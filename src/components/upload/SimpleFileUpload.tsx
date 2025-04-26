@@ -40,20 +40,13 @@ export const SimpleFileUpload: React.FC<SimpleFileUploadProps> = ({
       
       console.log(`Uploading to path: ${filePath}`);
       
-      // Try using createSignedUploadUrl for more reliable uploads
-      const { data: signedData, error: signedError } = await supabase.storage
+      // Try using direct upload instead of signed URLs
+      const { data, error: uploadError } = await supabase.storage
         .from(bucket)
-        .createSignedUploadUrl(filePath);
-        
-      if (signedError) {
-        console.error('Error creating signed URL:', signedError);
-        throw signedError;
-      }
-      
-      console.log('Got signed URL, uploading...');
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .uploadToSignedUrl(signedData.path, signedData.token, file);
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
         
       if (uploadError) {
         console.error('Error uploading file:', uploadError);
@@ -61,12 +54,12 @@ export const SimpleFileUpload: React.FC<SimpleFileUploadProps> = ({
       }
       
       console.log('Upload successful, getting public URL...');
-      const { data } = supabase.storage
+      const { data: urlData } = supabase.storage
         .from(bucket)
         .getPublicUrl(filePath);
         
-      console.log('Public URL:', data.publicUrl);
-      onUploadComplete(data.publicUrl);
+      console.log('Public URL:', urlData.publicUrl);
+      onUploadComplete(urlData.publicUrl);
       
       toast({
         title: "Upload successful",

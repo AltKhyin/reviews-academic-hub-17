@@ -10,6 +10,7 @@ interface ArticleFormData {
   summary?: string;
   image_url?: string;
   published?: boolean;
+  published_at?: string; // Added this field to fix the error
 }
 
 export const useArticles = () => {
@@ -45,7 +46,7 @@ export const useArticles = () => {
       
       // Add published_at field only if the article is being published
       if (formData.published) {
-        insertData['published_at'] = new Date().toISOString();
+        insertData.published_at = new Date().toISOString();
       }
 
       const { data, error } = await supabase

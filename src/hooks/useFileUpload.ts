@@ -14,36 +14,30 @@ export const useFileUpload = () => {
       const fileName = `${Math.random().toString().replace('0.', '')}.${fileExt}`;
       const filePath = `${folder}/${fileName}`;
 
-      // Get signed URL approach (avoids permissions issues)
-      const { data: signedURLData, error: signedURLError } = await supabase.storage
+      console.log(`Attempting direct upload to ${filePath}`);
+      
+      // Use direct upload approach instead of signed URLs
+      const { data, error: uploadError } = await supabase.storage
         .from('issues')
-        .createSignedUploadUrl(filePath);
-
-      if (signedURLError) {
-        console.error('Error getting signed URL:', signedURLError);
-        throw signedURLError;
-      }
-
-      const { error: uploadError } = await supabase.storage
-        .from('issues')
-        .uploadToSignedUrl(
-          signedURLData.path,
-          signedURLData.token,
-          file
-        );
-
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+      
       if (uploadError) {
-        console.error('Error uploading with signed URL:', uploadError);
+        console.error('Error uploading file:', uploadError);
         throw uploadError;
       }
 
+      console.log('File uploaded successfully, getting public URL');
+      
       // Get public URL after successful upload
-      const { data } = supabase.storage
+      const { data: urlData } = supabase.storage
         .from('issues')
         .getPublicUrl(filePath);
 
-      console.log('File uploaded successfully:', data.publicUrl);
-      return data.publicUrl;
+      console.log('File uploaded successfully:', urlData.publicUrl);
+      return urlData.publicUrl;
     } catch (error: any) {
       console.error('Error uploading file:', error);
       toast({
