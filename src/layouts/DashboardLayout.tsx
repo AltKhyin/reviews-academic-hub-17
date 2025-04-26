@@ -1,11 +1,33 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/navigation/Sidebar';
 import { supabase } from '@/integrations/supabase/client';
 
 const DashboardLayout: React.FC = () => {
   const navigate = useNavigate();
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  
+  // Verifica se a sidebar está colapsada no localStorage
+  useEffect(() => {
+    const savedState = localStorage.getItem('sidebar-collapsed');
+    if (savedState !== null) {
+      setIsCollapsed(savedState === 'true');
+    }
+  }, []);
+
+  // Monitora alterações no localStorage para atualizar a UI
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const savedState = localStorage.getItem('sidebar-collapsed');
+      if (savedState !== null) {
+        setIsCollapsed(savedState === 'true');
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
   
   useEffect(() => {
     const checkAuth = async () => {
@@ -27,9 +49,9 @@ const DashboardLayout: React.FC = () => {
   }, [navigate]);
 
   return (
-    <div className="min-h-screen flex bg-[#121212] text-white">
+    <div className="min-h-screen bg-[#121212] text-white">
       <Sidebar />
-      <main className="flex-1 transition-all duration-300 ml-64">
+      <main className={`transition-all duration-300 ${isCollapsed ? 'ml-16' : 'ml-60'}`}>
         <div className="max-w-7xl mx-auto p-4 md:p-6">
           <Outlet />
         </div>
