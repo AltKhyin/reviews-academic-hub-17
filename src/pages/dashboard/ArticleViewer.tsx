@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -45,7 +44,7 @@ Em conclusão, este trabalho representa uma contribuição valiosa para a litera
 const ArticleViewer: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [viewMode, setViewMode] = useState<'dual' | 'review' | 'original'>('dual');
-  const article = mockArticle; // In a real app, you would fetch based on the ID
+  const article = mockArticle;
   
   const handleViewModeChange = (mode: 'dual' | 'review' | 'original') => {
     setViewMode(mode);
@@ -90,40 +89,34 @@ const ArticleViewer: React.FC = () => {
         </div>
       </div>
       
-      <div className={`${viewMode === 'dual' ? 'grid grid-cols-1 lg:grid-cols-2 gap-6' : ''}`}>
-        {/* PDF Viewer - Hidden in "review" mode */}
+      <div className={`${viewMode === 'dual' ? 'grid grid-cols-2 gap-6' : ''}`}>
+        {/* PDF Viewers - Made identical */}
         {(viewMode === 'dual' || viewMode === 'original') && (
-          <div className="bg-[#1a1a1a] rounded-lg p-6 shadow-lg card-elevation">
+          <div className="bg-[#1a1a1a] rounded-lg p-6 shadow-lg card-elevation h-[calc(100vh-16rem)]">
             <div className="mb-4">
               <h2 className="font-serif text-xl font-medium">Artigo Original</h2>
             </div>
-            <div className="aspect-[3/4] bg-[#121212] rounded-md flex items-center justify-center">
-              <div className="text-center">
-                <p className="text-gray-400 mb-4">Visualização de PDF não disponível nesta demonstração</p>
-                <div className="border border-[#2a2a2a] rounded-md p-4 max-w-sm mx-auto">
-                  <h3 className="font-serif text-sm font-medium mb-2">{article.title}</h3>
-                  <p className="text-xs text-gray-400">{article.author}</p>
-                  <p className="text-xs text-gray-400">{article.journal}, {article.year}</p>
-                </div>
-              </div>
+            <div className="w-full h-full bg-[#121212] rounded-md">
+              <iframe
+                src={article.pdfUrl}
+                className="w-full h-full rounded-md"
+                title="Original Article PDF"
+              />
             </div>
           </div>
         )}
         
-        {/* Review Content - Hidden in "original" mode */}
         {(viewMode === 'dual' || viewMode === 'review') && (
-          <div className="bg-[#1a1a1a] rounded-lg p-6 shadow-lg card-elevation">
+          <div className="bg-[#1a1a1a] rounded-lg p-6 shadow-lg card-elevation h-[calc(100vh-16rem)]">
             <div className="mb-4">
               <h2 className="font-serif text-xl font-medium">Revisão</h2>
             </div>
-            <div className="prose prose-invert max-w-none">
-              <h3 className="font-serif text-lg font-medium mb-4">Resumo</h3>
-              <p className="text-gray-300 mb-6">{article.abstract}</p>
-              
-              <h3 className="font-serif text-lg font-medium mb-4">Análise crítica</h3>
-              <div className="text-gray-300 leading-relaxed whitespace-pre-line">
-                {article.reviewContent}
-              </div>
+            <div className="w-full h-full bg-[#121212] rounded-md">
+              <iframe
+                src={article.pdfUrl}
+                className="w-full h-full rounded-md"
+                title="Review PDF"
+              />
             </div>
           </div>
         )}
