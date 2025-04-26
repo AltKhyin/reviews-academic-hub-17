@@ -1,125 +1,242 @@
 
-import React from 'react';
-import { ChevronRight } from 'lucide-react';
+import React, { useState } from 'react';
+import { Bookmark, ThumbsDown, ThumbsUp, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-// Mock data for featured and recent articles
-const featuredArticles = [
-  {
-    id: '1',
-    title: 'Impactos do uso prolongado de inibidores de bomba de prótons',
-    description: 'Uma análise detalhada dos efeitos a longo prazo do uso de IBPs no tratamento de doenças gástricas.',
-    image: 'https://images.unsplash.com/photo-1581093588401-fbb62a02f120?auto=format&fit=crop&q=80&w=1200',
-    category: 'Gastroenterologia',
-    date: '2024-04-15'
-  },
-  // ... more articles
-];
+// Mock data for medical articles
+const featuredArticle = {
+  id: '1',
+  title: 'Impactos do uso prolongado de inibidores de bomba de prótons',
+  description: 'Uma análise detalhada dos efeitos a longo prazo do uso de IBPs no tratamento de doenças gástricas.',
+  image: 'https://images.unsplash.com/photo-1581093588401-fbb62a02f120?auto=format&fit=crop&q=80&w=1200',
+  category: 'Gastroenterologia',
+  date: '2024-04-15'
+};
 
 const recentArticles = [
   {
     id: '2',
     title: 'Avanços no tratamento de diabetes tipo 2',
     category: 'Endocrinologia',
-    progress: 45,
     image: 'https://images.unsplash.com/photo-1576086213369-97a306d36557?auto=format&fit=crop&q=80&w=800',
   },
-  // ... more articles
+  {
+    id: '3',
+    title: 'Uso de anticoagulantes em pacientes cardiológicos',
+    category: 'Cardiologia',
+    image: 'https://images.unsplash.com/photo-1628348068343-c6a848d2b6dd?auto=format&fit=crop&q=80&w=800',
+  },
+  {
+    id: '4',
+    title: 'Novos protocolos para tratamento de DPOC',
+    category: 'Pneumologia',
+    image: 'https://images.unsplash.com/photo-1530026186672-2cd00ffc50fe?auto=format&fit=crop&q=80&w=800',
+  },
+  {
+    id: '5',
+    title: 'Terapias inovadoras para doenças reumáticas',
+    category: 'Reumatologia',
+    image: 'https://images.unsplash.com/photo-1631815588090-d4bfec5b1ccb?auto=format&fit=crop&q=80&w=800',
+  },
+  {
+    id: '6',
+    title: 'Nutrição e saúde mental: evidências recentes',
+    category: 'Psiquiatria',
+    image: 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&q=80&w=800',
+  },
 ];
 
-const popularCategories = [
+const recommendedArticles = [
   {
-    name: 'Cardiologia',
-    count: 24,
-    image: 'https://images.unsplash.com/photo-1559757175-5700dde675bc?auto=format&fit=crop&q=80&w=800',
+    id: '7',
+    title: 'Novas diretrizes para o tratamento de hipertensão',
+    category: 'Cardiologia',
+    image: 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?auto=format&fit=crop&q=80&w=800',
   },
-  // ... more categories
+  {
+    id: '8',
+    title: 'Abordagens atalizadas para o manejo da dor crônica',
+    category: 'Anestesiologia',
+    image: 'https://images.unsplash.com/photo-1600959907703-125ba0a688ed?auto=format&fit=crop&q=80&w=800',
+  },
+  {
+    id: '9',
+    title: 'O papel dos probióticos na saúde digestiva',
+    category: 'Gastroenterologia',
+    image: 'https://images.unsplash.com/photo-1550831107-1553da8c8464?auto=format&fit=crop&q=80&w=800',
+  },
+  {
+    id: '10',
+    title: 'Biomarcadores e medicina personalizada em oncologia',
+    category: 'Oncologia',
+    image: 'https://images.unsplash.com/photo-1579154392429-0e6b4e615afa?auto=format&fit=crop&q=80&w=800',
+  },
+  {
+    id: '11',
+    title: 'Demência precoce: diagnóstico e intervenções',
+    category: 'Neurologia',
+    image: 'https://images.unsplash.com/photo-1559757152-a0db245654b1?auto=format&fit=crop&q=80&w=800',
+  },
 ];
+
+// Article Card component with hover actions
+const ArticleCard = ({ article }: { article: any }) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <div 
+      className="relative rounded-md overflow-hidden h-[360px] w-[202px] transition-transform duration-300"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <img 
+        src={article.image} 
+        alt={article.title}
+        className={`w-full h-full object-cover transition-transform duration-300 ${isHovered ? 'scale-105 brightness-50' : ''}`}
+      />
+      
+      <div className="absolute inset-0 flex flex-col justify-between p-4">
+        <div>
+          <span className="text-xs font-medium text-gray-200 bg-black/40 px-2 py-1 rounded">
+            {article.category}
+          </span>
+          
+          {/* Bookmark button visible on hover */}
+          {isHovered && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="absolute top-4 right-4 bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors">
+                    <Bookmark size={16} className="text-white" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p>Salvar</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
+        
+        <div>
+          <h3 className={`text-sm font-medium ${isHovered ? 'text-white' : 'text-transparent'} transition-colors duration-200`}>
+            {article.title}
+          </h3>
+          
+          {/* Rating buttons visible on hover */}
+          {isHovered && (
+            <div className="flex items-center justify-center gap-4 mt-3">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button className="bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors">
+                      <ThumbsUp size={16} strokeWidth={2} className="text-white" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p>Quero mais conteúdos assim</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button className="bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors">
+                      <ThumbsUp size={16} className="text-white" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p>Gostei</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button className="bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors">
+                      <ThumbsDown size={16} className="text-white" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <p>Não tenho interesse no assunto</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ArticleRow component for displaying a row of articles
+const ArticleRow = ({ title, articles }: { title: string, articles: any[] }) => {
+  return (
+    <section className="mb-12">
+      <h2 className="text-2xl font-serif mb-4 px-6">{title}</h2>
+      
+      <Carousel
+        opts={{
+          align: "start",
+          loop: true,
+        }}
+        className="w-full"
+      >
+        <CarouselContent className="-ml-4">
+          {articles.map((article) => (
+            <CarouselItem key={article.id} className="pl-4 md:basis-auto flex-shrink-0">
+              <ArticleCard article={article} />
+            </CarouselItem>
+          ))}
+        </CarouselContent>
+        <CarouselPrevious className="left-2" />
+        <CarouselNext className="right-2" />
+      </Carousel>
+    </section>
+  );
+};
 
 const Dashboard = () => {
   return (
-    <div className="p-6 space-y-8">
-      {/* Hero Carousel */}
-      <section className="relative h-[400px] rounded-xl overflow-hidden">
+    <div className="pt-4 pb-16 space-y-8">
+      {/* Hero section - Spotlight Article */}
+      <section className="w-full h-[500px] relative mb-12">
         <div className="absolute inset-0">
           <img 
-            src={featuredArticles[0].image} 
-            alt={featuredArticles[0].title}
+            src={featuredArticle.image} 
+            alt={featuredArticle.title}
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
         </div>
-        <div className="absolute bottom-8 left-8 right-8 text-white">
-          <span className="text-sm text-gray-300">{featuredArticles[0].category}</span>
-          <h1 className="mt-2 text-4xl font-serif font-medium leading-tight">
-            {featuredArticles[0].title}
-          </h1>
-          <p className="mt-4 text-gray-200 max-w-2xl">
-            {featuredArticles[0].description}
-          </p>
-        </div>
-      </section>
-
-      {/* Continue Reading Section */}
-      <section>
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-serif">Continue de Onde Parou</h2>
-          <button className="text-sm text-gray-400 flex items-center hover:text-white transition-colors">
-            Ver todos <ChevronRight className="w-4 h-4 ml-1" />
-          </button>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {recentArticles.map(article => (
-            <div key={article.id} className="bg-[#1a1a1a] rounded-lg overflow-hidden group">
-              <div className="relative h-48">
-                <img 
-                  src={article.image} 
-                  alt={article.title}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                />
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-700">
-                  <div 
-                    className="h-full bg-white"
-                    style={{ width: `${article.progress}%` }}
-                  />
-                </div>
-              </div>
-              <div className="p-4">
-                <span className="text-sm text-gray-400">{article.category}</span>
-                <h3 className="mt-2 text-lg font-medium">{article.title}</h3>
-              </div>
-            </div>
-          ))}
+        
+        <div className="relative h-full flex items-center px-12 z-10">
+          <div className="max-w-2xl text-white">
+            <span className="text-sm font-medium text-gray-300 bg-black/40 px-2 py-1 rounded">
+              {featuredArticle.category}
+            </span>
+            <h1 className="mt-4 text-5xl font-serif font-medium leading-tight">
+              {featuredArticle.title}
+            </h1>
+            <p className="mt-4 text-lg text-gray-200 max-w-xl">
+              {featuredArticle.description}
+            </p>
+            <button className="mt-8 bg-white text-black px-6 py-2 rounded-md font-medium hover:bg-gray-200 transition-colors">
+              Ler agora
+            </button>
+          </div>
         </div>
       </section>
 
-      {/* Categories Section */}
-      <section>
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-serif">Explorar por Categoria</h2>
-          <button className="text-sm text-gray-400 flex items-center hover:text-white transition-colors">
-            Ver todas <ChevronRight className="w-4 h-4 ml-1" />
-          </button>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {popularCategories.map(category => (
-            <div 
-              key={category.name}
-              className="relative h-40 rounded-lg overflow-hidden group cursor-pointer"
-            >
-              <img 
-                src={category.image} 
-                alt={category.name}
-                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-black/50 group-hover:bg-black/60 transition-colors" />
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <h3 className="text-xl font-serif text-white">{category.name}</h3>
-                <span className="mt-2 text-sm text-gray-300">{category.count} artigos</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* Recent Editions */}
+      <ArticleRow title="Edições Recentes" articles={recentArticles} />
+      
+      {/* Recommended For You */}
+      <ArticleRow title="Recomendados Para Você" articles={recommendedArticles} />
     </div>
   );
 };
