@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { useArticleView } from '@/hooks/useArticleView';
+import { ArticleActions } from '@/components/article/ArticleActions';
 
 // Mock article data
 const mockArticle = {
@@ -46,6 +48,9 @@ const ArticleViewer: React.FC = () => {
   const [viewMode, setViewMode] = useState<'dual' | 'review' | 'original'>('dual');
   const article = mockArticle;
   
+  // Track article view
+  useArticleView(id!);
+  
   const handleViewModeChange = (mode: 'dual' | 'review' | 'original') => {
     setViewMode(mode);
   };
@@ -64,6 +69,11 @@ const ArticleViewer: React.FC = () => {
         </div>
         <div className="text-sm text-gray-300 mb-6">
           Revisado por <span className="text-white">{article.reviewedBy}</span> em {article.reviewDate}
+        </div>
+        
+        {/* Add ArticleActions component */}
+        <div className="mt-4 mb-6">
+          <ArticleActions articleId={id!} />
         </div>
         
         {/* View mode selector */}
