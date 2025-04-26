@@ -24,6 +24,51 @@ export type Database = {
         }
         Relationships: []
       }
+      article_reviews: {
+        Row: {
+          article_id: string
+          comments: string | null
+          created_at: string
+          id: string
+          reviewer_id: string
+          status: Database["public"]["Enums"]["review_status"]
+          updated_at: string
+        }
+        Insert: {
+          article_id: string
+          comments?: string | null
+          created_at?: string
+          id?: string
+          reviewer_id: string
+          status?: Database["public"]["Enums"]["review_status"]
+          updated_at?: string
+        }
+        Update: {
+          article_id?: string
+          comments?: string | null
+          created_at?: string
+          id?: string
+          reviewer_id?: string
+          status?: Database["public"]["Enums"]["review_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_reviews_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "article_reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       article_tags: {
         Row: {
           article_id: string
@@ -355,7 +400,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      review_status: "draft" | "in_review" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -470,6 +515,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      review_status: ["draft", "in_review", "approved", "rejected"],
+    },
   },
 } as const

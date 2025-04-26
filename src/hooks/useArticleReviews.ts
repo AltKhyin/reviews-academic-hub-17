@@ -30,13 +30,13 @@ export const useArticleReviews = (articleId?: string) => {
     mutationFn: async ({
       articleId,
       reviewerId,
-      status = 'in_review',
-      comments = null,
+      status = 'in_review' as ReviewStatus,
+      comments = '',
     }: {
       articleId: string;
       reviewerId: string;
       status?: ReviewStatus;
-      comments?: string | null;
+      comments?: string;
     }) => {
       const { data, error } = await supabase
         .from('article_reviews')
@@ -68,7 +68,7 @@ export const useArticleReviews = (articleId?: string) => {
     },
   });
 
-  const updateReviewStatusMutation = useMutation({
+  const updateReviewMutation = useMutation({
     mutationFn: async ({
       reviewId,
       status,
@@ -76,16 +76,11 @@ export const useArticleReviews = (articleId?: string) => {
     }: {
       reviewId: string;
       status: ReviewStatus;
-      comments?: string | null;
+      comments?: string;
     }) => {
-      const updateData: { status: ReviewStatus; comments?: string | null } = { status };
-      if (comments !== undefined) {
-        updateData.comments = comments;
-      }
-
       const { data, error } = await supabase
         .from('article_reviews')
-        .update(updateData)
+        .update({ status, comments })
         .eq('id', reviewId)
         .select()
         .single();
@@ -97,7 +92,7 @@ export const useArticleReviews = (articleId?: string) => {
       queryClient.invalidateQueries({ queryKey: ['article-reviews', articleId] });
       toast({
         title: 'Review updated',
-        description: 'The review status has been updated.',
+        description: 'The review has been updated successfully.',
       });
     },
     onError: (error: Error) => {
@@ -114,8 +109,8 @@ export const useArticleReviews = (articleId?: string) => {
     isLoading,
     error,
     createReview: createReviewMutation.mutate,
-    updateReviewStatus: updateReviewStatusMutation.mutate,
+    updateReview: updateReviewMutation.mutate,
     isCreating: createReviewMutation.isPending,
-    isUpdating: updateReviewStatusMutation.isPending,
+    isUpdating: updateReviewMutation.isPending,
   };
 };
