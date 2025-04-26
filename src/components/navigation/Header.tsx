@@ -12,19 +12,22 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, collapsed }) => {
   
   return (
     <header className="h-16 border-b border-[#2a2a2a] bg-[#0d0d0d] shadow-sm">
-      <div className="h-full flex items-center px-4">
-        <button 
-          onClick={toggleSidebar}
-          className="hover:bg-[#1a1a1a] rounded-md p-2 hover-effect"
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          <Menu size={20} strokeWidth={1.5} />
-        </button>
+      <div className="h-full flex items-center justify-between px-4">
+        <div className="flex items-center">
+          <button 
+            onClick={toggleSidebar}
+            className="hover:bg-[#1a1a1a] rounded-md p-2 hover-effect"
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <Menu size={20} strokeWidth={1.5} />
+          </button>
+        </div>
         
-        {/* Middle section with search */}
-        <div className="flex-1 flex justify-center">
-          <div className={`relative transition-all duration-300 ease-in-out
-                         ${searchExpanded ? 'w-full md:w-2/3' : 'w-9'}`}>
+        {/* Right section with search and profile */}
+        <div className="flex items-center">
+          {/* Search component moved to the right */}
+          <div className={`relative transition-all duration-300 ease-in-out mr-4
+                         ${searchExpanded ? 'w-64' : 'w-9'}`}>
             <button 
               onClick={() => setSearchExpanded(!searchExpanded)}
               className={`${searchExpanded ? 'hidden' : 'block'} hover:bg-[#1a1a1a] rounded-md p-2 hover-effect`}
@@ -55,10 +58,8 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, collapsed }) => {
               </div>
             )}
           </div>
-        </div>
-        
-        {/* Right section with profile */}
-        <div>
+          
+          {/* Profile button */}
           <button className="hover:bg-[#1a1a1a] rounded-full p-2 hover-effect">
             <User size={20} strokeWidth={1.5} />
           </button>
