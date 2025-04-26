@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Bookmark, ThumbsDown, ThumbsUp, ChevronRight, ChevronLeft } from 'lucide-react';
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
@@ -80,7 +79,6 @@ const recommendedArticles = [
   },
 ];
 
-// Article Card component with hover actions
 const ArticleCard = ({ article }: { article: any }) => {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -96,14 +94,18 @@ const ArticleCard = ({ article }: { article: any }) => {
         className={`w-full h-full object-cover transition-transform duration-300 ${isHovered ? 'scale-105 brightness-50' : ''}`}
       />
       
-      <div className="absolute inset-0 flex flex-col justify-between p-4">
-        <div>
-          <span className="text-xs font-medium text-gray-200 bg-black/40 px-2 py-1 rounded">
-            {article.category}
-          </span>
-          
-          {/* Bookmark button visible on hover */}
-          {isHovered && (
+      {isHovered && (
+        <div className="absolute inset-0 flex flex-col justify-between p-4 animate-fade-in">
+          <div className="absolute top-0 left-full ml-4 bg-black/90 p-4 rounded-lg w-[300px] transform transition-all duration-200 animate-fade-in">
+            <h3 className="text-lg font-medium text-white mb-2">{article.title}</h3>
+            <p className="text-sm text-gray-300">{article.description}</p>
+          </div>
+
+          <div>
+            <span className="text-xs font-medium text-gray-200 bg-black/40 px-2 py-1 rounded">
+              {article.category}
+            </span>
+            
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -116,64 +118,54 @@ const ArticleCard = ({ article }: { article: any }) => {
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-          )}
-        </div>
-        
-        <div>
-          <h3 className={`text-sm font-medium ${isHovered ? 'text-white' : 'text-transparent'} transition-colors duration-200`}>
-            {article.title}
-          </h3>
-          
-          {/* Rating buttons visible on hover */}
-          {isHovered && (
-            <div className="flex items-center justify-center gap-4 mt-3">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button className="bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors">
-                      <ThumbsUp size={16} strokeWidth={2} className="text-white" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    <p>Quero mais conteúdos assim</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+          </div>
 
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button className="bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors">
-                      <ThumbsUp size={16} className="text-white" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    <p>Gostei</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+          <div className="flex items-center justify-center gap-4 mt-3">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors">
+                    <ThumbsUp size={16} strokeWidth={2} className="text-white" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p>Quero mais conteúdos assim</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
 
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button className="bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors">
-                      <ThumbsDown size={16} className="text-white" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    <p>Não tenho interesse no assunto</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-          )}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors">
+                    <ThumbsUp size={16} className="text-white" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p>Gostei</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors">
+                    <ThumbsDown size={16} className="text-white" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p>Não tenho interesse no assunto</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
 
-// ArticleRow component for displaying a row of articles
 const ArticleRow = ({ title, articles }: { title: string, articles: any[] }) => {
   return (
     <section className="mb-12">
@@ -203,7 +195,6 @@ const ArticleRow = ({ title, articles }: { title: string, articles: any[] }) => 
 const Dashboard = () => {
   return (
     <div className="pt-4 pb-16 space-y-8">
-      {/* Hero section - Spotlight Article */}
       <section className="w-full h-[500px] relative mb-12">
         <div className="absolute inset-0">
           <img 
@@ -232,10 +223,8 @@ const Dashboard = () => {
         </div>
       </section>
 
-      {/* Recent Editions */}
       <ArticleRow title="Edições Recentes" articles={recentArticles} />
       
-      {/* Recommended For You */}
       <ArticleRow title="Recomendados Para Você" articles={recommendedArticles} />
     </div>
   );

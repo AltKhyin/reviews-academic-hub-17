@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, BookOpen, User, Settings, LogOut, ChevronRight } from 'lucide-react';
@@ -21,27 +20,10 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
     { icon: Settings, label: 'Configurações', path: '/settings' },
   ];
 
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      toast({
-        title: 'Logout realizado com sucesso',
-        description: 'Você foi desconectado da sua conta',
-      });
-    } catch (error) {
-      console.error('Erro ao sair:', error);
-      toast({
-        title: 'Erro ao realizar logout',
-        description: 'Por favor tente novamente',
-        variant: 'destructive',
-      });
-    }
-  };
-
   return (
     <aside 
       className={`bg-[#0d0d0d] min-h-screen flex flex-col fixed top-0 left-0 z-20 transition-all duration-300 ease-in-out border-r border-[#2a2a2a]
-                 ${collapsed ? 'w-20' : 'w-72'}`}
+                 ${collapsed ? 'w-16' : 'w-60'}`}
     >
       <div className="h-full flex flex-col">
         <div className={`py-8 flex items-center justify-center border-b border-[#2a2a2a]`}>
@@ -70,18 +52,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
           </ul>
         </nav>
         
-        {/* Move the separation line and logout button to the bottom */}
+        {/* Move toggle button to bottom */}
         <div className="mt-auto border-t border-[#2a2a2a] p-4">
-          {!collapsed && (
-            <button 
-              onClick={handleLogout}
-              className="w-full flex items-center px-3 py-3 text-sm text-gray-300 hover:bg-red-900/20 hover:text-red-400 rounded-md whitespace-nowrap transition-colors"
-            >
-              <LogOut size={22} strokeWidth={1.5} className="min-w-6 flex-shrink-0" />
-              <span className="ml-3 font-medium">Sair</span>
-            </button>
-          )}
-          
           <div className="flex items-center justify-end mt-2">
             <button 
               onClick={toggleSidebar}

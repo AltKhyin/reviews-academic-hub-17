@@ -6,9 +6,9 @@ import AuthForm from '@/components/auth/AuthForm';
 const AuthPage = () => {
   return (
     <div className="min-h-screen w-full flex bg-gradient-to-br from-white via-white to-gray-100 relative overflow-hidden">
-      {/* Left side with logo - add max-width to prevent logo from going too far left */}
-      <div className="relative w-full flex flex-col justify-center items-start px-8 md:px-16 z-10 max-w-[800px]">
-        <div className="w-full max-w-[500px]">
+      {/* Left side with logo - centered more */}
+      <div className="relative w-full flex flex-col justify-center items-center md:items-end px-8 md:px-16 z-10 max-w-[800px]">
+        <div className="w-full max-w-[500px] md:mr-16">
           <Logo size="xlarge" showSubtitle />
         </div>
       </div>

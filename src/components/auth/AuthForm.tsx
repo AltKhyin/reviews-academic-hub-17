@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -75,37 +74,38 @@ const AuthForm = () => {
   };
 
   const renderHeader = () => {
-    if (mode === 'login') {
-      return (
-        <div className="flex items-center space-x-2 text-black">
-          <span className="h-1.5 w-1.5 rounded-full bg-black"></span>
-          <h2 className="text-xl font-serif tracking-tight">Área de membros</h2>
-        </div>
-      );
-    } else if (mode === 'register') {
-      return (
-        <>
+    switch (mode) {
+      case 'login':
+        return (
           <div className="flex items-center space-x-2 text-black">
             <span className="h-1.5 w-1.5 rounded-full bg-black"></span>
-            <h2 className="text-xl font-serif tracking-tight">Registro</h2>
+            <h2 className="text-xl font-serif tracking-tight">Área de membros</h2>
           </div>
-          <p className="mt-2 text-sm text-gray-600">
-            Use seu email de compra para se registrar
-          </p>
-        </>
-      );
-    } else {
-      return (
-        <>
-          <div className="flex items-center space-x-2 text-black">
-            <span className="h-1.5 w-1.5 rounded-full bg-black"></span>
-            <h2 className="text-xl font-serif tracking-tight">Recuperar senha</h2>
-          </div>
-          <p className="mt-2 text-sm text-gray-600">
-            Enviaremos instruções para seu email
-          </p>
-        </>
-      );
+        );
+      case 'register':
+        return (
+          <>
+            <div className="flex items-center space-x-2 text-black">
+              <span className="h-1.5 w-1.5 rounded-full bg-black"></span>
+              <h2 className="text-xl font-serif tracking-tight">Registro</h2>
+            </div>
+            <p className="mt-2 text-sm text-gray-600">
+              Use seu email de compra para se registrar
+            </p>
+          </>
+        );
+      case 'forgot':
+        return (
+          <>
+            <div className="flex items-center space-x-2 text-black">
+              <span className="h-1.5 w-1.5 rounded-full bg-black"></span>
+              <h2 className="text-xl font-serif tracking-tight">Recuperar senha</h2>
+            </div>
+            <p className="mt-2 text-sm text-gray-600">
+              Enviaremos instruções para seu email
+            </p>
+          </>
+        );
     }
   };
 
