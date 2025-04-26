@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Bookmark } from 'lucide-react';
+import { Bookmark, ThumbsUp, ThumbsDown, Heart } from 'lucide-react';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ArticleActions } from '../article/ArticleActions';
@@ -19,7 +19,7 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
   return (
     <HoverCard>
       <HoverCardTrigger asChild>
-        <div className="relative rounded-md overflow-hidden h-[360px] w-[202px] cursor-pointer">
+        <div className="relative rounded-md overflow-hidden h-[360px] w-[202px] cursor-pointer group">
           <img 
             src={article.image} 
             alt={article.title}
@@ -32,7 +32,7 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
             </span>
           </div>
           
-          <div className="absolute top-4 right-4">
+          <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -42,6 +42,47 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
                 </TooltipTrigger>
                 <TooltipContent side="top">
                   <p>Salvar</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+
+          <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors">
+                    <ThumbsUp size={16} className="text-white" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p>Gostei</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors">
+                    <ThumbsDown size={16} className="text-white" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p>Não gostei</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors">
+                    <Heart size={16} className="text-white" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  <p>Quero mais</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, BookOpen, User, Settings, LogOut, Search } from 'lucide-react';
+import { Home, BookOpen, User, Settings, LogOut } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import Logo from '../common/Logo';
@@ -44,14 +44,14 @@ const Sidebar: React.FC = () => {
   ];
 
   return (
-    <ShadcnSidebar>
+    <ShadcnSidebar collapsible="icon">
       <SidebarHeader>
         <div className="p-6">
           <Logo dark size="large" />
         </div>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="text-base">
         <SidebarMenu>
           {navItems.map((item) => (
             <SidebarMenuItem key={item.path}>
@@ -59,9 +59,10 @@ const Sidebar: React.FC = () => {
                 asChild
                 isActive={location.pathname === item.path}
                 tooltip={item.label}
+                className="h-12 text-base"
               >
                 <Link to={item.path}>
-                  <item.icon />
+                  <item.icon className="h-5 w-5" />
                   <span>{item.label}</span>
                 </Link>
               </SidebarMenuButton>
@@ -73,8 +74,8 @@ const Sidebar: React.FC = () => {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={handleLogout}>
-              <LogOut />
+            <SidebarMenuButton onClick={handleLogout} className="h-12 text-base">
+              <LogOut className="h-5 w-5" />
               <span>Sair</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
