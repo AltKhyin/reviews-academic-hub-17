@@ -5,22 +5,13 @@ import { Home, BookOpen, User, Settings, LogOut, ChevronLeft, ChevronRight, File
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import Logo from '../common/Logo';
+import { useSidebar, Sidebar as SidebarComponent, SidebarContent, SidebarFooter } from '@/components/ui/sidebar';
 
 const Sidebar = () => {
   const location = useLocation();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { state, toggleSidebar } = useSidebar();
   const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    const savedState = localStorage.getItem('sidebar-collapsed');
-    if (savedState !== null) {
-      setIsCollapsed(savedState === 'true');
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('sidebar-collapsed', isCollapsed.toString());
-  }, [isCollapsed]);
+  const isCollapsed = state === 'collapsed';
 
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -59,11 +50,7 @@ const Sidebar = () => {
   ];
 
   return (
-    <aside 
-      className={`fixed left-0 top-0 h-screen bg-[#121212] text-white transition-all duration-300 ease-in-out border-r border-white/10 z-10 ${
-        isCollapsed ? 'w-20' : 'w-60'
-      }`}
-    >
+    <SidebarComponent variant="sidebar" collapsible="icon">
       <div className="h-full flex flex-col">
         {/* Logo section */}
         <div className="p-4 flex justify-center">
@@ -71,7 +58,7 @@ const Sidebar = () => {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-2">
+        <SidebarContent className="px-2">
           {navItems.map((item) => (
             <Link
               key={item.path}
@@ -85,10 +72,10 @@ const Sidebar = () => {
               )}
             </Link>
           ))}
-        </nav>
+        </SidebarContent>
 
         {/* Footer section */}
-        <div className="mt-auto border-t border-white/10 p-2">
+        <SidebarFooter className="mt-auto border-t border-white/10 p-2">
           <button
             onClick={handleLogout}
             className="flex items-center w-full py-2 px-3 rounded-md hover:bg-white/5 transition-colors mb-2 text-sm"
@@ -98,7 +85,7 @@ const Sidebar = () => {
           </button>
           
           <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={toggleSidebar}
             className="flex items-center justify-center w-full py-2 px-3 rounded-md hover:bg-white/5 transition-colors text-sm"
           >
             {isCollapsed ? (
@@ -110,9 +97,9 @@ const Sidebar = () => {
               </>
             )}
           </button>
-        </div>
+        </SidebarFooter>
       </div>
-    </aside>
+    </SidebarComponent>
   );
 };
 
