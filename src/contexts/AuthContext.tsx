@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
@@ -69,13 +70,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('id', userId)
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching profile:', error);
+        throw error;
+      }
       
       if (data) {
         setProfile(data as UserProfile);
+      } else {
+        // Create default profile if it doesn't exist
+        const defaultProfile: Partial<UserProfile> = {
+          id: userId,
+          role: 'user',
+          full_name: null,
+          avatar_url: null
+        };
+        
+        await supabase
+          .from('profiles')
+          .insert(defaultProfile);
+          
+        setProfile(defaultProfile as UserProfile);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
+      // Set default profile in case of error to prevent app from breaking
+      setProfile({
+        id: userId,
+        role: 'user',
+        full_name: null,
+        avatar_url: null
+      });
     } finally {
       setIsLoading(false);
     }

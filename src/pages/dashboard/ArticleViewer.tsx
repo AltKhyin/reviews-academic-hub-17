@@ -1,145 +1,118 @@
-import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { useArticleView } from '@/hooks/useArticleView';
-import { CommentSection } from '@/components/comments/CommentSection';
-import { useSidebar } from '@/components/ui/sidebar';
-import { useQuery } from '@tanstack/react-query';
+
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
-import { Issue, Article } from '@/types/issue';
-import { PDFViewer } from '@/components/pdf/PDFViewer';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import PDFViewer from '@/components/pdf/PDFViewer';
+import { ChevronLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { toast } from '@/hooks/use-toast';
+import { ArticleData } from '@/types/article';
 import { ArticleHeader } from '@/components/article/ArticleHeader';
 import { ViewModeSwitcher } from '@/components/article/ViewModeSwitcher';
-import { ArticleData } from '@/types/article';
+import { ArticleContent } from '@/components/article/ArticleContent';
+import { ArticleComments } from '@/components/article/ArticleComments';
 
 const ArticleViewer: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const [viewMode, setViewMode] = useState<'dual' | 'review' | 'original'>('dual');
-  const { state } = useSidebar();
-  const isCollapsed = state === 'collapsed';
-  
-  useArticleView(id!);
-  
-  const { data: article, isLoading } = useQuery({
-    queryKey: ['article', id],
-    queryFn: async () => {
-      const { data: issueData, error: issueError } = await supabase
-        .from('issues')
-        .select('*')
-        .eq('id', id)
-        .maybeSingle();
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [article, setArticle] = useState<ArticleData | null>(null);
+  const [viewMode, setViewMode] = useState<'review' | 'original'>('review');
+
+  useEffect(() => {
+    const fetchArticle = async () => {
+      if (!id) return;
       
-      if (issueData) {
-        const typedIssue = issueData as Issue;
-        return {
-          ...typedIssue,
-          author: 'Journal Editorial Team',
-          journal: 'Medical Evidence Journal',
-          year: new Date(typedIssue.created_at).getFullYear().toString(),
-          reviewDate: typedIssue.published_at ? new Date(typedIssue.published_at).toLocaleDateString('pt-BR') : 'Não publicado',
-          reviewedBy: 'Editorial Board',
-          reviewContent: typedIssue.description || 'Sem conteúdo de revisão disponível.',
-          pdf_url: typedIssue.pdf_url,
-          article_pdf_url: typedIssue.article_pdf_url || ''
-        } as ArticleData;
-      }
-      
-      const { data: articleData, error: articleError } = await supabase
-        .from('articles')
-        .select('*, profiles:author_id(*)')
-        .eq('id', id)
-        .maybeSingle();
-      
-      if (articleData) {
-        const typedArticle = articleData as Article;
-        return {
-          ...typedArticle,
-          author: typedArticle.profiles?.full_name || 'Unknown Author',
-          journal: 'Medical Evidence Journal',
-          year: new Date(typedArticle.created_at).getFullYear().toString(),
-          reviewDate: typedArticle.published_at ? new Date(typedArticle.published_at).toLocaleDateString('pt-BR') : 'Não publicado',
-          reviewedBy: 'Editorial Board',
-          reviewContent: typedArticle.content || 'Sem conteúdo de revisão disponível.',
-          pdf_url: typedArticle.pdf_url || '',
-          article_pdf_url: typedArticle.article_pdf_url || ''
-        } as ArticleData;
-      }
-      
-      return {
-        id: id,
-        title: 'Impactos do uso prolongado de inibidores de bomba de prótons',
-        author: 'Johnson et al.',
-        journal: 'Journal of Gastroenterology',
-        year: '2023',
-        abstract: 'Os inibidores de bomba de prótons (IBP) estão entre os medicamentos mais prescritos mundialmente. Este artigo avalia os potenciais riscos associados ao uso prolongado de IBPs, incluindo deficiência de vitamina B12, hipomagnesemia, aumento do risco de fraturas, infecções entéricas e efeitos renais adversos. A análise de grandes estudos observacionais e meta-análises recentes sugere cautela na prescrição prolongada destes medicamentos.',
-        reviewDate: '12 de outubro de 2023',
-        reviewedBy: 'Igor Eckert',
-        reviewContent: `
-        Os inibidores da bomba de prótons (IBPs) representam uma classe de medicamentos amplamente prescrita e utilizada globalmente. Com sua eficácia comprovada no tratamento de distúrbios gastroesofágicos e sua disponibilidade tanto por prescrição médica quanto em formulações de venda livre, os IBPs se tornaram pilares no manejo de condições como doença do refluxo gastroesofágico (DRGE), úlceras pépticas e síndrome de Zollinger-Ellison.
-
-        Este artigo de Johnson et al. oferece uma revisão abrangente e equilibrada das evidências atuais sobre os potenciais efeitos adversos associados ao uso prolongado de IBPs. Os autores adotam uma abordagem metodológica rigorosa, analisando estudos observacionais de grande porte, ensaios clínicos randomizados e meta-análises recentes.
-
-        Pontos fortes:
-
-        1. Análise detalhada da plausibilidade biológica dos efeitos adversos reportados, incluindo os mecanismos pelos quais o uso de IBPs poderia levar à deficiência de nutrientes, alterações na microbiota intestinal e efeitos sistêmicos.
-
-        2. Discussão equilibrada dos dados epidemiológicos, reconhecendo tanto as associações significativas quanto as limitações metodológicas dos estudos observacionais que formam a base de muitas das preocupações de segurança.
-
-        3. Orientação clínica prática sobre monitoramento de pacientes em terapia prolongada com IBPs, oferecendo recomendações baseadas em evidências para triagem e acompanhamento.
-
-        Limitações:
-
-        1. Apesar da análise abrangente, o artigo poderia se beneficiar de uma estratificação mais detalhada dos riscos por subpopulações específicas, como idosos, pacientes com comorbidades e aqueles em politerapia.
-
-        2. A discussão sobre alternativas terapêuticas para pacientes de alto risco poderia ser mais robusta, incluindo protocolos de descontinuação gradual e estratégias de tratamento alternativas.
-
-        Implicações clínicas:
-
-        Este artigo reforça a importância da prescrição criteriosa de IBPs, seguindo o princípio de "dose mínima efetiva pelo menor tempo necessário". Médicos devem regularmente reavaliar a necessidade contínua do tratamento com IBPs, especialmente em pacientes idosos e naqueles com múltiplas comorbidades.
-
-        As evidências apresentadas suportam a necessidade de monitoramento periódico de níveis de vitamina B12, magnésio e densidade óssea em pacientes em uso prolongado de IBPs. Adicionalmente, é fundamental a educação dos pacientes sobre o uso apropriado destes medicamentos quando obtidos sem prescrição médica.
-
-        Em conclusão, este trabalho representa uma contribuição valiosa para a literatura médica sobre a segurança de IBPs, promovendo uma abordagem cautelosa e individualizada na prescrição prolongada destes medicamentos sem alimentar alarmismo injustificado.
-        `,
-        pdf_url: 'https://example.com/article.pdf',
-        article_pdf_url: 'https://example.com/original-article.pdf'
-      } as ArticleData;
-    }
-  });
-  
-  if (isLoading) {
-    return <div className="p-8 text-center">Carregando artigo...</div>;
-  }
-  
-  return (
-    <div className={`animate-fade-in pb-12 transition-all duration-300 ${isCollapsed ? 'max-w-[95%]' : 'max-w-[85%]'} mx-auto`}>
-      <ArticleHeader article={article} />
-      <ViewModeSwitcher viewMode={viewMode} onViewModeChange={setViewMode} />
-      
-      <div className={`${viewMode === 'dual' ? 'grid grid-cols-1 md:grid-cols-2 gap-6' : ''}`}>
-        {(viewMode === 'dual' || viewMode === 'original') && (
-          <PDFViewer
-            url={article.article_pdf_url || ''}
-            title="Artigo Original"
-          />
-        )}
+      try {
+        setLoading(true);
         
-        {(viewMode === 'dual' || viewMode === 'review') && (
-          <PDFViewer
-            url={article.pdf_url || ''}
-            title="Revisão"
-            fallbackContent={
-              <Card className="w-full max-w-2xl p-4 overflow-y-auto max-h-[80%]">
-                <div className="prose prose-invert max-w-none">
-                  <div dangerouslySetInnerHTML={{ __html: article.reviewContent.replace(/\n/g, '<br />') }} />
-                </div>
-              </Card>
-            }
-          />
-        )}
-      </div>
+        const { data, error } = await supabase
+          .from('issues')
+          .select('*')
+          .eq('id', id)
+          .single();
+        
+        if (error) throw error;
+        
+        if (data) {
+          // Transform the issue data to match ArticleData structure
+          const articleData: ArticleData = {
+            id: data.id,
+            title: data.title,
+            author: 'Author Not Available', // This would come from a join in a real implementation
+            journal: data.specialty || 'Journal Not Available',
+            year: new Date(data.created_at).getFullYear().toString(),
+            reviewDate: new Date(data.updated_at).toLocaleDateString(),
+            reviewedBy: 'Reviewer Not Available', // This would come from a join in a real implementation
+            reviewContent: data.description || 'No review content available',
+            pdf_url: data.pdf_url,
+            article_pdf_url: data.article_pdf_url || undefined,
+          };
+          
+          setArticle(articleData);
+        }
+      } catch (error) {
+        console.error('Error fetching article:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load article details.",
+          variant: "destructive"
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      <CommentSection articleId={id!} />
+    fetchArticle();
+  }, [id]);
+
+  if (loading) {
+    return <div className="p-8">Loading article...</div>;
+  }
+
+  if (!article) {
+    return <div className="p-8">Article not found.</div>;
+  }
+
+  const pdfUrl = viewMode === 'review' ? article.pdf_url : article.article_pdf_url;
+
+  return (
+    <div className="space-y-6">
+      <Button variant="ghost" onClick={() => navigate('/homepage')} className="mb-4">
+        <ChevronLeft className="mr-2 h-4 w-4" /> Back to Articles
+      </Button>
+
+      <ArticleHeader article={article} />
+      
+      <ViewModeSwitcher viewMode={viewMode} setViewMode={setViewMode} hasOriginal={!!article.article_pdf_url} />
+      
+      <Tabs defaultValue="pdf" className="w-full">
+        <TabsList className="mb-4">
+          <TabsTrigger value="pdf">PDF</TabsTrigger>
+          <TabsTrigger value="content">Content</TabsTrigger>
+          <TabsTrigger value="comments">Comments</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="pdf" className="bg-white/5 p-0 rounded-md overflow-hidden">
+          {pdfUrl ? (
+            <Card className="border-white/10">
+              <PDFViewer fileUrl={pdfUrl} />
+            </Card>
+          ) : (
+            <div className="p-8 text-center">PDF not available for this view mode.</div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="content">
+          <ArticleContent article={article} />
+        </TabsContent>
+        
+        <TabsContent value="comments">
+          <ArticleComments articleId={article.id} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
