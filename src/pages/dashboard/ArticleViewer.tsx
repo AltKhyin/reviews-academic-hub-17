@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useArticleView } from '@/hooks/useArticleView';
 import { ArticleActions } from '@/components/article/ArticleActions';
@@ -8,6 +8,7 @@ import { useSidebar } from '@/components/ui/sidebar';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
+import { Issue, Article } from '@/types/issue';
 
 // Define an interface for our article data structure
 interface ArticleData {
@@ -45,17 +46,18 @@ const ArticleViewer: React.FC = () => {
         .maybeSingle();
       
       if (issueData) {
+        const typedIssue = issueData as Issue;
         return {
-          ...issueData,
+          ...typedIssue,
           author: 'Journal Editorial Team',
           journal: 'Medical Evidence Journal',
-          year: new Date(issueData.created_at).getFullYear().toString(),
-          reviewDate: issueData.published_at ? new Date(issueData.published_at).toLocaleDateString('pt-BR') : 'Não publicado',
+          year: new Date(typedIssue.created_at).getFullYear().toString(),
+          reviewDate: typedIssue.published_at ? new Date(typedIssue.published_at).toLocaleDateString('pt-BR') : 'Não publicado',
           reviewedBy: 'Editorial Board',
-          reviewContent: issueData.description || 'Sem conteúdo de revisão disponível.',
-          pdf_url: issueData.pdf_url,
-          article_pdf_url: issueData.article_pdf_url || '' // Handle potentially undefined property
-        };
+          reviewContent: typedIssue.description || 'Sem conteúdo de revisão disponível.',
+          pdf_url: typedIssue.pdf_url,
+          article_pdf_url: typedIssue.article_pdf_url || '' // Handle potentially undefined property
+        } as ArticleData;
       }
       
       // If not found in issues, try articles table
@@ -66,17 +68,18 @@ const ArticleViewer: React.FC = () => {
         .maybeSingle();
       
       if (articleData) {
+        const typedArticle = articleData as Article;
         return {
-          ...articleData,
-          author: articleData.profiles?.full_name || 'Unknown Author',
+          ...typedArticle,
+          author: typedArticle.profiles?.full_name || 'Unknown Author',
           journal: 'Medical Evidence Journal',
-          year: new Date(articleData.created_at).getFullYear().toString(),
-          reviewDate: articleData.published_at ? new Date(articleData.published_at).toLocaleDateString('pt-BR') : 'Não publicado',
+          year: new Date(typedArticle.created_at).getFullYear().toString(),
+          reviewDate: typedArticle.published_at ? new Date(typedArticle.published_at).toLocaleDateString('pt-BR') : 'Não publicado',
           reviewedBy: 'Editorial Board',
-          reviewContent: articleData.content || 'Sem conteúdo de revisão disponível.',
-          pdf_url: articleData.pdf_url || '',
-          article_pdf_url: articleData.article_pdf_url || ''
-        };
+          reviewContent: typedArticle.content || 'Sem conteúdo de revisão disponível.',
+          pdf_url: typedArticle.pdf_url || '',
+          article_pdf_url: typedArticle.article_pdf_url || ''
+        } as ArticleData;
       }
       
       // If not found in any table, return mock data
