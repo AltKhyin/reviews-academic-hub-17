@@ -1,13 +1,12 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { ReviewStatusBadge } from './ReviewStatus';
-import { ArticleReview } from '@/types/issue';
+import { ArticleReviewData } from '@/types/issue';
 import { formatDistanceToNow } from 'date-fns';
 
 interface ArticleReviewListProps {
-  reviews: ArticleReview[];
+  reviews: ArticleReviewData[];
   isLoading?: boolean;
 }
 

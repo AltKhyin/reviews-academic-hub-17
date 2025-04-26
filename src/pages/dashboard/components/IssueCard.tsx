@@ -14,6 +14,15 @@ export const IssueCard: React.FC<IssueCardProps> = ({ issue, formatTags }) => {
   return (
     <Card key={issue.id} className="hover:bg-accent/5 transition-colors border-white/10 bg-white/5">
       <CardHeader>
+        <div className="w-[110%] -mx-[5%] mb-4">
+          {issue.cover_image_url && (
+            <img 
+              src={issue.cover_image_url} 
+              alt={issue.title}
+              className="w-full h-48 object-cover rounded-lg"
+            />
+          )}
+        </div>
         <CardTitle className="flex justify-between items-start">
           <span className="text-lg">{issue.title}</span>
           <span className={`text-xs px-2 py-1 rounded-full ${

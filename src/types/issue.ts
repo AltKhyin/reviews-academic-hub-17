@@ -48,7 +48,7 @@ export interface Comment {
 
 export type ReviewStatus = 'draft' | 'in_review' | 'approved' | 'rejected';
 
-export type ArticleReviewData = {
+export interface ArticleReviewData {
   id: string;
   article_id: string;
   reviewer_id: string;
@@ -57,4 +57,4 @@ export type ArticleReviewData = {
   created_at: string;
   updated_at: string;
   reviewer?: UserProfile;
-};
+}
