@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useArticleView } from '@/hooks/useArticleView';
 import { ArticleActions } from '@/components/article/ArticleActions';
+import { CommentSection } from '@/components/comments/CommentSection';
+import { useSidebar } from '@/components/ui/sidebar';
 
 // Mock article data
 const mockArticle = {
@@ -47,6 +49,7 @@ const ArticleViewer: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [viewMode, setViewMode] = useState<'dual' | 'review' | 'original'>('dual');
   const article = mockArticle;
+  const { state } = useSidebar();
   
   // Track article view
   useArticleView(id!);
@@ -56,7 +59,7 @@ const ArticleViewer: React.FC = () => {
   };
   
   return (
-    <div className="animate-fade-in pb-12">
+    <div className={`animate-fade-in pb-12 transition-all duration-300 ${state === 'collapsed' ? 'max-w-[95%]' : 'max-w-[85%]'}`}>
       <div className="mb-6">
         <div className="text-sm text-gray-400 mb-2">
           {article.journal} • {article.year}
@@ -131,6 +134,8 @@ const ArticleViewer: React.FC = () => {
           </div>
         )}
       </div>
+
+      <CommentSection articleId={id!} />
     </div>
   );
 };
