@@ -10,28 +10,23 @@ export const useFileUpload = () => {
     try {
       setIsUploading(true);
       
+      const timestamp = new Date().getTime();
+      const random = Math.floor(Math.random() * 1000);
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString().replace('0.', '')}.${fileExt}`;
+      const fileName = `${timestamp}-${random}.${fileExt}`;
       const filePath = `${folder}/${fileName}`;
 
-      console.log(`Attempting direct upload to ${filePath}`);
+      console.log(`Uploading file ${fileName} to ${folder}`);
       
-      // Use direct upload approach instead of signed URLs
       const { data, error: uploadError } = await supabase.storage
         .from('issues')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: true
-        });
+        .upload(filePath, file);
       
       if (uploadError) {
         console.error('Error uploading file:', uploadError);
         throw uploadError;
       }
 
-      console.log('File uploaded successfully, getting public URL');
-      
-      // Get public URL after successful upload
       const { data: urlData } = supabase.storage
         .from('issues')
         .getPublicUrl(filePath);

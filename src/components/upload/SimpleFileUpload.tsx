@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload, Loader2 } from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 interface SimpleFileUploadProps {
   onUploadComplete: (url: string) => void;
@@ -31,7 +31,6 @@ export const SimpleFileUpload: React.FC<SimpleFileUploadProps> = ({
       setIsUploading(true);
       console.log(`Starting upload to ${bucket}/${folder}...`);
       
-      // Generate unique filename
       const timestamp = new Date().getTime();
       const random = Math.floor(Math.random() * 1000);
       const fileExt = file.name.split('.').pop();
@@ -40,13 +39,9 @@ export const SimpleFileUpload: React.FC<SimpleFileUploadProps> = ({
       
       console.log(`Uploading to path: ${filePath}`);
       
-      // Try using direct upload instead of signed URLs
       const { data, error: uploadError } = await supabase.storage
         .from(bucket)
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: true
-        });
+        .upload(filePath, file);
         
       if (uploadError) {
         console.error('Error uploading file:', uploadError);
