@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ThumbsUp, ThumbsDown, Heart, Bookmark } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,10 +17,14 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
   const { data: reactions } = useQuery({
     queryKey: ['article-reactions', articleId],
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+
       const { data, error } = await supabase
         .from('user_article_reactions')
         .select('reaction_type')
-        .eq('article_id', articleId);
+        .eq('article_id', articleId)
+        .eq('user_id', user.id);
       
       if (error) throw error;
       return data.map(r => r.reaction_type);
@@ -32,10 +35,14 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
   const { data: isBookmarked } = useQuery({
     queryKey: ['article-bookmark', articleId],
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return false;
+
       const { data, error } = await supabase
         .from('user_bookmarks')
         .select('id')
         .eq('article_id', articleId)
+        .eq('user_id', user.id)
         .maybeSingle();
       
       if (error) throw error;
@@ -46,11 +53,15 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
   // Handle reactions
   const reactionMutation = useMutation({
     mutationFn: async ({ type }: { type: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
       const { error } = await supabase
         .from('user_article_reactions')
         .upsert({ 
           article_id: articleId, 
-          reaction_type: type 
+          reaction_type: type,
+          user_id: user.id
         });
       
       if (error) throw error;
@@ -72,16 +83,23 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
   // Handle bookmarks
   const bookmarkMutation = useMutation({
     mutationFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
       if (isBookmarked) {
         const { error } = await supabase
           .from('user_bookmarks')
           .delete()
-          .eq('article_id', articleId);
+          .eq('article_id', articleId)
+          .eq('user_id', user.id);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from('user_bookmarks')
-          .insert({ article_id: articleId });
+          .insert({ 
+            article_id: articleId,
+            user_id: user.id 
+          });
         if (error) throw error;
       }
     },
