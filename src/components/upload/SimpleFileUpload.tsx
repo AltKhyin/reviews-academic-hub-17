@@ -41,7 +41,10 @@ export const SimpleFileUpload: React.FC<SimpleFileUploadProps> = ({
       
       const { data, error: uploadError } = await supabase.storage
         .from(bucket)
-        .upload(filePath, file);
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
         
       if (uploadError) {
         console.error('Error uploading file:', uploadError);
