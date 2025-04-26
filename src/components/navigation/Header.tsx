@@ -11,7 +11,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, collapsed }) => {
   const [searchExpanded, setSearchExpanded] = useState(false);
   
   return (
-    <header className="h-16 border-b border-[#2a2a2a] bg-[#0d0d0d] shadow-sm">
+    <header className="h-16 border-b border-[#2a2a2a] bg-[#0d0d0d] shadow-sm sticky top-0 z-10">
       <div className="h-full flex items-center justify-between px-4">
         <div className="flex items-center">
           <button 

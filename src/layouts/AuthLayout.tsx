@@ -7,10 +7,17 @@ const AuthLayout = () => {
   return (
     <div className="min-h-screen w-full flex flex-col md:flex-row">
       {/* Left section with gradient */}
-      <div className="flex-1 bg-gradient-to-r from-[#F8F8F8] to-white p-6 md:p-12 flex items-center">
+      <div className="flex-1 bg-white p-6 md:p-12 flex items-center">
         <div className="w-full max-w-[480px] mx-auto">
-          <div className="mb-20">
-            <Logo />
+          <div className="mb-12 ml-0">
+            <div className="text-left mb-16">
+              <h1 className="text-5xl font-bold mb-2">
+                Bem-vindo ao <span className="text-[#667EEA]">Reviews.</span>
+              </h1>
+              <p className="text-gray-600">
+                - por Igor Eckert
+              </p>
+            </div>
           </div>
           <Outlet />
         </div>

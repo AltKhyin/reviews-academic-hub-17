@@ -1,36 +1,92 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/use-toast';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
-    // Simulating authentication delay
-    setTimeout(() => {
-      localStorage.setItem('auth_token', 'dummy-token');
-      window.location.href = '/area-de-membros';
-    }, 1000);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (error) {
+        toast({
+          title: 'Erro ao fazer login',
+          description: error.message,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Login realizado com sucesso',
+          description: 'Você foi conectado à sua conta',
+        });
+        navigate('/area-de-membros');
+      }
+    } catch (error) {
+      console.error('Erro ao fazer login:', error);
+      toast({
+        title: 'Erro ao fazer login',
+        description: 'Por favor tente novamente',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`
+        }
+      });
+      
+      if (error) {
+        toast({
+          title: 'Erro ao fazer login com Google',
+          description: error.message,
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao fazer login com Google:', error);
+      toast({
+        title: 'Erro ao fazer login com Google',
+        description: 'Por favor tente novamente',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
   
   return (
     <div className="w-full animate-fade-in">
       <div className="mb-8">
-        <h1 className="text-3xl font-serif font-medium text-[#212121]">
+        <h1 className="text-3xl font-bold text-[#212121] mb-2">
           Entrar
         </h1>
-        <p className="text-[#8E9196] mt-2">
+        <p className="text-[#8E9196]">
           Entre com sua conta para continuar
         </p>
       </div>
@@ -72,7 +128,7 @@ const Login = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="********"
-                  className="border-[#E1E1E1] pr-10"
+                  className="border-[#E1E1E1] pr-10 text-black"
                   required
                 />
                 <button
@@ -92,7 +148,7 @@ const Login = () => {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#212121] hover:bg-[#333333]"
+              className="w-full bg-[#1E40AF] hover:bg-[#1E3A8A] flex items-center justify-center"
             >
               <LogIn className="mr-2" size={16} />
               {loading ? 'Entrando...' : 'Entrar'}
@@ -112,7 +168,9 @@ const Login = () => {
             <Button
               type="button"
               variant="outline"
-              className="w-full border-[#E1E1E1]"
+              className="w-full border-[#E1E1E1] text-black"
+              onClick={handleGoogleLogin}
+              disabled={loading}
             >
               <img 
                 src="https://www.google.com/favicon.ico" 
@@ -128,7 +186,7 @@ const Login = () => {
       <div className="mt-8 text-center">
         <p className="text-sm text-[#8E9196]">
           Não tem uma conta?{' '}
-          <Link to="/auth/register" className="text-[#212121] hover:underline">
+          <Link to="/auth/register" className="text-[#1E40AF] hover:underline">
             Cadastre-se
           </Link>
         </p>
