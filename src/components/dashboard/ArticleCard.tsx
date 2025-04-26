@@ -3,7 +3,7 @@ import React from 'react';
 import { Bookmark } from 'lucide-react';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import ArticleActions from '../article/ArticleActions';
+import { ArticleActions } from '../article/ArticleActions';
 
 interface ArticleCardProps {
   article: {
