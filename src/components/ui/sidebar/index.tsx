@@ -84,5 +84,6 @@ export {
   SidebarSeparator,
   SidebarTrigger,
   useSidebar,
-  SidebarContext
+  // Fix the type export error
+  type SidebarContext
 }

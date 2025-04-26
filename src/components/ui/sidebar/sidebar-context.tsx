@@ -16,7 +16,8 @@ export type SidebarContext = {
   toggleSidebar: () => void
 }
 
-const SidebarContext = React.createContext<SidebarContext | null>(null)
+// Export the context so it can be imported separately
+export const SidebarContext = React.createContext<SidebarContext | null>(null)
 
 export function useSidebar() {
   const context = React.useContext(SidebarContext)
