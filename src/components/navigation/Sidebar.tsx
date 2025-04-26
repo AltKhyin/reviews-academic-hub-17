@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, BookOpen, User, Settings, LogOut } from 'lucide-react';
+import { Home, BookOpen, User, Settings, LogOut, ArrowLeftToLine, ArrowRightToLine } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 import Logo from '../common/Logo';
@@ -18,6 +18,7 @@ import {
 
 const Sidebar: React.FC = () => {
   const location = useLocation();
+  const [isCollapsed, setIsCollapsed] = React.useState(false);
   
   const handleLogout = async () => {
     try {
@@ -44,14 +45,14 @@ const Sidebar: React.FC = () => {
   ];
 
   return (
-    <ShadcnSidebar collapsible="icon">
+    <ShadcnSidebar collapsible={isCollapsed ? 'offcanvas' : 'icon'}>
       <SidebarHeader>
         <div className="p-6">
           <Logo dark size="large" />
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="text-base">
+      <SidebarContent className="text-base font-light">
         <SidebarMenu>
           {navItems.map((item) => (
             <SidebarMenuItem key={item.path}>
@@ -59,11 +60,11 @@ const Sidebar: React.FC = () => {
                 asChild
                 isActive={location.pathname === item.path}
                 tooltip={item.label}
-                className="h-12 text-base"
+                className="h-14 text-base tracking-wide"
               >
                 <Link to={item.path}>
-                  <item.icon className="h-5 w-5" />
-                  <span>{item.label}</span>
+                  <item.icon className="h-6 w-6" />
+                  <span className="font-light">{item.label}</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -74,9 +75,27 @@ const Sidebar: React.FC = () => {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={handleLogout} className="h-12 text-base">
-              <LogOut className="h-5 w-5" />
-              <span>Sair</span>
+            <SidebarMenuButton onClick={handleLogout} className="h-14 text-base tracking-wide">
+              <LogOut className="h-6 w-6" />
+              <span className="font-light">Sair</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton 
+              onClick={() => setIsCollapsed(!isCollapsed)} 
+              className="h-14 text-base tracking-wide"
+            >
+              {isCollapsed ? (
+                <>
+                  <ArrowRightToLine className="h-6 w-6" />
+                  <span className="font-light">Expandir</span>
+                </>
+              ) : (
+                <>
+                  <ArrowLeftToLine className="h-6 w-6" />
+                  <span className="font-light">Recolher</span>
+                </>
+              )}
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

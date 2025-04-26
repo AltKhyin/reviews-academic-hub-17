@@ -36,6 +36,7 @@ const App = () => {
             <Route path="/" element={<DashboardLayout />}>
               <Route path="homepage" element={<Dashboard />} />
               <Route path="article/:id" element={<ArticleViewer />} />
+              <Route path="articles" element={<Dashboard />} />
               <Route path="profile" element={<Profile />} />
               <Route path="settings" element={<Settings />} />
               <Route index element={<Navigate to="/homepage" replace />} />
