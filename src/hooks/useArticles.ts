@@ -42,6 +42,7 @@ export const useArticles = () => {
           author_id: user.id,
           published: formData.published || false,
           updated_at: new Date().toISOString(),
+          ...(formData.published ? { published_at: new Date().toISOString() } : {})
         })
         .select()
         .single();

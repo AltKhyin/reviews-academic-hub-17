@@ -11,4 +11,12 @@ export const issueFormSchema = z.object({
   published: z.boolean().default(false)
 });
 
-export type IssueFormValues = z.infer<typeof issueFormSchema>;
+export type IssueFormValues = {
+  title: string;
+  description?: string;
+  tags?: string;
+  pdf_url: string;
+  article_pdf_url?: string;
+  cover_image_url?: string;
+  published?: boolean;
+};
