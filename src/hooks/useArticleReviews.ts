@@ -22,8 +22,7 @@ export const useArticleReviews = (articleId?: string) => {
           *,
           reviewer:profiles(id, full_name, avatar_url, role)
         `)
-        .eq('article_id', articleId)
-        .order('created_at', { ascending: false });
+        .eq('article_id', articleId);
 
       if (error) throw error;
       return data as unknown as ArticleReview[];

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,7 +10,6 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } fr
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileUpload } from '@/components/upload/FileUpload';
 
-// Validation schema
 const articleSchema = z.object({
   title: z.string().min(3, 'Title is required and must be at least 3 characters'),
   content: z.string().min(10, 'Content is required and must be at least 10 characters'),
@@ -136,8 +134,9 @@ export const ArticleForm: React.FC<ArticleFormProps> = ({
                   <FileUpload
                     onUploadComplete={handleImageUpload}
                     accept="image/*"
-                    bucketName="article-images"
-                    label="Upload Image"
+                    bucket="articles"
+                    folder="images"
+                    buttonText="Upload Image"
                   />
                 )}
               </div>

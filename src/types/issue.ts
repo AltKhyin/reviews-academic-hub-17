@@ -17,7 +17,7 @@ export type FormIssueValues = {
   title: string;
   description?: string;
   tags?: string;
-  pdf_url?: string;
+  pdf_url: string;
   article_pdf_url?: string;
   cover_image_url?: string;
   published?: boolean;
