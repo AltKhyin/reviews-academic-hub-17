@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/navigation/Sidebar';
-import Header from '../components/navigation/Header';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
@@ -41,8 +40,6 @@ const DashboardLayout: React.FC = () => {
       {/* Main content */}
       <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300
                       ${sidebarCollapsed ? 'ml-20' : 'ml-72'}`}>
-        <Header toggleSidebar={toggleSidebar} collapsed={sidebarCollapsed} />
-        
         <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-6">
           <div className="max-w-7xl mx-auto">
             <Outlet />
