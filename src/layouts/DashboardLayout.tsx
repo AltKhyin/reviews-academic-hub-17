@@ -32,7 +32,7 @@ const DashboardLayout: React.FC = () => {
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-[#121212] text-white">
         <Sidebar />
-        <main className="flex-1 overflow-hidden transition-all duration-300">
+        <main className="flex-1 overflow-hidden transition-all duration-300 pl-4">
           <div className="max-w-7xl mx-auto p-4 md:p-6">
             <Outlet />
           </div>

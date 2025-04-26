@@ -13,12 +13,12 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  SidebarFooter
+  SidebarFooter,
 } from '@/components/ui/sidebar';
 
 const Sidebar: React.FC = () => {
   const location = useLocation();
-  const [isCollapsed, setIsCollapsed] = React.useState(false);
+  const [collapsed, setCollapsed] = React.useState(false);
   
   const handleLogout = async () => {
     try {
@@ -44,11 +44,15 @@ const Sidebar: React.FC = () => {
     { icon: Settings, label: 'Configurações', path: '/settings' },
   ];
 
+  const toggleSidebar = () => {
+    setCollapsed(!collapsed);
+  };
+
   return (
-    <ShadcnSidebar collapsible={isCollapsed ? 'offcanvas' : 'icon'}>
+    <ShadcnSidebar collapsible={collapsed ? 'icon' : 'none'} className="border-r">
       <SidebarHeader>
         <div className="p-6">
-          <Logo dark size="large" />
+          {!collapsed ? <Logo dark size="large" /> : <div className="text-xl font-bold ml-3">R.</div>}
         </div>
       </SidebarHeader>
 
@@ -63,7 +67,7 @@ const Sidebar: React.FC = () => {
                 className="h-14 text-base tracking-wide"
               >
                 <Link to={item.path}>
-                  <item.icon className="h-6 w-6" />
+                  <item.icon className="h-7 w-7" />
                   <span className="font-light">{item.label}</span>
                 </Link>
               </SidebarMenuButton>
@@ -76,23 +80,23 @@ const Sidebar: React.FC = () => {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton onClick={handleLogout} className="h-14 text-base tracking-wide">
-              <LogOut className="h-6 w-6" />
+              <LogOut className="h-7 w-7" />
               <span className="font-light">Sair</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton 
-              onClick={() => setIsCollapsed(!isCollapsed)} 
+              onClick={toggleSidebar} 
               className="h-14 text-base tracking-wide"
             >
-              {isCollapsed ? (
+              {collapsed ? (
                 <>
-                  <ArrowRightToLine className="h-6 w-6" />
+                  <ArrowRightToLine className="h-7 w-7" />
                   <span className="font-light">Expandir</span>
                 </>
               ) : (
                 <>
-                  <ArrowLeftToLine className="h-6 w-6" />
+                  <ArrowLeftToLine className="h-7 w-7" />
                   <span className="font-light">Recolher</span>
                 </>
               )}
