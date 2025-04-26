@@ -83,7 +83,7 @@ const RegisterForm = ({ setMode }: { setMode: (mode: 'login' | 'register' | 'for
             <FormItem>
               <FormLabel>Full Name</FormLabel>
               <FormControl>
-                <Input placeholder="Enter your full name" {...field} />
+                <Input placeholder="Enter your full name" {...field} className="bg-background text-foreground" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -96,7 +96,7 @@ const RegisterForm = ({ setMode }: { setMode: (mode: 'login' | 'register' | 'for
             <FormItem>
               <FormLabel>Email</FormLabel>
               <FormControl>
-                <Input placeholder="Enter your email" type="email" {...field} />
+                <Input placeholder="Enter your email" type="email" {...field} className="bg-background text-foreground" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -109,7 +109,7 @@ const RegisterForm = ({ setMode }: { setMode: (mode: 'login' | 'register' | 'for
             <FormItem>
               <FormLabel>Password</FormLabel>
               <FormControl>
-                <Input placeholder="Enter your password" type="password" {...field} />
+                <Input placeholder="Enter your password" type="password" {...field} className="bg-background text-foreground" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -117,7 +117,7 @@ const RegisterForm = ({ setMode }: { setMode: (mode: 'login' | 'register' | 'for
         />
         <Button 
           type="submit" 
-          className="w-full" 
+          className="w-full bg-primary text-primary-foreground hover:bg-primary/90" 
           disabled={isSubmitting}
         >
           {isSubmitting ? 'Registering...' : 'Register'}
