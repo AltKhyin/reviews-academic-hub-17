@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -35,15 +36,21 @@ export const useArticles = () => {
     mutationFn: async (formData: ArticleFormData) => {
       if (!user) throw new Error('You must be logged in to create an article');
 
+      const insertData = {
+        ...formData,
+        author_id: user.id,
+        published: formData.published || false,
+        updated_at: new Date().toISOString(),
+      };
+      
+      // Add published_at field only if the article is being published
+      if (formData.published) {
+        insertData['published_at'] = new Date().toISOString();
+      }
+
       const { data, error } = await supabase
         .from('articles')
-        .insert({
-          ...formData,
-          author_id: user.id,
-          published: formData.published || false,
-          updated_at: new Date().toISOString(),
-          ...(formData.published ? { published_at: new Date().toISOString() } : {})
-        })
+        .insert(insertData)
         .select()
         .single();
 

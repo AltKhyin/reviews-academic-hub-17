@@ -1,14 +1,13 @@
-import React, { useState } from 'react';
+
+import React from 'react';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Upload } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
 import { FormIssueValues } from '@/types/issue';
 import { UseFormReturn } from 'react-hook-form';
 import { IssueFileUpload } from '@/components/issue/IssueFileUpload';
+import { SimpleFileUpload } from '@/components/upload/SimpleFileUpload';
 
 interface IssueFormProps {
   form: UseFormReturn<FormIssueValues>;
@@ -17,10 +16,6 @@ interface IssueFormProps {
 }
 
 export const IssueForm: React.FC<IssueFormProps> = ({ form, onSubmit, onCancel }) => {
-  const [uploadingPdf, setUploadingPdf] = useState(false);
-  const [uploadingArticlePdf, setUploadingArticlePdf] = useState(false);
-  const [uploadingCover, setUploadingCover] = useState(false);
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -88,10 +83,11 @@ export const IssueForm: React.FC<IssueFormProps> = ({ form, onSubmit, onCancel }
               <FormControl>
                 <div className="flex gap-2">
                   <Input placeholder="URL do arquivo PDF original" {...field} />
-                  <IssueFileUpload
+                  <SimpleFileUpload
                     onUploadComplete={(url) => form.setValue('article_pdf_url', url)}
                     accept="application/pdf"
                     label="Upload"
+                    bucket="issues"
                     folder="pdfs"
                   />
                 </div>
@@ -113,10 +109,11 @@ export const IssueForm: React.FC<IssueFormProps> = ({ form, onSubmit, onCancel }
               <FormControl>
                 <div className="flex gap-2">
                   <Input placeholder="URL do arquivo PDF da revisão" {...field} />
-                  <IssueFileUpload
+                  <SimpleFileUpload
                     onUploadComplete={(url) => form.setValue('pdf_url', url)}
                     accept="application/pdf"
                     label="Upload"
+                    bucket="issues"
                     folder="pdfs"
                   />
                 </div>
@@ -138,10 +135,11 @@ export const IssueForm: React.FC<IssueFormProps> = ({ form, onSubmit, onCancel }
               <FormControl>
                 <div className="flex gap-2">
                   <Input placeholder="URL da imagem de capa" {...field} />
-                  <IssueFileUpload
+                  <SimpleFileUpload
                     onUploadComplete={(url) => form.setValue('cover_image_url', url)}
                     accept="image/*"
                     label="Upload"
+                    bucket="issues"
                     folder="covers"
                   />
                 </div>

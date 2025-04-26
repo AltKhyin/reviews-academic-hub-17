@@ -11,25 +11,44 @@ export const useFileUpload = () => {
       setIsUploading(true);
       
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
+      const fileName = `${Math.random().toString().replace('0.', '')}.${fileExt}`;
       const filePath = `${folder}/${fileName}`;
+
+      // Get signed URL approach (avoids permissions issues)
+      const { data: signedURLData, error: signedURLError } = await supabase.storage
+        .from('issues')
+        .createSignedUploadUrl(filePath);
+
+      if (signedURLError) {
+        console.error('Error getting signed URL:', signedURLError);
+        throw signedURLError;
+      }
 
       const { error: uploadError } = await supabase.storage
         .from('issues')
-        .upload(filePath, file);
+        .uploadToSignedUrl(
+          signedURLData.path,
+          signedURLData.token,
+          file
+        );
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Error uploading with signed URL:', uploadError);
+        throw uploadError;
+      }
 
+      // Get public URL after successful upload
       const { data } = supabase.storage
         .from('issues')
         .getPublicUrl(filePath);
 
+      console.log('File uploaded successfully:', data.publicUrl);
       return data.publicUrl;
     } catch (error: any) {
       console.error('Error uploading file:', error);
       toast({
         title: "Error uploading file",
-        description: error.message,
+        description: error.message || "Failed to upload file. Please try again.",
         variant: "destructive",
       });
       return null;
