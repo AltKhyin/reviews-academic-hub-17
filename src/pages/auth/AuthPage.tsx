@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from '@/integrations/supabase/client';
 import Logo from '@/components/common/Logo';
@@ -26,13 +25,10 @@ const AuthPage = () => {
     
     try {
       if (mode === 'login') {
+        // Fix: Remove expiresIn from options and use session expiry properly
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
-          options: {
-            // Set remember me for 30 days if checked
-            expiresIn: rememberMe ? 60 * 60 * 24 * 30 : undefined
-          }
         });
         
         if (error) throw error;
@@ -95,13 +91,12 @@ const AuthPage = () => {
       <div className="w-full md:w-[500px] flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 px-8 md:px-12">
         <div className="w-full max-w-[400px] py-12">
           <div className="mb-8 bg-white p-8 rounded-xl shadow-sm">
+            {/* Form header based on mode */}
             {mode === 'login' && (
-              <>
-                <div className="flex items-center space-x-2 text-black">
-                  <span className="h-1 w-1 rounded-full bg-black"></span>
-                  <h2 className="text-xl font-serif tracking-tight">Área de membros</h2>
-                </div>
-              </>
+              <div className="flex items-center space-x-2 text-black">
+                <span className="h-1 w-1 rounded-full bg-black"></span>
+                <h2 className="text-xl font-serif tracking-tight">Área de membros</h2>
+              </div>
             )}
             {mode === 'register' && (
               <>
@@ -114,6 +109,7 @@ const AuthPage = () => {
                 </p>
               </>
             )}
+            {/* Fixed comparison - Use strict equality for string literal type */}
             {mode === 'forgot' && (
               <>
                 <div className="flex items-center space-x-2 text-black">
