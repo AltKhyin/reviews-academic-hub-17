@@ -70,25 +70,30 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
           </ul>
         </nav>
         
-        <div className="mt-auto border-t border-[#2a2a2a] p-4 space-y-4">
-          <button 
-            onClick={handleLogout}
-            className="w-full flex items-center px-3 py-3 text-sm text-gray-300 hover:bg-red-900/20 hover:text-red-400 rounded-md whitespace-nowrap transition-colors"
-          >
-            <LogOut size={22} strokeWidth={1.5} className="min-w-6 flex-shrink-0" />
-            {!collapsed && <span className="ml-3 font-medium transition-opacity duration-200 opacity-100">Sair</span>}
-          </button>
-          
-          <button 
-            onClick={toggleSidebar}
-            className="w-full flex justify-center p-2 rounded-full hover:bg-[#1a1a1a] transition-colors"
-          >
-            <ChevronRight 
-              size={22} 
-              strokeWidth={1.5} 
-              className={`text-gray-400 transition-transform duration-300 ${collapsed ? '' : 'rotate-180'}`}
-            />
-          </button>
+        <div className="mt-auto border-t border-[#2a2a2a] p-4">
+          <div className="flex items-center justify-between">
+            {!collapsed && (
+              <button 
+                onClick={handleLogout}
+                className="flex items-center px-3 py-3 text-sm text-gray-300 hover:bg-red-900/20 hover:text-red-400 rounded-md whitespace-nowrap transition-colors"
+              >
+                <LogOut size={22} strokeWidth={1.5} className="min-w-6 flex-shrink-0" />
+                <span className="ml-3 font-medium">Sair</span>
+              </button>
+            )}
+            
+            <button 
+              onClick={toggleSidebar}
+              className={`flex justify-center p-2 rounded-full hover:bg-[#1a1a1a] transition-colors
+                        ${collapsed ? 'w-full' : 'ml-2'}`}
+            >
+              <ChevronRight 
+                size={22} 
+                strokeWidth={1.5} 
+                className={`text-gray-400 transition-transform duration-300 ${collapsed ? '' : 'rotate-180'}`}
+              />
+            </button>
+          </div>
         </div>
       </div>
     </aside>

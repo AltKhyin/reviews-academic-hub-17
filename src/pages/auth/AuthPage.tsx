@@ -2,13 +2,10 @@
 import React from 'react';
 import Logo from '@/components/common/Logo';
 import AuthForm from '@/components/auth/AuthForm';
-import AnimatedBackground from '@/components/auth/AnimatedBackground';
 
 const AuthPage = () => {
   return (
-    <div className="min-h-screen w-full flex bg-black relative overflow-hidden">
-      <AnimatedBackground />
-      
+    <div className="min-h-screen w-full flex bg-gradient-to-br from-white to-gray-100 relative overflow-hidden">
       <div className="relative w-full flex flex-col justify-center items-start px-8 md:px-16 z-10">
         <div className="w-full max-w-[500px]">
           <Logo size="xlarge" showSubtitle />

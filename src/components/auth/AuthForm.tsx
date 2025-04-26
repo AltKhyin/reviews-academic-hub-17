@@ -76,39 +76,46 @@ const AuthForm = () => {
     }
   };
 
-  return (
-    <div className="mb-8 bg-white/95 backdrop-blur p-8 rounded-xl shadow-lg">
-      {mode === 'login' && (
-        <div className="flex items-center space-x-2 text-black">
-          <span className="h-1 w-1 rounded-full bg-black"></span>
-          <h2 className="text-xl font-serif tracking-tight">Área de membros</h2>
-        </div>
-      )}
-      
-      {mode === 'register' && (
-        <>
+  const renderHeader = () => {
+    switch (mode) {
+      case 'login':
+        return (
           <div className="flex items-center space-x-2 text-black">
             <span className="h-1 w-1 rounded-full bg-black"></span>
-            <h2 className="text-xl font-serif tracking-tight">Registro</h2>
+            <h2 className="text-xl font-serif tracking-tight">Área de membros</h2>
           </div>
-          <p className="mt-2 text-sm text-gray-600">
-            Use seu email de compra para se registrar
-          </p>
-        </>
-      )}
-      
-      {mode === 'forgot' && (
-        <>
-          <div className="flex items-center space-x-2 text-black">
-            <span className="h-1 w-1 rounded-full bg-black"></span>
-            <h2 className="text-xl font-serif tracking-tight">Recuperar senha</h2>
-          </div>
-          <p className="mt-2 text-sm text-gray-600">
-            Enviaremos instruções para seu email
-          </p>
-        </>
-      )}
+        );
+      case 'register':
+        return (
+          <>
+            <div className="flex items-center space-x-2 text-black">
+              <span className="h-1 w-1 rounded-full bg-black"></span>
+              <h2 className="text-xl font-serif tracking-tight">Registro</h2>
+            </div>
+            <p className="mt-2 text-sm text-gray-600">
+              Use seu email de compra para se registrar
+            </p>
+          </>
+        );
+      case 'forgot':
+        return (
+          <>
+            <div className="flex items-center space-x-2 text-black">
+              <span className="h-1 w-1 rounded-full bg-black"></span>
+              <h2 className="text-xl font-serif tracking-tight">Recuperar senha</h2>
+            </div>
+            <p className="mt-2 text-sm text-gray-600">
+              Enviaremos instruções para seu email
+            </p>
+          </>
+        );
+    }
+  };
 
+  return (
+    <div className="mb-8 bg-white/95 backdrop-blur-sm p-8 rounded-xl shadow-lg">
+      {renderHeader()}
+      
       <form onSubmit={handleSubmit} className="space-y-6 mt-6">
         {mode === 'register' && (
           <Input
