@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useArticleView } from '@/hooks/useArticleView';
-import { ArticleActions } from '@/components/article/ArticleActions';
 import { CommentSection } from '@/components/comments/CommentSection';
 import { useSidebar } from '@/components/ui/sidebar';
 import { useQuery } from '@tanstack/react-query';
@@ -9,20 +8,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Issue, Article } from '@/types/issue';
 import { PDFViewer } from '@/components/pdf/PDFViewer';
-
-interface ArticleData {
-  id: string;
-  title: string;
-  author: string;
-  journal: string;
-  year: string;
-  abstract?: string;
-  reviewDate: string;
-  reviewedBy: string;
-  reviewContent: string;
-  pdf_url?: string;
-  article_pdf_url?: string;
-}
+import { ArticleHeader } from '@/components/article/ArticleHeader';
+import { ViewModeSwitcher } from '@/components/article/ViewModeSwitcher';
+import { ArticleData } from '@/types/article';
 
 const ArticleViewer: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -119,55 +107,14 @@ const ArticleViewer: React.FC = () => {
     }
   });
   
-  const handleViewModeChange = (mode: 'dual' | 'review' | 'original') => {
-    setViewMode(mode);
-  };
-  
   if (isLoading) {
     return <div className="p-8 text-center">Carregando artigo...</div>;
   }
   
   return (
     <div className={`animate-fade-in pb-12 transition-all duration-300 ${isCollapsed ? 'max-w-[95%]' : 'max-w-[85%]'} mx-auto`}>
-      <div className="mb-6">
-        <div className="text-sm text-gray-400 mb-2">
-          {article.journal} • {article.year}
-        </div>
-        <h1 className="font-serif text-3xl font-medium text-white mb-3">
-          {article.title}
-        </h1>
-        <div className="text-sm text-gray-300 mb-4">
-          Artigo original por {article.author}
-        </div>
-        <div className="text-sm text-gray-300 mb-6">
-          Revisado por <span className="text-white">{article.reviewedBy}</span> em {article.reviewDate}
-        </div>
-        
-        <div className="mt-4 mb-6">
-          <ArticleActions articleId={id!} />
-        </div>
-        
-        <div className="flex border-b border-[#2a2a2a] mb-8">
-          <button
-            onClick={() => handleViewModeChange('dual')}
-            className={`px-4 py-2 text-sm hover-effect ${viewMode === 'dual' ? 'border-b-2 border-white text-white' : 'text-gray-400'}`}
-          >
-            Visualização dual
-          </button>
-          <button
-            onClick={() => handleViewModeChange('review')}
-            className={`px-4 py-2 text-sm hover-effect ${viewMode === 'review' ? 'border-b-2 border-white text-white' : 'text-gray-400'}`}
-          >
-            Apenas revisão
-          </button>
-          <button
-            onClick={() => handleViewModeChange('original')}
-            className={`px-4 py-2 text-sm hover-effect ${viewMode === 'original' ? 'border-b-2 border-white text-white' : 'text-gray-400'}`}
-          >
-            Artigo original
-          </button>
-        </div>
-      </div>
+      <ArticleHeader article={article} />
+      <ViewModeSwitcher viewMode={viewMode} onViewModeChange={setViewMode} />
       
       <div className={`${viewMode === 'dual' ? 'grid grid-cols-1 md:grid-cols-2 gap-6' : ''}`}>
         {(viewMode === 'dual' || viewMode === 'original') && (

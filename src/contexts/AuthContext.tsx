@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
@@ -9,6 +8,9 @@ interface UserProfile {
   full_name: string | null;
   avatar_url: string | null;
   role: 'user' | 'editor' | 'admin';
+  bio?: string | null;
+  specialty?: string | null;
+  institution?: string | null;
 }
 
 interface AuthContextProps {
@@ -33,7 +35,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user || null);
@@ -44,7 +45,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session);
       setUser(session?.user || null);
@@ -65,9 +65,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, avatar_url, role')
+        .select('id, full_name, avatar_url, role, bio, specialty, institution')
         .eq('id', userId)
-        .maybeSingle();
+        .single();
       
       if (error) throw error;
       
@@ -146,7 +146,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error) throw error;
       
-      // Update local state
       setProfile(prev => prev ? { ...prev, ...data } : null);
       
       toast({
