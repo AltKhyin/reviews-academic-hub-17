@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -44,12 +45,12 @@ const AuthForm = () => {
         
         if (error) throw error;
         
-        setMode('login');
         toast({
-          title: "Conta criada com sucesso",
-          description: "Por favor faça login para continuar",
+          title: "Account created successfully",
+          description: "Please sign in to continue",
         });
-      } else if (mode === 'forgot') {
+        setMode('login');
+      } else {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: `${window.location.origin}/auth/reset-password`,
         });
@@ -57,15 +58,15 @@ const AuthForm = () => {
         if (error) throw error;
         
         toast({
-          title: "Email enviado",
-          description: "Verifique sua caixa de entrada para redefinir sua senha",
+          title: "Email sent",
+          description: "Check your inbox for password reset instructions",
         });
         setMode('login');
       }
     } catch (error: any) {
       toast({
-        title: "Erro",
-        description: error.message || "Ocorreu um erro. Por favor tente novamente.",
+        title: "Error",
+        description: error.message || "An error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -74,37 +75,38 @@ const AuthForm = () => {
   };
 
   const renderHeader = () => {
-    if (mode === 'login') {
-      return (
-        <div className="flex items-center space-x-2 text-black">
-          <span className="h-1.5 w-1.5 rounded-full bg-black"></span>
-          <h2 className="text-xl font-serif tracking-tight">Área de membros</h2>
-        </div>
-      );
-    } else if (mode === 'register') {
-      return (
-        <>
+    switch (mode) {
+      case 'login':
+        return (
           <div className="flex items-center space-x-2 text-black">
             <span className="h-1.5 w-1.5 rounded-full bg-black"></span>
-            <h2 className="text-xl font-serif tracking-tight">Registro</h2>
+            <h2 className="text-xl font-serif tracking-tight">Sign In</h2>
           </div>
-          <p className="mt-2 text-sm text-gray-600">
-            Use seu email de compra para se registrar
-          </p>
-        </>
-      );
-    } else {
-      return (
-        <>
-          <div className="flex items-center space-x-2 text-black">
-            <span className="h-1.5 w-1.5 rounded-full bg-black"></span>
-            <h2 className="text-xl font-serif tracking-tight">Recuperar senha</h2>
-          </div>
-          <p className="mt-2 text-sm text-gray-600">
-            Enviaremos instruções para seu email
-          </p>
-        </>
-      );
+        );
+      case 'register':
+        return (
+          <>
+            <div className="flex items-center space-x-2 text-black">
+              <span className="h-1.5 w-1.5 rounded-full bg-black"></span>
+              <h2 className="text-xl font-serif tracking-tight">Register</h2>
+            </div>
+            <p className="mt-2 text-sm text-gray-600">
+              Create your account to get started
+            </p>
+          </>
+        );
+      case 'forgot':
+        return (
+          <>
+            <div className="flex items-center space-x-2 text-black">
+              <span className="h-1.5 w-1.5 rounded-full bg-black"></span>
+              <h2 className="text-xl font-serif tracking-tight">Reset Password</h2>
+            </div>
+            <p className="mt-2 text-sm text-gray-600">
+              We'll send you instructions via email
+            </p>
+          </>
+        );
     }
   };
 
@@ -119,7 +121,7 @@ const AuthForm = () => {
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="bg-white border-gray-300 focus:border-black focus:ring-0 text-black"
-            placeholder="Nome completo"
+            placeholder="Full name"
             required={mode === 'register'}
           />
         )}
@@ -141,8 +143,9 @@ const AuthForm = () => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="bg-white border-gray-300 focus:border-black focus:ring-0 text-black"
-            placeholder="Senha"
+            placeholder="Password"
             required={mode !== 'forgot'}
+            minLength={6}
           />
         )}
 
@@ -159,7 +162,7 @@ const AuthForm = () => {
                 htmlFor="remember"
                 className="text-sm text-gray-700 select-none"
               >
-                Lembrar de mim
+                Remember me
               </label>
             </div>
             
@@ -168,7 +171,7 @@ const AuthForm = () => {
               onClick={() => setMode('forgot')}
               className="text-sm text-gray-700 hover:text-black"
             >
-              Esqueceu?
+              Forgot?
             </button>
           </div>
         )}
@@ -178,10 +181,10 @@ const AuthForm = () => {
           className="w-full bg-black hover:bg-gray-800 text-white"
           disabled={loading}
         >
-          {loading ? 'Processando...' : 
-            mode === 'login' ? 'Entrar' : 
-            mode === 'register' ? 'Cadastrar' : 
-            'Enviar instruções'}
+          {loading ? 'Please wait...' : 
+            mode === 'login' ? 'Sign In' : 
+            mode === 'register' ? 'Create Account' : 
+            'Send Instructions'}
         </Button>
 
         {mode !== 'forgot' && (
@@ -191,7 +194,7 @@ const AuthForm = () => {
             </div>
             <div className="relative flex justify-center text-sm">
               <span className="px-2 bg-white text-gray-600">
-                ou continue com
+                or continue with
               </span>
             </div>
 
@@ -234,35 +237,35 @@ const AuthForm = () => {
         <div className="mt-6 text-center text-sm">
           {mode === 'login' ? (
             <p className="text-gray-700">
-              Não tem uma conta?{' '}
+              Don't have an account?{' '}
               <button
                 type="button"
                 onClick={() => setMode('register')}
                 className="text-black font-medium hover:underline"
               >
-                Cadastre-se
+                Register
               </button>
             </p>
           ) : mode === 'register' ? (
             <p className="text-gray-700">
-              Já tem uma conta?{' '}
+              Already have an account?{' '}
               <button
                 type="button"
                 onClick={() => setMode('login')}
                 className="text-black font-medium hover:underline"
               >
-                Faça login
+                Sign In
               </button>
             </p>
           ) : (
             <p className="text-gray-700">
-              Lembrou sua senha?{' '}
+              Remember your password?{' '}
               <button
                 type="button"
                 onClick={() => setMode('login')}
                 className="text-black font-medium hover:underline"
               >
-                Voltar para login
+                Back to Sign In
               </button>
             </p>
           )}
