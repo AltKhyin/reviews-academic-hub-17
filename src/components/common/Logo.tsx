@@ -5,15 +5,15 @@ interface LogoProps {
   dark?: boolean;
 }
 
-const Logo: React.FC<LogoProps> = ({ dark = false }) => {
+const Logo = ({ dark = false }: LogoProps) => {
   const textColor = dark ? 'text-white' : 'text-[#212121]';
   
   return (
     <div className="flex flex-col">
-      <h1 className={`logo-text text-3xl ${textColor}`}>
+      <h1 className={`logo-text text-3xl font-serif ${textColor}`}>
         Reviews.
       </h1>
-      <p className={`subtitle-text mt-1 ${textColor}`}>
+      <p className={`subtitle-text mt-1 ${textColor} opacity-80`}>
         - por Igor Eckert
       </p>
     </div>

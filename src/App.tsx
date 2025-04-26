@@ -68,23 +68,23 @@ const App = () => {
               <Route index element={<Navigate to="login" replace />} />
             </Route>
 
-            {/* Dashboard Routes */}
+            {/* Members Area Routes */}
             <Route path="/" element={
               <ProtectedRoute>
                 <DashboardLayout />
               </ProtectedRoute>
             }>
-              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="area-de-membros" element={<Dashboard />} />
               <Route path="article/:id" element={<ArticleViewer />} />
               <Route path="profile" element={<Profile />} />
               <Route path="settings" element={<Settings />} />
-              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route index element={<Navigate to="area-de-membros" replace />} />
             </Route>
 
-            {/* Redirect root to dashboard or login based on auth state */}
+            {/* Redirect root to members area or login based on auth state */}
             <Route path="/" element={
               isAuthenticated() ? 
-                <Navigate to="/dashboard" replace /> : 
+                <Navigate to="/area-de-membros" replace /> : 
                 <Navigate to="/auth/login" replace />
             } />
 
