@@ -1,12 +1,13 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/components/ui/use-toast';
 import Logo from '@/components/common/Logo';
+import { toast } from '@/components/ui/use-toast';
 
 type AuthMode = 'login' | 'register' | 'forgot';
 
@@ -15,20 +16,9 @@ const AuthPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
-  // Check if user is already logged in
-  useEffect(() => {
-    const checkSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        navigate('/area-de-membros');
-      }
-    };
-    
-    checkSession();
-  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +33,7 @@ const AuthPage = () => {
         
         if (error) throw error;
         
-        navigate('/area-de-membros');
+        navigate('/homepage');
         
       } else if (mode === 'register') {
         const { error } = await supabase.auth.signUp({
@@ -71,11 +61,11 @@ const AuthPage = () => {
         
         if (error) throw error;
         
-        setMode('login');
         toast({
           title: "Email enviado",
           description: "Verifique sua caixa de entrada para redefinir sua senha",
         });
+        setMode('login');
       }
     } catch (error: any) {
       toast({
@@ -88,57 +78,58 @@ const AuthPage = () => {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/area-de-membros`
-        }
-      });
-      
-      if (error) throw error;
-    } catch (error: any) {
-      toast({
-        title: "Erro ao entrar com Google",
-        description: error.message || "Ocorreu um erro. Por favor tente novamente.",
-        variant: "destructive",
-      });
-    }
-  };
-
   return (
-    <div className="min-h-screen w-full flex items-center bg-gradient-to-br from-white to-gray-100">
-      <div className="w-full max-w-[1600px] mx-auto px-6 md:px-12 flex flex-col md:flex-row justify-between items-center">
-        {/* Left side - Logo */}
-        <div className="w-full md:w-1/2 mb-10 md:mb-0 py-10">
-          <div className="max-w-[500px]">
-            <Logo size="xlarge" showSubtitle />
-            <p className="mt-6 text-gray-600 max-w-md">
-              Análises profundas e insights valiosos sobre os melhores conteúdos.
-            </p>
-          </div>
+    <div className="min-h-screen w-full flex bg-gradient-to-r from-white to-gray-50">
+      {/* Left side - Logo */}
+      <div className="w-full flex flex-col justify-center px-12">
+        <div className="max-w-[800px]">
+          <Logo size="xlarge" showSubtitle />
         </div>
+      </div>
 
-        {/* Right side - Auth form */}
-        <div className="w-full md:w-[450px] bg-gradient-to-br from-gray-50 to-gray-200 p-8 rounded-xl shadow-lg">
-          <div className="mb-6">
-            <h2 className="text-2xl font-serif font-bold text-gray-800">
-              {mode === 'login' ? 'Bem-vindo de volta' : 
-               mode === 'register' ? 'Crie sua conta' : 
-               'Recuperar senha'}
-            </h2>
-            <p className="text-gray-600 mt-2">
-              {mode === 'login' ? 'Entre para acessar o conteúdo exclusivo' : 
-               mode === 'register' ? 'Use seu email de compra para se registrar' : 
-               'Enviaremos um link para redefinir sua senha'}
-            </p>
+      {/* Right side - Auth form */}
+      <div className="w-[500px] flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 shadow-lg px-12">
+        <div className="w-full">
+          <div className="mb-8">
+            {mode === 'login' && (
+              <>
+                <div className="flex items-center space-x-2 text-black">
+                  <span className="h-1 w-1 rounded-full bg-black"></span>
+                  <h2 className="text-xl font-serif tracking-tight">Área de membros</h2>
+                </div>
+                <p className="mt-2 text-sm text-gray-600">
+                  Entre para acessar o conteúdo exclusivo
+                </p>
+              </>
+            )}
+            {mode === 'register' && (
+              <>
+                <div className="flex items-center space-x-2 text-black">
+                  <span className="h-1 w-1 rounded-full bg-black"></span>
+                  <h2 className="text-xl font-serif tracking-tight">Registro</h2>
+                </div>
+                <p className="mt-2 text-sm text-gray-600">
+                  Use seu email de compra para se registrar
+                </p>
+              </>
+            )}
+            {mode === 'forgot' && (
+              <>
+                <div className="flex items-center space-x-2 text-black">
+                  <span className="h-1 w-1 rounded-full bg-black"></span>
+                  <h2 className="text-xl font-serif tracking-tight">Recuperar senha</h2>
+                </div>
+                <p className="mt-2 text-sm text-gray-600">
+                  Enviaremos instruções para seu email
+                </p>
+              </>
+            )}
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {mode === 'register' && (
               <div className="space-y-2">
-                <Label htmlFor="name" className="text-gray-700">Nome completo</Label>
+                <Label htmlFor="name" className="text-sm font-medium text-gray-700">Nome completo</Label>
                 <Input
                   id="name"
                   value={name}
@@ -150,7 +141,7 @@ const AuthPage = () => {
             )}
             
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-gray-700">Email</Label>
+              <Label htmlFor="email" className="text-sm font-medium text-gray-700">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -163,8 +154,8 @@ const AuthPage = () => {
 
             {mode !== 'forgot' && (
               <div className="space-y-2">
-                <div className="flex justify-between">
-                  <Label htmlFor="password" className="text-gray-700">Senha</Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="password" className="text-sm font-medium text-gray-700">Senha</Label>
                   {mode === 'login' && (
                     <button
                       type="button"
@@ -186,6 +177,22 @@ const AuthPage = () => {
               </div>
             )}
 
+            {mode === 'login' && (
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="remember"
+                  checked={rememberMe}
+                  onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                />
+                <label
+                  htmlFor="remember"
+                  className="text-sm text-gray-600 select-none"
+                >
+                  Lembrar de mim
+                </label>
+              </div>
+            )}
+
             <Button 
               type="submit" 
               className="w-full bg-black hover:bg-gray-800 text-white"
@@ -194,88 +201,93 @@ const AuthPage = () => {
               {loading ? 'Processando...' : 
                mode === 'login' ? 'Entrar' : 
                mode === 'register' ? 'Cadastrar' : 
-               'Enviar link de recuperação'}
+               'Enviar instruções'}
             </Button>
-          </form>
 
-          {mode !== 'forgot' && (
-            <div className="mt-6">
-              <div className="relative">
+            {mode !== 'forgot' && (
+              <div className="relative mt-6">
                 <div className="absolute inset-0 flex items-center">
                   <div className="w-full border-t border-gray-300"></div>
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-gradient-to-br from-gray-50 to-gray-200 text-gray-600">ou continue com</span>
+                  <span className="px-2 bg-gradient-to-br from-gray-50 to-gray-100 text-gray-600">
+                    ou continue com
+                  </span>
+                </div>
+
+                <div className="mt-6">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="w-full bg-white hover:bg-gray-50 border-gray-300 text-gray-700 flex items-center justify-center gap-2"
+                    onClick={() => supabase.auth.signInWithOAuth({
+                      provider: 'google',
+                      options: {
+                        redirectTo: `${window.location.origin}/homepage`
+                      }
+                    })}
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24">
+                      <path
+                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                        fill="#4285F4"
+                      />
+                      <path
+                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                        fill="#34A853"
+                      />
+                      <path
+                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                        fill="#FBBC05"
+                      />
+                      <path
+                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                        fill="#EA4335"
+                      />
+                    </svg>
+                    Google
+                  </Button>
                 </div>
               </div>
-
-              <div className="mt-6">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  className="w-full bg-white hover:bg-gray-50 border-gray-300 text-gray-700 flex items-center justify-center gap-2"
-                  onClick={handleGoogleLogin}
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24">
-                    <path
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                      fill="#4285F4"
-                    />
-                    <path
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                      fill="#34A853"
-                    />
-                    <path
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                      fill="#FBBC05"
-                    />
-                    <path
-                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                      fill="#EA4335"
-                    />
-                  </svg>
-                  Google
-                </Button>
-              </div>
-            </div>
-          )}
-
-          <div className="mt-6 text-center text-sm">
-            {mode === 'login' ? (
-              <p className="text-gray-600">
-                Não tem uma conta?{' '}
-                <button
-                  type="button"
-                  onClick={() => setMode('register')}
-                  className="text-black font-medium hover:underline"
-                >
-                  Cadastre-se
-                </button>
-              </p>
-            ) : mode === 'register' ? (
-              <p className="text-gray-600">
-                Já tem uma conta?{' '}
-                <button
-                  type="button"
-                  onClick={() => setMode('login')}
-                  className="text-black font-medium hover:underline"
-                >
-                  Faça login
-                </button>
-              </p>
-            ) : (
-              <p className="text-gray-600">
-                Lembrou sua senha?{' '}
-                <button
-                  type="button"
-                  onClick={() => setMode('login')}
-                  className="text-black font-medium hover:underline"
-                >
-                  Voltar para login
-                </button>
-              </p>
             )}
-          </div>
+
+            <div className="mt-6 text-center text-sm">
+              {mode === 'login' ? (
+                <p className="text-gray-600">
+                  Não tem uma conta?{' '}
+                  <button
+                    type="button"
+                    onClick={() => setMode('register')}
+                    className="text-black font-medium hover:underline"
+                  >
+                    Cadastre-se
+                  </button>
+                </p>
+              ) : mode === 'register' ? (
+                <p className="text-gray-600">
+                  Já tem uma conta?{' '}
+                  <button
+                    type="button"
+                    onClick={() => setMode('login')}
+                    className="text-black font-medium hover:underline"
+                  >
+                    Faça login
+                  </button>
+                </p>
+              ) : (
+                <p className="text-gray-600">
+                  Lembrou sua senha?{' '}
+                  <button
+                    type="button"
+                    onClick={() => setMode('login')}
+                    className="text-black font-medium hover:underline"
+                  >
+                    Voltar para login
+                  </button>
+                </p>
+              )}
+            </div>
+          </form>
         </div>
       </div>
     </div>

@@ -25,32 +25,6 @@ const App = () => {
     document.documentElement.classList.add('dark');
   }, []);
 
-  // For development, we're temporarily skipping auth checks
-  const [session, setSession] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Check for user session
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
-        setSession(currentSession);
-        setLoading(false);
-      }
-    );
-
-    // Check current session on load
-    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-      setSession(currentSession);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  if (loading) {
-    return <div className="h-screen w-screen flex items-center justify-center bg-[#121212] text-white">Carregando...</div>;
-  }
-
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -58,19 +32,16 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <Routes>
-            {/* Auth Route - temporarily not enforcing auth redirects for development */}
             <Route path="/auth" element={<AuthPage />} />
 
-            {/* Members Area Routes - temporarily not enforcing auth redirects for development */}
             <Route path="/" element={<DashboardLayout />}>
-              <Route path="area-de-membros" element={<Dashboard />} />
+              <Route path="homepage" element={<Dashboard />} />
               <Route path="article/:id" element={<ArticleViewer />} />
               <Route path="profile" element={<Profile />} />
               <Route path="settings" element={<Settings />} />
-              <Route index element={<Navigate to="/area-de-membros" replace />} />
+              <Route index element={<Navigate to="/homepage" replace />} />
             </Route>
 
-            {/* 404 Page */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

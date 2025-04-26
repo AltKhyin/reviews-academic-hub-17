@@ -15,7 +15,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
   const location = useLocation();
   
   const navItems = [
-    { icon: Home, label: 'Dashboard', path: '/area-de-membros' },
+    { icon: Home, label: 'Homepage', path: '/homepage' },
     { icon: BookOpen, label: 'Artigos', path: '/articles' },
     { icon: User, label: 'Perfil', path: '/profile' },
     { icon: Settings, label: 'Configurações', path: '/settings' },
@@ -40,16 +40,16 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
 
   return (
     <aside 
-      className={`bg-[#0d0d0d] h-screen flex flex-col fixed top-0 left-0 z-20 transition-all duration-300 ease-in-out border-r border-[#2a2a2a]
+      className={`bg-[#0d0d0d] min-h-screen flex flex-col fixed top-0 left-0 z-20 transition-all duration-300 ease-in-out border-r border-[#2a2a2a]
                  ${collapsed ? 'w-16' : 'w-64'}`}
     >
       <div className="h-full flex flex-col">
         {/* Logo area with more space */}
-        <div className={`${collapsed ? 'py-5' : 'py-6'} flex items-center justify-center border-b border-[#2a2a2a]`}>
-          {!collapsed ? <Logo dark size="large" /> : <Logo dark collapsed size="medium" />}
+        <div className={`${collapsed ? 'py-8' : 'py-8'} flex items-center justify-center border-b border-[#2a2a2a]`}>
+          <Logo dark size={collapsed ? "medium" : "large"} collapsed={collapsed} />
         </div>
         
-        <nav className="flex-1 px-2 py-6 overflow-hidden">
+        <nav className="flex-1 px-3 py-8 overflow-hidden">
           <ul className="space-y-4">
             {navItems.map((item) => {
               const isActive = location.pathname === item.path;
@@ -74,7 +74,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
         {/* Toggle sidebar button */}
         <button 
           onClick={toggleSidebar}
-          className="mx-auto mb-4 p-2 rounded-full hover:bg-[#1a1a1a] transition-colors"
+          className="mx-auto my-4 p-2 rounded-full hover:bg-[#1a1a1a] transition-colors"
         >
           <ChevronRight 
             size={22} 

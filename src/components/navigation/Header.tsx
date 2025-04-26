@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Menu, Search, User } from 'lucide-react';
+import { Search, User } from 'lucide-react';
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -11,16 +11,14 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, collapsed }) => {
   const [searchExpanded, setSearchExpanded] = useState(false);
   
   return (
-    <header className="h-16 border-b border-[#2a2a2a] bg-[#0d0d0d] shadow-sm sticky top-0 z-10 px-4">
-      <div className="h-full flex items-center justify-between max-w-full">
-        <div className="flex items-center">
-          {/* This space is intentionally left empty since the sidebar toggle is now in the sidebar itself */}
-        </div>
+    <header className="h-16 border-b border-[#2a2a2a] bg-[#0d0d0d] shadow-sm sticky top-0 z-10">
+      <div className="h-full flex items-center justify-between max-w-full px-4">
+        <div className="flex-1" /> {/* Spacer */}
         
         {/* Right section with search and profile */}
-        <div className="flex items-center ml-auto">
-          {/* Search component moved to the right */}
-          <div className={`relative transition-all duration-300 ease-in-out mr-4
+        <div className="flex items-center gap-4">
+          {/* Search component */}
+          <div className={`relative transition-all duration-300 ease-in-out
                          ${searchExpanded ? 'w-[60vw] md:w-[40vw]' : 'w-9'}`}>
             <button 
               onClick={() => setSearchExpanded(!searchExpanded)}
