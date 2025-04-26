@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useArticleView } from '@/hooks/useArticleView';
@@ -9,6 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Issue, Article } from '@/types/issue';
+import { PDFViewer } from '@/components/pdf/PDFViewer';
 
 // Define an interface for our article data structure
 interface ArticleData {
@@ -149,12 +149,10 @@ const ArticleViewer: React.FC = () => {
           Revisado por <span className="text-white">{article.reviewedBy}</span> em {article.reviewDate}
         </div>
         
-        {/* Add ArticleActions component */}
         <div className="mt-4 mb-6">
           <ArticleActions articleId={id!} />
         </div>
         
-        {/* View mode selector */}
         <div className="flex border-b border-[#2a2a2a] mb-8">
           <button
             onClick={() => handleViewModeChange('dual')}
@@ -178,53 +176,25 @@ const ArticleViewer: React.FC = () => {
       </div>
       
       <div className={`${viewMode === 'dual' ? 'grid grid-cols-1 md:grid-cols-2 gap-6' : ''}`}>
-        {/* Original PDF Viewer */}
         {(viewMode === 'dual' || viewMode === 'original') && (
-          <div className="bg-[#1a1a1a] rounded-lg p-6 shadow-lg card-elevation mb-6 md:mb-0">
-            <div className="mb-4">
-              <h2 className="font-serif text-xl font-medium">Artigo Original</h2>
-            </div>
-            <div className="w-full h-[60vh] bg-[#121212] rounded-md overflow-hidden">
-              {article.article_pdf_url ? (
-                <iframe
-                  src={article.article_pdf_url}
-                  className="w-full h-full rounded-md"
-                  title="Original Article PDF"
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full text-gray-400">
-                  PDF do artigo original não disponível
-                </div>
-              )}
-            </div>
-          </div>
+          <PDFViewer
+            url={article.article_pdf_url}
+            title="Artigo Original"
+          />
         )}
         
-        {/* Review PDF Viewer */}
         {(viewMode === 'dual' || viewMode === 'review') && (
-          <div className="bg-[#1a1a1a] rounded-lg p-6 shadow-lg card-elevation">
-            <div className="mb-4">
-              <h2 className="font-serif text-xl font-medium">Revisão</h2>
-            </div>
-            <div className="w-full h-[60vh] bg-[#121212] rounded-md overflow-hidden">
-              {article.pdf_url && article.pdf_url !== 'placeholder.pdf' ? (
-                <iframe
-                  src={article.pdf_url}
-                  className="w-full h-full rounded-md"
-                  title="Review PDF"
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full p-4">
-                  <p className="text-gray-400 mb-4 text-center">PDF da revisão não disponível</p>
-                  <Card className="w-full max-w-2xl p-4 overflow-y-auto max-h-[80%]">
-                    <div className="prose prose-invert max-w-none">
-                      <div dangerouslySetInnerHTML={{ __html: article.reviewContent.replace(/\n/g, '<br />') }} />
-                    </div>
-                  </Card>
+          <PDFViewer
+            url={article.pdf_url}
+            title="Revisão"
+            fallbackContent={
+              <Card className="w-full max-w-2xl p-4 overflow-y-auto max-h-[80%]">
+                <div className="prose prose-invert max-w-none">
+                  <div dangerouslySetInnerHTML={{ __html: article.reviewContent.replace(/\n/g, '<br />') }} />
                 </div>
-              )}
-            </div>
-          </div>
+              </Card>
+            }
+          />
         )}
       </div>
 
