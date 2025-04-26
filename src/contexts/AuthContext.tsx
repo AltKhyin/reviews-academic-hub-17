@@ -1,18 +1,8 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
 import { toast } from '@/hooks/use-toast';
-
-interface UserProfile {
-  id: string;
-  full_name: string | null;
-  avatar_url: string | null;
-  role: 'user' | 'editor' | 'admin';
-  bio?: string | null;
-  specialty?: string | null;
-  institution?: string | null;
-}
+import { UserProfile } from '@/types/issue';
 
 interface AuthContextProps {
   session: Session | null;
@@ -78,23 +68,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (data) {
         setProfile(data as UserProfile);
       } else {
-        // Create default profile if it doesn't exist
-        const defaultProfile: Partial<UserProfile> = {
+        const defaultProfileData = {
           id: userId,
           role: 'user',
           full_name: null,
           avatar_url: null
-        };
+        } as UserProfile;
         
         await supabase
           .from('profiles')
-          .insert(defaultProfile);
+          .insert(defaultProfileData);
           
-        setProfile(defaultProfile as UserProfile);
+        setProfile(defaultProfileData);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
-      // Set default profile in case of error to prevent app from breaking
       setProfile({
         id: userId,
         role: 'user',
@@ -161,13 +149,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateProfile = async (data: Partial<UserProfile>) => {
-    if (!user) return;
+    if (!user || !profile) return;
     
     try {
+      const updateData = { ...data };
+      if (!updateData.id) {
+        updateData.id = profile.id;
+      }
+      
       const { error } = await supabase
         .from('profiles')
-        .update(data)
-        .eq('id', user.id);
+        .update(updateData)
+        .eq('id', profile.id);
       
       if (error) throw error;
       

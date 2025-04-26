@@ -1,3 +1,4 @@
+
 export interface Issue {
   id: string;
   title: string;
@@ -36,7 +37,25 @@ export interface Comment {
   id: string;
   content: string;
   created_at: string;
-  user?: UserProfile;
   user_id: string;
   article_id: string;
+  user?: {
+    id: string;
+    full_name: string | null;
+    avatar_url: string | null;
+    role?: 'user' | 'editor' | 'admin';
+  };
+}
+
+export type ReviewStatus = 'draft' | 'in_review' | 'approved' | 'rejected';
+
+export interface ArticleReview {
+  id: string;
+  article_id: string;
+  reviewer_id: string;
+  status: ReviewStatus;
+  comments: string | null;
+  created_at: string;
+  updated_at: string;
+  reviewer?: UserProfile;
 }

@@ -19,7 +19,7 @@ export const useComments = (articleId: string) => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as Comment[];
+      return data as unknown as Comment[];
     }
   });
 

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
@@ -18,7 +19,7 @@ const ArticleViewer: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [article, setArticle] = useState<ArticleData | null>(null);
-  const [viewMode, setViewMode] = useState<'review' | 'original'>('review');
+  const [viewMode, setViewMode] = useState<'dual' | 'review' | 'original'>('review');
 
   useEffect(() => {
     const fetchArticle = async () => {
@@ -75,6 +76,10 @@ const ArticleViewer: React.FC = () => {
     return <div className="p-8">Article not found.</div>;
   }
 
+  const handleViewModeChange = (mode: 'dual' | 'review' | 'original') => {
+    setViewMode(mode);
+  };
+
   const pdfUrl = viewMode === 'review' ? article.pdf_url : article.article_pdf_url;
 
   return (
@@ -85,7 +90,11 @@ const ArticleViewer: React.FC = () => {
 
       <ArticleHeader article={article} />
       
-      <ViewModeSwitcher viewMode={viewMode} setViewMode={setViewMode} hasOriginal={!!article.article_pdf_url} />
+      <ViewModeSwitcher 
+        viewMode={viewMode} 
+        onViewModeChange={handleViewModeChange} 
+        hasOriginal={!!article.article_pdf_url} 
+      />
       
       <Tabs defaultValue="pdf" className="w-full">
         <TabsList className="mb-4">
@@ -97,7 +106,7 @@ const ArticleViewer: React.FC = () => {
         <TabsContent value="pdf" className="bg-white/5 p-0 rounded-md overflow-hidden">
           {pdfUrl ? (
             <Card className="border-white/10">
-              <PDFViewer fileUrl={pdfUrl} />
+              <PDFViewer url={pdfUrl} />
             </Card>
           ) : (
             <div className="p-8 text-center">PDF not available for this view mode.</div>
