@@ -10,7 +10,6 @@ import { Card } from '@/components/ui/card';
 import { Issue, Article } from '@/types/issue';
 import { PDFViewer } from '@/components/pdf/PDFViewer';
 
-// Define an interface for our article data structure
 interface ArticleData {
   id: string;
   title: string;
@@ -31,14 +30,11 @@ const ArticleViewer: React.FC = () => {
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
   
-  // Track article view
   useArticleView(id!);
   
-  // Fetch article data
   const { data: article, isLoading } = useQuery({
     queryKey: ['article', id],
     queryFn: async () => {
-      // First try to get from issues table
       const { data: issueData, error: issueError } = await supabase
         .from('issues')
         .select('*')
@@ -56,11 +52,10 @@ const ArticleViewer: React.FC = () => {
           reviewedBy: 'Editorial Board',
           reviewContent: typedIssue.description || 'Sem conteúdo de revisão disponível.',
           pdf_url: typedIssue.pdf_url,
-          article_pdf_url: typedIssue.article_pdf_url || '' // Handle potentially undefined property
+          article_pdf_url: typedIssue.article_pdf_url || ''
         } as ArticleData;
       }
       
-      // If not found in issues, try articles table
       const { data: articleData, error: articleError } = await supabase
         .from('articles')
         .select('*, profiles:author_id(*)')
@@ -82,7 +77,6 @@ const ArticleViewer: React.FC = () => {
         } as ArticleData;
       }
       
-      // If not found in any table, return mock data
       return {
         id: id,
         title: 'Impactos do uso prolongado de inibidores de bomba de prótons',
@@ -178,14 +172,14 @@ const ArticleViewer: React.FC = () => {
       <div className={`${viewMode === 'dual' ? 'grid grid-cols-1 md:grid-cols-2 gap-6' : ''}`}>
         {(viewMode === 'dual' || viewMode === 'original') && (
           <PDFViewer
-            url={article.article_pdf_url}
+            url={article.article_pdf_url || ''}
             title="Artigo Original"
           />
         )}
         
         {(viewMode === 'dual' || viewMode === 'review') && (
           <PDFViewer
-            url={article.pdf_url}
+            url={article.pdf_url || ''}
             title="Revisão"
             fallbackContent={
               <Card className="w-full max-w-2xl p-4 overflow-y-auto max-h-[80%]">

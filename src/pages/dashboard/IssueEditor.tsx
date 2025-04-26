@@ -1,17 +1,14 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { toast } from '@/hooks/use-toast';
 import { ChevronLeft, Save, Trash } from 'lucide-react';
-import { Switch } from '@/components/ui/switch';
 import { Issue, FormIssueValues } from '@/types/issue';
 import { IssueForm } from './components/IssueForm';
+import { PDFUpload } from '@/components/file/PDFUpload';
 
 // Form schema for issue editing
 const formSchema = z.object({
@@ -43,7 +40,6 @@ const IssueEditor = () => {
     }
   });
 
-  // Fetch issue data on component mount
   useEffect(() => {
     const fetchIssue = async () => {
       if (!id) return;
@@ -88,6 +84,14 @@ const IssueEditor = () => {
     fetchIssue();
   }, [id, form]);
 
+  const handlePDFUpload = (url: string) => {
+    form.setValue('pdf_url', url);
+  };
+
+  const handleArticlePDFUpload = (url: string) => {
+    form.setValue('article_pdf_url', url);
+  };
+
   const onSubmit = async (values: FormIssueValues) => {
     if (!id) return;
 
@@ -115,14 +119,14 @@ const IssueEditor = () => {
       if (error) throw error;
       
       toast({
-        title: "Edição atualizada com sucesso!",
-        description: "As alterações foram salvas.",
+        title: "Issue updated successfully!",
+        description: "Changes have been saved.",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating issue:', error);
       toast({
-        title: "Erro ao atualizar edição",
-        description: "Ocorreu um erro ao salvar as alterações. Tente novamente.",
+        title: "Error updating issue",
+        description: error.message || "An error occurred while saving changes.",
         variant: "destructive",
       });
     }
@@ -186,15 +190,35 @@ const IssueEditor = () => {
 
       <Card className="border-white/10 bg-white/5">
         <CardHeader>
-          <CardTitle>Editar Edição</CardTitle>
-          <CardDescription>Gerencie os detalhes desta edição</CardDescription>
+          <CardTitle>Edit Issue</CardTitle>
+          <CardDescription>Manage issue details</CardDescription>
         </CardHeader>
         <CardContent>
-          <IssueForm 
-            form={form} 
-            onSubmit={onSubmit} 
-            onCancel={() => navigate('/edit')} 
-          />
+          <div className="space-y-6">
+            <IssueForm 
+              form={form} 
+              onSubmit={onSubmit} 
+              onCancel={() => navigate('/edit')} 
+            />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <h3 className="mb-2 text-sm font-medium">Review PDF</h3>
+                <PDFUpload 
+                  bucketName="pdfs"
+                  onUploadComplete={handlePDFUpload}
+                  label="Upload Review PDF"
+                />
+              </div>
+              <div>
+                <h3 className="mb-2 text-sm font-medium">Original Article PDF</h3>
+                <PDFUpload 
+                  bucketName="pdfs"
+                  onUploadComplete={handleArticlePDFUpload}
+                  label="Upload Article PDF"
+                />
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
