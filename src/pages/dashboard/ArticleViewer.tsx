@@ -9,6 +9,21 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 
+// Define an interface for our article data structure
+interface ArticleData {
+  id: string;
+  title: string;
+  author: string;
+  journal: string;
+  year: string;
+  abstract?: string;
+  reviewDate: string;
+  reviewedBy: string;
+  reviewContent: string;
+  pdf_url?: string;
+  article_pdf_url?: string;
+}
+
 const ArticleViewer: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [viewMode, setViewMode] = useState<'dual' | 'review' | 'original'>('dual');
@@ -39,7 +54,7 @@ const ArticleViewer: React.FC = () => {
           reviewedBy: 'Editorial Board',
           reviewContent: issueData.description || 'Sem conteúdo de revisão disponível.',
           pdfUrl: issueData.pdf_url,
-          articlePdfUrl: issueData.article_pdf_url
+          articlePdfUrl: issueData.article_pdf_url || '' // Handle potentially undefined property
         };
       }
       
@@ -59,8 +74,8 @@ const ArticleViewer: React.FC = () => {
           reviewDate: articleData.published_at ? new Date(articleData.published_at).toLocaleDateString('pt-BR') : 'Não publicado',
           reviewedBy: 'Editorial Board',
           reviewContent: articleData.content || 'Sem conteúdo de revisão disponível.',
-          pdfUrl: articleData.pdf_url || '',
-          articlePdfUrl: articleData.article_pdf_url || ''
+          pdfUrl: articleData.pdf_url || '', // Handle PDF URL from article
+          articlePdfUrl: articleData.article_pdf_url || '' // Handle PDF URL from article
         };
       }
       
@@ -103,7 +118,7 @@ const ArticleViewer: React.FC = () => {
         `,
         pdfUrl: 'https://example.com/article.pdf',
         articlePdfUrl: 'https://example.com/original-article.pdf'
-      };
+      } as ArticleData;
     }
   });
   

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -13,6 +12,7 @@ import * as z from 'zod';
 import { toast } from '@/hooks/use-toast';
 import { ChevronLeft, Save, Trash, Upload } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { Issue, FormIssueValues } from '@/types/issue';
 
 // Form schema for issue editing
 const formSchema = z.object({
@@ -25,8 +25,6 @@ const formSchema = z.object({
   published: z.boolean().default(false)
 });
 
-type FormValues = z.infer<typeof formSchema>;
-
 const IssueEditor = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -36,7 +34,7 @@ const IssueEditor = () => {
   const [uploadingCover, setUploadingCover] = useState(false);
 
   // Setup form with react-hook-form
-  const form = useForm<FormValues>({
+  const form = useForm<FormIssueValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: '',
@@ -93,7 +91,7 @@ const IssueEditor = () => {
     fetchIssue();
   }, [id, form]);
 
-  const onSubmit = async (values: FormValues) => {
+  const onSubmit = async (values: FormIssueValues) => {
     if (!id) return;
 
     try {

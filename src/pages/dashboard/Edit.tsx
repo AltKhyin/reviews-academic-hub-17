@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -13,6 +12,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from '@/hooks/use-toast';
+import { Issue, FormIssueValues } from '@/types/issue';
 
 // Form schema for issue creation/editing
 const formSchema = z.object({
@@ -23,8 +23,6 @@ const formSchema = z.object({
   article_pdf_url: z.string().optional(),
   cover_image_url: z.string().optional()
 });
-
-type FormValues = z.infer<typeof formSchema>;
 
 const Edit = () => {
   const navigate = useNavigate();
@@ -43,12 +41,12 @@ const Edit = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data;
+      return data as Issue[];
     }
   });
 
   // Setup form with react-hook-form
-  const form = useForm<FormValues>({
+  const form = useForm<FormIssueValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       title: '',
@@ -60,7 +58,7 @@ const Edit = () => {
     }
   });
 
-  const onSubmit = async (values: FormValues) => {
+  const onSubmit = async (values: FormIssueValues) => {
     try {
       // Extract tags from the format [tag:name][tag:name2]
       const tagMatches = values.tags ? [...values.tags.matchAll(/\[tag:([^\]]+)\]/g)] : [];
@@ -74,7 +72,7 @@ const Edit = () => {
           description: values.description || '',
           specialty: extractedTags.join(', '), // Store as comma-separated for now
           pdf_url: values.pdf_url || 'placeholder.pdf',
-          article_pdf_url: values.article_pdf_url || '',
+          article_pdf_url: values.article_pdf_url || '', // Properly handled now
           cover_image_url: values.cover_image_url || null
         })
         .select();
