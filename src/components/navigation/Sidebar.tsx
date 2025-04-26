@@ -1,25 +1,15 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, BookOpen, User, Settings, LogOut, ArrowLeftToLine, ArrowRightToLine } from 'lucide-react';
+import { Home, BookOpen, User, Settings, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 import Logo from '../common/Logo';
-import { 
-  Sidebar as ShadcnSidebar,
-  SidebarContent,
-  SidebarTrigger,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarFooter,
-} from '@/components/ui/sidebar';
 
-const Sidebar: React.FC = () => {
+const Sidebar = () => {
   const location = useLocation();
-  const [collapsed, setCollapsed] = React.useState(false);
-  
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut();
@@ -44,67 +34,50 @@ const Sidebar: React.FC = () => {
     { icon: Settings, label: 'Configurações', path: '/settings' },
   ];
 
-  const toggleSidebar = () => {
-    setCollapsed(!collapsed);
-  };
-
   return (
-    <ShadcnSidebar collapsible={collapsed ? 'icon' : 'none'} className="border-r">
-      <SidebarHeader>
-        <div className="p-6">
-          {!collapsed ? <Logo dark size="large" /> : <div className="text-xl font-bold ml-3">R.</div>}
-        </div>
-      </SidebarHeader>
+    <div className={`fixed left-0 top-0 h-screen bg-[#121212] text-white transition-all duration-300 border-r border-white/10 flex flex-col ${isCollapsed ? 'w-20' : 'w-64'}`}>
+      <div className="p-6">
+        <Logo dark collapsed={isCollapsed} />
+      </div>
 
-      <SidebarContent className="text-base font-light">
-        <SidebarMenu>
-          {navItems.map((item) => (
-            <SidebarMenuItem key={item.path}>
-              <SidebarMenuButton
-                asChild
-                isActive={location.pathname === item.path}
-                tooltip={item.label}
-                className="h-14 text-base tracking-wide"
-              >
-                <Link to={item.path}>
-                  <item.icon className="h-7 w-7" />
-                  <span className="font-light">{item.label}</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
-      </SidebarContent>
+      <nav className="flex-1 px-4">
+        {navItems.map((item) => (
+          <Link
+            key={item.path}
+            to={item.path}
+            className={`flex items-center space-x-3 px-3 py-4 rounded-lg mb-1 transition-colors
+              ${location.pathname === item.path ? 'bg-white/10' : 'hover:bg-white/5'}`}
+          >
+            <item.icon className="w-7 h-7 flex-shrink-0" />
+            {!isCollapsed && <span className="font-light tracking-wide">{item.label}</span>}
+          </Link>
+        ))}
+      </nav>
 
-      <SidebarFooter>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton onClick={handleLogout} className="h-14 text-base tracking-wide">
-              <LogOut className="h-7 w-7" />
-              <span className="font-light">Sair</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton 
-              onClick={toggleSidebar} 
-              className="h-14 text-base tracking-wide"
-            >
-              {collapsed ? (
-                <>
-                  <ArrowRightToLine className="h-7 w-7" />
-                  <span className="font-light">Expandir</span>
-                </>
-              ) : (
-                <>
-                  <ArrowLeftToLine className="h-7 w-7" />
-                  <span className="font-light">Recolher</span>
-                </>
-              )}
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
-    </ShadcnSidebar>
+      <div className="px-4 pb-6 pt-2 border-t border-white/10 mt-auto">
+        <button
+          onClick={handleLogout}
+          className="flex items-center space-x-3 px-3 py-4 w-full rounded-lg hover:bg-white/5 transition-colors mb-2"
+        >
+          <LogOut className="w-7 h-7" />
+          {!isCollapsed && <span className="font-light tracking-wide">Sair</span>}
+        </button>
+
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="flex items-center space-x-3 px-3 py-4 w-full rounded-lg hover:bg-white/5 transition-colors"
+        >
+          {isCollapsed ? (
+            <ChevronRight className="w-7 h-7" />
+          ) : (
+            <>
+              <ChevronLeft className="w-7 h-7" />
+              <span className="font-light tracking-wide">Recolher</span>
+            </>
+          )}
+        </button>
+      </div>
+    </div>
   );
 };
 

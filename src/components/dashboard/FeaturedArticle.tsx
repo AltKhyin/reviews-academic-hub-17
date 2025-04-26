@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 interface FeaturedArticleProps {
   article: {
@@ -13,17 +13,15 @@ interface FeaturedArticleProps {
 }
 
 const FeaturedArticle = ({ article }: FeaturedArticleProps) => {
-  const navigate = useNavigate();
-
   return (
     <section className="w-full h-[500px] relative mb-12">
       <div className="absolute inset-0">
         <img 
           src={article.image} 
           alt={article.title}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover rounded-lg"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent rounded-lg" />
       </div>
       
       <div className="relative h-full flex items-center px-12 z-10">
@@ -37,12 +35,12 @@ const FeaturedArticle = ({ article }: FeaturedArticleProps) => {
           <p className="mt-4 text-lg text-gray-200 max-w-xl">
             {article.description}
           </p>
-          <button 
-            onClick={() => navigate(`/article/${article.id}`)}
-            className="mt-8 bg-white text-black px-6 py-2 rounded-md font-medium hover:bg-gray-200 transition-colors"
+          <Link 
+            to={`/article/${article.id}`}
+            className="mt-8 inline-block bg-white text-black px-6 py-2 rounded-md font-medium hover:bg-gray-200 transition-colors"
           >
             Ler agora
-          </button>
+          </Link>
         </div>
       </div>
     </section>

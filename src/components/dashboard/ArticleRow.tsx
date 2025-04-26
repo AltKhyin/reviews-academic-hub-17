@@ -17,7 +17,7 @@ interface ArticleRowProps {
 const ArticleRow = ({ title, articles }: ArticleRowProps) => {
   return (
     <section className="mb-12">
-      <h2 className="text-2xl font-serif mb-4 px-6">{title}</h2>
+      <h2 className="text-2xl font-serif mb-6 px-2">{title}</h2>
       
       <Carousel
         opts={{
