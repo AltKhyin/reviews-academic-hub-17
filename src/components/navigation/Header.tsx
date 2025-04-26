@@ -11,23 +11,17 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, collapsed }) => {
   const [searchExpanded, setSearchExpanded] = useState(false);
   
   return (
-    <header className="h-16 border-b border-[#2a2a2a] bg-[#0d0d0d] shadow-sm sticky top-0 z-10">
-      <div className="h-full flex items-center justify-between px-4">
+    <header className="h-16 border-b border-[#2a2a2a] bg-[#0d0d0d] shadow-sm sticky top-0 z-10 px-4">
+      <div className="h-full flex items-center justify-between max-w-full">
         <div className="flex items-center">
-          <button 
-            onClick={toggleSidebar}
-            className="hover:bg-[#1a1a1a] rounded-md p-2 hover-effect"
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            <Menu size={20} strokeWidth={1.5} />
-          </button>
+          {/* This space is intentionally left empty since the sidebar toggle is now in the sidebar itself */}
         </div>
         
         {/* Right section with search and profile */}
-        <div className="flex items-center">
+        <div className="flex items-center ml-auto">
           {/* Search component moved to the right */}
           <div className={`relative transition-all duration-300 ease-in-out mr-4
-                         ${searchExpanded ? 'w-64' : 'w-9'}`}>
+                         ${searchExpanded ? 'w-[60vw] md:w-[40vw]' : 'w-9'}`}>
             <button 
               onClick={() => setSearchExpanded(!searchExpanded)}
               className={`${searchExpanded ? 'hidden' : 'block'} hover:bg-[#1a1a1a] rounded-md p-2 hover-effect`}

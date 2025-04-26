@@ -13,9 +13,11 @@ const DashboardLayout: React.FC = () => {
 
   return (
     <div className="min-h-screen flex bg-[#121212] text-white">
-      <Sidebar collapsed={sidebarCollapsed} />
+      {/* Sidebar component with toggle function passed */}
+      <Sidebar collapsed={sidebarCollapsed} toggleSidebar={toggleSidebar} />
       
-      <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${sidebarCollapsed ? 'ml-16' : 'ml-64'}`}>
+      <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300
+                      ${sidebarCollapsed ? 'ml-16' : 'ml-64'}`}>
         <Header toggleSidebar={toggleSidebar} collapsed={sidebarCollapsed} />
         
         <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-6">
