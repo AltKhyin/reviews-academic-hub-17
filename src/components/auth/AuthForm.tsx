@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -50,9 +49,7 @@ const AuthForm = () => {
           title: "Conta criada com sucesso",
           description: "Por favor faça login para continuar",
         });
-      } else {
-        // Fixed the condition to use proper comparison
-        // This is for the forgot password mode
+      } else if (mode === 'forgot') {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: `${window.location.origin}/auth/reset-password`,
         });
@@ -112,7 +109,7 @@ const AuthForm = () => {
   };
 
   return (
-    <div className="mb-8 bg-white/95 backdrop-blur-sm p-8 rounded-xl shadow-lg">
+    <div className="mb-8 bg-white/95 backdrop-blur-sm p-8 rounded-xl shadow-lg w-full max-w-[350px]">
       {renderHeader()}
       
       <form onSubmit={handleSubmit} className="space-y-6 mt-6">
