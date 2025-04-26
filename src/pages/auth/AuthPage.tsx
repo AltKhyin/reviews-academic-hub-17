@@ -6,8 +6,8 @@ import AuthForm from '@/components/auth/AuthForm';
 const AuthPage = () => {
   return (
     <div className="min-h-screen w-full flex bg-gradient-to-br from-white via-white to-gray-100 relative overflow-hidden">
-      {/* Logo moved more to the left */}
-      <div className="flex-1 flex justify-start items-center pl-8">
+      {/* Logo container with max width for widescreen monitors */}
+      <div className="flex-1 flex justify-start items-center pl-8 max-w-[50%]">
         <div className="w-full max-w-[400px]">
           <Logo size="xlarge" showSubtitle />
         </div>

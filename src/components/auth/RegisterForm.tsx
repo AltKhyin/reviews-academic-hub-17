@@ -20,7 +20,7 @@ const RegisterForm = ({ setMode }: RegisterFormProps) => {
     setLoading(true);
     
     try {
-      // Fix: Ensure we're passing the full_name as metadata correctly
+      console.log("Attempting to register with:", { email, name });
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -28,7 +28,6 @@ const RegisterForm = ({ setMode }: RegisterFormProps) => {
           data: {
             full_name: name,
           },
-          emailRedirectTo: `${window.location.origin}/auth`
         }
       });
       
