@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bookmark, ThumbsDown, ThumbsUp, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Bookmark, ThumbsDown, ThumbsUp, ChevronRight, ChevronLeft, Heart } from 'lucide-react';
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -125,7 +125,7 @@ const ArticleCard = ({ article }: { article: any }) => {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button className="bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors">
-                    <ThumbsUp size={16} strokeWidth={2} className="text-white" />
+                    <Heart size={16} className="text-white" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="top">

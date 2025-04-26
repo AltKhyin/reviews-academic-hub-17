@@ -6,16 +6,16 @@ import AuthForm from '@/components/auth/AuthForm';
 const AuthPage = () => {
   return (
     <div className="min-h-screen w-full flex bg-gradient-to-br from-white via-white to-gray-100 relative overflow-hidden">
-      {/* Left side with logo - centered more */}
-      <div className="relative w-full flex flex-col justify-center items-center md:items-end px-8 md:px-16 z-10 max-w-[800px]">
-        <div className="w-full max-w-[500px] md:mr-16">
+      {/* Left side with logo - centered */}
+      <div className="flex-1 flex justify-center items-center px-8">
+        <div className="w-full max-w-[400px]">
           <Logo size="xlarge" showSubtitle />
         </div>
       </div>
 
       {/* Right side with auth form */}
-      <div className="relative w-full md:w-[500px] flex items-center justify-center px-8 md:px-12 z-10">
-        <div className="w-full max-w-[400px] py-12">
+      <div className="w-[500px] flex items-center justify-end pr-8">
+        <div className="w-full max-w-[400px]">
           <AuthForm />
         </div>
       </div>
