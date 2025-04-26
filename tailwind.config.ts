@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -100,6 +99,10 @@ export default {
           "0%": { transform: "translateX(-20px)", opacity: "0" },
           "100%": { transform: "translateX(0)", opacity: "1" },
         },
+        'subtle-pan': {
+          '0%': { transform: 'translate(0, 0) scale(1.5)' },
+          '100%': { transform: 'translate(-25%, -25%) scale(1.5)' }
+        }
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -107,6 +110,7 @@ export default {
         "fade-in": "fade-in 0.2s ease-out",
         "fade-out": "fade-out 0.2s ease-out",
         "slide-in": "slide-in 0.2s ease-out",
+        'subtle-pan': 'subtle-pan 25s linear infinite'
       },
       spacing: {
         "8": "8px",

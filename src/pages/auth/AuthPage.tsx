@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -7,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from '@/integrations/supabase/client';
 import Logo from '@/components/common/Logo';
 import { toast } from '@/components/ui/use-toast';
+import AnimatedBackground from '@/components/auth/AnimatedBackground';
 
 type AuthMode = 'login' | 'register' | 'forgot';
 
@@ -25,7 +25,6 @@ const AuthPage = () => {
     
     try {
       if (mode === 'login') {
-        // Fix: Remove expiresIn from options and use session expiry properly
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
@@ -79,19 +78,18 @@ const AuthPage = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-white">
-      {/* Left side - Logo */}
-      <div className="w-full flex flex-col justify-center items-start px-8 md:px-16">
+    <div className="min-h-screen w-full flex bg-black relative overflow-hidden">
+      <AnimatedBackground />
+      
+      <div className="relative w-full flex flex-col justify-center items-start px-8 md:px-16 z-10">
         <div className="w-full max-w-[500px]">
           <Logo size="xlarge" showSubtitle />
         </div>
       </div>
 
-      {/* Right side - Auth form */}
-      <div className="w-full md:w-[500px] flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 px-8 md:px-12">
+      <div className="relative w-full md:w-[500px] flex items-center justify-center px-8 md:px-12 z-10">
         <div className="w-full max-w-[400px] py-12">
-          <div className="mb-8 bg-white p-8 rounded-xl shadow-sm">
-            {/* Form header based on mode */}
+          <div className="mb-8 bg-white/95 backdrop-blur p-8 rounded-xl shadow-lg">
             {mode === 'login' && (
               <div className="flex items-center space-x-2 text-black">
                 <span className="h-1 w-1 rounded-full bg-black"></span>
@@ -109,7 +107,6 @@ const AuthPage = () => {
                 </p>
               </>
             )}
-            {/* Fixed comparison - Use strict equality for string literal type */}
             {mode === 'forgot' && (
               <>
                 <div className="flex items-center space-x-2 text-black">
@@ -124,44 +121,36 @@ const AuthPage = () => {
 
             <form onSubmit={handleSubmit} className="space-y-6 mt-6">
               {mode === 'register' && (
-                <div className="space-y-2">
-                  <Input
-                    id="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="bg-white border-gray-300 focus:border-black focus:ring-0 text-black"
-                    placeholder="Nome completo"
-                    required={mode === 'register'}
-                  />
-                </div>
+                <Input
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="bg-white border-gray-300 focus:border-black focus:ring-0 text-black"
+                  placeholder="Nome completo"
+                  required={mode === 'register'}
+                />
               )}
               
-              <div className="space-y-2">
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="bg-white border-gray-300 focus:border-black focus:ring-0 text-black"
-                  placeholder="Email"
-                  required
-                />
-              </div>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="bg-white border-gray-300 focus:border-black focus:ring-0 text-black"
+                placeholder="Email"
+                required
+              />
 
               {mode !== 'forgot' && (
-                <div className="space-y-2">
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="bg-white border-gray-300 focus:border-black focus:ring-0 text-black"
-                      placeholder="Senha"
-                      required={mode !== 'forgot'}
-                    />
-                  </div>
-                </div>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="bg-white border-gray-300 focus:border-black focus:ring-0 text-black"
+                  placeholder="Senha"
+                  required={mode !== 'forgot'}
+                />
               )}
 
               {mode === 'login' && (

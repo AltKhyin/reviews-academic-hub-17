@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, BookOpen, User, Settings, LogOut, ChevronRight } from 'lucide-react';
 import { supabase } from '../../integrations/supabase/client';
@@ -44,9 +44,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
                  ${collapsed ? 'w-20' : 'w-72'}`}
     >
       <div className="h-full flex flex-col">
-        {/* Logo area */}
         <div className={`${collapsed ? 'py-8' : 'py-8'} flex items-center justify-center border-b border-[#2a2a2a]`}>
-          <Logo dark size={collapsed ? "medium" : "large"} collapsed={collapsed} />
+          <Logo dark size={collapsed ? "large" : "large"} collapsed={collapsed} />
         </div>
         
         <nav className="flex-1 px-3 py-8">
@@ -71,22 +70,21 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
           </ul>
         </nav>
         
-        {/* Toggle sidebar button */}
-        <button 
-          onClick={toggleSidebar}
-          className="mx-auto my-4 p-2 rounded-full hover:bg-[#1a1a1a] transition-colors"
-        >
-          <ChevronRight 
-            size={22} 
-            strokeWidth={1.5} 
-            className={`text-gray-400 transition-transform duration-300 ${collapsed ? '' : 'rotate-180'}`}
-          />
-        </button>
-        
-        <div className="p-2 mt-auto border-t border-[#2a2a2a] py-4">
+        <div className="mt-auto border-t border-[#2a2a2a] p-4 space-y-4">
+          <button 
+            onClick={toggleSidebar}
+            className="w-full flex justify-center p-2 rounded-full hover:bg-[#1a1a1a] transition-colors"
+          >
+            <ChevronRight 
+              size={22} 
+              strokeWidth={1.5} 
+              className={`text-gray-400 transition-transform duration-300 ${collapsed ? '' : 'rotate-180'}`}
+            />
+          </button>
+          
           <button 
             onClick={handleLogout}
-            className="w-full flex items-center px-3 py-3 text-sm text-gray-300 hover:bg-[#1a1a1a] rounded-md whitespace-nowrap"
+            className="w-full flex items-center px-3 py-3 text-sm text-gray-300 hover:bg-red-900/20 hover:text-red-400 rounded-md whitespace-nowrap transition-colors"
           >
             <LogOut size={22} strokeWidth={1.5} className="min-w-6 flex-shrink-0" />
             {!collapsed && <span className="ml-3 font-medium transition-opacity duration-200 opacity-100">Sair</span>}
