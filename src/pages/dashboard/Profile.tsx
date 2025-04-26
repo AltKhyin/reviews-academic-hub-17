@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useSidebar } from '@/components/ui/sidebar';
 
 // Mock user profile data
 const userProfile = {
@@ -28,8 +29,11 @@ const ActivityIcon = ({ type }: { type: string }) => {
 };
 
 const Profile: React.FC = () => {
+  const { state } = useSidebar();
+  const isCollapsed = state === 'collapsed';
+
   return (
-    <div className="animate-fade-in pb-12">
+    <div className={`animate-fade-in pb-12 transition-all duration-300 ${isCollapsed ? 'max-w-[95%]' : 'max-w-[85%]'} mx-auto`}>
       <div className="bg-[#1a1a1a] rounded-lg shadow-lg card-elevation p-6 mb-8">
         <div className="flex flex-col md:flex-row items-center md:items-start md:space-x-6">
           <div className="mb-4 md:mb-0">

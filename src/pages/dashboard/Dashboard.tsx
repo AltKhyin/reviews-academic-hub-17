@@ -1,6 +1,8 @@
+
 import React from 'react';
 import FeaturedArticle from '@/components/dashboard/FeaturedArticle';
 import ArticleRow from '@/components/dashboard/ArticleRow';
+import { useSidebar } from '@/components/ui/sidebar';
 
 // Use the uploaded images for our articles
 const articleImages = [
@@ -104,8 +106,11 @@ const recommendedArticles = [
 ];
 
 const Dashboard = () => {
+  const { state } = useSidebar();
+  const isCollapsed = state === 'collapsed';
+
   return (
-    <div className="pt-4 pb-16 space-y-8">
+    <div className={`pt-4 pb-16 space-y-8 transition-all duration-300 ${isCollapsed ? 'max-w-full' : 'max-w-[95%] mx-auto'}`}>
       <FeaturedArticle article={featuredArticle} />
       <ArticleRow title="Edições Recentes" articles={recentArticles} />
       <ArticleRow title="Recomendados Para Você" articles={recommendedArticles} />

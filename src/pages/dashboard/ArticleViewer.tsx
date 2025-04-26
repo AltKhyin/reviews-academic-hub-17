@@ -51,6 +51,7 @@ const ArticleViewer: React.FC = () => {
   const [viewMode, setViewMode] = useState<'dual' | 'review' | 'original'>('dual');
   const article = mockArticle;
   const { state } = useSidebar();
+  const isCollapsed = state === 'collapsed';
   
   // Track article view
   useArticleView(id!);
@@ -60,7 +61,7 @@ const ArticleViewer: React.FC = () => {
   };
   
   return (
-    <div className={`animate-fade-in pb-12 transition-all duration-300 ${state === 'collapsed' ? 'max-w-[95%]' : 'max-w-[85%]'}`}>
+    <div className={`animate-fade-in pb-12 transition-all duration-300 ${isCollapsed ? 'max-w-[95%]' : 'max-w-[85%]'} mx-auto`}>
       <div className="mb-6">
         <div className="text-sm text-gray-400 mb-2">
           {article.journal} • {article.year}
@@ -103,14 +104,14 @@ const ArticleViewer: React.FC = () => {
         </div>
       </div>
       
-      <div className={`${viewMode === 'dual' ? 'grid grid-cols-2 gap-6' : ''}`}>
+      <div className={`${viewMode === 'dual' ? 'grid grid-cols-1 md:grid-cols-2 gap-6' : ''}`}>
         {/* PDF Viewers - Made identical */}
         {(viewMode === 'dual' || viewMode === 'original') && (
-          <div className="bg-[#1a1a1a] rounded-lg p-6 shadow-lg card-elevation h-[calc(100vh-16rem)]">
+          <div className="bg-[#1a1a1a] rounded-lg p-6 shadow-lg card-elevation mb-6 md:mb-0">
             <div className="mb-4">
               <h2 className="font-serif text-xl font-medium">Artigo Original</h2>
             </div>
-            <div className="w-full h-full bg-[#121212] rounded-md">
+            <div className="w-full h-[60vh] bg-[#121212] rounded-md">
               <iframe
                 src={article.pdfUrl}
                 className="w-full h-full rounded-md"
@@ -121,11 +122,11 @@ const ArticleViewer: React.FC = () => {
         )}
         
         {(viewMode === 'dual' || viewMode === 'review') && (
-          <div className="bg-[#1a1a1a] rounded-lg p-6 shadow-lg card-elevation h-[calc(100vh-16rem)]">
+          <div className="bg-[#1a1a1a] rounded-lg p-6 shadow-lg card-elevation">
             <div className="mb-4">
               <h2 className="font-serif text-xl font-medium">Revisão</h2>
             </div>
-            <div className="w-full h-full bg-[#121212] rounded-md">
+            <div className="w-full h-[60vh] bg-[#121212] rounded-md">
               <iframe
                 src={article.pdfUrl}
                 className="w-full h-full rounded-md"
