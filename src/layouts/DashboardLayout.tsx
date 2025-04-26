@@ -3,7 +3,21 @@ import React, { useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/navigation/Sidebar';
 import { supabase } from '@/integrations/supabase/client';
-import { SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarProvider, useSidebar } from '@/components/ui/sidebar';
+
+// Content wrapper component that adjusts based on sidebar state
+const ContentWrapper = ({ children }: { children: React.ReactNode }) => {
+  const { state } = useSidebar();
+  const isCollapsed = state === 'collapsed';
+  
+  return (
+    <div className={`flex-1 overflow-auto transition-all duration-300 ${isCollapsed ? 'ml-[60px]' : 'ml-[240px]'}`}>
+      <div className="mx-auto max-w-7xl p-4 md:p-6 h-full">
+        {children}
+      </div>
+    </div>
+  );
+};
 
 const DashboardLayout: React.FC = () => {
   const navigate = useNavigate();
@@ -31,11 +45,9 @@ const DashboardLayout: React.FC = () => {
     <SidebarProvider>
       <div className="flex h-screen bg-[#121212] text-white overflow-hidden">
         <Sidebar />
-        <main className="flex-1 overflow-auto">
-          <div className="max-w-7xl mx-auto p-4 md:p-6 h-full">
-            <Outlet />
-          </div>
-        </main>
+        <ContentWrapper>
+          <Outlet />
+        </ContentWrapper>
       </div>
     </SidebarProvider>
   );
