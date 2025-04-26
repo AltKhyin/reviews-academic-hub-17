@@ -53,8 +53,8 @@ const ArticleViewer: React.FC = () => {
           reviewDate: issueData.published_at ? new Date(issueData.published_at).toLocaleDateString('pt-BR') : 'Não publicado',
           reviewedBy: 'Editorial Board',
           reviewContent: issueData.description || 'Sem conteúdo de revisão disponível.',
-          pdfUrl: issueData.pdf_url,
-          articlePdfUrl: issueData.article_pdf_url || '' // Handle potentially undefined property
+          pdf_url: issueData.pdf_url,
+          article_pdf_url: issueData.article_pdf_url || '' // Handle potentially undefined property
         };
       }
       
@@ -74,8 +74,8 @@ const ArticleViewer: React.FC = () => {
           reviewDate: articleData.published_at ? new Date(articleData.published_at).toLocaleDateString('pt-BR') : 'Não publicado',
           reviewedBy: 'Editorial Board',
           reviewContent: articleData.content || 'Sem conteúdo de revisão disponível.',
-          pdfUrl: articleData.pdf_url || '', // Handle PDF URL from article
-          articlePdfUrl: articleData.article_pdf_url || '' // Handle PDF URL from article
+          pdf_url: articleData.pdf_url || '',
+          article_pdf_url: articleData.article_pdf_url || ''
         };
       }
       
@@ -116,8 +116,8 @@ const ArticleViewer: React.FC = () => {
 
         Em conclusão, este trabalho representa uma contribuição valiosa para a literatura médica sobre a segurança de IBPs, promovendo uma abordagem cautelosa e individualizada na prescrição prolongada destes medicamentos sem alimentar alarmismo injustificado.
         `,
-        pdfUrl: 'https://example.com/article.pdf',
-        articlePdfUrl: 'https://example.com/original-article.pdf'
+        pdf_url: 'https://example.com/article.pdf',
+        article_pdf_url: 'https://example.com/original-article.pdf'
       } as ArticleData;
     }
   });
@@ -182,9 +182,9 @@ const ArticleViewer: React.FC = () => {
               <h2 className="font-serif text-xl font-medium">Artigo Original</h2>
             </div>
             <div className="w-full h-[60vh] bg-[#121212] rounded-md overflow-hidden">
-              {article.articlePdfUrl ? (
+              {article.article_pdf_url ? (
                 <iframe
-                  src={article.articlePdfUrl}
+                  src={article.article_pdf_url}
                   className="w-full h-full rounded-md"
                   title="Original Article PDF"
                 />
@@ -204,9 +204,9 @@ const ArticleViewer: React.FC = () => {
               <h2 className="font-serif text-xl font-medium">Revisão</h2>
             </div>
             <div className="w-full h-[60vh] bg-[#121212] rounded-md overflow-hidden">
-              {article.pdfUrl && article.pdfUrl !== 'placeholder.pdf' ? (
+              {article.pdf_url && article.pdf_url !== 'placeholder.pdf' ? (
                 <iframe
-                  src={article.pdfUrl}
+                  src={article.pdf_url}
                   className="w-full h-full rounded-md"
                   title="Review PDF"
                 />
