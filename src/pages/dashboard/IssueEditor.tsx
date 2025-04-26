@@ -12,6 +12,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from '@/hooks/use-toast';
 import { ChevronLeft, Save, Trash, Upload } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 
 // Form schema for issue editing
 const formSchema = z.object({
@@ -19,6 +20,7 @@ const formSchema = z.object({
   description: z.string().optional(),
   tags: z.string().optional(),
   pdf_url: z.string().optional(),
+  article_pdf_url: z.string().optional(),
   cover_image_url: z.string().optional(),
   published: z.boolean().default(false)
 });
@@ -29,6 +31,9 @@ const IssueEditor = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
+  const [uploadingPdf, setUploadingPdf] = useState(false);
+  const [uploadingArticlePdf, setUploadingArticlePdf] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
 
   // Setup form with react-hook-form
   const form = useForm<FormValues>({
@@ -38,6 +43,7 @@ const IssueEditor = () => {
       description: '',
       tags: '',
       pdf_url: '',
+      article_pdf_url: '',
       cover_image_url: '',
       published: false
     }
@@ -67,6 +73,7 @@ const IssueEditor = () => {
             description: data.description || '',
             tags: formattedTags,
             pdf_url: data.pdf_url || '',
+            article_pdf_url: data.article_pdf_url || '',
             cover_image_url: data.cover_image_url || '',
             published: data.published || false
           });
@@ -102,6 +109,7 @@ const IssueEditor = () => {
           description: values.description || '',
           specialty: extractedTags.join(', '),
           pdf_url: values.pdf_url || 'placeholder.pdf',
+          article_pdf_url: values.article_pdf_url || '',
           cover_image_url: values.cover_image_url,
           published: values.published,
           updated_at: new Date().toISOString(),
@@ -156,6 +164,102 @@ const IssueEditor = () => {
     const currentStatus = form.getValues('published');
     form.setValue('published', !currentStatus);
     await form.handleSubmit(onSubmit)();
+  };
+
+  // Handle PDF upload
+  const handlePdfUpload = async (event: React.ChangeEvent<HTMLInputElement>, fileType: 'review' | 'article') => {
+    try {
+      if (!event.target.files || event.target.files.length === 0) {
+        return;
+      }
+      
+      if (fileType === 'review') {
+        setUploadingPdf(true);
+      } else {
+        setUploadingArticlePdf(true);
+      }
+      
+      const file = event.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `pdfs/${fileName}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('issues')
+        .upload(filePath, file);
+      
+      if (uploadError) throw uploadError;
+      
+      const { data } = supabase.storage
+        .from('issues')
+        .getPublicUrl(filePath);
+      
+      if (fileType === 'review') {
+        form.setValue('pdf_url', data.publicUrl);
+      } else {
+        form.setValue('article_pdf_url', data.publicUrl);
+      }
+      
+      toast({
+        title: "Arquivo enviado com sucesso",
+        description: "O PDF foi carregado e associado a esta edição.",
+      });
+    } catch (error) {
+      console.error('Error uploading PDF:', error);
+      toast({
+        title: "Erro ao enviar arquivo",
+        description: "Ocorreu um erro ao carregar o PDF. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      if (fileType === 'review') {
+        setUploadingPdf(false);
+      } else {
+        setUploadingArticlePdf(false);
+      }
+    }
+  };
+
+  // Handle cover image upload
+  const handleCoverUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      if (!event.target.files || event.target.files.length === 0) {
+        return;
+      }
+      
+      setUploadingCover(true);
+      
+      const file = event.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `covers/${fileName}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('issues')
+        .upload(filePath, file);
+      
+      if (uploadError) throw uploadError;
+      
+      const { data } = supabase.storage
+        .from('issues')
+        .getPublicUrl(filePath);
+      
+      form.setValue('cover_image_url', data.publicUrl);
+      
+      toast({
+        title: "Imagem enviada com sucesso",
+        description: "A imagem de capa foi carregada e associada a esta edição.",
+      });
+    } catch (error) {
+      console.error('Error uploading cover image:', error);
+      toast({
+        title: "Erro ao enviar imagem",
+        description: "Ocorreu um erro ao carregar a imagem de capa. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingCover(false);
+    }
   };
 
   if (isLoading) {
@@ -243,20 +347,76 @@ const IssueEditor = () => {
 
               <FormField
                 control={form.control}
-                name="pdf_url"
+                name="article_pdf_url"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>PDF URL</FormLabel>
+                    <FormLabel>Artigo Original PDF</FormLabel>
                     <FormControl>
                       <div className="flex gap-2">
-                        <Input placeholder="URL do arquivo PDF" {...field} />
-                        <Button type="button" variant="outline" className="whitespace-nowrap">
-                          <Upload className="h-4 w-4 mr-2" /> Upload
+                        <Input placeholder="URL do arquivo PDF original" {...field} />
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          className="whitespace-nowrap"
+                          onClick={() => document.getElementById('article_pdf_upload')?.click()}
+                          disabled={uploadingArticlePdf}
+                        >
+                          {uploadingArticlePdf ? 'Enviando...' : (
+                            <>
+                              <Upload className="h-4 w-4 mr-2" /> Upload
+                            </>
+                          )}
                         </Button>
+                        <input
+                          id="article_pdf_upload"
+                          type="file"
+                          accept="application/pdf"
+                          className="hidden"
+                          onChange={(e) => handlePdfUpload(e, 'article')}
+                        />
                       </div>
                     </FormControl>
                     <FormDescription>
-                      URL para o documento PDF desta edição
+                      PDF do artigo original para esta edição
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="pdf_url"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Revisão PDF</FormLabel>
+                    <FormControl>
+                      <div className="flex gap-2">
+                        <Input placeholder="URL do arquivo PDF da revisão" {...field} />
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          className="whitespace-nowrap"
+                          onClick={() => document.getElementById('review_pdf_upload')?.click()}
+                          disabled={uploadingPdf}
+                        >
+                          {uploadingPdf ? 'Enviando...' : (
+                            <>
+                              <Upload className="h-4 w-4 mr-2" /> Upload
+                            </>
+                          )}
+                        </Button>
+                        <input
+                          id="review_pdf_upload"
+                          type="file"
+                          accept="application/pdf"
+                          className="hidden"
+                          onChange={(e) => handlePdfUpload(e, 'review')}
+                        />
+                      </div>
+                    </FormControl>
+                    <FormDescription>
+                      PDF da revisão desta edição
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -272,15 +432,53 @@ const IssueEditor = () => {
                     <FormControl>
                       <div className="flex gap-2">
                         <Input placeholder="URL da imagem de capa" {...field} />
-                        <Button type="button" variant="outline" className="whitespace-nowrap">
-                          <Upload className="h-4 w-4 mr-2" /> Upload
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          className="whitespace-nowrap"
+                          onClick={() => document.getElementById('cover_upload')?.click()}
+                          disabled={uploadingCover}
+                        >
+                          {uploadingCover ? 'Enviando...' : (
+                            <>
+                              <Upload className="h-4 w-4 mr-2" /> Upload
+                            </>
+                          )}
                         </Button>
+                        <input
+                          id="cover_upload"
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleCoverUpload}
+                        />
                       </div>
                     </FormControl>
                     <FormDescription>
                       URL para a imagem de capa desta edição
                     </FormDescription>
                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="published"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">Publicar</FormLabel>
+                      <FormDescription>
+                        Ativar para tornar esta edição pública
+                      </FormDescription>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
                   </FormItem>
                 )}
               />

@@ -12,8 +12,10 @@ const ContentWrapper = ({ children }: { children: React.ReactNode }) => {
   
   return (
     <div className={`flex-1 overflow-auto transition-all duration-300 ${isCollapsed ? 'ml-[60px]' : 'ml-[240px]'}`}>
-      <div className="mx-auto max-w-7xl p-4 md:p-6 h-full">
-        {children}
+      <div className="mx-auto px-4 md:px-6 py-4 h-full flex justify-center">
+        <div className="w-full max-w-6xl">
+          {children}
+        </div>
       </div>
     </div>
   );
