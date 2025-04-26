@@ -15,7 +15,7 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
   const queryClient = useQueryClient();
 
   // Fetch current user's reactions
-  const { data: reactions } = useQuery({
+  const { data: reactions = [], isLoading: isLoadingReactions } = useQuery({
     queryKey: ['article-reactions', articleId],
     queryFn: async () => {
       try {
@@ -29,16 +29,18 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
           .eq('user_id', user.id);
         
         if (error) throw error;
-        return data.map(r => r.reaction_type);
+        return data?.map(r => r.reaction_type) || [];
       } catch (err) {
         console.error('Error fetching reactions:', err);
         return [];
       }
-    }
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: 1
   });
 
   // Fetch bookmark status
-  const { data: isBookmarked } = useQuery({
+  const { data: isBookmarked = false, isLoading: isLoadingBookmark } = useQuery({
     queryKey: ['article-bookmark', articleId],
     queryFn: async () => {
       try {
@@ -58,7 +60,9 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
         console.error('Error fetching bookmark status:', err);
         return false;
       }
-    }
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: 1
   });
 
   // Handle reactions
@@ -68,24 +72,46 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error('User not authenticated');
 
-        const { error } = await supabase
-          .from('user_article_reactions')
-          .upsert({ 
-            article_id: articleId, 
-            reaction_type: type,
-            user_id: user.id
-          });
+        const currentReactions = reactions || [];
+        const hasReaction = currentReactions.includes(type);
         
-        if (error) throw error;
+        if (hasReaction) {
+          // Remove the reaction
+          const { error } = await supabase
+            .from('user_article_reactions')
+            .delete()
+            .eq('article_id', articleId)
+            .eq('user_id', user.id)
+            .eq('reaction_type', type);
+          
+          if (error) throw error;
+          return { added: false, type };
+        } else {
+          // Add or update the reaction
+          const { error } = await supabase
+            .from('user_article_reactions')
+            .upsert({ 
+              article_id: articleId, 
+              user_id: user.id,
+              reaction_type: type
+            });
+          
+          if (error) throw error;
+          return { added: true, type };
+        }
       } catch (err) {
         console.error('Error registering reaction:', err);
         throw err;
       }
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['article-reactions', articleId] });
+      const message = result.added 
+        ? "Sua reação foi registrada" 
+        : "Sua reação foi removida";
+      
       toast({
-        description: "Sua reação foi registrada",
+        description: message,
       });
     },
     onError: () => {
@@ -109,7 +135,9 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
             .delete()
             .eq('article_id', articleId)
             .eq('user_id', user.id);
+            
           if (error) throw error;
+          return { added: false };
         } else {
           const { error } = await supabase
             .from('user_bookmarks')
@@ -117,17 +145,19 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
               article_id: articleId,
               user_id: user.id 
             });
+            
           if (error) throw error;
+          return { added: true };
         }
       } catch (err) {
         console.error('Error updating bookmark:', err);
         throw err;
       }
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['article-bookmark', articleId] });
       toast({
-        description: isBookmarked ? "Artigo removido dos favoritos" : "Artigo salvo nos favoritos",
+        description: result.added ? "Artigo salvo nos favoritos" : "Artigo removido dos favoritos",
       });
     },
     onError: () => {
@@ -138,13 +168,27 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
     }
   });
 
+  // Check if user is authenticated
+  const checkAuthAndProceed = async (callback: () => void) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toast({
+        variant: "destructive",
+        description: "Você precisa estar logado para realizar essa ação",
+      });
+      return;
+    }
+    callback();
+  };
+
   return (
     <div className="flex items-center gap-2">
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => reactionMutation.mutate({ type: 'want_more' })}
+        onClick={() => checkAuthAndProceed(() => reactionMutation.mutate({ type: 'want_more' }))}
         className={reactions?.includes('want_more') ? 'text-purple-600' : ''}
+        disabled={isLoadingReactions || reactionMutation.isPending}
       >
         <Heart className="mr-1" size={16} />
         Quero mais como esse
@@ -153,8 +197,9 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => reactionMutation.mutate({ type: 'like' })}
+        onClick={() => checkAuthAndProceed(() => reactionMutation.mutate({ type: 'like' }))}
         className={reactions?.includes('like') ? 'text-green-600' : ''}
+        disabled={isLoadingReactions || reactionMutation.isPending}
       >
         <ThumbsUp className="mr-1" size={16} />
         Gostei
@@ -163,8 +208,9 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => reactionMutation.mutate({ type: 'dislike' })}
+        onClick={() => checkAuthAndProceed(() => reactionMutation.mutate({ type: 'dislike' }))}
         className={reactions?.includes('dislike') ? 'text-red-600' : ''}
+        disabled={isLoadingReactions || reactionMutation.isPending}
       >
         <ThumbsDown className="mr-1" size={16} />
         Mostre menos conteúdos como este
@@ -173,8 +219,9 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => bookmarkMutation.mutate()}
+        onClick={() => checkAuthAndProceed(() => bookmarkMutation.mutate())}
         className={isBookmarked ? 'text-blue-600' : ''}
+        disabled={isLoadingBookmark || bookmarkMutation.isPending}
       >
         <Bookmark className="mr-1" size={16} />
         {isBookmarked ? 'Salvo' : 'Salvar'}

@@ -15,12 +15,18 @@ const Sidebar = () => {
 
   useEffect(() => {
     const checkAdminStatus = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      
       const { data: adminData } = await supabase
         .from('admin_users')
         .select('user_id')
-        .single();
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+      
       setIsAdmin(!!adminData);
     };
+    
     checkAdminStatus();
   }, []);
 
@@ -53,7 +59,7 @@ const Sidebar = () => {
     <SidebarComponent variant="sidebar" collapsible="icon">
       <div className="h-full flex flex-col">
         {/* Logo section */}
-        <div className="p-4 flex justify-center">
+        <div className={`p-4 flex ${isCollapsed ? 'justify-center' : 'justify-start'}`}>
           <Logo dark collapsed={isCollapsed} size={isCollapsed ? 'small' : 'medium'} />
         </div>
 
@@ -64,7 +70,8 @@ const Sidebar = () => {
               key={item.path}
               to={item.path}
               className={`flex items-center py-2 px-3 rounded-md mb-1 transition-colors group text-sm
-                ${location.pathname === item.path ? 'bg-white/10' : 'hover:bg-white/5'}`}
+                ${location.pathname === item.path ? 'bg-white/10' : 'hover:bg-white/5'}
+                ${isCollapsed ? 'justify-center' : ''}`}
             >
               <item.icon className="w-5 h-5 flex-shrink-0" />
               {!isCollapsed && (
@@ -78,7 +85,8 @@ const Sidebar = () => {
         <SidebarFooter className="mt-auto border-t border-white/10 p-2">
           <button
             onClick={handleLogout}
-            className="flex items-center w-full py-2 px-3 rounded-md hover:bg-white/5 transition-colors mb-2 text-sm"
+            className={`flex items-center w-full py-2 px-3 rounded-md hover:bg-white/5 transition-colors mb-2 text-sm
+              ${isCollapsed ? 'justify-center' : ''}`}
           >
             <LogOut className="w-5 h-5" />
             {!isCollapsed && <span className="ml-3 font-light">Sair</span>}
@@ -86,7 +94,8 @@ const Sidebar = () => {
           
           <button
             onClick={toggleSidebar}
-            className="flex items-center justify-center w-full py-2 px-3 rounded-md hover:bg-white/5 transition-colors text-sm"
+            className={`flex items-center w-full py-2 px-3 rounded-md hover:bg-white/5 transition-colors text-sm
+              ${isCollapsed ? 'justify-center' : ''}`}
           >
             {isCollapsed ? (
               <ChevronRight className="w-5 h-5" />

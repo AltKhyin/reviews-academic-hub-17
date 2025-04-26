@@ -5,7 +5,7 @@ import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/h
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Link } from 'react-router-dom';
 import { ArticleActions } from '../article/ArticleActions';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -24,24 +24,64 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Fetch bookmark status
+  const { data: isBookmarked = false } = useQuery({
+    queryKey: ['article-bookmark', article.id],
+    queryFn: async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return false;
+
+        const { data, error } = await supabase
+          .from('user_bookmarks')
+          .select('id')
+          .eq('article_id', article.id)
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+        
+        if (error) throw error;
+        return !!data;
+      } catch (err) {
+        console.error('Error fetching bookmark status:', err);
+        return false;
+      }
+    }
+  });
+
+  // Fetch user reactions
+  const { data: userReactions = [] } = useQuery({
+    queryKey: ['article-reactions', article.id],
+    queryFn: async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return [];
+
+        const { data, error } = await supabase
+          .from('user_article_reactions')
+          .select('reaction_type')
+          .eq('article_id', article.id)
+          .eq('user_id', session.user.id);
+        
+        if (error) throw error;
+        return data?.map(r => r.reaction_type) || [];
+      } catch (err) {
+        console.error('Error fetching reactions:', err);
+        return [];
+      }
+    }
+  });
+
   const bookmarkMutation = useMutation({
     mutationFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('User not authenticated');
 
-      const { data: existing } = await supabase
-        .from('user_bookmarks')
-        .select('id')
-        .eq('article_id', article.id)
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (existing) {
+      if (isBookmarked) {
         const { error } = await supabase
           .from('user_bookmarks')
           .delete()
           .eq('article_id', article.id)
-          .eq('user_id', user.id);
+          .eq('user_id', session.user.id);
         if (error) throw error;
         return { action: 'removed' };
       } else {
@@ -49,14 +89,14 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
           .from('user_bookmarks')
           .insert({ 
             article_id: article.id,
-            user_id: user.id 
+            user_id: session.user.id 
           });
         if (error) throw error;
         return { action: 'added' };
       }
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['article-bookmark'] });
+      queryClient.invalidateQueries({ queryKey: ['article-bookmark', article.id] });
       toast({
         description: result.action === 'added' ? "Artigo salvo nos favoritos" : "Artigo removido dos favoritos",
       });
@@ -71,29 +111,46 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
 
   const reactionMutation = useMutation({
     mutationFn: async ({ type }: { type: string }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('User not authenticated');
 
-      const { error } = await supabase
-        .from('user_article_reactions')
-        .upsert({ 
-          article_id: article.id, 
-          reaction_type: type,
-          user_id: user.id
-        });
+      const hasReaction = userReactions.includes(type);
       
-      if (error) throw error;
-      return { type };
+      if (hasReaction) {
+        // Remove reaction
+        const { error } = await supabase
+          .from('user_article_reactions')
+          .delete()
+          .eq('article_id', article.id)
+          .eq('user_id', session.user.id)
+          .eq('reaction_type', type);
+        
+        if (error) throw error;
+        return { added: false, type };
+      } else {
+        // Add reaction
+        const { error } = await supabase
+          .from('user_article_reactions')
+          .upsert({ 
+            article_id: article.id, 
+            reaction_type: type,
+            user_id: session.user.id
+          });
+        
+        if (error) throw error;
+        return { added: true, type };
+      }
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['article-reactions'] });
+      queryClient.invalidateQueries({ queryKey: ['article-reactions', article.id] });
       const reactionMessages: Record<string, string> = {
-        'want_more': 'Quero mais conteúdo como este',
-        'like': 'Você gostou deste artigo',
-        'dislike': 'Você verá menos conteúdos como este'
+        'want_more': result.added ? 'Quero mais conteúdo como este' : 'Preferência removida',
+        'like': result.added ? 'Você gostou deste artigo' : 'Avaliação removida',
+        'dislike': result.added ? 'Você verá menos conteúdos como este' : 'Avaliação removida'
       };
+      
       toast({
-        description: reactionMessages[result.type] || "Sua reação foi registrada",
+        description: reactionMessages[result.type] || "Sua reação foi atualizada",
       });
     },
     onError: () => {
@@ -104,16 +161,29 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
     }
   });
 
+  // Check if user is authenticated
+  const checkAuthAndProceed = async (callback: () => void) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toast({
+        variant: "destructive",
+        description: "Você precisa estar logado para realizar essa ação",
+      });
+      return;
+    }
+    callback();
+  };
+
   const handleBookmark = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    bookmarkMutation.mutate();
+    checkAuthAndProceed(() => bookmarkMutation.mutate());
   };
 
   const handleReaction = (e: React.MouseEvent, type: string) => {
     e.preventDefault();
     e.stopPropagation();
-    reactionMutation.mutate({ type });
+    checkAuthAndProceed(() => reactionMutation.mutate({ type }));
   };
 
   return (
@@ -143,14 +213,15 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button 
-                      className="bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors"
+                      className={`bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors ${isBookmarked ? 'text-blue-400' : 'text-white'}`}
                       onClick={handleBookmark}
+                      disabled={bookmarkMutation.isPending}
                     >
-                      <Bookmark size={16} className="text-white" />
+                      <Bookmark size={16} />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="top">
-                    <p>Salvar</p>
+                    <p>{isBookmarked ? 'Remover dos favoritos' : 'Salvar'}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -161,10 +232,11 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button 
-                      className="bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors"
+                      className={`bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors ${userReactions?.includes('want_more') ? 'text-purple-400' : 'text-white'}`}
                       onClick={(e) => handleReaction(e, 'want_more')}
+                      disabled={reactionMutation.isPending}
                     >
-                      <Heart size={16} className="text-white" />
+                      <Heart size={16} />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="top">
@@ -177,10 +249,11 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button 
-                      className="bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors"
+                      className={`bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors ${userReactions?.includes('like') ? 'text-green-400' : 'text-white'}`}
                       onClick={(e) => handleReaction(e, 'like')}
+                      disabled={reactionMutation.isPending}
                     >
-                      <ThumbsUp size={16} className="text-white" />
+                      <ThumbsUp size={16} />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="top">
@@ -193,10 +266,11 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button 
-                      className="bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors"
+                      className={`bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors ${userReactions?.includes('dislike') ? 'text-red-400' : 'text-white'}`}
                       onClick={(e) => handleReaction(e, 'dislike')}
+                      disabled={reactionMutation.isPending}
                     >
-                      <ThumbsDown size={16} className="text-white" />
+                      <ThumbsDown size={16} />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="top">
