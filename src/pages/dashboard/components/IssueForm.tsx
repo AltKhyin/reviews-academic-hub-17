@@ -8,14 +8,16 @@ import { FormIssueValues } from '@/types/issue';
 import { UseFormReturn } from 'react-hook-form';
 import { IssueFileUpload } from '@/components/issue/IssueFileUpload';
 import { SimpleFileUpload } from '@/components/upload/SimpleFileUpload';
+import { Loader2 } from 'lucide-react';
 
 interface IssueFormProps {
   form: UseFormReturn<FormIssueValues>;
   onSubmit: (values: FormIssueValues) => Promise<void>;
   onCancel: () => void;
+  isSubmitting?: boolean;
 }
 
-export const IssueForm: React.FC<IssueFormProps> = ({ form, onSubmit, onCancel }) => {
+export const IssueForm: React.FC<IssueFormProps> = ({ form, onSubmit, onCancel, isSubmitting = false }) => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -153,11 +155,26 @@ export const IssueForm: React.FC<IssueFormProps> = ({ form, onSubmit, onCancel }
         />
         
         <div className="flex justify-end space-x-2 pt-4">
-          <Button variant="outline" type="button" onClick={onCancel}>
+          <Button 
+            variant="outline" 
+            type="button" 
+            onClick={onCancel}
+            disabled={isSubmitting}
+          >
             Cancelar
           </Button>
-          <Button type="submit">
-            Salvar
+          <Button 
+            type="submit"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Salvando...
+              </>
+            ) : (
+              'Salvar'
+            )}
           </Button>
         </div>
       </form>

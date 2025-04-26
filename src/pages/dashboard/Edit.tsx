@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
@@ -25,18 +25,29 @@ const formSchema = z.object({
 
 const Edit = () => {
   const [isCreating, setIsCreating] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Load issues from database
   const { data: issues, isLoading, refetch } = useQuery({
     queryKey: ['issues'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('issues')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data as Issue[];
+      try {
+        const { data, error } = await supabase
+          .from('issues')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        return data as Issue[];
+      } catch (error) {
+        console.error('Error fetching issues:', error);
+        toast({
+          title: "Erro ao carregar edições",
+          description: "Não foi possível carregar a lista de edições.",
+          variant: "destructive",
+        });
+        return [];
+      }
     }
   });
 
@@ -55,24 +66,35 @@ const Edit = () => {
 
   const onSubmit = async (values: FormIssueValues) => {
     try {
+      setIsSubmitting(true);
+      console.log('Form values:', values);
+      
       // Extract tags from the format [tag:name][tag:name2]
       const tagMatches = values.tags ? [...values.tags.matchAll(/\[tag:([^\]]+)\]/g)] : [];
       const extractedTags = tagMatches.map(match => match[1]);
       
+      // Prepare data for insert
+      const issueData = {
+        title: values.title,
+        description: values.description || '',
+        specialty: extractedTags.join(', '), // Store as comma-separated for now
+        pdf_url: values.pdf_url || 'placeholder.pdf',
+        article_pdf_url: values.article_pdf_url || '',
+        cover_image_url: values.cover_image_url || null
+      };
+      
+      console.log('Issue data to insert:', issueData);
+      
       // Insert the issue
       const { data, error } = await supabase
         .from('issues')
-        .insert({
-          title: values.title,
-          description: values.description || '',
-          specialty: extractedTags.join(', '), // Store as comma-separated for now
-          pdf_url: values.pdf_url || 'placeholder.pdf',
-          article_pdf_url: values.article_pdf_url || '', // Properly handled now
-          cover_image_url: values.cover_image_url || null
-        })
+        .insert(issueData)
         .select();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error details:', error);
+        throw error;
+      }
       
       toast({
         title: "Edição criada com sucesso!",
@@ -83,13 +105,15 @@ const Edit = () => {
       form.reset();
       setIsCreating(false);
       refetch();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating issue:', error);
       toast({
         title: "Erro ao criar edição",
-        description: "Ocorreu um erro ao salvar a edição. Tente novamente.",
+        description: error.message || "Ocorreu um erro ao salvar a edição. Tente novamente.",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -129,6 +153,7 @@ const Edit = () => {
               form={form}
               onSubmit={onSubmit}
               onCancel={handleCancel}
+              isSubmitting={isSubmitting}
             />
           </CardContent>
         </Card>
@@ -136,14 +161,16 @@ const Edit = () => {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {isLoading ? (
             <p>Carregando edições...</p>
-          ) : (
-            issues?.map((issue) => (
+          ) : issues && issues.length > 0 ? (
+            issues.map((issue) => (
               <IssueCard 
                 key={issue.id}
                 issue={issue} 
                 formatTags={formatTags}
               />
             ))
+          ) : (
+            <p>Nenhuma edição encontrada.</p>
           )}
         </div>
       )}

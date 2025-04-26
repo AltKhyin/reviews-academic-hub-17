@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -15,6 +16,7 @@ const IssueEditor = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<IssueFormValues>({
     resolver: zodResolver(issueFormSchema),
@@ -72,18 +74,13 @@ const IssueEditor = () => {
     fetchIssue();
   }, [id, form]);
 
-  const handlePDFUpload = (url: string) => {
-    form.setValue('pdf_url', url);
-  };
-
-  const handleArticlePDFUpload = (url: string) => {
-    form.setValue('article_pdf_url', url);
-  };
-
   const onSubmit = async (values: IssueFormValues) => {
     if (!id) return;
 
     try {
+      setIsSubmitting(true);
+      
+      // Extract tags from the format [tag:name][tag:name2]
       const tagMatches = values.tags ? [...values.tags.matchAll(/\[tag:([^\]]+)\]/g)] : [];
       const extractedTags = tagMatches.map(match => match[1]);
       
@@ -115,6 +112,8 @@ const IssueEditor = () => {
         description: error.message || "An error occurred while saving changes.",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -122,6 +121,7 @@ const IssueEditor = () => {
     if (!id || !window.confirm('Tem certeza que deseja excluir esta edição?')) return;
 
     try {
+      setIsSubmitting(true);
       const { error } = await supabase
         .from('issues')
         .delete()
@@ -142,6 +142,8 @@ const IssueEditor = () => {
         description: "Ocorreu um erro ao tentar excluir a edição.",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -163,6 +165,7 @@ const IssueEditor = () => {
           onDelete={handleDelete}
           onTogglePublish={togglePublish}
           isPublished={form.watch('published')}
+          isDisabled={isSubmitting}
         />
       </div>
 
@@ -176,6 +179,7 @@ const IssueEditor = () => {
             form={form} 
             onSubmit={onSubmit} 
             onCancel={() => navigate('/edit')} 
+            isSubmitting={isSubmitting}
           />
         </CardContent>
       </Card>
