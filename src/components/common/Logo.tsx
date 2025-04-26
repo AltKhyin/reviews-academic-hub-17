@@ -17,14 +17,14 @@ const Logo = ({
   const textColor = dark ? 'text-white' : 'text-[#212121]';
   
   // Font weight map
-  const fontWeight = 'font-bold';
+  const fontWeight = 'font-extrabold';
   
   // Size map
   const sizeClasses = {
     small: collapsed ? 'text-lg' : 'text-2xl',
-    medium: collapsed ? 'text-xl' : 'text-3xl',
-    large: collapsed ? 'text-2xl' : 'text-4xl',
-    xlarge: 'text-7xl'
+    medium: collapsed ? 'text-2xl' : 'text-4xl',
+    large: collapsed ? 'text-3xl' : 'text-5xl',
+    xlarge: 'text-8xl'
   };
   
   if (collapsed) {

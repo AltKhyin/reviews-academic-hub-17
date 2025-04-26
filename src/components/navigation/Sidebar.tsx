@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, BookOpen, User, Settings, LogOut, ChevronRight } from 'lucide-react';
 import { supabase } from '../../integrations/supabase/client';
@@ -41,15 +41,15 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
   return (
     <aside 
       className={`bg-[#0d0d0d] min-h-screen flex flex-col fixed top-0 left-0 z-20 transition-all duration-300 ease-in-out border-r border-[#2a2a2a]
-                 ${collapsed ? 'w-16' : 'w-64'}`}
+                 ${collapsed ? 'w-20' : 'w-72'}`}
     >
       <div className="h-full flex flex-col">
-        {/* Logo area with more space */}
+        {/* Logo area */}
         <div className={`${collapsed ? 'py-8' : 'py-8'} flex items-center justify-center border-b border-[#2a2a2a]`}>
           <Logo dark size={collapsed ? "medium" : "large"} collapsed={collapsed} />
         </div>
         
-        <nav className="flex-1 px-3 py-8 overflow-hidden">
+        <nav className="flex-1 px-3 py-8">
           <ul className="space-y-4">
             {navItems.map((item) => {
               const isActive = location.pathname === item.path;
@@ -62,8 +62,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
                                 ? 'bg-[#2a2a2a] text-white' 
                                 : 'text-gray-300 hover:bg-[#1a1a1a]'}`}
                   >
-                    <item.icon size={22} strokeWidth={1.5} className="min-w-5" />
-                    {!collapsed && <span className="ml-3 text-sm font-medium">{item.label}</span>}
+                    <item.icon size={22} strokeWidth={1.5} className="min-w-6 flex-shrink-0" />
+                    {!collapsed && <span className="ml-3 text-sm font-medium transition-opacity duration-200 opacity-100">{item.label}</span>}
                   </Link>
                 </li>
               );
@@ -79,7 +79,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
           <ChevronRight 
             size={22} 
             strokeWidth={1.5} 
-            className={`text-gray-400 transition-transform ${collapsed ? '' : 'rotate-180'}`}
+            className={`text-gray-400 transition-transform duration-300 ${collapsed ? '' : 'rotate-180'}`}
           />
         </button>
         
@@ -88,8 +88,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
             onClick={handleLogout}
             className="w-full flex items-center px-3 py-3 text-sm text-gray-300 hover:bg-[#1a1a1a] rounded-md whitespace-nowrap"
           >
-            <LogOut size={22} strokeWidth={1.5} className="min-w-5" />
-            {!collapsed && <span className="ml-3 font-medium">Sair</span>}
+            <LogOut size={22} strokeWidth={1.5} className="min-w-6 flex-shrink-0" />
+            {!collapsed && <span className="ml-3 font-medium transition-opacity duration-200 opacity-100">Sair</span>}
           </button>
         </div>
       </div>
