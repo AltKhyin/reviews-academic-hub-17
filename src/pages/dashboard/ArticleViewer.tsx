@@ -1,10 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import PDFViewer from '@/components/pdf/PDFViewer';
+import { PDFViewer } from '@/components/pdf/PDFViewer';
 import { ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
@@ -13,6 +11,7 @@ import { ArticleHeader } from '@/components/article/ArticleHeader';
 import { ViewModeSwitcher } from '@/components/article/ViewModeSwitcher';
 import { ArticleContent } from '@/components/article/ArticleContent';
 import { ArticleComments } from '@/components/article/ArticleComments';
+import { supabase } from '@/integrations/supabase/client';
 
 const ArticleViewer: React.FC = () => {
   const { id } = useParams<{ id: string }>();

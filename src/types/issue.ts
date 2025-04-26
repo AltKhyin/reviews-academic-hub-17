@@ -1,4 +1,3 @@
-
 export interface Issue {
   id: string;
   title: string;
@@ -22,3 +21,22 @@ export type FormIssueValues = {
   cover_image_url?: string;
   published?: boolean;
 };
+
+export interface UserProfile {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  role: 'user' | 'editor' | 'admin';
+  bio?: string | null;
+  specialty?: string | null;
+  institution?: string | null;
+}
+
+export interface Comment {
+  id: string;
+  content: string;
+  created_at: string;
+  user?: UserProfile;
+  user_id: string;
+  article_id: string;
+}
