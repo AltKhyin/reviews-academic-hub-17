@@ -44,7 +44,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
                  ${collapsed ? 'w-20' : 'w-72'}`}
     >
       <div className="h-full flex flex-col">
-        <div className={`${collapsed ? 'py-8' : 'py-8'} flex items-center justify-center border-b border-[#2a2a2a]`}>
+        <div className={`py-8 flex items-center justify-center border-b border-[#2a2a2a]`}>
           <Logo dark size={collapsed ? "large" : "large"} collapsed={collapsed} />
         </div>
         
@@ -72,6 +72,14 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
         
         <div className="mt-auto border-t border-[#2a2a2a] p-4 space-y-4">
           <button 
+            onClick={handleLogout}
+            className="w-full flex items-center px-3 py-3 text-sm text-gray-300 hover:bg-red-900/20 hover:text-red-400 rounded-md whitespace-nowrap transition-colors"
+          >
+            <LogOut size={22} strokeWidth={1.5} className="min-w-6 flex-shrink-0" />
+            {!collapsed && <span className="ml-3 font-medium transition-opacity duration-200 opacity-100">Sair</span>}
+          </button>
+          
+          <button 
             onClick={toggleSidebar}
             className="w-full flex justify-center p-2 rounded-full hover:bg-[#1a1a1a] transition-colors"
           >
@@ -80,14 +88,6 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
               strokeWidth={1.5} 
               className={`text-gray-400 transition-transform duration-300 ${collapsed ? '' : 'rotate-180'}`}
             />
-          </button>
-          
-          <button 
-            onClick={handleLogout}
-            className="w-full flex items-center px-3 py-3 text-sm text-gray-300 hover:bg-red-900/20 hover:text-red-400 rounded-md whitespace-nowrap transition-colors"
-          >
-            <LogOut size={22} strokeWidth={1.5} className="min-w-6 flex-shrink-0" />
-            {!collapsed && <span className="ml-3 font-medium transition-opacity duration-200 opacity-100">Sair</span>}
           </button>
         </div>
       </div>

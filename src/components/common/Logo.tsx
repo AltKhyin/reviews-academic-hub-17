@@ -21,9 +21,9 @@ const Logo = ({
   
   // Size map
   const sizeClasses = {
-    small: collapsed ? 'text-lg' : 'text-2xl',
-    medium: collapsed ? 'text-2xl' : 'text-4xl',
-    large: collapsed ? 'text-3xl' : 'text-5xl',
+    small: 'text-2xl',
+    medium: 'text-4xl',
+    large: 'text-5xl',
     xlarge: 'text-8xl'
   };
   

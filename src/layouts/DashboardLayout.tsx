@@ -4,6 +4,7 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/navigation/Sidebar';
 import Header from '../components/navigation/Header';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/use-toast';
 
 const DashboardLayout: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -13,9 +14,6 @@ const DashboardLayout: React.FC = () => {
     setSidebarCollapsed(!sidebarCollapsed);
   };
 
-  // Check for auth status and redirect if not logged in
-  // For now, we're disabling this as per user request
-  /*
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -34,7 +32,6 @@ const DashboardLayout: React.FC = () => {
 
     return () => subscription.unsubscribe();
   }, [navigate]);
-  */
 
   return (
     <div className="min-h-screen flex bg-[#121212] text-white">

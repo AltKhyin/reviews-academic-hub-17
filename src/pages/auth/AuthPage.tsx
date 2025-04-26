@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -186,9 +187,9 @@ const AuthPage = () => {
                 disabled={loading}
               >
                 {loading ? 'Processando...' : 
-                mode === 'login' ? 'Entrar' : 
-                mode === 'register' ? 'Cadastrar' : 
-                'Enviar instruções'}
+                  mode === 'login' ? 'Entrar' : 
+                  mode === 'register' ? 'Cadastrar' : 
+                  'Enviar instruções'}
               </Button>
 
               {mode !== 'forgot' && (
