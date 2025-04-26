@@ -1,25 +1,17 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from '@/hooks/use-toast';
 import { ChevronLeft, Save, Trash } from 'lucide-react';
-import { Issue, FormIssueValues } from '@/types/issue';
+import { Issue } from '@/types/issue';
 import { IssueForm } from './components/IssueForm';
 import { PDFUpload } from '@/components/file/PDFUpload';
-
-// Form schema for issue editing
-const formSchema = z.object({
-  title: z.string().min(3, "O título deve ter pelo menos 3 caracteres"),
-  description: z.string().optional(),
-  tags: z.string().optional(),
-  pdf_url: z.string().optional(),
-  article_pdf_url: z.string().optional(),
-  cover_image_url: z.string().optional(),
-  published: z.boolean().default(false)
-});
+import { issueFormSchema, IssueFormValues } from '@/schemas/issue-form-schema';
 
 const IssueEditor = () => {
   const { id } = useParams<{ id: string }>();
@@ -27,8 +19,8 @@ const IssueEditor = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   // Setup form with react-hook-form
-  const form = useForm<FormIssueValues>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<IssueFormValues>({
+    resolver: zodResolver(issueFormSchema),
     defaultValues: {
       title: '',
       description: '',
@@ -92,7 +84,7 @@ const IssueEditor = () => {
     form.setValue('article_pdf_url', url);
   };
 
-  const onSubmit = async (values: FormIssueValues) => {
+  const onSubmit = async (values: IssueFormValues) => {
     if (!id) return;
 
     try {
