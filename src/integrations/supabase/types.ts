@@ -190,6 +190,7 @@ export type Database = {
       }
       issues: {
         Row: {
+          article_pdf_url: string | null
           cover_image_url: string | null
           created_at: string
           description: string | null
@@ -202,6 +203,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          article_pdf_url?: string | null
           cover_image_url?: string | null
           created_at?: string
           description?: string | null
@@ -214,6 +216,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          article_pdf_url?: string | null
           cover_image_url?: string | null
           created_at?: string
           description?: string | null
@@ -397,7 +400,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin_user: {
+        Args: { uid: string }
+        Returns: boolean
+      }
     }
     Enums: {
       review_status: "draft" | "in_review" | "approved" | "rejected"
