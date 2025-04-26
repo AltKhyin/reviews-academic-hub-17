@@ -45,7 +45,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
     >
       <div className="h-full flex flex-col">
         <div className={`py-8 flex items-center justify-center border-b border-[#2a2a2a]`}>
-          <Logo dark size={collapsed ? "large" : "large"} collapsed={collapsed} />
+          <Logo dark size="large" collapsed={collapsed} />
         </div>
         
         <nav className="flex-1 px-3 py-8">
