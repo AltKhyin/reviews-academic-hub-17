@@ -13,13 +13,12 @@ import Dashboard from "./pages/dashboard/Dashboard";
 import ArticleViewer from "./pages/dashboard/ArticleViewer";
 import Profile from "./pages/dashboard/Profile";
 import Settings from "./pages/dashboard/Settings";
-
+import Edit from "./pages/dashboard/Edit";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 const App = () => {
-  // Setting dark mode as default
   useEffect(() => {
     document.documentElement.classList.add('dark');
   }, []);
@@ -39,6 +38,7 @@ const App = () => {
               <Route path="articles" element={<Dashboard />} />
               <Route path="profile" element={<Profile />} />
               <Route path="settings" element={<Settings />} />
+              <Route path="edit" element={<Edit />} />
               <Route index element={<Navigate to="/homepage" replace />} />
             </Route>
 

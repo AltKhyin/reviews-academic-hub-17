@@ -8,7 +8,6 @@ const DashboardLayout: React.FC = () => {
   const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = useState(false);
   
-  // Verifica se a sidebar está colapsada no localStorage
   useEffect(() => {
     const savedState = localStorage.getItem('sidebar-collapsed');
     if (savedState !== null) {
@@ -16,7 +15,6 @@ const DashboardLayout: React.FC = () => {
     }
   }, []);
 
-  // Monitora alterações no localStorage para atualizar a UI
   useEffect(() => {
     const handleStorageChange = () => {
       const savedState = localStorage.getItem('sidebar-collapsed');
@@ -51,7 +49,7 @@ const DashboardLayout: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#121212] text-white">
       <Sidebar />
-      <main className={`transition-all duration-300 ${isCollapsed ? 'ml-16' : 'ml-60'}`}>
+      <main className={`transition-all duration-300 ${isCollapsed ? 'ml-20' : 'ml-60'}`}>
         <div className="max-w-7xl mx-auto p-4 md:p-6">
           <Outlet />
         </div>
