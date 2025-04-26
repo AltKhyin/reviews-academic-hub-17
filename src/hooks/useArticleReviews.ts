@@ -1,17 +1,13 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { ArticleReview, ReviewStatus } from '@/types/issue';
+import { ArticleReviewData, ReviewStatus } from '@/types/issue';
 import { toast } from '@/hooks/use-toast';
 
 export const useArticleReviews = (articleId?: string) => {
   const queryClient = useQueryClient();
 
-  const {
-    data: reviews = [],
-    isLoading,
-    error,
-  } = useQuery({
+  const { data: reviews = [], isLoading, error } = useQuery({
     queryKey: ['article-reviews', articleId],
     queryFn: async () => {
       if (!articleId) return [];
@@ -20,12 +16,12 @@ export const useArticleReviews = (articleId?: string) => {
         .from('article_reviews')
         .select(`
           *,
-          reviewer:profiles(id, full_name, avatar_url, role)
+          reviewer:profiles!article_reviews_reviewer_id_fkey(*)
         `)
         .eq('article_id', articleId);
 
       if (error) throw error;
-      return data as unknown as ArticleReview[];
+      return data as ArticleReviewData[];
     },
     enabled: !!articleId,
   });
@@ -63,7 +59,7 @@ export const useArticleReviews = (articleId?: string) => {
         description: 'The review has been successfully assigned.',
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Error',
         description: `Failed to assign review: ${error.message}`,
@@ -104,7 +100,7 @@ export const useArticleReviews = (articleId?: string) => {
         description: 'The review status has been updated.',
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: 'Error',
         description: `Failed to update review: ${error.message}`,

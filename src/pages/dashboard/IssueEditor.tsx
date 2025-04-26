@@ -1,24 +1,21 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from '@/hooks/use-toast';
-import { ChevronLeft, Save, Trash } from 'lucide-react';
 import { Issue } from '@/types/issue';
 import { IssueForm } from './components/IssueForm';
-import { PDFUpload } from '@/components/file/PDFUpload';
 import { issueFormSchema, IssueFormValues } from '@/schemas/issue-form-schema';
+import { IssueHeader } from './components/issue/IssueHeader';
+import { IssueActionButtons } from './components/issue/IssueActionButtons';
 
 const IssueEditor = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
 
-  // Setup form with react-hook-form
   const form = useForm<IssueFormValues>({
     resolver: zodResolver(issueFormSchema),
     defaultValues: {
@@ -47,7 +44,6 @@ const IssueEditor = () => {
 
         if (data) {
           const typedIssue = data as Issue;
-          // Format specialty tags before setting in form
           const formattedTags = typedIssue.specialty ? 
             typedIssue.specialty.split(', ').map(tag => `[tag:${tag}]`).join('') : '';
 
@@ -88,11 +84,9 @@ const IssueEditor = () => {
     if (!id) return;
 
     try {
-      // Extract tags from the format [tag:name][tag:name2]
       const tagMatches = values.tags ? [...values.tags.matchAll(/\[tag:([^\]]+)\]/g)] : [];
       const extractedTags = tagMatches.map(match => match[1]);
       
-      // Update the issue
       const { error } = await supabase
         .from('issues')
         .update({
@@ -164,20 +158,12 @@ const IssueEditor = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={() => navigate('/edit')} className="mb-4">
-          <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
-        </Button>
-        <div className="space-x-2">
-          <Button variant="outline" onClick={handleDelete} className="text-red-500 hover:text-red-700">
-            <Trash className="mr-2 h-4 w-4" /> Excluir
-          </Button>
-          <Button 
-            variant={form.watch('published') ? "outline" : "default"}
-            onClick={togglePublish}
-          >
-            {form.watch('published') ? 'Despublicar' : 'Publicar'}
-          </Button>
-        </div>
+        <IssueHeader />
+        <IssueActionButtons
+          onDelete={handleDelete}
+          onTogglePublish={togglePublish}
+          isPublished={form.watch('published')}
+        />
       </div>
 
       <Card className="border-white/10 bg-white/5">
@@ -186,31 +172,11 @@ const IssueEditor = () => {
           <CardDescription>Manage issue details</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-6">
-            <IssueForm 
-              form={form} 
-              onSubmit={onSubmit} 
-              onCancel={() => navigate('/edit')} 
-            />
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <h3 className="mb-2 text-sm font-medium">Review PDF</h3>
-                <PDFUpload 
-                  bucketName="pdfs"
-                  onUploadComplete={handlePDFUpload}
-                  label="Upload Review PDF"
-                />
-              </div>
-              <div>
-                <h3 className="mb-2 text-sm font-medium">Original Article PDF</h3>
-                <PDFUpload 
-                  bucketName="pdfs"
-                  onUploadComplete={handleArticlePDFUpload}
-                  label="Upload Article PDF"
-                />
-              </div>
-            </div>
-          </div>
+          <IssueForm 
+            form={form} 
+            onSubmit={onSubmit} 
+            onCancel={() => navigate('/edit')} 
+          />
         </CardContent>
       </Card>
     </div>

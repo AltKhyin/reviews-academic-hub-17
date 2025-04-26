@@ -1,4 +1,3 @@
-
 export interface Issue {
   id: string;
   title: string;
@@ -49,7 +48,7 @@ export interface Comment {
 
 export type ReviewStatus = 'draft' | 'in_review' | 'approved' | 'rejected';
 
-export interface ArticleReview {
+export type ArticleReviewData = {
   id: string;
   article_id: string;
   reviewer_id: string;
@@ -58,4 +57,4 @@ export interface ArticleReview {
   created_at: string;
   updated_at: string;
   reviewer?: UserProfile;
-}
+};
