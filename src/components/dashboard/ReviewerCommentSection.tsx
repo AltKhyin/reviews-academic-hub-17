@@ -8,16 +8,16 @@ import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { CheckCircle2, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import type { ReviewerComment as ReviewerCommentType } from '@/hooks/useReviewerComments';
+import type { ReviewerComment } from '@/hooks/useReviewerComments';
 
-const ReviewerCommentItem = ({ comment }: { comment: ReviewerCommentType }) => {
+const ReviewerCommentItem = ({ comment }: { comment: ReviewerComment }) => {
   const { profile } = useAuth();
   const isEditorOrAdmin = profile?.role === 'admin' || profile?.role === 'editor';
   const { deleteComment } = useReviewerComments();
   
   return (
     <div className="flex space-x-4">
-      <Avatar className="h-12 w-12 border-2 border-primary/20">
+      <Avatar className="h-24 w-24 border-2 border-primary/20">
         <AvatarImage src="/lovable-uploads/849d1c93-706d-4eb1-87e6-e14d6f4b13a5.png" alt={comment.reviewer_name} />
         <AvatarFallback>{comment.reviewer_name.charAt(0)}</AvatarFallback>
       </Avatar>

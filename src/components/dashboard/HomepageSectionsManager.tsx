@@ -2,7 +2,8 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { MoveVertical, Eye, EyeOff } from 'lucide-react';
+import { MoveVertical, Eye, EyeOff, ChevronUp, ChevronDown } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface Section {
   id: string;
@@ -65,14 +66,21 @@ const HomepageSectionsManager: React.FC<HomepageSectionsManagerProps> = ({
           {sections.map((section) => (
             <div 
               key={section.id}
-              className="flex items-center justify-between p-4 bg-secondary/5 rounded-lg"
+              className="flex items-center justify-between p-4 bg-secondary/5 rounded-lg border border-white/10"
             >
-              <span className="font-medium">{section.title}</span>
+              <div className="flex items-center gap-3">
+                <span className="font-medium">{section.title}</span>
+                <Badge variant={section.visible ? "default" : "outline"}>
+                  {section.visible ? "Visível" : "Oculta"}
+                </Badge>
+              </div>
+              
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="icon"
                   onClick={() => toggleVisibility(section.id)}
+                  title={section.visible ? "Ocultar seção" : "Mostrar seção"}
                 >
                   {section.visible ? (
                     <Eye className="h-4 w-4" />
@@ -80,13 +88,25 @@ const HomepageSectionsManager: React.FC<HomepageSectionsManagerProps> = ({
                     <EyeOff className="h-4 w-4" />
                   )}
                 </Button>
+                
                 <Button
                   variant="outline"
                   size="icon"
                   onClick={() => moveSection(section.id, 'up')}
                   disabled={section.order === 0}
+                  title="Mover para cima"
                 >
-                  <MoveVertical className="h-4 w-4" />
+                  <ChevronUp className="h-4 w-4" />
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => moveSection(section.id, 'down')}
+                  disabled={section.order === sections.length - 1}
+                  title="Mover para baixo"
+                >
+                  <ChevronDown className="h-4 w-4" />
                 </Button>
               </div>
             </div>

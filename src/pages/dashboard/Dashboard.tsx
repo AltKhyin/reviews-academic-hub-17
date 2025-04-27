@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useSidebar } from '@/components/ui/sidebar';
 import HomepageSectionsManager from '@/components/dashboard/HomepageSectionsManager';
@@ -128,10 +129,13 @@ const Dashboard = () => {
   return (
     <div className={`pt-4 pb-16 space-y-8 transition-all duration-300 ${isCollapsed ? 'max-w-full' : 'max-w-[95%] mx-auto'}`}>
       {profile && (profile.role === 'admin' || profile.role === 'editor') && (
-        <HomepageSectionsManager 
-          sections={sectionConfig}
-          updateSections={updateSectionConfig}
-        />
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold mb-4">Painel do Editor</h2>
+          <HomepageSectionsManager 
+            sections={sectionConfig}
+            updateSections={updateSectionConfig}
+          />
+        </div>
       )}
       
       {isLoading ? (
