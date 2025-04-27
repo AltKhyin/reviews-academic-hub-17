@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { moveVertical, moveHorizontal, eye, eyeOff } from 'lucide-react';
+import { MoveVertical, MoveHorizontal, Eye, EyeOff } from 'lucide-react';
 
 interface Section {
   id: string;
@@ -71,9 +71,9 @@ const HomepageSectionsManager = () => {
                   onClick={() => toggleVisibility(section.id)}
                 >
                   {section.visible ? (
-                    <eye className="h-4 w-4" />
+                    <Eye className="h-4 w-4" />
                   ) : (
-                    <eyeOff className="h-4 w-4" />
+                    <EyeOff className="h-4 w-4" />
                   )}
                 </Button>
                 <Button
@@ -82,7 +82,7 @@ const HomepageSectionsManager = () => {
                   onClick={() => moveSection(section.id, 'up')}
                   disabled={section.order === 0}
                 >
-                  <moveVertical className="h-4 w-4" />
+                  <MoveVertical className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="outline"
@@ -90,7 +90,7 @@ const HomepageSectionsManager = () => {
                   onClick={() => moveSection(section.id, 'down')}
                   disabled={section.order === sections.length - 1}
                 >
-                  <moveHorizontal className="h-4 w-4" />
+                  <MoveHorizontal className="h-4 w-4" />
                 </Button>
               </div>
             </div>
