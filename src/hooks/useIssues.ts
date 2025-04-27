@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Issue } from '@/types/issue';
@@ -28,9 +29,9 @@ export const useIssues = () => {
     },
     // Ensure we don't get stale data
     staleTime: 0,
-    // Disabled when user is null, refetch when user becomes available
+    // Always enabled, we'll refetch when user becomes available
     enabled: true,
-    // Keep previous data while refetching to prevent UI flicker
-    keepPreviousData: true,
+    // Use the correct property name for TanStack Query v5
+    placeholderData: previousData => previousData,
   });
 };
