@@ -22,7 +22,10 @@ const Dashboard = () => {
         .select('*')
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching issues:", error);
+        return [];
+      }
       return data as Issue[];
     }
   });
@@ -30,7 +33,7 @@ const Dashboard = () => {
   // Get featured issue or fall back to most recent
   const featuredIssue = issues?.find(issue => issue.featured) || issues?.[0];
   // Get recent issues excluding the featured one
-  const recentIssues = issues?.filter(issue => !issue.featured).slice(0, 5) || [];
+  const recentIssues = issues?.filter(issue => issue !== featuredIssue).slice(0, 5) || [];
   // Mock recommended issues (random selection)
   const recommendedIssues = issues 
     ? [...issues].sort(() => Math.random() - 0.5).slice(0, 5) 
@@ -40,6 +43,8 @@ const Dashboard = () => {
     ? [...issues].sort(() => Math.random() - 0.5).slice(0, 5) 
     : [];
 
+  console.log("Current user role:", user?.role);
+  
   // Transform Issue to article format
   const transformIssueToArticle = (issue: Issue) => ({
     id: issue.id,
@@ -52,7 +57,7 @@ const Dashboard = () => {
 
   return (
     <div className={`pt-4 pb-16 space-y-8 transition-all duration-300 ${isCollapsed ? 'max-w-full' : 'max-w-[95%] mx-auto'}`}>
-      {user?.role === 'admin' && (
+      {user && (user.role === 'admin' || user.role === 'editor') && (
         <HomepageSectionsManager />
       )}
       
