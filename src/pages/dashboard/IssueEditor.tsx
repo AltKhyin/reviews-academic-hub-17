@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -80,7 +79,6 @@ const IssueEditor = () => {
     try {
       setIsSubmitting(true);
       
-      // Extract tags from the format [tag:name][tag:name2]
       const tagMatches = values.tags ? [...values.tags.matchAll(/\[tag:([^\]]+)\]/g)] : [];
       const extractedTags = tagMatches.map(match => match[1]);
       
@@ -153,6 +151,42 @@ const IssueEditor = () => {
     await form.handleSubmit(onSubmit)();
   };
 
+  const toggleFeatured = async () => {
+    if (!id) return;
+
+    try {
+      setIsSubmitting(true);
+      
+      const { error } = await supabase
+        .from('issues')
+        .update({
+          featured: !form.getValues('featured'),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      form.setValue('featured', !form.getValues('featured'));
+      
+      toast({
+        title: form.getValues('featured') ? "Edição destacada!" : "Edição removida dos destaques",
+        description: form.getValues('featured') 
+          ? "Esta edição será exibida em destaque na página inicial."
+          : "Esta edição não será mais exibida em destaque.",
+      });
+    } catch (error: any) {
+      console.error('Error toggling featured status:', error);
+      toast({
+        title: "Erro ao alterar destaque",
+        description: error.message || "Ocorreu um erro ao alterar o destaque da edição.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   if (isLoading) {
     return <div className="p-8 text-center">Carregando...</div>;
   }
@@ -164,7 +198,9 @@ const IssueEditor = () => {
         <IssueActionButtons
           onDelete={handleDelete}
           onTogglePublish={togglePublish}
+          onToggleFeatured={toggleFeatured}
           isPublished={form.watch('published')}
+          isFeatured={form.watch('featured')}
           isDisabled={isSubmitting}
         />
       </div>

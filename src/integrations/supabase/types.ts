@@ -194,6 +194,7 @@ export type Database = {
           cover_image_url: string | null
           created_at: string
           description: string | null
+          featured: boolean | null
           id: string
           pdf_url: string
           published: boolean
@@ -207,6 +208,7 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string
           description?: string | null
+          featured?: boolean | null
           id?: string
           pdf_url: string
           published?: boolean
@@ -220,6 +222,7 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string
           description?: string | null
+          featured?: boolean | null
           id?: string
           pdf_url?: string
           published?: boolean
@@ -401,7 +404,7 @@ export type Database = {
     }
     Functions: {
       is_admin_user: {
-        Args: { uid: string }
+        Args: Record<PropertyKey, never> | { uid: string }
         Returns: boolean
       }
     }
