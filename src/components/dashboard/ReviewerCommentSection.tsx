@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { useReviewerComments, ReviewerComment } from '@/hooks/useReviewerComments';
+import { useReviewerComments } from '@/hooks/useReviewerComments';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,8 +8,9 @@ import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { CheckCircle2, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import type { ReviewerComment as ReviewerCommentType } from '@/hooks/useReviewerComments';
 
-const ReviewerComment = ({ comment }: { comment: ReviewerComment }) => {
+const ReviewerCommentItem = ({ comment }: { comment: ReviewerCommentType }) => {
   const { profile } = useAuth();
   const isEditorOrAdmin = profile?.role === 'admin' || profile?.role === 'editor';
   const { deleteComment } = useReviewerComments();
@@ -18,7 +18,7 @@ const ReviewerComment = ({ comment }: { comment: ReviewerComment }) => {
   return (
     <div className="flex space-x-4">
       <Avatar className="h-12 w-12 border-2 border-primary/20">
-        <AvatarImage src={comment.reviewer_avatar} alt={comment.reviewer_name} />
+        <AvatarImage src="/lovable-uploads/849d1c93-706d-4eb1-87e6-e14d6f4b13a5.png" alt={comment.reviewer_name} />
         <AvatarFallback>{comment.reviewer_name.charAt(0)}</AvatarFallback>
       </Avatar>
       
@@ -80,7 +80,7 @@ export const ReviewerCommentSection = () => {
           {hasComments && (
             <div className="space-y-6">
               {comments.map((comment) => (
-                <ReviewerComment key={comment.id} comment={comment} />
+                <ReviewerCommentItem key={comment.id} comment={comment} />
               ))}
             </div>
           )}

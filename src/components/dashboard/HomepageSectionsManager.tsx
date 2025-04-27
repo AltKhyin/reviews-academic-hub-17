@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { MoveVertical, MoveHorizontal, Eye, EyeOff } from 'lucide-react';
+import { MoveVertical, Eye, EyeOff } from 'lucide-react';
 
 interface Section {
   id: string;
@@ -20,16 +20,6 @@ const HomepageSectionsManager: React.FC<HomepageSectionsManagerProps> = ({
   sections,
   updateSections
 }) => {
-  const toggleVisibility = (sectionId: string) => {
-    updateSections(
-      sections.map(section => 
-        section.id === sectionId 
-          ? { ...section, visible: !section.visible }
-          : section
-      )
-    );
-  };
-
   const moveSection = (sectionId: string, direction: 'up' | 'down') => {
     const currentIndex = sections.findIndex(s => s.id === sectionId);
     if (
@@ -41,14 +31,27 @@ const HomepageSectionsManager: React.FC<HomepageSectionsManagerProps> = ({
 
     const newSections = [...sections];
     const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    
+    // Swap positions
     [newSections[currentIndex], newSections[targetIndex]] = 
     [newSections[targetIndex], newSections[currentIndex]];
 
+    // Update order numbers
     updateSections(
       newSections.map((section, index) => ({
         ...section,
         order: index
       }))
+    );
+  };
+
+  const toggleVisibility = (sectionId: string) => {
+    updateSections(
+      sections.map(section => 
+        section.id === sectionId 
+          ? { ...section, visible: !section.visible }
+          : section
+      )
     );
   };
 
@@ -84,14 +87,6 @@ const HomepageSectionsManager: React.FC<HomepageSectionsManagerProps> = ({
                   disabled={section.order === 0}
                 >
                   <MoveVertical className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => moveSection(section.id, 'down')}
-                  disabled={section.order === sections.length - 1}
-                >
-                  <MoveHorizontal className="h-4 w-4" />
                 </Button>
               </div>
             </div>
