@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -10,6 +9,8 @@ import { Issue } from '@/types/issue';
 import { PDFViewer } from '@/components/pdf/PDFViewer';
 import { ArticleComments } from '@/components/article/ArticleComments';
 import { RecommendedArticles } from '@/components/article/RecommendedArticles';
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 
 const ArticleViewer: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -65,9 +66,8 @@ const ArticleViewer: React.FC = () => {
     );
   }
 
-  const toggleViewMode = () => {
-    const newMode = viewMode === 'review' ? 'dual' : 'review';
-    setSearchParams({ view: newMode });
+  const handleViewModeChange = (value: string) => {
+    if (value) setSearchParams({ view: value });
   };
 
   return (
@@ -75,19 +75,6 @@ const ArticleViewer: React.FC = () => {
       <div className="flex items-center justify-between">
         <Button variant="ghost" onClick={() => navigate(-1)}>
           <ArrowLeft className="mr-2 h-4 w-4" /> Back
-        </Button>
-        <Button onClick={toggleViewMode}>
-          {viewMode === 'review' ? (
-            <>
-              <Eye className="mr-2 h-4 w-4" />
-              Show Both
-            </>
-          ) : (
-            <>
-              <EyeOff className="mr-2 h-4 w-4" />
-              Review Only
-            </>
-          )}
         </Button>
       </div>
 
@@ -107,31 +94,58 @@ const ArticleViewer: React.FC = () => {
         </div>
       </Card>
 
-      <div className={`grid ${viewMode === 'dual' ? 'grid-cols-2 gap-6' : 'grid-cols-1'}`}>
-        <PDFViewer 
-          url={issue.pdf_url} 
-          title="Review"
-          fallbackContent={
-            <p>Review PDF not available</p>
-          }
-        />
-        {viewMode === 'dual' && (
-          <PDFViewer 
-            url={issue.article_pdf_url || ''} 
-            title="Original Article"
-            fallbackContent={
-              <p>Original article PDF not available</p>
-            }
-          />
-        )}
+      <div className="flex justify-end mb-4">
+        <ToggleGroup type="single" value={viewMode} onValueChange={handleViewModeChange}>
+          <ToggleGroupItem value="review" aria-label="Show review only">
+            Review Only
+          </ToggleGroupItem>
+          <ToggleGroupItem value="article" aria-label="Show article only">
+            Article Only
+          </ToggleGroupItem>
+          <ToggleGroupItem value="dual" aria-label="Show both">
+            Side by Side
+          </ToggleGroupItem>
+        </ToggleGroup>
       </div>
 
-      <RecommendedArticles currentArticleId={issue.id} />
+      {viewMode === 'dual' ? (
+        <ResizablePanelGroup direction="horizontal" className="min-h-[800px]">
+          <ResizablePanel defaultSize={50}>
+            <PDFViewer 
+              url={issue.pdf_url} 
+              title="Review"
+              fallbackContent={
+                <p>Review PDF not available</p>
+              }
+            />
+          </ResizablePanel>
+          <ResizableHandle withHandle />
+          <ResizablePanel defaultSize={50}>
+            <PDFViewer 
+              url={issue.article_pdf_url || ''} 
+              title="Original Article"
+              fallbackContent={
+                <p>Original article PDF not available</p>
+              }
+            />
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      ) : (
+        <div className="min-h-[800px]">
+          <PDFViewer 
+            url={viewMode === 'review' ? issue.pdf_url : issue.article_pdf_url || ''} 
+            title={viewMode === 'review' ? "Review" : "Original Article"}
+            fallbackContent={
+              <p>{viewMode === 'review' ? "Review" : "Original article"} PDF not available</p>
+            }
+          />
+        </div>
+      )}
 
+      <RecommendedArticles currentArticleId={issue.id} />
       <ArticleComments articleId={issue.id} />
     </div>
   );
 };
 
 export default ArticleViewer;
-

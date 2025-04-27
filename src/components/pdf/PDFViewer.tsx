@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { Card } from '@/components/ui/card';
 
 interface PDFViewerProps {
   url?: string;
@@ -14,11 +13,11 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   fallbackContent
 }) => {
   return (
-    <div className="bg-[#1a1a1a] rounded-lg p-6 shadow-lg card-elevation">
+    <div className="bg-[#1a1a1a] rounded-lg p-6 shadow-lg card-elevation h-full">
       <div className="mb-4">
         <h2 className="font-serif text-xl font-medium">{title}</h2>
       </div>
-      <div className="w-full h-[60vh] bg-[#121212] rounded-md overflow-hidden">
+      <div className="w-full h-[calc(100%-3rem)] min-h-[800px] bg-[#121212] rounded-md overflow-hidden">
         {url && url !== 'placeholder.pdf' ? (
           <iframe
             src={url}
