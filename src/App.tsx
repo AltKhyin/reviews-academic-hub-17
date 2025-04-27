@@ -8,12 +8,12 @@ import { AuthProvider } from "./contexts/AuthContext";
 
 import DashboardLayout from "./layouts/DashboardLayout";
 import AuthPage from "./pages/auth/AuthPage";
-
 import Dashboard from "./pages/dashboard/Dashboard";
 import ArticleViewer from "./pages/dashboard/ArticleViewer";
 import Profile from "./pages/dashboard/Profile";
 import Settings from "./pages/dashboard/Settings";
 import Edit from "./pages/dashboard/Edit";
+import EditApp from "./pages/dashboard/EditApp";
 import IssueEditor from "./pages/dashboard/IssueEditor";
 import NotFound from "./pages/NotFound";
 import AdminPanel from "./pages/dashboard/AdminPanel";
@@ -53,6 +53,7 @@ const App = () => {
                 <Route path="profile" element={<Profile />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="edit" element={<Edit />} />
+                <Route path="edit-app" element={<EditApp />} />
                 <Route path="admin" element={<AdminPanel />} />
                 <Route path="edit/issue/:id" element={<IssueEditor />} />
                 <Route path="edit/issue/new" element={<Edit />} />

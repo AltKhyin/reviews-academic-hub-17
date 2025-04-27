@@ -317,6 +317,33 @@ export type Database = {
         }
         Relationships: []
       }
+      reviewer_comments: {
+        Row: {
+          comment: string
+          created_at: string
+          id: string
+          reviewer_avatar: string | null
+          reviewer_id: string
+          reviewer_name: string
+        }
+        Insert: {
+          comment: string
+          created_at?: string
+          id?: string
+          reviewer_avatar?: string | null
+          reviewer_id: string
+          reviewer_name: string
+        }
+        Update: {
+          comment?: string
+          created_at?: string
+          id?: string
+          reviewer_avatar?: string | null
+          reviewer_id?: string
+          reviewer_name?: string
+        }
+        Relationships: []
+      }
       tags: {
         Row: {
           created_at: string

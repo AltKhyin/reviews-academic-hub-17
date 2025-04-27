@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, BookOpen, User, Settings, LogOut, ChevronLeft, ChevronRight, FileEdit, ShieldAlert } from 'lucide-react';
@@ -36,8 +37,8 @@ const Sidebar = () => {
     { icon: Home, label: 'Homepage', path: '/homepage' },
     { icon: BookOpen, label: 'Artigos', path: '/articles' },
     { icon: User, label: 'Perfil', path: '/profile' },
-    ...(isEditor || isAdmin ? [{ icon: FileEdit, label: 'Editor', path: '/edit' }] : []),
-    ...(isEditor || isAdmin ? [{ icon: ShieldAlert, label: 'Admin', path: '/admin' }] : []),
+    ...(isEditor || isAdmin ? [{ icon: FileEdit, label: 'Editor', path: '/edit-app' }] : []),
+    ...(isAdmin ? [{ icon: ShieldAlert, label: 'Admin', path: '/admin' }] : []),
     { icon: Settings, label: 'Configurações', path: '/settings' },
   ];
 
