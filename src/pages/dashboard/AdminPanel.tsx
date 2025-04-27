@@ -11,6 +11,10 @@ const AdminPanel = () => {
   const { profile } = useAuth();
   const isEditorOrAdmin = profile?.role === 'admin' || profile?.role === 'editor';
 
+  if (!profile) {
+    return <div>Loading...</div>;
+  }
+
   if (!isEditorOrAdmin) {
     return <Navigate to="/homepage" replace />;
   }

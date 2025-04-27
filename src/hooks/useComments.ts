@@ -10,6 +10,20 @@ export const useComments = (articleId: string) => {
   const { data: comments = [], isLoading } = useQuery({
     queryKey: ['comments', articleId],
     queryFn: async () => {
+      // First, verify if the article exists
+      const { data: articleExists, error: articleError } = await supabase
+        .from('articles')
+        .select('id')
+        .eq('id', articleId)
+        .maybeSingle();
+      
+      if (articleError) throw articleError;
+      
+      if (!articleExists) {
+        console.error(`Article with ID ${articleId} not found`);
+        return [];
+      }
+      
       const { data, error } = await supabase
         .from('comments')
         .select(`
@@ -28,7 +42,17 @@ export const useComments = (articleId: string) => {
     mutationFn: async (content: string) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
-
+      
+      // Verify article exists before inserting
+      const { data: articleExists, error: articleError } = await supabase
+        .from('articles')
+        .select('id')
+        .eq('id', articleId)
+        .maybeSingle();
+        
+      if (articleError) throw articleError;
+      if (!articleExists) throw new Error(`Article with ID ${articleId} not found`);
+      
       const { error } = await supabase
         .from('comments')
         .insert({

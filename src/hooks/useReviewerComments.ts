@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -18,7 +19,7 @@ const mockComments: ReviewerComment[] = [
     id: '1',
     reviewer_id: '123',
     reviewer_name: 'Igor Eckert',
-    reviewer_avatar: '/lovable-uploads/849d1c93-706d-4eb1-87e6-e14d6f4b13a5.png',
+    reviewer_avatar: '/lovable-uploads/956f3a16-f61a-4bd3-a2cd-02c95a0dd469.png',
     comment: 'Esta edição traz avanços significativos no entendimento do tratamento da hipertensão em pacientes geriátricos.',
     created_at: new Date(Date.now() - 86400000 * 2).toISOString() // 2 days ago
   }

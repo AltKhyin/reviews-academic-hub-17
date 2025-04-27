@@ -18,33 +18,36 @@ interface Comment {
 export const CommentSection = ({ articleId }: { articleId: string }) => {
   const [newComment, setNewComment] = React.useState('');
   const { toast } = useToast();
-  const { addComment } = useComments(articleId);
+  const { addComment, comments, isLoading } = useComments(articleId);
   
-  const { data: comments, isLoading } = useQuery({
-    queryKey: ['comments', articleId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('comments')
-        .select('*, profiles(full_name, avatar_url)')
-        .eq('article_id', articleId)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data;
-    }
-  });
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.trim()) return;
     
     try {
+      // First verify the article exists
+      const { data: articleExists, error: articleError } = await supabase
+        .from('articles')
+        .select('id')
+        .eq('id', articleId)
+        .maybeSingle();
+        
+      if (articleError) {
+        throw articleError;
+      }
+      
+      if (!articleExists) {
+        toast({
+          variant: "destructive",
+          description: `Artigo não encontrado. ID: ${articleId}`,
+        });
+        return;
+      }
+      
       await addComment(newComment);
       setNewComment('');
-      toast({
-        description: "Comentário adicionado com sucesso",
-      });
     } catch (error) {
+      console.error('Error adding comment:', error);
       toast({
         variant: "destructive",
         description: "Erro ao adicionar comentário",

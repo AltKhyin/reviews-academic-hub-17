@@ -18,8 +18,8 @@ const ReviewerCommentItem = ({ comment }: { comment: ReviewerCommentType }) => {
   
   return (
     <div className="flex space-x-6">
-      <Avatar className="h-36 w-36 border-2 border-primary/20">
-        <AvatarImage src="/lovable-uploads/849d1c93-706d-4eb1-87e6-e14d6f4b13a5.png" alt={comment.reviewer_name} />
+      <Avatar className="h-24 w-24 border-2 border-primary/20">
+        <AvatarImage src={comment.reviewer_avatar} alt={comment.reviewer_name} />
         <AvatarFallback>{comment.reviewer_name.charAt(0)}</AvatarFallback>
       </Avatar>
       
