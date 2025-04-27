@@ -10,6 +10,7 @@ export interface Issue {
   published_at?: string | null;
   created_at: string;
   updated_at: string;
+  featured: boolean | null;
 }
 
 export type FormIssueValues = {

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -26,7 +27,8 @@ const IssueEditor = () => {
       pdf_url: '',
       article_pdf_url: '',
       cover_image_url: '',
-      published: false
+      published: false,
+      featured: false
     }
   });
 
@@ -55,7 +57,8 @@ const IssueEditor = () => {
             pdf_url: typedIssue.pdf_url || '',
             article_pdf_url: typedIssue.article_pdf_url || '',
             cover_image_url: typedIssue.cover_image_url || '',
-            published: typedIssue.published || false
+            published: typedIssue.published || false,
+            featured: typedIssue.featured || false
           });
         }
       } catch (error) {
@@ -92,6 +95,7 @@ const IssueEditor = () => {
           article_pdf_url: values.article_pdf_url || '',
           cover_image_url: values.cover_image_url,
           published: values.published,
+          featured: values.featured,
           updated_at: new Date().toISOString(),
           ...(values.published && { published_at: new Date().toISOString() })
         })
@@ -157,21 +161,18 @@ const IssueEditor = () => {
     try {
       setIsSubmitting(true);
       
-      const { error } = await supabase
-        .from('issues')
-        .update({
-          featured: !form.getValues('featured'),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id);
+      // Get the current featured value
+      const currentFeatured = form.getValues('featured');
       
-      if (error) throw error;
+      // Update the form value
+      form.setValue('featured', !currentFeatured);
       
-      form.setValue('featured', !form.getValues('featured'));
+      // Submit the form
+      await form.handleSubmit(onSubmit)();
       
       toast({
-        title: form.getValues('featured') ? "Edição destacada!" : "Edição removida dos destaques",
-        description: form.getValues('featured') 
+        title: !currentFeatured ? "Edição destacada!" : "Edição removida dos destaques",
+        description: !currentFeatured 
           ? "Esta edição será exibida em destaque na página inicial."
           : "Esta edição não será mais exibida em destaque.",
       });
