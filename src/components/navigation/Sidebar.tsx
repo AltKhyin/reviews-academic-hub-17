@@ -37,7 +37,7 @@ const Sidebar = () => {
     { icon: Home, label: 'Homepage', path: '/homepage' },
     { icon: BookOpen, label: 'Artigos', path: '/articles' },
     { icon: User, label: 'Perfil', path: '/profile' },
-    ...(isEditor || isAdmin ? [{ icon: FileEdit, label: 'Editor', path: '/edit-app' }] : []),
+    ...(isEditor ? [{ icon: FileEdit, label: 'Editor', path: '/edit-app' }] : []),
     ...(isAdmin ? [{ icon: ShieldAlert, label: 'Admin', path: '/admin' }] : []),
     { icon: Settings, label: 'Configurações', path: '/settings' },
   ];

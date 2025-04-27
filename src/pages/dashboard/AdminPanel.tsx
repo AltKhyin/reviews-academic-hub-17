@@ -30,7 +30,7 @@ const AdminPanel = () => {
   };
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <div className="flex items-center justify-center h-screen">Carregando...</div>;
   }
 
   if (!profile) {
