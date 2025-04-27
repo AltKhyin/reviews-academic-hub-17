@@ -494,6 +494,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      increment_votes: {
+        Args: { suggestion_id: string }
+        Returns: undefined
+      }
       is_admin_user: {
         Args: Record<PropertyKey, never> | { uid: string }
         Returns: boolean

@@ -6,6 +6,7 @@ import { useContentSuggestions } from '@/hooks/useContentSuggestions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 import { ArrowUp } from 'lucide-react';
 import { differenceInDays, differenceInHours, differenceInMinutes } from 'date-fns';
 
@@ -19,12 +20,21 @@ export const UpcomingReleaseSection = () => {
     if (!release) return null;
     const now = new Date();
     const releaseDate = new Date(release.release_date);
+    const totalTime = releaseDate.getTime() - now.getTime();
+    const totalDuration = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+    const progressPercentage = Math.max(0, Math.min(100, (1 - totalTime / totalDuration) * 100));
     
     const days = differenceInDays(releaseDate, now);
     const hours = differenceInHours(releaseDate, now) % 24;
     const minutes = differenceInMinutes(releaseDate, now) % 60;
     
-    return { days, hours, minutes };
+    return { 
+      days, 
+      hours, 
+      minutes, 
+      progressPercentage,
+      timeUnit: days > 0 ? 'Dias' : (hours > 0 ? 'Horas' : 'Minutos')
+    };
   };
 
   const timeRemaining = getTimeRemaining();
@@ -47,18 +57,18 @@ export const UpcomingReleaseSection = () => {
       <h2 className="text-2xl font-serif mb-6">Próxima Edição</h2>
       
       <Card className="p-6 space-y-6">
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <div className="bg-secondary/10 rounded-lg p-4">
-            <span className="text-3xl font-bold">{timeRemaining?.days}</span>
-            <p className="text-sm text-muted-foreground">Dias</p>
-          </div>
-          <div className="bg-secondary/10 rounded-lg p-4">
-            <span className="text-3xl font-bold">{timeRemaining?.hours}</span>
-            <p className="text-sm text-muted-foreground">Horas</p>
-          </div>
-          <div className="bg-secondary/10 rounded-lg p-4">
-            <span className="text-3xl font-bold">{timeRemaining?.minutes}</span>
-            <p className="text-sm text-muted-foreground">Minutos</p>
+        <div className="space-y-4">
+          <Progress 
+            value={timeRemaining?.progressPercentage} 
+            className="w-full h-2" 
+          />
+          <div className="flex justify-between items-center">
+            <span className="text-3xl font-bold">
+              {timeRemaining?.[timeRemaining?.timeUnit.toLowerCase() as keyof typeof timeRemaining]}
+            </span>
+            <span className="text-sm text-muted-foreground">
+              {timeRemaining?.timeUnit}
+            </span>
           </div>
         </div>
 
@@ -78,10 +88,18 @@ export const UpcomingReleaseSection = () => {
             </form>
           )}
 
-          <div className="space-y-2">
+          <div className="space-y-2 max-h-48 overflow-y-auto">
             {suggestions.map((suggestion) => (
-              <div key={suggestion.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/5">
-                <span>{suggestion.title}</span>
+              <div 
+                key={suggestion.id} 
+                className="flex items-center justify-between p-3 rounded-lg bg-secondary/5 hover:bg-secondary/10 transition-colors"
+              >
+                <div className="flex-1">
+                  <span className="font-medium">{suggestion.title}</span>
+                  {suggestion.description && (
+                    <p className="text-sm text-muted-foreground">{suggestion.description}</p>
+                  )}
+                </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground">
                     {suggestion.votes} votos
