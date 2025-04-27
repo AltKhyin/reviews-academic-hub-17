@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Issue } from '@/types/issue';
@@ -8,7 +7,7 @@ export const useIssues = () => {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ['issues', user?.role],
+    queryKey: ['issues', user?.id],
     queryFn: async () => {
       try {
         const { data, error } = await supabase
@@ -24,14 +23,14 @@ export const useIssues = () => {
         return data as Issue[];
       } catch (error: any) {
         console.error("Error in useIssues hook:", error);
-        // Return empty array instead of throwing to prevent UI breakage
         return [];
       }
     },
-    // Add retry configuration and staleTime
-    retry: 1,
-    staleTime: 30000,
-    // Make it safer by adding initialData
-    initialData: [],
+    // Ensure we don't get stale data
+    staleTime: 0,
+    // Disabled when user is null, refetch when user becomes available
+    enabled: true,
+    // Keep previous data while refetching to prevent UI flicker
+    keepPreviousData: true,
   });
 };
