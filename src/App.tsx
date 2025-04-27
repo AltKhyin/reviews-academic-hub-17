@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -24,8 +23,8 @@ const queryClient = new QueryClient({
       retry: 2,
       refetchOnWindowFocus: false,
       staleTime: 30000,
-      onError: (error) => {
-        console.error("Query error:", error);
+      meta: {
+        errorMessage: "An error occurred while fetching data"
       }
     },
   },

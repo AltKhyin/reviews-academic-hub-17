@@ -1,20 +1,20 @@
-
 import React, { useEffect, useState } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import Sidebar from '../components/navigation/Sidebar';
 import { supabase } from '@/integrations/supabase/client';
 import { SidebarProvider, useSidebar } from '@/components/ui/sidebar';
 import { useAuth } from '@/contexts/AuthContext';
 
-// Content wrapper component that adjusts based on sidebar state
 const ContentWrapper = ({ children }: { children: React.ReactNode }) => {
   const { state } = useSidebar();
   const isCollapsed = state === 'collapsed';
+  const location = useLocation();
+  const isDualView = location.pathname.includes('/article/') && new URLSearchParams(location.search).get('view') === 'dual';
   
   return (
     <div className={`flex-1 overflow-auto transition-all duration-300 ${isCollapsed ? 'ml-[60px]' : 'ml-[240px]'}`}>
-      <div className="mx-auto px-4 md:px-6 py-4 h-full flex justify-center">
-        <div className="w-full max-w-6xl">
+      <div className={`mx-auto px-4 md:px-6 py-4 h-full flex justify-center ${isDualView ? 'max-w-[95%]' : 'max-w-6xl'}`}>
+        <div className="w-full">
           {children}
         </div>
       </div>
