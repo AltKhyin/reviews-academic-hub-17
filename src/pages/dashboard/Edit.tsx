@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -153,13 +152,11 @@ const Edit = () => {
     }
   };
 
-  // Handle cancel button
   const handleCancel = () => {
     form.reset();
     setIsCreating(false);
   };
 
-  // Helper function to format tags for display
   const formatTags = (specialtyString: string) => {
     if (!specialtyString) return '';
     return specialtyString.split(', ')
@@ -171,7 +168,7 @@ const Edit = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold tracking-tight">Painel do Editor</h1>
-        {!isCreating && (
+        {!isCreating && isEditorOrAdmin && (
           <Button onClick={() => setIsCreating(true)}>
             <PlusCircle className="mr-2 h-4 w-4" /> Nova Edição
           </Button>
@@ -196,7 +193,7 @@ const Edit = () => {
                 <CardContent>
                   <IssueForm 
                     form={form}
-                    onSubmit={onSubmit}
+                    onSubmit={form.handleSubmit((values) => onSubmit(values))}
                     onCancel={handleCancel}
                     isSubmitting={isSubmitting}
                   />
@@ -249,7 +246,7 @@ const Edit = () => {
               <CardContent>
                 <IssueForm 
                   form={form}
-                  onSubmit={onSubmit}
+                  onSubmit={form.handleSubmit((values) => onSubmit(values))}
                   onCancel={handleCancel}
                   isSubmitting={isSubmitting}
                 />

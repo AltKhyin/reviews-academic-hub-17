@@ -17,8 +17,8 @@ const ReviewerCommentItem = ({ comment }: { comment: ReviewerCommentType }) => {
   const { deleteComment } = useReviewerComments();
   
   return (
-    <div className="flex space-x-4">
-      <Avatar className="h-24 w-24 border-2 border-primary/20">
+    <div className="flex space-x-6">
+      <Avatar className="h-40 w-40 border-2 border-primary/20">
         <AvatarImage src="/lovable-uploads/849d1c93-706d-4eb1-87e6-e14d6f4b13a5.png" alt={comment.reviewer_name} />
         <AvatarFallback>{comment.reviewer_name.charAt(0)}</AvatarFallback>
       </Avatar>
@@ -67,10 +67,6 @@ export const ReviewerCommentSection = () => {
       onSuccess: () => setNewComment('')
     });
   };
-
-  if (!hasComments && !isEditorOrAdmin) {
-    return null;
-  }
 
   return (
     <section className="mb-12">
