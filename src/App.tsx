@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
+import { AuthProvider } from "./contexts/AuthContext";
 
 import DashboardLayout from "./layouts/DashboardLayout";
 import AuthPage from "./pages/auth/AuthPage";
@@ -27,27 +28,29 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/auth" element={<AuthPage />} />
+        <AuthProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/auth" element={<AuthPage />} />
 
-            <Route path="/" element={<DashboardLayout />}>
-              <Route path="homepage" element={<Dashboard />} />
-              <Route path="article/:id" element={<ArticleViewer />} />
-              <Route path="articles" element={<Dashboard />} />
-              <Route path="profile" element={<Profile />} />
-              <Route path="settings" element={<Settings />} />
-              <Route path="edit" element={<Edit />} />
-              <Route path="edit/issue/:id" element={<IssueEditor />} />
-              <Route path="edit/issue/new" element={<Edit />} />
-              <Route index element={<Navigate to="/homepage" replace />} />
-            </Route>
+              <Route path="/" element={<DashboardLayout />}>
+                <Route path="homepage" element={<Dashboard />} />
+                <Route path="article/:id" element={<ArticleViewer />} />
+                <Route path="articles" element={<Dashboard />} />
+                <Route path="profile" element={<Profile />} />
+                <Route path="settings" element={<Settings />} />
+                <Route path="edit" element={<Edit />} />
+                <Route path="edit/issue/:id" element={<IssueEditor />} />
+                <Route path="edit/issue/new" element={<Edit />} />
+                <Route index element={<Navigate to="/homepage" replace />} />
+              </Route>
 
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );
