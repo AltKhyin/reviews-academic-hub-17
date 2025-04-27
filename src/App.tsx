@@ -16,6 +16,7 @@ import Settings from "./pages/dashboard/Settings";
 import Edit from "./pages/dashboard/Edit";
 import IssueEditor from "./pages/dashboard/IssueEditor";
 import NotFound from "./pages/NotFound";
+import AdminPanel from "./pages/dashboard/AdminPanel";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -52,6 +53,7 @@ const App = () => {
                 <Route path="profile" element={<Profile />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="edit" element={<Edit />} />
+                <Route path="admin" element={<AdminPanel />} />
                 <Route path="edit/issue/:id" element={<IssueEditor />} />
                 <Route path="edit/issue/new" element={<Edit />} />
                 <Route index element={<Navigate to="/homepage" replace />} />
