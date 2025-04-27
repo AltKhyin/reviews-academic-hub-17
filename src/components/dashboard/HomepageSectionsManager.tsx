@@ -1,0 +1,104 @@
+
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { moveVertical, moveHorizontal, eye, eyeOff } from 'lucide-react';
+
+interface Section {
+  id: string;
+  title: string;
+  visible: boolean;
+  order: number;
+}
+
+const HomepageSectionsManager = () => {
+  const [sections, setSections] = React.useState<Section[]>([
+    { id: 'featured', title: 'Destaque', visible: true, order: 0 },
+    { id: 'recent', title: 'Edições Recentes', visible: true, order: 1 },
+    { id: 'recommended', title: 'Recomendados para você', visible: true, order: 2 },
+    { id: 'trending', title: 'Mais acessados', visible: true, order: 3 },
+  ]);
+
+  const toggleVisibility = (sectionId: string) => {
+    setSections(prev => 
+      prev.map(section => 
+        section.id === sectionId 
+          ? { ...section, visible: !section.visible }
+          : section
+      )
+    );
+  };
+
+  const moveSection = (sectionId: string, direction: 'up' | 'down') => {
+    setSections(prev => {
+      const currentIndex = prev.findIndex(s => s.id === sectionId);
+      if (
+        (direction === 'up' && currentIndex === 0) || 
+        (direction === 'down' && currentIndex === prev.length - 1)
+      ) {
+        return prev;
+      }
+
+      const newSections = [...prev];
+      const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+      [newSections[currentIndex], newSections[targetIndex]] = 
+      [newSections[targetIndex], newSections[currentIndex]];
+
+      return newSections.map((section, index) => ({
+        ...section,
+        order: index
+      }));
+    });
+  };
+
+  return (
+    <Card className="border-white/10 bg-white/5">
+      <CardHeader>
+        <CardTitle>Gerenciar Seções da Página Inicial</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {sections.map((section) => (
+            <div 
+              key={section.id}
+              className="flex items-center justify-between p-4 bg-secondary/5 rounded-lg"
+            >
+              <span className="font-medium">{section.title}</span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => toggleVisibility(section.id)}
+                >
+                  {section.visible ? (
+                    <eye className="h-4 w-4" />
+                  ) : (
+                    <eyeOff className="h-4 w-4" />
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => moveSection(section.id, 'up')}
+                  disabled={section.order === 0}
+                >
+                  <moveVertical className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => moveSection(section.id, 'down')}
+                  disabled={section.order === sections.length - 1}
+                >
+                  <moveHorizontal className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default HomepageSectionsManager;

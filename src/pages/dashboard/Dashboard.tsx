@@ -6,12 +6,14 @@ import { Issue } from '@/types/issue';
 import FeaturedArticle from '@/components/dashboard/FeaturedArticle';
 import ArticleRow from '@/components/dashboard/ArticleRow';
 import { useSidebar } from '@/components/ui/sidebar';
+import HomepageSectionsManager from '@/components/dashboard/HomepageSectionsManager';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Dashboard = () => {
   const { state } = useSidebar();
+  const { user } = useAuth();
   const isCollapsed = state === 'collapsed';
 
-  // Fetch issues from Supabase
   const { data: issues, isLoading } = useQuery({
     queryKey: ['issues'],
     queryFn: async () => {
@@ -29,8 +31,16 @@ const Dashboard = () => {
   const featuredIssue = issues?.find(issue => issue.featured) || issues?.[0];
   // Get recent issues excluding the featured one
   const recentIssues = issues?.filter(issue => !issue.featured).slice(0, 5) || [];
+  // Mock recommended issues (random selection)
+  const recommendedIssues = issues 
+    ? [...issues].sort(() => Math.random() - 0.5).slice(0, 5) 
+    : [];
+  // Mock most viewed issues (random selection)
+  const mostViewedIssues = issues 
+    ? [...issues].sort(() => Math.random() - 0.5).slice(0, 5) 
+    : [];
 
-  // Transform Issue to FeaturedArticle format
+  // Transform Issue to article format
   const transformIssueToArticle = (issue: Issue) => ({
     id: issue.id,
     title: issue.title,
@@ -42,6 +52,10 @@ const Dashboard = () => {
 
   return (
     <div className={`pt-4 pb-16 space-y-8 transition-all duration-300 ${isCollapsed ? 'max-w-full' : 'max-w-[95%] mx-auto'}`}>
+      {user?.role === 'admin' && (
+        <HomepageSectionsManager />
+      )}
+      
       {isLoading ? (
         <div>Carregando...</div>
       ) : featuredIssue ? (
@@ -52,6 +66,20 @@ const Dashboard = () => {
         <ArticleRow 
           title="Edições Recentes" 
           articles={recentIssues.map(transformIssueToArticle)} 
+        />
+      )}
+
+      {recommendedIssues.length > 0 && (
+        <ArticleRow 
+          title="Recomendados para você" 
+          articles={recommendedIssues.map(transformIssueToArticle)} 
+        />
+      )}
+
+      {mostViewedIssues.length > 0 && (
+        <ArticleRow 
+          title="Mais acessados" 
+          articles={mostViewedIssues.map(transformIssueToArticle)} 
         />
       )}
     </div>
