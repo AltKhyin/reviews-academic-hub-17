@@ -65,7 +65,12 @@ export const useContentSuggestions = (upcomingReleaseId: string) => {
 
       if (error) throw error;
 
-      await supabase.rpc('increment_votes', { suggestion_id: suggestionId });
+      // Use the correct RPC function name 'increment_votes'
+      const { error: rpcError } = await supabase.rpc('increment_votes', { 
+        suggestion_id: suggestionId 
+      });
+
+      if (rpcError) throw rpcError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contentSuggestions', upcomingReleaseId] });

@@ -6,9 +6,16 @@ import ArticleRow from './ArticleRow';
 interface ArticlesSectionProps {
   issues: Issue[];
   featuredIssueId?: string;
+  sectionTitle?: string;
+  sectionType?: string;
 }
 
-export const ArticlesSection = ({ issues, featuredIssueId }: ArticlesSectionProps) => {
+export const ArticlesSection = ({ 
+  issues, 
+  featuredIssueId,
+  sectionTitle,
+  sectionType = "recent"
+}: ArticlesSectionProps) => {
   const transformIssueToArticle = (issue: Issue) => ({
     id: issue.id,
     title: issue.title,
@@ -18,40 +25,38 @@ export const ArticlesSection = ({ issues, featuredIssueId }: ArticlesSectionProp
     date: new Date(issue.created_at).toLocaleDateString('pt-BR')
   });
 
-  const recentIssues = issues
-    .filter(issue => issue.id !== featuredIssueId)
-    .slice(0, 5);
+  // Filter issues based on section type
+  const getFilteredIssues = () => {
+    const filteredIssues = issues.filter(issue => issue.id !== featuredIssueId);
+    
+    switch(sectionType) {
+      case 'recent':
+        return filteredIssues.slice(0, 5);
+      case 'recommended':
+        // For demo purposes, just randomize and take 5
+        return [...filteredIssues]
+          .sort(() => Math.random() - 0.5)
+          .slice(0, 5);
+      case 'trending':
+        // Another randomization for demo
+        return [...filteredIssues]
+          .sort(() => Math.random() - 0.5)
+          .slice(0, 5);
+      default:
+        return filteredIssues.slice(0, 5);
+    }
+  };
 
-  const recommendedIssues = [...issues]
-    .sort(() => Math.random() - 0.5)
-    .slice(0, 5);
-
-  const mostViewedIssues = [...issues]
-    .sort(() => Math.random() - 0.5)
-    .slice(0, 5);
+  const displayIssues = getFilteredIssues();
+  
+  if (displayIssues.length === 0) {
+    return null;
+  }
 
   return (
-    <>
-      {recentIssues.length > 0 && (
-        <ArticleRow 
-          title="Edições Recentes" 
-          articles={recentIssues.map(transformIssueToArticle)} 
-        />
-      )}
-
-      {recommendedIssues.length > 0 && (
-        <ArticleRow 
-          title="Recomendados para você" 
-          articles={recommendedIssues.map(transformIssueToArticle)} 
-        />
-      )}
-
-      {mostViewedIssues.length > 0 && (
-        <ArticleRow 
-          title="Mais acessados" 
-          articles={mostViewedIssues.map(transformIssueToArticle)} 
-        />
-      )}
-    </>
+    <ArticleRow 
+      title={sectionTitle || "Artigos"} 
+      articles={displayIssues.map(transformIssueToArticle)} 
+    />
   );
 };

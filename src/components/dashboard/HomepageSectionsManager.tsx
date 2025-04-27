@@ -11,17 +11,18 @@ interface Section {
   order: number;
 }
 
-const HomepageSectionsManager = () => {
-  const [sections, setSections] = React.useState<Section[]>([
-    { id: 'featured', title: 'Destaque', visible: true, order: 0 },
-    { id: 'recent', title: 'Edições Recentes', visible: true, order: 1 },
-    { id: 'recommended', title: 'Recomendados para você', visible: true, order: 2 },
-    { id: 'trending', title: 'Mais acessados', visible: true, order: 3 },
-  ]);
+interface HomepageSectionsManagerProps {
+  sections: Section[];
+  updateSections: (sections: Section[]) => void;
+}
 
+const HomepageSectionsManager: React.FC<HomepageSectionsManagerProps> = ({
+  sections,
+  updateSections
+}) => {
   const toggleVisibility = (sectionId: string) => {
-    setSections(prev => 
-      prev.map(section => 
+    updateSections(
+      sections.map(section => 
         section.id === sectionId 
           ? { ...section, visible: !section.visible }
           : section
@@ -30,25 +31,25 @@ const HomepageSectionsManager = () => {
   };
 
   const moveSection = (sectionId: string, direction: 'up' | 'down') => {
-    setSections(prev => {
-      const currentIndex = prev.findIndex(s => s.id === sectionId);
-      if (
-        (direction === 'up' && currentIndex === 0) || 
-        (direction === 'down' && currentIndex === prev.length - 1)
-      ) {
-        return prev;
-      }
+    const currentIndex = sections.findIndex(s => s.id === sectionId);
+    if (
+      (direction === 'up' && currentIndex === 0) || 
+      (direction === 'down' && currentIndex === sections.length - 1)
+    ) {
+      return;
+    }
 
-      const newSections = [...prev];
-      const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-      [newSections[currentIndex], newSections[targetIndex]] = 
-      [newSections[targetIndex], newSections[currentIndex]];
+    const newSections = [...sections];
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    [newSections[currentIndex], newSections[targetIndex]] = 
+    [newSections[targetIndex], newSections[currentIndex]];
 
-      return newSections.map((section, index) => ({
+    updateSections(
+      newSections.map((section, index) => ({
         ...section,
         order: index
-      }));
-    });
+      }))
+    );
   };
 
   return (

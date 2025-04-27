@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { ArrowUp } from 'lucide-react';
 import { differenceInDays, differenceInHours, differenceInMinutes } from 'date-fns';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 export const UpcomingReleaseSection = () => {
   const { user } = useAuth();
@@ -60,10 +61,10 @@ export const UpcomingReleaseSection = () => {
         <div className="space-y-4">
           <Progress 
             value={timeRemaining?.progressPercentage} 
-            className="w-full h-2" 
+            className="w-full h-3" 
           />
           <div className="flex justify-between items-center">
-            <span className="text-3xl font-bold">
+            <span className="text-4xl font-bold">
               {timeRemaining?.[timeRemaining?.timeUnit.toLowerCase() as keyof typeof timeRemaining]}
             </span>
             <span className="text-sm text-muted-foreground">
@@ -88,17 +89,25 @@ export const UpcomingReleaseSection = () => {
             </form>
           )}
 
-          <div className="space-y-2 max-h-48 overflow-y-auto">
+          <div className="space-y-2 max-h-72 overflow-y-auto">
             {suggestions.map((suggestion) => (
               <div 
                 key={suggestion.id} 
                 className="flex items-center justify-between p-3 rounded-lg bg-secondary/5 hover:bg-secondary/10 transition-colors"
               >
-                <div className="flex-1">
-                  <span className="font-medium">{suggestion.title}</span>
-                  {suggestion.description && (
-                    <p className="text-sm text-muted-foreground">{suggestion.description}</p>
-                  )}
+                <div className="flex items-center gap-3 flex-1">
+                  <Avatar className="h-8 w-8 border border-white/10">
+                    <AvatarFallback>
+                      {suggestion.title.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  
+                  <div>
+                    <span className="font-medium">{suggestion.title}</span>
+                    {suggestion.description && (
+                      <p className="text-sm text-muted-foreground">{suggestion.description}</p>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground">
