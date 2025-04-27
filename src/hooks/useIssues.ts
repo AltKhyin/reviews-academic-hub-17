@@ -27,11 +27,9 @@ export const useIssues = () => {
         return [];
       }
     },
-    // Ensure we don't get stale data
+    // No stale time, always fetch fresh data
     staleTime: 0,
-    // Always enabled, we'll refetch when user becomes available
+    // Always enabled to ensure data is loaded
     enabled: true,
-    // Use the correct property name for TanStack Query v5
-    placeholderData: previousData => previousData,
   });
 };

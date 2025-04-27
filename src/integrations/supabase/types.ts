@@ -188,6 +188,44 @@ export type Database = {
           },
         ]
       }
+      content_suggestions: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          title: string
+          upcoming_release_id: string | null
+          user_id: string
+          votes: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          title: string
+          upcoming_release_id?: string | null
+          user_id: string
+          votes?: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          title?: string
+          upcoming_release_id?: string | null
+          user_id?: string
+          votes?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_suggestions_upcoming_release_id_fkey"
+            columns: ["upcoming_release_id"]
+            isOneToOne: false
+            referencedRelation: "upcoming_releases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       issues: {
         Row: {
           article_pdf_url: string | null
@@ -284,6 +322,30 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+        }
+        Relationships: []
+      }
+      upcoming_releases: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          release_date: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          release_date: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          release_date?: string
+          title?: string
         }
         Relationships: []
       }
@@ -394,6 +456,35 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_votes: {
+        Row: {
+          created_at: string
+          id: string
+          suggestion_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          suggestion_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          suggestion_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_votes_suggestion_id_fkey"
+            columns: ["suggestion_id"]
+            isOneToOne: false
+            referencedRelation: "content_suggestions"
             referencedColumns: ["id"]
           },
         ]
