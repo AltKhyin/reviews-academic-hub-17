@@ -12,6 +12,10 @@ import { toast } from '@/hooks/use-toast';
 import { Issue, FormIssueValues } from '@/types/issue';
 import { IssueForm } from './components/IssueForm';
 import { IssueCard } from './components/IssueCard';
+import HomepageSectionsManager from '@/components/dashboard/HomepageSectionsManager';
+import { ReviewerCommentSection } from '@/components/dashboard/ReviewerCommentSection';
+import { useAuth } from '@/contexts/AuthContext';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // Form schema for issue creation/editing
 const formSchema = z.object({
@@ -23,9 +27,41 @@ const formSchema = z.object({
   cover_image_url: z.string().optional()
 });
 
+type SectionType = 'featured' | 'reviewer' | 'upcoming' | 'recent' | 'recommended' | 'trending';
+
+interface SectionConfig {
+  id: SectionType;
+  title: string;
+  visible: boolean;
+  order: number;
+}
+
 const Edit = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { profile } = useAuth();
+  const isEditorOrAdmin = profile?.role === 'admin' || profile?.role === 'editor';
+  
+  // Default sections configuration
+  const defaultSections: SectionConfig[] = [
+    { id: 'reviewer', title: 'Nota do Revisor', visible: true, order: 0 },
+    { id: 'featured', title: 'Destaque', visible: true, order: 1 },
+    { id: 'recent', title: 'Edições Recentes', visible: true, order: 2 },
+    { id: 'upcoming', title: 'Próxima Edição', visible: true, order: 3 },
+    { id: 'recommended', title: 'Recomendados para você', visible: true, order: 4 },
+    { id: 'trending', title: 'Mais acessados', visible: true, order: 5 },
+  ];
+
+  const [sectionConfig, setSectionConfig] = useState<SectionConfig[]>(defaultSections);
+  
+  const updateSectionConfig = (newConfig: SectionConfig[]) => {
+    setSectionConfig(newConfig);
+    // In a real app, you would save this to the database or localStorage
+    toast({
+      title: "Configuração atualizada",
+      description: "A ordem das seções foi atualizada com sucesso."
+    });
+  };
   
   // Load issues from database
   const { data: issues, isLoading, refetch } = useQuery({
@@ -142,35 +178,99 @@ const Edit = () => {
         )}
       </div>
 
-      {isCreating ? (
-        <Card className="border-white/10 bg-white/5">
-          <CardHeader>
-            <CardTitle>Nova Edição</CardTitle>
-            <CardDescription>Crie uma nova edição para a revista</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <IssueForm 
-              form={form}
-              onSubmit={onSubmit}
-              onCancel={handleCancel}
-              isSubmitting={isSubmitting}
-            />
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {isLoading ? (
-            <p>Carregando edições...</p>
-          ) : issues && issues.length > 0 ? (
-            issues.map((issue) => (
-              <IssueCard 
-                key={issue.id}
-                issue={issue} 
-                formatTags={formatTags}
+      {isEditorOrAdmin && (
+        <Tabs defaultValue="issues" className="w-full">
+          <TabsList className="mb-4">
+            <TabsTrigger value="issues">Edições</TabsTrigger>
+            <TabsTrigger value="comments">Comentários do Revisor</TabsTrigger>
+            <TabsTrigger value="sections">Gerenciar Seções</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="issues">
+            {isCreating ? (
+              <Card className="border-white/10 bg-white/5">
+                <CardHeader>
+                  <CardTitle>Nova Edição</CardTitle>
+                  <CardDescription>Crie uma nova edição para a revista</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <IssueForm 
+                    form={form}
+                    onSubmit={onSubmit}
+                    onCancel={handleCancel}
+                    isSubmitting={isSubmitting}
+                  />
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {isLoading ? (
+                  <p>Carregando edições...</p>
+                ) : issues && issues.length > 0 ? (
+                  issues.map((issue) => (
+                    <IssueCard 
+                      key={issue.id}
+                      issue={issue} 
+                      formatTags={formatTags}
+                    />
+                  ))
+                ) : (
+                  <p>Nenhuma edição encontrada.</p>
+                )}
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="comments">
+            <div className="mb-8">
+              <ReviewerCommentSection />
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="sections">
+            <div className="mb-8">
+              <HomepageSectionsManager 
+                sections={sectionConfig}
+                updateSections={updateSectionConfig}
               />
-            ))
+            </div>
+          </TabsContent>
+        </Tabs>
+      )}
+      
+      {!isEditorOrAdmin && (
+        <div className="space-y-6">
+          {isCreating ? (
+            <Card className="border-white/10 bg-white/5">
+              <CardHeader>
+                <CardTitle>Nova Edição</CardTitle>
+                <CardDescription>Crie uma nova edição para a revista</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <IssueForm 
+                  form={form}
+                  onSubmit={onSubmit}
+                  onCancel={handleCancel}
+                  isSubmitting={isSubmitting}
+                />
+              </CardContent>
+            </Card>
           ) : (
-            <p>Nenhuma edição encontrada.</p>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {isLoading ? (
+                <p>Carregando edições...</p>
+              ) : issues && issues.length > 0 ? (
+                issues.map((issue) => (
+                  <IssueCard 
+                    key={issue.id}
+                    issue={issue} 
+                    formatTags={formatTags}
+                  />
+                ))
+              ) : (
+                <p>Nenhuma edição encontrada.</p>
+              )}
+            </div>
           )}
         </div>
       )}

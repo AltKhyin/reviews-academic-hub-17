@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useReviewerComments } from '@/hooks/useReviewerComments';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
@@ -8,9 +9,9 @@ import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { CheckCircle2, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import type { ReviewerComment } from '@/hooks/useReviewerComments';
+import type { ReviewerComment as ReviewerCommentType } from '@/hooks/useReviewerComments';
 
-const ReviewerCommentItem = ({ comment }: { comment: ReviewerComment }) => {
+const ReviewerCommentItem = ({ comment }: { comment: ReviewerCommentType }) => {
   const { profile } = useAuth();
   const isEditorOrAdmin = profile?.role === 'admin' || profile?.role === 'editor';
   const { deleteComment } = useReviewerComments();
