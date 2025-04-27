@@ -3,18 +3,21 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
-import { useComments } from '@/hooks/useComments';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 
 interface CommentAddFormProps {
   articleId: string;
+  onSubmit?: (comment: string) => void;
+  isSubmitting?: boolean;
 }
 
-export const CommentAddForm: React.FC<CommentAddFormProps> = ({ articleId }) => {
+export const CommentAddForm: React.FC<CommentAddFormProps> = ({ 
+  articleId,
+  onSubmit,
+  isSubmitting = false 
+}) => {
   const [comment, setComment] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { addComment } = useComments(articleId);
   const { user } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,8 +42,9 @@ export const CommentAddForm: React.FC<CommentAddFormProps> = ({ articleId }) => 
     }
     
     try {
-      setIsSubmitting(true);
-      await addComment(comment);
+      if (onSubmit) {
+        await onSubmit(comment);
+      }
       setComment('');
       toast({
         title: "Comment added",
@@ -53,8 +57,6 @@ export const CommentAddForm: React.FC<CommentAddFormProps> = ({ articleId }) => 
         description: "Failed to add comment. Please try again.",
         variant: "destructive"
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
