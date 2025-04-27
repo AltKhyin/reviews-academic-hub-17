@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -40,15 +40,13 @@ const ArticleViewer: React.FC = () => {
       return data as Issue;
     },
     retry: 1,
-    meta: {
-      onError: (err: Error) => {
-        console.error("Error in query:", err);
-        toast({
-          title: "Erro ao carregar edição",
-          description: "Não foi possível carregar os dados desta edição.",
-          variant: "destructive",
-        });
-      }
+    onError: (err) => {
+      console.error("Error in query:", err);
+      toast({
+        title: "Erro ao carregar edição",
+        description: "Não foi possível carregar os dados desta edição.",
+        variant: "destructive",
+      });
     }
   });
 
