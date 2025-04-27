@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, BookOpen, User, Settings, LogOut, ChevronLeft, ChevronRight, FileEdit, ShieldAlert } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -45,12 +44,10 @@ const Sidebar = () => {
   return (
     <SidebarComponent variant="sidebar" collapsible="icon">
       <div className="h-full flex flex-col">
-        {/* Logo section */}
         <div className={`p-4 flex ${isCollapsed ? 'justify-center' : 'justify-start'}`}>
           <Logo dark collapsed={isCollapsed} size={isCollapsed ? 'small' : 'medium'} />
         </div>
 
-        {/* Navigation */}
         <SidebarContent className="px-2">
           {navItems.map((item) => (
             <Link
@@ -68,7 +65,6 @@ const Sidebar = () => {
           ))}
         </SidebarContent>
 
-        {/* Footer section */}
         <SidebarFooter className="mt-auto border-t border-white/10 p-2">
           <button
             onClick={handleLogout}
