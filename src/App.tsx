@@ -18,14 +18,7 @@ import Edit from "./pages/dashboard/Edit";
 import IssueEditor from "./pages/dashboard/IssueEditor"; // We'll create this
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      staleTime: 30000,
-    },
-  },
-});
+const queryClient = new QueryClient();
 
 const App = () => {
   useEffect(() => {
