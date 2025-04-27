@@ -15,14 +15,18 @@ import ArticleViewer from "./pages/dashboard/ArticleViewer";
 import Profile from "./pages/dashboard/Profile";
 import Settings from "./pages/dashboard/Settings";
 import Edit from "./pages/dashboard/Edit";
-import IssueEditor from "./pages/dashboard/IssueEditor"; // We'll create this
+import IssueEditor from "./pages/dashboard/IssueEditor";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,
+      retry: 2,
+      refetchOnWindowFocus: false,
       staleTime: 30000,
+      onError: (error) => {
+        console.error("Query error:", error);
+      }
     },
   },
 });

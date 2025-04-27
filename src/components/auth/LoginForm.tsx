@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
+import { Loader2 } from 'lucide-react';
 
 interface LoginFormProps {
   setMode: (mode: 'login' | 'register' | 'forgot') => void;
@@ -23,17 +24,28 @@ const LoginForm = ({ setMode }: LoginFormProps) => {
     setLoading(true);
     
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log("Attempting to sign in with:", email);
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Login error:", error);
+        throw error;
+      }
+      
+      console.log("Login successful, session:", data.session);
+      toast({
+        title: "Success",
+        description: "You've been logged in successfully",
+      });
       
       navigate('/homepage');
     } catch (error: any) {
+      console.error("Full login error:", error);
       toast({
-        title: "Error",
+        title: "Login Failed",
         description: error.message || "An error occurred. Please try again.",
         variant: "destructive",
       });
@@ -95,7 +107,12 @@ const LoginForm = ({ setMode }: LoginFormProps) => {
         className="w-full bg-black hover:bg-gray-800 text-white"
         disabled={loading}
       >
-        {loading ? 'Please wait...' : 'Sign In'}
+        {loading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Please wait...
+          </>
+        ) : 'Sign In'}
       </Button>
     </form>
   );

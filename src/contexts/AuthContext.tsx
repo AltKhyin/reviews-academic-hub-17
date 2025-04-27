@@ -26,24 +26,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user || null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      } else {
-        setIsLoading(false);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+      console.log("Auth state change:", event, currentSession?.user?.email);
+      setSession(currentSession);
+      setUser(currentSession?.user || null);
+      
+      if (event === 'SIGNED_IN' && currentSession?.user) {
+        setTimeout(() => {
+          fetchProfile(currentSession.user.id);
+        }, 0);
+      } else if (event === 'SIGNED_OUT') {
+        setProfile(null);
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setSession(session);
-      setUser(session?.user || null);
-      
-      if (event === 'SIGNED_IN' && session?.user) {
-        await fetchProfile(session.user.id);
-      } else if (event === 'SIGNED_OUT') {
-        setProfile(null);
+    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      console.log("Initial session check:", currentSession?.user?.email || "No session");
+      setSession(currentSession);
+      setUser(currentSession?.user || null);
+      if (currentSession?.user) {
+        fetchProfile(currentSession.user.id);
+      } else {
+        setIsLoading(false);
       }
     });
 
@@ -54,6 +58,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchProfile = async (userId: string) => {
     try {
+      console.log("Fetching profile for user:", userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('id, full_name, avatar_url, role, bio, specialty, institution')
@@ -66,8 +71,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       if (data) {
+        console.log("Profile found:", data);
         setProfile(data as UserProfile);
       } else {
+        console.log("No profile found, creating default");
         const defaultProfileData = {
           id: userId,
           role: 'user',
@@ -81,8 +88,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           
         setProfile(defaultProfileData);
       }
-    } catch (error) {
-      console.error('Error fetching profile:', error);
+    } catch (error: any) {
+      console.error('Error in profile handling:', error);
       setProfile({
         id: userId,
         role: 'user',
@@ -91,6 +98,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const signIn = async (email: string, password: string) => {
+    try {
+      console.log("Signing in with:", email);
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      
+      if (error) throw error;
+      
+      console.log("Sign in successful:", data);
+      return data;
+    } catch (error: any) {
+      console.error("Sign in error:", error);
+      toast({
+        title: "Sign in failed",
+        description: error.message,
+        variant: "destructive"
+      });
+      throw error;
+    }
+  };
+
+  const signOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      console.log("Signed out successfully");
+    } catch (error: any) {
+      console.error("Sign out error:", error);
+      toast({
+        title: "Sign out failed",
+        description: error.message,
+        variant: "destructive"
+      });
     }
   };
 
@@ -117,34 +160,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         variant: "destructive"
       });
       throw error;
-    }
-  };
-
-  const signIn = async (email: string, password: string) => {
-    try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      
-      if (error) throw error;
-    } catch (error: any) {
-      toast({
-        title: "Sign in failed",
-        description: error.message,
-        variant: "destructive"
-      });
-      throw error;
-    }
-  };
-
-  const signOut = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-    } catch (error: any) {
-      toast({
-        title: "Sign out failed",
-        description: error.message,
-        variant: "destructive"
-      });
     }
   };
 
