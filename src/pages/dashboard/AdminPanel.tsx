@@ -10,8 +10,6 @@ import { toast } from '@/hooks/use-toast';
 
 const AdminPanel = () => {
   const { profile, isLoading } = useAuth();
-  const isAdmin = profile?.role === 'admin';
-  
   const [sections, setSections] = useState([
     { id: 'reviewer', title: 'Nota do Revisor', visible: true, order: 0 },
     { id: 'featured', title: 'Destaque', visible: true, order: 1 },
@@ -33,11 +31,13 @@ const AdminPanel = () => {
     return <div className="flex items-center justify-center h-screen">Carregando...</div>;
   }
 
+  // Redirect if not authenticated
   if (!profile) {
     return <Navigate to="/auth" replace />;
   }
 
-  if (!isAdmin) {
+  // Check if user is admin
+  if (profile.role !== 'admin') {
     return <Navigate to="/homepage" replace />;
   }
 
@@ -54,7 +54,7 @@ const AdminPanel = () => {
         <TabsContent value="sections">
           <Card className="border-white/10 bg-white/5">
             <HomepageSectionsManager 
-              sections={sections} 
+              sections={sections}
               updateSections={updateSections}
             />
           </Card>

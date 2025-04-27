@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ReviewerCommentSection } from '@/components/dashboard/ReviewerCommentSection';
 import HomepageSectionsManager from '@/components/dashboard/HomepageSectionsManager';
@@ -18,8 +18,6 @@ const EditApp = () => {
     { id: 'trending', title: 'Mais acessados', visible: true, order: 5 }
   ]);
 
-  const isEditorOrAdmin = profile?.role === 'admin' || profile?.role === 'editor';
-
   const updateSections = (updatedSections) => {
     setSections(updatedSections);
     toast({
@@ -32,10 +30,13 @@ const EditApp = () => {
     return <div className="flex items-center justify-center h-screen">Carregando...</div>;
   }
 
+  // Redirect if not authenticated
   if (!profile) {
     return <Navigate to="/auth" replace />;
   }
 
+  // Check if user is editor or admin
+  const isEditorOrAdmin = profile.role === 'editor' || profile.role === 'admin';
   if (!isEditorOrAdmin) {
     return <Navigate to="/homepage" replace />;
   }

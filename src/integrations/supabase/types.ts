@@ -531,6 +531,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_user_role: {
+        Args: { user_id: string }
+        Returns: string
+      }
       increment_votes: {
         Args: { suggestion_id: string }
         Returns: undefined
