@@ -15,10 +15,12 @@ const ArticleViewer: React.FC = () => {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'review' | 'original'>('review');
 
-  const { data: issue, isLoading } = useQuery({
+  const { data: issue, isLoading, error } = useQuery({
     queryKey: ['issue', id],
     queryFn: async () => {
       if (!id) throw new Error('No issue ID provided');
+      
+      console.log("Fetching issue with ID:", id);
 
       const { data, error } = await supabase
         .from('issues')
@@ -28,24 +30,33 @@ const ArticleViewer: React.FC = () => {
 
       if (error) {
         console.error('Error fetching issue:', error);
+        throw error;
+      }
+      
+      if (!data) {
+        throw new Error('Issue not found');
+      }
+
+      return data as Issue;
+    },
+    retry: 1,
+    meta: {
+      onError: (err: Error) => {
+        console.error("Error in query:", err);
         toast({
           title: "Erro ao carregar edição",
           description: "Não foi possível carregar os dados desta edição.",
           variant: "destructive",
         });
-        throw error;
       }
-
-      return data as Issue;
-    },
-    retry: false
+    }
   });
 
   if (isLoading) {
     return <div className="p-8 text-center">Carregando...</div>;
   }
 
-  if (!issue) {
+  if (error || !issue) {
     return (
       <div className="space-y-8">
         <Button variant="ghost" onClick={() => navigate(-1)}>
