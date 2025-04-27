@@ -10,7 +10,6 @@ import { Issue } from '@/types/issue';
 import { PDFViewer } from '@/components/pdf/PDFViewer';
 import { ArticleComments } from '@/components/article/ArticleComments';
 import { RecommendedArticles } from '@/components/article/RecommendedArticles';
-import { toast } from '@/hooks/use-toast';
 
 const ArticleViewer: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -108,8 +107,6 @@ const ArticleViewer: React.FC = () => {
         </div>
       </Card>
 
-      <RecommendedArticles currentArticleId={issue.id} />
-
       <div className={`grid ${viewMode === 'dual' ? 'grid-cols-2 gap-6' : 'grid-cols-1'}`}>
         <PDFViewer 
           url={issue.pdf_url} 
@@ -129,9 +126,12 @@ const ArticleViewer: React.FC = () => {
         )}
       </div>
 
+      <RecommendedArticles currentArticleId={issue.id} />
+
       <ArticleComments articleId={issue.id} />
     </div>
   );
 };
 
 export default ArticleViewer;
+
