@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Comment } from '@/types/issue';
+import { toast } from '@/hooks/use-toast';
 
 export const useComments = (articleId: string) => {
   const queryClient = useQueryClient();
@@ -19,26 +20,72 @@ export const useComments = (articleId: string) => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as unknown as Comment[];
+      return data as Comment[];
     }
   });
 
-  const addComment = async (content: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
+  const addComment = useMutation({
+    mutationFn: async (content: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
 
-    const { error } = await supabase
-      .from('comments')
-      .insert({
-        content,
-        article_id: articleId,
-        user_id: user.id
+      const { error } = await supabase
+        .from('comments')
+        .insert({
+          content,
+          article_id: articleId,
+          user_id: user.id
+        });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['comments', articleId] });
+      toast({
+        title: "Success",
+        description: "Your comment has been added.",
       });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
 
-    if (error) throw error;
-    
-    queryClient.invalidateQueries({ queryKey: ['comments', articleId] });
+  const deleteComment = useMutation({
+    mutationFn: async (commentId: string) => {
+      const { error } = await supabase
+        .from('comments')
+        .delete()
+        .eq('id', commentId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['comments', articleId] });
+      toast({
+        title: "Success",
+        description: "Comment deleted successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  return {
+    comments,
+    isLoading,
+    addComment: addComment.mutate,
+    deleteComment: deleteComment.mutate,
+    isAddingComment: addComment.isPending,
+    isDeletingComment: deleteComment.isPending
   };
-
-  return { comments, isLoading, addComment };
 };

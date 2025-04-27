@@ -2,11 +2,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Issue } from '@/types/issue';
-import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const useIssues = () => {
+  const { user } = useAuth();
+
   return useQuery({
-    queryKey: ['issues'],
+    queryKey: ['issues', user?.role],
     queryFn: async () => {
       try {
         const { data, error } = await supabase
@@ -22,11 +24,6 @@ export const useIssues = () => {
         return data as Issue[];
       } catch (error: any) {
         console.error("Error in useIssues hook:", error);
-        toast({
-          title: "Error loading issues",
-          description: error.message || "Could not load the issues list.",
-          variant: "destructive",
-        });
         // Return empty array instead of throwing to prevent UI breakage
         return [];
       }
