@@ -1,21 +1,43 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ReviewerCommentSection } from '@/components/dashboard/ReviewerCommentSection';
 import HomepageSectionsManager from '@/components/dashboard/HomepageSectionsManager';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
+import { toast } from '@/hooks/use-toast';
 
 const AdminPanel = () => {
-  const { profile } = useAuth();
-  const isEditorOrAdmin = profile?.role === 'admin' || profile?.role === 'editor';
+  const { profile, isLoading } = useAuth();
+  const isAdmin = profile?.role === 'admin';
+  
+  const [sections, setSections] = useState([
+    { id: 'reviewer', title: 'Nota do Revisor', visible: true, order: 0 },
+    { id: 'featured', title: 'Destaque', visible: true, order: 1 },
+    { id: 'recent', title: 'Edições Recentes', visible: true, order: 2 },
+    { id: 'upcoming', title: 'Próxima Edição', visible: true, order: 3 },
+    { id: 'recommended', title: 'Recomendados para você', visible: true, order: 4 },
+    { id: 'trending', title: 'Mais acessados', visible: true, order: 5 }
+  ]);
 
-  if (!profile) {
+  const updateSections = (updatedSections) => {
+    setSections(updatedSections);
+    toast({
+      title: "Seções atualizadas",
+      description: "As alterações foram salvas com sucesso",
+    });
+  };
+
+  if (isLoading) {
     return <div>Loading...</div>;
   }
 
-  if (!isEditorOrAdmin) {
+  if (!profile) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  if (!isAdmin) {
     return <Navigate to="/homepage" replace />;
   }
 
@@ -32,8 +54,8 @@ const AdminPanel = () => {
         <TabsContent value="sections">
           <Card className="border-white/10 bg-white/5">
             <HomepageSectionsManager 
-              sections={[]} 
-              updateSections={() => {}}
+              sections={sections} 
+              updateSections={updateSections}
             />
           </Card>
         </TabsContent>

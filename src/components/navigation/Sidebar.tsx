@@ -11,10 +11,10 @@ import { useAuth } from '@/contexts/AuthContext';
 const Sidebar = () => {
   const location = useLocation();
   const { state, toggleSidebar } = useSidebar();
-  const { profile } = useAuth();
+  const { profile, isLoading } = useAuth();
   const isCollapsed = state === 'collapsed';
   const isAdmin = profile?.role === 'admin';
-  const isEditor = profile?.role === 'editor';
+  const isEditor = profile?.role === 'editor' || isAdmin;
 
   const handleLogout = async () => {
     try {

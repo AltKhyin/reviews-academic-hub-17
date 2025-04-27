@@ -1,17 +1,40 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ReviewerCommentSection } from '@/components/dashboard/ReviewerCommentSection';
 import HomepageSectionsManager from '@/components/dashboard/HomepageSectionsManager';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 const EditApp = () => {
-  const { profile } = useAuth();
+  const { profile, isLoading } = useAuth();
+  const [sections, setSections] = useState([
+    { id: 'reviewer', title: 'Nota do Revisor', visible: true, order: 0 },
+    { id: 'featured', title: 'Destaque', visible: true, order: 1 },
+    { id: 'recent', title: 'Edições Recentes', visible: true, order: 2 },
+    { id: 'upcoming', title: 'Próxima Edição', visible: true, order: 3 },
+    { id: 'recommended', title: 'Recomendados para você', visible: true, order: 4 },
+    { id: 'trending', title: 'Mais acessados', visible: true, order: 5 }
+  ]);
+
   const isEditorOrAdmin = profile?.role === 'admin' || profile?.role === 'editor';
 
-  if (!profile) {
+  const updateSections = (updatedSections) => {
+    setSections(updatedSections);
+    toast({
+      title: "Seções atualizadas",
+      description: "As alterações foram salvas com sucesso",
+    });
+  };
+
+  if (isLoading) {
     return <div>Loading...</div>;
+  }
+
+  if (!profile) {
+    return <Navigate to="/auth" replace />;
   }
 
   if (!isEditorOrAdmin) {
@@ -30,15 +53,8 @@ const EditApp = () => {
         
         <TabsContent value="sections">
           <HomepageSectionsManager 
-            sections={[
-              { id: 'reviewer', title: 'Nota do Revisor', visible: true, order: 0 },
-              { id: 'featured', title: 'Destaque', visible: true, order: 1 },
-              { id: 'recent', title: 'Edições Recentes', visible: true, order: 2 },
-              { id: 'upcoming', title: 'Próxima Edição', visible: true, order: 3 },
-              { id: 'recommended', title: 'Recomendados para você', visible: true, order: 4 },
-              { id: 'trending', title: 'Mais acessados', visible: true, order: 5 }
-            ]}
-            updateSections={() => {}}
+            sections={sections}
+            updateSections={updateSections}
           />
         </TabsContent>
         

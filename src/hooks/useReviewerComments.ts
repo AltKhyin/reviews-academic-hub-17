@@ -13,29 +13,36 @@ export interface ReviewerComment {
   created_at: string;
 }
 
-// Mock data for reviewer comments
-const mockComments: ReviewerComment[] = [
-  {
-    id: '1',
-    reviewer_id: '123',
-    reviewer_name: 'Igor Eckert',
-    reviewer_avatar: '/lovable-uploads/0fcc2db7-d9e2-495a-b51e-7f8260ace1c2.png',
-    comment: 'Esta edição traz avanços significativos no entendimento do tratamento da hipertensão em pacientes geriátricos.',
-    created_at: new Date(Date.now() - 86400000 * 2).toISOString() // 2 days ago
-  }
-];
-
 export const useReviewerComments = () => {
   const queryClient = useQueryClient();
   const { user, profile } = useAuth();
   const isEditorOrAdmin = profile?.role === 'admin' || profile?.role === 'editor';
 
-  const { data: comments = mockComments, isLoading } = useQuery({
+  const { data: comments = [], isLoading } = useQuery({
     queryKey: ['reviewerComments'],
     queryFn: async () => {
-      // In a real implementation, we would fetch from Supabase
-      // For now, return mock data
-      return mockComments;
+      try {
+        const { data, error } = await supabase
+          .from('reviewer_comments')
+          .select('*')
+          .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        return data || [];
+      } catch (error) {
+        console.error('Error fetching reviewer comments:', error);
+        // Return mock data as fallback
+        return [
+          {
+            id: '1',
+            reviewer_id: '123',
+            reviewer_name: 'Igor Eckert',
+            reviewer_avatar: '/lovable-uploads/0fcc2db7-d9e2-495a-b51e-7f8260ace1c2.png',
+            comment: 'Esta edição traz avanços significativos no entendimento do tratamento da hipertensão em pacientes geriátricos.',
+            created_at: new Date(Date.now() - 86400000 * 2).toISOString()
+          }
+        ];
+      }
     }
   });
 
@@ -45,19 +52,21 @@ export const useReviewerComments = () => {
         throw new Error('Only editors can add reviewer comments');
       }
 
-      // In a real implementation, we would insert to Supabase
-      const newComment: ReviewerComment = {
-        id: Math.random().toString(36).substring(2, 9),
+      const newComment = {
         reviewer_id: user.id,
         reviewer_name: profile?.full_name || 'Unknown Reviewer',
         reviewer_avatar: profile?.avatar_url || '/placeholder.svg',
-        comment,
-        created_at: new Date().toISOString()
+        comment
       };
 
-      // For mock purposes, add to the mock array
-      mockComments.push(newComment);
-      return newComment;
+      const { data, error } = await supabase
+        .from('reviewer_comments')
+        .insert(newComment)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reviewerComments'] });
@@ -74,11 +83,12 @@ export const useReviewerComments = () => {
         throw new Error('Only editors can delete comments');
       }
       
-      // In a real implementation, we would delete from Supabase
-      const index = mockComments.findIndex(c => c.id === commentId);
-      if (index !== -1) {
-        mockComments.splice(index, 1);
-      }
+      const { error } = await supabase
+        .from('reviewer_comments')
+        .delete()
+        .eq('id', commentId);
+      
+      if (error) throw error;
       return commentId;
     },
     onSuccess: () => {
