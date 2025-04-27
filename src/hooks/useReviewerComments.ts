@@ -19,7 +19,7 @@ const mockComments: ReviewerComment[] = [
     id: '1',
     reviewer_id: '123',
     reviewer_name: 'Igor Eckert',
-    reviewer_avatar: '/lovable-uploads/956f3a16-f61a-4bd3-a2cd-02c95a0dd469.png',
+    reviewer_avatar: '/lovable-uploads/0fcc2db7-d9e2-495a-b51e-7f8260ace1c2.png',
     comment: 'Esta edição traz avanços significativos no entendimento do tratamento da hipertensão em pacientes geriátricos.',
     created_at: new Date(Date.now() - 86400000 * 2).toISOString() // 2 days ago
   }

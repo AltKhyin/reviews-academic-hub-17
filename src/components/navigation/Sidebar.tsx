@@ -1,34 +1,20 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, BookOpen, User, Settings, LogOut, ChevronLeft, ChevronRight, FileEdit } from 'lucide-react';
+import { Home, BookOpen, User, Settings, LogOut, ChevronLeft, ChevronRight, FileEdit, ShieldAlert } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import Logo from '../common/Logo';
 import { useSidebar, Sidebar as SidebarComponent, SidebarContent, SidebarFooter } from '@/components/ui/sidebar';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Sidebar = () => {
   const location = useLocation();
   const { state, toggleSidebar } = useSidebar();
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { profile } = useAuth();
   const isCollapsed = state === 'collapsed';
-
-  useEffect(() => {
-    const checkAdminStatus = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      
-      const { data: adminData } = await supabase
-        .from('admin_users')
-        .select('user_id')
-        .eq('user_id', session.user.id)
-        .maybeSingle();
-      
-      setIsAdmin(!!adminData);
-    };
-    
-    checkAdminStatus();
-  }, []);
+  const isAdmin = profile?.role === 'admin';
+  const isEditor = profile?.role === 'editor';
 
   const handleLogout = async () => {
     try {
@@ -51,7 +37,8 @@ const Sidebar = () => {
     { icon: Home, label: 'Homepage', path: '/homepage' },
     { icon: BookOpen, label: 'Artigos', path: '/articles' },
     { icon: User, label: 'Perfil', path: '/profile' },
-    ...(isAdmin ? [{ icon: FileEdit, label: 'Editor', path: '/edit' }] : []),
+    ...(isEditor || isAdmin ? [{ icon: FileEdit, label: 'Editor', path: '/edit' }] : []),
+    ...(isEditor || isAdmin ? [{ icon: ShieldAlert, label: 'Admin', path: '/admin' }] : []),
     { icon: Settings, label: 'Configurações', path: '/settings' },
   ];
 

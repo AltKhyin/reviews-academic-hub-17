@@ -28,7 +28,7 @@ export const useComments = (articleId: string) => {
         .from('comments')
         .select(`
           *,
-          user:profiles(id, full_name, avatar_url)
+          profiles(id, full_name, avatar_url)
         `)
         .eq('article_id', articleId)
         .order('created_at', { ascending: false });
