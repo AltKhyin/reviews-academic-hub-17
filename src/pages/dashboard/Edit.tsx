@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -193,7 +194,7 @@ const Edit = () => {
                 <CardContent>
                   <IssueForm 
                     form={form}
-                    onSubmit={form.handleSubmit((values) => onSubmit(values))}
+                    onSubmit={form.handleSubmit(onSubmit)}
                     onCancel={handleCancel}
                     isSubmitting={isSubmitting}
                   />
@@ -246,7 +247,7 @@ const Edit = () => {
               <CardContent>
                 <IssueForm 
                   form={form}
-                  onSubmit={form.handleSubmit((values) => onSubmit(values))}
+                  onSubmit={form.handleSubmit(onSubmit)}
                   onCancel={handleCancel}
                   isSubmitting={isSubmitting}
                 />

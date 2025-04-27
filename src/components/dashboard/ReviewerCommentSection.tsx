@@ -9,7 +9,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { CheckCircle2, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import type { ReviewerComment as ReviewerCommentType } from '@/hooks/useReviewerComments';
+import { ReviewerComment as ReviewerCommentType } from '@/hooks/useReviewerComments';
 
 const ReviewerCommentItem = ({ comment }: { comment: ReviewerCommentType }) => {
   const { profile } = useAuth();
@@ -18,7 +18,7 @@ const ReviewerCommentItem = ({ comment }: { comment: ReviewerCommentType }) => {
   
   return (
     <div className="flex space-x-6">
-      <Avatar className="h-40 w-40 border-2 border-primary/20">
+      <Avatar className="h-52 w-52 border-2 border-primary/20">
         <AvatarImage src="/lovable-uploads/849d1c93-706d-4eb1-87e6-e14d6f4b13a5.png" alt={comment.reviewer_name} />
         <AvatarFallback>{comment.reviewer_name.charAt(0)}</AvatarFallback>
       </Avatar>
