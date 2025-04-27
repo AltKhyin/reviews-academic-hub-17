@@ -3,78 +3,66 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from '@/hooks/use-toast';
 import { Issue } from '@/types/issue';
-import { IssueForm } from './components/IssueForm';
-import { issueFormSchema, IssueFormValues } from '@/schemas/issue-form-schema';
+import { IssueFormValues, issueFormSchema } from '@/schemas/issue-form-schema';
 import { IssueHeader } from './components/issue/IssueHeader';
 import { IssueActionButtons } from './components/issue/IssueActionButtons';
+import { IssueForm } from './components/issue/IssueForm';
+import { useQuery } from '@tanstack/react-query';
 
 const IssueEditor = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const form = useForm<IssueFormValues>({
-    resolver: zodResolver(issueFormSchema),
-    defaultValues: {
-      title: '',
-      description: '',
-      tags: '',
-      pdf_url: '',
-      article_pdf_url: '',
-      cover_image_url: '',
-      published: false,
-      featured: false
-    }
+  const [formValues, setFormValues] = useState<IssueFormValues>({
+    title: '',
+    description: '',
+    tags: '',
+    pdf_url: '',
+    article_pdf_url: '',
+    cover_image_url: '',
+    published: false,
+    featured: false
   });
 
+  // Fetch issue data
+  const { data: issue, isLoading } = useQuery({
+    queryKey: ['issue-edit', id],
+    queryFn: async () => {
+      if (!id) return null;
+
+      const { data, error } = await supabase
+        .from('issues')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+      return data as Issue;
+    },
+    enabled: !!id,
+    retry: 1,
+  });
+
+  // Update form values when issue data is loaded
   useEffect(() => {
-    const fetchIssue = async () => {
-      if (!id) return;
+    if (issue) {
+      const formattedTags = issue.specialty ? 
+        issue.specialty.split(', ').map(tag => `[tag:${tag}]`).join('') : '';
 
-      try {
-        const { data, error } = await supabase
-          .from('issues')
-          .select('*')
-          .eq('id', id)
-          .single();
-
-        if (error) throw error;
-
-        if (data) {
-          const typedIssue = data as Issue;
-          const formattedTags = typedIssue.specialty ? 
-            typedIssue.specialty.split(', ').map(tag => `[tag:${tag}]`).join('') : '';
-
-          form.reset({
-            title: typedIssue.title || '',
-            description: typedIssue.description || '',
-            tags: formattedTags,
-            pdf_url: typedIssue.pdf_url || '',
-            article_pdf_url: typedIssue.article_pdf_url || '',
-            cover_image_url: typedIssue.cover_image_url || '',
-            published: typedIssue.published || false,
-            featured: typedIssue.featured || false
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching issue:', error);
-        toast({
-          title: "Erro ao carregar dados",
-          description: "Não foi possível carregar os dados desta edição.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchIssue();
-  }, [id, form]);
+      setFormValues({
+        title: issue.title || '',
+        description: issue.description || '',
+        tags: formattedTags,
+        pdf_url: issue.pdf_url || '',
+        article_pdf_url: issue.article_pdf_url || '',
+        cover_image_url: issue.cover_image_url || '',
+        published: issue.published || false,
+        featured: issue.featured || false
+      });
+    }
+  }, [issue]);
 
   const onSubmit = async (values: IssueFormValues) => {
     if (!id) return;
@@ -137,7 +125,7 @@ const IssueEditor = () => {
       });
       
       navigate('/edit');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting issue:', error);
       toast({
         title: "Erro ao excluir edição",
@@ -150,9 +138,18 @@ const IssueEditor = () => {
   };
 
   const togglePublish = async () => {
-    const currentStatus = form.getValues('published');
-    form.setValue('published', !currentStatus);
-    await form.handleSubmit(onSubmit)();
+    setFormValues(prev => ({
+      ...prev,
+      published: !prev.published
+    }));
+    
+    // Make a new copy of the values to submit
+    const updatedValues = {
+      ...formValues,
+      published: !formValues.published
+    };
+    
+    await onSubmit(updatedValues);
   };
 
   const toggleFeatured = async () => {
@@ -161,18 +158,24 @@ const IssueEditor = () => {
     try {
       setIsSubmitting(true);
       
-      // Get the current featured value
-      const currentFeatured = form.getValues('featured');
+      // Update the form values
+      setFormValues(prev => ({
+        ...prev,
+        featured: !prev.featured
+      }));
       
-      // Update the form value
-      form.setValue('featured', !currentFeatured);
+      // Make a new copy of the values to submit
+      const updatedValues = {
+        ...formValues,
+        featured: !formValues.featured
+      };
       
-      // Submit the form
-      await form.handleSubmit(onSubmit)();
+      // Submit with updated value
+      await onSubmit(updatedValues);
       
       toast({
-        title: !currentFeatured ? "Edição destacada!" : "Edição removida dos destaques",
-        description: !currentFeatured 
+        title: !formValues.featured ? "Edição destacada!" : "Edição removida dos destaques",
+        description: !formValues.featured 
           ? "Esta edição será exibida em destaque na página inicial."
           : "Esta edição não será mais exibida em destaque.",
       });
@@ -200,8 +203,8 @@ const IssueEditor = () => {
           onDelete={handleDelete}
           onTogglePublish={togglePublish}
           onToggleFeatured={toggleFeatured}
-          isPublished={form.watch('published')}
-          isFeatured={form.watch('featured')}
+          isPublished={formValues.published}
+          isFeatured={formValues.featured}
           isDisabled={isSubmitting}
         />
       </div>
@@ -213,7 +216,7 @@ const IssueEditor = () => {
         </CardHeader>
         <CardContent>
           <IssueForm 
-            form={form} 
+            defaultValues={formValues}
             onSubmit={onSubmit} 
             onCancel={() => navigate('/edit')} 
             isSubmitting={isSubmitting}
