@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -158,31 +159,11 @@ const Edit = () => {
         </TabsContent>
         
         <TabsContent value="comments">
-          <Card className="border-white/10 bg-white/5">
-            <CardContent className="pt-6">
-              <ReviewerCommentSection />
-            </CardContent>
-          </Card>
+          <ReviewerCommentSection />
         </TabsContent>
 
         <TabsContent value="sections">
-          <HomepageSectionsManager 
-            sections={[
-              { id: "reviewer", title: "Notas do Revisor", visible: true, order: 0 },
-              { id: "featured", title: "Edições em Destaque", visible: true, order: 1 },
-              { id: "upcoming", title: "Próximas Edições", visible: true, order: 2 },
-              { id: "recent", title: "Edições Recentes", visible: true, order: 3 },
-              { id: "recommended", title: "Recomendados", visible: true, order: 4 },
-              { id: "trending", title: "Mais Acessados", visible: true, order: 5 }
-            ]} 
-            updateSections={(sections) => {
-              console.log("Updated sections:", sections);
-              toast({
-                title: "Seções atualizadas",
-                description: "As alterações foram salvas com sucesso."
-              });
-            }} 
-          />
+          <HomepageSectionsManager />
         </TabsContent>
       </Tabs>
     </div>

@@ -1,35 +1,115 @@
-import React from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Eye, EyeOff, ChevronUp, ChevronDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
-interface Section {
+export interface Section {
   id: string;
   title: string;
   visible: boolean;
   order: number;
 }
 
-interface HomepageSectionsManagerProps {
-  sections: Section[];
-  updateSections: (sections: Section[]) => void;
-}
+const HomepageSectionsManager = () => {
+  const queryClient = useQueryClient();
+  const [sections, setSections] = useState<Section[]>([]);
+  const [loading, setLoading] = useState(true);
 
-const HomepageSectionsManager: React.FC<HomepageSectionsManagerProps> = ({
-  sections,
-  updateSections
-}) => {
+  // Fetch sections from database
+  const { data: dbSections, isLoading } = useQuery({
+    queryKey: ['homepage-sections'],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase
+          .from('homepage_sections')
+          .select('*')
+          .order('order', { ascending: true });
+        
+        if (error) throw error;
+        return data as Section[];
+      } catch (error) {
+        console.error('Error fetching sections:', error);
+        // Return default sections if fetching fails
+        return defaultSections;
+      }
+    }
+  });
+
+  // Default sections to use if database has no data
+  const defaultSections: Section[] = [
+    { id: "reviewer", title: "Notas do Revisor", visible: true, order: 0 },
+    { id: "featured", title: "Edições em Destaque", visible: true, order: 1 },
+    { id: "upcoming", title: "Próximas Edições", visible: true, order: 2 },
+    { id: "recent", title: "Edições Recentes", visible: true, order: 3 },
+    { id: "recommended", title: "Recomendados", visible: true, order: 4 },
+    { id: "trending", title: "Mais Acessados", visible: true, order: 5 }
+  ];
+
+  // Update sections in the database
+  const updateSectionsMutation = useMutation({
+    mutationFn: async (updatedSections: Section[]) => {
+      // First, we need to upsert the sections (insert if not exists, update if exists)
+      const upsertPromises = updatedSections.map(section => 
+        supabase
+          .from('homepage_sections')
+          .upsert({ 
+            id: section.id,
+            title: section.title,
+            visible: section.visible,
+            order: section.order 
+          })
+      );
+
+      await Promise.all(upsertPromises);
+      return updatedSections;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['homepage-sections'] });
+      toast({
+        title: "Seções atualizadas",
+        description: "As alterações foram salvas com sucesso."
+      });
+    },
+    onError: (error) => {
+      console.error('Failed to update sections:', error);
+      toast({
+        title: "Erro ao atualizar seções",
+        description: "Ocorreu um erro ao salvar as alterações.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Initialize sections state with data from database or defaults
+  useEffect(() => {
+    if (dbSections) {
+      if (dbSections.length > 0) {
+        setSections(dbSections);
+      } else {
+        setSections(defaultSections);
+        // If no sections found in the DB, initialize with defaults
+        updateSectionsMutation.mutate(defaultSections);
+      }
+      setLoading(false);
+    }
+  }, [dbSections]);
+
   const moveSection = (sectionId: string, direction: 'up' | 'down') => {
-    const currentIndex = sections.findIndex(s => s.id === sectionId);
+    const newSections = [...sections];
+    const currentIndex = newSections.findIndex(s => s.id === sectionId);
+    
     if (
       (direction === 'up' && currentIndex === 0) || 
-      (direction === 'down' && currentIndex === sections.length - 1)
+      (direction === 'down' && currentIndex === newSections.length - 1)
     ) {
       return;
     }
 
-    const newSections = [...sections];
     const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
     
     // Swap positions
@@ -37,23 +117,40 @@ const HomepageSectionsManager: React.FC<HomepageSectionsManagerProps> = ({
     [newSections[targetIndex], newSections[currentIndex]];
 
     // Update order numbers
-    updateSections(
-      newSections.map((section, index) => ({
-        ...section,
-        order: index
-      }))
-    );
+    const updatedSections = newSections.map((section, index) => ({
+      ...section,
+      order: index
+    }));
+    
+    setSections(updatedSections);
+    updateSectionsMutation.mutate(updatedSections);
   };
 
   const toggleVisibility = (sectionId: string) => {
-    updateSections(
-      sections.map(section => 
-        section.id === sectionId 
-          ? { ...section, visible: !section.visible }
-          : section
-      )
+    const updatedSections = sections.map(section => 
+      section.id === sectionId 
+        ? { ...section, visible: !section.visible }
+        : section
     );
+    
+    setSections(updatedSections);
+    updateSectionsMutation.mutate(updatedSections);
   };
+
+  if (loading || isLoading) {
+    return (
+      <Card className="border-white/10 bg-white/5">
+        <CardHeader>
+          <CardTitle>Gerenciar Seções da Página Inicial</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-center py-6">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="border-white/10 bg-white/5">

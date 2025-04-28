@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useSidebar } from '@/components/ui/sidebar';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,12 +8,14 @@ import { FeaturedSection } from '@/components/dashboard/FeaturedSection';
 import { ArticlesSection } from '@/components/dashboard/ArticlesSection';
 import { UpcomingReleaseSection } from '@/components/dashboard/UpcomingReleaseSection';
 import { ReviewerCommentsDisplay } from '@/components/dashboard/ReviewerCommentsDisplay';
+import { useSectionVisibility } from '@/hooks/useSectionVisibility';
 
 const Dashboard = () => {
   const { state } = useSidebar();
   const { user, profile } = useAuth();
   const { data: issues = [], isLoading, refetch } = useIssues();
   const isCollapsed = state === 'collapsed';
+  const { isLoading: sectionsLoading, getSortedVisibleSectionIds, isSectionVisible } = useSectionVisibility();
 
   const visibleIssues = React.useMemo(() => {
     if (!issues) return [];
@@ -30,40 +33,39 @@ const Dashboard = () => {
 
   const featuredIssue = visibleIssues?.find(issue => issue.featured) || visibleIssues?.[0];
 
-  const ArticleRow = ({ title, section, issues, featuredIssueId }: { 
-    title: string; 
-    section: string; 
-    issues: any[]; 
-    featuredIssueId?: string;
-  }) => {
-    const filteredIssues = issues.filter(issue => issue.id !== featuredIssueId);
-    
-    if (filteredIssues.length === 0) {
-      return null;
-    }
-    
-    switch(section) {
+  // Component mapping for each section type
+  const renderSection = (sectionId: string) => {
+    switch(sectionId) {
+      case 'reviewer':
+        return <ReviewerCommentsDisplay key="reviewer" />;
+      case 'featured':
+        return <FeaturedSection key="featured" issues={visibleIssues} />;
+      case 'upcoming':
+        return <UpcomingReleaseSection key="upcoming" />;
       case 'recent':
         return <ArticlesSection 
-          issues={filteredIssues.slice(0, 5)} 
-          featuredIssueId={featuredIssueId} 
-          sectionTitle={title}
+          key="recent"
+          issues={visibleIssues.slice(0, 5)} 
+          featuredIssueId={featuredIssue?.id} 
+          sectionTitle="Edições Recentes"
           sectionType="recent"
         />;
       case 'recommended':
-        const recommended = [...filteredIssues].sort(() => Math.random() - 0.5).slice(0, 5);
+        const recommended = [...visibleIssues].sort(() => Math.random() - 0.5).slice(0, 5);
         return <ArticlesSection 
+          key="recommended"
           issues={recommended} 
-          featuredIssueId={featuredIssueId} 
-          sectionTitle={title}
+          featuredIssueId={featuredIssue?.id} 
+          sectionTitle="Recomendados para você"
           sectionType="recommended"
         />;
       case 'trending':
-        const trending = [...filteredIssues].sort(() => Math.random() - 0.5).slice(0, 5);
+        const trending = [...visibleIssues].sort(() => Math.random() - 0.5).slice(0, 5);
         return <ArticlesSection 
+          key="trending"
           issues={trending} 
-          featuredIssueId={featuredIssueId} 
-          sectionTitle={title}
+          featuredIssueId={featuredIssue?.id} 
+          sectionTitle="Mais acessados"
           sectionType="trending"
         />;
       default:
@@ -71,18 +73,15 @@ const Dashboard = () => {
     }
   };
 
+  const visibleSectionIds = getSortedVisibleSectionIds();
+
   return (
     <div className={`pt-4 pb-16 space-y-8 transition-all duration-300 ${isCollapsed ? 'max-w-full' : 'max-w-[95%] mx-auto'}`}>
-      {isLoading ? (
+      {isLoading || sectionsLoading ? (
         <DashboardSkeleton />
       ) : visibleIssues.length > 0 ? (
         <>
-          <FeaturedSection issues={visibleIssues} />
-          <ReviewerCommentsDisplay />
-          <UpcomingReleaseSection />
-          <ArticleRow title="Edições Recentes" section="recent" issues={visibleIssues} featuredIssueId={featuredIssue?.id} />
-          <ArticleRow title="Recomendados para você" section="recommended" issues={visibleIssues} featuredIssueId={featuredIssue?.id} />
-          <ArticleRow title="Mais acessados" section="trending" issues={visibleIssues} featuredIssueId={featuredIssue?.id} />
+          {visibleSectionIds.map(renderSection)}
         </>
       ) : (
         <div className="text-center py-12">

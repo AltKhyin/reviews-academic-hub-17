@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useReviewerComments } from '@/hooks/useReviewerComments';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
@@ -26,10 +25,12 @@ const ReviewerCommentItem = ({ comment }: { comment: ReviewerCommentType }) => {
   
   return (
     <div className="flex space-x-6">
-      <Avatar className="h-24 w-24 border-2 border-primary/20">
-        <AvatarImage src={comment.reviewer_avatar} alt={comment.reviewer_name} />
-        <AvatarFallback>{comment.reviewer_name.charAt(0)}</AvatarFallback>
-      </Avatar>
+      <div className="flex-shrink-0">
+        <Avatar className="h-24 w-24 border-2 border-primary/20" style={{ width: '48px', height: '48px' }}>
+          <AvatarImage src={comment.reviewer_avatar} alt={comment.reviewer_name} />
+          <AvatarFallback>{comment.reviewer_name.charAt(0)}</AvatarFallback>
+        </Avatar>
+      </div>
       
       <div className="flex-1">
         <div className="flex items-center">
