@@ -168,11 +168,12 @@ const Edit = () => {
         <TabsContent value="sections">
           <HomepageSectionsManager 
             sections={[
-              { id: "featured", title: "Edições em Destaque", visible: true, order: 0 },
-              { id: "upcoming", title: "Próximas Edições", visible: true, order: 1 },
-              { id: "recent", title: "Edições Recentes", visible: true, order: 2 },
-              { id: "recommended", title: "Recomendados", visible: true, order: 3 },
-              { id: "trending", title: "Mais Acessados", visible: true, order: 4 }
+              { id: "reviewer", title: "Notas do Revisor", visible: true, order: 0 },
+              { id: "featured", title: "Edições em Destaque", visible: true, order: 1 },
+              { id: "upcoming", title: "Próximas Edições", visible: true, order: 2 },
+              { id: "recent", title: "Edições Recentes", visible: true, order: 3 },
+              { id: "recommended", title: "Recomendados", visible: true, order: 4 },
+              { id: "trending", title: "Mais Acessados", visible: true, order: 5 }
             ]} 
             updateSections={(sections) => {
               console.log("Updated sections:", sections);
