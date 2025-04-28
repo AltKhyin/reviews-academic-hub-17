@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useReviewerComments } from '@/hooks/useReviewerComments';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { CheckCircle2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -13,14 +13,13 @@ export const ReviewerCommentsDisplay = () => {
   if (!hasComments) return null;
 
   return (
-    <section className="mb-16 mt-2">
-      <h2 className="text-2xl font-serif mb-4">Nota do Revisor</h2>
-      <Card className="border-white/10 bg-white/5">
+    <section className="mb-16">
+      <Card className="border-white/10 bg-gradient-to-r from-white/5 to-transparent">
         <CardContent className="pt-6 space-y-6">
           {comments.map((comment) => (
             <div key={comment.id} className="flex space-x-6">
               <div className="flex-shrink-0">
-                <Avatar className="border-2 border-primary/20" style={{ width: '62px', height: '62px' }}>
+                <Avatar className="border-2 border-primary/20" style={{ width: '80px', height: '80px' }}>
                   <AvatarImage src={comment.reviewer_avatar} alt={comment.reviewer_name} />
                   <AvatarFallback>{comment.reviewer_name.charAt(0)}</AvatarFallback>
                 </Avatar>
