@@ -14,7 +14,7 @@ import { IssueCard } from './components/IssueCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ReviewerCommentSection } from '@/components/dashboard/ReviewerCommentSection';
-import { HomepageSectionsManager } from '@/components/dashboard/HomepageSectionsManager';
+import HomepageSectionsManager from '@/components/dashboard/HomepageSectionsManager';
 
 const formSchema = z.object({
   title: z.string().min(3, "O título deve ter pelo menos 3 caracteres"),
