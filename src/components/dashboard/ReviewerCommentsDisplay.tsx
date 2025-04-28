@@ -13,14 +13,14 @@ export const ReviewerCommentsDisplay = () => {
   if (!hasComments) return null;
 
   return (
-    <section className="mb-12">
-      <h2 className="text-2xl font-serif mb-6">Nota do Revisor</h2>
+    <section>
+      <h2 className="text-2xl font-serif mb-2">Nota do Revisor</h2>
       <Card className="border-white/10 bg-white/5">
         <CardContent className="pt-6 space-y-6">
           {comments.map((comment) => (
             <div key={comment.id} className="flex space-x-6">
               <div className="flex-shrink-0">
-                <Avatar className="border-2 border-primary/20" style={{ width: '48px', height: '48px' }}>
+                <Avatar className="border-2 border-primary/20" style={{ width: '62px', height: '62px' }}>
                   <AvatarImage src={comment.reviewer_avatar} alt={comment.reviewer_name} />
                   <AvatarFallback>{comment.reviewer_name.charAt(0)}</AvatarFallback>
                 </Avatar>
