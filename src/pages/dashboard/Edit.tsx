@@ -13,6 +13,8 @@ import { Issue, FormIssueValues } from '@/types/issue';
 import { IssueForm } from './components/IssueForm';
 import { IssueCard } from './components/IssueCard';
 import { useAuth } from '@/contexts/AuthContext';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ReviewerCommentSection } from '@/components/dashboard/ReviewerCommentSection';
 
 // Form schema for issue creation/editing
 const formSchema = z.object({
@@ -29,6 +31,7 @@ const Edit = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { profile } = useAuth();
   const isEditorOrAdmin = profile?.role === 'admin' || profile?.role === 'editor';
+  const [activeTab, setActiveTab] = useState("issues");
   
   const { data: issues, isLoading, refetch } = useQuery({
     queryKey: ['issues'],
@@ -105,46 +108,63 @@ const Edit = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold tracking-tight">Gerenciar Edições</h1>
-        {!isCreating && isEditorOrAdmin && (
+        <h1 className="text-2xl font-semibold tracking-tight">Painel do Editor</h1>
+        {!isCreating && isEditorOrAdmin && activeTab === "issues" && (
           <Button onClick={() => setIsCreating(true)}>
             <PlusCircle className="mr-2 h-4 w-4" /> Nova Edição
           </Button>
         )}
       </div>
 
-      {isCreating ? (
-        <Card className="border-white/10 bg-white/5">
-          <CardHeader>
-            <CardTitle>Nova Edição</CardTitle>
-            <CardDescription>Crie uma nova edição para a revista</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <IssueForm 
-              form={form}
-              onSubmit={onSubmit}
-              onCancel={handleCancel}
-              isSubmitting={isSubmitting}
-            />
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {isLoading ? (
-            <p>Carregando edições...</p>
-          ) : issues && issues.length > 0 ? (
-            issues.map((issue) => (
-              <IssueCard 
-                key={issue.id}
-                issue={issue} 
-                formatTags={(tags) => tags.split(', ').map(tag => `[tag:${tag}]`).join('')}
-              />
-            ))
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid grid-cols-2 mb-4">
+          <TabsTrigger value="issues">Gerenciar Edições</TabsTrigger>
+          <TabsTrigger value="comments">Notas do Revisor</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="issues">
+          {isCreating ? (
+            <Card className="border-white/10 bg-white/5">
+              <CardHeader>
+                <CardTitle>Nova Edição</CardTitle>
+                <CardDescription>Crie uma nova edição para a revista</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <IssueForm 
+                  form={form}
+                  onSubmit={onSubmit}
+                  onCancel={handleCancel}
+                  isSubmitting={isSubmitting}
+                />
+              </CardContent>
+            </Card>
           ) : (
-            <p>Nenhuma edição encontrada.</p>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {isLoading ? (
+                <p>Carregando edições...</p>
+              ) : issues && issues.length > 0 ? (
+                issues.map((issue) => (
+                  <IssueCard 
+                    key={issue.id}
+                    issue={issue} 
+                    formatTags={(tags) => tags.split(', ').map(tag => `[tag:${tag}]`).join('')}
+                  />
+                ))
+              ) : (
+                <p>Nenhuma edição encontrada.</p>
+              )}
+            </div>
           )}
-        </div>
-      )}
+        </TabsContent>
+        
+        <TabsContent value="comments">
+          <Card className="border-white/10 bg-white/5">
+            <CardContent className="pt-6">
+              <ReviewerCommentSection />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
