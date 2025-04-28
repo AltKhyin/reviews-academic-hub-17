@@ -11,10 +11,8 @@ import { useAuth } from '@/contexts/AuthContext';
 const Sidebar = () => {
   const location = useLocation();
   const { state, toggleSidebar } = useSidebar();
-  const { profile, isLoading } = useAuth();
+  const { profile, isAdmin, isEditor, isLoading } = useAuth();
   const isCollapsed = state === 'collapsed';
-  const isAdmin = profile?.role === 'admin';
-  const isEditor = profile?.role === 'editor' || isAdmin;
 
   const handleLogout = async () => {
     try {
@@ -33,6 +31,11 @@ const Sidebar = () => {
     }
   };
 
+  // For debugging purposes
+  console.log("Current user role:", profile?.role);
+  console.log("Is admin:", isAdmin);
+  console.log("Is editor:", isEditor);
+
   const navItems = [
     { icon: Home, label: 'Homepage', path: '/homepage' },
     { icon: BookOpen, label: 'Artigos', path: '/articles' },
@@ -41,6 +44,9 @@ const Sidebar = () => {
     ...(isAdmin ? [{ icon: ShieldAlert, label: 'Admin', path: '/admin' }] : []),
     { icon: Settings, label: 'Configurações', path: '/settings' },
   ];
+
+  // Log the nav items for debugging
+  console.log("Navigation items:", navItems.map(item => item.label));
 
   return (
     <SidebarComponent variant="sidebar" collapsible="icon">

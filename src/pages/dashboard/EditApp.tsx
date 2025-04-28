@@ -1,14 +1,15 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ReviewerCommentSection } from '@/components/dashboard/ReviewerCommentSection';
 import HomepageSectionsManager from '@/components/dashboard/HomepageSectionsManager';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const EditApp = () => {
-  const { profile, isLoading } = useAuth();
+  const { profile, isEditor, isAdmin, isLoading } = useAuth();
   const [sections, setSections] = useState([
     { id: 'reviewer', title: 'Nota do Revisor', visible: true, order: 0 },
     { id: 'featured', title: 'Destaque', visible: true, order: 1 },
@@ -17,6 +18,34 @@ const EditApp = () => {
     { id: 'recommended', title: 'Recomendados para você', visible: true, order: 4 },
     { id: 'trending', title: 'Mais acessados', visible: true, order: 5 }
   ]);
+  
+  // For debugging purposes
+  useEffect(() => {
+    console.log("EditApp - Current user profile:", profile);
+    console.log("EditApp - Is editor:", isEditor);
+    console.log("EditApp - Is admin:", isAdmin);
+    
+    const checkRole = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        console.log("Current user:", user);
+        
+        if (user) {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+            
+          console.log("Profile query result:", data, error);
+        }
+      } catch (error) {
+        console.error("Error checking role:", error);
+      }
+    };
+    
+    checkRole();
+  }, [profile, isEditor, isAdmin]);
 
   const updateSections = (updatedSections) => {
     setSections(updatedSections);
@@ -36,8 +65,10 @@ const EditApp = () => {
   }
 
   // Check if user is editor or admin
-  const isEditorOrAdmin = profile.role === 'editor' || profile.role === 'admin';
-  if (!isEditorOrAdmin) {
+  const hasAccess = isEditor || isAdmin;
+  console.log("EditApp - Has access:", hasAccess);
+  
+  if (!hasAccess) {
     return <Navigate to="/homepage" replace />;
   }
 

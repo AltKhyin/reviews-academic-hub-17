@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ReviewerCommentSection } from '@/components/dashboard/ReviewerCommentSection';
@@ -7,9 +7,10 @@ import HomepageSectionsManager from '@/components/dashboard/HomepageSectionsMana
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const AdminPanel = () => {
-  const { profile, isLoading } = useAuth();
+  const { profile, isAdmin, isLoading } = useAuth();
   const [sections, setSections] = useState([
     { id: 'reviewer', title: 'Nota do Revisor', visible: true, order: 0 },
     { id: 'featured', title: 'Destaque', visible: true, order: 1 },
@@ -18,6 +19,33 @@ const AdminPanel = () => {
     { id: 'recommended', title: 'Recomendados para você', visible: true, order: 4 },
     { id: 'trending', title: 'Mais acessados', visible: true, order: 5 }
   ]);
+
+  // For debugging purposes
+  useEffect(() => {
+    console.log("AdminPanel - Current user profile:", profile);
+    console.log("AdminPanel - Is admin:", isAdmin);
+    
+    const checkRole = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        console.log("Current user:", user);
+        
+        if (user) {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+            
+          console.log("Profile query result:", data, error);
+        }
+      } catch (error) {
+        console.error("Error checking role:", error);
+      }
+    };
+    
+    checkRole();
+  }, [profile, isAdmin]);
 
   const updateSections = (updatedSections) => {
     setSections(updatedSections);
@@ -37,7 +65,8 @@ const AdminPanel = () => {
   }
 
   // Check if user is admin
-  if (profile.role !== 'admin') {
+  console.log("AdminPanel - Has access:", isAdmin);
+  if (!isAdmin) {
     return <Navigate to="/homepage" replace />;
   }
 
