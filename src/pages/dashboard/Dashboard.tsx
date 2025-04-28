@@ -6,6 +6,7 @@ import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { FeaturedSection } from '@/components/dashboard/FeaturedSection';
 import { ArticlesSection } from '@/components/dashboard/ArticlesSection';
 import { UpcomingReleaseSection } from '@/components/dashboard/UpcomingReleaseSection';
+import { ReviewerCommentsDisplay } from '@/components/dashboard/ReviewerCommentsDisplay';
 
 const Dashboard = () => {
   const { state } = useSidebar();
@@ -77,6 +78,7 @@ const Dashboard = () => {
       ) : visibleIssues.length > 0 ? (
         <>
           <FeaturedSection issues={visibleIssues} />
+          <ReviewerCommentsDisplay />
           <UpcomingReleaseSection />
           <ArticleRow title="Edições Recentes" section="recent" issues={visibleIssues} featuredIssueId={featuredIssue?.id} />
           <ArticleRow title="Recomendados para você" section="recommended" issues={visibleIssues} featuredIssueId={featuredIssue?.id} />
