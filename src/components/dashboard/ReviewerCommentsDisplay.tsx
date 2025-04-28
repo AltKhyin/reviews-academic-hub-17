@@ -20,7 +20,7 @@ export const ReviewerCommentsDisplay = () => {
           {comments.map((comment) => (
             <div key={comment.id} className="flex space-x-6">
               <div className="flex-shrink-0">
-                <Avatar className="h-24 w-24 border-2 border-primary/20" style={{ width: '48px', height: '48px' }}>
+                <Avatar className="border-2 border-primary/20" style={{ width: '48px', height: '48px' }}>
                   <AvatarImage src={comment.reviewer_avatar} alt={comment.reviewer_name} />
                   <AvatarFallback>{comment.reviewer_name.charAt(0)}</AvatarFallback>
                 </Avatar>

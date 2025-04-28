@@ -1,6 +1,5 @@
 
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useState, useEffect } from 'react';
 
 export interface Section {
   id: string;
@@ -19,23 +18,38 @@ export const useSectionVisibility = () => {
     { id: "trending", title: "Mais Acessados", visible: true, order: 5 }
   ];
 
-  const { data: sections, isLoading } = useQuery({
-    queryKey: ['homepage-sections'],
-    queryFn: async () => {
+  const [sections, setSections] = useState<Section[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadSections = () => {
       try {
-        const { data, error } = await supabase
-          .from('homepage_sections')
-          .select('*')
-          .order('order', { ascending: true });
-        
-        if (error) throw error;
-        return data && data.length > 0 ? data : defaultSections;
+        const savedSections = localStorage.getItem('homepage_sections');
+        if (savedSections) {
+          setSections(JSON.parse(savedSections));
+        } else {
+          setSections(defaultSections);
+          localStorage.setItem('homepage_sections', JSON.stringify(defaultSections));
+        }
       } catch (error) {
-        console.error('Error fetching section visibility:', error);
-        return defaultSections;
+        console.error('Error loading section visibility:', error);
+        setSections(defaultSections);
+      } finally {
+        setIsLoading(false);
       }
+    };
+    
+    loadSections();
+  }, []);
+
+  const saveSections = (updatedSections: Section[]) => {
+    try {
+      localStorage.setItem('homepage_sections', JSON.stringify(updatedSections));
+      setSections(updatedSections);
+    } catch (error) {
+      console.error('Error saving section visibility:', error);
     }
-  });
+  };
 
   const isSectionVisible = (sectionId: string): boolean => {
     if (!sections || sections.length === 0) return true;
@@ -69,6 +83,7 @@ export const useSectionVisibility = () => {
   return {
     sections,
     isLoading,
+    saveSections,
     isSectionVisible,
     getSectionOrder,
     getSortedVisibleSectionIds
