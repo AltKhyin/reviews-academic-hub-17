@@ -3,29 +3,26 @@ import React from 'react';
 import { Card } from '@/components/ui/card';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { ExternalLecture } from '@/types/issue';
 
-interface ExternalLecture {
-  id: string;
-  title: string;
-  thumbnail_url: string;
-  description: string;
-  external_url: string;
-  created_at: string;
-  issue_id: string;
+interface ExternalLecturesProps {
+  issueId: string;
 }
 
-export const ExternalLectures = ({ issueId }: { issueId: string }) => {
+export const ExternalLectures = ({ issueId }: ExternalLecturesProps) => {
   const { data: lectures } = useQuery({
     queryKey: ['external-lectures', issueId],
     queryFn: async () => {
+      // Cast the result to any first to avoid TypeScript errors
+      // with the table not being recognized yet in the types
       const { data, error } = await supabase
-        .from('external_lectures')
+        .from('external_lectures' as any)
         .select('*')
         .eq('issue_id', issueId)
         .order('created_at', { ascending: false });
         
       if (error) throw error;
-      return data as ExternalLecture[];
+      return data as unknown as ExternalLecture[];
     },
   });
 
@@ -42,6 +39,7 @@ export const ExternalLectures = ({ issueId }: { issueId: string }) => {
             target="_blank"
             rel="noopener noreferrer"
             className="cursor-pointer group"
+            onClick={() => window.open(lecture.external_url, '_blank', 'noopener')}
           >
             <div className="aspect-video mb-2 overflow-hidden rounded-lg">
               {lecture.thumbnail_url ? (

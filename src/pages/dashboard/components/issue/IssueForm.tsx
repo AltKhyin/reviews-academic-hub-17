@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -42,12 +41,12 @@ export const IssueForm: React.FC<IssueFormProps> = ({
       if (!issueId) return [];
       
       const { data, error } = await supabase
-        .from('external_lectures')
+        .from('external_lectures' as any)
         .select('*')
         .eq('issue_id', issueId);
         
       if (error) throw error;
-      return data as ExternalLecture[];
+      return data as unknown as ExternalLecture[];
     },
     enabled: !!issueId
   });
@@ -79,12 +78,26 @@ export const IssueForm: React.FC<IssueFormProps> = ({
     }
     
     try {
-      const { error } = await supabase
-        .from('external_lectures')
-        .insert({
-          ...newLecture,
-          issue_id: issueId
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Error",
+          description: "You must be logged in to add lectures",
+          variant: "destructive",
         });
+        return;
+      }
+      
+      const { error } = await supabase
+        .from('external_lectures' as any)
+        .insert({
+          issue_id: issueId,
+          title: newLecture.title,
+          description: newLecture.description,
+          thumbnail_url: newLecture.thumbnail_url,
+          external_url: newLecture.external_url,
+          owner_id: user.id
+        } as any);
         
       if (error) throw error;
       
@@ -93,7 +106,6 @@ export const IssueForm: React.FC<IssueFormProps> = ({
         description: "External lecture added successfully",
       });
       
-      // Reset form and refetch lectures
       setNewLecture({
         title: '',
         description: '',
@@ -114,7 +126,7 @@ export const IssueForm: React.FC<IssueFormProps> = ({
   const handleDeleteLecture = async (lectureId: string) => {
     try {
       const { error } = await supabase
-        .from('external_lectures')
+        .from('external_lectures' as any)
         .delete()
         .eq('id', lectureId);
         

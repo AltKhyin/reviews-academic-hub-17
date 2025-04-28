@@ -41,7 +41,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
         }
       }
       
-      // Fixed: explicitly typed the return value to avoid circular type inference
+      // Use type casting to avoid the circular type inference
       const { data, error } = await supabase
         .from('comments')
         .select(`
@@ -51,13 +51,13 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
           user_id,
           article_id,
           issue_id,
-          profiles:profiles(id, full_name, avatar_url)
+          profiles(id, full_name, avatar_url)
         `)
         .eq(entityIdField, entityId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as Comment[];
+      return data as unknown as Comment[];
     }
   });
 

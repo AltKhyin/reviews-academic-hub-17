@@ -25,12 +25,12 @@ export const CommentItem: React.FC<CommentItemProps> = ({
     <div className="border-b border-white/10 pb-4 space-y-2">
       <div className="flex items-start gap-3">
         <Avatar>
-          <AvatarImage src={comment.user?.avatar_url || undefined} />
-          <AvatarFallback>{comment.user?.full_name?.[0] || 'A'}</AvatarFallback>
+          <AvatarImage src={comment.profiles?.avatar_url || undefined} />
+          <AvatarFallback>{comment.profiles?.full_name?.[0] || 'A'}</AvatarFallback>
         </Avatar>
         <div className="flex-1">
           <div className="flex justify-between items-start">
-            <div className="font-medium">{comment.user?.full_name || 'Anonymous'}</div>
+            <div className="font-medium">{comment.profiles?.full_name || 'Anonymous'}</div>
             <div className="text-xs text-gray-400">
               {new Date(comment.created_at).toLocaleString()}
             </div>
