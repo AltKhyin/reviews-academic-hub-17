@@ -13,35 +13,70 @@ interface Comment {
   created_at: string;
   user_id: string;
   article_id: string;
+  issue_id: string;
 }
 
-export const CommentSection = ({ articleId }: { articleId: string }) => {
+interface CommentSectionProps {
+  articleId?: string;
+  issueId?: string;
+}
+
+export const CommentSection = ({ articleId, issueId }: CommentSectionProps) => {
   const [newComment, setNewComment] = React.useState('');
   const { toast } = useToast();
-  const { addComment, comments, isLoading } = useComments(articleId);
+  
+  const entityId = issueId || articleId;
+  const entityType = issueId ? 'issue' : 'article';
+  
+  if (!entityId) {
+    console.error('CommentSection requires either articleId or issueId');
+    return null;
+  }
+  
+  const { addComment, comments, isLoading } = useComments(entityId, entityType);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.trim()) return;
     
     try {
-      // First verify the article exists
-      const { data: articleExists, error: articleError } = await supabase
-        .from('articles')
-        .select('id')
-        .eq('id', articleId)
-        .maybeSingle();
+      // First verify the entity exists
+      if (entityType === 'article' && articleId) {
+        const { data: entityExists, error: entityError } = await supabase
+          .from('articles')
+          .select('id')
+          .eq('id', articleId)
+          .maybeSingle();
+          
+        if (entityError) {
+          throw entityError;
+        }
         
-      if (articleError) {
-        throw articleError;
-      }
-      
-      if (!articleExists) {
-        toast({
-          variant: "destructive",
-          description: `Artigo não encontrado. ID: ${articleId}`,
-        });
-        return;
+        if (!entityExists) {
+          toast({
+            variant: "destructive",
+            description: `Artigo não encontrado. ID: ${articleId}`,
+          });
+          return;
+        }
+      } else if (entityType === 'issue' && issueId) {
+        const { data: entityExists, error: entityError } = await supabase
+          .from('issues')
+          .select('id')
+          .eq('id', issueId)
+          .maybeSingle();
+          
+        if (entityError) {
+          throw entityError;
+        }
+        
+        if (!entityExists) {
+          toast({
+            variant: "destructive",
+            description: `Issue não encontrado. ID: ${issueId}`,
+          });
+          return;
+        }
       }
       
       await addComment(newComment);

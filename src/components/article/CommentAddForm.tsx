@@ -10,12 +10,14 @@ interface CommentAddFormProps {
   articleId: string;
   onSubmit?: (comment: string) => void;
   isSubmitting?: boolean;
+  entityType?: 'article' | 'issue'; // Added entityType prop
 }
 
 export const CommentAddForm: React.FC<CommentAddFormProps> = ({ 
   articleId,
   onSubmit,
-  isSubmitting = false 
+  isSubmitting = false,
+  entityType = 'article' // Default to 'article' for backward compatibility
 }) => {
   const [comment, setComment] = useState('');
   const { user } = useAuth();
@@ -66,7 +68,7 @@ export const CommentAddForm: React.FC<CommentAddFormProps> = ({
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <Textarea
-              placeholder="Share your thoughts on this article..."
+              placeholder={`Share your thoughts on this ${entityType}...`}
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               rows={4}

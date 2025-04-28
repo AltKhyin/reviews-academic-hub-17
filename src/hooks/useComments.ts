@@ -4,24 +4,41 @@ import { supabase } from '@/integrations/supabase/client';
 import { Comment } from '@/types/issue';
 import { toast } from '@/hooks/use-toast';
 
-export const useComments = (articleId: string) => {
+export const useComments = (entityId: string, entityType: 'article' | 'issue' = 'article') => {
   const queryClient = useQueryClient();
 
   const { data: comments = [], isLoading } = useQuery({
-    queryKey: ['comments', articleId],
+    queryKey: ['comments', entityId, entityType],
     queryFn: async () => {
-      // First, verify if the article exists
-      const { data: articleExists, error: articleError } = await supabase
-        .from('articles')
-        .select('id')
-        .eq('id', articleId)
-        .maybeSingle();
+      let entityIdField = entityType === 'article' ? 'article_id' : 'issue_id';
       
-      if (articleError) throw articleError;
-      
-      if (!articleExists) {
-        console.error(`Article with ID ${articleId} not found`);
-        return [];
+      // First, verify if the entity exists
+      if (entityType === 'article') {
+        const { data: entityExists, error: entityError } = await supabase
+          .from('articles')
+          .select('id')
+          .eq('id', entityId)
+          .maybeSingle();
+        
+        if (entityError) throw entityError;
+        
+        if (!entityExists) {
+          console.error(`Article with ID ${entityId} not found`);
+          return [];
+        }
+      } else {
+        const { data: entityExists, error: entityError } = await supabase
+          .from('issues')
+          .select('id')
+          .eq('id', entityId)
+          .maybeSingle();
+        
+        if (entityError) throw entityError;
+        
+        if (!entityExists) {
+          console.error(`Issue with ID ${entityId} not found`);
+          return [];
+        }
       }
       
       const { data, error } = await supabase
@@ -30,7 +47,7 @@ export const useComments = (articleId: string) => {
           *,
           profiles(id, full_name, avatar_url)
         `)
-        .eq('article_id', articleId)
+        .eq(entityIdField, entityId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -43,28 +60,46 @@ export const useComments = (articleId: string) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
       
-      // Verify article exists before inserting
-      const { data: articleExists, error: articleError } = await supabase
-        .from('articles')
-        .select('id')
-        .eq('id', articleId)
-        .maybeSingle();
-        
-      if (articleError) throw articleError;
-      if (!articleExists) throw new Error(`Article with ID ${articleId} not found`);
+      let entityIdField = entityType === 'article' ? 'article_id' : 'issue_id';
+      
+      // Verify entity exists before inserting
+      if (entityType === 'article') {
+        const { data: entityExists, error: entityError } = await supabase
+          .from('articles')
+          .select('id')
+          .eq('id', entityId)
+          .maybeSingle();
+          
+        if (entityError) throw entityError;
+        if (!entityExists) throw new Error(`Article with ID ${entityId} not found`);
+      } else {
+        const { data: entityExists, error: entityError } = await supabase
+          .from('issues')
+          .select('id')
+          .eq('id', entityId)
+          .maybeSingle();
+          
+        if (entityError) throw entityError;
+        if (!entityExists) throw new Error(`Issue with ID ${entityId} not found`);
+      }
+      
+      // Create the comment object with the right field set
+      const commentData: any = {
+        content,
+        user_id: user.id
+      };
+      
+      // Set either article_id or issue_id based on entityType
+      commentData[entityIdField] = entityId;
       
       const { error } = await supabase
         .from('comments')
-        .insert({
-          content,
-          article_id: articleId,
-          user_id: user.id
-        });
+        .insert(commentData);
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['comments', articleId] });
+      queryClient.invalidateQueries({ queryKey: ['comments', entityId, entityType] });
       toast({
         title: "Success",
         description: "Your comment has been added.",
@@ -89,7 +124,7 @@ export const useComments = (articleId: string) => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['comments', articleId] });
+      queryClient.invalidateQueries({ queryKey: ['comments', entityId, entityType] });
       toast({
         title: "Success",
         description: "Comment deleted successfully.",

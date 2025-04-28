@@ -17,7 +17,7 @@ export const ArticleComments: React.FC<ArticleCommentsProps> = ({ articleId }) =
     deleteComment,
     isAddingComment,
     isDeletingComment 
-  } = useComments(articleId);
+  } = useComments(articleId, 'issue'); // Changed to pass 'issue' as the entity type
 
   if (isLoading) {
     return <div>Loading comments...</div>;
@@ -29,6 +29,7 @@ export const ArticleComments: React.FC<ArticleCommentsProps> = ({ articleId }) =
         articleId={articleId} 
         onSubmit={addComment}
         isSubmitting={isAddingComment}
+        entityType="issue" // Added entityType prop
       />
       
       <Card className="border-white/10 bg-white/5">
