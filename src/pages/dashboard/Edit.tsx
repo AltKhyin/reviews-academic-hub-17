@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,8 +14,8 @@ import { IssueCard } from './components/IssueCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ReviewerCommentSection } from '@/components/dashboard/ReviewerCommentSection';
+import { HomepageSectionsManager } from '@/components/dashboard/HomepageSectionsManager';
 
-// Form schema for issue creation/editing
 const formSchema = z.object({
   title: z.string().min(3, "O título deve ter pelo menos 3 caracteres"),
   description: z.string().optional(),
@@ -117,9 +116,10 @@ const Edit = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-2 mb-4">
+        <TabsList className="grid grid-cols-3 mb-4">
           <TabsTrigger value="issues">Gerenciar Edições</TabsTrigger>
           <TabsTrigger value="comments">Notas do Revisor</TabsTrigger>
+          <TabsTrigger value="sections">Gerenciar Seções</TabsTrigger>
         </TabsList>
         
         <TabsContent value="issues">
@@ -163,6 +163,25 @@ const Edit = () => {
               <ReviewerCommentSection />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="sections">
+          <HomepageSectionsManager 
+            sections={[
+              { id: "featured", title: "Edições em Destaque", visible: true, order: 0 },
+              { id: "upcoming", title: "Próximas Edições", visible: true, order: 1 },
+              { id: "recent", title: "Edições Recentes", visible: true, order: 2 },
+              { id: "recommended", title: "Recomendados", visible: true, order: 3 },
+              { id: "trending", title: "Mais Acessados", visible: true, order: 4 }
+            ]} 
+            updateSections={(sections) => {
+              console.log("Updated sections:", sections);
+              toast({
+                title: "Seções atualizadas",
+                description: "As alterações foram salvas com sucesso."
+              });
+            }} 
+          />
         </TabsContent>
       </Tabs>
     </div>
