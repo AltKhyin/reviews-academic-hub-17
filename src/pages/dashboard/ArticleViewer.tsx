@@ -1,9 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Issue } from '@/types/issue';
@@ -144,7 +144,8 @@ const ArticleViewer: React.FC = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      {/* Stack recommendations vertically instead of horizontally */}
+      <div className="space-y-8">
         <RecommendedArticles currentArticleId={issue.id} />
         <ExternalLectures issueId={issue.id} />
       </div>
