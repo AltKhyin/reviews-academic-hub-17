@@ -31,31 +31,29 @@ export const useReviewerComments = () => {
         return data || [];
       } catch (error) {
         console.error('Error fetching reviewer comments:', error);
-        // Return mock data as fallback
-        return [
-          {
-            id: '1',
-            reviewer_id: '123',
-            reviewer_name: 'Igor Eckert',
-            reviewer_avatar: '/lovable-uploads/0fcc2db7-d9e2-495a-b51e-7f8260ace1c2.png',
-            comment: 'Esta edição traz avanços significativos no entendimento do tratamento da hipertensão em pacientes geriátricos.',
-            created_at: new Date(Date.now() - 86400000 * 2).toISOString()
-          }
-        ];
+        return [];
       }
     }
   });
 
   const addComment = useMutation({
-    mutationFn: async ({ comment }: { comment: string }) => {
+    mutationFn: async ({ 
+      comment, 
+      reviewerName, 
+      reviewerAvatar 
+    }: { 
+      comment: string; 
+      reviewerName?: string; 
+      reviewerAvatar?: string;
+    }) => {
       if (!user || !isEditorOrAdmin) {
         throw new Error('Only editors can add reviewer comments');
       }
 
       const newComment = {
         reviewer_id: user.id,
-        reviewer_name: profile?.full_name || 'Unknown Reviewer',
-        reviewer_avatar: profile?.avatar_url || '/placeholder.svg',
+        reviewer_name: reviewerName || profile?.full_name || 'Unknown Reviewer',
+        reviewer_avatar: reviewerAvatar || profile?.avatar_url || '/placeholder.svg',
         comment
       };
 
@@ -71,8 +69,8 @@ export const useReviewerComments = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reviewerComments'] });
       toast({
-        title: 'Comentário adicionado',
-        description: 'Seu comentário foi publicado com sucesso.'
+        title: "Comentário adicionado",
+        description: "Seu comentário foi publicado com sucesso."
       });
     }
   });
@@ -94,8 +92,8 @@ export const useReviewerComments = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reviewerComments'] });
       toast({
-        title: 'Comentário removido',
-        description: 'O comentário foi removido com sucesso.'
+        title: "Comentário removido",
+        description: "O comentário foi removido com sucesso."
       });
     }
   });
