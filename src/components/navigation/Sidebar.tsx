@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, BookOpen, User, Settings, LogOut, ChevronLeft, ChevronRight, FileEdit, ShieldAlert } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,8 +11,14 @@ import { useAuth } from '@/contexts/AuthContext';
 const Sidebar = () => {
   const location = useLocation();
   const { state, toggleSidebar } = useSidebar();
-  const { profile, isAdmin, isEditor, isLoading } = useAuth();
+  const { profile, isAdmin, isEditor, isLoading, refreshProfile } = useAuth();
   const isCollapsed = state === 'collapsed';
+
+  // Add an effect to refresh profile when sidebar mounts
+  useEffect(() => {
+    refreshProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -32,18 +38,29 @@ const Sidebar = () => {
   };
 
   // For debugging purposes
-  console.log("Current user role:", profile?.role);
-  console.log("Is admin:", isAdmin);
-  console.log("Is editor:", isEditor);
+  console.log("Sidebar - Current user role:", profile?.role);
+  console.log("Sidebar - Is admin:", isAdmin);
+  console.log("Sidebar - Is editor:", isEditor);
 
+  // Build navigation items based on role
   const navItems = [
     { icon: Home, label: 'Homepage', path: '/homepage' },
     { icon: BookOpen, label: 'Artigos', path: '/articles' },
     { icon: User, label: 'Perfil', path: '/profile' },
-    ...(isEditor ? [{ icon: FileEdit, label: 'Editor', path: '/edit-app' }] : []),
-    ...(isAdmin ? [{ icon: ShieldAlert, label: 'Admin', path: '/admin' }] : []),
-    { icon: Settings, label: 'Configurações', path: '/settings' },
   ];
+  
+  // Add editor link if user is editor or admin
+  if (isEditor) {
+    navItems.push({ icon: FileEdit, label: 'Editor', path: '/edit-app' });
+  }
+  
+  // Add admin link if user is admin
+  if (isAdmin) {
+    navItems.push({ icon: ShieldAlert, label: 'Admin', path: '/admin' });
+  }
+  
+  // Add settings link for everyone
+  navItems.push({ icon: Settings, label: 'Configurações', path: '/settings' });
 
   // Log the nav items for debugging
   console.log("Navigation items:", navItems.map(item => item.label));

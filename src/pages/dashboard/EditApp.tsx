@@ -6,10 +6,9 @@ import HomepageSectionsManager from '@/components/dashboard/HomepageSectionsMana
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 
 const EditApp = () => {
-  const { profile, isEditor, isAdmin, isLoading } = useAuth();
+  const { profile, isEditor, isAdmin, isLoading, refreshProfile } = useAuth();
   const [sections, setSections] = useState([
     { id: 'reviewer', title: 'Nota do Revisor', visible: true, order: 0 },
     { id: 'featured', title: 'Destaque', visible: true, order: 1 },
@@ -19,32 +18,17 @@ const EditApp = () => {
     { id: 'trending', title: 'Mais acessados', visible: true, order: 5 }
   ]);
   
+  // Refresh profile when component mounts
+  useEffect(() => {
+    refreshProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  
   // For debugging purposes
   useEffect(() => {
     console.log("EditApp - Current user profile:", profile);
     console.log("EditApp - Is editor:", isEditor);
     console.log("EditApp - Is admin:", isAdmin);
-    
-    const checkRole = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        console.log("Current user:", user);
-        
-        if (user) {
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .single();
-            
-          console.log("Profile query result:", data, error);
-        }
-      } catch (error) {
-        console.error("Error checking role:", error);
-      }
-    };
-    
-    checkRole();
   }, [profile, isEditor, isAdmin]);
 
   const updateSections = (updatedSections) => {

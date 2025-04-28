@@ -15,6 +15,7 @@ interface AuthContextProps {
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
   isAdmin: boolean;
   isEditor: boolean;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
@@ -24,37 +25,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
-      console.log("Auth state change:", event, currentSession?.user?.email);
-      setSession(currentSession);
-      setUser(currentSession?.user || null);
-      
-      if (event === 'SIGNED_IN' && currentSession?.user) {
-        setTimeout(() => {
-          fetchProfile(currentSession.user.id);
-        }, 0);
-      } else if (event === 'SIGNED_OUT') {
-        setProfile(null);
-      }
-    });
-
-    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-      console.log("Initial session check:", currentSession?.user?.email || "No session");
-      setSession(currentSession);
-      setUser(currentSession?.user || null);
-      if (currentSession?.user) {
-        fetchProfile(currentSession.user.id);
-      } else {
-        setIsLoading(false);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isEditor, setIsEditor] = useState(false);
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -73,6 +45,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (data) {
         console.log("Profile found:", data);
         setProfile(data as UserProfile);
+        
+        setIsAdmin(data.role === 'admin');
+        setIsEditor(data.role === 'admin' || data.role === 'editor');
+        console.log("Role flags set - Admin:", data.role === 'admin', "Editor:", data.role === 'admin' || data.role === 'editor');
       } else {
         console.log("No profile found, creating default");
         const defaultProfileData = {
@@ -87,6 +63,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .insert(defaultProfileData);
           
         setProfile(defaultProfileData);
+        setIsAdmin(false);
+        setIsEditor(false);
       }
     } catch (error: any) {
       console.error('Error in profile handling:', error);
@@ -96,10 +74,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         full_name: null,
         avatar_url: null
       });
+      setIsAdmin(false);
+      setIsEditor(false);
     } finally {
       setIsLoading(false);
     }
   };
+
+  const refreshProfile = async () => {
+    if (!user) return;
+    await fetchProfile(user.id);
+  };
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+      console.log("Auth state change:", event, currentSession?.user?.email);
+      setSession(currentSession);
+      setUser(currentSession?.user || null);
+      
+      if (event === 'SIGNED_IN' && currentSession?.user) {
+        setTimeout(() => {
+          fetchProfile(currentSession.user.id);
+        }, 0);
+      } else if (event === 'SIGNED_OUT') {
+        setProfile(null);
+        setIsAdmin(false);
+        setIsEditor(false);
+      }
+    });
+
+    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      console.log("Initial session check:", currentSession?.user?.email || "No session");
+      setSession(currentSession);
+      setUser(currentSession?.user || null);
+      if (currentSession?.user) {
+        fetchProfile(currentSession.user.id);
+      } else {
+        setIsLoading(false);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   const signIn = async (email: string, password: string): Promise<void> => {
     try {
@@ -191,9 +209,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const isAdmin = profile?.role === 'admin';
-  const isEditor = profile?.role === 'editor' || isAdmin;
-
   return (
     <AuthContext.Provider value={{
       session,
@@ -205,7 +220,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       signOut,
       updateProfile,
       isAdmin,
-      isEditor
+      isEditor,
+      refreshProfile
     }}>
       {children}
     </AuthContext.Provider>

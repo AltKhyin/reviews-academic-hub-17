@@ -539,8 +539,16 @@ export type Database = {
         Args: { suggestion_id: string }
         Returns: undefined
       }
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       is_admin_user: {
         Args: Record<PropertyKey, never> | { uid: string }
+        Returns: boolean
+      }
+      is_editor: {
+        Args: Record<PropertyKey, never>
         Returns: boolean
       }
     }
