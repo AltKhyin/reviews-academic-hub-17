@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, BookOpen, User, Settings, LogOut, ChevronLeft, ChevronRight, FileEdit, ShieldAlert } from 'lucide-react';
@@ -14,11 +13,12 @@ const Sidebar = () => {
   const { profile, isAdmin, isEditor, isLoading, refreshProfile } = useAuth();
   const isCollapsed = state === 'collapsed';
 
-  // Add an effect to refresh profile when sidebar mounts
+  // Add debug logs
   useEffect(() => {
-    refreshProfile();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    console.log("Sidebar - Profile:", profile);
+    console.log("Sidebar - Is admin:", isAdmin);
+    console.log("Sidebar - Is editor:", isEditor);
+  }, [profile, isAdmin, isEditor]);
 
   const handleLogout = async () => {
     try {
@@ -37,11 +37,6 @@ const Sidebar = () => {
     }
   };
 
-  // For debugging purposes
-  console.log("Sidebar - Current user role:", profile?.role);
-  console.log("Sidebar - Is admin:", isAdmin);
-  console.log("Sidebar - Is editor:", isEditor);
-
   // Build navigation items based on role
   const navItems = [
     { icon: Home, label: 'Homepage', path: '/homepage' },
@@ -49,14 +44,16 @@ const Sidebar = () => {
     { icon: User, label: 'Perfil', path: '/profile' },
   ];
   
-  // Add editor link if user is editor or admin
-  if (isEditor) {
-    navItems.push({ icon: FileEdit, label: 'Editor', path: '/edit-app' });
-  }
-  
   // Add admin link if user is admin
   if (isAdmin) {
+    console.log("Adding admin link - user is admin");
     navItems.push({ icon: ShieldAlert, label: 'Admin', path: '/admin' });
+  }
+  
+  // Add editor link if user is editor or admin
+  if (isEditor) {
+    console.log("Adding editor link - user is editor/admin");
+    navItems.push({ icon: FileEdit, label: 'Editor', path: '/edit-app' });
   }
   
   // Add settings link for everyone

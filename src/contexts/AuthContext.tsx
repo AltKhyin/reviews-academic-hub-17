@@ -31,27 +31,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchProfile = async (userId: string) => {
     try {
       console.log("Fetching profile for user:", userId);
-      const { data, error } = await supabase
+      
+      // First check if user is in admin_users table
+      const { data: adminData, error: adminError } = await supabase
+        .from('admin_users')
+        .select('user_id')
+        .eq('user_id', userId)
+        .single();
+      
+      console.log("Admin check result:", { adminData, adminError });
+
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('id, full_name, avatar_url, role, bio, specialty, institution')
+        .select('*')
         .eq('id', userId)
         .single();
       
-      if (error) {
-        console.error('Error fetching profile:', error);
-        throw error;
-      }
+      console.log("Profile fetch result:", { profileData, profileError });
       
-      if (data) {
-        console.log("Profile found:", data);
-        setProfile(data as UserProfile);
+      if (profileError) throw profileError;
+      
+      if (profileData) {
+        const isUserAdmin = adminData !== null;
+        const isUserEditor = profileData.role === 'editor' || isUserAdmin;
         
-        setIsAdmin(data.role === 'admin');
-        setIsEditor(data.role === 'admin' || data.role === 'editor');
-        console.log("Role flags set - Admin:", data.role === 'admin', "Editor:", data.role === 'admin' || data.role === 'editor');
+        console.log("Setting role flags:", { isAdmin: isUserAdmin, isEditor: isUserEditor });
+        
+        setProfile(profileData as UserProfile);
+        setIsAdmin(isUserAdmin);
+        setIsEditor(isUserEditor);
       } else {
         console.log("No profile found, creating default");
-        const defaultProfileData = {
+        const defaultProfile = {
           id: userId,
           role: 'user',
           full_name: null,
@@ -60,14 +71,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         await supabase
           .from('profiles')
-          .insert(defaultProfileData);
+          .insert(defaultProfile);
           
-        setProfile(defaultProfileData);
+        setProfile(defaultProfile);
         setIsAdmin(false);
         setIsEditor(false);
       }
     } catch (error: any) {
       console.error('Error in profile handling:', error);
+      // Set a basic profile in case of error
       setProfile({
         id: userId,
         role: 'user',
