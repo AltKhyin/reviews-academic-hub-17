@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { MoveVertical, Eye, EyeOff, ChevronUp, ChevronDown } from 'lucide-react';
+import { Eye, EyeOff, ChevronUp, ChevronDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface Section {
