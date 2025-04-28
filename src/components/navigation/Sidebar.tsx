@@ -13,7 +13,6 @@ const Sidebar = () => {
   const { profile, isAdmin, isEditor, isLoading, refreshProfile } = useAuth();
   const isCollapsed = state === 'collapsed';
 
-  // Add debug logs
   useEffect(() => {
     console.log("Sidebar - Profile:", profile);
     console.log("Sidebar - Is admin:", isAdmin);
@@ -37,29 +36,24 @@ const Sidebar = () => {
     }
   };
 
-  // Build navigation items based on role
   const navItems = [
     { icon: Home, label: 'Homepage', path: '/homepage' },
     { icon: BookOpen, label: 'Artigos', path: '/articles' },
     { icon: User, label: 'Perfil', path: '/profile' },
   ];
   
-  // Add admin link if user is admin
   if (isAdmin) {
     console.log("Adding admin link - user is admin");
     navItems.push({ icon: ShieldAlert, label: 'Admin', path: '/admin' });
   }
   
-  // Add editor link if user is editor or admin
   if (isEditor) {
     console.log("Adding editor link - user is editor/admin");
-    navItems.push({ icon: FileEdit, label: 'Editor', path: '/edit-app' });
+    navItems.push({ icon: FileEdit, label: 'Editor', path: '/edit' });
   }
   
-  // Add settings link for everyone
   navItems.push({ icon: Settings, label: 'Configurações', path: '/settings' });
 
-  // Log the nav items for debugging
   console.log("Navigation items:", navItems.map(item => item.label));
 
   return (

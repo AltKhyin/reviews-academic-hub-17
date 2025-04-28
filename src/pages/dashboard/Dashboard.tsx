@@ -1,7 +1,5 @@
-
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useSidebar } from '@/components/ui/sidebar';
-import HomepageSectionsManager from '@/components/dashboard/HomepageSectionsManager';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIssues } from '@/hooks/useIssues';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
@@ -9,40 +7,12 @@ import { FeaturedSection } from '@/components/dashboard/FeaturedSection';
 import { ArticlesSection } from '@/components/dashboard/ArticlesSection';
 import { UpcomingReleaseSection } from '@/components/dashboard/UpcomingReleaseSection';
 import { ReviewerCommentSection } from '@/components/dashboard/ReviewerCommentSection';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-type SectionType = 'featured' | 'reviewer' | 'upcoming' | 'recent' | 'recommended' | 'trending';
-
-interface SectionConfig {
-  id: SectionType;
-  title: string;
-  visible: boolean;
-  order: number;
-}
 
 const Dashboard = () => {
   const { state } = useSidebar();
   const { user, profile } = useAuth();
   const { data: issues = [], isLoading, refetch } = useIssues();
   const isCollapsed = state === 'collapsed';
-  const isEditorOrAdmin = profile?.role === 'admin' || profile?.role === 'editor';
-
-  const defaultSections: SectionConfig[] = [
-    { id: 'reviewer', title: 'Nota do Revisor', visible: true, order: 0 },
-    { id: 'featured', title: 'Destaque', visible: true, order: 1 },
-    { id: 'recent', title: 'Edições Recentes', visible: true, order: 2 },
-    { id: 'upcoming', title: 'Próxima Edição', visible: true, order: 3 },
-    { id: 'recommended', title: 'Recomendados para você', visible: true, order: 4 },
-    { id: 'trending', title: 'Mais acessados', visible: true, order: 5 },
-  ];
-
-  const [sectionConfig, setSectionConfig] = useState<SectionConfig[]>(defaultSections);
-
-  useEffect(() => {
-    if (user) {
-      refetch();
-    }
-  }, [user, refetch]);
 
   const visibleIssues = React.useMemo(() => {
     if (!issues) return [];
@@ -59,33 +29,6 @@ const Dashboard = () => {
   }, [issues, profile]);
 
   const featuredIssue = visibleIssues?.find(issue => issue.featured) || visibleIssues?.[0];
-
-  const updateSectionConfig = (newConfig: SectionConfig[]) => {
-    setSectionConfig(newConfig);
-  };
-
-  const renderSection = (sectionType: SectionType) => {
-    if (!sectionConfig.find(s => s.id === sectionType)?.visible) {
-      return null;
-    }
-
-    switch (sectionType) {
-      case 'reviewer':
-        return <ReviewerCommentSection />;
-      case 'featured':
-        return <FeaturedSection issues={visibleIssues} />;
-      case 'upcoming':
-        return <UpcomingReleaseSection />;
-      case 'recent':
-        return <ArticleRow title="Edições Recentes" section="recent" issues={visibleIssues} featuredIssueId={featuredIssue?.id} />;
-      case 'recommended':
-        return <ArticleRow title="Recomendados para você" section="recommended" issues={visibleIssues} featuredIssueId={featuredIssue?.id} />;
-      case 'trending':
-        return <ArticleRow title="Mais acessados" section="trending" issues={visibleIssues} featuredIssueId={featuredIssue?.id} />;
-      default:
-        return null;
-    }
-  };
 
   const ArticleRow = ({ title, section, issues, featuredIssueId }: { 
     title: string; 
@@ -130,56 +73,22 @@ const Dashboard = () => {
 
   return (
     <div className={`pt-4 pb-16 space-y-8 transition-all duration-300 ${isCollapsed ? 'max-w-full' : 'max-w-[95%] mx-auto'}`}>
-      {isEditorOrAdmin && (
-        <div className="mb-8">
-          <Tabs defaultValue="content" className="w-full">
-            <TabsList className="mb-4">
-              <TabsTrigger value="content">Conteúdo</TabsTrigger>
-              <TabsTrigger value="sections">Gerenciar Seções</TabsTrigger>
-              <TabsTrigger value="comments">Comentários do Revisor</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="content">
-              {/* The main content stays here */}
-            </TabsContent>
-            
-            <TabsContent value="sections">
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold mb-4">Gerenciar Seções</h2>
-                <HomepageSectionsManager 
-                  sections={sectionConfig}
-                  updateSections={updateSectionConfig}
-                />
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="comments">
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold mb-4">Comentários do Revisor</h2>
-                <ReviewerCommentSection />
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
-      )}
-      
       {isLoading ? (
         <DashboardSkeleton />
       ) : visibleIssues.length > 0 ? (
         <>
-          {sectionConfig
-            .sort((a, b) => a.order - b.order)
-            .map(section => (
-              <React.Fragment key={section.id}>
-                {renderSection(section.id)}
-              </React.Fragment>
-            ))}
+          <ReviewerCommentSection />
+          <FeaturedSection issues={visibleIssues} />
+          <UpcomingReleaseSection />
+          <ArticleRow title="Edições Recentes" section="recent" issues={visibleIssues} featuredIssueId={featuredIssue?.id} />
+          <ArticleRow title="Recomendados para você" section="recommended" issues={visibleIssues} featuredIssueId={featuredIssue?.id} />
+          <ArticleRow title="Mais acessados" section="trending" issues={visibleIssues} featuredIssueId={featuredIssue?.id} />
         </>
       ) : (
         <div className="text-center py-12">
           <h2 className="text-xl font-medium mb-2">No articles available</h2>
           <p className="text-muted-foreground">
-            {isEditorOrAdmin 
+            {profile?.role === 'admin' || profile?.role === 'editor'
               ? 'Create your first article to get started.'
               : 'Check back later for new articles.'}
           </p>
