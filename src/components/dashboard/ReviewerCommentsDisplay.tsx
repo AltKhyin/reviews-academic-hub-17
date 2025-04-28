@@ -13,8 +13,8 @@ export const ReviewerCommentsDisplay = () => {
   if (!hasComments) return null;
 
   return (
-    <section>
-      <h2 className="text-2xl font-serif mb-2">Nota do Revisor</h2>
+    <section className="mb-16 mt-2">
+      <h2 className="text-2xl font-serif mb-4">Nota do Revisor</h2>
       <Card className="border-white/10 bg-white/5">
         <CardContent className="pt-6 space-y-6">
           {comments.map((comment) => (
