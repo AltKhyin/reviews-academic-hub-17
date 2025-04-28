@@ -2,6 +2,7 @@
 import { z } from "zod";
 
 export const issueFormSchema = z.object({
+  id: z.string().uuid().optional(),
   title: z.string().min(3, "O título deve ter pelo menos 3 caracteres"),
   description: z.string().optional(),
   tags: z.string().optional(),
@@ -13,6 +14,7 @@ export const issueFormSchema = z.object({
 });
 
 export type IssueFormValues = {
+  id?: string;
   title: string;
   description?: string;
   tags?: string;

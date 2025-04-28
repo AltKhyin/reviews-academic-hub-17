@@ -52,6 +52,7 @@ const IssueEditor = () => {
         issue.specialty.split(', ').map(tag => `[tag:${tag}]`).join('') : '';
 
       setFormValues({
+        id: issue.id,
         title: issue.title || '',
         description: issue.description || '',
         tags: formattedTags,

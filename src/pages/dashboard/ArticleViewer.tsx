@@ -10,6 +10,7 @@ import { Issue } from '@/types/issue';
 import { PDFViewer } from '@/components/pdf/PDFViewer';
 import { ArticleComments } from '@/components/article/ArticleComments';
 import { RecommendedArticles } from '@/components/article/RecommendedArticles';
+import { ExternalLectures } from '@/components/article/ExternalLectures';
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 
@@ -143,7 +144,11 @@ const ArticleViewer: React.FC = () => {
         </div>
       )}
 
-      <RecommendedArticles currentArticleId={issue.id} />
+      <div className="grid grid-cols-1 gap-8">
+        <RecommendedArticles currentArticleId={issue.id} />
+        <ExternalLectures issueId={issue.id} />
+      </div>
+      
       <ArticleComments articleId={issue.id} />
     </div>
   );

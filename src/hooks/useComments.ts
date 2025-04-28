@@ -41,11 +41,17 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
         }
       }
       
+      // Fixed: explicitly typed the return value to avoid circular type inference
       const { data, error } = await supabase
         .from('comments')
         .select(`
-          *,
-          profiles(id, full_name, avatar_url)
+          id,
+          content,
+          created_at,
+          user_id,
+          article_id,
+          issue_id,
+          profiles:profiles(id, full_name, avatar_url)
         `)
         .eq(entityIdField, entityId)
         .order('created_at', { ascending: false });
