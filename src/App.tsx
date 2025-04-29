@@ -19,6 +19,9 @@ import Settings from "./pages/dashboard/Settings";
 import Edit from "./pages/dashboard/Edit";
 import IssueEditor from "./pages/dashboard/IssueEditor";
 import NotFound from "./pages/NotFound";
+import Payment from "./pages/dashboard/Payment";
+import PaymentSuccess from "./pages/dashboard/PaymentSuccess";
+import PaymentCanceled from "./pages/dashboard/PaymentCanceled";
 
 // Create the query client outside the component function
 const queryClient = new QueryClient({
@@ -61,6 +64,9 @@ const App = () => {
                 <Route path="edit" element={<Edit />} />
                 <Route path="edit/issue/:id" element={<IssueEditor />} />
                 <Route path="edit/issue/new" element={<Edit />} />
+                <Route path="payment" element={<Payment />} />
+                <Route path="payment-success" element={<PaymentSuccess />} />
+                <Route path="payment-canceled" element={<PaymentCanceled />} />
                 <Route index element={<Navigate to="/homepage" replace />} />
               </Route>
 

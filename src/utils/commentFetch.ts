@@ -34,7 +34,7 @@ export const fetchComments = async (
         .eq('user_id', userId)
         .in(
           'comment_id',
-          comments.map((c: BaseComment) => c.id)
+          comments.map((c) => c.id)
         );
 
       if (!votesError && votes) {
