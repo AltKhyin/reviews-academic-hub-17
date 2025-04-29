@@ -23,7 +23,7 @@ export const CommentSection = ({ articleId, issueId, postId }: CommentSectionPro
   
   // Determine entity type and ID
   let entityId = '';
-  let entityType = '';
+  let entityType: 'article' | 'issue' | 'post' = 'article'; // Default value
   
   if (articleId) {
     entityId = articleId;
@@ -174,7 +174,8 @@ export const CommentSection = ({ articleId, issueId, postId }: CommentSectionPro
               comment={comment}
               onDelete={deleteComment}
               onReply={(parentId: string, content: string) => {
-                return replyToComment(parentId, content);
+                replyToComment({ parentId, content });
+                return Promise.resolve();
               }}
               onVote={voteComment}
               entityType={entityType}

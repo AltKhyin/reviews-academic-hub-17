@@ -19,10 +19,19 @@ export const useFileUpload = () => {
       console.log(`Starting upload for file ${fileName} to ${folder}`);
       
       // Determine which bucket to use based on folder
-      let bucketName = 'avatars'; // Use avatars as the default bucket for all uploads
+      let bucketName = 'avatars'; // Default bucket
+      
+      if (folder.includes('community')) {
+        bucketName = 'community';
+      } else if (folder.includes('issue')) {
+        bucketName = 'issues';
+      } else if (folder.includes('article')) {
+        bucketName = 'articles';
+      }
+      
+      console.log(`Selected bucket: ${bucketName} for folder: ${folder}`);
       
       // Upload the file to the bucket
-      console.log(`Uploading file to path: ${filePath} in bucket: ${bucketName}`);
       const { data, error: uploadError } = await supabase.storage
         .from(bucketName)
         .upload(filePath, file, {

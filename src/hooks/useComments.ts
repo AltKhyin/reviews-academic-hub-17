@@ -55,22 +55,31 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' | 
           return { comments: [], userVotes: [] };
         }
         
+        // Create the select query based on the entity type
+        let selectQuery = `
+          id, 
+          content, 
+          created_at, 
+          updated_at, 
+          user_id, 
+          parent_id,
+          score,
+          profiles:user_id (id, full_name, avatar_url)
+        `;
+        
+        // Add the appropriate entity ID field
+        if (entityType === 'article') {
+          selectQuery += `, article_id`;
+        } else if (entityType === 'issue') {
+          selectQuery += `, issue_id`;
+        } else if (entityType === 'post') {
+          selectQuery += `, post_id`;
+        }
+        
         // Fetch comments
         const { data: commentsData, error: commentsError } = await supabase
           .from('comments')
-          .select(`
-            id, 
-            content, 
-            created_at, 
-            updated_at, 
-            user_id, 
-            article_id, 
-            issue_id,
-            post_id,
-            parent_id,
-            score,
-            profiles:user_id (id, full_name, avatar_url)
-          `)
+          .select(selectQuery)
           .eq(entityIdField, entityId)
           .order('created_at', { ascending: false });
           
@@ -177,7 +186,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' | 
       if (!user) throw new Error('Not authenticated');
       
       // Create the comment object with the right fields
-      const commentData: any = {
+      const commentData: Record<string, any> = {
         content,
         user_id: user.id,
         score: 0 // Initialize with 0, will be updated by trigger after upvote
@@ -235,7 +244,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' | 
       if (!user) throw new Error('Not authenticated');
       
       // Create the reply comment object
-      const commentData: any = {
+      const commentData: Record<string, any> = {
         content,
         user_id: user.id,
         parent_id: parentId,
@@ -378,7 +387,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' | 
     comments: organizedComments,
     isLoading,
     addComment: (content: string) => addComment.mutateAsync(content),
-    replyToComment: async (parentId: string, content: string) => {
+    replyToComment: async ({ parentId, content }: { parentId: string, content: string }) => {
       return await replyToComment.mutateAsync({ parentId, content });
     },
     deleteComment: (commentId: string) => deleteComment.mutate(commentId),

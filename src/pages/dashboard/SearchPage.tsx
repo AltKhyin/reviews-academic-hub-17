@@ -193,33 +193,19 @@ const SearchPage: React.FC = () => {
 
           {/* Results area */}
           <div className="mb-6">
-            {searchResults && searchResults.length > 0 ? (
-              <SearchResults 
-                isLoading={isLoading}
-                error={error}
-                searchResults={searchResults}
-                refetch={refetch}
-                sortBy={sortBy}
-                setSortBy={setSortBy}
-                currentPage={currentPage}
-                setCurrentPage={setCurrentPage}
-                clearFilters={clearFilters}
-                filters={filters}
-                searchTags={searchTags}
-              />
-            ) : (
-              searchTags.length > 0 || Object.values(filters).some(v => 
-                Array.isArray(v) ? v.length > 0 : false
-              ) ? (
-                <Card className="p-8 text-center">
-                  <p className="text-lg font-medium mb-2">Nenhum resultado encontrado</p>
-                  <p className="text-gray-400 mb-4">Tente ajustar seus termos de busca ou remover alguns filtros.</p>
-                  <Button onClick={clearFilters} variant="outline">
-                    Limpar filtros
-                  </Button>
-                </Card>
-              ) : null
-            )}
+            <SearchResults 
+              isLoading={isLoading}
+              error={error}
+              searchResults={searchResults}
+              refetch={refetch}
+              sortBy={sortBy}
+              setSortBy={setSortBy}
+              currentPage={currentPage}
+              setCurrentPage={setCurrentPage}
+              clearFilters={clearFilters}
+              filters={filters}
+              searchTags={searchTags}
+            />
           </div>
         </section>
       </main>
