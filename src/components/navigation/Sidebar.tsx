@@ -13,7 +13,6 @@ import {
   FileEdit,
   Shield,
   LogOut,
-  Newspaper,
   Search,
   ChevronRight,
   ChevronLeft
@@ -33,45 +32,39 @@ export const Sidebar = () => {
   const menuItems = [
     {
       name: 'Início',
-      icon: <Home className="w-5 h-5" />,
+      icon: <Home className="w-[1.15em] h-[1.15em]" />,
       path: '/homepage',
       active: isActive('/homepage')
     },
     {
-      name: 'Artigos',
-      icon: <Newspaper className="w-5 h-5" />,
-      path: '/articles',
-      active: isActive('/articles')
-    },
-    {
-      name: 'Busca Avançada',
-      icon: <Search className="w-5 h-5" />,
+      name: 'Procurar',
+      icon: <Search className="w-[1.15em] h-[1.15em]" />,
       path: '/search',
       active: isActive('/search')
     },
     {
       name: 'Editar',
-      icon: <FileEdit className="w-5 h-5" />,
+      icon: <FileEdit className="w-[1.15em] h-[1.15em]" />,
       path: '/edit',
       active: isActive('/edit'),
       showToAdmin: true
     },
     {
       name: 'Administração',
-      icon: <Shield className="w-5 h-5" />,
+      icon: <Shield className="w-[1.15em] h-[1.15em]" />,
       path: '/admin',
       active: isActive('/admin'),
       adminOnly: true
     },
     {
       name: 'Perfil',
-      icon: <User className="w-5 h-5" />,
+      icon: <User className="w-[1.15em] h-[1.15em]" />,
       path: '/profile',
       active: isActive('/profile')
     },
     {
       name: 'Configurações',
-      icon: <Settings className="w-5 h-5" />,
+      icon: <Settings className="w-[1.15em] h-[1.15em]" />,
       path: '/settings',
       active: isActive('/settings')
     }
@@ -102,7 +95,7 @@ export const Sidebar = () => {
                 <li key={index}>
                   <Link
                     to={item.path}
-                    className={`flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-800 ${
+                    className={`flex items-center px-3 py-2 text-[1.1rem] font-medium rounded-md hover:bg-gray-800 ${
                       item.active ? 'bg-gray-800 text-white' : 'text-gray-400'
                     }`}
                   >
@@ -118,26 +111,26 @@ export const Sidebar = () => {
           <div className="flex flex-col space-y-2">
             <Button 
               variant="ghost" 
-              className="w-full justify-start gap-2 text-gray-400 hover:text-white hover:bg-gray-800" 
+              className="w-full justify-start gap-2 text-gray-400 hover:text-white hover:bg-gray-800 text-[1.1rem]" 
               onClick={() => signOut()}
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-[1.15em] h-[1.15em]" />
               {!isCollapsed && <span>Sair</span>}
             </Button>
             
             <Button
               variant="ghost" 
               size="sm" 
-              className="w-full justify-between text-gray-400 hover:text-white hover:bg-gray-800 mt-2"
+              className="w-full justify-between text-gray-400 hover:text-white hover:bg-gray-800 mt-2 text-[1.1rem]"
               onClick={toggleSidebar}
             >
               {!isCollapsed ? (
                 <>
                   <span>Esconder</span>
-                  <ChevronLeft className="w-4 h-4" />
+                  <ChevronLeft className="w-[1.15em] h-[1.15em]" />
                 </>
               ) : (
-                <ChevronRight className="w-4 h-4 mx-auto" />
+                <ChevronRight className="w-[1.15em] h-[1.15em] mx-auto" />
               )}
             </Button>
           </div>

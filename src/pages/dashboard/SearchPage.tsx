@@ -8,6 +8,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Issue } from '@/types/issue';
+import Logo from '@/components/common/Logo';
 import { 
   HelpCircle, 
   SlidersHorizontal, 
@@ -15,8 +16,8 @@ import {
   Search,
   Eye, 
   Filter,
-  ChevronLeft,  // Added ChevronLeft import
-  ChevronRight  // Also added ChevronRight for consistency with pagination
+  ChevronLeft,
+  ChevronRight 
 } from 'lucide-react';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/ui/pagination";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -153,7 +154,88 @@ const SearchPage: React.FC = () => {
 
   return (
     <div className="container mx-auto py-6">
-      <h1 className="text-3xl font-serif mb-6">Busca Avançada</h1>
+      {/* Logo centered at the top */}
+      <div className="flex justify-center mb-6">
+        <Logo dark={false} size="large" showSubtitle={true} />
+      </div>
+
+      <div className="mb-8">
+        {/* Search Area (Zona A) */}
+        <Card className="p-4">
+          <form onSubmit={handleSubmitSearch} className="flex gap-2 mb-4">
+            <div className="relative flex-1">
+              <Input
+                type="text"
+                placeholder="Pesquisa..."
+                value={queryText}
+                onChange={(e) => setQueryText(e.target.value)}
+                className="pr-10"
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <HelpCircle size={16} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="max-w-xs">
+                        Sintaxe: Use termos simples ou aspas para frases exatas.
+                        <br /><br />
+                        <strong>AND</strong>: Ambos os termos (padrão)
+                        <br />
+                        <strong>OR</strong>: Qualquer dos termos
+                        <br />
+                        <strong>NOT</strong>: Excluir termo
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
+            <Button type="submit">
+              <Search size={18} className="mr-2" />
+              Buscar
+            </Button>
+          </form>
+
+          {/* Search Tags */}
+          {searchTags.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-3">
+              {searchTags.map((tag, index) => (
+                <Badge 
+                  key={index} 
+                  variant={tag.exclude ? "outline" : "default"}
+                  className={`${tag.exclude ? 'border-destructive text-destructive' : ''} flex items-center gap-1 cursor-pointer`}
+                >
+                  <span onClick={() => handleTagToggleExclude(index)}>
+                    {tag.exclude ? 'NOT ' : ''}{tag.term}
+                  </span>
+                  <button 
+                    onClick={() => handleTagRemove(index)} 
+                    className="ml-1 hover:bg-gray-700/50 rounded-full p-0.5"
+                  >
+                    <X size={12} />
+                  </button>
+                </Badge>
+              ))}
+              {searchTags.length > 0 && (
+                <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs h-6">
+                  Limpar
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Query Preview */}
+          {queryPreview && (
+            <div className="text-sm text-gray-500 mt-2">
+              Query: {queryPreview}
+            </div>
+          )}
+        </Card>
+      </div>
 
       <div className="grid grid-cols-12 gap-6">
         {/* Mobile filters */}
@@ -192,82 +274,6 @@ const SearchPage: React.FC = () => {
 
         {/* Main Content */}
         <div className="col-span-12 md:col-span-9">
-          {/* Search Area (Zona A) */}
-          <Card className="p-4 mb-6">
-            <form onSubmit={handleSubmitSearch} className="flex gap-2 mb-4">
-              <div className="relative flex-1">
-                <Input
-                  type="text"
-                  placeholder="Pesquisa avançada..."
-                  value={queryText}
-                  onChange={(e) => setQueryText(e.target.value)}
-                  className="pr-10"
-                />
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <HelpCircle size={16} />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p className="max-w-xs">
-                          Sintaxe: Use termos simples ou aspas para frases exatas.
-                          <br /><br />
-                          <strong>AND</strong>: Ambos os termos (padrão)
-                          <br />
-                          <strong>OR</strong>: Qualquer dos termos
-                          <br />
-                          <strong>NOT</strong>: Excluir termo
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-              </div>
-              <Button type="submit">
-                <Search size={18} className="mr-2" />
-                Buscar
-              </Button>
-            </form>
-
-            {/* Search Tags */}
-            {searchTags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mb-3">
-                {searchTags.map((tag, index) => (
-                  <Badge 
-                    key={index} 
-                    variant={tag.exclude ? "outline" : "default"}
-                    className={`${tag.exclude ? 'border-destructive text-destructive' : ''} flex items-center gap-1 cursor-pointer`}
-                  >
-                    <span onClick={() => handleTagToggleExclude(index)}>
-                      {tag.exclude ? 'NOT ' : ''}{tag.term}
-                    </span>
-                    <button 
-                      onClick={() => handleTagRemove(index)} 
-                      className="ml-1 hover:bg-gray-700/50 rounded-full p-0.5"
-                    >
-                      <X size={12} />
-                    </button>
-                  </Badge>
-                ))}
-                {searchTags.length > 0 && (
-                  <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs h-6">
-                    Limpar
-                  </Button>
-                )}
-              </div>
-            )}
-
-            {/* Query Preview */}
-            {queryPreview && (
-              <div className="text-sm text-gray-500 mt-2">
-                Query: {queryPreview}
-              </div>
-            )}
-          </Card>
-
           {/* Sort & View Options */}
           <div className="flex justify-between items-center mb-4">
             <div className="flex items-center">
@@ -366,7 +372,7 @@ const SearchSidebar: React.FC<SearchSidebarProps> = ({ filters, onFilterChange, 
     <div className="space-y-4">
       <h3 className="font-medium text-lg mb-2">Filtros</h3>
       
-      <Accordion type="multiple" defaultValue={["area", "studyType"]}>
+      <Accordion type="multiple" defaultValue={[]}>
         {/* Area Clinica */}
         <AccordionItem value="area">
           <AccordionTrigger>Área Clínica</AccordionTrigger>
