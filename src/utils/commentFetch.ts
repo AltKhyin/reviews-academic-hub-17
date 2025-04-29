@@ -34,7 +34,7 @@ export const fetchComments = async (
         .eq('user_id', userId)
         .in(
           'comment_id',
-          comments.map(c => c.id)
+          comments.map((c: any) => c.id)
         );
 
       if (!votesError && votes) {
@@ -47,6 +47,18 @@ export const fetchComments = async (
     console.error('Error fetching comments:', error);
     return { comments: [], userVotes: [] };
   }
+};
+
+// Wrapper function for fetchComments with better naming for the hook
+export const fetchCommentsData = async (
+  entityId: string,
+  entityType: EntityType
+): Promise<{ comments: BaseComment[], userVotes: CommentVote[] }> => {
+  // Get current user if available
+  const { data } = await supabase.auth.getUser();
+  const userId = data?.user?.id;
+  
+  return fetchComments(entityType, entityId, userId);
 };
 
 // This function adds user vote information to comments
