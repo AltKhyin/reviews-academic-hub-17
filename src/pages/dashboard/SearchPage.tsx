@@ -150,9 +150,10 @@ const SearchPage: React.FC = () => {
           <Logo dark={false} size="2xlarge" />
         </header>
 
-        <section className="flex-1 px-6">
+        {/* Center the search card vertically as suggested */}
+        <section className="flex-1 flex items-center justify-center px-6">
           {/* Mobile filters */}
-          <div className="block md:hidden mb-4">
+          <div className="block md:hidden mb-4 w-full">
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="outline" size="sm" className="w-full">
@@ -177,8 +178,8 @@ const SearchPage: React.FC = () => {
             </Sheet>
           </div>
 
-          {/* Search Header Component */}
-          <Card className="p-6 mb-6">
+          {/* Search Header Component - centered */}
+          <Card className="p-6 mb-6 w-full max-w-3xl">
             <SearchHeader 
               queryText={queryText}
               setQueryText={setQueryText}
@@ -190,24 +191,24 @@ const SearchPage: React.FC = () => {
               queryPreview={queryPreview}
             />
           </Card>
-
-          {/* Results area */}
-          <div className="mb-6">
-            <SearchResults 
-              isLoading={isLoading}
-              error={error}
-              searchResults={searchResults}
-              refetch={refetch}
-              sortBy={sortBy}
-              setSortBy={setSortBy}
-              currentPage={currentPage}
-              setCurrentPage={setCurrentPage}
-              clearFilters={clearFilters}
-              filters={filters}
-              searchTags={searchTags}
-            />
-          </div>
         </section>
+
+        {/* Results area */}
+        <div className="mb-6 px-6">
+          <SearchResults 
+            isLoading={isLoading}
+            error={error}
+            searchResults={searchResults}
+            refetch={refetch}
+            sortBy={sortBy}
+            setSortBy={setSortBy}
+            currentPage={currentPage}
+            setCurrentPage={setCurrentPage}
+            clearFilters={clearFilters}
+            filters={filters}
+            searchTags={searchTags}
+          />
+        </div>
       </main>
     </div>
   );

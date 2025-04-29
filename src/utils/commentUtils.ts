@@ -124,12 +124,28 @@ export const fetchCommentsData = async (entityId: string, entityType: EntityType
   }
 };
 
-// This type fixes the infinite type instantiation issue
-type CommentWithReplies = Omit<Comment, 'replies'> & {
-  replies?: CommentWithReplies[]
-};
+// Define a concrete type to avoid infinite recursion
+interface CommentWithReplies {
+  id: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  user_id: string;
+  parent_id: string | null;
+  score: number;
+  article_id?: string | null;
+  issue_id?: string | null;
+  post_id?: string | null;
+  profiles?: {
+    id: string;
+    full_name: string;
+    avatar_url: string;
+  };
+  userVote?: 1 | -1 | 0;
+  replies?: CommentWithReplies[];
+}
 
-// Organize comments into a hierarchical structure - fixed to avoid infinite type instantiation
+// Organize comments into a hierarchical structure
 export const organizeComments = (commentsData: { comments: any[], userVotes: CommentVote[] }): CommentWithReplies[] => {
   if (!commentsData?.comments) return [];
   
@@ -149,7 +165,7 @@ export const organizeComments = (commentsData: { comments: any[], userVotes: Com
     const commentWithScore: CommentWithReplies = {
       ...comment,
       userVote: userVotesMap[comment.id] as 1 | -1 | 0 || 0,
-      replies: [] // Initialize with empty array
+      replies: []
     };
     
     // Add to map for quick lookup
@@ -185,5 +201,6 @@ export const organizeComments = (commentsData: { comments: any[], userVotes: Com
     }
   });
   
-  return topLevelComments as Comment[];
+  // Return the organized comments as Comment[] for compatibility
+  return topLevelComments;
 };
