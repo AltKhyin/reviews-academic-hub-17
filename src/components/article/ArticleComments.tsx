@@ -35,10 +35,6 @@ export const ArticleComments: React.FC<ArticleCommentsProps> = ({ articleId }) =
     await replyToComment(parentId, content);
   };
 
-  const handleVote = async (params: { commentId: string; value: 1 | -1 | 0 }) => {
-    await voteComment(params);
-  };
-
   const getSortedComments = () => {
     if (!comments) return [];
     
@@ -124,7 +120,7 @@ export const ArticleComments: React.FC<ArticleCommentsProps> = ({ articleId }) =
                     comment={comment}
                     voteComment={(commentId, value) => voteComment({ commentId, value })}
                     replyToComment={handleReply}
-                    deleteComment={deleteComment}
+                    deleteComment={async (commentId) => await deleteComment(commentId)}
                     isVoting={isVoting}
                     isReplying={isReplying}
                     isDeletingComment={isDeletingComment}

@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -52,7 +51,7 @@ export const useCommentActions = (entityId: string, entityType: 'article' | 'iss
       toast({
         title: "Sucesso",
         description: "Seu comentário foi adicionado.",
-        duration: 3000, // Auto-dismiss after 3 seconds
+        duration: 3000,
       });
     },
     onError: (error: Error) => {
@@ -60,14 +59,14 @@ export const useCommentActions = (entityId: string, entityType: 'article' | 'iss
         title: "Erro",
         description: error.message,
         variant: "destructive",
-        duration: 5000, // Auto-dismiss after 5 seconds
+        duration: 5000,
       });
     }
   });
 
-  // Reply to a comment
+  // Reply to a comment - Fix the mutation signature issue
   const replyToComment = useMutation({
-    mutationFn: async (parentId: string, content: string) => {
+    mutationFn: async ({ parentId, content }: { parentId: string, content: string }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
       
@@ -111,7 +110,7 @@ export const useCommentActions = (entityId: string, entityType: 'article' | 'iss
       toast({
         title: "Resposta adicionada",
         description: "Sua resposta foi publicada com sucesso.",
-        duration: 3000, // Auto-dismiss after 3 seconds
+        duration: 3000,
       });
     },
     onError: (error: Error) => {
@@ -119,7 +118,7 @@ export const useCommentActions = (entityId: string, entityType: 'article' | 'iss
         title: "Erro",
         description: error.message,
         variant: "destructive",
-        duration: 5000, // Auto-dismiss after 5 seconds
+        duration: 5000,
       });
     }
   });
@@ -133,13 +132,14 @@ export const useCommentActions = (entityId: string, entityType: 'article' | 'iss
         .eq('id', commentId);
 
       if (error) throw error;
+      return commentId;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['comments', entityId, entityType] });
       toast({
         title: "Sucesso",
         description: "Comentário excluído com sucesso.",
-        duration: 3000, // Auto-dismiss after 3 seconds
+        duration: 3000,
       });
     },
     onError: (error: Error) => {
@@ -147,7 +147,7 @@ export const useCommentActions = (entityId: string, entityType: 'article' | 'iss
         title: "Erro",
         description: error.message,
         variant: "destructive",
-        duration: 5000, // Auto-dismiss after 5 seconds
+        duration: 5000,
       });
     }
   });
@@ -206,18 +206,19 @@ export const useCommentActions = (entityId: string, entityType: 'article' | 'iss
         title: "Erro ao votar",
         description: error.message,
         variant: "destructive",
-        duration: 5000, // Auto-dismiss after 5 seconds
+        duration: 5000,
       });
     }
   });
 
+  // Fix the return interface to match how functions are being called
   return {
     addComment: (content: string) => addComment.mutate(content),
     replyToComment: (parentId: string, content: string) => 
       replyToComment.mutate({ parentId, content }),
     deleteComment: (commentId: string) => deleteComment.mutate(commentId),
-    voteComment: async (commentId: string, value: 1 | -1 | 0) => {
-      return voteComment.mutate({ commentId, value });
+    voteComment: (params: { commentId: string, value: 1 | -1 | 0 }) => {
+      return voteComment.mutate(params);
     },
     isAddingComment: addComment.isPending,
     isDeletingComment: deleteComment.isPending,
