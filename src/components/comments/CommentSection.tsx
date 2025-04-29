@@ -174,10 +174,12 @@ export const CommentSection = ({ articleId, issueId, postId }: CommentSectionPro
               comment={comment}
               onDelete={deleteComment}
               onReply={(parentId: string, content: string) => {
-                return replyToComment({ parentId, content });
+                // Wrap in void to match expected Promise<void> return type
+                replyToComment({ parentId, content });
+                return Promise.resolve();
               }}
               onVote={voteComment}
-              entityType={entityType}
+              entityType={entityType as 'article' | 'issue' | 'post'}
               entityId={entityId}
             />
           ))

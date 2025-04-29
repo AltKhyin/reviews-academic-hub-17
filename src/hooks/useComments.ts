@@ -96,7 +96,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' | 
             .from('comment_votes')
             .select('comment_id, value, user_id')
             .eq('user_id', user.id)
-            .in('comment_id', commentsData.map(c => c.id));
+            .in('comment_id', commentsData.map((c: any) => c.id));
             
           if (votesError) {
             console.error('Error fetching votes:', votesError);
@@ -126,7 +126,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' | 
     
     // Map of user votes by comment ID
     const userVotesMap: Record<string, number> = {};
-    userVotes.forEach(vote => {
+    userVotes.forEach((vote: CommentVote) => {
       userVotesMap[vote.comment_id] = vote.value;
     });
     
@@ -134,7 +134,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' | 
     const commentMap: Record<string, Comment> = {};
     
     // Process comments to add scores and user votes
-    const processedComments = comments.map(comment => {
+    const processedComments = comments.map((comment: any) => {
       const commentWithScore: Comment = {
         ...comment,
         userVote: userVotesMap[comment.id] as 1 | -1 | 0 || 0,
@@ -150,7 +150,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' | 
     // Organize into parent-child relationship
     const topLevelComments: Comment[] = [];
     
-    processedComments.forEach(comment => {
+    processedComments.forEach((comment: Comment) => {
       if (!comment.parent_id) {
         // This is a top-level comment
         topLevelComments.push(comment);
@@ -168,7 +168,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' | 
     });
     
     // Sort replies by created_at
-    Object.values(commentMap).forEach(comment => {
+    Object.values(commentMap).forEach((comment) => {
       if (comment.replies && comment.replies.length > 0) {
         comment.replies.sort((a, b) => 
           new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
@@ -186,7 +186,12 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' | 
       if (!user) throw new Error('Not authenticated');
       
       // Create the comment object with the right fields
-      const commentData: any = {
+      const commentData: {
+        content: string;
+        user_id: string;
+        score: number;
+        [key: string]: any;
+      } = {
         content,
         user_id: user.id,
         score: 0 // Initialize with 0, will be updated by trigger after upvote
@@ -244,7 +249,13 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' | 
       if (!user) throw new Error('Not authenticated');
       
       // Create the reply comment object
-      const commentData: any = {
+      const commentData: {
+        content: string;
+        user_id: string;
+        parent_id: string;
+        score: number;
+        [key: string]: any;
+      } = {
         content,
         user_id: user.id,
         parent_id: parentId,
@@ -387,12 +398,12 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' | 
     comments: organizedComments,
     isLoading,
     addComment: (content: string) => addComment.mutateAsync(content),
-    replyToComment: async ({ parentId, content }: { parentId: string, content: string }) => {
-      return await replyToComment.mutateAsync({ parentId, content });
+    replyToComment: ({ parentId, content }: { parentId: string, content: string }) => {
+      return replyToComment.mutateAsync({ parentId, content });
     },
     deleteComment: (commentId: string) => deleteComment.mutate(commentId),
-    voteComment: async (params: { commentId: string; value: 1 | -1 | 0 }) => {
-      return voteComment.mutate(params);
+    voteComment: ({ commentId, value }: { commentId: string; value: 1 | -1 | 0 }) => {
+      return voteComment.mutate({ commentId, value });
     },
     isAddingComment: addComment.isPending,
     isDeletingComment: deleteComment.isPending,

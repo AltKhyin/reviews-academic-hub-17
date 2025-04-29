@@ -14,7 +14,8 @@ export const Logo = ({
   collapsed = false,
   size = 'medium'
 }: LogoProps) => {
-  const textColor = dark ? 'text-[#212121]' : 'text-white';
+  // Changed to always black on auth page (dark = true)
+  const textColor = dark ? 'text-black' : 'text-white';
   
   // Font weight map
   const fontWeight = 'font-extrabold';

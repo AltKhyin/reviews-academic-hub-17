@@ -15,11 +15,11 @@ import { supabase } from '@/integrations/supabase/client';
 interface CommentItemProps {
   comment: Comment;
   onDelete: (id: string) => void;
-  onReply: (parentId: string, content: string) => Promise<void>;
+  onReply: (parentId: string, content: string) => Promise<void> | void;
   onVote: (params: { commentId: string; value: 1 | -1 | 0 }) => Promise<void>;
   level?: number;
   isDeleting?: boolean;
-  entityType?: 'article' | 'issue';
+  entityType?: 'article' | 'issue' | 'post';
   entityId: string;
 }
 
