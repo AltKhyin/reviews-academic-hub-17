@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -78,7 +77,7 @@ const SearchPage: React.FC = () => {
     ));
   };
 
-  const handleFilterChange = (filterType: keyof typeof filters, value: any) => {
+  const handleFilterChange = (filterType: keyof typeof DEFAULT_FILTERS, value: any) => {
     setFilters(prev => ({
       ...prev,
       [filterType]: value
@@ -109,7 +108,7 @@ const SearchPage: React.FC = () => {
     },
     studyType: {
       title: 'Tipo de Estudo',
-      options: ['RCT', 'Coorte', 'Caso-Controle', 'Metanálise', 'Revisão Sistemática']
+      options: ['Ensaio Clínico Randomizado', 'Coorte', 'Caso-Controle', 'Metanálise', 'Revisão Sistemática']
     },
     journal: {
       title: 'Jornal',
@@ -131,14 +130,14 @@ const SearchPage: React.FC = () => {
   return (
     <div className="container mx-auto py-8">
       {/* Logo centered with breathing room */}
-      <div className="flex justify-center mb-16">
+      <div className="flex justify-center my-8">
         <Logo dark={false} size="2xlarge" />
       </div>
 
       <div className="flex items-start justify-between gap-6">
         {/* Desktop Sidebar */}
         <div className="hidden md:block w-1/4">
-          <Card className="p-4">
+          <Card className="p-4 sticky top-4">
             <SearchFilters 
               filters={filters}
               onFilterChange={handleFilterChange}
@@ -152,7 +151,7 @@ const SearchPage: React.FC = () => {
 
         {/* Search Area */}
         <div className="flex-1">
-          <Card className="p-4">
+          <Card className="p-4 mb-4">
             {/* Mobile filters */}
             <div className="block md:hidden mb-4">
               <Sheet>

@@ -24,7 +24,8 @@ export const useIssueEditor = (id?: string) => {
     search_description: '',
     year: '',
     design: '',
-    score: 0
+    score: 0,
+    population: ''
   });
 
   const onSubmit = async (values: IssueFormValues) => {
@@ -48,7 +49,7 @@ export const useIssueEditor = (id?: string) => {
           published: values.published,
           featured: values.featured,
           updated_at: new Date().toISOString(),
-          // New fields
+          // Fields
           authors: values.authors || '',
           search_title: values.search_title || '',
           real_title: values.real_title || '',
@@ -57,6 +58,7 @@ export const useIssueEditor = (id?: string) => {
           year: values.year || '',
           design: values.design || '',
           score: values.score || 0,
+          population: values.population || '',
           ...(values.published && { published_at: new Date().toISOString() })
         })
         .eq('id', id);

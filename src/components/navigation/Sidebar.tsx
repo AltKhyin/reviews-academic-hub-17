@@ -11,7 +11,6 @@ import {
   FileText,
   Settings,
   User,
-  Shield,
   LogOut,
   ChevronRight,
   ChevronLeft
@@ -49,13 +48,6 @@ export const Sidebar = () => {
       showToAdmin: true
     },
     {
-      name: 'Administração',
-      icon: <Shield size={24} strokeWidth={1.5} className="w-6 h-6" />,
-      path: '/admin',
-      active: isActive('/admin'),
-      adminOnly: true
-    },
-    {
       name: 'Perfil',
       icon: <User size={24} strokeWidth={1.5} className="w-6 h-6" />,
       path: '/profile',
@@ -84,9 +76,6 @@ export const Sidebar = () => {
         <div className="flex-grow p-4">
           <ul className="space-y-1">
             {menuItems.map((item, index) => {
-              if (item.adminOnly && !isAdmin) {
-                return null;
-              }
               if (item.showToAdmin && !isAdmin) {
                 return null;
               }

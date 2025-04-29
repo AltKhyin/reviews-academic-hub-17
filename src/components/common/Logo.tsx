@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Archive } from 'lucide-react';
 
 interface LogoProps {
   dark?: boolean;
@@ -28,14 +29,11 @@ export const Logo = ({
     '2xlarge': 'text-9xl'
   };
   
-  // Letter spacing for added premium feel
-  const letterSpacing = 'tracking-[0.1em]';
-  
   if (collapsed) {
     return (
       <div className="flex justify-center">
-        <h1 className={`logo-text ${sizeClasses[size]} font-serif ${letterSpacing} ${fontWeight} ${textColor}`}>
-          R.
+        <h1 className={`logo-text ${sizeClasses[size]} ${fontWeight} ${textColor} flex items-center`}>
+          R<Archive className="h-4 w-4 mb-3 ml-1" />
         </h1>
       </div>
     );
@@ -43,8 +41,8 @@ export const Logo = ({
 
   return (
     <div className="flex flex-col">
-      <h1 className={`logo-text ${sizeClasses[size]} font-serif ${letterSpacing} ${fontWeight} ${textColor}`}>
-        Reviews.
+      <h1 className={`logo-text ${sizeClasses[size]} ${fontWeight} ${textColor} flex items-center`}>
+        Reviews<Archive className="h-6 w-6 mb-3 ml-1" />
       </h1>
     </div>
   );

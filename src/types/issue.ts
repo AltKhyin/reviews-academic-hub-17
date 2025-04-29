@@ -1,4 +1,3 @@
-
 export interface Issue {
   id: string;
   title: string;
@@ -21,6 +20,7 @@ export interface Issue {
   year?: string | null;
   design?: string | null;
   score?: number | null;
+  population?: string | null;
 }
 
 export type FormIssueValues = {
@@ -40,6 +40,7 @@ export type FormIssueValues = {
   year?: string;
   design?: string;
   score?: number;
+  population?: string;
 };
 
 export interface UserProfile {

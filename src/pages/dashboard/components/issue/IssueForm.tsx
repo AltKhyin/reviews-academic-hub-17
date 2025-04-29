@@ -194,7 +194,7 @@ export const IssueForm: React.FC<IssueFormProps> = ({
                   <FormItem>
                     <FormLabel>Design do estudo</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ex: RCT, Coorte, etc" {...field} />
+                      <Input placeholder="Ex: Ensaio Clínico Randomizado, Coorte, etc" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -223,6 +223,23 @@ export const IssueForm: React.FC<IssueFormProps> = ({
                 )}
               />
             </div>
+            
+            <FormField
+              control={form.control}
+              name="population"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>População</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: Adultos, Pediátrico, Idosos, Gestantes" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    Categoria da população do estudo
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
         </div>
 

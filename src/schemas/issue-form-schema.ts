@@ -11,7 +11,7 @@ export const issueFormSchema = z.object({
   cover_image_url: z.string().optional(),
   published: z.boolean().default(false),
   featured: z.boolean().default(false),
-  // New fields for search engine optimization
+  // Search engine optimization fields
   authors: z.string().optional(),
   search_title: z.string().optional(),
   real_title: z.string().optional(),
@@ -19,7 +19,8 @@ export const issueFormSchema = z.object({
   search_description: z.string().optional(),
   year: z.string().optional(), 
   design: z.string().optional(),
-  score: z.number().optional().default(0)
+  score: z.number().optional().default(0),
+  population: z.string().optional()
 });
 
 export type IssueFormValues = {
@@ -40,4 +41,5 @@ export type IssueFormValues = {
   year?: string;
   design?: string;
   score?: number;
+  population?: string;
 };
