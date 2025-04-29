@@ -129,17 +129,29 @@ const SearchPage: React.FC = () => {
       );
 
   return (
-    <main className="flex flex-col h-screen overflow-hidden">
-      {/* Logo Header - Equal spacing from top */}
-      <header className="flex-none h-24 flex items-center justify-center">
-        <Logo dark={false} size="2xlarge" />
-      </header>
+    <main className="flex h-screen">
+      {/* Sidebar - no overflow */}
+      <aside className="hidden md:block w-64 p-4 bg-background/50 border-r">
+        <SearchFilters 
+          filters={filters}
+          onFilterChange={handleFilterChange}
+          facetGroups={facetGroups}
+          areaSearchText={areaSearchText}
+          setAreaSearchText={setAreaSearchText}
+          filteredAreaOptions={filteredAreaOptions}
+        />
+      </aside>
 
-      {/* Search area - centered vertically */}
-      <section className="flex-1 flex items-center justify-center px-6 overflow-y-auto">
-        <div className="w-full max-w-5xl">
-          {/* Search Header Component in Card */}
-          <Card className="p-6 mb-6">
+      {/* Content with scrollable area */}
+      <div className="flex flex-col flex-1 overflow-y-auto">
+        {/* Logo Header */}
+        <header className="flex-none h-24 flex items-center justify-center">
+          <Logo dark={false} size="2xlarge" />
+        </header>
+
+        {/* Centered search section */}
+        <section className="flex-1 flex items-center justify-center px-6">
+          <div className="w-full max-w-2xl">
             {/* Mobile filters */}
             <div className="block md:hidden mb-4">
               <Sheet>
@@ -167,58 +179,40 @@ const SearchPage: React.FC = () => {
             </div>
 
             {/* Search Header Component */}
-            <SearchHeader 
-              queryText={queryText}
-              setQueryText={setQueryText}
-              handleSubmitSearch={handleSubmitSearch}
-              searchTags={searchTags}
-              handleTagRemove={handleTagRemove}
-              handleTagToggleExclude={handleTagToggleExclude}
-              clearFilters={clearFilters}
-              queryPreview={queryPreview}
-            />
-          </Card>
+            <Card className="p-6 mb-6">
+              <SearchHeader 
+                queryText={queryText}
+                setQueryText={setQueryText}
+                handleSubmitSearch={handleSubmitSearch}
+                searchTags={searchTags}
+                handleTagRemove={handleTagRemove}
+                handleTagToggleExclude={handleTagToggleExclude}
+                clearFilters={clearFilters}
+                queryPreview={queryPreview}
+              />
+            </Card>
 
-          {/* Results area - only appears after search */}
-          {searchResults && searchResults.length > 0 && (
-            <div className="mb-6">
-              {/* Filters and Results Area */}
-              <div className="flex gap-6">
-                {/* Desktop Sidebar */}
-                <aside className="hidden md:block w-1/4">
-                  <Card className="p-4 sticky top-6">
-                    <SearchFilters 
-                      filters={filters}
-                      onFilterChange={handleFilterChange}
-                      facetGroups={facetGroups}
-                      areaSearchText={areaSearchText}
-                      setAreaSearchText={setAreaSearchText}
-                      filteredAreaOptions={filteredAreaOptions}
-                    />
-                  </Card>
-                </aside>
-
-                {/* Search Results */}
-                <div className="flex-1">
-                  <SearchResults 
-                    isLoading={isLoading}
-                    error={error}
-                    searchResults={searchResults}
-                    refetch={refetch}
-                    sortBy={sortBy}
-                    setSortBy={setSortBy}
-                    currentPage={currentPage}
-                    setCurrentPage={setCurrentPage}
-                    clearFilters={clearFilters}
-                    filters={filters}
-                    searchTags={searchTags}
-                  />
-                </div>
+            {/* Results area - only appears after search */}
+            {searchResults && searchResults.length > 0 && (
+              <div className="mb-6">
+                <SearchResults 
+                  isLoading={isLoading}
+                  error={error}
+                  searchResults={searchResults}
+                  refetch={refetch}
+                  sortBy={sortBy}
+                  setSortBy={setSortBy}
+                  currentPage={currentPage}
+                  setCurrentPage={setCurrentPage}
+                  clearFilters={clearFilters}
+                  filters={filters}
+                  searchTags={searchTags}
+                />
               </div>
-            </div>
-          )}
-        </div>
-      </section>
+            )}
+          </div>
+        </section>
+      </div>
     </main>
   );
 };

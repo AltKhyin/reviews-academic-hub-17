@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -70,23 +69,26 @@ export const CommunityHeader: React.FC = () => {
       
       console.log("Updating community settings with new header:", imageUrl);
       
-      // Use fetch API directly for consistency with the hook
-      const response = await fetch(
-        `https://kznasfgubbyinomtetiu.supabase.co/rest/v1/community_settings?id=eq.${settings.id}`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'apiKey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6bmFzZmd1YmJ5aW5vbXRldGl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2Njg4NzMsImV4cCI6MjA2MTI0NDg3M30.Fx7xl_EA_G8SVVjWyVRu61kWhwkrbFlZsulQz_WKx7Q',
-            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || ''}`
-          },
-          body: JSON.stringify({ header_image_url: imageUrl })
-        }
-      );
-      
-      if (!response.ok) {
-        console.error("Error response:", await response.text());
-        throw new Error(`Error updating settings: ${response.statusText}`);
+      // If there's an existing settings record, update it
+      if (settings.id) {
+        const { error } = await supabase
+          .from('community_settings')
+          .update({ header_image_url: imageUrl })
+          .eq('id', settings.id);
+          
+        if (error) throw error;
+      } else {
+        // Otherwise create a new settings record
+        const { error } = await supabase
+          .from('community_settings')
+          .insert({
+            header_image_url: imageUrl,
+            theme_color: '#1e40af',
+            description: 'Comunidade científica para discussão de evidências médicas',
+            allow_polls: true
+          });
+          
+        if (error) throw error;
       }
       
       await refetch();
@@ -118,15 +120,11 @@ export const CommunityHeader: React.FC = () => {
     );
   }
   
-  if (!settings) {
-    return null;
-  }
-  
   return (
     <>
       <div 
         className="relative w-full h-48 bg-cover bg-center rounded-md mb-6 overflow-hidden"
-        style={{ backgroundImage: `url(${settings.header_image_url})` }}
+        style={{ backgroundImage: `url(${settings?.header_image_url || 'https://images.unsplash.com/photo-1618044733300-9472054094ee?q=80&w=2942&auto=format&fit=crop'})` }}
       >
         <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
           <h1 className="text-4xl font-serif text-white font-semibold drop-shadow-lg">Comunidade</h1>
@@ -161,7 +159,7 @@ export const CommunityHeader: React.FC = () => {
                 <div 
                   className="w-full h-32 rounded bg-cover bg-center mb-2"
                   style={{ 
-                    backgroundImage: `url(${headerImagePreview || settings.header_image_url})` 
+                    backgroundImage: `url(${headerImagePreview || settings?.header_image_url || ''})` 
                   }}
                 ></div>
                 

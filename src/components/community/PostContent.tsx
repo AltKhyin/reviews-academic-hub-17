@@ -45,18 +45,26 @@ export const PostContent: React.FC<PostContentProps> = ({ post, onVoteChange }) 
             />
           )}
           {post.video_url && (
-            // Use a div wrapper with specific dimensions
             <div className="relative w-full h-0 pb-[56.25%] rounded-md overflow-hidden">
-              <video 
-                src={post.video_url} 
-                controls 
-                className="absolute top-0 left-0 w-full h-full object-contain bg-black/10 rounded-md"
-                preload="metadata"
-                onError={(e) => {
-                  console.error('Video loading error:', e);
-                  console.log('Failed video URL:', post.video_url);
-                }}
-              />
+              {post.video_url.includes('mp4') || post.video_url.includes('webm') || post.video_url.includes('mov') ? (
+                <video 
+                  src={post.video_url} 
+                  controls 
+                  className="absolute top-0 left-0 w-full h-full object-contain bg-black/10 rounded-md"
+                  preload="metadata"
+                  onError={(e) => {
+                    console.error('Video loading error:', e);
+                    console.log('Failed video URL:', post.video_url);
+                  }}
+                />
+              ) : (
+                <iframe
+                  src={post.video_url.replace('watch?v=', 'embed/')} 
+                  className="absolute top-0 left-0 w-full h-full object-contain bg-black/10 rounded-md"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              )}
             </div>
           )}
         </div>

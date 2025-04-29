@@ -278,6 +278,36 @@ export type Database = {
           },
         ]
       }
+      community_settings: {
+        Row: {
+          allow_polls: boolean | null
+          created_at: string | null
+          description: string | null
+          header_image_url: string | null
+          id: string
+          theme_color: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          allow_polls?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          header_image_url?: string | null
+          id?: string
+          theme_color?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          allow_polls?: boolean | null
+          created_at?: string | null
+          description?: string | null
+          header_image_url?: string | null
+          id?: string
+          theme_color?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       content_suggestions: {
         Row: {
           created_at: string
