@@ -19,42 +19,7 @@ export const useFileUpload = () => {
       console.log(`Starting upload for file ${fileName} to ${folder}`);
       
       // Determine which bucket to use based on folder
-      let bucketName;
-      
-      if (folder === 'issues') {
-        bucketName = 'issues';
-      } else if (folder === 'community') {
-        bucketName = 'community';
-      } else if (folder === 'avatars') {
-        bucketName = 'avatars';
-      } else {
-        bucketName = 'public'; // Default bucket
-      }
-      
-      // Check if bucket exists or create it if needed
-      try {
-        const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-        
-        if (bucketsError) {
-          console.error('Error listing buckets:', bucketsError);
-          throw bucketsError;
-        }
-        
-        // Find or create the bucket
-        const bucketExists = buckets?.some(bucket => bucket.name === bucketName);
-        
-        if (!bucketExists) {
-          console.log(`Bucket "${bucketName}" not found, creating it...`);
-          
-          // Instead of creating bucket directly (which causes RLS issues),
-          // we'll use an existing bucket or fall back to the public bucket
-          bucketName = 'avatars'; // Use existing bucket as fallback
-        }
-      } catch (error) {
-        console.error('Error checking buckets:', error);
-        // Fall back to using the avatars bucket which likely already exists
-        bucketName = 'avatars';
-      }
+      let bucketName = 'avatars'; // Use avatars as the default bucket for all uploads
       
       // Upload the file to the bucket
       console.log(`Uploading file to path: ${filePath} in bucket: ${bucketName}`);

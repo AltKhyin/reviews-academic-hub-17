@@ -13,18 +13,31 @@ import { CommentItem } from '@/components/article/CommentItem';
 interface CommentSectionProps {
   articleId?: string;
   issueId?: string;
+  postId?: string;
 }
 
-export const CommentSection = ({ articleId, issueId }: CommentSectionProps) => {
+export const CommentSection = ({ articleId, issueId, postId }: CommentSectionProps) => {
   const [newComment, setNewComment] = React.useState('');
   const { toast } = useToast();
   const { user, profile } = useAuth();
   
-  const entityId = issueId || articleId;
-  const entityType = issueId ? 'issue' : 'article';
+  // Determine entity type and ID
+  let entityId = '';
+  let entityType = '';
+  
+  if (articleId) {
+    entityId = articleId;
+    entityType = 'article';
+  } else if (issueId) {
+    entityId = issueId;
+    entityType = 'issue';
+  } else if (postId) {
+    entityId = postId;
+    entityType = 'post';
+  }
   
   if (!entityId) {
-    console.error('CommentSection requires either articleId or issueId');
+    console.error('CommentSection requires either articleId, issueId, or postId');
     return null;
   }
   
@@ -33,27 +46,40 @@ export const CommentSection = ({ articleId, issueId }: CommentSectionProps) => {
     queryKey: [entityType, entityId, 'exists'],
     queryFn: async () => {
       if (entityType === 'article') {
-        // For posts, we need to check in the posts table
+        // For articles, check the articles table
         const { data, error } = await supabase
-          .from('posts')
+          .from('articles')
           .select('id')
-          .eq('id', articleId)
+          .eq('id', entityId)
           .maybeSingle();
           
         if (error) throw error;
         return !!data;
-      } else {
-        // For issues, check in the issues table
+      } else if (entityType === 'issue') {
+        // For issues, check the issues table
         const { data, error } = await supabase
           .from('issues')
           .select('id')
-          .eq('id', issueId)
+          .eq('id', entityId)
+          .maybeSingle();
+          
+        if (error) throw error;
+        return !!data;
+      } else if (entityType === 'post') {
+        // For posts, check the posts table
+        const { data, error } = await supabase
+          .from('posts')
+          .select('id')
+          .eq('id', entityId)
           .maybeSingle();
           
         if (error) throw error;
         return !!data;
       }
-    }
+      
+      return false;
+    },
+    retry: false
   });
   
   const { 
@@ -75,7 +101,7 @@ export const CommentSection = ({ articleId, issueId }: CommentSectionProps) => {
         toast({
           variant: "destructive",
           title: "Erro",
-          description: `O ${entityType === 'article' ? 'post' : 'issue'} não foi encontrado.`,
+          description: `O ${entityType === 'article' ? 'artigo' : entityType === 'issue' ? 'issue' : 'post'} não foi encontrado.`,
         });
         return;
       }
@@ -147,7 +173,9 @@ export const CommentSection = ({ articleId, issueId }: CommentSectionProps) => {
               key={comment.id}
               comment={comment}
               onDelete={deleteComment}
-              onReply={replyToComment}
+              onReply={(parentId: string, content: string) => {
+                return replyToComment(parentId, content);
+              }}
               onVote={voteComment}
               entityType={entityType}
               entityId={entityId}

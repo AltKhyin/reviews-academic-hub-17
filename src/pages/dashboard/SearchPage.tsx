@@ -151,64 +151,74 @@ const SearchPage: React.FC = () => {
         </header>
 
         <section className="flex-1 px-6">
-          <div className="w-full max-w-2xl mx-auto">
-            {/* Mobile filters */}
-            <div className="block md:hidden mb-4">
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="outline" size="sm" className="w-full">
-                    <SlidersHorizontal size={16} className="mr-2" />
-                    Filtros
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="left" className="w-[300px] sm:w-[400px]">
-                  {/* Sidebar Content for Mobile */}
-                  <div className="h-full py-4">
-                    <h3 className="font-bold mb-4">Filtros</h3>
-                    <SearchFilters 
-                      filters={filters}
-                      onFilterChange={handleFilterChange}
-                      facetGroups={facetGroups}
-                      areaSearchText={areaSearchText}
-                      setAreaSearchText={setAreaSearchText}
-                      filteredAreaOptions={filteredAreaOptions}
-                    />
-                  </div>
-                </SheetContent>
-              </Sheet>
-            </div>
+          {/* Mobile filters */}
+          <div className="block md:hidden mb-4">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="sm" className="w-full">
+                  <SlidersHorizontal size={16} className="mr-2" />
+                  Filtros
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+                {/* Sidebar Content for Mobile */}
+                <div className="h-full py-4">
+                  <h3 className="font-bold mb-4">Filtros</h3>
+                  <SearchFilters 
+                    filters={filters}
+                    onFilterChange={handleFilterChange}
+                    facetGroups={facetGroups}
+                    areaSearchText={areaSearchText}
+                    setAreaSearchText={setAreaSearchText}
+                    filteredAreaOptions={filteredAreaOptions}
+                  />
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
 
-            {/* Search Header Component */}
-            <Card className="p-6 mb-6">
-              <SearchHeader 
-                queryText={queryText}
-                setQueryText={setQueryText}
-                handleSubmitSearch={handleSubmitSearch}
-                searchTags={searchTags}
-                handleTagRemove={handleTagRemove}
-                handleTagToggleExclude={handleTagToggleExclude}
+          {/* Search Header Component */}
+          <Card className="p-6 mb-6">
+            <SearchHeader 
+              queryText={queryText}
+              setQueryText={setQueryText}
+              handleSubmitSearch={handleSubmitSearch}
+              searchTags={searchTags}
+              handleTagRemove={handleTagRemove}
+              handleTagToggleExclude={handleTagToggleExclude}
+              clearFilters={clearFilters}
+              queryPreview={queryPreview}
+            />
+          </Card>
+
+          {/* Results area */}
+          <div className="mb-6">
+            {searchResults && searchResults.length > 0 ? (
+              <SearchResults 
+                isLoading={isLoading}
+                error={error}
+                searchResults={searchResults}
+                refetch={refetch}
+                sortBy={sortBy}
+                setSortBy={setSortBy}
+                currentPage={currentPage}
+                setCurrentPage={setCurrentPage}
                 clearFilters={clearFilters}
-                queryPreview={queryPreview}
+                filters={filters}
+                searchTags={searchTags}
               />
-            </Card>
-
-            {/* Results area - only appears after search */}
-            {searchResults && searchResults.length > 0 && (
-              <div className="mb-6">
-                <SearchResults 
-                  isLoading={isLoading}
-                  error={error}
-                  searchResults={searchResults}
-                  refetch={refetch}
-                  sortBy={sortBy}
-                  setSortBy={setSortBy}
-                  currentPage={currentPage}
-                  setCurrentPage={setCurrentPage}
-                  clearFilters={clearFilters}
-                  filters={filters}
-                  searchTags={searchTags}
-                />
-              </div>
+            ) : (
+              searchTags.length > 0 || Object.values(filters).some(v => 
+                Array.isArray(v) ? v.length > 0 : false
+              ) ? (
+                <Card className="p-8 text-center">
+                  <p className="text-lg font-medium mb-2">Nenhum resultado encontrado</p>
+                  <p className="text-gray-400 mb-4">Tente ajustar seus termos de busca ou remover alguns filtros.</p>
+                  <Button onClick={clearFilters} variant="outline">
+                    Limpar filtros
+                  </Button>
+                </Card>
+              ) : null
             )}
           </div>
         </section>

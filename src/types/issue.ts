@@ -61,15 +61,16 @@ export interface Comment {
   user_id: string;
   article_id?: string;
   issue_id?: string;
+  post_id?: string;
+  parent_id?: string;
   score: number;
-  parent_id?: string | null;
   profiles?: {
     id: string;
     full_name: string | null;
     avatar_url: string | null;
-  };
-  replies?: Comment[];
+  } | null;
   userVote?: 1 | -1 | 0;
+  replies?: Comment[];
 }
 
 export interface CommentVote {

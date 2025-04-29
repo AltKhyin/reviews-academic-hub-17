@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -115,7 +116,7 @@ export const CommunityHeader: React.FC = () => {
   if (isLoading) {
     return (
       <div className="w-full">
-        <Skeleton className="w-full h-48 rounded-md" />
+        <Skeleton className="w-full h-144 rounded-md" />
       </div>
     );
   }
@@ -123,11 +124,11 @@ export const CommunityHeader: React.FC = () => {
   return (
     <>
       <div 
-        className="relative w-full h-48 bg-cover bg-center rounded-md mb-6 overflow-hidden"
+        className="relative w-full h-144 bg-cover bg-center rounded-md mb-6 overflow-hidden"
         style={{ backgroundImage: `url(${settings?.header_image_url || 'https://images.unsplash.com/photo-1618044733300-9472054094ee?q=80&w=2942&auto=format&fit=crop'})` }}
       >
         <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
-          <h1 className="text-4xl font-serif text-white font-semibold drop-shadow-lg">Comunidade</h1>
+          <h1 className="text-5xl font-serif text-white font-semibold drop-shadow-lg">Comunidade</h1>
         </div>
         
         {isAdmin && (

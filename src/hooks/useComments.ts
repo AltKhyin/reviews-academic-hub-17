@@ -5,9 +5,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Comment, CommentVote } from '@/types/issue';
 import { toast } from '@/hooks/use-toast';
 
-export const useComments = (entityId: string, entityType: 'article' | 'issue' = 'article') => {
+export const useComments = (entityId: string, entityType: 'article' | 'issue' | 'post' = 'article') => {
   const queryClient = useQueryClient();
-  const entityIdField = entityType === 'article' ? 'article_id' : 'issue_id';
+  const entityIdField = entityType === 'article' ? 'article_id' : 
+                        entityType === 'issue' ? 'issue_id' : 'post_id';
 
   // Fetch comments for the entity with votes for current user
   const { data: commentsData, isLoading } = useQuery({
@@ -18,32 +19,40 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
         const { data: { user } } = await supabase.auth.getUser();
         
         // First, verify if the entity exists
+        let entityExists = false;
+        
         if (entityType === 'article') {
-          const { data: entityExists, error: entityError } = await supabase
+          const { data, error } = await supabase
             .from('articles')
             .select('id')
             .eq('id', entityId)
             .maybeSingle();
           
-          if (entityError) throw entityError;
-          
-          if (!entityExists) {
-            console.error(`Article with ID ${entityId} not found`);
-            return { comments: [], userVotes: [] };
-          }
-        } else {
-          const { data: entityExists, error: entityError } = await supabase
+          if (error) throw error;
+          entityExists = !!data;
+        } else if (entityType === 'issue') {
+          const { data, error } = await supabase
             .from('issues')
             .select('id')
             .eq('id', entityId)
             .maybeSingle();
           
-          if (entityError) throw entityError;
+          if (error) throw error;
+          entityExists = !!data;
+        } else if (entityType === 'post') {
+          const { data, error } = await supabase
+            .from('posts')
+            .select('id')
+            .eq('id', entityId)
+            .maybeSingle();
           
-          if (!entityExists) {
-            console.error(`Issue with ID ${entityId} not found`);
-            return { comments: [], userVotes: [] };
-          }
+          if (error) throw error;
+          entityExists = !!data;
+        }
+        
+        if (!entityExists) {
+          console.error(`${entityType} with ID ${entityId} not found`);
+          return { comments: [], userVotes: [] };
         }
         
         // Fetch comments
@@ -57,6 +66,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
             user_id, 
             article_id, 
             issue_id,
+            post_id,
             parent_id,
             score,
             profiles:user_id (id, full_name, avatar_url)
@@ -173,7 +183,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
         score: 0 // Initialize with 0, will be updated by trigger after upvote
       };
       
-      // Set either article_id or issue_id based on entityType
+      // Set either article_id, issue_id, or post_id based on entityType
       commentData[entityIdField] = entityId;
       
       // Insert the comment
@@ -232,7 +242,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
         score: 0 // Initialize with 0, will be updated by trigger after upvote
       };
       
-      // Set either article_id or issue_id based on entityType
+      // Set either article_id, issue_id, or post_id based on entityType
       commentData[entityIdField] = entityId;
       
       // Insert the comment
@@ -367,9 +377,10 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
   return {
     comments: organizedComments,
     isLoading,
-    addComment: (content: string) => addComment.mutate(content),
-    replyToComment: (parentId: string, content: string) => 
-      replyToComment.mutate({ parentId, content }),
+    addComment: (content: string) => addComment.mutateAsync(content),
+    replyToComment: async (parentId: string, content: string) => {
+      return await replyToComment.mutateAsync({ parentId, content });
+    },
     deleteComment: (commentId: string) => deleteComment.mutate(commentId),
     voteComment: async (params: { commentId: string; value: 1 | -1 | 0 }) => {
       return voteComment.mutate(params);
