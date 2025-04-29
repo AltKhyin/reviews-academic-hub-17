@@ -1,8 +1,8 @@
+
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -19,24 +19,18 @@ import * as z from 'zod';
 interface PaymentLink {
   id: string;
   name: string;
-  description: string | null;
-  amount: number;
-  currency: string;
   url: string;
   created_at: string;
-  stripe_id: string;
 }
 
 // Form schema
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  description: z.string().optional(),
-  amount: z.coerce.number().min(1, "Amount must be at least 1"),
-  currency: z.string().default("USD")
+  url: z.string().url("Must be a valid URL")
 });
 
 const PaymentLinks = () => {
-  const { isAdmin, profile } = useAuth();
+  const { isAdmin } = useAuth();
   const [isCreatingLink, setIsCreatingLink] = useState(false);
   const queryClient = useQueryClient();
 
@@ -50,13 +44,11 @@ const PaymentLinks = () => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
-      description: "",
-      amount: 0,
-      currency: "USD"
+      url: ""
     }
   });
 
-  // Fetch payment links - using any type to bypass TypeScript issues with table not in types
+  // Fetch payment links
   const { data: paymentLinks, isLoading } = useQuery({
     queryKey: ['paymentLinks'],
     queryFn: async () => {
@@ -66,7 +58,7 @@ const PaymentLinks = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      // Use a more explicit type casting to avoid TS2352 error
+      // Use a more explicit type casting to avoid TS errors
       return (data as unknown) as PaymentLink[];
     }
   });
@@ -74,15 +66,14 @@ const PaymentLinks = () => {
   // Create payment link mutation
   const createPaymentLinkMutation = useMutation({
     mutationFn: async (values: z.infer<typeof formSchema>) => {
-      // Call the edge function to create a payment link
-      const { data, error } = await supabase.functions.invoke('create-payment-link', {
-        body: { 
+      const { data, error } = await supabase
+        .from('payment_links' as any)
+        .insert([{ 
           name: values.name,
-          description: values.description || '',
-          amount: values.amount,
-          currency: values.currency
-        }
-      });
+          url: values.url,
+          created_at: new Date().toISOString()
+        }])
+        .select();
       
       if (error) throw error;
       return data;
@@ -93,14 +84,14 @@ const PaymentLinks = () => {
       setIsCreatingLink(false);
       toast({
         title: "Success",
-        description: "Payment link created successfully",
+        description: "Payment link added successfully",
       });
     },
     onError: (error) => {
       console.error('Error creating payment link:', error);
       toast({
         title: "Error",
-        description: "Failed to create payment link. Please try again.",
+        description: "Failed to add payment link. Please try again.",
         variant: "destructive"
       });
     }
@@ -153,15 +144,15 @@ const PaymentLinks = () => {
           onClick={() => setIsCreatingLink(!isCreatingLink)}
           variant={isCreatingLink ? "outline" : "default"}
         >
-          {isCreatingLink ? "Cancel" : <><Plus className="w-4 h-4 mr-2" /> Create New Link</>}
+          {isCreatingLink ? "Cancel" : <><Plus className="w-4 h-4 mr-2" /> Add New Link</>}
         </Button>
       </div>
 
       {isCreatingLink && (
         <Card>
           <CardHeader>
-            <CardTitle>Create Payment Link</CardTitle>
-            <CardDescription>Generate a new payment link that customers can use to make a purchase</CardDescription>
+            <CardTitle>Add Payment Link</CardTitle>
+            <CardDescription>Add a payment link to use in your application</CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
@@ -173,7 +164,7 @@ const PaymentLinks = () => {
                     <FormItem>
                       <FormLabel>Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="Premium Access" {...field} />
+                        <Input placeholder="Premium Plan" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -182,54 +173,24 @@ const PaymentLinks = () => {
                 
                 <FormField
                   control={form.control}
-                  name="description"
+                  name="url"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Description (Optional)</FormLabel>
+                      <FormLabel>Payment URL</FormLabel>
                       <FormControl>
-                        <Textarea placeholder="Access to premium content for one month" {...field} />
+                        <Input placeholder="https://buy.stripe.com/..." {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
 
-                <div className="flex gap-4">
-                  <FormField
-                    control={form.control}
-                    name="amount"
-                    render={({ field }) => (
-                      <FormItem className="flex-1">
-                        <FormLabel>Amount</FormLabel>
-                        <FormControl>
-                          <Input type="number" placeholder="29.99" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="currency"
-                    render={({ field }) => (
-                      <FormItem className="w-32">
-                        <FormLabel>Currency</FormLabel>
-                        <FormControl>
-                          <Input {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
                 <Button 
                   type="submit" 
                   className="w-full"
                   disabled={createPaymentLinkMutation.isPending}
                 >
-                  {createPaymentLinkMutation.isPending ? "Creating..." : "Create Payment Link"}
+                  {createPaymentLinkMutation.isPending ? "Adding..." : "Add Payment Link"}
                 </Button>
               </form>
             </Form>
@@ -240,7 +201,7 @@ const PaymentLinks = () => {
       <Card>
         <CardHeader>
           <CardTitle>Existing Payment Links</CardTitle>
-          <CardDescription>Manage your existing payment links</CardDescription>
+          <CardDescription>Manage your payment links</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -249,15 +210,14 @@ const PaymentLinks = () => {
             </div>
           ) : !paymentLinks || paymentLinks.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              <p>No payment links created yet.</p>
+              <p>No payment links added yet.</p>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Name</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Created</TableHead>
+                  <TableHead>Added</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -265,18 +225,7 @@ const PaymentLinks = () => {
                 {paymentLinks.map((link) => (
                   <TableRow key={link.id}>
                     <TableCell>
-                      <div>
-                        <div className="font-medium">{link.name}</div>
-                        {link.description && (
-                          <div className="text-sm text-gray-500">{link.description}</div>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {new Intl.NumberFormat('en-US', { 
-                        style: 'currency', 
-                        currency: link.currency
-                      }).format(link.amount / 100)}
+                      <div className="font-medium">{link.name}</div>
                     </TableCell>
                     <TableCell>{new Date(link.created_at).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">
@@ -292,7 +241,7 @@ const PaymentLinks = () => {
                           variant="ghost" 
                           size="sm"
                           onClick={() => {
-                            if(confirm("Are you sure you want to delete this payment link? This action cannot be undone.")) {
+                            if(confirm("Are you sure you want to delete this payment link?")) {
                               deletePaymentLinkMutation.mutate(link.id);
                             }
                           }}
