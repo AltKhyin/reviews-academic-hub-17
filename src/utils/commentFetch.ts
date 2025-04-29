@@ -27,14 +27,14 @@ export const fetchComments = async (
 
     // Get user votes if a userId is provided
     let userVotes: CommentVote[] = [];
-    if (userId) {
+    if (userId && comments && comments.length > 0) {
       const { data: votes, error: votesError } = await supabase
         .from('comment_votes')
         .select('*')
         .eq('user_id', userId)
         .in(
           'comment_id',
-          comments.map((c: any) => c.id)
+          comments.map((c: BaseComment) => c.id)
         );
 
       if (!votesError && votes) {

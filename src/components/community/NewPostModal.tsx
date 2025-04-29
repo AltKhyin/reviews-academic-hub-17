@@ -212,7 +212,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose, onP
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Nova Publicação</DialogTitle>
           <DialogDescription>
@@ -236,8 +236,9 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose, onP
             <Textarea
               id="content"
               placeholder="Digite o conteúdo da sua publicação"
-              rows={5}
+              rows={10}
               {...register('content')}
+              className="min-h-[200px]"
             />
           </div>
 
