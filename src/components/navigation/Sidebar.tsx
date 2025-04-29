@@ -80,18 +80,14 @@ export const Sidebar = () => {
   return (
     <div className="fixed top-0 left-0 h-full z-40 bg-[#121212] border-r border-white/10">
       <div className="flex flex-col h-full">
-        <div className="px-4 py-6 flex items-center justify-between">
+        <div className="px-4 py-6">
           <Link to="/homepage">
-            <Logo dark={false} />
+            {isCollapsed ? (
+              <Logo dark={false} collapsed={true} />
+            ) : (
+              <Logo dark={false} />
+            )}
           </Link>
-          <Button
-            variant="ghost" 
-            size="sm" 
-            className="text-white hover:bg-gray-800"
-            onClick={toggleSidebar}
-          >
-            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-          </Button>
         </div>
         <div className="flex-grow p-4">
           <ul className="space-y-1">
@@ -119,10 +115,32 @@ export const Sidebar = () => {
           </ul>
         </div>
         <div className="p-4 border-t border-white/10">
-          <Button variant="ghost" className="w-full justify-start gap-2 text-gray-400 hover:text-white hover:bg-gray-800" onClick={() => signOut()}>
-            <LogOut className="w-4 h-4" />
-            {!isCollapsed && <span>Sair</span>}
-          </Button>
+          <div className="flex flex-col space-y-2">
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start gap-2 text-gray-400 hover:text-white hover:bg-gray-800" 
+              onClick={() => signOut()}
+            >
+              <LogOut className="w-4 h-4" />
+              {!isCollapsed && <span>Sair</span>}
+            </Button>
+            
+            <Button
+              variant="ghost" 
+              size="sm" 
+              className="w-full justify-between text-gray-400 hover:text-white hover:bg-gray-800 mt-2"
+              onClick={toggleSidebar}
+            >
+              {!isCollapsed ? (
+                <>
+                  <span>Esconder</span>
+                  <ChevronLeft className="w-4 h-4" />
+                </>
+              ) : (
+                <ChevronRight className="w-4 h-4 mx-auto" />
+              )}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
