@@ -21,7 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArticleComments } from '@/components/article/ArticleComments';
+import { CommentSection } from '@/components/comments/CommentSection';
 import { useNavigate } from 'react-router-dom';
 
 interface PostProps {
@@ -383,10 +383,10 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
         </div>
       </div>
 
-      {/* Comments Section (ArticleComments) - visible when showComments is true */}
+      {/* Comments Section - visible when showComments is true */}
       {showComments && (
         <div className="mt-4 pt-4 border-t border-gray-700/30">
-          <ArticleComments articleId={post.id} />
+          <CommentSection articleId={post.id} />
         </div>
       )}
 

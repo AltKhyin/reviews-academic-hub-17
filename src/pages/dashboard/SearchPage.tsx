@@ -132,6 +132,7 @@ const SearchPage: React.FC = () => {
     <div className="flex h-screen">
       {/* Sidebar - fixed, no overflow */}
       <aside className="hidden md:block w-64 flex-shrink-0 p-4 bg-background/50 border-r">
+        <h3 className="font-medium text-lg mb-2">Filtros</h3>
         <SearchFilters 
           filters={filters}
           onFilterChange={handleFilterChange}
@@ -149,9 +150,8 @@ const SearchPage: React.FC = () => {
           <Logo dark={false} size="2xlarge" />
         </header>
 
-        {/* Centered search section */}
-        <section className="flex-1 flex items-center justify-center px-6">
-          <div className="w-full max-w-2xl">
+        <section className="flex-1 px-6">
+          <div className="w-full max-w-2xl mx-auto">
             {/* Mobile filters */}
             <div className="block md:hidden mb-4">
               <Sheet>

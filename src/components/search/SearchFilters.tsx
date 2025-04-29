@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,8 +35,6 @@ export const SearchFilters: React.FC<SearchFilterProps> = ({
 }) => {
   return (
     <>
-      <h3 className="font-medium text-lg mb-2">Filtros</h3>
-      
       <Accordion type="multiple" defaultValue={["studyType"]}>
         {/* Área - with search box */}
         <AccordionItem value="area">
