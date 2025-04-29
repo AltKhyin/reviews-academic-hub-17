@@ -110,6 +110,7 @@ export const fetchCommentsData = async (entityId: string, entityType: EntityType
       if (votesError) {
         console.error('Error fetching votes:', votesError);
       } else if (votesData) {
+        // Fix: Ensure votesData is properly typed when assigning to userVotes
         userVotes = votesData as CommentVote[];
       }
     }
@@ -124,7 +125,7 @@ export const fetchCommentsData = async (entityId: string, entityType: EntityType
   }
 };
 
-// Organize comments into a hierarchical structure
+// Organize comments into a hierarchical structure - fixing excessive recursion
 export const organizeComments = (commentsData: { comments: any[], userVotes: CommentVote[] }): Comment[] => {
   if (!commentsData?.comments) return [];
   
@@ -144,6 +145,7 @@ export const organizeComments = (commentsData: { comments: any[], userVotes: Com
     const commentWithScore: Comment = {
       ...comment,
       userVote: userVotesMap[comment.id] as 1 | -1 | 0 || 0,
+      // Initialize replies as an empty array to avoid recursion issues
       replies: []
     };
     

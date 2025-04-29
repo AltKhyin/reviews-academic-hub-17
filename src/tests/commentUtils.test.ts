@@ -1,6 +1,7 @@
 
 import { Comment, CommentVote } from '@/types/comment';
 import { organizeComments } from '@/utils/commentUtils';
+import '@testing-library/jest-dom';
 
 describe('commentUtils', () => {
   describe('organizeComments', () => {
@@ -47,7 +48,8 @@ describe('commentUtils', () => {
         }
       ];
 
-      const userVotes = [
+      // Fix the value type to match CommentVote (1 | -1 instead of number)
+      const userVotes: CommentVote[] = [
         { user_id: 'currentUser', comment_id: '1', value: 1 },
         { user_id: 'currentUser', comment_id: '3', value: -1 }
       ];
