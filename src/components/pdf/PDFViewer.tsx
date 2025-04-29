@@ -1,7 +1,5 @@
 
-import React, { useState } from 'react';
-import { Maximize, Minimize } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import React from 'react';
 
 interface PDFViewerProps {
   url?: string;
@@ -14,42 +12,18 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   title,
   fallbackContent
 }) => {
-  const [isFullScreen, setIsFullScreen] = useState(false);
-
-  const toggleFullScreen = () => {
-    setIsFullScreen(!isFullScreen);
-  };
-
   return (
-    <div 
-      className={`bg-[#1a1a1a] rounded-lg p-6 shadow-lg card-elevation flex flex-col ${
-        isFullScreen 
-          ? 'fixed inset-0 z-50 rounded-none' 
-          : 'h-full'
-      }`}
-    >
-      <div className="mb-4 flex justify-between items-center">
+    <div className="bg-[#1a1a1a] rounded-lg p-6 shadow-lg card-elevation h-full flex flex-col">
+      <div className="mb-4">
         <h2 className="font-serif text-xl font-medium">{title}</h2>
-        <Button 
-          variant="ghost" 
-          size="icon"
-          onClick={toggleFullScreen}
-          className="text-gray-400 hover:text-white"
-        >
-          {isFullScreen ? <Minimize size={18} /> : <Maximize size={18} />}
-        </Button>
       </div>
-      <div 
-        className={`w-full flex-grow bg-[#121212] rounded-md overflow-hidden ${
-          isFullScreen ? 'h-[calc(100vh-80px)]' : 'min-h-[800px]'
-        }`}
-      >
+      <div className="w-full flex-grow min-h-[800px] bg-[#121212] rounded-md overflow-hidden">
         {url && url !== 'placeholder.pdf' ? (
           <iframe
             src={url}
             className="w-full h-full rounded-md"
             title={title}
-            style={{ height: '100%', minHeight: isFullScreen ? 'calc(100vh - 80px)' : '800px' }}
+            style={{ minHeight: '800px' }}
           />
         ) : (
           <div className="flex flex-col items-center justify-center h-full p-4">

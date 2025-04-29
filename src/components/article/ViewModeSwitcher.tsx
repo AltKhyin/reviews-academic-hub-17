@@ -42,7 +42,7 @@ export const ViewModeSwitcher: React.FC<ViewModeSwitcherProps> = ({
         } ${!hasOriginal ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
         <FileText size={16} />
-        <span>Original</span>
+        <span>Artigo Original</span>
       </button>
     </div>
   );

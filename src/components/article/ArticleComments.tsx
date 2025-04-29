@@ -18,32 +18,18 @@ export const ArticleComments: React.FC<ArticleCommentsProps> = ({ articleId }) =
     voteComment,
     isAddingComment,
     isDeletingComment
-  } = useComments(articleId, 'issue');
+  } = useComments(articleId, 'issue'); // Using 'issue' as the entity type
 
   const handleAddComment = async (content: string) => {
-    try {
-      await addComment(content);
-      console.log("Comment added successfully");
-    } catch (error) {
-      console.error("Error adding comment:", error);
-    }
+    await addComment(content);
   };
   
   const handleAddReply = async (parentId: string, content: string) => {
-    try {
-      await addComment(content, parentId);
-      console.log("Reply added successfully");
-    } catch (error) {
-      console.error("Error adding reply:", error);
-    }
+    await addComment(content, parentId);
   };
   
   const handleVote = async (commentId: string, value: 1 | -1) => {
-    try {
-      await voteComment({ commentId, value });
-    } catch (error) {
-      console.error("Error voting on comment:", error);
-    }
+    await voteComment({ commentId, value });
   };
 
   if (isLoading) {
@@ -81,9 +67,7 @@ export const ArticleComments: React.FC<ArticleCommentsProps> = ({ articleId }) =
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-400">
-              Nenhum comentário ainda. Seja o primeiro a comentar!
-            </div>
+            <div className="text-center py-8 text-gray-400">Nenhum comentário ainda. Seja o primeiro a comentar!</div>
           )}
         </CardContent>
       </Card>
