@@ -132,6 +132,15 @@ export const CommentSection = ({ articleId, issueId, postId }: CommentSectionPro
 
   const userInitial = profile?.full_name ? profile.full_name[0] : 'U';
 
+  // Wrapper functions to handle the type mismatch
+  const handleReply = async (parentId: string, content: string) => {
+    await replyToComment({ parentId, content });
+  };
+  
+  const handleVote = async (params: { commentId: string; value: 1 | -1 | 0 }) => {
+    await voteComment(params);
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="text-lg font-medium">Comentários</h2>
@@ -174,8 +183,8 @@ export const CommentSection = ({ articleId, issueId, postId }: CommentSectionPro
               key={comment.id}
               comment={comment}
               onDelete={commentId => deleteComment(commentId)}
-              onReply={(parentId: string, content: string) => replyToComment({ parentId, content })}
-              onVote={(params) => voteComment(params)}
+              onReply={handleReply}
+              onVote={handleVote}
               entityType={entityType}
               entityId={entityId}
             />
@@ -189,3 +198,4 @@ export const CommentSection = ({ articleId, issueId, postId }: CommentSectionPro
     </div>
   );
 };
+

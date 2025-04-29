@@ -1,217 +1,39 @@
 
-import React, { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { useFileUpload } from '@/hooks/useFileUpload';
-import { useToast } from '@/hooks/use-toast';
+import React from 'react';
 import { useCommunitySettings } from '@/hooks/useCommunityPosts';
-import { Button } from '@/components/ui/button';
-import { Pencil, Image, Loader2 } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 
-export const CommunityHeader: React.FC = () => {
-  const { user } = useAuth();
-  const { data: settings, isLoading, refetch } = useCommunitySettings();
-  const [isEditing, setIsEditing] = useState(false);
-  const [headerImageFile, setHeaderImageFile] = useState<File | null>(null);
-  const [headerImagePreview, setHeaderImagePreview] = useState<string | null>(null);
-  const { uploadFile, isUploading } = useFileUpload();
-  const { toast } = useToast();
-  
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  
-  // Check if user is an admin
-  React.useEffect(() => {
-    if (!user) return;
-    
-    const checkAdminStatus = async () => {
-      const { data } = await supabase
-        .from('admin_users')
-        .select('user_id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-        
-      setIsAdmin(!!data);
-    };
-    
-    checkAdminStatus();
-  }, [user]);
-  
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setHeaderImageFile(file);
-      const objectUrl = URL.createObjectURL(file);
-      setHeaderImagePreview(objectUrl);
-    }
-  };
-  
-  const handleSave = async () => {
-    if (!settings) return;
-    
-    try {
-      setIsSaving(true);
-      let imageUrl = settings.header_image_url;
-      
-      if (headerImageFile) {
-        console.log("Uploading header image file...", headerImageFile.name);
-        const uploadedUrl = await uploadFile(headerImageFile, 'community');
-        if (uploadedUrl) {
-          console.log("Upload successful, URL:", uploadedUrl);
-          imageUrl = uploadedUrl;
-        } else {
-          throw new Error("Failed to upload image");
-        }
-      }
-      
-      console.log("Updating community settings with new header:", imageUrl);
-      
-      // If there's an existing settings record, update it
-      if (settings.id) {
-        const { error } = await supabase
-          .from('community_settings')
-          .update({ header_image_url: imageUrl })
-          .eq('id', settings.id);
-          
-        if (error) throw error;
-      } else {
-        // Otherwise create a new settings record
-        const { error } = await supabase
-          .from('community_settings')
-          .insert({
-            header_image_url: imageUrl,
-            theme_color: '#1e40af',
-            description: 'Comunidade científica para discussão de evidências médicas',
-            allow_polls: true
-          });
-          
-        if (error) throw error;
-      }
-      
-      await refetch();
-      setIsEditing(false);
-      setHeaderImageFile(null);
-      setHeaderImagePreview(null);
-      
-      toast({
-        title: "Configurações atualizadas",
-        description: "As configurações da comunidade foram atualizadas com sucesso.",
-      });
-    } catch (error: any) {
-      console.error('Error updating community settings:', error);
-      toast({
-        title: "Erro ao atualizar configurações",
-        description: error.message || "Ocorreu um erro ao atualizar as configurações.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-  
+export const CommunityHeader = () => {
+  const { data: settings, isLoading } = useCommunitySettings();
+
   if (isLoading) {
     return (
-      <div className="w-full">
-        <Skeleton className="w-full h-144 rounded-md" />
-      </div>
+      <div className="w-full h-40 bg-gray-800/20 mb-8 rounded-lg animate-pulse"></div>
     );
   }
-  
+
+  if (!settings) {
+    return null;
+  }
+
   return (
-    <>
+    <div className="mb-8">
       <div 
-        className="relative w-full h-144 bg-cover bg-center rounded-md mb-6 overflow-hidden"
-        style={{ backgroundImage: `url(${settings?.header_image_url || 'https://images.unsplash.com/photo-1618044733300-9472054094ee?q=80&w=2942&auto=format&fit=crop'})` }}
+        className="w-full h-40 rounded-lg bg-cover bg-center mb-4"
+        style={{ 
+          backgroundImage: `url(${settings.header_image_url})`,
+          backgroundColor: settings.theme_color || '#1e40af'
+        }}
       >
-        <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center">
-          <h1 className="text-5xl font-serif text-white font-semibold drop-shadow-lg">Comunidade</h1>
+        <div className="w-full h-full bg-black/30 flex items-center justify-center rounded-lg">
+          <h1 className="text-4xl font-serif text-white font-bold">Comunidade</h1>
         </div>
-        
-        {isAdmin && (
-          <Button
-            variant="secondary"
-            size="sm"
-            className="absolute top-4 right-4"
-            onClick={() => setIsEditing(true)}
-          >
-            <Pencil className="h-4 w-4 mr-2" />
-            Editar
-          </Button>
-        )}
       </div>
       
-      <Dialog open={isEditing} onOpenChange={setIsEditing}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Editar Cabeçalho da Comunidade</DialogTitle>
-            <DialogDescription>
-              Personalize a aparência da página da comunidade.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="header-image">Imagem de Cabeçalho</Label>
-              <div className="border rounded-md p-2 flex flex-col items-center justify-center space-y-2">
-                <div 
-                  className="w-full h-32 rounded bg-cover bg-center mb-2"
-                  style={{ 
-                    backgroundImage: `url(${headerImagePreview || settings?.header_image_url || ''})` 
-                  }}
-                ></div>
-                
-                <Label 
-                  htmlFor="header-image-upload"
-                  className="cursor-pointer flex items-center px-4 py-2 bg-secondary rounded-md hover:bg-secondary/80 transition-colors"
-                >
-                  <Image className="h-4 w-4 mr-2" />
-                  Selecionar Imagem
-                </Label>
-                <Input
-                  id="header-image-upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="hidden"
-                />
-                {headerImageFile && (
-                  <p className="text-sm text-green-500">
-                    Imagem selecionada: {headerImageFile.name}
-                  </p>
-                )}
-              </div>
-            </div>
-            
-            <div className="flex justify-end space-x-2">
-              <Button 
-                variant="outline" 
-                onClick={() => {
-                  setIsEditing(false);
-                  setHeaderImageFile(null);
-                  setHeaderImagePreview(null);
-                }}
-              >
-                Cancelar
-              </Button>
-              <Button 
-                onClick={handleSave} 
-                disabled={isUploading || isSaving}
-              >
-                {(isUploading || isSaving) ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Salvando...
-                  </>
-                ) : 'Salvar'}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </>
+      {settings.description && (
+        <p className="text-gray-300 text-lg max-w-2xl mx-auto text-center">
+          {settings.description}
+        </p>
+      )}
+    </div>
   );
 };
