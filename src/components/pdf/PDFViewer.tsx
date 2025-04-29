@@ -41,14 +41,14 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
           </Button>
         )}
       </div>
-      <div className="w-full flex-grow min-h-[800px] bg-[#121212] rounded-md overflow-hidden">
+      <div className="w-full flex-grow bg-[#121212] rounded-md overflow-hidden" style={{ height: 'calc(100% - 60px)' }}>
         {url && url !== 'placeholder.pdf' ? (
           <iframe
             id={`pdf-iframe-${title.replace(/\s+/g, '-')}`}
             src={url}
             className="w-full h-full rounded-md"
             title={title}
-            style={{ height: '100%', minHeight: '800px' }}
+            style={{ height: '100%' }}
           />
         ) : (
           <div className="flex flex-col items-center justify-center h-full p-4">

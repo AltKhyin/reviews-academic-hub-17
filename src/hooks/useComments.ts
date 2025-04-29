@@ -329,8 +329,10 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
     addComment: (content: string) => addComment.mutate(content),
     replyToComment: (parentId: string, content: string) => 
       replyToComment.mutate({ parentId, content }),
-    deleteComment: deleteComment.mutate,
-    voteComment: voteComment.mutate,
+    deleteComment: (commentId: string) => deleteComment.mutate(commentId),
+    voteComment: async (params: { commentId: string; value: 1 | -1 | 0 }) => {
+      return voteComment.mutate(params);
+    },
     isAddingComment: addComment.isPending,
     isDeletingComment: deleteComment.isPending,
     isVoting: voteComment.isPending,
