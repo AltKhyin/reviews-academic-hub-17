@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NewPostModal } from '@/components/community/NewPostModal';
 import { PostsList } from '@/components/community/PostsList';
 import { useCommunityPosts, usePostFlairs } from '@/hooks/useCommunityPosts';
+import { CommunityHeader } from '@/components/community/CommunityHeader';
 
 const Community = () => {
   const { user } = useAuth();
@@ -19,7 +20,7 @@ const Community = () => {
   const [activeTab, setActiveTab] = useState('latest');
 
   const { data: flairs } = usePostFlairs();
-  const { data: posts, refetch: refetchPosts } = useCommunityPosts(activeTab, searchTerm);
+  const { data: posts, refetch: refetchPosts, isLoading, error } = useCommunityPosts(activeTab, searchTerm);
 
   const handleCreatePost = () => {
     if (!user) {
@@ -36,8 +37,10 @@ const Community = () => {
 
   return (
     <div className="container mx-auto py-6 max-w-4xl">
+      <CommunityHeader />
+      
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-serif">Comunidade</h1>
+        <h2 className="text-xl font-medium">Publicações</h2>
         <Button onClick={handleCreatePost}>Nova Publicação</Button>
       </div>
       
@@ -62,7 +65,9 @@ const Community = () => {
           <PostsList 
             posts={posts} 
             emptyMessage="Nenhuma publicação encontrada." 
-            onVoteChange={refetchPosts} 
+            onVoteChange={refetchPosts}
+            isLoading={isLoading}
+            error={error}
           />
         </TabsContent>
 
@@ -70,7 +75,9 @@ const Community = () => {
           <PostsList 
             posts={posts} 
             emptyMessage="Nenhuma publicação encontrada." 
-            onVoteChange={refetchPosts} 
+            onVoteChange={refetchPosts}
+            isLoading={isLoading}
+            error={error}
           />
         </TabsContent>
 
@@ -78,7 +85,9 @@ const Community = () => {
           <PostsList 
             posts={posts} 
             emptyMessage="Nenhuma publicação encontrada." 
-            onVoteChange={refetchPosts} 
+            onVoteChange={refetchPosts}
+            isLoading={isLoading}
+            error={error}
           />
         </TabsContent>
 
@@ -87,7 +96,9 @@ const Community = () => {
             <PostsList 
               posts={posts} 
               emptyMessage="Você ainda não criou publicações." 
-              onVoteChange={refetchPosts} 
+              onVoteChange={refetchPosts}
+              isLoading={isLoading}
+              error={error}
             />
           </TabsContent>
         )}

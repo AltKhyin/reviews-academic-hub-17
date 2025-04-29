@@ -10,15 +10,13 @@ export function useCommunityPosts(activeTab: string, searchTerm: string) {
   return useQuery({
     queryKey: ['community-posts', activeTab, searchTerm],
     queryFn: async () => {
+      // First, fetch all posts
       let query = supabase
         .from('posts')
         .select(`
-          *,
-          profiles:user_id (full_name, avatar_url),
-          post_flairs:flair_id (id, name, color)
+          *
         `)
-        .eq('published', true)
-        .order('created_at', { ascending: activeTab === 'oldest' });
+        .eq('published', true);
       
       // Add search filter if searchTerm is provided
       if (searchTerm) {
@@ -27,6 +25,11 @@ export function useCommunityPosts(activeTab: string, searchTerm: string) {
       
       if (activeTab === 'popular') {
         query = query.order('score', { ascending: false });
+      } else if (activeTab === 'oldest') {
+        query = query.order('created_at', { ascending: true });
+      } else {
+        // Default is latest (newest first)
+        query = query.order('created_at', { ascending: false });
       }
 
       // For "my" tab, filter by current user
@@ -34,14 +37,44 @@ export function useCommunityPosts(activeTab: string, searchTerm: string) {
         query = query.eq('user_id', user.id);
       }
 
-      const { data, error } = await query;
+      const { data: posts, error } = await query;
       
       if (error) throw error;
+      if (!posts) return [];
+      
+      // Now fetch profiles for these posts
+      const userIds = posts.map(post => post.user_id);
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url')
+        .in('id', userIds);
+      
+      // Fetch flairs
+      const flairIds = posts.filter(post => post.flair_id).map(post => post.flair_id);
+      const { data: flairs } = await supabase
+        .from('post_flairs')
+        .select('*')
+        .in('id', flairIds.length > 0 ? flairIds : ['no-flairs']);
       
       // Fetch poll data for posts with polls
-      const postsWithPolls = await Promise.all(
-        (data || []).map(async (post) => {
-          if (!post.poll_id) return post;
+      const postsWithDetails = await Promise.all(
+        posts.map(async (post) => {
+          // Find the profile for this post
+          const profile = profiles?.find(p => p.id === post.user_id);
+          // Find the flair for this post
+          const postFlair = flairs?.find(f => f.id === post.flair_id);
+          
+          const enhancedPost = {
+            ...post,
+            profiles: profile ? {
+              full_name: profile.full_name,
+              avatar_url: profile.avatar_url
+            } : null,
+            post_flairs: postFlair || null,
+            poll: null as any
+          };
+          
+          if (!post.poll_id) return enhancedPost;
           
           // Fetch poll options
           const { data: pollOptions } = await supabase
@@ -50,9 +83,11 @@ export function useCommunityPosts(activeTab: string, searchTerm: string) {
             .eq('poll_id', post.poll_id)
             .order('position');
             
+          if (!pollOptions) return enhancedPost;
+            
           // Fetch vote counts for each option
           const optionsWithVotes = await Promise.all(
-            (pollOptions || []).map(async (option) => {
+            pollOptions.map(async (option) => {
               const { count } = await supabase
                 .from('poll_votes')
                 .select('*', { count: 'exact', head: true })
@@ -82,7 +117,7 @@ export function useCommunityPosts(activeTab: string, searchTerm: string) {
           const totalVotes = optionsWithVotes.reduce((sum, o) => sum + o.votes, 0);
           
           return {
-            ...post,
+            ...enhancedPost,
             poll: {
               id: post.poll_id,
               options: optionsWithVotes,
@@ -93,8 +128,7 @@ export function useCommunityPosts(activeTab: string, searchTerm: string) {
         })
       );
       
-      // Use type assertion to tell TypeScript this conforms to PostData[]
-      return postsWithPolls as unknown as PostData[];
+      return postsWithDetails as PostData[];
     },
     enabled: true,
   });
@@ -110,6 +144,41 @@ export function usePostFlairs() {
         .order('name');
       
       if (error) throw error;
+      return data;
+    }
+  });
+}
+
+export function useCommunitySettings() {
+  return useQuery({
+    queryKey: ['community-settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('community_settings')
+        .select('*')
+        .single();
+      
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No settings found, create default settings
+          const defaultSettings = {
+            header_image_url: 'https://images.unsplash.com/photo-1618044733300-9472054094ee?q=80&w=2942&auto=format&fit=crop',
+            theme_color: '#1e40af',
+            description: 'Comunidade científica para discussão de evidências médicas',
+            allow_polls: true
+          };
+          
+          const { data: newSettings } = await supabase
+            .from('community_settings')
+            .insert(defaultSettings)
+            .select()
+            .single();
+            
+          return newSettings || defaultSettings;
+        }
+        throw error;
+      }
+      
       return data;
     }
   });
