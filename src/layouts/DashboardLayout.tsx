@@ -71,7 +71,7 @@ const DashboardLayout: React.FC = () => {
   }
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={true}>
       <div className="flex h-screen bg-[#121212] text-white overflow-hidden">
         <Sidebar />
         <ContentWrapper>

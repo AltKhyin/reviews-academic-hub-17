@@ -14,7 +14,7 @@ export const Logo = ({
   collapsed = false,
   size = 'medium'
 }: LogoProps) => {
-  const textColor = dark ? 'text-white' : 'text-[#212121]';
+  const textColor = dark ? 'text-[#212121]' : 'text-white';
   
   // Font weight map
   const fontWeight = 'font-extrabold';
@@ -51,5 +51,4 @@ export const Logo = ({
   );
 };
 
-// Also export as default for backward compatibility
 export default Logo;
