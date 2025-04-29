@@ -12,7 +12,7 @@ import DashboardLayout from "./layouts/DashboardLayout";
 import AuthPage from "./pages/auth/AuthPage";
 import Dashboard from "./pages/dashboard/Dashboard";
 import ArticleViewer from "./pages/dashboard/ArticleViewer";
-import Procurar from "./pages/dashboard/Procurar";
+import SearchPage from "./pages/dashboard/SearchPage";
 import Community from "./pages/dashboard/Community";
 import Profile from "./pages/dashboard/Profile";
 import Settings from "./pages/dashboard/Settings";
@@ -53,7 +53,7 @@ const App = () => {
               <Route path="/" element={<DashboardLayout />}>
                 <Route path="homepage" element={<Dashboard />} />
                 <Route path="article/:id" element={<ArticleViewer />} />
-                <Route path="procurar" element={<Procurar />} />
+                <Route path="search" element={<SearchPage />} />
                 <Route path="community" element={<Community />} />
                 <Route path="articles" element={<Dashboard />} />
                 <Route path="profile" element={<Profile />} />

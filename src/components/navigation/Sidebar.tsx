@@ -1,110 +1,139 @@
 
 import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
-import { 
-  Home, BookOpen, Search, Users, Settings, Edit, LogOut, ChevronDown 
-} from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import Logo from '../common/Logo';
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
+import Logo from '@/components/common/Logo';
+import { useSidebar } from '@/components/ui/sidebar';
 import {
-  Sidebar as SidebarComponent,
-  SidebarContent,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-} from '@/components/ui/sidebar';
+  Home,
+  Search,
+  FileText,
+  Settings,
+  User,
+  LogOut,
+  ChevronRight,
+  ChevronLeft,
+  MessageSquare
+} from 'lucide-react';
 
-interface SidebarProps {}
-
-export const Sidebar: React.FC<SidebarProps> = () => {
+export const Sidebar = () => {
+  const { user, isAdmin, signOut } = useAuth();
   const location = useLocation();
-  const { user } = useAuth();
+  const { state, toggleSidebar } = useSidebar();
   
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
+  const isCollapsed = state === 'collapsed';
+  
+  const isActive = (path: string) => {
+    return location.pathname.startsWith(path);
   };
 
-  const isAdmin = user?.user_metadata?.role === 'admin';
-  
+  const menuItems = [
+    {
+      name: 'Início',
+      icon: <Home size={24} strokeWidth={1.5} className="w-6 h-6" />,
+      path: '/homepage',
+      active: isActive('/homepage')
+    },
+    {
+      name: 'Procurar',
+      icon: <Search size={24} strokeWidth={1.5} className="w-6 h-6" />,
+      path: '/search',
+      active: isActive('/search')
+    },
+    {
+      name: 'Comunidade',
+      icon: <MessageSquare size={24} strokeWidth={1.5} className="w-6 h-6" />,
+      path: '/community',
+      active: isActive('/community')
+    },
+    {
+      name: 'Editar',
+      icon: <FileText size={24} strokeWidth={1.5} className="w-6 h-6" />,
+      path: '/edit',
+      active: isActive('/edit'),
+      showToAdmin: true
+    },
+    {
+      name: 'Perfil',
+      icon: <User size={24} strokeWidth={1.5} className="w-6 h-6" />,
+      path: '/profile',
+      active: isActive('/profile')
+    },
+    {
+      name: 'Configurações',
+      icon: <Settings size={24} strokeWidth={1.5} className="w-6 h-6" />,
+      path: '/settings',
+      active: isActive('/settings')
+    }
+  ];
+
   return (
-    <SidebarComponent className="h-screen">
-      <SidebarHeader className="p-6 flex justify-center items-center">
-        <Logo collapsed={false} dark size="medium" />
-      </SidebarHeader>
-      <SidebarContent>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <NavLink to="/homepage" className={({ isActive }) => isActive ? 'text-primary' : ''}>
-                <Home size={20} className="mr-2" />
-                <span>Início</span>
-              </NavLink>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <NavLink to="/articles" className={({ isActive }) => isActive ? 'text-primary' : ''}>
-                <BookOpen size={20} className="mr-2" />
-                <span>Artigos</span>
-              </NavLink>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <NavLink to="/procurar" className={({ isActive }) => isActive ? 'text-primary' : ''}>
-                <Search size={20} className="mr-2" />
-                <span>Procurar</span>
-              </NavLink>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <NavLink to="/community" className={({ isActive }) => isActive ? 'text-primary' : ''}>
-                <Users size={20} className="mr-2" />
-                <span>Comunidade</span>
-              </NavLink>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          
-          {isAdmin && (
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <NavLink to="/edit" className={({ isActive }) => isActive ? 'text-primary' : ''}>
-                  <Edit size={20} className="mr-2" />
-                  <span>Editar</span>
-                </NavLink>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          )}
-          
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <NavLink to="/settings" className={({ isActive }) => isActive ? 'text-primary' : ''}>
-                <Settings size={20} className="mr-2" />
-                <span>Configurações</span>
-              </NavLink>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          
-          <SidebarMenuItem>
-            <SidebarMenuButton onClick={handleLogout}>
-              <LogOut size={20} className="mr-2" />
-              <span>Sair</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarContent>
-    </SidebarComponent>
+    <div className="fixed top-0 left-0 h-full z-40 bg-[#121212] border-r border-white/10">
+      <div className="flex flex-col h-full">
+        <div className="flex justify-center items-center py-6">
+          <Link to="/homepage" className="flex justify-center w-full">
+            {isCollapsed ? (
+              <Logo dark={false} collapsed={true} />
+            ) : (
+              <Logo dark={false} />
+            )}
+          </Link>
+        </div>
+        <div className="flex-grow p-4">
+          <ul className="space-y-1">
+            {menuItems.map((item, index) => {
+              if (item.showToAdmin && !isAdmin) {
+                return null;
+              }
+              return (
+                <li key={index}>
+                  <Link
+                    to={item.path}
+                    className={`flex items-center px-3 py-2 font-medium tracking-wide rounded-md hover:bg-gray-800 ${
+                      item.active ? 'bg-gray-800 text-white' : 'text-gray-400'
+                    }`}
+                  >
+                    <span className="flex items-center justify-center">
+                      {item.icon}
+                    </span>
+                    {!isCollapsed && <span className="ml-3 text-[0.95rem] tracking-[0.05em] font-medium">{item.name}</span>}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+        <div className="p-4 border-t border-white/10">
+          <div className="flex flex-col space-y-2">
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start gap-2 text-gray-400 hover:text-white hover:bg-gray-800" 
+              onClick={() => signOut()}
+            >
+              <LogOut size={24} strokeWidth={1.5} className="w-6 h-6" />
+              {!isCollapsed && <span className="text-[0.95rem] tracking-[0.05em] font-medium">Sair</span>}
+            </Button>
+            
+            <Button
+              variant="ghost" 
+              size="sm" 
+              className="w-full justify-between text-gray-400 hover:text-white hover:bg-gray-800 mt-2"
+              onClick={toggleSidebar}
+            >
+              {!isCollapsed ? (
+                <>
+                  <span className="text-[0.95rem] tracking-[0.05em] font-medium">Esconder</span>
+                  <ChevronLeft size={24} strokeWidth={1.5} className="w-6 h-6" />
+                </>
+              ) : (
+                <ChevronRight size={24} strokeWidth={1.5} className="w-6 h-6 mx-auto" />
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
