@@ -13,7 +13,6 @@ export const ExternalLectures = ({ issueId }: ExternalLecturesProps) => {
   const { data: lectures } = useQuery({
     queryKey: ['external-lectures', issueId],
     queryFn: async () => {
-      // Use a more explicit type casting approach to resolve TypeScript errors
       const { data, error } = await supabase
         .from('external_lectures')
         .select('*')
@@ -21,7 +20,7 @@ export const ExternalLectures = ({ issueId }: ExternalLecturesProps) => {
         .order('created_at', { ascending: false });
         
       if (error) throw error;
-      return (data || []) as ExternalLecture[];
+      return (data || []) as unknown as ExternalLecture[];
     },
   });
 
@@ -38,7 +37,6 @@ export const ExternalLectures = ({ issueId }: ExternalLecturesProps) => {
             target="_blank"
             rel="noopener noreferrer"
             className="cursor-pointer group"
-            onClick={() => window.open(lecture.external_url, '_blank', 'noopener')}
           >
             <div className="aspect-video mb-2 overflow-hidden rounded-lg">
               {lecture.thumbnail_url ? (
