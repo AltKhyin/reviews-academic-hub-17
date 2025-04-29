@@ -13,7 +13,8 @@ import {
   User,
   LogOut,
   ChevronRight,
-  ChevronLeft
+  ChevronLeft,
+  MessageSquare
 } from 'lucide-react';
 
 export const Sidebar = () => {
@@ -39,6 +40,12 @@ export const Sidebar = () => {
       icon: <Search size={24} strokeWidth={1.5} className="w-6 h-6" />,
       path: '/search',
       active: isActive('/search')
+    },
+    {
+      name: 'Comunidade',
+      icon: <MessageSquare size={24} strokeWidth={1.5} className="w-6 h-6" />,
+      path: '/community',
+      active: isActive('/community')
     },
     {
       name: 'Editar',

@@ -13,6 +13,7 @@ import AuthPage from "./pages/auth/AuthPage";
 import Dashboard from "./pages/dashboard/Dashboard";
 import ArticleViewer from "./pages/dashboard/ArticleViewer";
 import SearchPage from "./pages/dashboard/SearchPage";
+import Community from "./pages/dashboard/Community";
 import Profile from "./pages/dashboard/Profile";
 import Settings from "./pages/dashboard/Settings";
 import Edit from "./pages/dashboard/Edit";
@@ -53,6 +54,7 @@ const App = () => {
                 <Route path="homepage" element={<Dashboard />} />
                 <Route path="article/:id" element={<ArticleViewer />} />
                 <Route path="search" element={<SearchPage />} />
+                <Route path="community" element={<Community />} />
                 <Route path="articles" element={<Dashboard />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="settings" element={<Settings />} />
