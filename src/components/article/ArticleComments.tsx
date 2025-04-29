@@ -17,7 +17,7 @@ export const ArticleComments: React.FC<ArticleCommentsProps> = ({ articleId }) =
     deleteComment,
     isAddingComment,
     isDeletingComment 
-  } = useComments(articleId, 'issue'); // Changed to pass 'issue' as the entity type
+  } = useComments(articleId, 'issue'); // Using 'issue' as the entity type
 
   if (isLoading) {
     return <div>Loading comments...</div>;
