@@ -1,13 +1,17 @@
-
 import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Comment, CommentVote, EntityType } from '@/types/comment';
-import { toast } from '@/hooks/use-toast';
-import { fetchCommentsData, getEntityIdField, organizeComments } from '@/utils/commentUtils';
+import { useToast } from '@/hooks/use-toast';
+import { 
+  fetchCommentsData, 
+  getEntityIdField,
+  organizeComments
+} from '@/utils/commentUtils';
 
 export const useComments = (entityId: string, entityType: EntityType = 'article') => {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const entityIdField = getEntityIdField(entityType);
 
   // Fetch comments for the entity with votes for current user
@@ -72,11 +76,6 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['comments', entityId, entityType] });
-      toast({
-        title: "Sucesso",
-        description: "Seu comentário foi adicionado.",
-        duration: 3000,
-      });
     },
     onError: (error: Error) => {
       toast({

@@ -29,13 +29,39 @@ export const PollSection: React.FC<PollSectionProps> = ({ poll, onVoteChange }) 
     try {
       setIsVoting(true);
       
-      // The trigger we created will handle removing previous votes
-      await supabase
+      // First check if user already voted
+      const { data: existingVote } = await supabase
         .from('poll_votes')
-        .insert({ 
-          option_id: optionId, 
-          user_id: user.id 
-        });
+        .select('option_id')
+        .eq('user_id', user.id)
+        .in('option_id', poll.options.map(o => o.id))
+        .maybeSingle();
+        
+      if (existingVote) {
+        // User has already voted, so update their vote
+        const { error } = await supabase
+          .from('poll_votes')
+          .update({ option_id: optionId })
+          .eq('user_id', user.id)
+          .in('option_id', poll.options.map(o => o.id));
+          
+        if (error) throw error;
+      } else {
+        // New vote
+        const { error } = await supabase
+          .from('poll_votes')
+          .insert({ 
+            option_id: optionId, 
+            user_id: user.id 
+          });
+          
+        if (error) throw error;
+      }
+      
+      toast({
+        title: "Voto registrado",
+        description: "Seu voto foi registrado com sucesso.",
+      });
       
       onVoteChange();
       

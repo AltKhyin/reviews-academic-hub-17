@@ -4,14 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface CommentAddFormProps {
   articleId: string;
   onSubmit?: (comment: string) => Promise<void>;
   isSubmitting?: boolean;
-  entityType?: 'article' | 'issue';
+  entityType?: 'article' | 'issue' | 'post';
   placeholder?: string;
 }
 
@@ -24,6 +24,7 @@ export const CommentAddForm: React.FC<CommentAddFormProps> = ({
 }) => {
   const [comment, setComment] = useState('');
   const { user, profile } = useAuth();
+  const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,7 +34,7 @@ export const CommentAddForm: React.FC<CommentAddFormProps> = ({
         title: "Autenticação necessária",
         description: "Faça login para deixar um comentário.",
         variant: "destructive",
-        duration: 5000, // Auto-dismiss after 5 seconds
+        duration: 5000,
       });
       return;
     }
@@ -43,7 +44,7 @@ export const CommentAddForm: React.FC<CommentAddFormProps> = ({
         title: "Comentário obrigatório",
         description: "Por favor, escreva um comentário.",
         variant: "destructive",
-        duration: 5000, // Auto-dismiss after 5 seconds
+        duration: 5000,
       });
       return;
     }
@@ -52,6 +53,11 @@ export const CommentAddForm: React.FC<CommentAddFormProps> = ({
       if (onSubmit) {
         await onSubmit(comment);
         setComment('');
+        toast({
+          title: "Comentário adicionado",
+          description: "Seu comentário foi publicado com sucesso.",
+          duration: 3000,
+        });
       }
     } catch (error) {
       console.error('Error adding comment:', error);
@@ -59,7 +65,7 @@ export const CommentAddForm: React.FC<CommentAddFormProps> = ({
         title: "Erro",
         description: "Falha ao adicionar comentário. Por favor, tente novamente.",
         variant: "destructive",
-        duration: 5000, // Auto-dismiss after 5 seconds
+        duration: 5000,
       });
     }
   };
