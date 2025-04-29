@@ -21,10 +21,10 @@ export const ExternalLecturesManager: React.FC<ExternalLecturesManagerProps> = (
         .from('external_lectures')
         .select('*')
         .eq('issue_id', issueId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }) as { data: ExternalLecture[] | null; error: any };
         
       if (error) throw error;
-      return (data || []) as unknown as ExternalLecture[];
+      return (data || []) as ExternalLecture[];
     },
     enabled: !!issueId
   });
@@ -34,7 +34,7 @@ export const ExternalLecturesManager: React.FC<ExternalLecturesManagerProps> = (
       const { error } = await supabase
         .from('external_lectures')
         .delete()
-        .eq('id', lectureId);
+        .eq('id', lectureId) as { error: any };
         
       if (error) throw error;
       

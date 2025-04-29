@@ -74,7 +74,7 @@ export function ExternalLectureForm({ issueId, onSuccess }: ExternalLectureFormP
           thumbnail_url: values.thumbnail_url || null,
           external_url: values.external_url,
           owner_id: user.id
-        });
+        } as any) as { error: any };
         
       if (error) throw error;
       

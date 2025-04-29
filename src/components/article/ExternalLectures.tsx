@@ -17,10 +17,10 @@ export const ExternalLectures = ({ issueId }: ExternalLecturesProps) => {
         .from('external_lectures')
         .select('*')
         .eq('issue_id', issueId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }) as { data: ExternalLecture[] | null; error: any };
         
       if (error) throw error;
-      return (data || []) as unknown as ExternalLecture[];
+      return (data || []) as ExternalLecture[];
     },
   });
 

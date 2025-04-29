@@ -41,7 +41,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
         }
       }
       
-      // Use explicit type casting to avoid deep recursion issues
+      // Type assertion to avoid deep recursion issues
       const { data, error } = await supabase
         .from('comments')
         .select(`
@@ -54,11 +54,10 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
           profiles(id, full_name, avatar_url)
         `)
         .eq(entityIdField, entityId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false }) as { data: Comment[] | null, error: any };
 
       if (error) throw error;
-      // Cast the result explicitly to avoid type issues
-      return (data || []) as unknown as Comment[];
+      return (data || []);
     }
   });
 
