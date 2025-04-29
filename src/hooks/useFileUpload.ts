@@ -18,6 +18,15 @@ export const useFileUpload = () => {
 
       console.log(`Uploading file ${fileName} to ${folder}`);
       
+      // Check if bucket exists before upload
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const bucketExists = buckets?.some(bucket => bucket.name === 'issues');
+      
+      if (!bucketExists) {
+        console.error('Bucket "issues" not found');
+        throw new Error('Storage bucket not found. Please contact support.');
+      }
+      
       const { data, error: uploadError } = await supabase.storage
         .from('issues')
         .upload(filePath, file, {

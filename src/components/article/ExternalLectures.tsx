@@ -60,9 +60,6 @@ export const ExternalLectures = ({ issueId }: ExternalLecturesProps) => {
             {lecture.description && (
               <p className="text-sm text-gray-300 mt-2">{lecture.description}</p>
             )}
-            <p className="text-xs text-blue-400 mt-3">
-              {lecture.external_url}
-            </p>
           </div>
         </a>
       </div>

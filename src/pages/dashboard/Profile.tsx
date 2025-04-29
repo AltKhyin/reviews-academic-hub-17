@@ -43,7 +43,23 @@ const Profile: React.FC = () => {
       const file = event.target.files[0];
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
+      const filePath = `${fileName}`;
+      
+      // Check if bucket exists before upload
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const bucketExists = buckets?.some(bucket => bucket.name === 'avatars');
+      
+      if (!bucketExists) {
+        console.error('Bucket "avatars" not found');
+        try {
+          // Try to create the bucket if it doesn't exist
+          await supabase.storage.createBucket('avatars', { public: true });
+          console.log('Created avatars bucket');
+        } catch (bucketError) {
+          console.error('Failed to create bucket:', bucketError);
+          throw new Error('Storage bucket not available. Please contact support.');
+        }
+      }
       
       // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage

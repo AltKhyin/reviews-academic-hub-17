@@ -170,7 +170,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
       const commentData: any = {
         content,
         user_id: user.id,
-        score: 1 // Start with 1 upvote (author's upvote)
+        score: 0 // Initialize with 0, will be updated by trigger after upvote
       };
       
       // Set either article_id or issue_id based on entityType
@@ -229,7 +229,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
         content,
         user_id: user.id,
         parent_id: parentId,
-        score: 1 // Start with 1 upvote (author's upvote)
+        score: 0 // Initialize with 0, will be updated by trigger after upvote
       };
       
       // Set either article_id or issue_id based on entityType

@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Trash2, MessageSquare, ThumbsUp, ThumbsDown, ChevronDown, Plus, Minus } from 'lucide-react';
+import { Trash2, MessageSquare, ChevronDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Comment } from '@/types/issue';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -113,7 +113,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
           className="flex items-center gap-2 py-2 px-2 rounded cursor-pointer hover:bg-gray-800/30"
           onClick={() => setIsCollapsed(false)}
         >
-          <Plus size={16} className="text-gray-400" />
+          <ArrowDown size={16} className="text-gray-400" />
           <div className="flex items-center gap-1">
             <Avatar className="w-5 h-5">
               <AvatarImage src={comment.profiles?.avatar_url || undefined} />
@@ -133,14 +133,8 @@ export const CommentItem: React.FC<CommentItemProps> = ({
 
   return (
     <div 
-      className={`${level > 0 ? 'ml-6 border-l border-gray-700 pl-4 hover:border-gray-500 transition-colors' : 'border-b border-white/10 pb-6'} pt-2 mb-6 group`}
+      className={`${level > 0 ? 'ml-6 border-l border-gray-700 pl-4' : 'border-b border-white/10 pb-6'} pt-2 mb-6`}
     >
-      <div 
-        className="absolute -ml-4 h-full w-1 cursor-pointer opacity-0 group-hover:opacity-100" 
-        onClick={() => setIsCollapsed(true)}
-        title="Minimizar comentário"
-      />
-      
       <div className="flex gap-3 relative">
         {/* Avatar */}
         <Avatar className="w-8 h-8 mt-1 flex-shrink-0">
@@ -176,17 +170,17 @@ export const CommentItem: React.FC<CommentItemProps> = ({
           <p className="text-sm text-gray-200">{comment.content}</p>
           
           <div className="flex items-center gap-4 pt-1">
-            {/* Vote buttons */}
+            {/* Vote buttons followed by reply button and delete button */}
             <div className="flex items-center gap-1">
               <Button 
                 variant="ghost"
                 size="sm"
-                className={`p-0 h-8 w-8 rounded-full ${userVote === 1 ? 'text-orange-500 bg-orange-500/10' : 'text-gray-400 hover:bg-gray-700/30'}`}
+                className={`p-0 h-8 w-8 rounded-md ${userVote === 1 ? 'text-orange-500 bg-orange-500/10' : 'text-gray-400 hover:bg-gray-700/30'}`}
                 onClick={handleUpvote}
                 disabled={!user}
                 title="Upvote"
               >
-                <ThumbsUp size={16} />
+                <ArrowUp size={16} className={userVote === 1 ? 'fill-orange-500' : ''} />
               </Button>
               
               <span className={`text-sm font-medium ${localScore > 0 ? 'text-orange-500' : localScore < 0 ? 'text-blue-500' : 'text-gray-400'}`}>
@@ -196,12 +190,12 @@ export const CommentItem: React.FC<CommentItemProps> = ({
               <Button 
                 variant="ghost"
                 size="sm"
-                className={`p-0 h-8 w-8 rounded-full ${userVote === -1 ? 'text-blue-500 bg-blue-500/10' : 'text-gray-400 hover:bg-gray-700/30'}`}
+                className={`p-0 h-8 w-8 rounded-md ${userVote === -1 ? 'text-blue-500 bg-blue-500/10' : 'text-gray-400 hover:bg-gray-700/30'}`}
                 onClick={handleDownvote}
                 disabled={!user}
                 title="Downvote"
               >
-                <ThumbsDown size={16} />
+                <ArrowDown size={16} className={userVote === -1 ? 'fill-blue-500' : ''} />
               </Button>
             </div>
             

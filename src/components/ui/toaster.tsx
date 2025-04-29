@@ -13,7 +13,7 @@ export function Toaster() {
   const { toasts } = useToast()
 
   return (
-    <ToastProvider duration={5000}> {/* Set default duration to 5000ms (5 seconds) */}
+    <ToastProvider duration={3000}> {/* Set default duration to 3000ms (3 seconds) */}
       {toasts.map(function ({ id, title, description, action, ...props }) {
         return (
           <Toast key={id} {...props}>
