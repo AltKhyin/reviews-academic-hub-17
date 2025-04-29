@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -67,7 +66,8 @@ const PaymentLinks = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as PaymentLink[];
+      // Use a more explicit type casting to avoid TS2352 error
+      return (data as unknown) as PaymentLink[];
     }
   });
 
@@ -313,4 +313,3 @@ const PaymentLinks = () => {
 };
 
 export default PaymentLinks;
-

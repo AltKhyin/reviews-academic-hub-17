@@ -15,7 +15,24 @@ export const getEntityIdField = (entityType: EntityType) => {
 export const fetchCommentsData = async (entityId: string, entityType: EntityType) => {
   try {
     const entityIdField = getEntityIdField(entityType);
-    // Use type casting to avoid deep type instantiation issues
+    
+    // Use explicit typing to avoid deep type instantiation issues
+    interface CommentQueryResult {
+      id: string;
+      content: string;
+      user_id: string;
+      created_at: string;
+      updated_at: string;
+      parent_id: string | null;
+      score: number;
+      profiles: {
+        id: string;
+        full_name: string | null;
+        avatar_url: string | null;
+      };
+      [key: string]: any; // For dynamic entityIdField
+    }
+
     const { data: comments, error } = await supabase
       .from('comments')
       .select(`
