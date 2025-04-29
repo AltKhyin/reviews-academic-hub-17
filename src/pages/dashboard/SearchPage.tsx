@@ -6,6 +6,7 @@ import Logo from '@/components/common/Logo';
 import { SearchHeader } from '@/components/search/SearchHeader';
 import { SearchFilters } from '@/components/search/SearchFilters';
 import { SearchResults } from '@/components/search/SearchResults';
+import { Card } from '@/components/ui/card';
 
 // Define the main SearchPage component
 const SearchPage: React.FC = () => {
@@ -131,51 +132,56 @@ const SearchPage: React.FC = () => {
         <Logo dark={false} size="2xlarge" />
       </header>
 
-      {/* Layout with Filters and Search side by side on desktop, stacked on mobile */}
-      <div className="px-6 py-4 grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Filters Section */}
-        <div className="md:col-span-1">
-          <h3 className="font-medium text-lg mb-2">Filtros</h3>
-          <SearchFilters 
-            filters={filters}
-            onFilterChange={handleFilterChange}
-            facetGroups={facetGroups}
-            areaSearchText={areaSearchText}
-            setAreaSearchText={setAreaSearchText}
-            filteredAreaOptions={filteredAreaOptions}
-          />
-        </div>
-
-        {/* Search and Results Section */}
-        <div className="md:col-span-3">
-          {/* Search Header */}
-          <div className="mb-6">
-            <SearchHeader 
-              queryText={queryText}
-              setQueryText={setQueryText}
-              handleSubmitSearch={handleSubmitSearch}
-              searchTags={searchTags}
-              handleTagRemove={handleTagRemove}
-              handleTagToggleExclude={handleTagToggleExclude}
-              clearFilters={clearFilters}
-              queryPreview={queryPreview}
-            />
+      {/* Main layout wrapper - centered vertically and horizontally */}
+      <div className="flex-1 flex items-center px-6 py-4">
+        {/* Layout with Filters and Search side by side on desktop, stacked on mobile */}
+        <div className="w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-6">
+          {/* Filters Section */}
+          <div className="md:col-span-1">
+            <Card className="p-6">
+              <h3 className="font-medium text-lg mb-2">Filtros</h3>
+              <SearchFilters 
+                filters={filters}
+                onFilterChange={handleFilterChange}
+                facetGroups={facetGroups}
+                areaSearchText={areaSearchText}
+                setAreaSearchText={setAreaSearchText}
+                filteredAreaOptions={filteredAreaOptions}
+              />
+            </Card>
           </div>
 
-          {/* Results area */}
-          <SearchResults 
-            isLoading={isLoading}
-            error={error}
-            searchResults={searchResults}
-            refetch={refetch}
-            sortBy={sortBy}
-            setSortBy={setSortBy}
-            currentPage={currentPage}
-            setCurrentPage={setCurrentPage}
-            clearFilters={clearFilters}
-            filters={filters}
-            searchTags={searchTags}
-          />
+          {/* Search and Results Section */}
+          <div className="md:col-span-3">
+            {/* Search Header */}
+            <Card className="p-6 mb-6">
+              <SearchHeader 
+                queryText={queryText}
+                setQueryText={setQueryText}
+                handleSubmitSearch={handleSubmitSearch}
+                searchTags={searchTags}
+                handleTagRemove={handleTagRemove}
+                handleTagToggleExclude={handleTagToggleExclude}
+                clearFilters={clearFilters}
+                queryPreview={queryPreview}
+              />
+            </Card>
+
+            {/* Results area */}
+            <SearchResults 
+              isLoading={isLoading}
+              error={error}
+              searchResults={searchResults}
+              refetch={refetch}
+              sortBy={sortBy}
+              setSortBy={setSortBy}
+              currentPage={currentPage}
+              setCurrentPage={setCurrentPage}
+              clearFilters={clearFilters}
+              filters={filters}
+              searchTags={searchTags}
+            />
+          </div>
         </div>
       </div>
     </div>
