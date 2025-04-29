@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Flag, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
@@ -12,6 +12,7 @@ import { ptBR } from 'date-fns/locale';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 
+// Define the CommentReport type to match the database structure
 interface CommentReport {
   id: string;
   comment_id: string;
@@ -44,7 +45,7 @@ export const CommentReportsPanel: React.FC = () => {
     queryKey: ['comment-reports', filter],
     queryFn: async () => {
       let query = supabase
-        .from('comment_reports')
+        .from('comment_reports' as any)
         .select(`
           *,
           comment:comment_id (
@@ -70,7 +71,7 @@ export const CommentReportsPanel: React.FC = () => {
       const { data, error } = await query;
       
       if (error) throw error;
-      return data as CommentReport[];
+      return data as unknown as CommentReport[];
     },
     refetchInterval: 30000, // Refetch every 30 seconds
   });
@@ -78,7 +79,7 @@ export const CommentReportsPanel: React.FC = () => {
   const approveReport = useMutation({
     mutationFn: async (reportId: string) => {
       const { error } = await supabase
-        .from('comment_reports')
+        .from('comment_reports' as any)
         .update({ status: 'approved' })
         .eq('id', reportId);
         
@@ -105,7 +106,7 @@ export const CommentReportsPanel: React.FC = () => {
   const rejectReport = useMutation({
     mutationFn: async (reportId: string) => {
       const { error } = await supabase
-        .from('comment_reports')
+        .from('comment_reports' as any)
         .update({ status: 'rejected' })
         .eq('id', reportId);
         

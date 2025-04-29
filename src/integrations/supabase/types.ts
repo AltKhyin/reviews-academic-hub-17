@@ -146,6 +146,47 @@ export type Database = {
           },
         ]
       }
+      comment_reports: {
+        Row: {
+          comment_id: string
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          reason: string
+          reporter_id: string
+          status: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          reason: string
+          reporter_id: string
+          status?: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          reason?: string
+          reporter_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_reports_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comment_votes: {
         Row: {
           comment_id: string

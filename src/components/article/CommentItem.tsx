@@ -114,15 +114,17 @@ export const CommentItem: React.FC<CommentItemProps> = ({
     }
 
     try {
+      // Using any type here to bypass TypeScript errors until types are regenerated
       const { error } = await supabase
-        .from('comment_reports')
+        .from('comment_reports' as any)
         .insert({
           comment_id: comment.id,
           reporter_id: user.id,
           reason: 'inappropriate', // Default reason
           entity_id: entityId,
-          entity_type: entityType
-        });
+          entity_type: entityType,
+          status: 'pending'
+        } as any);
 
       if (error) throw error;
 

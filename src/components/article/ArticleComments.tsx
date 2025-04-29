@@ -4,7 +4,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useComments } from '@/hooks/useComments';
 import { CommentAddForm } from './CommentAddForm';
 import { CommentItem } from './CommentItem';
-import { AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface ArticleCommentsProps {
