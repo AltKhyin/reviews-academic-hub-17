@@ -2,117 +2,19 @@
 import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Comment, CommentVote } from '@/types/issue';
+import { Comment, CommentVote, EntityType } from '@/types/comment';
 import { toast } from '@/hooks/use-toast';
+import { fetchCommentsData, getEntityIdField, organizeComments } from '@/utils/commentUtils';
 
-export const useComments = (entityId: string, entityType: 'article' | 'issue' | 'post' = 'article') => {
+export const useComments = (entityId: string, entityType: EntityType = 'article') => {
   const queryClient = useQueryClient();
-  const entityIdField = entityType === 'article' ? 'article_id' : 
-                        entityType === 'issue' ? 'issue_id' : 'post_id';
+  const entityIdField = getEntityIdField(entityType);
 
   // Fetch comments for the entity with votes for current user
   const { data: commentsData, isLoading } = useQuery({
     queryKey: ['comments', entityId, entityType],
     queryFn: async () => {
-      try {
-        // Get current user
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        // First, verify if the entity exists
-        let entityExists = false;
-        
-        if (entityType === 'article') {
-          const { data, error } = await supabase
-            .from('articles')
-            .select('id')
-            .eq('id', entityId)
-            .maybeSingle();
-          
-          if (error) throw error;
-          entityExists = !!data;
-        } else if (entityType === 'issue') {
-          const { data, error } = await supabase
-            .from('issues')
-            .select('id')
-            .eq('id', entityId)
-            .maybeSingle();
-          
-          if (error) throw error;
-          entityExists = !!data;
-        } else if (entityType === 'post') {
-          const { data, error } = await supabase
-            .from('posts')
-            .select('id')
-            .eq('id', entityId)
-            .maybeSingle();
-          
-          if (error) throw error;
-          entityExists = !!data;
-        }
-        
-        if (!entityExists) {
-          console.error(`${entityType} with ID ${entityId} not found`);
-          return { comments: [], userVotes: [] };
-        }
-        
-        // Create the select query based on the entity type
-        let selectQuery = `
-          id, 
-          content, 
-          created_at, 
-          updated_at, 
-          user_id, 
-          parent_id,
-          score,
-          profiles:user_id (id, full_name, avatar_url)
-        `;
-        
-        // Add the appropriate entity ID field
-        if (entityType === 'article') {
-          selectQuery += `, article_id`;
-        } else if (entityType === 'issue') {
-          selectQuery += `, issue_id`;
-        } else if (entityType === 'post') {
-          selectQuery += `, post_id`;
-        }
-        
-        // Fetch comments
-        const { data: commentsData, error: commentsError } = await supabase
-          .from('comments')
-          .select(selectQuery)
-          .eq(entityIdField, entityId)
-          .order('created_at', { ascending: false });
-          
-        if (commentsError) {
-          console.error('Error fetching comments:', commentsError);
-          throw commentsError;
-        }
-        
-        // Fetch comment votes if user is logged in
-        let userVotes: CommentVote[] = [];
-        
-        if (user) {
-          const { data: votesData, error: votesError } = await supabase
-            .from('comment_votes')
-            .select('comment_id, value, user_id')
-            .eq('user_id', user.id)
-            .in('comment_id', commentsData.map((c: any) => c.id));
-            
-          if (votesError) {
-            console.error('Error fetching votes:', votesError);
-          } else if (votesData) {
-            userVotes = votesData as CommentVote[];
-          }
-        }
-        
-        return { 
-          comments: commentsData,
-          userVotes
-        };
-      } catch (error: any) {
-        console.error('Error in useComments query:', error);
-        return { comments: [], userVotes: [] };
-      }
+      return fetchCommentsData(entityId, entityType);
     },
     refetchOnWindowFocus: false,
     staleTime: 30000
@@ -120,63 +22,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' | 
 
   // Organize comments into a hierarchical structure
   const organizedComments = useMemo(() => {
-    if (!commentsData?.comments) return [];
-    
-    const { comments, userVotes } = commentsData;
-    
-    // Map of user votes by comment ID
-    const userVotesMap: Record<string, number> = {};
-    userVotes.forEach((vote: CommentVote) => {
-      userVotesMap[vote.comment_id] = vote.value;
-    });
-    
-    // Create map for quick lookup of comments by ID
-    const commentMap: Record<string, Comment> = {};
-    
-    // Process comments to add scores and user votes
-    const processedComments = comments.map((comment: any) => {
-      const commentWithScore: Comment = {
-        ...comment,
-        userVote: userVotesMap[comment.id] as 1 | -1 | 0 || 0,
-        replies: []
-      };
-      
-      // Add to map for quick lookup
-      commentMap[comment.id] = commentWithScore;
-      
-      return commentWithScore;
-    });
-    
-    // Organize into parent-child relationship
-    const topLevelComments: Comment[] = [];
-    
-    processedComments.forEach((comment: Comment) => {
-      if (!comment.parent_id) {
-        // This is a top-level comment
-        topLevelComments.push(comment);
-      } else if (commentMap[comment.parent_id]) {
-        // This is a reply to another comment
-        if (!commentMap[comment.parent_id].replies) {
-          commentMap[comment.parent_id].replies = [];
-        }
-        commentMap[comment.parent_id].replies!.push(comment);
-      } else {
-        // This is a reply but the parent was not found, treat as top-level
-        console.warn(`Parent comment ${comment.parent_id} not found for comment ${comment.id}`);
-        topLevelComments.push(comment);
-      }
-    });
-    
-    // Sort replies by created_at
-    Object.values(commentMap).forEach((comment) => {
-      if (comment.replies && comment.replies.length > 0) {
-        comment.replies.sort((a, b) => 
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-        );
-      }
-    });
-    
-    return topLevelComments;
+    return organizeComments(commentsData || { comments: [], userVotes: [] });
   }, [commentsData]);
 
   // Add a new comment
@@ -229,7 +75,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' | 
       toast({
         title: "Sucesso",
         description: "Seu comentário foi adicionado.",
-        duration: 3000, // Auto-dismiss after 3 seconds
+        duration: 3000,
       });
     },
     onError: (error: Error) => {
@@ -237,7 +83,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' | 
         title: "Erro",
         description: error.message,
         variant: "destructive",
-        duration: 5000, // Auto-dismiss after 5 seconds
+        duration: 5000,
       });
     }
   });
@@ -294,7 +140,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' | 
       toast({
         title: "Resposta adicionada",
         description: "Sua resposta foi publicada com sucesso.",
-        duration: 3000, // Auto-dismiss after 3 seconds
+        duration: 3000,
       });
     },
     onError: (error: Error) => {
@@ -302,7 +148,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' | 
         title: "Erro",
         description: error.message,
         variant: "destructive",
-        duration: 5000, // Auto-dismiss after 5 seconds
+        duration: 5000,
       });
     }
   });
@@ -316,13 +162,14 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' | 
         .eq('id', commentId);
 
       if (error) throw error;
+      return true;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['comments', entityId, entityType] });
       toast({
         title: "Sucesso",
         description: "Comentário excluído com sucesso.",
-        duration: 3000, // Auto-dismiss after 3 seconds
+        duration: 3000,
       });
     },
     onError: (error: Error) => {
@@ -330,7 +177,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' | 
         title: "Erro",
         description: error.message,
         variant: "destructive",
-        duration: 5000, // Auto-dismiss after 5 seconds
+        duration: 5000,
       });
     }
   });
@@ -389,7 +236,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' | 
         title: "Erro ao votar",
         description: error.message,
         variant: "destructive",
-        duration: 5000, // Auto-dismiss after 5 seconds
+        duration: 5000,
       });
     }
   });
@@ -401,9 +248,9 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' | 
     replyToComment: ({ parentId, content }: { parentId: string, content: string }) => {
       return replyToComment.mutateAsync({ parentId, content });
     },
-    deleteComment: (commentId: string) => deleteComment.mutate(commentId),
+    deleteComment: (commentId: string) => deleteComment.mutateAsync(commentId),
     voteComment: ({ commentId, value }: { commentId: string; value: 1 | -1 | 0 }) => {
-      return voteComment.mutate({ commentId, value });
+      return voteComment.mutateAsync({ commentId, value });
     },
     isAddingComment: addComment.isPending,
     isDeletingComment: deleteComment.isPending,

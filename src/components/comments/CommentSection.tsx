@@ -9,6 +9,7 @@ import { useComments } from '@/hooks/useComments';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { CommentItem } from '@/components/article/CommentItem';
+import { EntityType } from '@/types/comment';
 
 interface CommentSectionProps {
   articleId?: string;
@@ -23,7 +24,7 @@ export const CommentSection = ({ articleId, issueId, postId }: CommentSectionPro
   
   // Determine entity type and ID
   let entityId = '';
-  let entityType: 'article' | 'issue' | 'post' = 'article'; // Default value
+  let entityType: EntityType = 'article'; // Default value
   
   if (articleId) {
     entityId = articleId;
@@ -172,14 +173,10 @@ export const CommentSection = ({ articleId, issueId, postId }: CommentSectionPro
             <CommentItem
               key={comment.id}
               comment={comment}
-              onDelete={deleteComment}
-              onReply={(parentId: string, content: string) => {
-                // Wrap in void to match expected Promise<void> return type
-                replyToComment({ parentId, content });
-                return Promise.resolve();
-              }}
-              onVote={voteComment}
-              entityType={entityType as 'article' | 'issue' | 'post'}
+              onDelete={commentId => deleteComment(commentId)}
+              onReply={(parentId: string, content: string) => replyToComment({ parentId, content })}
+              onVote={(params) => voteComment(params)}
+              entityType={entityType}
               entityId={entityId}
             />
           ))
