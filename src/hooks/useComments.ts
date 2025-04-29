@@ -58,6 +58,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
             article_id, 
             issue_id,
             parent_id,
+            score,
             profiles:user_id (id, full_name, avatar_url)
           `)
           .eq(entityIdField, entityId)
@@ -74,47 +75,24 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
         if (user) {
           const { data: votesData, error: votesError } = await supabase
             .from('comment_votes')
-            .select('comment_id, value')
+            .select('comment_id, value, user_id')
             .eq('user_id', user.id)
             .in('comment_id', commentsData.map(c => c.id));
             
           if (votesError) {
             console.error('Error fetching votes:', votesError);
           } else if (votesData) {
-            userVotes = votesData;
+            userVotes = votesData as CommentVote[];
           }
-        }
-        
-        // Get comment scores
-        const { data: scoresData, error: scoresError } = await supabase
-          .from('comment_votes')
-          .select('comment_id, value')
-          .in('comment_id', commentsData.map(c => c.id));
-          
-        if (scoresError) {
-          console.error('Error fetching comment scores:', scoresError);
-        }
-        
-        // Calculate scores for each comment
-        const commentScores: Record<string, number> = {};
-        
-        if (scoresData) {
-          scoresData.forEach(vote => {
-            if (!commentScores[vote.comment_id]) {
-              commentScores[vote.comment_id] = 0;
-            }
-            commentScores[vote.comment_id] += vote.value;
-          });
         }
         
         return { 
           comments: commentsData,
-          userVotes,
-          commentScores
+          userVotes
         };
       } catch (error) {
         console.error('Error in useComments query:', error);
-        return { comments: [], userVotes: [], commentScores: {} };
+        return { comments: [], userVotes: [] };
       }
     },
     refetchOnWindowFocus: false,
@@ -125,7 +103,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
   const organizedComments = useMemo(() => {
     if (!commentsData?.comments) return [];
     
-    const { comments, userVotes, commentScores } = commentsData;
+    const { comments, userVotes } = commentsData;
     
     // Map of user votes by comment ID
     const userVotesMap: Record<string, number> = {};
@@ -140,7 +118,6 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
     const processedComments = comments.map(comment => {
       const commentWithScore: Comment = {
         ...comment,
-        score: commentScores[comment.id] || 0,
         userVote: userVotesMap[comment.id] as 1 | -1 | 0 || 0,
         replies: []
       };
@@ -353,8 +330,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
     replyToComment: (parentId: string, content: string) => 
       replyToComment.mutate({ parentId, content }),
     deleteComment: deleteComment.mutate,
-    voteComment: ({ commentId, value }: { commentId: string; value: 1 | -1 | 0 }) => 
-      voteComment.mutate({ commentId, value }),
+    voteComment: voteComment.mutate,
     isAddingComment: addComment.isPending,
     isDeletingComment: deleteComment.isPending,
     isVoting: voteComment.isPending,
