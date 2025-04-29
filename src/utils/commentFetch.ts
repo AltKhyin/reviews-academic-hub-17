@@ -9,6 +9,9 @@ export const fetchComments = async (
   userId?: string
 ): Promise<{ comments: BaseComment[], userVotes: CommentVote[] }> => {
   try {
+    // Construct the entity ID field 
+    const entityIdField = getEntityIdField(entityType);
+    
     // Get comments for the entity
     const { data: comments, error } = await supabase
       .from('comments')
@@ -20,7 +23,7 @@ export const fetchComments = async (
           avatar_url
         )
       `)
-      .eq(`${entityType}_id`, entityId)
+      .eq(entityIdField, entityId)
       .order('created_at', { ascending: true });
 
     if (error) throw error;
@@ -49,6 +52,20 @@ export const fetchComments = async (
   }
 };
 
+// Helper function to get the correct field name for entity ID
+export const getEntityIdField = (entityType: EntityType): string => {
+  switch (entityType) {
+    case 'article':
+      return 'article_id';
+    case 'issue':
+      return 'issue_id';
+    case 'post':
+      return 'post_id';
+    default:
+      return 'article_id';
+  }
+};
+
 // Wrapper function for fetchComments with better naming for the hook
 export const fetchCommentsData = async (
   entityId: string,
@@ -61,7 +78,7 @@ export const fetchCommentsData = async (
   return fetchComments(entityType, entityId, userId);
 };
 
-// This function adds user vote information to comments
+// Function to add user vote information to comments
 export const appendUserVotesToComments = (
   comments: BaseComment[],
   userVotes: CommentVote[]

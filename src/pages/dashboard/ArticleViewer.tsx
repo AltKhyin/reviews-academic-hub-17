@@ -1,267 +1,133 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { ArrowLeft, Maximize, BookOpen, SplitSquareVertical, FileText } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
-import { Issue } from '@/types/issue';
-import { PDFViewer } from '@/components/pdf/PDFViewer';
-import { ArticleComments } from '@/components/article/ArticleComments';
-import { RecommendedArticles } from '@/components/article/RecommendedArticles';
-import { ExternalLectures } from '@/components/article/ExternalLectures';
 import { ViewModeSwitcher } from '@/components/article/ViewModeSwitcher';
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
-import { useSidebar } from '@/components/ui/sidebar';
+import { PDFViewer } from '@/components/pdf/PDFViewer';
+import { ArticleContent } from '@/components/article/ArticleContent';
+import { ExternalLectures } from '@/components/article/ExternalLectures';
+import { ArticleHeader } from '@/components/article/ArticleHeader';
+import { ArticleActions } from '@/components/article/ArticleActions';
+import { ArticleComments } from '@/components/article/ArticleComments';
+import { ArticleReviewForm } from '@/components/article/ArticleReviewForm';
+import { ArticleReviewList } from '@/components/article/ArticleReviewList';
+import { useArticleView } from '@/hooks/useArticleView';
+import { useIssueViews } from '@/hooks/useIssueViews';
 
-const ArticleViewer: React.FC = () => {
+type ViewMode = 'pdf' | 'content';
+
+const ArticleViewer = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [viewMode, setViewMode] = useState<'dual' | 'review' | 'original'>('review');
-  const [isFullScreen, setIsFullScreen] = useState(false);
-  const [isReadingMode, setIsReadingMode] = useState(false);
-  const { setOpen: setSidebarOpen } = useSidebar();
+  const [viewMode, setViewMode] = useState<ViewMode>('pdf');
+  const [showReviewForm, setShowReviewForm] = useState(false);
   
-  // Enable scrolling on the main document
+  const issueId = id; // For our use case, article ID is the same as issue ID
+  const { recordIssueView } = useIssueViews();
+  
+  const {
+    article,
+    externalLectures,
+    issue,
+    isLoading,
+    isReviewer,
+    hasPermissionToReview,
+    userReview,
+    allReviews,
+    refetchReviews
+  } = useArticleView(id);
+
   useEffect(() => {
-    document.body.style.overflow = 'auto';
-    
-    return () => {
-      document.body.style.overflow = 'auto'; // Reset on unmount
-    };
-  }, []);
-
-  const { data: issue, isLoading, error } = useQuery({
-    queryKey: ['issue', id],
-    queryFn: async () => {
-      if (!id) throw new Error('No issue ID provided');
-      
-      const { data, error } = await supabase
-        .from('issues')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (error) {
-        console.error('Error fetching issue:', error);
-        throw error;
-      }
-      
-      if (!data) {
-        throw new Error('Issue not found');
-      }
-
-      return data as Issue;
-    },
-    retry: 1,
-    meta: {
-      errorMessage: "Couldn't load the article"
+    if (issue?.id) {
+      recordIssueView(issue.id);
     }
-  });
-
-  const handleFullScreenDual = () => {
-    const container = document.getElementById('dual-pdf-container');
-    if (container) {
-      if (!document.fullscreenElement) {
-        container.requestFullscreen().catch(err => {
-          console.error(`Error attempting to enable full-screen mode: ${err.message}`);
-        });
-      } else {
-        document.exitFullscreen();
-      }
-    }
-    setIsFullScreen(!isFullScreen);
-  };
-  
-  const handleReadingMode = () => {
-    setIsReadingMode(!isReadingMode);
-    
-    // Automatically hide sidebar when entering reading mode
-    if (!isReadingMode) {
-      setSidebarOpen(false);
-    }
-  };
+  }, [issue?.id, recordIssueView]);
 
   if (isLoading) {
-    return <div className="p-8 text-center">Carregando...</div>;
+    return <div className="p-8 flex justify-center">Carregando...</div>;
   }
 
-  if (error || !issue) {
+  if (!article && !issue) {
     return (
-      <div className="space-y-8">
-        <Button variant="ghost" onClick={() => navigate(-1)}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
-        </Button>
-        <Card className="p-8 text-center">
-          <h2 className="text-xl font-semibold mb-2">Artigo não encontrado</h2>
-          <p className="text-muted-foreground">
-            O artigo que você está procurando não existe ou foi removido.
-          </p>
-        </Card>
+      <div className="p-8">
+        <h1 className="text-2xl font-bold">Artigo não encontrado</h1>
+        <p className="mt-2">O artigo que você está procurando não existe ou foi removido.</p>
+        <button
+          onClick={() => navigate('/')}
+          className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-md"
+        >
+          Voltar para a página inicial
+        </button>
       </div>
     );
   }
 
-  const hasOriginalArticle = !!issue.article_pdf_url;
+  const handleReviewFormToggle = () => {
+    setShowReviewForm(!showReviewForm);
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" onClick={() => navigate(-1)}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
-        </Button>
+    <div className="container mx-auto py-6 px-4 md:px-6">
+      <div className="flex flex-col md:flex-row justify-between mb-8">
+        <ArticleHeader article={article} issue={issue} />
+        <div className="mt-4 md:mt-0 flex items-center">
+          <ViewModeSwitcher viewMode={viewMode} onViewModeChange={setViewMode} />
+        </div>
       </div>
 
-      <Card className="border-white/10 bg-white/5">
-        <div className="p-6">
-          <h1 className="text-2xl font-semibold mb-4">{issue.title}</h1>
-          {issue.description && (
-            <p className="text-gray-400 mb-4">{issue.description}</p>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div className="lg:col-span-8 space-y-8">
+          {viewMode === 'pdf' ? (
+            <PDFViewer pdfUrl={issue?.pdf_url || ''} />
+          ) : (
+            <ArticleContent content={article?.content || issue?.description || ''} />
           )}
-          {issue.cover_image_url && (
-            <img 
-              src={issue.cover_image_url} 
-              alt={issue.title} 
-              className="w-full h-64 object-cover rounded-lg mb-6"
-            />
+
+          {/* Review Form */}
+          {hasPermissionToReview && (
+            <div className="mt-8 border-t border-gray-700 pt-8">
+              <h2 className="text-xl font-medium mb-4">Revisão do Artigo</h2>
+              <ArticleActions 
+                article={article} 
+                issue={issue} 
+                onReviewClick={handleReviewFormToggle} 
+                showReviewForm={showReviewForm}
+                userReview={userReview}
+              />
+              
+              {showReviewForm && (
+                <ArticleReviewForm 
+                  articleId={id || ''} 
+                  onSubmitSuccess={() => {
+                    refetchReviews();
+                    setShowReviewForm(false);
+                  }}
+                  existingReview={userReview}
+                />
+              )}
+            </div>
+          )}
+
+          {/* Reviews List */}
+          {allReviews && allReviews.length > 0 && (
+            <ArticleReviewList reviews={allReviews} />
+          )}
+
+          {/* Comments Section */}
+          <div className="mt-8 border-t border-gray-700 pt-8">
+            <ArticleComments issueId={issue?.id} />
+          </div>
+        </div>
+
+        {/* Sidebar */}
+        <div className="lg:col-span-4">
+          {externalLectures && externalLectures.length > 0 && (
+            <div className="bg-gray-800/10 rounded-lg p-4 border border-gray-700/30">
+              <h3 className="text-lg font-medium mb-4">Material Complementar</h3>
+              <ExternalLectures lectures={externalLectures} />
+            </div>
           )}
         </div>
-      </Card>
-
-      <div className="flex justify-between mb-4">
-        <ViewModeSwitcher 
-          viewMode={viewMode} 
-          onViewModeChange={setViewMode} 
-          hasOriginal={hasOriginalArticle} 
-        />
-        
-        {viewMode === 'dual' && hasOriginalArticle && (
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleReadingMode}>
-              <BookOpen size={16} className="mr-1" />
-              <span>Modo de leitura</span>
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleFullScreenDual}>
-              <Maximize size={16} className="mr-1" />
-              <span>Tela cheia</span>
-            </Button>
-          </div>
-        )}
       </div>
-
-      <div className={`h-[800px] w-full flex flex-col ${isReadingMode ? 'fixed inset-0 z-50 bg-[#111111] p-4 rounded-lg' : ''}`}>
-        {viewMode === 'dual' ? (
-          <ResizablePanelGroup 
-            id="dual-pdf-container" 
-            direction="horizontal" 
-            className={`h-[800px] w-full flex-grow ${isReadingMode ? 'h-full' : ''}`}
-          >
-            <ResizablePanel defaultSize={50} className="h-full">
-              <div className="h-full bg-[#1a1a1a] rounded-lg p-6 shadow-lg card-elevation flex flex-col">
-                <h2 className="font-serif text-xl font-medium mb-4">Revisão</h2>
-                <div className="w-full flex-grow bg-[#121212] rounded-md overflow-hidden">
-                  {issue.pdf_url && issue.pdf_url !== 'placeholder.pdf' ? (
-                    <iframe
-                      src={issue.pdf_url}
-                      className="w-full h-full rounded-md"
-                      title="Revisão"
-                      style={{ display: 'block' }} // Ensures proper rendering in all browsers
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-full p-4">
-                      <p className="text-gray-400 mb-4 text-center">PDF de revisão não disponível</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </ResizablePanel>
-            <ResizableHandle withHandle />
-            <ResizablePanel defaultSize={50} className="h-full">
-              <div className="h-full bg-[#1a1a1a] rounded-lg p-6 shadow-lg card-elevation flex flex-col">
-                <h2 className="font-serif text-xl font-medium mb-4">Artigo Original</h2>
-                <div className="w-full flex-grow bg-[#121212] rounded-md overflow-hidden">
-                  {issue.article_pdf_url && issue.article_pdf_url !== 'placeholder.pdf' ? (
-                    <iframe
-                      src={issue.article_pdf_url}
-                      className="w-full h-full rounded-md"
-                      title="Artigo Original"
-                      style={{ display: 'block' }} // Ensures proper rendering in all browsers
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-full p-4">
-                      <p className="text-gray-400 mb-4 text-center">PDF do artigo original não disponível</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        ) : (
-          <div className="h-[800px] w-full flex-grow">
-            <PDFViewer 
-              url={viewMode === 'review' ? issue.pdf_url : issue.article_pdf_url || ''} 
-              title={viewMode === 'review' ? "Revisão" : "Artigo Original"}
-              fallbackContent={
-                <p>{viewMode === 'review' ? "PDF de revisão" : "PDF do artigo original"} não disponível</p>
-              }
-            />
-          </div>
-        )}
-        
-        {isReadingMode && (
-          <>
-            <div className="absolute top-3 right-3 z-50">
-              <Button 
-                variant="secondary" 
-                size="sm" 
-                onClick={handleReadingMode}
-                className="bg-gray-700/60 hover:bg-gray-600"
-              >
-                Fechar
-              </Button>
-            </div>
-            
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-50 bg-gray-800/70 px-4 py-2 rounded-full flex items-center gap-3">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setViewMode('original')}
-                disabled={!hasOriginalArticle}
-                className={`p-2 rounded-full ${viewMode === 'original' ? 'bg-gray-700/70' : 'bg-transparent'}`}
-              >
-                <FileText size={20} className={`${viewMode === 'original' ? 'text-white' : 'text-gray-400'} ${!hasOriginalArticle ? 'opacity-50' : ''}`} />
-              </Button>
-              
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setViewMode('dual')}
-                disabled={!hasOriginalArticle}
-                className={`p-2 rounded-full ${viewMode === 'dual' ? 'bg-gray-700/70' : 'bg-transparent'}`}
-              >
-                <SplitSquareVertical size={20} className={`${viewMode === 'dual' ? 'text-white' : 'text-gray-400'} ${!hasOriginalArticle ? 'opacity-50' : ''}`} />
-              </Button>
-              
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setViewMode('review')}
-                className={`p-2 rounded-full ${viewMode === 'review' ? 'bg-gray-700/70' : 'bg-transparent'}`}
-              >
-                <BookOpen size={20} className={viewMode === 'review' ? 'text-white' : 'text-gray-400'} />
-              </Button>
-            </div>
-          </>
-        )}
-      </div>
-
-      <div className="space-y-8 mt-8">
-        <RecommendedArticles currentArticleId={issue.id} />
-        <ExternalLectures issueId={issue.id} />
-      </div>
-      
-      <ArticleComments articleId={issue.id} />
     </div>
   );
 };

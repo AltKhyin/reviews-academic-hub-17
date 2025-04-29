@@ -1,3 +1,4 @@
+
 export interface Issue {
   id: string;
   title: string;
@@ -21,6 +22,7 @@ export interface Issue {
   design?: string | null;
   score?: number | null;
   population?: string | null;
+  views?: number | null; // Add view count field
 }
 
 export type FormIssueValues = {
@@ -99,4 +101,12 @@ export interface ArticleReviewData {
   created_at: string;
   updated_at: string;
   reviewer?: UserProfile;
+}
+
+export interface IssueView {
+  id: string;
+  issue_id: string;
+  user_id?: string | null;
+  created_at: string;
+  client_ip?: string | null;
 }
