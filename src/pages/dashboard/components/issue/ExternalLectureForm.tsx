@@ -65,7 +65,8 @@ export function ExternalLectureForm({ issueId, onSuccess }: ExternalLectureFormP
         return;
       }
       
-      const { error } = await supabase
+      // Use any type to bypass TypeScript's strict checking
+      const { error } = await (supabase as any)
         .from('external_lectures')
         .insert({
           issue_id: issueId,
@@ -74,7 +75,7 @@ export function ExternalLectureForm({ issueId, onSuccess }: ExternalLectureFormP
           thumbnail_url: values.thumbnail_url || null,
           external_url: values.external_url,
           owner_id: user.id
-        } as any) as { error: any };
+        });
         
       if (error) throw error;
       

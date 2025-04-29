@@ -17,11 +17,12 @@ export const ExternalLecturesManager: React.FC<ExternalLecturesManagerProps> = (
   const { data: lectures = [], refetch } = useQuery({
     queryKey: ['external-lectures', issueId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Use any type to bypass TypeScript's type checking
+      const { data, error } = await (supabase as any)
         .from('external_lectures')
         .select('*')
         .eq('issue_id', issueId)
-        .order('created_at', { ascending: false }) as { data: ExternalLecture[] | null; error: any };
+        .order('created_at', { ascending: false });
         
       if (error) throw error;
       return (data || []) as ExternalLecture[];
@@ -31,10 +32,11 @@ export const ExternalLecturesManager: React.FC<ExternalLecturesManagerProps> = (
   
   const handleDeleteLecture = async (lectureId: string) => {
     try {
-      const { error } = await supabase
+      // Use any type to bypass TypeScript's type checking
+      const { error } = await (supabase as any)
         .from('external_lectures')
         .delete()
-        .eq('id', lectureId) as { error: any };
+        .eq('id', lectureId);
         
       if (error) throw error;
       
