@@ -13,15 +13,15 @@ export const ExternalLectures = ({ issueId }: ExternalLecturesProps) => {
   const { data: lectures } = useQuery({
     queryKey: ['external-lectures', issueId],
     queryFn: async () => {
-      // Use a type assertion to work around the TypeScript error
+      // Use a more explicit type casting approach to resolve TypeScript errors
       const { data, error } = await supabase
-        .from('external_lectures' as any)
+        .from('external_lectures')
         .select('*')
         .eq('issue_id', issueId)
         .order('created_at', { ascending: false });
         
       if (error) throw error;
-      return data as ExternalLecture[];
+      return (data || []) as ExternalLecture[];
     },
   });
 

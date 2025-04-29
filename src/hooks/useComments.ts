@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Comment } from '@/types/issue';
@@ -40,7 +41,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
         }
       }
       
-      // Fixed the deep recursion issue with casting
+      // Use explicit type casting to avoid deep recursion issues
       const { data, error } = await supabase
         .from('comments')
         .select(`
@@ -56,7 +57,8 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as Comment[];
+      // Cast the result explicitly to avoid type issues
+      return (data || []) as unknown as Comment[];
     }
   });
 
