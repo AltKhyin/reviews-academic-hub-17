@@ -31,7 +31,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   };
   
   return (
-    <div className="bg-[#1a1a1a] rounded-lg p-6 shadow-lg card-elevation h-full flex flex-col">
+    <div className="bg-[#1a1a1a] rounded-lg p-6 shadow-lg card-elevation h-full flex flex-col overflow-visible">
       <div className="mb-4 flex justify-between items-center">
         <h2 className="font-serif text-xl font-medium">{title}</h2>
         {url && url !== 'placeholder.pdf' && (

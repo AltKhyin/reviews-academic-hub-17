@@ -1,15 +1,13 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useSidebar } from '@/components/ui/sidebar';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
-// Mock user profile data
-const userProfile = {
-  name: 'Dr. Ana Martins',
-  specialty: 'Cardiologia',
-  email: 'ana.martins@hospital.med.br',
-  institution: 'Hospital Central',
-  joinDate: '10 de agosto de 2023',
-  avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=100',
+// Mock user profile data for demo sections
+const mockData = {
   readArticles: 17,
   savedArticles: 8,
   recentActivity: [
@@ -30,50 +28,122 @@ const ActivityIcon = ({ type }: { type: string }) => {
 
 const Profile: React.FC = () => {
   const { state } = useSidebar();
+  const { user, profile, updateProfile, refreshProfile } = useAuth();
   const isCollapsed = state === 'collapsed';
+  const [uploading, setUploading] = useState(false);
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || !event.target.files.length || !user) {
+      return;
+    }
+    
+    try {
+      setUploading(true);
+      
+      const file = event.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+      
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+      
+      if (uploadError) throw uploadError;
+      
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+      
+      // Update user profile
+      await updateProfile({ avatar_url: publicUrl });
+      await refreshProfile();
+      
+      toast({
+        title: "Sucesso",
+        description: "Avatar atualizado com sucesso!",
+        duration: 3000,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao fazer upload do avatar",
+        variant: "destructive",
+        duration: 5000,
+      });
+      console.error('Error uploading avatar:', error);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
     <div className={`animate-fade-in pb-12 transition-all duration-300 ${isCollapsed ? 'max-w-[95%]' : 'max-w-[85%]'} mx-auto`}>
       <div className="bg-[#1a1a1a] rounded-lg shadow-lg card-elevation p-6 mb-8">
         <div className="flex flex-col md:flex-row items-center md:items-start md:space-x-6">
           <div className="mb-4 md:mb-0">
-            <div className="relative">
-              <img 
-                src={userProfile.avatar} 
-                alt={userProfile.name} 
-                className="w-24 h-24 rounded-full object-cover"
+            <div className="relative group">
+              <input
+                type="file"
+                id="avatar-upload"
+                className="hidden"
+                accept="image/*"
+                onChange={handleAvatarUpload}
+                disabled={uploading}
               />
+              <label htmlFor="avatar-upload" className="cursor-pointer block">
+                <div className="w-24 h-24 rounded-full overflow-hidden">
+                  {profile?.avatar_url ? (
+                    <img 
+                      src={profile.avatar_url} 
+                      alt={profile?.full_name || "User avatar"} 
+                      className="w-full h-full object-cover transition-opacity group-hover:opacity-70"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-700 flex items-center justify-center text-3xl text-gray-300 transition-opacity group-hover:opacity-70">
+                      {profile?.full_name ? profile.full_name[0].toUpperCase() : '?'}
+                    </div>
+                  )}
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <span className="bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                    {uploading ? 'Enviando...' : 'Mudar foto'}
+                  </span>
+                </div>
+              </label>
               <div className="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-status-green border-2 border-[#1a1a1a]"></div>
             </div>
           </div>
           
           <div className="flex-1 text-center md:text-left">
-            <h1 className="font-serif text-2xl font-medium mb-1">{userProfile.name}</h1>
-            <p className="text-gray-400">{userProfile.specialty}</p>
+            <h1 className="font-serif text-2xl font-medium mb-1">{profile?.full_name || user?.email || 'Usuário'}</h1>
+            <p className="text-gray-400">{profile?.specialty || 'Especialidade não definida'}</p>
             
             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-400">Email</p>
-                <p>{userProfile.email}</p>
+                <p>{user?.email || 'Email não definido'}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-400">Instituição</p>
-                <p>{userProfile.institution}</p>
+                <p>{profile?.institution || 'Instituição não definida'}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-400">Membro desde</p>
-                <p>{userProfile.joinDate}</p>
+                <p>{user?.created_at ? new Date(user.created_at).toLocaleDateString('pt-BR') : 'Data não disponível'}</p>
               </div>
             </div>
           </div>
           
           <div className="mt-6 md:mt-0 flex flex-col items-center space-y-3">
             <div className="bg-[#212121] rounded-md p-3 w-full text-center">
-              <p className="text-2xl font-medium">{userProfile.readArticles}</p>
+              <p className="text-2xl font-medium">{mockData.readArticles}</p>
               <p className="text-xs text-gray-400">Artigos lidos</p>
             </div>
             <div className="bg-[#212121] rounded-md p-3 w-full text-center">
-              <p className="text-2xl font-medium">{userProfile.savedArticles}</p>
+              <p className="text-2xl font-medium">{mockData.savedArticles}</p>
               <p className="text-xs text-gray-400">Artigos salvos</p>
             </div>
           </div>
@@ -95,7 +165,7 @@ const Profile: React.FC = () => {
         <h2 className="font-serif text-xl font-medium mb-6">Atividade recente</h2>
         
         <div className="space-y-4">
-          {userProfile.recentActivity.map((activity, index) => (
+          {mockData.recentActivity.map((activity, index) => (
             <div key={index} className="flex items-start space-x-4 p-3 hover:bg-[#212121] rounded-md hover-effect">
               <div className="mt-1">
                 <ActivityIcon type={activity.type} />

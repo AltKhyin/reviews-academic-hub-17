@@ -132,7 +132,15 @@ export const CommentItem: React.FC<CommentItemProps> = ({
   }
 
   return (
-    <div className={`${level > 0 ? 'ml-6 border-l border-gray-700 pl-4' : 'border-b border-white/10 pb-6'} pt-2 mb-6`}>
+    <div 
+      className={`${level > 0 ? 'ml-6 border-l border-gray-700 pl-4 hover:border-gray-500 transition-colors' : 'border-b border-white/10 pb-6'} pt-2 mb-6 group`}
+    >
+      <div 
+        className="absolute -ml-4 h-full w-1 cursor-pointer opacity-0 group-hover:opacity-100" 
+        onClick={() => setIsCollapsed(true)}
+        title="Minimizar comentário"
+      />
+      
       <div className="flex gap-3 relative">
         {/* Avatar */}
         <Avatar className="w-8 h-8 mt-1 flex-shrink-0">
@@ -169,7 +177,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
           
           <div className="flex items-center gap-4 pt-1">
             {/* Vote buttons */}
-            <div className="flex items-center gap-2 text-sm">
+            <div className="flex items-center gap-1">
               <Button 
                 variant="ghost"
                 size="sm"

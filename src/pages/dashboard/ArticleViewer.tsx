@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -18,6 +18,15 @@ const ArticleViewer: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'dual' | 'review' | 'original'>('review');
+  
+  // Enable scrolling on the main document
+  useEffect(() => {
+    document.body.style.overflow = 'auto';
+    
+    return () => {
+      document.body.style.overflow = 'auto'; // Reset on unmount
+    };
+  }, []);
 
   const { data: issue, isLoading, error } = useQuery({
     queryKey: ['issue', id],

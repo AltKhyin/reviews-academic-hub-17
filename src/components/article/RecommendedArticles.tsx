@@ -27,7 +27,7 @@ export const RecommendedArticles = ({ currentArticleId }: { currentArticleId: st
 
   return (
     <Card className="p-6 mb-8 border-white/10 bg-white/5">
-      <h3 className="text-lg font-medium mb-4">Recommended Articles</h3>
+      <h3 className="text-lg font-medium mb-4">Leituras recomendadas</h3>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {articles.map((article) => (
           <div

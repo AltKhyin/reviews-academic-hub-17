@@ -170,13 +170,13 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
       const commentData: any = {
         content,
         user_id: user.id,
-        score: 1 // Start with 1 upvote
+        score: 1 // Start with 1 upvote (author's upvote)
       };
       
       // Set either article_id or issue_id based on entityType
       commentData[entityIdField] = entityId;
       
-      // First insert the comment
+      // Insert the comment
       const { error: commentError, data: newComment } = await supabase
         .from('comments')
         .insert(commentData)
@@ -185,7 +185,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
 
       if (commentError) throw commentError;
       
-      // Then auto-upvote the comment by the author
+      // Add the author's upvote
       if (newComment) {
         const { error: voteError } = await supabase
           .from('comment_votes')
@@ -229,13 +229,13 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
         content,
         user_id: user.id,
         parent_id: parentId,
-        score: 1 // Start with 1 upvote
+        score: 1 // Start with 1 upvote (author's upvote)
       };
       
       // Set either article_id or issue_id based on entityType
       commentData[entityIdField] = entityId;
       
-      // First insert the comment
+      // Insert the comment
       const { error: commentError, data: newComment } = await supabase
         .from('comments')
         .insert(commentData)
@@ -244,7 +244,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
 
       if (commentError) throw commentError;
       
-      // Then auto-upvote the comment by the author
+      // Add the author's upvote
       if (newComment) {
         const { error: voteError } = await supabase
           .from('comment_votes')
