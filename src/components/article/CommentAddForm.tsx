@@ -8,7 +8,7 @@ import { toast } from '@/hooks/use-toast';
 
 interface CommentAddFormProps {
   articleId: string;
-  onSubmit?: (comment: string) => void;
+  onSubmit?: (comment: string) => Promise<void>;
   isSubmitting?: boolean;
   entityType?: 'article' | 'issue';
   placeholder?: string;
@@ -48,12 +48,8 @@ export const CommentAddForm: React.FC<CommentAddFormProps> = ({
     try {
       if (onSubmit) {
         await onSubmit(comment);
+        setComment('');
       }
-      setComment('');
-      toast({
-        title: "Comentário adicionado",
-        description: "Seu comentário foi adicionado com sucesso."
-      });
     } catch (error) {
       console.error('Error adding comment:', error);
       toast({

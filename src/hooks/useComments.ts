@@ -13,105 +13,93 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
   const { data: comments = [], isLoading } = useQuery({
     queryKey: ['comments', entityId, entityType],
     queryFn: async () => {
-      // First, verify if the entity exists
-      if (entityType === 'article') {
-        const { data: entityExists, error: entityError } = await supabase
-          .from('articles')
-          .select('id')
-          .eq('id', entityId)
-          .maybeSingle();
-        
-        if (entityError) throw entityError;
-        
-        if (!entityExists) {
-          console.error(`Article with ID ${entityId} not found`);
-          return [];
+      try {
+        // First, verify if the entity exists
+        if (entityType === 'article') {
+          const { data: entityExists, error: entityError } = await supabase
+            .from('articles')
+            .select('id')
+            .eq('id', entityId)
+            .maybeSingle();
+          
+          if (entityError) throw entityError;
+          
+          if (!entityExists) {
+            console.error(`Article with ID ${entityId} not found`);
+            return [];
+          }
+        } else {
+          const { data: entityExists, error: entityError } = await supabase
+            .from('issues')
+            .select('id')
+            .eq('id', entityId)
+            .maybeSingle();
+          
+          if (entityError) throw entityError;
+          
+          if (!entityExists) {
+            console.error(`Issue with ID ${entityId} not found`);
+            return [];
+          }
         }
-      } else {
-        const { data: entityExists, error: entityError } = await supabase
-          .from('issues')
-          .select('id')
-          .eq('id', entityId)
-          .maybeSingle();
         
-        if (entityError) throw entityError;
-        
-        if (!entityExists) {
-          console.error(`Issue with ID ${entityId} not found`);
-          return [];
+        // Fetch comments without nesting join
+        const { data: commentsData, error: commentsError } = await supabase
+          .from('comments')
+          .select(`
+            id, 
+            content, 
+            created_at, 
+            updated_at, 
+            user_id, 
+            article_id, 
+            issue_id,
+            score,
+            profiles:user_id (id, full_name, avatar_url)
+          `)
+          .eq(entityIdField, entityId)
+          .order('created_at', { ascending: false });
+          
+        if (commentsError) {
+          console.error('Error fetching comments:', commentsError);
+          throw commentsError;
         }
+        
+        return commentsData as unknown as Comment[];
+      } catch (error) {
+        console.error('Error in useComments query:', error);
+        return [];
       }
-      
-      // Fix: Use explicit any type to avoid TypeScript recursion
-      const result = await (supabase as any)
-        .from('comments')
-        .select(`
-          id,
-          content,
-          created_at,
-          updated_at,
-          user_id,
-          parent_id,
-          article_id,
-          issue_id,
-          score,
-          profiles(id, full_name, avatar_url)
-        `)
-        .eq(entityIdField, entityId)
-        .order('created_at', { ascending: false });
-
-      if (result.error) throw result.error;
-      
-      return (result.data || []) as Comment[];
-    }
+    },
+    refetchOnWindowFocus: false,
+    staleTime: 30000
   });
 
   // Organize comments into a hierarchical structure
   const organizedComments = useMemo(() => {
     if (!comments) return [];
     
-    const commentMap = new Map<string, Comment & { replies: Comment[] }>();
-    const topLevelComments: (Comment & { replies: Comment[] })[] = [];
+    // Since we don't have parent_id in the DB yet, all comments are top-level
+    // We'll add reply functionality later
+    const topLevelComments = comments.map(comment => ({
+      ...comment,
+      replies: []
+    }));
     
-    // First, create entries for all comments in the map
-    comments.forEach(comment => {
-      commentMap.set(comment.id, { ...comment, replies: [] });
-    });
-    
-    // Then, organize them into a tree
-    comments.forEach(comment => {
-      const enrichedComment = commentMap.get(comment.id)!;
-      
-      if (comment.parent_id) {
-        const parent = commentMap.get(comment.parent_id);
-        if (parent) {
-          parent.replies.push(enrichedComment);
-        } else {
-          // If parent doesn't exist (unusual case), treat as top-level
-          topLevelComments.push(enrichedComment);
-        }
-      } else {
-        // No parent means it's a top-level comment
-        topLevelComments.push(enrichedComment);
+    // Sort top-level comments by score (highest first) or created_at if no score
+    topLevelComments.sort((a, b) => {
+      if ((b.score || 0) === (a.score || 0)) {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       }
+      return (b.score || 0) - (a.score || 0);
     });
-    
-    // Sort replies by created date
-    topLevelComments.forEach(comment => {
-      comment.replies.sort((a, b) => 
-        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-      );
-    });
-    
-    // Sort top-level comments by score (highest first)
-    topLevelComments.sort((a, b) => (b.score || 0) - (a.score || 0));
     
     return topLevelComments;
   }, [comments]);
 
   // Add a new comment
   const addComment = useMutation({
-    mutationFn: async ({ content, parentId }: { content: string; parentId?: string }) => {
+    mutationFn: async (content: string) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
       
@@ -141,11 +129,6 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
         content,
         user_id: user.id
       };
-      
-      // Add parent_id if this is a reply
-      if (parentId) {
-        commentData.parent_id = parentId;
-      }
       
       // Set either article_id or issue_id based on entityType
       commentData[entityIdField] = entityId;
@@ -206,35 +189,24 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
       
-      // Check if the user has already voted
-      const { data: existingVote } = await supabase
-        .from('comment_votes')
-        .select('*')
-        .eq('comment_id', commentId)
-        .eq('user_id', user.id)
-        .maybeSingle();
+      // Update comment score directly since we don't have a votes table yet
+      const { data: comment, error: fetchError } = await supabase
+        .from('comments')
+        .select('score')
+        .eq('id', commentId)
+        .single();
+        
+      if (fetchError) throw fetchError;
       
-      if (existingVote) {
-        // Update existing vote
-        const { error } = await supabase
-          .from('comment_votes')
-          .update({ value })
-          .eq('comment_id', commentId)
-          .eq('user_id', user.id);
+      const currentScore = comment.score || 0;
+      const newScore = currentScore + value;
+      
+      const { error: updateError } = await supabase
+        .from('comments')
+        .update({ score: newScore })
+        .eq('id', commentId);
         
-        if (error) throw error;
-      } else {
-        // Insert new vote
-        const { error } = await supabase
-          .from('comment_votes')
-          .insert({
-            comment_id: commentId,
-            user_id: user.id,
-            value
-          });
-        
-        if (error) throw error;
-      }
+      if (updateError) throw updateError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['comments', entityId, entityType] });
@@ -251,8 +223,8 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
   return {
     comments: organizedComments,
     isLoading,
-    addComment: (content: string, parentId?: string) => 
-      addComment.mutate({ content, parentId }),
+    addComment: (content: string) => 
+      addComment.mutate(content),
     deleteComment: deleteComment.mutate,
     voteComment: ({ commentId, value }: { commentId: string; value: 1 | -1 }) => 
       voteComment.mutate({ commentId, value }),

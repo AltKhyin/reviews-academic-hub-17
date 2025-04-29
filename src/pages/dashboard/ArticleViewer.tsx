@@ -126,7 +126,7 @@ const ArticleViewer: React.FC = () => {
           </ResizablePanelGroup>
         </div>
       ) : (
-        <div className="h-[800px]">
+        <div className="min-h-[800px]">
           <PDFViewer 
             url={viewMode === 'review' ? issue.pdf_url : issue.article_pdf_url || ''} 
             title={viewMode === 'review' ? "Revisão" : "Artigo Original"}

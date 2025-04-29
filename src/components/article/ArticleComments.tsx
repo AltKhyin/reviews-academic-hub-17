@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useComments } from '@/hooks/useComments';
 import { CommentAddForm } from './CommentAddForm';
 import { CommentItem } from './CommentItem';
+import { AlertCircle } from 'lucide-react';
 
 interface ArticleCommentsProps {
   articleId: string;
@@ -22,14 +23,6 @@ export const ArticleComments: React.FC<ArticleCommentsProps> = ({ articleId }) =
 
   const handleAddComment = async (content: string) => {
     await addComment(content);
-  };
-  
-  const handleAddReply = async (parentId: string, content: string) => {
-    await addComment(content, parentId);
-  };
-  
-  const handleVote = async (commentId: string, value: 1 | -1) => {
-    await voteComment({ commentId, value });
   };
 
   if (isLoading) {
@@ -57,12 +50,11 @@ export const ArticleComments: React.FC<ArticleCommentsProps> = ({ articleId }) =
                   key={comment.id} 
                   comment={comment}
                   onDelete={deleteComment}
-                  onReply={handleAddReply}
                   isDeleting={isDeletingComment}
-                  replies={comment.replies}
+                  replies={comment.replies || []}
                   entityType="issue"
                   entityId={articleId}
-                  onVote={handleVote}
+                  onVote={voteComment}
                 />
               ))}
             </div>

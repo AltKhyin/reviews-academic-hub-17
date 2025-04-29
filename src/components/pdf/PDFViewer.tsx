@@ -1,5 +1,7 @@
 
-import React from 'react';
+import React, { useState } from 'react';
+import { Maximize } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface PDFViewerProps {
   url?: string;
@@ -12,18 +14,41 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   title,
   fallbackContent
 }) => {
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  
+  const handleFullScreen = () => {
+    const iframe = document.getElementById(`pdf-iframe-${title.replace(/\s+/g, '-')}`) as HTMLIFrameElement;
+    if (iframe) {
+      if (!document.fullscreenElement) {
+        iframe.requestFullscreen().catch(err => {
+          console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+        });
+      } else {
+        document.exitFullscreen();
+      }
+    }
+    setIsFullScreen(!isFullScreen);
+  };
+  
   return (
     <div className="bg-[#1a1a1a] rounded-lg p-6 shadow-lg card-elevation h-full flex flex-col">
-      <div className="mb-4">
+      <div className="mb-4 flex justify-between items-center">
         <h2 className="font-serif text-xl font-medium">{title}</h2>
+        {url && url !== 'placeholder.pdf' && (
+          <Button variant="ghost" size="sm" onClick={handleFullScreen}>
+            <Maximize size={16} className="mr-1" />
+            <span>Tela cheia</span>
+          </Button>
+        )}
       </div>
       <div className="w-full flex-grow min-h-[800px] bg-[#121212] rounded-md overflow-hidden">
         {url && url !== 'placeholder.pdf' ? (
           <iframe
+            id={`pdf-iframe-${title.replace(/\s+/g, '-')}`}
             src={url}
             className="w-full h-full rounded-md"
             title={title}
-            style={{ minHeight: '800px' }}
+            style={{ height: '800px' }}
           />
         ) : (
           <div className="flex flex-col items-center justify-center h-full p-4">
