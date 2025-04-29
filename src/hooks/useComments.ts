@@ -40,8 +40,8 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
         }
       }
       
-      // Use any type to bypass TypeScript's checks
-      const { data, error } = await supabase
+      // Fix: Use explicit any type to avoid TypeScript recursion
+      const result = await (supabase as any)
         .from('comments')
         .select(`
           id,
@@ -55,8 +55,8 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
         .eq(entityIdField, entityId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      return (data || []) as Comment[];
+      if (result.error) throw result.error;
+      return (result.data || []) as Comment[];
     }
   });
 
