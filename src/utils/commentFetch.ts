@@ -42,7 +42,10 @@ export const fetchComments = async (
       }
     }
 
-    return { comments: comments || [], userVotes };
+    return { 
+      comments: comments || [], 
+      userVotes 
+    };
   } catch (error) {
     console.error('Error fetching comments:', error);
     return { comments: [], userVotes: [] };

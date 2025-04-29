@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { CheckCircle } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client'; // Added missing import
 
 const PaymentSuccess: React.FC = () => {
   const [searchParams] = useSearchParams();
