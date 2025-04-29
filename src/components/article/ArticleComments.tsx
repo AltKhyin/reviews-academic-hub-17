@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useComments } from '@/hooks/useComments';
@@ -123,9 +122,9 @@ export const ArticleComments: React.FC<ArticleCommentsProps> = ({ articleId }) =
                   <CommentItem 
                     key={comment.id} 
                     comment={comment}
-                    onDelete={async (commentId) => { await deleteComment(commentId); }}
-                    onReply={async (parentId, content) => { await handleReply(parentId, content); }}
-                    onVote={async (params) => { await handleVote(params); }}
+                    onDelete={deleteComment}
+                    onReply={handleReply}
+                    onVote={handleVote}
                     entityType="issue"
                     entityId={articleId}
                     isDeleting={isDeletingComment}

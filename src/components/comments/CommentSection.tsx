@@ -173,15 +173,9 @@ export const CommentSection = ({ articleId, issueId, postId }: CommentSectionPro
             <CommentItem
               key={comment.id}
               comment={comment}
-              onDelete={async commentId => {
-                await deleteComment(commentId);
-              }}
-              onReply={async (parentId: string, content: string) => {
-                await replyToComment({ parentId, content });
-              }}
-              onVote={async (params) => {
-                await voteComment(params);
-              }}
+              onDelete={commentId => deleteComment(commentId)}
+              onReply={(parentId: string, content: string) => replyToComment({ parentId, content })}
+              onVote={(params) => voteComment(params)}
               entityType={entityType}
               entityId={entityId}
             />

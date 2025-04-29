@@ -124,7 +124,7 @@ export const fetchCommentsData = async (entityId: string, entityType: EntityType
   }
 };
 
-// Organize comments into a hierarchical structure - fixing excessive recursion
+// Organize comments into a hierarchical structure
 export const organizeComments = (commentsData: { comments: any[], userVotes: CommentVote[] }): Comment[] => {
   if (!commentsData?.comments) return [];
   
@@ -139,34 +139,32 @@ export const organizeComments = (commentsData: { comments: any[], userVotes: Com
   // Create map for quick lookup of comments by ID
   const commentMap: Record<string, Comment> = {};
   
-  // First pass: Process comments to create all Comment objects without setting up the reply relationships
-  comments.forEach((comment: any) => {
-    commentMap[comment.id] = {
-      id: comment.id,
-      content: comment.content,
-      created_at: comment.created_at,
-      updated_at: comment.updated_at,
-      user_id: comment.user_id,
-      parent_id: comment.parent_id,
-      article_id: comment.article_id,
-      issue_id: comment.issue_id,
-      post_id: comment.post_id,
-      score: comment.score,
-      profiles: comment.profiles,
-      userVote: (userVotesMap[comment.id] as (1 | -1 | 0)) || 0,
-      replies: [] // Initialize with empty array
+  // Process comments to add scores and user votes
+  const processedComments = comments.map((comment: any): Comment => {
+    const commentWithScore: Comment = {
+      ...comment,
+      userVote: userVotesMap[comment.id] as 1 | -1 | 0 || 0,
+      replies: []
     };
+    
+    // Add to map for quick lookup
+    commentMap[comment.id] = commentWithScore;
+    
+    return commentWithScore;
   });
   
-  // Second pass: Set up reply relationships
+  // Organize into parent-child relationship
   const topLevelComments: Comment[] = [];
   
-  Object.values(commentMap).forEach((comment) => {
+  processedComments.forEach((comment: Comment) => {
     if (!comment.parent_id) {
       // This is a top-level comment
       topLevelComments.push(comment);
     } else if (commentMap[comment.parent_id]) {
       // This is a reply to another comment
+      if (!commentMap[comment.parent_id].replies) {
+        commentMap[comment.parent_id].replies = [];
+      }
       commentMap[comment.parent_id].replies!.push(comment);
     } else {
       // This is a reply but the parent was not found, treat as top-level
