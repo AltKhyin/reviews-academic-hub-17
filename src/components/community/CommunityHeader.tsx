@@ -18,7 +18,7 @@ export const CommunityHeader = () => {
   return (
     <div className="mb-8">
       <div 
-        className="w-full h-40 rounded-lg bg-cover bg-center mb-4"
+        className="w-full h-40 rounded-lg bg-cover bg-center"
         style={{ 
           backgroundImage: `url(${settings.header_image_url})`,
           backgroundColor: settings.theme_color || '#1e40af'
@@ -28,12 +28,6 @@ export const CommunityHeader = () => {
           <h1 className="text-4xl font-serif text-white font-bold">Comunidade</h1>
         </div>
       </div>
-      
-      {settings.description && (
-        <p className="text-gray-300 text-lg max-w-2xl mx-auto text-center">
-          {settings.description}
-        </p>
-      )}
     </div>
   );
 };

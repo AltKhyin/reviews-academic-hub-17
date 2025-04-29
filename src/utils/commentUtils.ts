@@ -125,24 +125,9 @@ export const fetchCommentsData = async (entityId: string, entityType: EntityType
 };
 
 // Define a concrete type to avoid infinite recursion
-interface CommentWithReplies {
-  id: string;
-  content: string;
-  created_at: string;
-  updated_at: string;
-  user_id: string;
-  parent_id: string | null;
-  score: number;
-  article_id?: string | null;
-  issue_id?: string | null;
-  post_id?: string | null;
-  profiles?: {
-    id: string;
-    full_name: string;
-    avatar_url: string;
-  };
-  userVote?: 1 | -1 | 0;
+interface CommentWithReplies extends Omit<Comment, 'replies'> {
   replies?: CommentWithReplies[];
+  userVote?: 1 | -1 | 0;
 }
 
 // Organize comments into a hierarchical structure
@@ -201,6 +186,5 @@ export const organizeComments = (commentsData: { comments: any[], userVotes: Com
     }
   });
   
-  // Return the organized comments as Comment[] for compatibility
   return topLevelComments;
 };

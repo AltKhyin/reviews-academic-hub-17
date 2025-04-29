@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -150,35 +149,34 @@ const SearchPage: React.FC = () => {
           <Logo dark={false} size="2xlarge" />
         </header>
 
-        {/* Center the search card vertically as suggested */}
-        <section className="flex-1 flex items-center justify-center px-6">
-          {/* Mobile filters */}
-          <div className="block md:hidden mb-4 w-full">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="sm" className="w-full">
-                  <SlidersHorizontal size={16} className="mr-2" />
-                  Filtros
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[300px] sm:w-[400px]">
-                {/* Sidebar Content for Mobile */}
-                <div className="h-full py-4">
-                  <h3 className="font-bold mb-4">Filtros</h3>
-                  <SearchFilters 
-                    filters={filters}
-                    onFilterChange={handleFilterChange}
-                    facetGroups={facetGroups}
-                    areaSearchText={areaSearchText}
-                    setAreaSearchText={setAreaSearchText}
-                    filteredAreaOptions={filteredAreaOptions}
-                  />
-                </div>
-              </SheetContent>
-            </Sheet>
-          </div>
+        {/* Fixed area for mobile filters - outside the centering container */}
+        <div className="block md:hidden px-6 mb-4">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="sm" className="w-full">
+                <SlidersHorizontal size={16} className="mr-2" />
+                Filtros
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+              {/* Sidebar Content for Mobile */}
+              <div className="h-full py-4">
+                <h3 className="font-bold mb-4">Filtros</h3>
+                <SearchFilters 
+                  filters={filters}
+                  onFilterChange={handleFilterChange}
+                  facetGroups={facetGroups}
+                  areaSearchText={areaSearchText}
+                  setAreaSearchText={setAreaSearchText}
+                  filteredAreaOptions={filteredAreaOptions}
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
 
-          {/* Search Header Component - centered */}
+        {/* Center the search card vertically */}
+        <div className="flex-1 flex items-center justify-center px-6">
           <Card className="p-6 mb-6 w-full max-w-3xl">
             <SearchHeader 
               queryText={queryText}
@@ -191,7 +189,7 @@ const SearchPage: React.FC = () => {
               queryPreview={queryPreview}
             />
           </Card>
-        </section>
+        </div>
 
         {/* Results area */}
         <div className="mb-6 px-6">
