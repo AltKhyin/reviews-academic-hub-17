@@ -48,7 +48,6 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
             src={url}
             className="w-full h-full rounded-md"
             title={title}
-            style={{ height: '100%' }}
           />
         ) : (
           <div className="flex flex-col items-center justify-center h-full p-4">
