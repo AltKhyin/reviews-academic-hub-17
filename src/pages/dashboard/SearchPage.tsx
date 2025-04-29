@@ -14,7 +14,9 @@ import {
   X, 
   Search,
   Eye, 
-  Filter
+  Filter,
+  ChevronLeft,  // Added ChevronLeft import
+  ChevronRight  // Also added ChevronRight for consistency with pagination
 } from 'lucide-react';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/ui/pagination";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
