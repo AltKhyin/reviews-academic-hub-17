@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Poll } from 'lucide-react';
+import { Poll, BarChart } from 'lucide-react';
 
 interface Flair {
   id: string;
@@ -289,7 +288,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose, onP
                 onClick={() => setIsPollEnabled(!isPollEnabled)}
                 className="gap-2"
               >
-                <Poll size={16} />
+                <BarChart size={16} />
                 {isPollEnabled ? "Remover Enquete" : "Adicionar Enquete"}
               </Button>
             </div>

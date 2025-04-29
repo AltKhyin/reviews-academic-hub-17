@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -139,7 +138,7 @@ const Community = () => {
               .eq('user_id', user.id)
               .in('option_id', optionsWithVotes.map(o => o.id))
               .maybeSingle();
-              
+            
             userVote = voteData?.option_id || null;
           }
           
