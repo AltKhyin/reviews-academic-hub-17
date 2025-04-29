@@ -60,7 +60,16 @@ const IssueEditor = () => {
         article_pdf_url: issue.article_pdf_url || '',
         cover_image_url: issue.cover_image_url || '',
         published: issue.published || false,
-        featured: issue.featured || false
+        featured: issue.featured || false,
+        // New fields
+        authors: issue.authors || '',
+        search_title: issue.search_title || '',
+        real_title: issue.real_title || '',
+        real_title_ptbr: issue.real_title_ptbr || '',
+        search_description: issue.search_description || '',
+        year: issue.year || '',
+        design: issue.design || '',
+        score: issue.score || 0
       });
     }
   }, [issue, setFormValues]);

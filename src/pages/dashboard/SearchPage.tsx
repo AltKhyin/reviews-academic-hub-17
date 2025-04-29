@@ -153,119 +153,15 @@ const SearchPage: React.FC = () => {
       );
 
   return (
-    <div className="container mx-auto py-12">
+    <div className="container mx-auto py-8">
       {/* Logo centered at the top with extra spacing */}
       <div className="flex justify-center mb-16">
         <Logo dark={false} size="2xlarge" />
       </div>
 
-      <div className="mb-8">
-        {/* Search Area */}
-        <Card className="p-4">
-          <form onSubmit={handleSubmitSearch} className="flex gap-2 mb-4">
-            <div className="relative flex-1">
-              <Input
-                type="text"
-                placeholder="Pesquisa..."
-                value={queryText}
-                onChange={(e) => setQueryText(e.target.value)}
-                className="pr-10"
-              />
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <HelpCircle size={16} />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="max-w-xs">
-                        Sintaxe: Use termos simples ou aspas para frases exatas.
-                        <br /><br />
-                        <strong>AND</strong>: Ambos os termos (padrão)
-                        <br />
-                        <strong>OR</strong>: Qualquer dos termos
-                        <br />
-                        <strong>NOT</strong>: Excluir termo
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
-            </div>
-            <Button type="submit">
-              <Search size={18} className="mr-2" />
-              Buscar
-            </Button>
-          </form>
-
-          {/* Search Tags */}
-          {searchTags.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-3">
-              {searchTags.map((tag, index) => (
-                <Badge 
-                  key={index} 
-                  variant={tag.exclude ? "outline" : "default"}
-                  className={`${tag.exclude ? 'border-destructive text-destructive' : ''} flex items-center gap-1 cursor-pointer`}
-                >
-                  <span onClick={() => handleTagToggleExclude(index)}>
-                    {tag.exclude ? 'NOT ' : ''}{tag.term}
-                  </span>
-                  <button 
-                    onClick={() => handleTagRemove(index)} 
-                    className="ml-1 hover:bg-gray-700/50 rounded-full p-0.5"
-                  >
-                    <X size={12} />
-                  </button>
-                </Badge>
-              ))}
-              {searchTags.length > 0 && (
-                <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs h-6">
-                  Limpar
-                </Button>
-              )}
-            </div>
-          )}
-
-          {/* Query Preview */}
-          {queryPreview && (
-            <div className="text-sm text-gray-500 mt-2">
-              Query: {queryPreview}
-            </div>
-          )}
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-12 gap-6">
-        {/* Mobile filters */}
-        <div className="block md:hidden col-span-12 mb-2">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="sm" className="w-full">
-                <SlidersHorizontal size={16} className="mr-2" />
-                Filtros
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-[300px] sm:w-[400px]">
-              {/* Sidebar Content for Mobile */}
-              <div className="h-full py-4 overflow-y-auto">
-                <h3 className="font-bold mb-4">Filtros</h3>
-                <SearchSidebar 
-                  filters={filters} 
-                  onFilterChange={handleFilterChange} 
-                  facetGroups={facetGroups}
-                  areaSearchText={areaSearchText}
-                  setAreaSearchText={setAreaSearchText}
-                  filteredAreaOptions={filteredAreaOptions}
-                />
-              </div>
-            </SheetContent>
-          </Sheet>
-        </div>
-
+      <div className="flex items-start justify-between gap-6 mb-16">
         {/* Desktop Sidebar */}
-        <div className="hidden md:block col-span-3">
+        <div className="hidden md:block w-1/4">
           <Card className="p-4">
             <SearchSidebar 
               filters={filters} 
@@ -278,10 +174,111 @@ const SearchPage: React.FC = () => {
           </Card>
         </div>
 
-        {/* Main Content */}
-        <div className="col-span-12 md:col-span-9">
+        {/* Search Area */}
+        <div className="flex-1">
+          <Card className="p-4">
+            {/* Mobile filters */}
+            <div className="block md:hidden mb-4">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm" className="w-full">
+                    <SlidersHorizontal size={16} className="mr-2" />
+                    Filtros
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+                  {/* Sidebar Content for Mobile */}
+                  <div className="h-full py-4 overflow-y-auto">
+                    <h3 className="font-bold mb-4">Filtros</h3>
+                    <SearchSidebar 
+                      filters={filters} 
+                      onFilterChange={handleFilterChange} 
+                      facetGroups={facetGroups}
+                      areaSearchText={areaSearchText}
+                      setAreaSearchText={setAreaSearchText}
+                      filteredAreaOptions={filteredAreaOptions}
+                    />
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
+
+            <form onSubmit={handleSubmitSearch} className="flex gap-2 mb-4">
+              <div className="relative flex-1">
+                <Input
+                  type="text"
+                  placeholder="Pesquisa..."
+                  value={queryText}
+                  onChange={(e) => setQueryText(e.target.value)}
+                  className="pr-10"
+                />
+                <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <HelpCircle size={16} />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-xs">
+                          Sintaxe: Use termos simples ou aspas para frases exatas.
+                          <br /><br />
+                          <strong>AND</strong>: Ambos os termos (padrão)
+                          <br />
+                          <strong>OR</strong>: Qualquer dos termos
+                          <br />
+                          <strong>NOT</strong>: Excluir termo
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              </div>
+              <Button type="submit">
+                <Search size={18} className="mr-2" />
+                Buscar
+              </Button>
+            </form>
+
+            {/* Search Tags */}
+            {searchTags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {searchTags.map((tag, index) => (
+                  <Badge 
+                    key={index} 
+                    variant={tag.exclude ? "outline" : "default"}
+                    className={`${tag.exclude ? 'border-destructive text-destructive' : ''} flex items-center gap-1 cursor-pointer`}
+                  >
+                    <span onClick={() => handleTagToggleExclude(index)}>
+                      {tag.exclude ? 'NOT ' : ''}{tag.term}
+                    </span>
+                    <button 
+                      onClick={() => handleTagRemove(index)} 
+                      className="ml-1 hover:bg-gray-700/50 rounded-full p-0.5"
+                    >
+                      <X size={12} />
+                    </button>
+                  </Badge>
+                ))}
+                {searchTags.length > 0 && (
+                  <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs h-6">
+                    Limpar
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {/* Query Preview */}
+            {queryPreview && (
+              <div className="text-sm text-gray-500 mt-2">
+                Query: {queryPreview}
+              </div>
+            )}
+          </Card>
+
           {/* Sort & View Options */}
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex justify-between items-center my-4">
             <div className="flex items-center">
               <span className="text-sm mr-2">Ordenar por:</span>
               <ToggleGroup type="single" value={sortBy} onValueChange={(val) => val && setSortBy(val as any)}>
@@ -527,11 +524,13 @@ interface SearchResultCardProps {
 }
 
 const SearchResultCard: React.FC<SearchResultCardProps> = ({ article }) => {
-  // For display purposes, we'll create a fake study type and authors
-  const studyType = ["RCT", "Metanálise", "Coorte", "Caso-Controle", "Revisão Sistemática"][Math.floor(Math.random() * 5)];
-  const authors = "Smith J, Johnson A, et al.";
-  const year = new Date(article.created_at).getFullYear();
-  const karma = Math.floor(Math.random() * 100);
+  // Display author data if available, otherwise use fallback
+  const authors = article.authors || "Smith J, Johnson A, et al.";
+  const year = article.year || new Date(article.created_at).getFullYear();
+  const studyType = article.design || ["RCT", "Metanálise", "Coorte", "Caso-Controle", "Revisão Sistemática"][Math.floor(Math.random() * 5)];
+  const karma = article.score || Math.floor(Math.random() * 100);
+  const title = article.search_title || article.title;
+  const description = article.search_description || article.description;
   
   return (
     <Card className="overflow-hidden hover:shadow-md transition-all group">
@@ -547,10 +546,10 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({ article }) => {
           </div>
           
           <Link to={`/article/${article.id}`} className="hover:underline">
-            <h3 className="font-medium text-lg mb-2">{article.title}</h3>
+            <h3 className="font-medium text-lg mb-2">{title}</h3>
           </Link>
           
-          <p className="text-sm text-gray-400 line-clamp-2">{article.description || "Sem descrição disponível."}</p>
+          <p className="text-sm text-gray-400 line-clamp-2">{description || "Sem descrição disponível."}</p>
         </div>
         
         <div className="flex flex-col items-end justify-between">

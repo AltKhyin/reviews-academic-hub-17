@@ -12,6 +12,15 @@ export interface Issue {
   created_at: string;
   updated_at: string;
   featured: boolean | null;
+  // New fields
+  authors?: string | null;
+  search_title?: string | null;
+  real_title?: string | null;
+  real_title_ptbr?: string | null;
+  search_description?: string | null;
+  year?: string | null;
+  design?: string | null;
+  score?: number | null;
 }
 
 export type FormIssueValues = {
@@ -22,6 +31,15 @@ export type FormIssueValues = {
   article_pdf_url?: string;
   cover_image_url?: string;
   published?: boolean;
+  // New fields
+  authors?: string;
+  search_title?: string;
+  real_title?: string;
+  real_title_ptbr?: string;
+  search_description?: string;
+  year?: string;
+  design?: string;
+  score?: number;
 };
 
 export interface UserProfile {

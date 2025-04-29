@@ -31,7 +31,7 @@ export const Logo = ({
   if (collapsed) {
     return (
       <div className="flex justify-center">
-        <h1 className={`logo-text ${sizeClasses[size]} font-serif ${fontWeight} ${textColor}`}>
+        <h1 className={`logo-text ${sizeClasses[size]} font-serif tracking-tight ${fontWeight} ${textColor}`}>
           R.
         </h1>
       </div>
@@ -40,7 +40,7 @@ export const Logo = ({
 
   return (
     <div className="flex flex-col">
-      <h1 className={`logo-text ${sizeClasses[size]} font-serif ${fontWeight} ${textColor}`}>
+      <h1 className={`logo-text ${sizeClasses[size]} font-serif tracking-tight ${fontWeight} ${textColor}`}>
         Reviews.
       </h1>
     </div>

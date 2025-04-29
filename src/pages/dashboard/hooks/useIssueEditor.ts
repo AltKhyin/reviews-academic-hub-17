@@ -16,7 +16,15 @@ export const useIssueEditor = (id?: string) => {
     article_pdf_url: '',
     cover_image_url: '',
     published: false,
-    featured: false
+    featured: false,
+    authors: '',
+    search_title: '',
+    real_title: '',
+    real_title_ptbr: '',
+    search_description: '',
+    year: '',
+    design: '',
+    score: 0
   });
 
   const onSubmit = async (values: IssueFormValues) => {
@@ -40,6 +48,15 @@ export const useIssueEditor = (id?: string) => {
           published: values.published,
           featured: values.featured,
           updated_at: new Date().toISOString(),
+          // New fields
+          authors: values.authors || '',
+          search_title: values.search_title || '',
+          real_title: values.real_title || '',
+          real_title_ptbr: values.real_title_ptbr || '',
+          search_description: values.search_description || '',
+          year: values.year || '',
+          design: values.design || '',
+          score: values.score || 0,
           ...(values.published && { published_at: new Date().toISOString() })
         })
         .eq('id', id);

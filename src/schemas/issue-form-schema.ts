@@ -10,7 +10,16 @@ export const issueFormSchema = z.object({
   article_pdf_url: z.string().optional(),
   cover_image_url: z.string().optional(),
   published: z.boolean().default(false),
-  featured: z.boolean().default(false)
+  featured: z.boolean().default(false),
+  // New fields for search engine optimization
+  authors: z.string().optional(),
+  search_title: z.string().optional(),
+  real_title: z.string().optional(),
+  real_title_ptbr: z.string().optional(),
+  search_description: z.string().optional(),
+  year: z.string().optional(), 
+  design: z.string().optional(),
+  score: z.number().optional().default(0)
 });
 
 export type IssueFormValues = {
@@ -23,4 +32,12 @@ export type IssueFormValues = {
   cover_image_url?: string;
   published?: boolean;
   featured?: boolean;
+  authors?: string;
+  search_title?: string;
+  real_title?: string;
+  real_title_ptbr?: string;
+  search_description?: string;
+  year?: string;
+  design?: string;
+  score?: number;
 };
