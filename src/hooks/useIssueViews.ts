@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { IssueView } from '@/types/issue';
 
 export const useIssueViews = () => {
   const { user } = useAuth();
@@ -37,25 +38,25 @@ export const useIssueViews = () => {
           return;
         }
         
-        // Record the view with user ID
+        // Record the view with user ID - use type assertion to avoid TS errors
         await supabase
-          .from('issue_views')
+          .from('issue_views' as any)
           .insert({
             issue_id: issueId,
             user_id: user.id
-          });
+          } as any);
       } else {
         // For anonymous users, just record the view
         await supabase
-          .from('issue_views')
+          .from('issue_views' as any)
           .insert({
             issue_id: issueId,
             user_id: null
-          });
+          } as any);
       }
       
       // Increment the view count on the issues table
-      await supabase.rpc('increment_issue_views', { issue_id: issueId });
+      await supabase.rpc('increment_issue_views' as any, { issue_id: issueId });
       
     } catch (err) {
       console.error('Error recording issue view:', err);
@@ -85,7 +86,7 @@ export const useIssueViews = () => {
       
       // Fallback to counting from issue_views table
       const { count, error } = await supabase
-        .from('issue_views')
+        .from('issue_views' as any)
         .select('*', { count: 'exact', head: true })
         .eq('issue_id', issueId);
       

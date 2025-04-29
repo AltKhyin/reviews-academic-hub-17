@@ -13,12 +13,12 @@ import { ArticleReviewList } from '@/components/article/ArticleReviewList';
 import { useArticleView } from '@/hooks/useArticleView';
 import { useIssueViews } from '@/hooks/useIssueViews';
 
-type ViewMode = 'pdf' | 'content';
+type ViewMode = 'dual' | 'review' | 'original';
 
 const ArticleViewer = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [viewMode, setViewMode] = useState<ViewMode>('pdf');
+  const [viewMode, setViewMode] = useState<ViewMode>('review');
   const [showReviewForm, setShowReviewForm] = useState(false);
   
   const issueId = id; // For our use case, article ID is the same as issue ID
@@ -34,7 +34,7 @@ const ArticleViewer = () => {
     userReview,
     allReviews,
     refetchReviews
-  } = useArticleView(id);
+  } = useArticleView(id || '');
 
   useEffect(() => {
     if (issue?.id) {
@@ -65,21 +65,27 @@ const ArticleViewer = () => {
     setShowReviewForm(!showReviewForm);
   };
 
+  const hasOriginalPDF = !!issue?.article_pdf_url;
+
   return (
     <div className="container mx-auto py-6 px-4 md:px-6">
       <div className="flex flex-col md:flex-row justify-between mb-8">
-        <ArticleHeader article={article} issue={issue} />
+        <ArticleHeader article={article || { id: issue?.id || '', title: issue?.title || '' }} />
         <div className="mt-4 md:mt-0 flex items-center">
-          <ViewModeSwitcher viewMode={viewMode} onViewModeChange={setViewMode} />
+          <ViewModeSwitcher 
+            viewMode={viewMode} 
+            onViewModeChange={(mode) => setViewMode(mode)} 
+            hasOriginal={hasOriginalPDF}
+          />
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <div className="lg:col-span-8 space-y-8">
-          {viewMode === 'pdf' ? (
-            <PDFViewer pdfUrl={issue?.pdf_url || ''} />
+          {viewMode === 'pdf' || viewMode === 'review' ? (
+            <PDFViewer file={issue?.pdf_url || ''} />
           ) : (
-            <ArticleContent content={article?.content || issue?.description || ''} />
+            <PDFViewer file={issue?.article_pdf_url || ''} />
           )}
 
           {/* Review Form */}
@@ -87,21 +93,19 @@ const ArticleViewer = () => {
             <div className="mt-8 border-t border-gray-700 pt-8">
               <h2 className="text-xl font-medium mb-4">Revisão do Artigo</h2>
               <ArticleActions 
-                article={article} 
-                issue={issue} 
+                articleId={id || ''} 
                 onReviewClick={handleReviewFormToggle} 
                 showReviewForm={showReviewForm}
-                userReview={userReview}
               />
               
               {showReviewForm && (
                 <ArticleReviewForm 
-                  articleId={id || ''} 
+                  article={article}
                   onSubmitSuccess={() => {
                     refetchReviews();
                     setShowReviewForm(false);
                   }}
-                  existingReview={userReview}
+                  initialData={userReview}
                 />
               )}
             </div>
@@ -114,7 +118,7 @@ const ArticleViewer = () => {
 
           {/* Comments Section */}
           <div className="mt-8 border-t border-gray-700 pt-8">
-            <ArticleComments issueId={issue?.id} />
+            <ArticleComments articleId={article?.id || issue?.id || ''} />
           </div>
         </div>
 
@@ -123,7 +127,7 @@ const ArticleViewer = () => {
           {externalLectures && externalLectures.length > 0 && (
             <div className="bg-gray-800/10 rounded-lg p-4 border border-gray-700/30">
               <h3 className="text-lg font-medium mb-4">Material Complementar</h3>
-              <ExternalLectures lectures={externalLectures} />
+              <ExternalLectures issueId={issue?.id || ''} />
             </div>
           )}
         </div>
