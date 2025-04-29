@@ -1,37 +1,106 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useComments } from '@/hooks/useComments';
 import { CommentAddForm } from './CommentAddForm';
 import { CommentItem } from './CommentItem';
 import { AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface ArticleCommentsProps {
   articleId: string;
 }
 
 export const ArticleComments: React.FC<ArticleCommentsProps> = ({ articleId }) => {
+  const [sortMode, setSortMode] = useState<'best' | 'new' | 'top'>('best');
+  
   const { 
     comments, 
     isLoading, 
     addComment, 
     deleteComment,
+    replyToComment,
     voteComment,
     isAddingComment,
-    isDeletingComment
+    isDeletingComment,
+    isReplying,
   } = useComments(articleId, 'issue'); // Using 'issue' as the entity type
 
   const handleAddComment = async (content: string) => {
     await addComment(content);
   };
 
+  const handleReply = async (parentId: string, content: string) => {
+    await replyToComment(parentId, content);
+  };
+
+  const getSortedComments = () => {
+    if (!comments) return [];
+    
+    // Create a copy to avoid mutating the original
+    const sortedComments = [...comments];
+    
+    switch (sortMode) {
+      case 'new':
+        return sortedComments.sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+      case 'top':
+        return sortedComments.sort((a, b) => 
+          (b.score || 0) - (a.score || 0)
+        );
+      case 'best':
+      default:
+        // Simple Wilson score approximation (would be better calculated on server)
+        return sortedComments.sort((a, b) => {
+          const aScore = a.score || 0;
+          const bScore = b.score || 0;
+          // This is not a true Wilson score, just a simple approximation
+          return bScore - aScore;
+        });
+    }
+  };
+
   if (isLoading) {
     return <div className="p-4 text-center text-gray-400">Carregando comentários...</div>;
   }
 
+  const sortedComments = getSortedComments();
+
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-serif font-medium">Discussão</h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-serif font-medium">Discussão</h2>
+        <div className="flex items-center space-x-2">
+          <span className="text-sm text-gray-400">Ordenar por:</span>
+          <div className="flex rounded-md overflow-hidden border border-gray-700">
+            <Button 
+              variant={sortMode === 'best' ? 'secondary' : 'ghost'} 
+              size="sm"
+              onClick={() => setSortMode('best')}
+              className="rounded-none border-r border-gray-700"
+            >
+              Melhores
+            </Button>
+            <Button 
+              variant={sortMode === 'new' ? 'secondary' : 'ghost'} 
+              size="sm"
+              onClick={() => setSortMode('new')}
+              className="rounded-none border-r border-gray-700"
+            >
+              Novos
+            </Button>
+            <Button 
+              variant={sortMode === 'top' ? 'secondary' : 'ghost'} 
+              size="sm"
+              onClick={() => setSortMode('top')}
+              className="rounded-none"
+            >
+              Mais votados
+            </Button>
+          </div>
+        </div>
+      </div>
       
       <CommentAddForm 
         articleId={articleId} 
@@ -43,19 +112,21 @@ export const ArticleComments: React.FC<ArticleCommentsProps> = ({ articleId }) =
       
       <Card className="border-white/10 bg-white/5">
         <CardContent className="pt-6">
-          {comments && comments.length > 0 ? (
+          {sortedComments && sortedComments.length > 0 ? (
             <div className="space-y-6">
-              {comments.map((comment) => (
-                <CommentItem 
-                  key={comment.id} 
-                  comment={comment}
-                  onDelete={deleteComment}
-                  isDeleting={isDeletingComment}
-                  replies={comment.replies || []}
-                  entityType="issue"
-                  entityId={articleId}
-                  onVote={voteComment}
-                />
+              {sortedComments
+                .filter(comment => !comment.parent_id) // Only show top-level comments
+                .map((comment) => (
+                  <CommentItem 
+                    key={comment.id} 
+                    comment={comment}
+                    onDelete={deleteComment}
+                    onReply={handleReply}
+                    onVote={voteComment}
+                    entityType="issue"
+                    entityId={articleId}
+                    isDeleting={isDeletingComment}
+                  />
               ))}
             </div>
           ) : (

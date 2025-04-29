@@ -1,3 +1,4 @@
+
 export interface Issue {
   id: string;
   title: string;
@@ -41,13 +42,21 @@ export interface Comment {
   user_id: string;
   article_id?: string;
   issue_id?: string;
-  score?: number;
+  score: number;
+  parent_id?: string | null;
   profiles?: {
     id: string;
     full_name: string | null;
     avatar_url: string | null;
   };
   replies?: Comment[];
+  userVote?: 1 | -1 | 0;
+}
+
+export interface CommentVote {
+  user_id: string;
+  comment_id: string;
+  value: 1 | -1;
 }
 
 export interface ExternalLecture {
