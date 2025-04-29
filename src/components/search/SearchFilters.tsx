@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,7 +33,7 @@ export const SearchFilters: React.FC<SearchFilterProps> = ({
   filteredAreaOptions
 }) => {
   return (
-    <div className="space-y-4">
+    <>
       <h3 className="font-medium text-lg mb-2">Filtros</h3>
       
       <Accordion type="multiple" defaultValue={["studyType"]}>
@@ -167,6 +166,6 @@ export const SearchFilters: React.FC<SearchFilterProps> = ({
           Limpar todos os filtros
         </Button>
       )}
-    </div>
+    </>
   );
 };
