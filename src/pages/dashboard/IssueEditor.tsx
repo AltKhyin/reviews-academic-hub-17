@@ -11,7 +11,6 @@ import { IssueActionButtons } from './components/issue/IssueActionButtons';
 import { IssueFormContainer } from './components/issue/IssueFormContainer';
 import { useIssueEditor } from './hooks/useIssueEditor';
 import { useQuery } from '@tanstack/react-query';
-import { useIssueViews } from '@/hooks/useIssueViews';
 
 const IssueEditor = () => {
   const { id } = useParams<{ id: string }>();
@@ -26,9 +25,6 @@ const IssueEditor = () => {
     togglePublish,
     toggleFeatured
   } = useIssueEditor(id);
-
-  const { getIssueViewCount } = useIssueViews();
-  const [viewCount, setViewCount] = useState<number>(0);
 
   // Fetch issue data
   const { data: issue, isLoading } = useQuery({
@@ -73,23 +69,10 @@ const IssueEditor = () => {
         search_description: issue.search_description || '',
         year: issue.year || '',
         design: issue.design || '',
-        score: issue.score || 0,
-        population: issue.population || ''
+        score: issue.score || 0
       });
     }
   }, [issue, setFormValues]);
-
-  // Get view count when issue data is loaded
-  useEffect(() => {
-    const loadViewCount = async () => {
-      if (id) {
-        const count = await getIssueViewCount(id);
-        setViewCount(count);
-      }
-    };
-    
-    loadViewCount();
-  }, [id, getIssueViewCount]);
 
   if (isLoading) {
     return <div className="p-8 text-center">Carregando...</div>;
@@ -99,19 +82,14 @@ const IssueEditor = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <IssueHeader />
-        <div className="flex items-center gap-2">
-          <div className="text-sm bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full">
-            {viewCount} {viewCount === 1 ? 'visualização' : 'visualizações'}
-          </div>
-          <IssueActionButtons
-            onDelete={handleDelete}
-            onTogglePublish={togglePublish}
-            onToggleFeatured={toggleFeatured}
-            isPublished={formValues.published}
-            isFeatured={formValues.featured}
-            isDisabled={isSubmitting}
-          />
-        </div>
+        <IssueActionButtons
+          onDelete={handleDelete}
+          onTogglePublish={togglePublish}
+          onToggleFeatured={toggleFeatured}
+          isPublished={formValues.published}
+          isFeatured={formValues.featured}
+          isDisabled={isSubmitting}
+        />
       </div>
 
       <Card className="border-white/10 bg-white/5">

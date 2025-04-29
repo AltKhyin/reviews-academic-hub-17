@@ -23,7 +23,6 @@ export const ExternalLectures = ({ issueId }: ExternalLecturesProps) => {
       if (error) throw error;
       return (data || []) as ExternalLecture[];
     },
-    enabled: !!issueId
   });
 
   if (!lectures?.length) return null;

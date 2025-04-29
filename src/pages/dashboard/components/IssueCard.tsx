@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Issue } from '@/types/issue';
-import { Eye } from 'lucide-react';
 
 interface IssueCardProps {
   issue: Issue;
@@ -50,12 +49,6 @@ export const IssueCard: React.FC<IssueCardProps> = ({ issue, formatTags }) => {
             {issue.article_pdf_url && (
               <span className="text-xs bg-purple-500/10 text-purple-400 px-2 py-1 rounded-full">
                 Artigo Original
-              </span>
-            )}
-            {issue.views !== undefined && issue.views > 0 && (
-              <span className="text-xs bg-cyan-500/10 text-cyan-400 px-2 py-1 rounded-full flex items-center gap-1">
-                <Eye className="h-3 w-3" />
-                {issue.views}
               </span>
             )}
           </div>

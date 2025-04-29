@@ -23,7 +23,7 @@ export const ArticleComments: React.FC<ArticleCommentsProps> = ({ articleId }) =
     isAddingComment,
     isDeletingComment,
     isReplying,
-  } = useComments(articleId, 'article');
+  } = useComments(articleId, 'article'); // Changed from 'issue' to 'article'
 
   const handleAddComment = async (content: string) => {
     await addComment(content);
