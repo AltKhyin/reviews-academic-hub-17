@@ -31,7 +31,8 @@ export const CommentAddForm: React.FC<CommentAddFormProps> = ({
       toast({
         title: "Autenticação necessária",
         description: "Faça login para deixar um comentário.",
-        variant: "destructive"
+        variant: "destructive",
+        duration: 5000, // Auto-dismiss after 5 seconds
       });
       return;
     }
@@ -40,7 +41,8 @@ export const CommentAddForm: React.FC<CommentAddFormProps> = ({
       toast({
         title: "Comentário obrigatório",
         description: "Por favor, escreva um comentário.",
-        variant: "destructive"
+        variant: "destructive",
+        duration: 5000, // Auto-dismiss after 5 seconds
       });
       return;
     }
@@ -55,7 +57,8 @@ export const CommentAddForm: React.FC<CommentAddFormProps> = ({
       toast({
         title: "Erro",
         description: "Falha ao adicionar comentário. Por favor, tente novamente.",
-        variant: "destructive"
+        variant: "destructive",
+        duration: 5000, // Auto-dismiss after 5 seconds
       });
     }
   };

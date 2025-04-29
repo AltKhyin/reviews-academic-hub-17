@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Trash2, MessageSquare, ChevronUp, ChevronDown, Plus, Minus } from 'lucide-react';
+import { Trash2, MessageSquare, ThumbsUp, ThumbsDown, ChevronDown, Plus, Minus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Comment } from '@/types/issue';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -132,75 +132,78 @@ export const CommentItem: React.FC<CommentItemProps> = ({
   }
 
   return (
-    <div className={`${level > 0 ? 'ml-6 border-l border-gray-700 pl-4' : 'border-b border-white/10 pb-4'} mb-4`}>
+    <div className={`${level > 0 ? 'ml-6 border-l border-gray-700 pl-4' : 'border-b border-white/10 pb-6'} pt-2 mb-6`}>
       <div className="flex gap-3 relative">
         {/* Avatar */}
-        <Avatar className="w-8 h-8 mt-1">
+        <Avatar className="w-8 h-8 mt-1 flex-shrink-0">
           <AvatarImage src={comment.profiles?.avatar_url || undefined} />
           <AvatarFallback>{profileInitial}</AvatarFallback>
         </Avatar>
         
         {/* Comment content */}
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <span className="font-medium text-sm">{profileName}</span>
-            <span className="text-xs text-gray-400">
-              {formatDistanceToNow(new Date(comment.created_at), { 
-                addSuffix: true,
-                locale: ptBR
-              })}
-            </span>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-6 ml-auto p-1 text-gray-400 hover:text-gray-300 flex items-center gap-1"
-              onClick={() => setIsCollapsed(true)}
-              title="Minimizar"
-            >
-              <Minus size={14} />
-              <span className="text-xs">Minimizar</span>
-            </Button>
+        <div className="flex-1 space-y-3">
+          <div className="flex items-center">
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-sm">{profileName}</span>
+                <span className="text-xs text-gray-400">
+                  {formatDistanceToNow(new Date(comment.created_at), { 
+                    addSuffix: true,
+                    locale: ptBR
+                  })}
+                </span>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 ml-auto p-1 text-gray-400 hover:text-gray-300"
+                  onClick={() => setIsCollapsed(true)}
+                  title="Minimizar"
+                >
+                  <ChevronDown size={16} />
+                </Button>
+              </div>
+            </div>
           </div>
           
-          <p className="mt-1 text-sm text-gray-200">{comment.content}</p>
+          <p className="text-sm text-gray-200">{comment.content}</p>
           
-          <div className="flex items-center gap-3 mt-1">
-            {/* Vote buttons - now horizontal and with area */}
-            <div className="flex items-center">
+          <div className="flex items-center gap-4 pt-1">
+            {/* Vote buttons */}
+            <div className="flex items-center gap-2 text-sm">
               <Button 
                 variant="ghost"
                 size="sm"
-                className={`h-6 w-6 p-0 rounded ${userVote === 1 ? 'text-orange-500 bg-orange-500/10' : 'text-gray-400 hover:bg-gray-700/30'}`}
+                className={`p-0 h-8 w-8 rounded-full ${userVote === 1 ? 'text-orange-500 bg-orange-500/10' : 'text-gray-400 hover:bg-gray-700/30'}`}
                 onClick={handleUpvote}
                 disabled={!user}
                 title="Upvote"
               >
-                <ChevronUp size={16} />
+                <ThumbsUp size={16} />
               </Button>
               
-              <span className={`text-xs font-medium mx-1 ${localScore > 0 ? 'text-orange-500' : localScore < 0 ? 'text-blue-500' : 'text-gray-400'}`}>
+              <span className={`text-sm font-medium ${localScore > 0 ? 'text-orange-500' : localScore < 0 ? 'text-blue-500' : 'text-gray-400'}`}>
                 {localScore}
               </span>
               
               <Button 
                 variant="ghost"
                 size="sm"
-                className={`h-6 w-6 p-0 rounded ${userVote === -1 ? 'text-blue-500 bg-blue-500/10' : 'text-gray-400 hover:bg-gray-700/30'}`}
+                className={`p-0 h-8 w-8 rounded-full ${userVote === -1 ? 'text-blue-500 bg-blue-500/10' : 'text-gray-400 hover:bg-gray-700/30'}`}
                 onClick={handleDownvote}
                 disabled={!user}
                 title="Downvote"
               >
-                <ChevronDown size={16} />
+                <ThumbsDown size={16} />
               </Button>
             </div>
             
             <Button 
               variant="ghost" 
               size="sm" 
-              className="h-6 px-2 text-xs text-gray-400 hover:text-gray-300 flex items-center gap-1" 
+              className="h-8 px-2 py-0 text-sm text-gray-400 hover:text-gray-300" 
               onClick={() => setIsReplying(!isReplying)}
             >
-              <MessageSquare size={14} />
+              <MessageSquare size={14} className="mr-1" />
               <span>Responder</span>
             </Button>
             
@@ -210,11 +213,10 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    className="h-6 px-2 text-xs text-gray-400 hover:text-red-400 flex items-center gap-1" 
+                    className="h-8 px-2 py-0 text-sm text-gray-400 hover:text-red-400" 
                     disabled={isDeleting}
                   >
                     <Trash2 size={14} />
-                    <span>Excluir</span>
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
@@ -270,7 +272,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
       
       {/* Replies */}
       {hasReplies && !isCollapsed && (
-        <div className="mt-2 pl-6">
+        <div className="mt-4">
           {comment.replies && comment.replies.length > 0 && comment.replies.map((reply) => (
             <CommentItem
               key={reply.id}
@@ -289,4 +291,3 @@ export const CommentItem: React.FC<CommentItemProps> = ({
     </div>
   );
 };
-

@@ -169,25 +169,43 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
       // Create the comment object with the right fields
       const commentData: any = {
         content,
-        user_id: user.id
+        user_id: user.id,
+        score: 1 // Start with 1 upvote
       };
       
       // Set either article_id or issue_id based on entityType
       commentData[entityIdField] = entityId;
       
-      const { error, data } = await supabase
+      // First insert the comment
+      const { error: commentError, data: newComment } = await supabase
         .from('comments')
         .insert(commentData)
-        .select();
+        .select()
+        .single();
 
-      if (error) throw error;
-      return data;
+      if (commentError) throw commentError;
+      
+      // Then auto-upvote the comment by the author
+      if (newComment) {
+        const { error: voteError } = await supabase
+          .from('comment_votes')
+          .insert({
+            user_id: user.id,
+            comment_id: newComment.id,
+            value: 1
+          });
+        
+        if (voteError) console.error('Error adding auto-upvote:', voteError);
+      }
+      
+      return newComment;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['comments', entityId, entityType] });
       toast({
         title: "Sucesso",
         description: "Seu comentário foi adicionado.",
+        duration: 3000, // Auto-dismiss after 3 seconds
       });
     },
     onError: (error: Error) => {
@@ -195,6 +213,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
         title: "Erro",
         description: error.message,
         variant: "destructive",
+        duration: 5000, // Auto-dismiss after 5 seconds
       });
     }
   });
@@ -209,25 +228,43 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
       const commentData: any = {
         content,
         user_id: user.id,
-        parent_id: parentId
+        parent_id: parentId,
+        score: 1 // Start with 1 upvote
       };
       
       // Set either article_id or issue_id based on entityType
       commentData[entityIdField] = entityId;
       
-      const { error, data } = await supabase
+      // First insert the comment
+      const { error: commentError, data: newComment } = await supabase
         .from('comments')
         .insert(commentData)
-        .select();
+        .select()
+        .single();
 
-      if (error) throw error;
-      return data;
+      if (commentError) throw commentError;
+      
+      // Then auto-upvote the comment by the author
+      if (newComment) {
+        const { error: voteError } = await supabase
+          .from('comment_votes')
+          .insert({
+            user_id: user.id,
+            comment_id: newComment.id,
+            value: 1
+          });
+        
+        if (voteError) console.error('Error adding auto-upvote:', voteError);
+      }
+      
+      return newComment;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['comments', entityId, entityType] });
       toast({
         title: "Resposta adicionada",
         description: "Sua resposta foi publicada com sucesso.",
+        duration: 3000, // Auto-dismiss after 3 seconds
       });
     },
     onError: (error: Error) => {
@@ -235,6 +272,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
         title: "Erro",
         description: error.message,
         variant: "destructive",
+        duration: 5000, // Auto-dismiss after 5 seconds
       });
     }
   });
@@ -254,6 +292,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
       toast({
         title: "Sucesso",
         description: "Comentário excluído com sucesso.",
+        duration: 3000, // Auto-dismiss after 3 seconds
       });
     },
     onError: (error: Error) => {
@@ -261,6 +300,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
         title: "Erro",
         description: error.message,
         variant: "destructive",
+        duration: 5000, // Auto-dismiss after 5 seconds
       });
     }
   });
@@ -319,6 +359,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
         title: "Erro ao votar",
         description: error.message,
         variant: "destructive",
+        duration: 5000, // Auto-dismiss after 5 seconds
       });
     }
   });

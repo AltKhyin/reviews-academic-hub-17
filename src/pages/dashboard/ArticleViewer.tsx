@@ -101,10 +101,10 @@ const ArticleViewer: React.FC = () => {
         />
       </div>
 
-      <div className="min-h-[800px] h-[800px] w-full">
+      <div className="h-[800px] w-full flex flex-col">
         {viewMode === 'dual' ? (
-          <ResizablePanelGroup direction="horizontal" className="h-full w-full">
-            <ResizablePanel defaultSize={50} className="h-full">
+          <ResizablePanelGroup direction="horizontal" className="min-h-[800px] w-full flex-grow">
+            <ResizablePanel defaultSize={50} className="min-h-[800px]">
               <PDFViewer 
                 url={issue.pdf_url} 
                 title="Revisão"
@@ -114,7 +114,7 @@ const ArticleViewer: React.FC = () => {
               />
             </ResizablePanel>
             <ResizableHandle withHandle />
-            <ResizablePanel defaultSize={50} className="h-full">
+            <ResizablePanel defaultSize={50} className="min-h-[800px]">
               <PDFViewer 
                 url={issue.article_pdf_url || ''} 
                 title="Artigo Original"
@@ -125,7 +125,7 @@ const ArticleViewer: React.FC = () => {
             </ResizablePanel>
           </ResizablePanelGroup>
         ) : (
-          <div className="h-full w-full">
+          <div className="min-h-[800px] w-full flex-grow">
             <PDFViewer 
               url={viewMode === 'review' ? issue.pdf_url : issue.article_pdf_url || ''} 
               title={viewMode === 'review' ? "Revisão" : "Artigo Original"}

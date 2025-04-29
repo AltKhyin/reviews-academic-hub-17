@@ -65,8 +65,7 @@ export function ExternalLectureForm({ issueId, onSuccess }: ExternalLectureFormP
         return;
       }
       
-      // Use any type to bypass TypeScript's strict checking
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('external_lectures')
         .insert({
           issue_id: issueId,
@@ -74,7 +73,7 @@ export function ExternalLectureForm({ issueId, onSuccess }: ExternalLectureFormP
           description: values.description || null,
           thumbnail_url: values.thumbnail_url || null,
           external_url: values.external_url,
-          owner_id: user.id
+          // No need to include owner_id as it's not in the schema
         });
         
       if (error) throw error;
@@ -82,6 +81,7 @@ export function ExternalLectureForm({ issueId, onSuccess }: ExternalLectureFormP
       toast({
         title: "Success",
         description: "External lecture added successfully",
+        duration: 3000, // Auto-dismiss after 3 seconds
       });
       
       // Reset form
@@ -94,6 +94,7 @@ export function ExternalLectureForm({ issueId, onSuccess }: ExternalLectureFormP
         title: "Error",
         description: error.message || "Failed to add external lecture",
         variant: "destructive",
+        duration: 5000, // Auto-dismiss after 5 seconds
       });
     }
   };

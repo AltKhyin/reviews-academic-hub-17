@@ -72,7 +72,7 @@ export const ArticleComments: React.FC<ArticleCommentsProps> = ({ articleId }) =
   const sortedComments = getSortedComments();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 mt-12">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-serif font-medium">Discussão</h2>
         <div className="flex items-center space-x-2">
@@ -115,9 +115,9 @@ export const ArticleComments: React.FC<ArticleCommentsProps> = ({ articleId }) =
       />
       
       <Card className="border-white/10 bg-white/5">
-        <CardContent className="pt-6">
+        <CardContent className="pt-6 pb-2 px-5">
           {sortedComments && sortedComments.length > 0 ? (
-            <div className="space-y-6">
+            <div className="space-y-1">
               {sortedComments
                 .filter(comment => !comment.parent_id) // Only show top-level comments
                 .map((comment) => (
