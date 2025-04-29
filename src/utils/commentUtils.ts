@@ -24,6 +24,25 @@ export interface CommentWithReplies {
   level: number;
 }
 
+// Define a raw comment type to avoid deep type inference
+interface RawComment {
+  id: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  user_id: string;
+  parent_id: string | null;
+  score: number;
+  profiles: {
+    id: string;
+    full_name: string | null;
+    avatar_url: string | null;
+  } | null;
+  article_id?: string | null;
+  issue_id?: string | null;
+  post_id?: string | null;
+}
+
 // Helper function to determine the entity ID field based on entity type
 export const getEntityIdField = (entityType: EntityType): string => {
   switch (entityType) {
@@ -45,10 +64,10 @@ export const fetchCommentsData = async (entityId: string, entityType: EntityType
   // Get the current user for vote data
   const { data: { user } } = await supabase.auth.getUser();
   
-  // Fetch comments with profile information
+  // Fetch comments with profile information, using the RawComment type to prevent deep type inference
   const { data: comments, error: commentsError } = await supabase
     .from('comments')
-    .select(`
+    .select<RawComment[]>(`
       *,
       profiles:user_id (
         id,
