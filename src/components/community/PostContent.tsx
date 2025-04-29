@@ -45,13 +45,19 @@ export const PostContent: React.FC<PostContentProps> = ({ post, onVoteChange }) 
             />
           )}
           {post.video_url && (
-            <video 
-              src={post.video_url} 
-              controls 
-              className="rounded-md w-full max-h-96" 
-              preload="metadata"
-              onError={(e) => console.error('Video loading error:', e)}
-            />
+            // Use a div wrapper with specific dimensions
+            <div className="relative w-full h-0 pb-[56.25%] rounded-md overflow-hidden">
+              <video 
+                src={post.video_url} 
+                controls 
+                className="absolute top-0 left-0 w-full h-full object-contain bg-black/10 rounded-md"
+                preload="metadata"
+                onError={(e) => {
+                  console.error('Video loading error:', e);
+                  console.log('Failed video URL:', post.video_url);
+                }}
+              />
+            </div>
           )}
         </div>
       )}

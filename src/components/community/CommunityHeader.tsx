@@ -11,7 +11,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { CommunitySettings } from '@/types/community';
 
 export const CommunityHeader: React.FC = () => {
   const { user } = useAuth();

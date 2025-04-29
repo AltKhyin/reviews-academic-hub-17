@@ -186,7 +186,7 @@ const SearchPage: React.FC = () => {
               <div className="flex gap-6">
                 {/* Desktop Sidebar */}
                 <aside className="hidden md:block w-1/4">
-                  <Card className="p-4">
+                  <Card className="p-4 sticky top-6">
                     <SearchFilters 
                       filters={filters}
                       onFilterChange={handleFilterChange}

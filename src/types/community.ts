@@ -41,6 +41,7 @@ export interface PostData {
     color: string;
   } | null;
   poll: Poll | null;
+  userVote?: number;
 }
 
 export interface CommunitySettings {

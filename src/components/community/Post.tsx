@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -7,7 +7,7 @@ import { PostData } from '@/types/community';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowUp, ArrowDown, MessageSquare, Trash, AlertTriangle } from 'lucide-react';
+import { ArrowUp, ArrowDown, MessageSquare, Trash, AlertTriangle, BookmarkPlus } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { PostContent } from '@/components/community/PostContent';
@@ -35,9 +35,11 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isBookmarking, setIsBookmarking] = useState(false);
 
   // Check if user is admin
-  React.useEffect(() => {
+  useEffect(() => {
     if (!user) return;
     
     const checkAdminStatus = async () => {
@@ -51,7 +53,50 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
     };
     
     checkAdminStatus();
-  }, [user]);
+
+    // Check if post is bookmarked
+    const checkBookmarkStatus = async () => {
+      const { data } = await supabase
+        .from('post_bookmarks')
+        .select('id')
+        .eq('post_id', post.id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+        
+      setIsBookmarked(!!data);
+    };
+    
+    checkBookmarkStatus();
+
+    // Auto-upvote your own post if you're the author
+    const autoUpvoteOwnPost = async () => {
+      if (user.id === post.user_id) {
+        // Check if user already voted
+        const { data: existingVote } = await supabase
+          .from('post_votes')
+          .select('*')
+          .eq('post_id', post.id)
+          .eq('user_id', user.id)
+          .maybeSingle();
+          
+        // If user hasn't voted on their post yet, auto-upvote
+        if (!existingVote) {
+          try {
+            await supabase
+              .from('post_votes')
+              .insert({ post_id: post.id, user_id: user.id, value: 1 });
+            
+            // Refresh the post to get updated score
+            onVoteChange();
+          } catch (error) {
+            console.error('Error auto-upvoting post:', error);
+          }
+        }
+      }
+    };
+    
+    autoUpvoteOwnPost();
+  }, [user, post.id, post.user_id, onVoteChange]);
 
   const formatDate = (dateString: string) => {
     return formatDistanceToNow(new Date(dateString), {
@@ -118,6 +163,61 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
     }
   };
 
+  const handleBookmark = async () => {
+    if (!user) {
+      toast({
+        title: "Autenticação necessária",
+        description: "Faça login para salvar publicações.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsBookmarking(true);
+      
+      if (isBookmarked) {
+        // Remove bookmark
+        await supabase
+          .from('post_bookmarks')
+          .delete()
+          .eq('post_id', post.id)
+          .eq('user_id', user.id);
+          
+        setIsBookmarked(false);
+        
+        toast({
+          title: "Publicação removida dos salvos",
+          description: "A publicação foi removida dos seus salvos.",
+        });
+      } else {
+        // Add bookmark
+        await supabase
+          .from('post_bookmarks')
+          .insert({
+            post_id: post.id,
+            user_id: user.id
+          });
+          
+        setIsBookmarked(true);
+        
+        toast({
+          title: "Publicação salva",
+          description: "A publicação foi adicionada aos seus salvos.",
+        });
+      }
+    } catch (error) {
+      console.error('Error bookmarking post:', error);
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar a publicação.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsBookmarking(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!user) return;
     
@@ -165,82 +265,100 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
   
   return (
     <div className="bg-gray-800/10 rounded-lg border border-gray-700/30 p-4">
-      <div className="flex items-center space-x-4">
-        {/* Vote buttons - styled like comments */}
-        <div className="flex flex-col items-center space-y-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-            onClick={() => handleVote(1)}
-            disabled={isVoting}
-          >
-            <ArrowUp className={`h-5 w-5 ${post.score > 0 ? 'text-blue-500' : ''}`} />
-            <span className="sr-only">Vote up</span>
-          </Button>
-          <span className="text-sm font-medium">{post.score}</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-            onClick={() => handleVote(-1)}
-            disabled={isVoting}
-          >
-            <ArrowDown className={`h-5 w-5 ${post.score < 0 ? 'text-red-500' : ''}`} />
-            <span className="sr-only">Vote down</span>
-          </Button>
-        </div>
-        
+      <div className="flex items-start space-x-4">
         {/* Post content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center space-x-2 mb-2">
-            <Avatar className="h-6 w-6">
-              <AvatarImage src={post.profiles?.avatar_url || undefined} />
-              <AvatarFallback>
-                {post.profiles?.full_name?.[0] || 'U'}
-              </AvatarFallback>
-            </Avatar>
-            <span className="text-sm text-gray-300">
-              {post.profiles?.full_name || 'Usuário'}
-              <span className="mx-1">•</span>
-              {formatDate(post.created_at)}
-            </span>
-            {post.post_flairs && (
-              <Badge 
-                style={{ backgroundColor: post.post_flairs.color }}
-                className="text-xs"
-              >
-                {post.post_flairs.name}
-              </Badge>
-            )}
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center">
+              <Avatar className="h-6 w-6 mr-3">
+                <AvatarImage src={post.profiles?.avatar_url || undefined} />
+                <AvatarFallback>
+                  {post.profiles?.full_name?.[0] || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <span className="text-sm text-gray-300">
+                {post.profiles?.full_name || 'Usuário'}
+                <span className="mx-1">•</span>
+                {formatDate(post.created_at)}
+              </span>
+            </div>
+            
+            {/* Report button now at top-right as just an icon */}
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className="h-8 w-8 p-0 text-gray-400 hover:text-yellow-500"
+              onClick={() => setShowReportDialog(true)}
+            >
+              <AlertTriangle className="h-4 w-4" />
+              <span className="sr-only">Denunciar</span>
+            </Button>
           </div>
           
           <h3 className="text-lg font-medium leading-tight mb-2">{post.title}</h3>
           
+          {post.post_flairs && (
+            <Badge 
+              style={{ backgroundColor: post.post_flairs.color }}
+              className="text-xs mb-3"
+            >
+              {post.post_flairs.name}
+            </Badge>
+          )}
+          
           <PostContent post={post} onVoteChange={onVoteChange} />
           
-          <div className="flex mt-4 space-x-2">
+          <div className="flex mt-4 space-x-2 items-center">
+            {/* Voting buttons side by side */}
+            <div className="flex items-center space-x-1 mr-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                onClick={() => handleVote(1)}
+                disabled={isVoting}
+              >
+                <ArrowUp className={`h-5 w-5 ${post.userVote === 1 ? 'text-blue-500' : ''}`} />
+                <span className="sr-only">Vote up</span>
+              </Button>
+              
+              <span className="text-sm font-medium">{post.score}</span>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                onClick={() => handleVote(-1)}
+                disabled={isVoting}
+              >
+                <ArrowDown className={`h-5 w-5 ${post.userVote === -1 ? 'text-red-500' : ''}`} />
+                <span className="sr-only">Vote down</span>
+              </Button>
+            </div>
+            
             <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
               <MessageSquare className="h-4 w-4 mr-1" />
               Comentários
             </Button>
             
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-gray-400 hover:text-yellow-500"
-              onClick={() => setShowReportDialog(true)}
+            {/* Save button - bookmark */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`text-gray-400 ${isBookmarked ? 'text-blue-500 hover:text-blue-600' : 'hover:text-white'}`}
+              onClick={handleBookmark}
+              disabled={isBookmarking}
             >
-              <AlertTriangle className="h-4 w-4 mr-1" />
-              Denunciar
+              <BookmarkPlus className="h-4 w-4 mr-1" />
+              Salvar
             </Button>
 
-            {/* Delete button - only visible to post owner or admin */}
+            {/* Delete button - moved to far right, only visible to post owner or admin */}
             {user && (user.id === post.user_id || isAdmin) && (
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="text-gray-400 hover:text-red-500"
+                className="text-gray-400 hover:text-red-500 ml-auto"
                 onClick={() => setShowDeleteDialog(true)}
                 disabled={isDeleting}
               >

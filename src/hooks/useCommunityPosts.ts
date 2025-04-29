@@ -8,7 +8,7 @@ export function useCommunityPosts(activeTab: string, searchTerm: string) {
   const { user } = useAuth();
   
   return useQuery({
-    queryKey: ['community-posts', activeTab, searchTerm],
+    queryKey: ['community-posts', activeTab, searchTerm, user?.id],
     queryFn: async () => {
       // First, fetch all posts
       let query = supabase
@@ -51,10 +51,34 @@ export function useCommunityPosts(activeTab: string, searchTerm: string) {
       
       // Fetch flairs
       const flairIds = posts.filter(post => post.flair_id).map(post => post.flair_id);
-      const { data: flairs } = await supabase
-        .from('post_flairs')
-        .select('*')
-        .in('id', flairIds.length > 0 ? flairIds : ['no-flairs']);
+      let flairs = [];
+      
+      if (flairIds.length > 0) {
+        const { data: flairsData } = await supabase
+          .from('post_flairs')
+          .select('*')
+          .in('id', flairIds);
+          
+        flairs = flairsData || [];
+      }
+      
+      // Fetch user votes if logged in
+      let userVotes: Record<string, number> = {};
+      
+      if (user) {
+        const { data: votesData } = await supabase
+          .from('post_votes')
+          .select('post_id, value')
+          .eq('user_id', user.id)
+          .in('post_id', posts.map(p => p.id));
+          
+        if (votesData) {
+          userVotes = votesData.reduce((acc: Record<string, number>, vote) => {
+            acc[vote.post_id] = vote.value;
+            return acc;
+          }, {});
+        }
+      }
       
       // Fetch poll data for posts with polls
       const postsWithDetails = await Promise.all(
@@ -62,7 +86,7 @@ export function useCommunityPosts(activeTab: string, searchTerm: string) {
           // Find the profile for this post
           const profile = profiles?.find(p => p.id === post.user_id);
           // Find the flair for this post
-          const postFlair = flairs?.find(f => f.id === post.flair_id);
+          const postFlair = flairs.find(f => f.id === post.flair_id);
           
           const enhancedPost = {
             ...post,
@@ -71,7 +95,8 @@ export function useCommunityPosts(activeTab: string, searchTerm: string) {
               avatar_url: profile.avatar_url
             } : null,
             post_flairs: postFlair || null,
-            poll: null as any
+            poll: null as any,
+            userVote: userVotes[post.id] || 0
           };
           
           if (!post.poll_id) return enhancedPost;

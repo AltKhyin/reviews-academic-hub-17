@@ -18,6 +18,9 @@ export const useFileUpload = () => {
 
       console.log(`Starting upload for file ${fileName} to ${folder}`);
       
+      // Determine which bucket to use based on folder
+      const bucketName = folder === 'issues' ? 'issues' : 'community';
+      
       // Check if bucket exists
       const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
       
@@ -26,12 +29,12 @@ export const useFileUpload = () => {
         throw bucketsError;
       }
       
-      // Find or create the issues bucket
-      const bucketExists = buckets?.some(bucket => bucket.name === 'issues');
+      // Find or create the bucket
+      const bucketExists = buckets?.some(bucket => bucket.name === bucketName);
       
       if (!bucketExists) {
-        console.log('Bucket "issues" not found, creating it...');
-        const { error: createBucketError } = await supabase.storage.createBucket('issues', {
+        console.log(`Bucket "${bucketName}" not found, creating it...`);
+        const { error: createBucketError } = await supabase.storage.createBucket(bucketName, {
           public: true
         });
         
@@ -42,9 +45,9 @@ export const useFileUpload = () => {
       }
       
       // Upload the file
-      console.log(`Uploading file to path: ${filePath}`);
+      console.log(`Uploading file to path: ${filePath} in bucket: ${bucketName}`);
       const { data, error: uploadError } = await supabase.storage
-        .from('issues')
+        .from(bucketName)
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: true
@@ -57,7 +60,7 @@ export const useFileUpload = () => {
 
       console.log('File uploaded successfully, getting public URL');
       const { data: urlData } = supabase.storage
-        .from('issues')
+        .from(bucketName)
         .getPublicUrl(filePath);
 
       console.log('File uploaded successfully, public URL:', urlData.publicUrl);

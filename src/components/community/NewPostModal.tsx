@@ -44,7 +44,18 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose, onP
   const [pollOptions, setPollOptions] = useState<string[]>(['', '']);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<FormValues>();
+  const { register, handleSubmit, formState: { errors }, setValue } = useForm<FormValues>({
+    defaultValues: {
+      flair_id: ''
+    }
+  });
+
+  // Set a default flair if available
+  React.useEffect(() => {
+    if (flairs && flairs.length > 0 && !setValue) {
+      setValue('flair_id', flairs[0].id);
+    }
+  }, [flairs, setValue]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -91,6 +102,16 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose, onP
       return;
     }
 
+    // Validate flair selection
+    if (!data.flair_id) {
+      toast({
+        title: "Erro",
+        description: "Por favor, selecione uma categoria para a publicação.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setIsSubmitting(true);
 
@@ -102,13 +123,13 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose, onP
         const filePath = `posts/${fileName}`;
 
         const { error: uploadError, data: uploadData } = await supabase.storage
-          .from('media')
+          .from('community')
           .upload(filePath, imageFile);
 
         if (uploadError) throw uploadError;
 
         const { data: urlData } = supabase.storage
-          .from('media')
+          .from('community')
           .getPublicUrl(filePath);
 
         finalImageUrl = urlData.publicUrl;
@@ -121,7 +142,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose, onP
         image_url: mediaType === 'image' ? (finalImageUrl || imageUrl) : null,
         video_url: mediaType === 'video' ? videoUrl : null,
         user_id: user.id,
-        flair_id: data.flair_id || null,
+        flair_id: data.flair_id,
         published: true,
       };
       
@@ -221,8 +242,12 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose, onP
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="flair">Categoria</Label>
-            <Select {...register('flair_id')}>
+            <Label htmlFor="flair">Categoria <span className="text-red-500">*</span></Label>
+            <Select 
+              defaultValue={flairs.length > 0 ? flairs[0].id : undefined}
+              onValueChange={(value) => setValue('flair_id', value)}
+              required
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione uma categoria" />
               </SelectTrigger>
@@ -238,6 +263,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose, onP
                 ))}
               </SelectContent>
             </Select>
+            {errors.flair_id && <p className="text-red-500 text-sm">A categoria é obrigatória</p>}
           </div>
 
           <div className="space-y-3">
@@ -275,6 +301,9 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose, onP
                     value={videoUrl || ''}
                     onChange={(e) => setVideoUrl(e.target.value)}
                   />
+                  <p className="text-xs text-gray-500">
+                    Dica: Você pode usar URLs do YouTube, Vimeo ou links diretos para arquivos de vídeo (.mp4, .webm, etc.)
+                  </p>
                 </TabsContent>
               </Tabs>
             </div>
