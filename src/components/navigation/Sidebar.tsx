@@ -7,7 +7,6 @@ import Logo from '@/components/common/Logo';
 import { useSidebar } from '@/components/ui/sidebar';
 import {
   Home,
-  File,
   Settings,
   User,
   FileEdit,

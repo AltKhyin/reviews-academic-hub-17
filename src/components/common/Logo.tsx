@@ -5,7 +5,7 @@ interface LogoProps {
   dark?: boolean;
   showSubtitle?: boolean;
   collapsed?: boolean;
-  size?: 'small' | 'medium' | 'large' | 'xlarge';
+  size?: 'small' | 'medium' | 'large' | 'xlarge' | '2xlarge';
 }
 
 export const Logo = ({ 
@@ -24,7 +24,8 @@ export const Logo = ({
     small: 'text-2xl',
     medium: 'text-4xl',
     large: 'text-5xl',
-    xlarge: 'text-8xl'
+    xlarge: 'text-8xl',
+    '2xlarge': 'text-9xl'
   };
   
   if (collapsed) {
@@ -42,11 +43,6 @@ export const Logo = ({
       <h1 className={`logo-text ${sizeClasses[size]} font-serif ${fontWeight} ${textColor}`}>
         Reviews.
       </h1>
-      {showSubtitle && (
-        <p className={`subtitle-text mt-1 ${textColor} opacity-80 text-sm`}>
-          - por Igor Eckert
-        </p>
-      )}
     </div>
   );
 };

@@ -15,7 +15,6 @@ import {
   X, 
   Search,
   Eye, 
-  Filter,
   ChevronLeft,
   ChevronRight 
 } from 'lucide-react';
@@ -30,7 +29,6 @@ interface SearchFilter {
   area: string[];
   studyType: string[];
   year: [number, number];
-  language: string[];
   journal: string[];
   population: string[];
 }
@@ -45,7 +43,6 @@ const DEFAULT_FILTERS: SearchFilter = {
   area: [],
   studyType: [],
   year: [1980, CURRENT_YEAR],
-  language: [],
   journal: [],
   population: []
 };
@@ -56,7 +53,7 @@ const SearchPage: React.FC = () => {
   const [filters, setFilters] = useState<SearchFilter>(DEFAULT_FILTERS);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [sortBy, setSortBy] = useState<'relevance' | 'recent' | 'popular'>('relevance');
-  const [isFiltersVisible, setIsFiltersVisible] = useState<boolean>(true);
+  const [areaSearchText, setAreaSearchText] = useState<string>('');
   
   // Debounced search
   const [debouncedQuery, setDebouncedQuery] = useState<string>('');
@@ -131,16 +128,12 @@ const SearchPage: React.FC = () => {
   // List of facets to show in sidebar
   const facetGroups = {
     area: {
-      title: 'Área Clínica',
-      options: ['Cardiologia', 'Neurologia', 'Oncologia', 'Pediatria', 'Psiquiatria']
+      title: 'Área',
+      options: ['Cardiologia', 'Neurologia', 'Oncologia', 'Pediatria', 'Psiquiatria', 'Nutrição']
     },
     studyType: {
       title: 'Tipo de Estudo',
       options: ['RCT', 'Coorte', 'Caso-Controle', 'Metanálise', 'Revisão Sistemática']
-    },
-    language: {
-      title: 'Idioma',
-      options: ['Português', 'Inglês', 'Espanhol', 'Francês']
     },
     journal: {
       title: 'Jornal',
@@ -152,15 +145,22 @@ const SearchPage: React.FC = () => {
     }
   };
 
+  // Filter area options based on search
+  const filteredAreaOptions = areaSearchText.trim() === '' 
+    ? facetGroups.area.options 
+    : facetGroups.area.options.filter(option => 
+        option.toLowerCase().includes(areaSearchText.toLowerCase())
+      );
+
   return (
-    <div className="container mx-auto py-6">
-      {/* Logo centered at the top */}
-      <div className="flex justify-center mb-6">
-        <Logo dark={false} size="large" showSubtitle={true} />
+    <div className="container mx-auto py-12">
+      {/* Logo centered at the top with extra spacing */}
+      <div className="flex justify-center mb-16">
+        <Logo dark={false} size="2xlarge" />
       </div>
 
       <div className="mb-8">
-        {/* Search Area (Zona A) */}
+        {/* Search Area */}
         <Card className="p-4">
           <form onSubmit={handleSubmitSearch} className="flex gap-2 mb-4">
             <div className="relative flex-1">
@@ -255,6 +255,9 @@ const SearchPage: React.FC = () => {
                   filters={filters} 
                   onFilterChange={handleFilterChange} 
                   facetGroups={facetGroups}
+                  areaSearchText={areaSearchText}
+                  setAreaSearchText={setAreaSearchText}
+                  filteredAreaOptions={filteredAreaOptions}
                 />
               </div>
             </SheetContent>
@@ -268,6 +271,9 @@ const SearchPage: React.FC = () => {
               filters={filters} 
               onFilterChange={handleFilterChange} 
               facetGroups={facetGroups}
+              areaSearchText={areaSearchText}
+              setAreaSearchText={setAreaSearchText}
+              filteredAreaOptions={filteredAreaOptions}
             />
           </Card>
         </div>
@@ -291,7 +297,7 @@ const SearchPage: React.FC = () => {
             )}
           </div>
 
-          {/* Results Area (Zona C) */}
+          {/* Results Area */}
           <div className="min-h-[500px]">
             {isLoading ? (
               <div className="flex justify-center items-center h-[400px]">
@@ -365,20 +371,39 @@ interface SearchSidebarProps {
   filters: SearchFilter;
   onFilterChange: (filterType: keyof SearchFilter, value: any) => void;
   facetGroups: Record<string, { title: string, options: string[] }>;
+  areaSearchText: string;
+  setAreaSearchText: (text: string) => void;
+  filteredAreaOptions: string[];
 }
 
-const SearchSidebar: React.FC<SearchSidebarProps> = ({ filters, onFilterChange, facetGroups }) => {
+const SearchSidebar: React.FC<SearchSidebarProps> = ({ 
+  filters, 
+  onFilterChange, 
+  facetGroups,
+  areaSearchText,
+  setAreaSearchText,
+  filteredAreaOptions
+}) => {
   return (
     <div className="space-y-4">
       <h3 className="font-medium text-lg mb-2">Filtros</h3>
       
-      <Accordion type="multiple" defaultValue={[]}>
-        {/* Area Clinica */}
+      <Accordion type="multiple" defaultValue={["studyType"]}>
+        {/* Área */}
         <AccordionItem value="area">
-          <AccordionTrigger>Área Clínica</AccordionTrigger>
+          <AccordionTrigger>Área</AccordionTrigger>
           <AccordionContent>
+            <div className="mb-3">
+              <Input
+                type="text"
+                placeholder="Buscar áreas..."
+                value={areaSearchText}
+                onChange={(e) => setAreaSearchText(e.target.value)}
+                className="mb-2"
+              />
+            </div>
             <div className="space-y-2">
-              {facetGroups.area.options.map(option => (
+              {filteredAreaOptions.map(option => (
                 <div key={option} className="flex items-center">
                   <Toggle 
                     pressed={filters.area.includes(option)} 
@@ -401,7 +426,7 @@ const SearchSidebar: React.FC<SearchSidebarProps> = ({ filters, onFilterChange, 
           </AccordionContent>
         </AccordionItem>
         
-        {/* Tipo de Estudo */}
+        {/* Tipo de Estudo - starts expanded */}
         <AccordionItem value="studyType">
           <AccordionTrigger>Tipo de Estudo</AccordionTrigger>
           <AccordionContent>
@@ -422,34 +447,6 @@ const SearchSidebar: React.FC<SearchSidebarProps> = ({ filters, onFilterChange, 
                     className="w-full justify-start"
                   >
                     {option} <span className="text-gray-500 ml-1">(15)</span>
-                  </Toggle>
-                </div>
-              ))}
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-        
-        {/* Language */}
-        <AccordionItem value="language">
-          <AccordionTrigger>Idioma</AccordionTrigger>
-          <AccordionContent>
-            <div className="space-y-2">
-              {facetGroups.language.options.map(option => (
-                <div key={option} className="flex items-center">
-                  <Toggle 
-                    pressed={filters.language.includes(option)} 
-                    onPressedChange={(pressed) => {
-                      if (pressed) {
-                        onFilterChange('language', [...filters.language, option]);
-                      } else {
-                        onFilterChange('language', filters.language.filter(l => l !== option));
-                      }
-                    }}
-                    variant="outline"
-                    size="sm"
-                    className="w-full justify-start"
-                  >
-                    {option} <span className="text-gray-500 ml-1">(30)</span>
                   </Toggle>
                 </div>
               ))}
