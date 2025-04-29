@@ -19,7 +19,7 @@ export const Logo = ({
   // Font weight map
   const fontWeight = 'font-extrabold';
   
-  // Size map
+  // Size map with adjusted sizes to make the logo feel more premium
   const sizeClasses = {
     small: 'text-2xl',
     medium: 'text-4xl',
@@ -28,10 +28,13 @@ export const Logo = ({
     '2xlarge': 'text-9xl'
   };
   
+  // Letter spacing for added premium feel
+  const letterSpacing = 'tracking-[0.1em]';
+  
   if (collapsed) {
     return (
       <div className="flex justify-center">
-        <h1 className={`logo-text ${sizeClasses[size]} font-serif tracking-tight ${fontWeight} ${textColor}`}>
+        <h1 className={`logo-text ${sizeClasses[size]} font-serif ${letterSpacing} ${fontWeight} ${textColor}`}>
           R.
         </h1>
       </div>
@@ -40,7 +43,7 @@ export const Logo = ({
 
   return (
     <div className="flex flex-col">
-      <h1 className={`logo-text ${sizeClasses[size]} font-serif tracking-tight ${fontWeight} ${textColor}`}>
+      <h1 className={`logo-text ${sizeClasses[size]} font-serif ${letterSpacing} ${fontWeight} ${textColor}`}>
         Reviews.
       </h1>
     </div>
