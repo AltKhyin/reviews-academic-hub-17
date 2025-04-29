@@ -126,14 +126,14 @@ const SearchPage: React.FC = () => {
       );
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex flex-col min-h-screen bg-background pt-12">
       {/* Logo Header */}
-      <header className="h-24 flex items-center justify-center px-6 pt-6">
+      <header className="flex items-center justify-center px-6 mb-8">
         <Logo dark={false} size="2xlarge" />
       </header>
 
-      {/* Main layout wrapper - centered vertically and horizontally */}
-      <div className="flex-1 flex items-center px-6 py-4">
+      {/* Main layout wrapper - centered vertically */}
+      <div className="flex-1 flex items-center justify-center px-6 py-4 mb-8">
         {/* Layout with Filters and Search side by side on desktop, stacked on mobile */}
         <div className="w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-6">
           {/* Filters Section */}
