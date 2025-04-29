@@ -62,12 +62,14 @@ export const organizeComments = (data: {
   // First, append user votes to comments
   const commentsWithVotes = comments.map(comment => {
     const userVote = userVotes.find(vote => vote.comment_id === comment.id);
+    const voteValue = userVote ? userVote.value : 0;
+    
     return {
       ...comment,
-      userVote: userVote ? userVote.value : 0
+      userVote: voteValue as 0 | 1 | -1
     };
   });
   
   // Then organize into a tree structure
-  return organizeCommentsInTree(commentsWithVotes);
+  return organizeCommentsInTree(commentsWithVotes as BaseComment[]);
 };
