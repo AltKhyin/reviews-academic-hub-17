@@ -78,10 +78,10 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
         duration: 3000,
       });
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       toast({
         title: "Erro",
-        description: error.message,
+        description: error.message || "Erro ao adicionar comentário",
         variant: "destructive",
         duration: 5000,
       });
@@ -95,21 +95,13 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
       if (!user) throw new Error('Not authenticated');
       
       // Create the reply comment object
-      const commentData: {
-        content: string;
-        user_id: string;
-        parent_id: string;
-        score: number;
-        [key: string]: any;
-      } = {
+      const commentData = {
         content,
         user_id: user.id,
         parent_id: parentId,
-        score: 0 // Initialize with 0, will be updated by trigger after upvote
+        score: 0,
+        [entityIdField]: entityId
       };
-      
-      // Set either article_id, issue_id, or post_id based on entityType
-      commentData[entityIdField] = entityId;
       
       // Insert the comment
       const { error: commentError, data: newComment } = await supabase
@@ -143,10 +135,10 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
         duration: 3000,
       });
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       toast({
         title: "Erro",
-        description: error.message,
+        description: error.message || "Erro ao adicionar resposta",
         variant: "destructive",
         duration: 5000,
       });
@@ -172,10 +164,10 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
         duration: 3000,
       });
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       toast({
         title: "Erro",
-        description: error.message,
+        description: error.message || "Erro ao excluir comentário",
         variant: "destructive",
         duration: 5000,
       });
@@ -231,10 +223,10 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['comments', entityId, entityType] });
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       toast({
         title: "Erro ao votar",
-        description: error.message,
+        description: error.message || "Erro ao registrar voto",
         variant: "destructive",
         duration: 5000,
       });
@@ -244,14 +236,10 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
   return {
     comments: organizedComments,
     isLoading,
-    addComment: (content: string) => addComment.mutateAsync(content),
-    replyToComment: ({ parentId, content }: { parentId: string, content: string }) => {
-      return replyToComment.mutateAsync({ parentId, content });
-    },
-    deleteComment: (commentId: string) => deleteComment.mutateAsync(commentId),
-    voteComment: ({ commentId, value }: { commentId: string; value: 1 | -1 | 0 }) => {
-      return voteComment.mutateAsync({ commentId, value });
-    },
+    addComment: addComment.mutateAsync,
+    replyToComment: replyToComment.mutateAsync,
+    deleteComment: deleteComment.mutateAsync,
+    voteComment: voteComment.mutateAsync,
     isAddingComment: addComment.isPending,
     isDeletingComment: deleteComment.isPending,
     isVoting: voteComment.isPending,

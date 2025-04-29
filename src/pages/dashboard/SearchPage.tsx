@@ -1,213 +1,260 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import Logo from '@/components/common/Logo';
-import { SearchHeader } from '@/components/search/SearchHeader';
-import { SearchFilters } from '@/components/search/SearchFilters';
-import { SearchResults } from '@/components/search/SearchResults';
-import { Card } from '@/components/ui/card';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { SlidersHorizontal } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Search, ChevronUp, HelpCircle } from 'lucide-react';
+import { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Toggle } from '@/components/ui/toggle';
 
-// Define the main SearchPage component
 const SearchPage: React.FC = () => {
-  const [currentPage, setCurrentPage] = React.useState<number>(1);
-  const [sortBy, setSortBy] = React.useState<'relevance' | 'recent' | 'popular'>('relevance');
-  const [searchTags, setSearchTags] = React.useState<{ term: string; exclude: boolean }[]>([]);
-  const [queryText, setQueryText] = React.useState<string>('');
-  const [areaSearchText, setAreaSearchText] = React.useState<string>('');
-  
-  // Define filters state
-  const CURRENT_YEAR = new Date().getFullYear();
-  const DEFAULT_FILTERS = {
-    area: [] as string[],
-    studyType: [] as string[],
-    year: [1980, CURRENT_YEAR] as [number, number],
-    journal: [] as string[],
-    population: [] as string[]
-  };
-  
-  const [filters, setFilters] = React.useState(DEFAULT_FILTERS);
+  const [queryText, setQueryText] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<'relevance' | 'recent' | 'popular'>('relevance');
 
-  // Debounced search
-  const [debouncedQuery, setDebouncedQuery] = React.useState<string>('');
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedQuery(queryText);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [queryText]);
-
-  // Search query function
-  const searchQuery = async () => {
-    const query = supabase
-      .from('issues')
-      .select('*')
-      .limit(10)
-      .order('created_at', { ascending: false });
-      
-    // Apply filters from searchTags and filters
-    const { data, error } = await query;
-    
-    if (error) throw error;
-    return data;
-  };
-
-  const { data: searchResults, isLoading, error, refetch } = useQuery({
-    queryKey: ['search', debouncedQuery, searchTags, filters, currentPage, sortBy],
-    queryFn: searchQuery
+  // Fetch search results
+  const { data: searchResults, isLoading } = useQuery({
+    queryKey: ['search', queryText, currentPage, sortBy],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('issues')
+        .select('*')
+        .limit(10);
+        
+      if (error) throw error;
+      return data;
+    },
+    enabled: false // Don't run query on component mount
   });
 
-  const handleSubmitSearch = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (queryText.trim()) {
-      setSearchTags(prev => [...prev, { term: queryText.trim(), exclude: false }]);
-      setQueryText('');
-    }
+    // Implement search logic here
   };
-
-  const handleTagRemove = (index: number) => {
-    setSearchTags(searchTags.filter((_, i) => i !== index));
-  };
-
-  const handleTagToggleExclude = (index: number) => {
-    setSearchTags(searchTags.map((tag, i) => 
-      i === index ? { ...tag, exclude: !tag.exclude } : tag
-    ));
-  };
-
-  const handleFilterChange = (filterType: keyof typeof DEFAULT_FILTERS, value: any) => {
-    setFilters(prev => ({
-      ...prev,
-      [filterType]: value
-    }));
-  };
-
-  const clearFilters = () => {
-    setFilters(DEFAULT_FILTERS);
-    setSearchTags([]);
-  };
-
-  // Generate a preview of the search query
-  const generateQueryPreview = () => {
-    if (searchTags.length === 0) return '';
-    
-    return searchTags.map(tag => 
-      tag.exclude ? `NOT "${tag.term}"` : `"${tag.term}"`
-    ).join(' AND ');
-  };
-
-  const queryPreview = generateQueryPreview();
-
-  // List of facets to show in sidebar
-  const facetGroups = {
-    area: {
-      title: 'Área',
-      options: ['Cardiologia', 'Neurologia', 'Oncologia', 'Pediatria', 'Psiquiatria', 'Nutrição']
-    },
-    studyType: {
-      title: 'Tipo de Estudo',
-      options: ['Ensaio Clínico', 'Coorte', 'Caso-Controle', 'Metanálise', 'Revisão Sistemática']
-    },
-    journal: {
-      title: 'Jornal',
-      options: ['JAMA', 'The Lancet', 'BMJ', 'NEJM', 'Cochrane']
-    },
-    population: {
-      title: 'População',
-      options: ['Adultos', 'Pediátrico', 'Idosos', 'Gestantes']
-    }
-  };
-
-  // Filter area options based on search
-  const filteredAreaOptions = areaSearchText.trim() === '' 
-    ? facetGroups.area.options 
-    : facetGroups.area.options.filter(option => 
-        option.toLowerCase().includes(areaSearchText.toLowerCase())
-      );
 
   return (
-    <div className="flex h-screen">
-      {/* Sidebar - fixed, no overflow */}
-      <aside className="hidden md:block w-64 flex-shrink-0 p-4 bg-background/50 border-r">
-        <h3 className="font-medium text-lg mb-2">Filtros</h3>
-        <SearchFilters 
-          filters={filters}
-          onFilterChange={handleFilterChange}
-          facetGroups={facetGroups}
-          areaSearchText={areaSearchText}
-          setAreaSearchText={setAreaSearchText}
-          filteredAreaOptions={filteredAreaOptions}
-        />
+    <div className="flex h-screen bg-black text-white">
+      {/* Sidebar - fixed */}
+      <aside className="w-64 p-6 border-r border-white/10 flex-shrink-0 h-full overflow-auto">
+        <h3 className="font-medium text-lg mb-4">Filtros</h3>
+        
+        <Accordion type="multiple" defaultValue={["tipo"]}>
+          {/* Área */}
+          <AccordionItem value="area">
+            <AccordionTrigger>Área</AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-2">
+                {['Cardiologia', 'Neurologia', 'Oncologia', 'Pediatria', 'Psiquiatria'].map(option => (
+                  <div key={option} className="flex items-center">
+                    <Toggle 
+                      variant="outline"
+                      size="sm"
+                      className="w-full justify-start"
+                    >
+                      {option} <span className="text-gray-500 ml-1">(24)</span>
+                    </Toggle>
+                  </div>
+                ))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+          
+          {/* Tipo de Estudo */}
+          <AccordionItem value="tipo">
+            <AccordionTrigger>Tipo de Estudo</AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-2">
+                {['Ensaio Clínico', 'Coorte', 'Caso-Controle', 'Metanálise', 'Revisão Sistemática'].map(option => (
+                  <div key={option} className="flex items-center">
+                    <Toggle 
+                      variant="outline"
+                      size="sm"
+                      className="w-full justify-start"
+                    >
+                      {option} <span className="text-gray-500 ml-1">(15)</span>
+                    </Toggle>
+                  </div>
+                ))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+          
+          {/* Jornal */}
+          <AccordionItem value="jornal">
+            <AccordionTrigger>Jornal</AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-2">
+                {['JAMA', 'The Lancet', 'BMJ', 'NEJM', 'Cochrane'].map(option => (
+                  <div key={option} className="flex items-center">
+                    <Toggle 
+                      variant="outline"
+                      size="sm"
+                      className="w-full justify-start"
+                    >
+                      {option} <span className="text-gray-500 ml-1">(18)</span>
+                    </Toggle>
+                  </div>
+                ))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+          
+          {/* População */}
+          <AccordionItem value="populacao">
+            <AccordionTrigger>População</AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-2">
+                {['Adultos', 'Pediátrico', 'Idosos', 'Gestantes'].map(option => (
+                  <div key={option} className="flex items-center">
+                    <Toggle 
+                      variant="outline"
+                      size="sm"
+                      className="w-full justify-start"
+                    >
+                      {option} <span className="text-gray-500 ml-1">(12)</span>
+                    </Toggle>
+                  </div>
+                ))}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+        
+        <Button variant="outline" size="sm" className="w-full mt-6">
+          Limpar todos os filtros
+        </Button>
       </aside>
 
-      {/* Content with scrollable area */}
-      <main className="flex flex-col flex-1 overflow-y-auto">
-        {/* Logo Header */}
-        <header className="flex-none h-24 flex items-center justify-center">
-          <Logo dark={false} size="2xlarge" />
-        </header>
+      {/* Content */}
+      <main className="flex-1 p-6 overflow-auto">
+        {/* Logo */}
+        <div className="flex justify-center mb-14">
+          <h1 className="text-9xl font-extrabold">Reviews.</h1>
+        </div>
+        
+        {/* Search input */}
+        <div className="max-w-3xl mx-auto mb-8">
+          <form onSubmit={handleSubmit} className="flex gap-2">
+            <div className="relative flex-1">
+              <Input
+                type="text"
+                placeholder="Pesquisa..."
+                value={queryText}
+                onChange={(e) => setQueryText(e.target.value)}
+                className="bg-gray-900 border-gray-700"
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <HelpCircle size={16} />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="max-w-xs">
+                        Sintaxe: Use termos simples ou aspas para frases exatas.
+                        <br /><br />
+                        <strong>AND</strong>: Ambos os termos (padrão)
+                        <br />
+                        <strong>OR</strong>: Qualquer dos termos
+                        <br />
+                        <strong>NOT</strong>: Excluir termo
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
+            <Button type="submit">
+              <Search size={18} className="mr-2" />
+              Buscar
+            </Button>
+          </form>
+        </div>
 
-        <section className="flex-1 px-6">
-          {/* Mobile filters */}
-          <div className="block md:hidden mb-4">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="sm" className="w-full">
-                  <SlidersHorizontal size={16} className="mr-2" />
-                  Filtros
+        {/* Sort options */}
+        <div className="max-w-3xl mx-auto mb-6">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center">
+              <span className="text-sm mr-2">Ordenar por:</span>
+              <div className="flex rounded-md overflow-hidden border border-gray-700">
+                <Button 
+                  variant={sortBy === 'relevance' ? 'secondary' : 'ghost'} 
+                  size="sm"
+                  onClick={() => setSortBy('relevance')}
+                  className="rounded-none border-r border-gray-700"
+                >
+                  Relevância
                 </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[300px] sm:w-[400px]">
-                {/* Sidebar Content for Mobile */}
-                <div className="h-full py-4">
-                  <h3 className="font-bold mb-4">Filtros</h3>
-                  <SearchFilters 
-                    filters={filters}
-                    onFilterChange={handleFilterChange}
-                    facetGroups={facetGroups}
-                    areaSearchText={areaSearchText}
-                    setAreaSearchText={setAreaSearchText}
-                    filteredAreaOptions={filteredAreaOptions}
-                  />
-                </div>
-              </SheetContent>
-            </Sheet>
+                <Button 
+                  variant={sortBy === 'recent' ? 'secondary' : 'ghost'} 
+                  size="sm"
+                  onClick={() => setSortBy('recent')}
+                  className="rounded-none border-r border-gray-700"
+                >
+                  Recentes
+                </Button>
+                <Button 
+                  variant={sortBy === 'popular' ? 'secondary' : 'ghost'} 
+                  size="sm"
+                  onClick={() => setSortBy('popular')}
+                  className="rounded-none"
+                >
+                  Populares
+                </Button>
+              </div>
+            </div>
+            <div className="text-sm text-gray-400">
+              10 resultados
+            </div>
           </div>
-
-          {/* Search Header Component */}
-          <Card className="p-6 mb-6">
-            <SearchHeader 
-              queryText={queryText}
-              setQueryText={setQueryText}
-              handleSubmitSearch={handleSubmitSearch}
-              searchTags={searchTags}
-              handleTagRemove={handleTagRemove}
-              handleTagToggleExclude={handleTagToggleExclude}
-              clearFilters={clearFilters}
-              queryPreview={queryPreview}
-            />
-          </Card>
-
-          {/* Results area */}
-          <div className="mb-6">
-            <SearchResults 
-              isLoading={isLoading}
-              error={error}
-              searchResults={searchResults}
-              refetch={refetch}
-              sortBy={sortBy}
-              setSortBy={setSortBy}
-              currentPage={currentPage}
-              setCurrentPage={setCurrentPage}
-              clearFilters={clearFilters}
-              filters={filters}
-              searchTags={searchTags}
-            />
-          </div>
-        </section>
+        </div>
+        
+        {/* Results */}
+        <div className="max-w-3xl mx-auto space-y-4">
+          {isLoading ? (
+            <div className="flex justify-center items-center h-40">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <>
+              {/* Example result items */}
+              {[1, 2, 3, 4].map(index => (
+                <Card key={index} className="p-4 bg-gray-900/50 hover:bg-gray-900 transition-all border-gray-800">
+                  <div className="flex justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <Badge variant="outline" className="text-xs bg-purple-500/10 text-purple-400 border-purple-500/30">
+                          {['RCT', 'Caso-Controle', 'Coorte', 'Metanálise'][index % 4]}
+                        </Badge>
+                        <span className="text-xs text-gray-400">2025</span>
+                        <span className="text-xs text-gray-400">•</span>
+                        <span className="text-xs text-gray-400">Smith J, Johnson A, et al.</span>
+                      </div>
+                      
+                      <h3 className="font-medium text-lg mb-2">Test Issue #{index + 16}</h3>
+                      <p className="text-sm text-gray-400 line-clamp-2">
+                        This is a test and will bug as fuck
+                      </p>
+                    </div>
+                    
+                    <div className="flex flex-col items-end justify-between">
+                      <div className="flex items-center gap-1 text-gray-400">
+                        <span className="text-sm font-medium">{70 + index}</span>
+                        <ChevronUp size={16} />
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </>
+          )}
+        </div>
       </main>
     </div>
   );

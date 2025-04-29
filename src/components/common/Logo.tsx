@@ -44,6 +44,11 @@ export const Logo = ({
       <h1 className={`logo-text ${sizeClasses[size]} ${fontWeight} ${textColor} flex items-center`}>
         Reviews.
       </h1>
+      {dark && (
+        <span className={`${textColor} text-sm mt-1 italic`}>
+          - por Igor Eckert
+        </span>
+      )}
     </div>
   );
 };
