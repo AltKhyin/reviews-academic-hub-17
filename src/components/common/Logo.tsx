@@ -1,6 +1,5 @@
 
 import React from 'react';
-import { Archive } from 'lucide-react';
 
 interface LogoProps {
   dark?: boolean;
@@ -33,7 +32,7 @@ export const Logo = ({
     return (
       <div className="flex justify-center">
         <h1 className={`logo-text ${sizeClasses[size]} ${fontWeight} ${textColor} flex items-center`}>
-          R<Archive className="h-4 w-4 mb-3 ml-1" />
+          R.
         </h1>
       </div>
     );
@@ -42,7 +41,7 @@ export const Logo = ({
   return (
     <div className="flex flex-col">
       <h1 className={`logo-text ${sizeClasses[size]} ${fontWeight} ${textColor} flex items-center`}>
-        Reviews<Archive className="h-6 w-6 mb-3 ml-1" />
+        Reviews.
       </h1>
     </div>
   );

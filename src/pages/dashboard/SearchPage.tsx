@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -108,7 +109,7 @@ const SearchPage: React.FC = () => {
     },
     studyType: {
       title: 'Tipo de Estudo',
-      options: ['Ensaio Clínico Randomizado', 'Coorte', 'Caso-Controle', 'Metanálise', 'Revisão Sistemática']
+      options: ['Ensaio Clínico', 'Coorte', 'Caso-Controle', 'Metanálise', 'Revisão Sistemática']
     },
     journal: {
       title: 'Jornal',
@@ -128,30 +129,17 @@ const SearchPage: React.FC = () => {
       );
 
   return (
-    <div className="container mx-auto py-8">
-      {/* Logo centered with breathing room */}
-      <div className="flex justify-center my-8">
+    <div className="h-screen overflow-hidden flex flex-col">
+      {/* Logo centered with breathing room - positioned at the top with equal spacing */}
+      <div className="flex-none flex justify-center items-center py-12">
         <Logo dark={false} size="2xlarge" />
       </div>
 
-      <div className="flex items-start justify-between gap-6">
-        {/* Desktop Sidebar */}
-        <div className="hidden md:block w-1/4">
-          <Card className="p-4 sticky top-4">
-            <SearchFilters 
-              filters={filters}
-              onFilterChange={handleFilterChange}
-              facetGroups={facetGroups}
-              areaSearchText={areaSearchText}
-              setAreaSearchText={setAreaSearchText}
-              filteredAreaOptions={filteredAreaOptions}
-            />
-          </Card>
-        </div>
-
-        {/* Search Area */}
-        <div className="flex-1">
-          <Card className="p-4 mb-4">
+      {/* Search area - centered vertically */}
+      <div className="flex-1 flex items-center justify-center px-4 pb-8">
+        <div className="w-full max-w-5xl">
+          {/* Search Header Component in Card */}
+          <Card className="p-6 mb-6">
             {/* Mobile filters */}
             <div className="block md:hidden mb-4">
               <Sheet>
@@ -163,7 +151,7 @@ const SearchPage: React.FC = () => {
                 </SheetTrigger>
                 <SheetContent side="left" className="w-[300px] sm:w-[400px]">
                   {/* Sidebar Content for Mobile */}
-                  <div className="h-full py-4 overflow-y-auto">
+                  <div className="h-full py-4">
                     <h3 className="font-bold mb-4">Filtros</h3>
                     <SearchFilters 
                       filters={filters}
@@ -191,20 +179,39 @@ const SearchPage: React.FC = () => {
             />
           </Card>
 
-          {/* Search Results Component */}
-          <SearchResults 
-            isLoading={isLoading}
-            error={error}
-            searchResults={searchResults}
-            refetch={refetch}
-            sortBy={sortBy}
-            setSortBy={setSortBy}
-            currentPage={currentPage}
-            setCurrentPage={setCurrentPage}
-            clearFilters={clearFilters}
-            filters={filters}
-            searchTags={searchTags}
-          />
+          {/* Filters and Results Area */}
+          <div className="flex gap-6">
+            {/* Desktop Sidebar */}
+            <div className="hidden md:block w-1/4 h-full">
+              <Card className="p-4 h-full">
+                <SearchFilters 
+                  filters={filters}
+                  onFilterChange={handleFilterChange}
+                  facetGroups={facetGroups}
+                  areaSearchText={areaSearchText}
+                  setAreaSearchText={setAreaSearchText}
+                  filteredAreaOptions={filteredAreaOptions}
+                />
+              </Card>
+            </div>
+
+            {/* Search Results */}
+            <div className="flex-1">
+              <SearchResults 
+                isLoading={isLoading}
+                error={error}
+                searchResults={searchResults}
+                refetch={refetch}
+                sortBy={sortBy}
+                setSortBy={setSortBy}
+                currentPage={currentPage}
+                setCurrentPage={setCurrentPage}
+                clearFilters={clearFilters}
+                filters={filters}
+                searchTags={searchTags}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>
