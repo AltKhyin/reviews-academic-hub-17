@@ -48,7 +48,7 @@ const ArticleViewer: React.FC = () => {
   });
 
   if (isLoading) {
-    return <div className="p-8 text-center">Loading...</div>;
+    return <div className="p-8 text-center">Carregando...</div>;
   }
 
   if (error || !issue) {
@@ -101,8 +101,8 @@ const ArticleViewer: React.FC = () => {
         />
       </div>
 
-      {viewMode === 'dual' ? (
-        <div className="min-h-[800px]">
+      <div className="min-h-[800px]">
+        {viewMode === 'dual' ? (
           <ResizablePanelGroup direction="horizontal" className="min-h-[800px]">
             <ResizablePanel defaultSize={50}>
               <PDFViewer 
@@ -124,18 +124,18 @@ const ArticleViewer: React.FC = () => {
               />
             </ResizablePanel>
           </ResizablePanelGroup>
-        </div>
-      ) : (
-        <div className="min-h-[800px]">
-          <PDFViewer 
-            url={viewMode === 'review' ? issue.pdf_url : issue.article_pdf_url || ''} 
-            title={viewMode === 'review' ? "Revisão" : "Artigo Original"}
-            fallbackContent={
-              <p>{viewMode === 'review' ? "PDF de revisão" : "PDF do artigo original"} não disponível</p>
-            }
-          />
-        </div>
-      )}
+        ) : (
+          <div className="min-h-[800px] h-full">
+            <PDFViewer 
+              url={viewMode === 'review' ? issue.pdf_url : issue.article_pdf_url || ''} 
+              title={viewMode === 'review' ? "Revisão" : "Artigo Original"}
+              fallbackContent={
+                <p>{viewMode === 'review' ? "PDF de revisão" : "PDF do artigo original"} não disponível</p>
+              }
+            />
+          </div>
+        )}
+      </div>
 
       <div className="space-y-8">
         <RecommendedArticles currentArticleId={issue.id} />

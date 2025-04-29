@@ -29,7 +29,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
 }) => {
   const { user } = useAuth();
   const [userVote, setUserVote] = useState<1 | -1 | 0>(0);
-  const [score, setScore] = useState(comment.score || 0);
+  const [localScore, setLocalScore] = useState(comment.score || 0);
   const isAuthor = user?.id === comment.user_id;
   
   // Format profile name
@@ -42,7 +42,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
     try {
       await onVote({ commentId: comment.id, value: 1 });
       setUserVote(1);
-      setScore(prev => prev + 1);
+      setLocalScore(prev => prev + 1);
     } catch (error) {
       console.error("Error voting:", error);
     }
@@ -54,14 +54,14 @@ export const CommentItem: React.FC<CommentItemProps> = ({
     try {
       await onVote({ commentId: comment.id, value: -1 });
       setUserVote(-1);
-      setScore(prev => prev - 1);
+      setLocalScore(prev => prev - 1);
     } catch (error) {
       console.error("Error voting:", error);
     }
   };
 
   // Check if the comment should be collapsed due to low score
-  const isCollapsed = score <= -4;
+  const isCollapsed = localScore <= -4;
 
   return (
     <div className={`border-b border-white/10 pb-4 space-y-2 ${level > 0 ? 'ml-8' : ''}`}>
@@ -79,8 +79,8 @@ export const CommentItem: React.FC<CommentItemProps> = ({
             >
               <ChevronUp size={16} />
             </button>
-            <span className={`text-sm font-medium ${score > 0 ? 'text-green-500' : score < 0 ? 'text-red-500' : 'text-gray-400'}`}>
-              {score}
+            <span className={`text-sm font-medium ${localScore > 0 ? 'text-green-500' : localScore < 0 ? 'text-red-500' : 'text-gray-400'}`}>
+              {localScore}
             </span>
             <button
               onClick={handleDownvote}
