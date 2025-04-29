@@ -140,13 +140,25 @@ export const organizeComments = (commentsData: { comments: any[], userVotes: Com
   // Create map for quick lookup of comments by ID
   const commentMap: Record<string, Comment> = {};
   
-  // Process comments to add scores and user votes
+  // Process comments to add scores and user votes - fixing type instantiation issue
   const processedComments = comments.map((comment: any): Comment => {
+    // Explicitly create the Comment object with all required fields and a defined replies array
     const commentWithScore: Comment = {
-      ...comment,
-      userVote: userVotesMap[comment.id] as 1 | -1 | 0 || 0,
-      // Initialize replies as an empty array to avoid recursion issues
-      replies: []
+      id: comment.id,
+      content: comment.content,
+      created_at: comment.created_at,
+      updated_at: comment.updated_at,
+      user_id: comment.user_id,
+      parent_id: comment.parent_id,
+      article_id: comment.article_id,
+      issue_id: comment.issue_id,
+      post_id: comment.post_id,
+      score: comment.score,
+      profiles: comment.profiles,
+      // Fix: Explicitly define userVote with proper type
+      userVote: (userVotesMap[comment.id] as (1 | -1 | 0)) || 0,
+      // Fix: Initialize replies as an explicitly typed empty array
+      replies: [] as Comment[]
     };
     
     // Add to map for quick lookup
@@ -164,6 +176,7 @@ export const organizeComments = (commentsData: { comments: any[], userVotes: Com
       topLevelComments.push(comment);
     } else if (commentMap[comment.parent_id]) {
       // This is a reply to another comment
+      // Fix: Ensure replies array exists before pushing
       if (!commentMap[comment.parent_id].replies) {
         commentMap[comment.parent_id].replies = [];
       }
