@@ -20,11 +20,12 @@ import * as z from 'zod';
 interface PaymentLink {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
   amount: number;
   currency: string;
   url: string;
   created_at: string;
+  stripe_id: string;
 }
 
 // Form schema
@@ -56,12 +57,12 @@ const PaymentLinks = () => {
     }
   });
 
-  // Fetch payment links
+  // Fetch payment links - using any type to bypass TypeScript issues with table not in types
   const { data: paymentLinks, isLoading } = useQuery({
     queryKey: ['paymentLinks'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('payment_links')
+        .from('payment_links' as any)
         .select('*')
         .order('created_at', { ascending: false });
       
@@ -109,7 +110,7 @@ const PaymentLinks = () => {
   const deletePaymentLinkMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('payment_links')
+        .from('payment_links' as any)
         .delete()
         .eq('id', id);
       
@@ -312,3 +313,4 @@ const PaymentLinks = () => {
 };
 
 export default PaymentLinks;
+

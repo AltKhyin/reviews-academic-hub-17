@@ -15,6 +15,7 @@ export const getEntityIdField = (entityType: EntityType) => {
 export const fetchCommentsData = async (entityId: string, entityType: EntityType) => {
   try {
     const entityIdField = getEntityIdField(entityType);
+    // Use type casting to avoid deep type instantiation issues
     const { data: comments, error } = await supabase
       .from('comments')
       .select(`

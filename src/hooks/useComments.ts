@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Comment, CommentVote, EntityType } from '@/types/comment';
 import { toast } from '@/hooks/use-toast';
-import { fetchCommentsData, getEntityIdField } from '@/utils/commentUtils';
+import { fetchCommentsData, getEntityIdField } from '@/utils/commentFetch';
 import { organizeComments } from '@/utils/commentOrganize';
 
 export const useComments = (entityId: string, entityType: EntityType = 'article') => {
