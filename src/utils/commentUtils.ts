@@ -110,7 +110,6 @@ export const fetchCommentsData = async (entityId: string, entityType: EntityType
       if (votesError) {
         console.error('Error fetching votes:', votesError);
       } else if (votesData) {
-        // Fix: Ensure votesData is properly typed when assigning to userVotes
         userVotes = votesData as CommentVote[];
       }
     }
@@ -140,10 +139,9 @@ export const organizeComments = (commentsData: { comments: any[], userVotes: Com
   // Create map for quick lookup of comments by ID
   const commentMap: Record<string, Comment> = {};
   
-  // Process comments to add scores and user votes - fixing type instantiation issue
-  const processedComments = comments.map((comment: any): Comment => {
-    // Explicitly create the Comment object with all required fields and a defined replies array
-    const commentWithScore: Comment = {
+  // First pass: Process comments to create all Comment objects without setting up the reply relationships
+  comments.forEach((comment: any) => {
+    commentMap[comment.id] = {
       id: comment.id,
       content: comment.content,
       created_at: comment.created_at,
@@ -155,31 +153,20 @@ export const organizeComments = (commentsData: { comments: any[], userVotes: Com
       post_id: comment.post_id,
       score: comment.score,
       profiles: comment.profiles,
-      // Fix: Explicitly define userVote with proper type
       userVote: (userVotesMap[comment.id] as (1 | -1 | 0)) || 0,
-      // Fix: Initialize replies as an explicitly typed empty array
-      replies: [] as Comment[]
+      replies: [] // Initialize with empty array
     };
-    
-    // Add to map for quick lookup
-    commentMap[comment.id] = commentWithScore;
-    
-    return commentWithScore;
   });
   
-  // Organize into parent-child relationship
+  // Second pass: Set up reply relationships
   const topLevelComments: Comment[] = [];
   
-  processedComments.forEach((comment: Comment) => {
+  Object.values(commentMap).forEach((comment) => {
     if (!comment.parent_id) {
       // This is a top-level comment
       topLevelComments.push(comment);
     } else if (commentMap[comment.parent_id]) {
       // This is a reply to another comment
-      // Fix: Ensure replies array exists before pushing
-      if (!commentMap[comment.parent_id].replies) {
-        commentMap[comment.parent_id].replies = [];
-      }
       commentMap[comment.parent_id].replies!.push(comment);
     } else {
       // This is a reply but the parent was not found, treat as top-level
