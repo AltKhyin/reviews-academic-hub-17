@@ -1,190 +1,137 @@
 
-import { Comment, CommentVote, EntityType } from "@/types/comment";
-import { supabase } from "@/integrations/supabase/client";
+import { Comment } from '@/types/comment';
 
-// Returns the appropriate field name for database queries based on entity type
-export const getEntityIdField = (entityType: EntityType): string => {
-  return entityType === 'article' ? 'article_id' : 
-         entityType === 'issue' ? 'issue_id' : 'post_id';
-};
-
-// Verify if the entity exists in the database
-export const verifyEntityExists = async (entityId: string, entityType: EntityType): Promise<boolean> => {
-  try {
-    if (entityType === 'article') {
-      const { data, error } = await supabase
-        .from('articles')
-        .select('id')
-        .eq('id', entityId)
-        .maybeSingle();
-      
-      if (error) throw error;
-      return !!data;
-    } else if (entityType === 'issue') {
-      const { data, error } = await supabase
-        .from('issues')
-        .select('id')
-        .eq('id', entityId)
-        .maybeSingle();
-      
-      if (error) throw error;
-      return !!data;
-    } else if (entityType === 'post') {
-      const { data, error } = await supabase
-        .from('posts')
-        .select('id')
-        .eq('id', entityId)
-        .maybeSingle();
-      
-      if (error) throw error;
-      return !!data;
-    }
-    
-    return false;
-  } catch (error) {
-    console.error('Error verifying entity exists:', error);
-    return false;
-  }
-};
-
-// Fetch comments data for an entity
-export const fetchCommentsData = async (entityId: string, entityType: EntityType) => {
-  try {
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    // First, verify if the entity exists
-    const entityExists = await verifyEntityExists(entityId, entityType);
-    
-    if (!entityExists) {
-      console.error(`${entityType} with ID ${entityId} not found`);
-      return { comments: [], userVotes: [] };
-    }
-    
-    // Get the appropriate entity ID field
-    const entityIdField = getEntityIdField(entityType);
-    
-    // Create the select query based on the entity type
-    let selectQuery = `
-      id, 
-      content, 
-      created_at, 
-      updated_at, 
-      user_id, 
-      parent_id,
-      score,
-      profiles:user_id (id, full_name, avatar_url)
-    `;
-    
-    // Add the appropriate entity ID field
-    if (entityType === 'article') {
-      selectQuery += `, article_id`;
-    } else if (entityType === 'issue') {
-      selectQuery += `, issue_id`;
-    } else if (entityType === 'post') {
-      selectQuery += `, post_id`;
-    }
-    
-    // Fetch comments
-    const { data: commentsData, error: commentsError } = await supabase
-      .from('comments')
-      .select(selectQuery)
-      .eq(entityIdField, entityId)
-      .order('created_at', { ascending: false });
-      
-    if (commentsError) {
-      console.error('Error fetching comments:', commentsError);
-      throw commentsError;
-    }
-    
-    // Fetch comment votes if user is logged in
-    let userVotes: CommentVote[] = [];
-    
-    if (user) {
-      const { data: votesData, error: votesError } = await supabase
-        .from('comment_votes')
-        .select('comment_id, value, user_id')
-        .eq('user_id', user.id)
-        .in('comment_id', commentsData.map((c: any) => c.id));
-        
-      if (votesError) {
-        console.error('Error fetching votes:', votesError);
-      } else if (votesData) {
-        userVotes = votesData as CommentVote[];
-      }
-    }
-    
-    return { 
-      comments: commentsData,
-      userVotes
-    };
-  } catch (error) {
-    console.error('Error in fetchCommentsData:', error);
-    return { comments: [], userVotes: [] };
-  }
-};
-
-// Define a concrete type to avoid infinite recursion
-interface CommentWithReplies extends Omit<Comment, 'replies'> {
-  replies?: CommentWithReplies[];
-  userVote?: 1 | -1 | 0;
+// Define a separate interface for comments with replies to avoid recursive type issues
+export interface CommentWithReplies extends Comment {
+  replies: CommentWithReplies[];
+  level: number;
 }
 
-// Organize comments into a hierarchical structure
-export const organizeComments = (commentsData: { comments: any[], userVotes: CommentVote[] }): CommentWithReplies[] => {
-  if (!commentsData?.comments) return [];
+// Function to organize comments into a hierarchical structure
+export const organizeComments = (comments: Comment[]): CommentWithReplies[] => {
+  // Step 1: Create a map of all comments indexed by ID
+  const commentMap = new Map<string, CommentWithReplies>();
   
-  const { comments, userVotes } = commentsData;
-  
-  // Map of user votes by comment ID
-  const userVotesMap: Record<string, number> = {};
-  userVotes.forEach((vote: CommentVote) => {
-    userVotesMap[vote.comment_id] = vote.value;
-  });
-  
-  // Create map for quick lookup of comments by ID
-  const commentMap: Record<string, CommentWithReplies> = {};
-  
-  // First pass: create all comment objects without setting up the hierarchy
-  comments.forEach((comment: any) => {
-    const commentWithScore: CommentWithReplies = {
+  // First, create base objects for all comments
+  comments.forEach(comment => {
+    commentMap.set(comment.id, {
       ...comment,
-      userVote: userVotesMap[comment.id] as 1 | -1 | 0 || 0,
-      replies: []
-    };
-    
-    // Add to map for quick lookup
-    commentMap[comment.id] = commentWithScore;
+      replies: [],
+      level: 0
+    });
   });
   
-  // Second pass: organize into parent-child relationship
-  const topLevelComments: CommentWithReplies[] = [];
+  // Step 2: Build the hierarchy
+  const rootComments: CommentWithReplies[] = [];
   
-  comments.forEach((comment: any) => {
-    if (!comment.parent_id) {
-      // This is a top-level comment
-      topLevelComments.push(commentMap[comment.id]);
-    } else if (commentMap[comment.parent_id]) {
-      // This is a reply to another comment
-      if (!commentMap[comment.parent_id].replies) {
-        commentMap[comment.parent_id].replies = [];
+  // Now assign children to their parents
+  comments.forEach(comment => {
+    const commentWithReplies = commentMap.get(comment.id)!;
+    
+    if (comment.parent_id) {
+      // This is a reply, add it to its parent's replies array
+      const parent = commentMap.get(comment.parent_id);
+      if (parent) {
+        commentWithReplies.level = parent.level + 1;
+        parent.replies.push(commentWithReplies);
+      } else {
+        // If parent doesn't exist (shouldn't happen with valid data),
+        // treat it as a root comment
+        rootComments.push(commentWithReplies);
       }
-      commentMap[comment.parent_id].replies!.push(commentMap[comment.id]);
     } else {
-      // This is a reply but the parent was not found, treat as top-level
-      console.warn(`Parent comment ${comment.parent_id} not found for comment ${comment.id}`);
-      topLevelComments.push(commentMap[comment.id]);
+      // This is a root comment
+      rootComments.push(commentWithReplies);
     }
   });
   
-  // Sort replies by created_at
-  Object.values(commentMap).forEach((comment) => {
-    if (comment.replies && comment.replies.length > 0) {
+  // Sort replies by created_at for each comment
+  const sortReplies = (comments: CommentWithReplies[]): void => {
+    comments.forEach(comment => {
       comment.replies.sort((a, b) => 
         new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       );
-    }
-  });
+      sortReplies(comment.replies);
+    });
+  };
   
-  return topLevelComments;
+  // Sort root comments by created_at
+  rootComments.sort((a, b) => 
+    new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+  );
+  
+  // Sort all replies recursively
+  sortReplies(rootComments);
+  
+  return rootComments;
+};
+
+// Function to flatten a hierarchical comment structure
+export const flattenComments = (organizedComments: CommentWithReplies[]): CommentWithReplies[] => {
+  const flattened: CommentWithReplies[] = [];
+  
+  const addComment = (comment: CommentWithReplies) => {
+    flattened.push(comment);
+    comment.replies.forEach(reply => addComment(reply));
+  };
+  
+  organizedComments.forEach(comment => addComment(comment));
+  
+  return flattened;
+};
+
+// Function to find a comment by ID in a flat array
+export const findCommentById = (comments: Comment[], id: string): Comment | undefined => {
+  return comments.find(comment => comment.id === id);
+};
+
+// Function to create a new comment
+export const createComment = async (
+  content: string,
+  userId: string,
+  articleId?: string,
+  issueId?: string,
+  parentId?: string
+): Promise<Comment> => {
+  // Implementation depends on your API
+  return {
+    id: `comment-${Date.now()}`,
+    user_id: userId,
+    content,
+    article_id: articleId || null,
+    issue_id: issueId || null,
+    parent_id: parentId || null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    score: 0
+  };
+};
+
+// Function to update a comment's content
+export const updateComment = async (id: string, content: string): Promise<Comment> => {
+  // Implementation depends on your API
+  return {
+    id,
+    user_id: 'current-user',
+    content,
+    article_id: null,
+    issue_id: null,
+    parent_id: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    score: 0
+  };
+};
+
+// Function to delete a comment
+export const deleteComment = async (id: string): Promise<void> => {
+  // Implementation depends on your API
+  console.log(`Comment ${id} deleted`);
+};
+
+// Function to vote on a comment
+export const voteComment = async (id: string, direction: 'up' | 'down'): Promise<{ success: boolean }> => {
+  // Implementation depends on your API
+  console.log(`Vote ${direction} for comment ${id}`);
+  return { success: true };
 };

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -128,7 +129,7 @@ const SearchPage: React.FC = () => {
       );
 
   return (
-    <div className="flex h-screen">
+    <div className="flex min-h-screen">
       {/* Sidebar - fixed, no overflow */}
       <aside className="hidden md:block w-64 flex-shrink-0 p-4 bg-background/50 border-r">
         <h3 className="font-medium text-lg mb-2">Filtros</h3>
@@ -142,14 +143,14 @@ const SearchPage: React.FC = () => {
         />
       </aside>
 
-      {/* Content with scrollable area */}
-      <main className="flex flex-col flex-1 overflow-y-auto">
+      {/* Content area */}
+      <div className="flex flex-col flex-1">
         {/* Logo Header */}
         <header className="flex-none h-24 flex items-center justify-center">
           <Logo dark={false} size="2xlarge" />
         </header>
 
-        {/* Fixed area for mobile filters - outside the centering container */}
+        {/* Mobile filters button - outside the centering container */}
         <div className="block md:hidden px-6 mb-4">
           <Sheet>
             <SheetTrigger asChild>
@@ -175,7 +176,7 @@ const SearchPage: React.FC = () => {
           </Sheet>
         </div>
 
-        {/* Center the search card vertically */}
+        {/* Search Card - centered vertically */}
         <div className="flex-1 flex items-center justify-center px-6">
           <Card className="p-6 mb-6 w-full max-w-3xl">
             <SearchHeader 
@@ -207,7 +208,7 @@ const SearchPage: React.FC = () => {
             searchTags={searchTags}
           />
         </div>
-      </main>
+      </div>
     </div>
   );
 };
