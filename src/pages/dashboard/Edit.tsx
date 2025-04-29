@@ -16,6 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ReviewerCommentSection } from '@/components/dashboard/ReviewerCommentSection';
 import HomepageSectionsManager from '@/components/dashboard/HomepageSectionsManager';
+import { CommentReportsPanel } from '@/components/dashboard/CommentReportsPanel';
 
 const formSchema = z.object({
   title: z.string().min(3, "O título deve ter pelo menos 3 caracteres"),
@@ -117,10 +118,11 @@ const Edit = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid grid-cols-3 mb-4">
+        <TabsList className="grid grid-cols-4 mb-4">
           <TabsTrigger value="issues">Gerenciar Edições</TabsTrigger>
           <TabsTrigger value="comments">Notas do Revisor</TabsTrigger>
           <TabsTrigger value="sections">Gerenciar Seções</TabsTrigger>
+          <TabsTrigger value="reports">Denúncias</TabsTrigger>
         </TabsList>
         
         <TabsContent value="issues">
@@ -164,6 +166,10 @@ const Edit = () => {
 
         <TabsContent value="sections">
           <HomepageSectionsManager />
+        </TabsContent>
+
+        <TabsContent value="reports">
+          <CommentReportsPanel />
         </TabsContent>
       </Tabs>
     </div>

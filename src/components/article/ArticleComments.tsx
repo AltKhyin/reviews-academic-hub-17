@@ -77,12 +77,12 @@ export const ArticleComments: React.FC<ArticleCommentsProps> = ({ articleId }) =
         <h2 className="text-2xl font-serif font-medium">Discussão</h2>
         <div className="flex items-center space-x-2">
           <span className="text-sm text-gray-400">Ordenar por:</span>
-          <div className="flex rounded-md overflow-hidden border border-gray-700">
+          <div className="flex rounded-md overflow-hidden border border-gray-700/50">
             <Button 
               variant={sortMode === 'best' ? 'secondary' : 'ghost'} 
               size="sm"
               onClick={() => setSortMode('best')}
-              className="rounded-none border-r border-gray-700"
+              className="rounded-none border-r border-gray-700/50"
             >
               Melhores
             </Button>
@@ -90,7 +90,7 @@ export const ArticleComments: React.FC<ArticleCommentsProps> = ({ articleId }) =
               variant={sortMode === 'new' ? 'secondary' : 'ghost'} 
               size="sm"
               onClick={() => setSortMode('new')}
-              className="rounded-none border-r border-gray-700"
+              className="rounded-none border-r border-gray-700/50"
             >
               Novos
             </Button>
@@ -114,7 +114,7 @@ export const ArticleComments: React.FC<ArticleCommentsProps> = ({ articleId }) =
         placeholder="Participe da discussão deste artigo..."
       />
       
-      <Card className="border-white/10 bg-white/5">
+      <Card className="border-white/5 bg-gray-800/10">
         <CardContent className="pt-6 pb-2 px-5">
           {sortedComments && sortedComments.length > 0 ? (
             <div className="space-y-1">

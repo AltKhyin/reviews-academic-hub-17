@@ -2,13 +2,15 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Trash2, MessageSquare, ChevronDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Trash2, MessageSquare, ChevronDown, ArrowUp, ArrowDown, Flag } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Comment } from '@/types/issue';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CommentItemProps {
   comment: Comment;
@@ -101,6 +103,43 @@ export const CommentItem: React.FC<CommentItemProps> = ({
     }
   };
 
+  const handleReport = async () => {
+    if (!user) {
+      toast({
+        title: "Autenticação necessária",
+        description: "Faça login para denunciar um comentário.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('comment_reports')
+        .insert({
+          comment_id: comment.id,
+          reporter_id: user.id,
+          reason: 'inappropriate', // Default reason
+          entity_id: entityId,
+          entity_type: entityType
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Comentário reportado",
+        description: "Obrigado por ajudar a manter nossa comunidade segura."
+      });
+    } catch (error) {
+      console.error("Error reporting comment:", error);
+      toast({
+        title: "Erro ao denunciar",
+        description: "Não foi possível processar sua denúncia. Tente novamente.",
+        variant: "destructive"
+      });
+    }
+  };
+
   // If auto-collapsed due to low score
   if (shouldAutoCollapse && !isCollapsed) {
     setIsCollapsed(true);
@@ -108,9 +147,9 @@ export const CommentItem: React.FC<CommentItemProps> = ({
 
   if (isCollapsed) {
     return (
-      <div className={`${level > 0 ? 'ml-6 border-l border-gray-700 pl-4' : 'border-b border-white/10 pb-4'} mb-4`}>
+      <div className={`${level > 0 ? 'ml-6 border-l border-gray-700/50 pl-4' : 'border-b border-gray-700/20 pb-4'} mb-4`}>
         <div 
-          className="flex items-center gap-2 py-2 px-2 rounded cursor-pointer hover:bg-gray-800/30"
+          className="flex items-center gap-2 py-2 px-2 rounded cursor-pointer hover:bg-gray-800/10"
           onClick={() => setIsCollapsed(false)}
         >
           <ArrowDown size={16} className="text-gray-400" />
@@ -133,11 +172,11 @@ export const CommentItem: React.FC<CommentItemProps> = ({
 
   return (
     <div 
-      className={`${level > 0 ? 'ml-6 border-l border-gray-700 pl-4' : 'border-b border-white/10 pb-6'} pt-2 mb-6`}
+      className={`${level > 0 ? 'ml-6 border-l border-gray-700/30 pl-4' : 'border-b border-gray-700/20 pb-6'} pt-2 mb-6`}
     >
-      <div className="flex gap-3 relative">
-        {/* Avatar */}
-        <Avatar className="w-8 h-8 mt-1 flex-shrink-0">
+      <div className="flex gap-4 relative">
+        {/* Avatar - now larger */}
+        <Avatar className="w-10 h-10 mt-1 flex-shrink-0">
           <AvatarImage src={comment.profiles?.avatar_url || undefined} />
           <AvatarFallback>{profileInitial}</AvatarFallback>
         </Avatar>
@@ -147,7 +186,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
           <div className="flex items-center">
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <span className="font-medium text-sm">{profileName}</span>
+                <span className="font-medium">{profileName}</span>
                 <span className="text-xs text-gray-400">
                   {formatDistanceToNow(new Date(comment.created_at), { 
                     addSuffix: true,
@@ -175,12 +214,12 @@ export const CommentItem: React.FC<CommentItemProps> = ({
               <Button 
                 variant="ghost"
                 size="sm"
-                className={`p-0 h-8 w-8 rounded-md ${userVote === 1 ? 'text-orange-500 bg-orange-500/10' : 'text-gray-400 hover:bg-gray-700/30'}`}
+                className={`p-0 h-8 w-8 rounded-md ${userVote === 1 ? 'text-orange-500 bg-orange-500/5' : 'text-gray-400 hover:bg-gray-700/10'}`}
                 onClick={handleUpvote}
                 disabled={!user}
                 title="Upvote"
               >
-                <ArrowUp size={16} className={userVote === 1 ? 'fill-orange-500' : ''} />
+                <ArrowUp size={16} strokeWidth={2.5} />
               </Button>
               
               <span className={`text-sm font-medium ${localScore > 0 ? 'text-orange-500' : localScore < 0 ? 'text-blue-500' : 'text-gray-400'}`}>
@@ -190,12 +229,12 @@ export const CommentItem: React.FC<CommentItemProps> = ({
               <Button 
                 variant="ghost"
                 size="sm"
-                className={`p-0 h-8 w-8 rounded-md ${userVote === -1 ? 'text-blue-500 bg-blue-500/10' : 'text-gray-400 hover:bg-gray-700/30'}`}
+                className={`p-0 h-8 w-8 rounded-md ${userVote === -1 ? 'text-blue-500 bg-blue-500/5' : 'text-gray-400 hover:bg-gray-700/10'}`}
                 onClick={handleDownvote}
                 disabled={!user}
                 title="Downvote"
               >
-                <ArrowDown size={16} className={userVote === -1 ? 'fill-blue-500' : ''} />
+                <ArrowDown size={16} strokeWidth={2.5} />
               </Button>
             </div>
             
@@ -207,6 +246,16 @@ export const CommentItem: React.FC<CommentItemProps> = ({
             >
               <MessageSquare size={14} className="mr-1" />
               <span>Responder</span>
+            </Button>
+            
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-8 px-2 py-0 text-sm text-gray-400 hover:text-red-400" 
+              onClick={handleReport}
+              title="Denunciar comentário"
+            >
+              <Flag size={14} />
             </Button>
             
             {isAuthor && (
@@ -249,7 +298,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
                 value={replyContent}
                 onChange={(e) => setReplyContent(e.target.value)}
                 placeholder="Escreva uma resposta..."
-                className="min-h-[80px] text-sm"
+                className="min-h-[80px] text-sm bg-gray-800/20 border-gray-700/30"
               />
               <div className="flex justify-end gap-2 mt-2">
                 <Button 

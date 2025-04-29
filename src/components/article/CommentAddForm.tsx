@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 interface CommentAddFormProps {
   articleId: string;
@@ -22,7 +23,7 @@ export const CommentAddForm: React.FC<CommentAddFormProps> = ({
   placeholder = 'Compartilhe seus pensamentos...'
 }) => {
   const [comment, setComment] = useState('');
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,32 +64,43 @@ export const CommentAddForm: React.FC<CommentAddFormProps> = ({
     }
   };
 
+  const userInitial = profile?.full_name ? profile.full_name[0] : 'U';
+
   return (
-    <Card className="border-white/10 bg-white/5 mb-6">
+    <Card className="border-white/5 bg-gray-800/10 mb-6">
       <CardContent className="pt-6">
         <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <Textarea
-              placeholder={placeholder}
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              rows={4}
-              className="resize-none"
-              disabled={isSubmitting || !user}
-            />
-            {!user && (
-              <p className="mt-2 text-sm text-yellow-400">
-                Por favor, faça login para comentar.
-              </p>
-            )}
-          </div>
-          <div className="flex justify-end">
-            <Button 
-              type="submit" 
-              disabled={isSubmitting || !user || !comment.trim()}
-            >
-              {isSubmitting ? 'Enviando...' : 'Comentar'}
-            </Button>
+          <div className="flex gap-4">
+            {/* User avatar */}
+            <Avatar className="w-10 h-10 flex-shrink-0">
+              <AvatarImage src={profile?.avatar_url || undefined} />
+              <AvatarFallback>{userInitial}</AvatarFallback>
+            </Avatar>
+            
+            <div className="flex-1">
+              <Textarea
+                placeholder={placeholder}
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                rows={4}
+                className="resize-none bg-gray-800/20 border-gray-700/30"
+                disabled={isSubmitting || !user}
+              />
+              {!user && (
+                <p className="mt-2 text-sm text-yellow-400">
+                  Por favor, faça login para comentar.
+                </p>
+              )}
+              
+              <div className="flex justify-end mt-3">
+                <Button 
+                  type="submit" 
+                  disabled={isSubmitting || !user || !comment.trim()}
+                >
+                  {isSubmitting ? 'Enviando...' : 'Comentar'}
+                </Button>
+              </div>
+            </div>
           </div>
         </form>
       </CardContent>
