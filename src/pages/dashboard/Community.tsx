@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -191,7 +192,7 @@ const Community = () => {
         />
       </div>
       
-      <Tabs defaultValue="latest" value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-6">
           <TabsTrigger value="latest">Recentes</TabsTrigger>
           <TabsTrigger value="popular">Populares</TabsTrigger>
@@ -199,7 +200,7 @@ const Community = () => {
           {user && <TabsTrigger value="my">Minhas Publicações</TabsTrigger>}
         </TabsList>
         
-        <TabsContent value={activeTab} className="space-y-6">
+        <TabsContent value="latest" className="space-y-6">
           {posts?.length === 0 && (
             <div className="text-center py-12 text-gray-400">
               <p>Nenhuma publicação encontrada.</p>
@@ -214,6 +215,56 @@ const Community = () => {
             />
           ))}
         </TabsContent>
+
+        <TabsContent value="popular" className="space-y-6">
+          {posts?.length === 0 && (
+            <div className="text-center py-12 text-gray-400">
+              <p>Nenhuma publicação encontrada.</p>
+            </div>
+          )}
+          
+          {posts?.map((post) => (
+            <Post 
+              key={post.id} 
+              post={post} 
+              onVoteChange={refetchPosts} 
+            />
+          ))}
+        </TabsContent>
+
+        <TabsContent value="oldest" className="space-y-6">
+          {posts?.length === 0 && (
+            <div className="text-center py-12 text-gray-400">
+              <p>Nenhuma publicação encontrada.</p>
+            </div>
+          )}
+          
+          {posts?.map((post) => (
+            <Post 
+              key={post.id} 
+              post={post} 
+              onVoteChange={refetchPosts} 
+            />
+          ))}
+        </TabsContent>
+
+        {user && (
+          <TabsContent value="my" className="space-y-6">
+            {posts?.length === 0 && (
+              <div className="text-center py-12 text-gray-400">
+                <p>Você ainda não criou publicações.</p>
+              </div>
+            )}
+            
+            {posts?.map((post) => (
+              <Post 
+                key={post.id} 
+                post={post} 
+                onVoteChange={refetchPosts} 
+              />
+            ))}
+          </TabsContent>
+        )}
       </Tabs>
       
       {isNewPostModalOpen && (
