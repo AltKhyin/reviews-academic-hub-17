@@ -1,4 +1,3 @@
-
 export interface Issue {
   id: string;
   title: string;
@@ -38,15 +37,18 @@ export interface Comment {
   id: string;
   content: string;
   created_at: string;
+  updated_at?: string;
   user_id: string;
   article_id?: string;
   issue_id?: string;
+  parent_id?: string;
+  score?: number;
   profiles?: {
     id: string;
-    full_name: string | null;
-    avatar_url: string | null;
-    role?: 'user' | 'editor' | 'admin';
+    full_name?: string;
+    avatar_url?: string;
   };
+  replies?: Comment[];
 }
 
 export interface ExternalLecture {

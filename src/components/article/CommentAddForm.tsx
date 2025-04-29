@@ -10,14 +10,16 @@ interface CommentAddFormProps {
   articleId: string;
   onSubmit?: (comment: string) => void;
   isSubmitting?: boolean;
-  entityType?: 'article' | 'issue'; // Added entityType prop
+  entityType?: 'article' | 'issue';
+  placeholder?: string;
 }
 
 export const CommentAddForm: React.FC<CommentAddFormProps> = ({ 
   articleId,
   onSubmit,
   isSubmitting = false,
-  entityType = 'article' // Default to 'article' for backward compatibility
+  entityType = 'article',
+  placeholder = 'Compartilhe seus pensamentos...'
 }) => {
   const [comment, setComment] = useState('');
   const { user } = useAuth();
@@ -27,8 +29,8 @@ export const CommentAddForm: React.FC<CommentAddFormProps> = ({
     
     if (!user) {
       toast({
-        title: "Authentication required",
-        description: "Please sign in to leave a comment.",
+        title: "Autenticação necessária",
+        description: "Faça login para deixar um comentário.",
         variant: "destructive"
       });
       return;
@@ -36,8 +38,8 @@ export const CommentAddForm: React.FC<CommentAddFormProps> = ({
     
     if (!comment.trim()) {
       toast({
-        title: "Comment required",
-        description: "Please enter a comment.",
+        title: "Comentário obrigatório",
+        description: "Por favor, escreva um comentário.",
         variant: "destructive"
       });
       return;
@@ -49,14 +51,14 @@ export const CommentAddForm: React.FC<CommentAddFormProps> = ({
       }
       setComment('');
       toast({
-        title: "Comment added",
-        description: "Your comment has been added successfully."
+        title: "Comentário adicionado",
+        description: "Seu comentário foi adicionado com sucesso."
       });
     } catch (error) {
       console.error('Error adding comment:', error);
       toast({
-        title: "Error",
-        description: "Failed to add comment. Please try again.",
+        title: "Erro",
+        description: "Falha ao adicionar comentário. Por favor, tente novamente.",
         variant: "destructive"
       });
     }
@@ -68,7 +70,7 @@ export const CommentAddForm: React.FC<CommentAddFormProps> = ({
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <Textarea
-              placeholder={`Share your thoughts on this ${entityType}...`}
+              placeholder={placeholder}
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               rows={4}
@@ -77,7 +79,7 @@ export const CommentAddForm: React.FC<CommentAddFormProps> = ({
             />
             {!user && (
               <p className="mt-2 text-sm text-yellow-400">
-                Please sign in to comment.
+                Por favor, faça login para comentar.
               </p>
             )}
           </div>
@@ -86,7 +88,7 @@ export const CommentAddForm: React.FC<CommentAddFormProps> = ({
               type="submit" 
               disabled={isSubmitting || !user || !comment.trim()}
             >
-              {isSubmitting ? 'Submitting...' : 'Add Comment'}
+              {isSubmitting ? 'Enviando...' : 'Comentar'}
             </Button>
           </div>
         </form>

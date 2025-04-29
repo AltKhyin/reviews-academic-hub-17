@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft } from 'lucide-react';
@@ -11,14 +11,13 @@ import { PDFViewer } from '@/components/pdf/PDFViewer';
 import { ArticleComments } from '@/components/article/ArticleComments';
 import { RecommendedArticles } from '@/components/article/RecommendedArticles';
 import { ExternalLectures } from '@/components/article/ExternalLectures';
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { ViewModeSwitcher } from '@/components/article/ViewModeSwitcher';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 
 const ArticleViewer: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const viewMode = searchParams.get('view') || 'review';
+  const [viewMode, setViewMode] = useState<'dual' | 'review' | 'original'>('review');
 
   const { data: issue, isLoading, error } = useQuery({
     queryKey: ['issue', id],
@@ -56,27 +55,25 @@ const ArticleViewer: React.FC = () => {
     return (
       <div className="space-y-8">
         <Button variant="ghost" onClick={() => navigate(-1)}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back
+          <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
         </Button>
         <Card className="p-8 text-center">
-          <h2 className="text-xl font-semibold mb-2">Article not found</h2>
+          <h2 className="text-xl font-semibold mb-2">Artigo não encontrado</h2>
           <p className="text-muted-foreground">
-            The article you're looking for doesn't exist or has been removed.
+            O artigo que você está procurando não existe ou foi removido.
           </p>
         </Card>
       </div>
     );
   }
 
-  const handleViewModeChange = (value: string) => {
-    if (value) setSearchParams({ view: value });
-  };
+  const hasOriginalArticle = !!issue.article_pdf_url;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <Button variant="ghost" onClick={() => navigate(-1)}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back
+          <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
         </Button>
       </div>
 
@@ -97,54 +94,49 @@ const ArticleViewer: React.FC = () => {
       </Card>
 
       <div className="flex justify-end mb-4">
-        <ToggleGroup type="single" value={viewMode} onValueChange={handleViewModeChange}>
-          <ToggleGroupItem value="review" aria-label="Show review only">
-            Review Only
-          </ToggleGroupItem>
-          <ToggleGroupItem value="article" aria-label="Show article only">
-            Article Only
-          </ToggleGroupItem>
-          <ToggleGroupItem value="dual" aria-label="Show both">
-            Side by Side
-          </ToggleGroupItem>
-        </ToggleGroup>
+        <ViewModeSwitcher 
+          viewMode={viewMode} 
+          onViewModeChange={setViewMode} 
+          hasOriginal={hasOriginalArticle} 
+        />
       </div>
 
       {viewMode === 'dual' ? (
-        <ResizablePanelGroup direction="horizontal" className="min-h-[800px]">
-          <ResizablePanel defaultSize={50}>
-            <PDFViewer 
-              url={issue.pdf_url} 
-              title="Review"
-              fallbackContent={
-                <p>Review PDF not available</p>
-              }
-            />
-          </ResizablePanel>
-          <ResizableHandle withHandle />
-          <ResizablePanel defaultSize={50}>
-            <PDFViewer 
-              url={issue.article_pdf_url || ''} 
-              title="Original Article"
-              fallbackContent={
-                <p>Original article PDF not available</p>
-              }
-            />
-          </ResizablePanel>
-        </ResizablePanelGroup>
-      ) : (
         <div className="min-h-[800px]">
+          <ResizablePanelGroup direction="horizontal" className="min-h-[800px]">
+            <ResizablePanel defaultSize={50}>
+              <PDFViewer 
+                url={issue.pdf_url} 
+                title="Revisão"
+                fallbackContent={
+                  <p>PDF de revisão não disponível</p>
+                }
+              />
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+            <ResizablePanel defaultSize={50}>
+              <PDFViewer 
+                url={issue.article_pdf_url || ''} 
+                title="Artigo Original"
+                fallbackContent={
+                  <p>PDF do artigo original não disponível</p>
+                }
+              />
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        </div>
+      ) : (
+        <div className="h-[800px]">
           <PDFViewer 
             url={viewMode === 'review' ? issue.pdf_url : issue.article_pdf_url || ''} 
-            title={viewMode === 'review' ? "Review" : "Original Article"}
+            title={viewMode === 'review' ? "Revisão" : "Artigo Original"}
             fallbackContent={
-              <p>{viewMode === 'review' ? "Review" : "Original article"} PDF not available</p>
+              <p>{viewMode === 'review' ? "PDF de revisão" : "PDF do artigo original"} não disponível</p>
             }
           />
         </div>
       )}
 
-      {/* Stack recommendations vertically instead of horizontally */}
       <div className="space-y-8">
         <RecommendedArticles currentArticleId={issue.id} />
         <ExternalLectures issueId={issue.id} />

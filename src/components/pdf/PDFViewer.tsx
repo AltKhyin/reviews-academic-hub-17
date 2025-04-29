@@ -13,16 +13,17 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   fallbackContent
 }) => {
   return (
-    <div className="bg-[#1a1a1a] rounded-lg p-6 shadow-lg card-elevation h-full">
+    <div className="bg-[#1a1a1a] rounded-lg p-6 shadow-lg card-elevation h-full flex flex-col">
       <div className="mb-4">
         <h2 className="font-serif text-xl font-medium">{title}</h2>
       </div>
-      <div className="w-full h-[calc(100%-3rem)] min-h-[800px] bg-[#121212] rounded-md overflow-hidden">
+      <div className="w-full flex-grow min-h-[800px] bg-[#121212] rounded-md overflow-hidden">
         {url && url !== 'placeholder.pdf' ? (
           <iframe
             src={url}
             className="w-full h-full rounded-md"
             title={title}
+            style={{ minHeight: '800px' }}
           />
         ) : (
           <div className="flex flex-col items-center justify-center h-full p-4">

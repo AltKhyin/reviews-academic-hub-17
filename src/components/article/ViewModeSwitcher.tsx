@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { SplitSquareVertical, BookOpen, FileText } from 'lucide-react';
 
 interface ViewModeSwitcherProps {
   viewMode: 'dual' | 'review' | 'original';
@@ -17,28 +18,31 @@ export const ViewModeSwitcher: React.FC<ViewModeSwitcherProps> = ({
       <button
         onClick={() => onViewModeChange('dual')}
         disabled={!hasOriginal}
-        className={`px-4 py-2 text-sm hover-effect ${
+        className={`px-4 py-2 text-sm hover-effect flex items-center gap-2 ${
           viewMode === 'dual' ? 'border-b-2 border-white text-white' : 'text-gray-400'
         } ${!hasOriginal ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
-        Dual view
+        <SplitSquareVertical size={16} />
+        <span>Lado a Lado</span>
       </button>
       <button
         onClick={() => onViewModeChange('review')}
-        className={`px-4 py-2 text-sm hover-effect ${
+        className={`px-4 py-2 text-sm hover-effect flex items-center gap-2 ${
           viewMode === 'review' ? 'border-b-2 border-white text-white' : 'text-gray-400'
         }`}
       >
-        Review only
+        <BookOpen size={16} />
+        <span>Revisão</span>
       </button>
       <button
         onClick={() => onViewModeChange('original')}
         disabled={!hasOriginal}
-        className={`px-4 py-2 text-sm hover-effect ${
+        className={`px-4 py-2 text-sm hover-effect flex items-center gap-2 ${
           viewMode === 'original' ? 'border-b-2 border-white text-white' : 'text-gray-400'
         } ${!hasOriginal ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
-        Original article
+        <FileText size={16} />
+        <span>Artigo Original</span>
       </button>
     </div>
   );
