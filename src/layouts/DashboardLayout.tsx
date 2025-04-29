@@ -14,10 +14,8 @@ const ContentWrapper = ({ children }: { children: React.ReactNode }) => {
   
   return (
     <div className={`flex-1 overflow-auto transition-all duration-300 ${isCollapsed ? 'ml-[60px]' : 'ml-[240px]'}`}>
-      <div className={`mx-auto px-4 md:px-6 py-4 h-full flex justify-center ${isDualView ? 'max-w-[95%]' : 'max-w-6xl'}`}>
-        <div className="w-full">
-          {children}
-        </div>
+      <div className={`h-full ${isDualView ? 'max-w-[95%]' : 'max-w-6xl'} mx-auto`}>
+        {children}
       </div>
     </div>
   );
@@ -72,7 +70,7 @@ const DashboardLayout: React.FC = () => {
 
   return (
     <SidebarProvider defaultOpen={true}>
-      <div className="flex h-screen bg-[#121212] text-white overflow-hidden">
+      <div className="flex h-screen overflow-hidden bg-[#121212] text-white">
         <Sidebar />
         <ContentWrapper>
           <Outlet />
