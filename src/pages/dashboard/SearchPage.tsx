@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -305,9 +306,16 @@ const SearchPage: React.FC = () => {
                   <Pagination>
                     <PaginationContent>
                       <PaginationItem>
-                        <PaginationLink onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))} disabled={currentPage === 1}>
-                          Anterior
-                        </PaginationLink>
+                        {currentPage === 1 ? (
+                          <Button variant="outline" size="icon" className="opacity-50" disabled>
+                            <span className="sr-only">Página anterior</span>
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                        ) : (
+                          <PaginationLink onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}>
+                            Anterior
+                          </PaginationLink>
+                        )}
                       </PaginationItem>
                       {[1, 2, 3].map(page => (
                         <PaginationItem key={page}>

@@ -51,4 +51,5 @@ export const Logo = ({
   );
 };
 
+// Also export as default for backward compatibility
 export default Logo;
