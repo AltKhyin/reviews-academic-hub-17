@@ -44,6 +44,11 @@ export const Logo = ({
       <h1 className={`logo-text ${sizeClasses[size]} ${fontWeight} ${textColor} flex items-center`}>
         Reviews.
       </h1>
+      {showSubtitle && (
+        <p className={`text-sm mt-1 ${textColor} opacity-80`}>
+          - por Igor Eckert
+        </p>
+      )}
     </div>
   );
 };

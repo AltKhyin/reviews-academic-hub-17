@@ -124,8 +124,13 @@ export const fetchCommentsData = async (entityId: string, entityType: EntityType
   }
 };
 
-// Organize comments into a hierarchical structure
-export const organizeComments = (commentsData: { comments: any[], userVotes: CommentVote[] }): Comment[] => {
+// This type fixes the infinite type instantiation issue
+type CommentWithReplies = Omit<Comment, 'replies'> & {
+  replies?: CommentWithReplies[]
+};
+
+// Organize comments into a hierarchical structure - fixed to avoid infinite type instantiation
+export const organizeComments = (commentsData: { comments: any[], userVotes: CommentVote[] }): CommentWithReplies[] => {
   if (!commentsData?.comments) return [];
   
   const { comments, userVotes } = commentsData;
@@ -137,39 +142,37 @@ export const organizeComments = (commentsData: { comments: any[], userVotes: Com
   });
   
   // Create map for quick lookup of comments by ID
-  const commentMap: Record<string, Comment> = {};
+  const commentMap: Record<string, CommentWithReplies> = {};
   
-  // Process comments to add scores and user votes
-  const processedComments = comments.map((comment: any): Comment => {
-    const commentWithScore: Comment = {
+  // First pass: create all comment objects without setting up the hierarchy
+  comments.forEach((comment: any) => {
+    const commentWithScore: CommentWithReplies = {
       ...comment,
       userVote: userVotesMap[comment.id] as 1 | -1 | 0 || 0,
-      replies: []
+      replies: [] // Initialize with empty array
     };
     
     // Add to map for quick lookup
     commentMap[comment.id] = commentWithScore;
-    
-    return commentWithScore;
   });
   
-  // Organize into parent-child relationship
-  const topLevelComments: Comment[] = [];
+  // Second pass: organize into parent-child relationship
+  const topLevelComments: CommentWithReplies[] = [];
   
-  processedComments.forEach((comment: Comment) => {
+  comments.forEach((comment: any) => {
     if (!comment.parent_id) {
       // This is a top-level comment
-      topLevelComments.push(comment);
+      topLevelComments.push(commentMap[comment.id]);
     } else if (commentMap[comment.parent_id]) {
       // This is a reply to another comment
       if (!commentMap[comment.parent_id].replies) {
         commentMap[comment.parent_id].replies = [];
       }
-      commentMap[comment.parent_id].replies!.push(comment);
+      commentMap[comment.parent_id].replies!.push(commentMap[comment.id]);
     } else {
       // This is a reply but the parent was not found, treat as top-level
       console.warn(`Parent comment ${comment.parent_id} not found for comment ${comment.id}`);
-      topLevelComments.push(comment);
+      topLevelComments.push(commentMap[comment.id]);
     }
   });
   
@@ -182,5 +185,5 @@ export const organizeComments = (commentsData: { comments: any[], userVotes: Com
     }
   });
   
-  return topLevelComments;
+  return topLevelComments as Comment[];
 };

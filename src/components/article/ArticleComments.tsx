@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useComments } from '@/hooks/useComments';
@@ -22,7 +23,7 @@ export const ArticleComments: React.FC<ArticleCommentsProps> = ({ articleId }) =
     isAddingComment,
     isDeletingComment,
     isReplying,
-  } = useComments(articleId, 'issue'); // Using 'issue' as the entity type
+  } = useComments(articleId, 'article'); // Changed from 'issue' to 'article'
 
   const handleAddComment = async (content: string) => {
     await addComment(content);
@@ -108,7 +109,7 @@ export const ArticleComments: React.FC<ArticleCommentsProps> = ({ articleId }) =
         articleId={articleId} 
         onSubmit={handleAddComment}
         isSubmitting={isAddingComment}
-        entityType="issue"
+        entityType="article"
         placeholder="Participe da discussão deste artigo..."
       />
       
@@ -125,7 +126,7 @@ export const ArticleComments: React.FC<ArticleCommentsProps> = ({ articleId }) =
                     onDelete={deleteComment}
                     onReply={handleReply}
                     onVote={handleVote}
-                    entityType="issue"
+                    entityType="article"
                     entityId={articleId}
                     isDeleting={isDeletingComment}
                   />
