@@ -56,6 +56,24 @@ const ArticleViewer: React.FC = () => {
     }
   });
 
+  // Fetch external lectures
+  const { data: externalLectures = [] } = useQuery({
+    queryKey: ['external-lectures', id],
+    queryFn: async () => {
+      if (!id) return [];
+      
+      const { data, error } = await supabase
+        .from('external_lectures')
+        .select('*')
+        .eq('issue_id', id)
+        .order('created_at', { ascending: false });
+        
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!id
+  });
+
   if (isLoading) {
     return <div className="p-8 text-center">Carregando...</div>;
   }
@@ -148,7 +166,7 @@ const ArticleViewer: React.FC = () => {
 
       <div className="space-y-8 mt-8">
         <RecommendedArticles currentArticleId={issue.id} />
-        <ExternalLectures issueId={issue.id} />
+        <ExternalLectures lectures={externalLectures} />
       </div>
       
       <ArticleComments articleId={issue.id} />

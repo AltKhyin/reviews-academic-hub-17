@@ -32,9 +32,9 @@ export const CommentVote: React.FC<CommentVoteProps> = ({
         size="sm"
         onClick={() => handleVote(1)} 
         disabled={isVoting}
-        className={`p-0 h-auto ${userVote === 1 ? 'text-green-500' : 'hover:text-green-400'}`}
+        className={`p-1 h-8 w-8 rounded-full ${userVote === 1 ? 'bg-green-500/20 text-green-500' : 'hover:bg-green-500/10 hover:text-green-400'}`}
       >
-        <ArrowUp className="h-4 w-4" />
+        <ArrowUp className="h-5 w-5" strokeWidth={2.5} />
       </Button>
       
       <span className="text-xs font-medium my-1">
@@ -46,9 +46,9 @@ export const CommentVote: React.FC<CommentVoteProps> = ({
         size="sm"
         onClick={() => handleVote(-1)} 
         disabled={isVoting}
-        className={`p-0 h-auto ${userVote === -1 ? 'text-red-500' : 'hover:text-red-400'}`}
+        className={`p-1 h-8 w-8 rounded-full ${userVote === -1 ? 'bg-red-500/20 text-red-500' : 'hover:bg-red-500/10 hover:text-red-400'}`}
       >
-        <ArrowDown className="h-4 w-4" />
+        <ArrowDown className="h-5 w-5" strokeWidth={2.5} />
       </Button>
     </div>
   );

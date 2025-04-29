@@ -24,6 +24,7 @@ export const ArticleComments: React.FC<ArticleCommentsProps> = ({ articleId }) =
     isAddingComment,
     isDeletingComment,
     isReplying,
+    isVoting
   } = useComments(articleId, 'issue'); // Using 'issue' as the entity type
 
   const handleAddComment = async (content: string) => {
@@ -107,11 +108,8 @@ export const ArticleComments: React.FC<ArticleCommentsProps> = ({ articleId }) =
       </div>
       
       <CommentAddForm 
-        articleId={articleId} 
-        onSubmit={handleAddComment}
-        isSubmitting={isAddingComment}
-        entityType="issue"
-        placeholder="Participe da discussão deste artigo..."
+        onAddComment={handleAddComment}
+        isAddingComment={isAddingComment}
       />
       
       <Card className="border-white/10 bg-white/5">
@@ -124,12 +122,12 @@ export const ArticleComments: React.FC<ArticleCommentsProps> = ({ articleId }) =
                   <CommentItem 
                     key={comment.id} 
                     comment={comment}
-                    onDelete={deleteComment}
-                    onReply={handleReply}
-                    onVote={handleVote}
-                    entityType="issue"
-                    entityId={articleId}
-                    isDeleting={isDeletingComment}
+                    voteComment={(commentId, value) => voteComment({ commentId, value })}
+                    replyToComment={handleReply}
+                    deleteComment={deleteComment}
+                    isVoting={isVoting}
+                    isReplying={isReplying}
+                    isDeletingComment={isDeletingComment}
                   />
               ))}
             </div>

@@ -1,5 +1,7 @@
 
 import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ExternalLecture {
   id: string;
@@ -10,10 +12,10 @@ interface ExternalLecture {
 }
 
 interface ExternalLecturesProps {
-  lectures: ExternalLecture[];
+  lectures?: ExternalLecture[];
 }
 
-export const ExternalLectures: React.FC<ExternalLecturesProps> = ({ lectures }) => {
+export const ExternalLectures: React.FC<ExternalLecturesProps> = ({ lectures = [] }) => {
   if (lectures.length === 0) {
     return null;
   }

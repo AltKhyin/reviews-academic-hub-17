@@ -67,7 +67,7 @@ export const useCommentActions = (entityId: string, entityType: 'article' | 'iss
 
   // Reply to a comment
   const replyToComment = useMutation({
-    mutationFn: async ({ parentId, content }: { parentId: string, content: string }) => {
+    mutationFn: async (parentId: string, content: string) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
       
