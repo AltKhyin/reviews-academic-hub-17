@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -13,8 +14,7 @@ import {
   LogOut,
   ChevronRight,
   ChevronLeft,
-  MessageSquare,
-  Link as LinkIcon
+  MessageSquare
 } from 'lucide-react';
 
 export const Sidebar = () => {
@@ -52,13 +52,6 @@ export const Sidebar = () => {
       icon: <FileText size={24} strokeWidth={1.5} className="w-6 h-6" />,
       path: '/edit',
       active: isActive('/edit'),
-      showToAdmin: true
-    },
-    {
-      name: 'Links de Pagamento',
-      icon: <LinkIcon size={24} strokeWidth={1.5} className="w-6 h-6" />,
-      path: '/payment-links',
-      active: isActive('/payment-links'),
       showToAdmin: true
     },
     {

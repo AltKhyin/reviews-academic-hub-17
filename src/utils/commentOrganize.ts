@@ -51,25 +51,3 @@ export const flattenCommentsWithLevel = (
     return acc;
   }, []);
 };
-
-// This function organizes comments and adds user vote information
-export const organizeComments = (data: { 
-  comments: BaseComment[]; 
-  userVotes: { user_id: string; comment_id: string; value: 1 | -1 }[] 
-}): Comment[] => {
-  const { comments, userVotes } = data;
-  
-  // First, append user votes to comments
-  const commentsWithVotes = comments.map(comment => {
-    const userVote = userVotes.find(vote => vote.comment_id === comment.id);
-    const voteValue = userVote ? userVote.value : 0;
-    
-    return {
-      ...comment,
-      userVote: voteValue as 0 | 1 | -1
-    };
-  });
-  
-  // Then organize into a tree structure
-  return organizeCommentsInTree(commentsWithVotes as BaseComment[]);
-};

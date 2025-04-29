@@ -1,75 +1,82 @@
 
-import { supabase } from '@/integrations/supabase/client';
-import { BaseComment } from '@/types/commentTypes';
-import { EntityType } from '@/types/comment';
+import { supabase } from "@/integrations/supabase/client";
+import { BaseComment, CommentVote, EntityType } from '@/types/commentTypes';
 
-export const getEntityIdField = (entityType: EntityType) => {
-  switch (entityType) {
-    case 'article': return 'article_id';
-    case 'issue': return 'issue_id';
-    case 'post': return 'post_id';
-    default: return 'article_id';
-  }
-};
-
-export const fetchCommentsData = async (entityId: string, entityType: EntityType) => {
+// This function fetches comments for various entity types (article, issue, post)
+export const fetchComments = async (
+  entityType: EntityType,
+  entityId: string,
+  userId?: string
+): Promise<{ comments: BaseComment[], userVotes: CommentVote[] }> => {
   try {
-    const entityIdField = getEntityIdField(entityType);
-    
-    // Use explicit typing to avoid deep type instantiation issues
-    type CommentQueryResult = {
-      id: string;
-      content: string;
-      user_id: string;
-      created_at: string;
-      updated_at: string;
-      parent_id: string | null;
-      score: number;
-      profiles: {
-        id: string;
-        full_name: string | null;
-        avatar_url: string | null;
-      };
-      [key: string]: any; // For dynamic entityIdField
-    };
-
+    // Get comments for the entity
     const { data: comments, error } = await supabase
       .from('comments')
       .select(`
         *,
         profiles:user_id (
-          id, full_name, avatar_url
+          id,
+          full_name,
+          avatar_url
         )
       `)
-      .eq(entityIdField, entityId)
-      .order('created_at', { ascending: false });
+      .eq(`${entityType}_id`, entityId)
+      .order('created_at', { ascending: true });
 
-    if (error) {
-      console.error('Error fetching comments:', error);
-      return { comments: [], userVotes: [] };
-    }
+    if (error) throw error;
 
-    // Fetch user votes if authenticated
-    let userVotes: { user_id: string; comment_id: string; value: 1 | -1 }[] = [];
-    const { data: session } = await supabase.auth.getSession();
-    
-    if (session?.session?.user) {
+    // Get user votes if a userId is provided
+    let userVotes: CommentVote[] = [];
+    if (userId && comments && comments.length > 0) {
       const { data: votes, error: votesError } = await supabase
         .from('comment_votes')
-        .select('user_id, comment_id, value')
-        .eq('user_id', session.session.user.id);
-        
+        .select('*')
+        .eq('user_id', userId)
+        .in(
+          'comment_id',
+          comments.map((c: BaseComment) => c.id)
+        );
+
       if (!votesError && votes) {
-        userVotes = votes as { user_id: string; comment_id: string; value: 1 | -1 }[];
+        userVotes = votes as CommentVote[];
       }
     }
 
-    return { 
-      comments: comments as BaseComment[] || [], 
-      userVotes 
-    };
+    return { comments: comments || [], userVotes };
   } catch (error) {
     console.error('Error fetching comments:', error);
     return { comments: [], userVotes: [] };
   }
+};
+
+// Wrapper function for fetchComments with better naming for the hook
+export const fetchCommentsData = async (
+  entityId: string,
+  entityType: EntityType
+): Promise<{ comments: BaseComment[], userVotes: CommentVote[] }> => {
+  // Get current user if available
+  const { data } = await supabase.auth.getUser();
+  const userId = data?.user?.id;
+  
+  return fetchComments(entityType, entityId, userId);
+};
+
+// This function adds user vote information to comments
+export const appendUserVotesToComments = (
+  comments: BaseComment[],
+  userVotes: CommentVote[]
+): BaseComment[] => {
+  if (!userVotes.length) return comments;
+  
+  // Create a map for faster lookup
+  const votesMap: Record<string, 1 | -1> = {};
+  userVotes.forEach(vote => {
+    votesMap[vote.comment_id] = vote.value;
+  });
+
+  // Append vote information to each comment
+  return comments.map(comment => ({
+    ...comment,
+    userVote: votesMap[comment.id] || 0
+  }));
 };
