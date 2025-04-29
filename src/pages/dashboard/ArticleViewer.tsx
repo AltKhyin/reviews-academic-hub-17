@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -149,7 +150,7 @@ const ArticleViewer: React.FC = () => {
         )}
       </div>
 
-      <div className={`h-[800px] w-full flex flex-col ${isReadingMode ? 'fixed inset-4 z-50 bg-[#111111] p-4 rounded-lg' : ''}`}>
+      <div className={`h-[800px] w-full flex flex-col ${isReadingMode ? 'fixed inset-0 z-50 bg-[#111111] p-4 rounded-lg' : ''}`}>
         {viewMode === 'dual' ? (
           <ResizablePanelGroup 
             id="dual-pdf-container" 
