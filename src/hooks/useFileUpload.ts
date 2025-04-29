@@ -57,9 +57,57 @@ export const useFileUpload = () => {
       setIsUploading(false);
     }
   };
+  
+  const uploadAvatar = async (file: File): Promise<string | null> => {
+    try {
+      setIsUploading(true);
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+      
+      const timestamp = new Date().getTime();
+      const random = Math.floor(Math.random() * 1000);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/${timestamp}-${random}.${fileExt}`;
+      
+      console.log(`Uploading avatar to path: ${fileName}`);
+      
+      const { data, error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+      
+      if (uploadError) {
+        console.error('Error uploading avatar:', uploadError);
+        throw uploadError;
+      }
+      
+      const { data: urlData } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+      
+      console.log('Avatar uploaded successfully:', urlData.publicUrl);
+      return urlData.publicUrl;
+    } catch (error: any) {
+      console.error('Error uploading avatar:', error);
+      toast({
+        title: "Error uploading avatar",
+        description: error.message || "Failed to upload avatar. Please try again.",
+        variant: "destructive",
+      });
+      return null;
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   return {
     uploadFile,
+    uploadAvatar,
     isUploading
   };
 };
