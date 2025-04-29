@@ -13,9 +13,9 @@ export const ExternalLectures = ({ issueId }: ExternalLecturesProps) => {
   const { data: lectures } = useQuery({
     queryKey: ['external-lectures', issueId],
     queryFn: async () => {
-      // Use a safer approach with type assertion
+      // Use a type assertion to work around the TypeScript error
       const { data, error } = await supabase
-        .from('external_lectures')
+        .from('external_lectures' as any)
         .select('*')
         .eq('issue_id', issueId)
         .order('created_at', { ascending: false });

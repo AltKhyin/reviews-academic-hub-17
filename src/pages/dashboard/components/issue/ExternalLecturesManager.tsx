@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FormLabel } from '@/components/ui/form';
@@ -22,7 +21,7 @@ export const ExternalLecturesManager: React.FC<ExternalLecturesManagerProps> = (
     queryKey: ['external-lectures', issueId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('external_lectures')
+        .from('external_lectures' as any)
         .select('*')
         .eq('issue_id', issueId)
         .order('created_at', { ascending: false });
@@ -71,15 +70,15 @@ export const ExternalLecturesManager: React.FC<ExternalLecturesManagerProps> = (
       }
       
       const { error } = await supabase
-        .from('external_lectures')
+        .from('external_lectures' as any)
         .insert({
           issue_id: issueId,
           title: newLecture.title,
-          description: newLecture.description,
-          thumbnail_url: newLecture.thumbnail_url,
+          description: newLecture.description || null,
+          thumbnail_url: newLecture.thumbnail_url || null,
           external_url: newLecture.external_url,
           owner_id: user.id
-        });
+        } as any);
         
       if (error) throw error;
       
@@ -108,7 +107,7 @@ export const ExternalLecturesManager: React.FC<ExternalLecturesManagerProps> = (
   const handleDeleteLecture = async (lectureId: string) => {
     try {
       const { error } = await supabase
-        .from('external_lectures')
+        .from('external_lectures' as any)
         .delete()
         .eq('id', lectureId);
         

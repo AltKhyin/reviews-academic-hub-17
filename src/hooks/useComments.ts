@@ -40,7 +40,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
         }
       }
       
-      // Fixed the deep recursion issue by using a more precise type casting
+      // Fixed the deep recursion issue with casting
       const { data, error } = await supabase
         .from('comments')
         .select(`
@@ -56,7 +56,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return (data || []) as Comment[];
+      return data as Comment[];
     }
   });
 
