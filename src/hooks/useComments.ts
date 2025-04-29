@@ -1,4 +1,5 @@
 
+import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Comment } from '@/types/issue';
@@ -66,7 +67,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' = 
   });
 
   // Organize comments into a hierarchical structure
-  const organizedComments = React.useMemo(() => {
+  const organizedComments = useMemo(() => {
     if (!comments) return [];
     
     const commentMap = new Map<string, Comment & { replies: Comment[] }>();
