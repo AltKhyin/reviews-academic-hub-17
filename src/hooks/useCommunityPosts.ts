@@ -153,34 +153,64 @@ export function useCommunitySettings() {
   return useQuery<CommunitySettings>({
     queryKey: ['community-settings'],
     queryFn: async () => {
-      // Use a raw query to get community settings since it's not in the TypeScript types yet
-      const { data, error } = await supabase
-        .from('community_settings')
-        .select('*')
-        .single();
-      
-      if (error) {
-        if (error.code === 'PGRST116') {
-          // No settings found, create default settings
-          const defaultSettings: Omit<CommunitySettings, 'id' | 'created_at' | 'updated_at'> = {
-            header_image_url: 'https://images.unsplash.com/photo-1618044733300-9472054094ee?q=80&w=2942&auto=format&fit=crop',
-            theme_color: '#1e40af',
-            description: 'Comunidade científica para discussão de evidências médicas',
-            allow_polls: true
-          };
-          
-          const { data: newSettings } = await supabase
-            .from('community_settings')
-            .insert(defaultSettings)
-            .select()
+      try {
+        // Since 'community_settings' isn't in TypeScript types yet, use a workaround
+        // to fetch the data with proper typing
+        const response = await supabase.rpc('get_community_settings');
+        
+        if (response.error && response.error.message.includes('function "get_community_settings" does not exist')) {
+          // If the RPC function doesn't exist, fall back to direct query
+          const { data, error } = await supabase.from('community_settings')
+            .select('*')
             .single();
             
-          return newSettings as CommunitySettings || defaultSettings as CommunitySettings;
+          if (error) {
+            if (error.code === 'PGRST116') { // No rows returned
+              // Create default settings
+              const defaultSettings: Omit<CommunitySettings, 'id'> = {
+                header_image_url: 'https://images.unsplash.com/photo-1618044733300-9472054094ee?q=80&w=2942&auto=format&fit=crop',
+                theme_color: '#1e40af',
+                description: 'Comunidade científica para discussão de evidências médicas',
+                allow_polls: true
+              };
+              
+              // Insert default settings and return them
+              const { data: newSettings, error: insertError } = await fetch(
+                'https://kznasfgubbyinomtetiu.supabase.co/rest/v1/community_settings',
+                {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'apiKey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6bmFzZmd1YmJ5aW5vbXRldGl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2Njg4NzMsImV4cCI6MjA2MTI0NDg3M30.Fx7xl_EA_G8SVVjWyVRu61kWhwkrbFlZsulQz_WKx7Q',
+                    'Authorization': `Bearer ${supabase.auth.getSession()}`
+                  },
+                  body: JSON.stringify(defaultSettings)
+                }
+              ).then(res => res.json());
+              
+              if (insertError) throw insertError;
+              
+              return newSettings || defaultSettings as CommunitySettings;
+            }
+            throw error;
+          }
+          
+          return data as CommunitySettings;
         }
-        throw error;
+        
+        return response.data as CommunitySettings;
+      } catch (error) {
+        console.error("Error fetching community settings:", error);
+        
+        // Return default settings as fallback
+        return {
+          id: 'default',
+          header_image_url: 'https://images.unsplash.com/photo-1618044733300-9472054094ee?q=80&w=2942&auto=format&fit=crop',
+          theme_color: '#1e40af',
+          description: 'Comunidade científica para discussão de evidências médicas',
+          allow_polls: true
+        };
       }
-      
-      return data as CommunitySettings;
     }
   });
 }

@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS public.community_settings (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
--- Add RLS policies
+-- Add Row Level Security
 ALTER TABLE public.community_settings ENABLE ROW LEVEL SECURITY;
 
 -- Everyone can view community settings
