@@ -18,7 +18,7 @@ interface SearchFilterProps {
     journal: string[];
     population: string[];
   };
-  onFilterChange: (filterType: keyof typeof filters, value: any) => void;
+  onFilterChange: (filterType: keyof SearchFilterProps['filters'], value: any) => void;
   facetGroups: Record<string, { title: string, options: string[] }>;
   areaSearchText: string;
   setAreaSearchText: (text: string) => void;
@@ -162,7 +162,7 @@ export const SearchFilters: React.FC<SearchFilterProps> = ({
       
       {Object.values(filters).some(v => Array.isArray(v) && v.length > 0) && (
         <Button variant="outline" size="sm" onClick={() => Object.keys(filters).forEach(key => 
-          onFilterChange(key as keyof typeof filters, Array.isArray(filters[key as keyof typeof filters]) ? [] : filters[key as keyof typeof filters])
+          onFilterChange(key as keyof SearchFilterProps['filters'], Array.isArray(filters[key as keyof typeof filters]) ? [] : filters[key as keyof typeof filters])
         )} className="w-full mt-4">
           Limpar todos os filtros
         </Button>

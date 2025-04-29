@@ -87,7 +87,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
                         <ChevronLeft className="h-4 w-4" />
                       </Button>
                     ) : (
-                      <PaginationLink onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}>
+                      <PaginationLink onClick={() => setCurrentPage(currentPage - 1)}>
                         Anterior
                       </PaginationLink>
                     )}
@@ -100,7 +100,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({
                     </PaginationItem>
                   ))}
                   <PaginationItem>
-                    <PaginationLink onClick={() => setCurrentPage(prev => prev + 1)}>
+                    <PaginationLink onClick={() => setCurrentPage(currentPage + 1)}>
                       Próxima
                     </PaginationLink>
                   </PaginationItem>
