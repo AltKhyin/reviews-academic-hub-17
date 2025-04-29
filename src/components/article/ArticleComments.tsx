@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useComments } from '@/hooks/useComments';
@@ -30,7 +29,7 @@ export const ArticleComments: React.FC<ArticleCommentsProps> = ({ articleId }) =
   };
 
   const handleReply = async (parentId: string, content: string) => {
-    await replyToComment(parentId, content);
+    await replyToComment({ parentId, content });
   };
 
   const handleVote = async (params: { commentId: string; value: 1 | -1 | 0 }) => {
@@ -115,9 +114,9 @@ export const ArticleComments: React.FC<ArticleCommentsProps> = ({ articleId }) =
       
       <Card className="border-white/5 bg-gray-800/10">
         <CardContent className="pt-6 pb-2 px-5">
-          {sortedComments && sortedComments.length > 0 ? (
+          {comments && comments.length > 0 ? (
             <div className="space-y-1">
-              {sortedComments
+              {comments
                 .filter(comment => !comment.parent_id) // Only show top-level comments
                 .map((comment) => (
                   <CommentItem 

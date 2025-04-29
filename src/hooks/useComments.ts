@@ -109,7 +109,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' | 
           comments: commentsData,
           userVotes
         };
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error in useComments query:', error);
         return { comments: [], userVotes: [] };
       }
@@ -186,7 +186,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' | 
       if (!user) throw new Error('Not authenticated');
       
       // Create the comment object with the right fields
-      const commentData: Record<string, any> = {
+      const commentData: any = {
         content,
         user_id: user.id,
         score: 0 // Initialize with 0, will be updated by trigger after upvote
@@ -244,7 +244,7 @@ export const useComments = (entityId: string, entityType: 'article' | 'issue' | 
       if (!user) throw new Error('Not authenticated');
       
       // Create the reply comment object
-      const commentData: Record<string, any> = {
+      const commentData: any = {
         content,
         user_id: user.id,
         parent_id: parentId,

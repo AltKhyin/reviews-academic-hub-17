@@ -174,8 +174,7 @@ export const CommentSection = ({ articleId, issueId, postId }: CommentSectionPro
               comment={comment}
               onDelete={deleteComment}
               onReply={(parentId: string, content: string) => {
-                replyToComment({ parentId, content });
-                return Promise.resolve();
+                return replyToComment({ parentId, content });
               }}
               onVote={voteComment}
               entityType={entityType}
