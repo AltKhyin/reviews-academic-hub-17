@@ -158,7 +158,8 @@ const Community = () => {
         })
       );
       
-      return postsWithPolls as PostData[];
+      // Use type assertion to tell TypeScript this conforms to PostData[]
+      return postsWithPolls as unknown as PostData[];
     },
     enabled: true,
   });
