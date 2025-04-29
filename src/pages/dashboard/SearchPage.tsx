@@ -125,31 +125,31 @@ const SearchPage: React.FC = () => {
       );
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex flex-col min-h-screen bg-background pt-12">
       {/* Logo Header */}
-      <header className="h-24 flex items-center justify-center px-6 pt-6">
+      <header className="flex-none flex items-center justify-center px-6 mb-12">
         <Logo dark={false} size="2xlarge" />
       </header>
 
-      {/* Layout with Filters and Search side by side on desktop, stacked on mobile */}
-      <div className="px-6 py-4 grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Filters Section */}
-        <div className="md:col-span-1">
-          <h3 className="font-medium text-lg mb-2">Filtros</h3>
-          <SearchFilters 
-            filters={filters}
-            onFilterChange={handleFilterChange}
-            facetGroups={facetGroups}
-            areaSearchText={areaSearchText}
-            setAreaSearchText={setAreaSearchText}
-            filteredAreaOptions={filteredAreaOptions}
-          />
-        </div>
+      {/* Centering Container */}
+      <div className="flex-1 flex items-center justify-center px-6">
+        {/* Group Wrapper (Filters + Search) */}
+        <div className="space-y-6 w-full max-w-3xl">
+          {/* Outlined Filters Box */}
+          <div className="border border-gray-700 rounded-lg p-6">
+            <h3 className="font-medium text-lg mb-2">Filtros</h3>
+            <SearchFilters 
+              filters={filters}
+              onFilterChange={handleFilterChange}
+              facetGroups={facetGroups}
+              areaSearchText={areaSearchText}
+              setAreaSearchText={setAreaSearchText}
+              filteredAreaOptions={filteredAreaOptions}
+            />
+          </div>
 
-        {/* Search and Results Section */}
-        <div className="md:col-span-3">
-          {/* Search Header */}
-          <div className="mb-6">
+          {/* Search Header Container */}
+          <div className="py-4">
             <SearchHeader 
               queryText={queryText}
               setQueryText={setQueryText}
@@ -161,22 +161,24 @@ const SearchPage: React.FC = () => {
               queryPreview={queryPreview}
             />
           </div>
-
-          {/* Results area */}
-          <SearchResults 
-            isLoading={isLoading}
-            error={error}
-            searchResults={searchResults}
-            refetch={refetch}
-            sortBy={sortBy}
-            setSortBy={setSortBy}
-            currentPage={currentPage}
-            setCurrentPage={setCurrentPage}
-            clearFilters={clearFilters}
-            filters={filters}
-            searchTags={searchTags}
-          />
         </div>
+      </div>
+
+      {/* Results Area */}
+      <div className="px-6 pb-12">
+        <SearchResults 
+          isLoading={isLoading}
+          error={error}
+          searchResults={searchResults}
+          refetch={refetch}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          clearFilters={clearFilters}
+          filters={filters}
+          searchTags={searchTags}
+        />
       </div>
     </div>
   );
