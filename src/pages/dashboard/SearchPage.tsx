@@ -6,10 +6,6 @@ import Logo from '@/components/common/Logo';
 import { SearchHeader } from '@/components/search/SearchHeader';
 import { SearchFilters } from '@/components/search/SearchFilters';
 import { SearchResults } from '@/components/search/SearchResults';
-import { Card } from '@/components/ui/card';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Button } from '@/components/ui/button';
-import { SlidersHorizontal } from 'lucide-react';
 
 // Define the main SearchPage component
 const SearchPage: React.FC = () => {
@@ -129,56 +125,31 @@ const SearchPage: React.FC = () => {
       );
 
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar - fixed, no overflow */}
-      <aside className="hidden md:block w-64 flex-shrink-0 p-4 bg-background/50 border-r">
-        <h3 className="font-medium text-lg mb-2">Filtros</h3>
-        <SearchFilters 
-          filters={filters}
-          onFilterChange={handleFilterChange}
-          facetGroups={facetGroups}
-          areaSearchText={areaSearchText}
-          setAreaSearchText={setAreaSearchText}
-          filteredAreaOptions={filteredAreaOptions}
-        />
-      </aside>
+    <div className="flex flex-col min-h-screen bg-background">
+      {/* Logo Header */}
+      <header className="h-24 flex items-center justify-center px-6 pt-6">
+        <Logo dark={false} size="2xlarge" />
+      </header>
 
-      {/* Content area */}
-      <div className="flex flex-col flex-1">
-        {/* Logo Header */}
-        <header className="flex-none h-24 flex items-center justify-center">
-          <Logo dark={false} size="2xlarge" />
-        </header>
-
-        {/* Mobile filters button - outside the centering container */}
-        <div className="block md:hidden px-6 mb-4">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="sm" className="w-full">
-                <SlidersHorizontal size={16} className="mr-2" />
-                Filtros
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-[300px] sm:w-[400px]">
-              {/* Sidebar Content for Mobile */}
-              <div className="h-full py-4">
-                <h3 className="font-bold mb-4">Filtros</h3>
-                <SearchFilters 
-                  filters={filters}
-                  onFilterChange={handleFilterChange}
-                  facetGroups={facetGroups}
-                  areaSearchText={areaSearchText}
-                  setAreaSearchText={setAreaSearchText}
-                  filteredAreaOptions={filteredAreaOptions}
-                />
-              </div>
-            </SheetContent>
-          </Sheet>
+      {/* Layout with Filters and Search side by side on desktop, stacked on mobile */}
+      <div className="px-6 py-4 grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* Filters Section */}
+        <div className="md:col-span-1">
+          <h3 className="font-medium text-lg mb-2">Filtros</h3>
+          <SearchFilters 
+            filters={filters}
+            onFilterChange={handleFilterChange}
+            facetGroups={facetGroups}
+            areaSearchText={areaSearchText}
+            setAreaSearchText={setAreaSearchText}
+            filteredAreaOptions={filteredAreaOptions}
+          />
         </div>
 
-        {/* Search Card - centered vertically */}
-        <div className="flex-1 flex items-center justify-center px-6">
-          <Card className="p-6 mb-6 w-full max-w-3xl">
+        {/* Search and Results Section */}
+        <div className="md:col-span-3">
+          {/* Search Header */}
+          <div className="mb-6">
             <SearchHeader 
               queryText={queryText}
               setQueryText={setQueryText}
@@ -189,11 +160,9 @@ const SearchPage: React.FC = () => {
               clearFilters={clearFilters}
               queryPreview={queryPreview}
             />
-          </Card>
-        </div>
+          </div>
 
-        {/* Results area */}
-        <div className="mb-6 px-6">
+          {/* Results area */}
           <SearchResults 
             isLoading={isLoading}
             error={error}
