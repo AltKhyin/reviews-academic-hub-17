@@ -25,11 +25,11 @@ CREATE POLICY "Administrators can update community settings"
   FOR UPDATE
   USING (EXISTS (
     SELECT 1 FROM public.admin_users
-    WHERE id = auth.uid()
+    WHERE user_id = auth.uid()
   ))
   WITH CHECK (EXISTS (
     SELECT 1 FROM public.admin_users
-    WHERE id = auth.uid()
+    WHERE user_id = auth.uid()
   ));
 
 -- Only administrators can insert community settings
@@ -38,7 +38,7 @@ CREATE POLICY "Administrators can insert community settings"
   FOR INSERT
   WITH CHECK (EXISTS (
     SELECT 1 FROM public.admin_users
-    WHERE id = auth.uid()
+    WHERE user_id = auth.uid()
   ));
 
 -- Create an index for faster lookups

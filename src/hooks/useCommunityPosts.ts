@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { PostData } from '@/types/community';
+import { CommunitySettings, PostData } from '@/types/community';
 
 export function useCommunityPosts(activeTab: string, searchTerm: string) {
   const { user } = useAuth();
@@ -150,9 +150,10 @@ export function usePostFlairs() {
 }
 
 export function useCommunitySettings() {
-  return useQuery({
+  return useQuery<CommunitySettings>({
     queryKey: ['community-settings'],
     queryFn: async () => {
+      // Use a raw query to get community settings since it's not in the TypeScript types yet
       const { data, error } = await supabase
         .from('community_settings')
         .select('*')
@@ -161,7 +162,7 @@ export function useCommunitySettings() {
       if (error) {
         if (error.code === 'PGRST116') {
           // No settings found, create default settings
-          const defaultSettings = {
+          const defaultSettings: Omit<CommunitySettings, 'id' | 'created_at' | 'updated_at'> = {
             header_image_url: 'https://images.unsplash.com/photo-1618044733300-9472054094ee?q=80&w=2942&auto=format&fit=crop',
             theme_color: '#1e40af',
             description: 'Comunidade científica para discussão de evidências médicas',
@@ -174,12 +175,12 @@ export function useCommunitySettings() {
             .select()
             .single();
             
-          return newSettings || defaultSettings;
+          return newSettings as CommunitySettings || defaultSettings as CommunitySettings;
         }
         throw error;
       }
       
-      return data;
+      return data as CommunitySettings;
     }
   });
 }

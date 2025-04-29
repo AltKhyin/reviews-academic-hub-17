@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { CommunitySettings } from '@/types/community';
 
 export const CommunityHeader: React.FC = () => {
   const { user } = useAuth();
@@ -30,8 +31,8 @@ export const CommunityHeader: React.FC = () => {
     const checkAdminStatus = async () => {
       const { data } = await supabase
         .from('admin_users')
-        .select('id')
-        .eq('id', user.id)
+        .select('user_id')
+        .eq('user_id', user.id)
         .maybeSingle();
         
       setIsAdmin(!!data);
@@ -50,8 +51,10 @@ export const CommunityHeader: React.FC = () => {
   };
   
   const handleSave = async () => {
+    if (!settings) return;
+    
     try {
-      let imageUrl = settings?.header_image_url;
+      let imageUrl = settings.header_image_url;
       
       if (headerImageFile) {
         const uploadedUrl = await uploadFile(headerImageFile, 'community');
@@ -63,7 +66,7 @@ export const CommunityHeader: React.FC = () => {
       const { error } = await supabase
         .from('community_settings')
         .update({ header_image_url: imageUrl })
-        .eq('id', settings?.id);
+        .eq('id', settings.id);
         
       if (error) throw error;
       
@@ -101,7 +104,7 @@ export const CommunityHeader: React.FC = () => {
           <h1 className="text-4xl font-serif text-white font-semibold drop-shadow-lg">Comunidade</h1>
         </div>
         
-        {(isAdmin) && (
+        {isAdmin && (
           <Button
             variant="secondary"
             size="sm"

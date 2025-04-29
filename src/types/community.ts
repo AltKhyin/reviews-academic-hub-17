@@ -42,3 +42,13 @@ export interface PostData {
   } | null;
   poll: Poll | null;
 }
+
+export interface CommunitySettings {
+  id: string;
+  header_image_url: string;
+  theme_color: string;
+  description: string;
+  allow_polls: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
