@@ -1,6 +1,7 @@
+
 import React, { useEffect, useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import Sidebar from '../components/navigation/Sidebar';
+import { Sidebar } from '../components/navigation/Sidebar';
 import { supabase } from '@/integrations/supabase/client';
 import { SidebarProvider, useSidebar } from '@/components/ui/sidebar';
 import { useAuth } from '@/contexts/AuthContext';

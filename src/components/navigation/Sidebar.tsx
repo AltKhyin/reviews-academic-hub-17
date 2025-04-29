@@ -1,8 +1,9 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { Logo } from '@/components/common/Logo';
+import Logo from '@/components/common/Logo';
 import {
   Home,
   File,
@@ -111,3 +112,5 @@ export const Sidebar = () => {
     </div>
   );
 };
+
+export default Sidebar;

@@ -8,7 +8,7 @@ interface LogoProps {
   size?: 'small' | 'medium' | 'large' | 'xlarge';
 }
 
-const Logo = ({ 
+export const Logo = ({ 
   dark = false, 
   showSubtitle = false, 
   collapsed = false,

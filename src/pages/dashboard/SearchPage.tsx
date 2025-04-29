@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -19,7 +18,8 @@ import {
 import { Pagination, PaginationContent, PaginationItem, PaginationLink } from "@/components/ui/pagination";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Link } from 'react-router-dom';
-import { Toggle, ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Toggle } from "@/components/ui/toggle";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 interface SearchFilter {
