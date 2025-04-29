@@ -7,7 +7,7 @@ import { PostData } from '@/types/community';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowUp, ArrowDown, MessageSquare, Trash, AlertTriangle, BookmarkPlus, Flag } from 'lucide-react';
+import { ArrowUp, ArrowDown, MessageSquare, Trash, BookmarkPlus, Flag } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { PostContent } from '@/components/community/PostContent';
@@ -21,8 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
+import { ArticleComments } from '@/components/article/ArticleComments';
 import { useNavigate } from 'react-router-dom';
 
 interface PostProps {
@@ -41,9 +40,7 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isBookmarking, setIsBookmarking] = useState(false);
-  const [showCommentDialog, setShowCommentDialog] = useState(false);
-  const [commentContent, setCommentContent] = useState('');
-  const [isCommentSubmitting, setIsCommentSubmitting] = useState(false);
+  const [showComments, setShowComments] = useState(false);
 
   // Check if user is admin
   useEffect(() => {
@@ -270,61 +267,12 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
     setShowReportDialog(false);
   };
 
-  const handleCommentSubmit = async () => {
-    if (!user) {
-      toast({
-        title: "Autenticação necessária",
-        description: "Faça login para comentar em publicações.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!commentContent.trim()) {
-      toast({
-        title: "Comentário vazio",
-        description: "Por favor, escreva algo para comentar.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      setIsCommentSubmitting(true);
-      
-      // Create comment in database
-      const { error } = await supabase
-        .from('comments')
-        .insert({
-          content: commentContent,
-          user_id: user.id,
-          post_id: post.id
-        });
-        
-      if (error) throw error;
-      
-      toast({
-        title: "Comentário adicionado",
-        description: "Seu comentário foi publicado com sucesso.",
-      });
-      
-      setCommentContent('');
-      setShowCommentDialog(false);
-      
-    } catch (error) {
-      console.error('Error posting comment:', error);
-      toast({
-        title: "Erro ao comentar",
-        description: "Não foi possível publicar seu comentário.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsCommentSubmitting(false);
-    }
+  const toggleComments = () => {
+    setShowComments(!showComments);
   };
   
   return (
-    <div className="bg-gray-800/10 rounded-lg border border-gray-700/30 p-4">
+    <div className="bg-gray-800/10 rounded-lg border border-gray-700/30 p-4 mb-6">
       <div className="flex items-start space-x-4">
         {/* Post content */}
         <div className="flex-1 min-w-0">
@@ -370,7 +318,7 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
           
           <div className="flex mt-4 space-x-2 items-center">
             {/* Voting buttons side by side */}
-            <div className="flex items-center space-x-2 mr-3">
+            <div className="flex items-center space-x-3 mr-3">
               <Button
                 variant="ghost"
                 size="sm"
@@ -399,8 +347,8 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
             <Button 
               variant="ghost" 
               size="sm" 
-              className="text-gray-400 hover:text-white"
-              onClick={() => setShowCommentDialog(true)}
+              className={`text-gray-400 hover:text-white ${showComments ? 'text-white' : ''}`}
+              onClick={toggleComments}
             >
               <MessageSquare className="h-4 w-4 mr-1" />
               Comentários
@@ -434,6 +382,13 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
           </div>
         </div>
       </div>
+
+      {/* Comments Section (ArticleComments) - visible when showComments is true */}
+      {showComments && (
+        <div className="mt-4 pt-4 border-t border-gray-700/30">
+          <ArticleComments articleId={post.id} />
+        </div>
+      )}
 
       {/* Delete confirmation dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
@@ -471,40 +426,6 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Comment dialog */}
-      <Dialog open={showCommentDialog} onOpenChange={setShowCommentDialog}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Adicionar comentário</DialogTitle>
-            <DialogDescription>
-              Escreva seu comentário sobre esta publicação
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <Textarea 
-              placeholder="Escreva seu comentário..."
-              value={commentContent}
-              onChange={(e) => setCommentContent(e.target.value)}
-              rows={4}
-              className="resize-none"
-            />
-          </div>
-          
-          <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={() => setShowCommentDialog(false)}>
-              Cancelar
-            </Button>
-            <Button 
-              onClick={handleCommentSubmit}
-              disabled={isCommentSubmitting || !commentContent.trim()}
-            >
-              {isCommentSubmitting ? 'Enviando...' : 'Comentar'}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

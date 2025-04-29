@@ -129,9 +129,9 @@ const SearchPage: React.FC = () => {
       );
 
   return (
-    <main className="flex h-screen">
-      {/* Sidebar - no overflow */}
-      <aside className="hidden md:block w-64 p-4 bg-background/50 border-r">
+    <div className="flex h-screen">
+      {/* Sidebar - fixed, no overflow */}
+      <aside className="hidden md:block w-64 flex-shrink-0 p-4 bg-background/50 border-r">
         <SearchFilters 
           filters={filters}
           onFilterChange={handleFilterChange}
@@ -143,7 +143,7 @@ const SearchPage: React.FC = () => {
       </aside>
 
       {/* Content with scrollable area */}
-      <div className="flex flex-col flex-1 overflow-y-auto">
+      <main className="flex flex-col flex-1 overflow-y-auto">
         {/* Logo Header */}
         <header className="flex-none h-24 flex items-center justify-center">
           <Logo dark={false} size="2xlarge" />
@@ -212,8 +212,8 @@ const SearchPage: React.FC = () => {
             )}
           </div>
         </section>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 };
 
