@@ -154,51 +154,59 @@ export function useCommunitySettings() {
     queryKey: ['community-settings'],
     queryFn: async () => {
       try {
-        // Since 'community_settings' isn't in TypeScript types yet, use a workaround
-        // to fetch the data with proper typing
-        const response = await supabase.rpc('get_community_settings');
-        
-        if (response.error && response.error.message.includes('function "get_community_settings" does not exist')) {
-          // If the RPC function doesn't exist, fall back to direct query
-          const { data, error } = await supabase.from('community_settings')
-            .select('*')
-            .single();
-            
-          if (error) {
-            if (error.code === 'PGRST116') { // No rows returned
-              // Create default settings
-              const defaultSettings: Omit<CommunitySettings, 'id'> = {
-                header_image_url: 'https://images.unsplash.com/photo-1618044733300-9472054094ee?q=80&w=2942&auto=format&fit=crop',
-                theme_color: '#1e40af',
-                description: 'Comunidade científica para discussão de evidências médicas',
-                allow_polls: true
-              };
-              
-              // Insert default settings and return them
-              const { data: newSettings, error: insertError } = await fetch(
-                'https://kznasfgubbyinomtetiu.supabase.co/rest/v1/community_settings',
-                {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'apiKey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6bmFzZmd1YmJ5aW5vbXRldGl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2Njg4NzMsImV4cCI6MjA2MTI0NDg3M30.Fx7xl_EA_G8SVVjWyVRu61kWhwkrbFlZsulQz_WKx7Q',
-                    'Authorization': `Bearer ${supabase.auth.getSession()}`
-                  },
-                  body: JSON.stringify(defaultSettings)
-                }
-              ).then(res => res.json());
-              
-              if (insertError) throw insertError;
-              
-              return newSettings || defaultSettings as CommunitySettings;
+        // Since the database table might not be in the TypeScript types yet,
+        // use REST API directly with proper typing
+        const response = await fetch(
+          'https://kznasfgubbyinomtetiu.supabase.co/rest/v1/community_settings?select=*&limit=1',
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'apiKey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6bmFzZmd1YmJ5aW5vbXRldGl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2Njg4NzMsImV4cCI6MjA2MTI0NDg3M30.Fx7xl_EA_G8SVVjWyVRu61kWhwkrbFlZsulQz_WKx7Q',
+              'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || ''}`
             }
-            throw error;
           }
-          
-          return data as CommunitySettings;
+        );
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch community settings: ${response.statusText}`);
         }
         
-        return response.data as CommunitySettings;
+        const settings = await response.json();
+        
+        // If no settings found, return default
+        if (!settings || settings.length === 0) {
+          // Create default settings
+          const defaultSettings: Omit<CommunitySettings, 'id' | 'created_at' | 'updated_at'> = {
+            header_image_url: 'https://images.unsplash.com/photo-1618044733300-9472054094ee?q=80&w=2942&auto=format&fit=crop',
+            theme_color: '#1e40af',
+            description: 'Comunidade científica para discussão de evidências médicas',
+            allow_polls: true
+          };
+          
+          // Insert default settings
+          const insertResponse = await fetch(
+            'https://kznasfgubbyinomtetiu.supabase.co/rest/v1/community_settings',
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'apiKey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6bmFzZmd1YmJ5aW5vbXRldGl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2Njg4NzMsImV4cCI6MjA2MTI0NDg3M30.Fx7xl_EA_G8SVVjWyVRu61kWhwkrbFlZsulQz_WKx7Q',
+                'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || ''}`
+              },
+              body: JSON.stringify(defaultSettings)
+            }
+          );
+          
+          if (!insertResponse.ok) {
+            throw new Error(`Failed to create default community settings: ${insertResponse.statusText}`);
+          }
+          
+          const newSettings = await insertResponse.json();
+          return newSettings as CommunitySettings;
+        }
+        
+        return settings[0] as CommunitySettings;
       } catch (error) {
         console.error("Error fetching community settings:", error);
         
@@ -208,7 +216,9 @@ export function useCommunitySettings() {
           header_image_url: 'https://images.unsplash.com/photo-1618044733300-9472054094ee?q=80&w=2942&auto=format&fit=crop',
           theme_color: '#1e40af',
           description: 'Comunidade científica para discussão de evidências médicas',
-          allow_polls: true
+          allow_polls: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         };
       }
     }

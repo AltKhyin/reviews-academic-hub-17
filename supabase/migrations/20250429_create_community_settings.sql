@@ -2,8 +2,8 @@
 -- Create the community_settings table
 CREATE TABLE IF NOT EXISTS public.community_settings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  header_image_url TEXT,
-  theme_color TEXT,
+  header_image_url TEXT NOT NULL,
+  theme_color TEXT NOT NULL,
   description TEXT,
   allow_polls BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),

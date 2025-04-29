@@ -49,6 +49,6 @@ export interface CommunitySettings {
   theme_color: string;
   description: string;
   allow_polls: boolean;
-  created_at?: string;
-  updated_at?: string;
+  created_at: string;
+  updated_at: string;
 }

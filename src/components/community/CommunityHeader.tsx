@@ -63,7 +63,7 @@ export const CommunityHeader: React.FC = () => {
         }
       }
       
-      // Use fetch API directly since Supabase TypeScript doesn't know about the table yet
+      // Use fetch API directly for consistency with the hook
       const response = await fetch(
         `https://kznasfgubbyinomtetiu.supabase.co/rest/v1/community_settings?id=eq.${settings.id}`,
         {
