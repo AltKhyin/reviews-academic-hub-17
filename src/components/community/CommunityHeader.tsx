@@ -6,7 +6,7 @@ import { useFileUpload } from '@/hooks/useFileUpload';
 import { useToast } from '@/hooks/use-toast';
 import { useCommunitySettings } from '@/hooks/useCommunityPosts';
 import { Button } from '@/components/ui/button';
-import { Pencil, Image } from 'lucide-react';
+import { Pencil, Image, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -23,6 +23,7 @@ export const CommunityHeader: React.FC = () => {
   const { toast } = useToast();
   
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
   // Check if user is an admin
   React.useEffect(() => {
@@ -54,14 +55,21 @@ export const CommunityHeader: React.FC = () => {
     if (!settings) return;
     
     try {
+      setIsSaving(true);
       let imageUrl = settings.header_image_url;
       
       if (headerImageFile) {
+        console.log("Uploading header image file...", headerImageFile.name);
         const uploadedUrl = await uploadFile(headerImageFile, 'community');
         if (uploadedUrl) {
+          console.log("Upload successful, URL:", uploadedUrl);
           imageUrl = uploadedUrl;
+        } else {
+          throw new Error("Failed to upload image");
         }
       }
+      
+      console.log("Updating community settings with new header:", imageUrl);
       
       // Use fetch API directly for consistency with the hook
       const response = await fetch(
@@ -78,11 +86,15 @@ export const CommunityHeader: React.FC = () => {
       );
       
       if (!response.ok) {
+        console.error("Error response:", await response.text());
         throw new Error(`Error updating settings: ${response.statusText}`);
       }
       
       await refetch();
       setIsEditing(false);
+      setHeaderImageFile(null);
+      setHeaderImagePreview(null);
+      
       toast({
         title: "Configurações atualizadas",
         description: "As configurações da comunidade foram atualizadas com sucesso.",
@@ -94,6 +106,8 @@ export const CommunityHeader: React.FC = () => {
         description: error.message || "Ocorreu um erro ao atualizar as configurações.",
         variant: "destructive",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
   
@@ -166,15 +180,35 @@ export const CommunityHeader: React.FC = () => {
                   onChange={handleImageChange}
                   className="hidden"
                 />
+                {headerImageFile && (
+                  <p className="text-sm text-green-500">
+                    Imagem selecionada: {headerImageFile.name}
+                  </p>
+                )}
               </div>
             </div>
             
             <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsEditing(false)}>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setIsEditing(false);
+                  setHeaderImageFile(null);
+                  setHeaderImagePreview(null);
+                }}
+              >
                 Cancelar
               </Button>
-              <Button onClick={handleSave} disabled={isUploading}>
-                {isUploading ? 'Salvando...' : 'Salvar'}
+              <Button 
+                onClick={handleSave} 
+                disabled={isUploading || isSaving}
+              >
+                {(isUploading || isSaving) ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : 'Salvar'}
               </Button>
             </div>
           </div>

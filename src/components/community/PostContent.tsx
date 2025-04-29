@@ -49,6 +49,8 @@ export const PostContent: React.FC<PostContentProps> = ({ post, onVoteChange }) 
               src={post.video_url} 
               controls 
               className="rounded-md w-full max-h-96" 
+              preload="metadata"
+              onError={(e) => console.error('Video loading error:', e)}
             />
           )}
         </div>

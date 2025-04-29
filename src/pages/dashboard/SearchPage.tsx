@@ -129,14 +129,14 @@ const SearchPage: React.FC = () => {
       );
 
   return (
-    <div className="flex flex-col h-full">
+    <main className="flex flex-col h-screen overflow-hidden">
       {/* Logo Header - Equal spacing from top */}
       <header className="flex-none h-24 flex items-center justify-center">
         <Logo dark={false} size="2xlarge" />
       </header>
 
       {/* Search area - centered vertically */}
-      <section className="flex-1 flex items-center justify-center px-4">
+      <section className="flex-1 flex items-center justify-center px-6 overflow-y-auto">
         <div className="w-full max-w-5xl">
           {/* Search Header Component in Card */}
           <Card className="p-6 mb-6">
@@ -178,50 +178,48 @@ const SearchPage: React.FC = () => {
               queryPreview={queryPreview}
             />
           </Card>
-        </div>
-      </section>
 
-      {/* Results area - at the bottom, only appears after search */}
-      {searchResults && searchResults.length > 0 && (
-        <section className="flex-none">
-          <div className="w-full max-w-5xl mx-auto">
-            {/* Filters and Results Area */}
-            <div className="flex gap-6">
-              {/* Desktop Sidebar */}
-              <div className="hidden md:block w-1/4">
-                <Card className="p-4">
-                  <SearchFilters 
+          {/* Results area - only appears after search */}
+          {searchResults && searchResults.length > 0 && (
+            <div className="mb-6">
+              {/* Filters and Results Area */}
+              <div className="flex gap-6">
+                {/* Desktop Sidebar */}
+                <aside className="hidden md:block w-1/4">
+                  <Card className="p-4">
+                    <SearchFilters 
+                      filters={filters}
+                      onFilterChange={handleFilterChange}
+                      facetGroups={facetGroups}
+                      areaSearchText={areaSearchText}
+                      setAreaSearchText={setAreaSearchText}
+                      filteredAreaOptions={filteredAreaOptions}
+                    />
+                  </Card>
+                </aside>
+
+                {/* Search Results */}
+                <div className="flex-1">
+                  <SearchResults 
+                    isLoading={isLoading}
+                    error={error}
+                    searchResults={searchResults}
+                    refetch={refetch}
+                    sortBy={sortBy}
+                    setSortBy={setSortBy}
+                    currentPage={currentPage}
+                    setCurrentPage={setCurrentPage}
+                    clearFilters={clearFilters}
                     filters={filters}
-                    onFilterChange={handleFilterChange}
-                    facetGroups={facetGroups}
-                    areaSearchText={areaSearchText}
-                    setAreaSearchText={setAreaSearchText}
-                    filteredAreaOptions={filteredAreaOptions}
+                    searchTags={searchTags}
                   />
-                </Card>
-              </div>
-
-              {/* Search Results */}
-              <div className="flex-1">
-                <SearchResults 
-                  isLoading={isLoading}
-                  error={error}
-                  searchResults={searchResults}
-                  refetch={refetch}
-                  sortBy={sortBy}
-                  setSortBy={setSortBy}
-                  currentPage={currentPage}
-                  setCurrentPage={setCurrentPage}
-                  clearFilters={clearFilters}
-                  filters={filters}
-                  searchTags={searchTags}
-                />
+                </div>
               </div>
             </div>
-          </div>
-        </section>
-      )}
-    </div>
+          )}
+        </div>
+      </section>
+    </main>
   );
 };
 

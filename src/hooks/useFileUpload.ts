@@ -16,17 +16,33 @@ export const useFileUpload = () => {
       const fileName = `${timestamp}-${random}.${fileExt}`;
       const filePath = `${folder}/${fileName}`;
 
-      console.log(`Uploading file ${fileName} to ${folder}`);
+      console.log(`Starting upload for file ${fileName} to ${folder}`);
       
-      // Check if bucket exists before upload
-      const { data: buckets } = await supabase.storage.listBuckets();
+      // Check if bucket exists
+      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+      
+      if (bucketsError) {
+        console.error('Error listing buckets:', bucketsError);
+        throw bucketsError;
+      }
+      
+      // Find or create the issues bucket
       const bucketExists = buckets?.some(bucket => bucket.name === 'issues');
       
       if (!bucketExists) {
-        console.error('Bucket "issues" not found');
-        throw new Error('Storage bucket not found. Please contact support.');
+        console.log('Bucket "issues" not found, creating it...');
+        const { error: createBucketError } = await supabase.storage.createBucket('issues', {
+          public: true
+        });
+        
+        if (createBucketError) {
+          console.error('Error creating bucket:', createBucketError);
+          throw createBucketError;
+        }
       }
       
+      // Upload the file
+      console.log(`Uploading file to path: ${filePath}`);
       const { data, error: uploadError } = await supabase.storage
         .from('issues')
         .upload(filePath, file, {
@@ -39,11 +55,12 @@ export const useFileUpload = () => {
         throw uploadError;
       }
 
+      console.log('File uploaded successfully, getting public URL');
       const { data: urlData } = supabase.storage
         .from('issues')
         .getPublicUrl(filePath);
 
-      console.log('File uploaded successfully:', urlData.publicUrl);
+      console.log('File uploaded successfully, public URL:', urlData.publicUrl);
       return urlData.publicUrl;
     } catch (error: any) {
       console.error('Error uploading file:', error);
