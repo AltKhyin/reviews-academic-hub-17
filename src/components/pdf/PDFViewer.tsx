@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
-import { Maximize } from 'lucide-react';
+import { Maximize, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useSidebar } from '@/components/ui/sidebar';
 
 interface PDFViewerProps {
   url?: string;
@@ -15,6 +16,8 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   fallbackContent
 }) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isReadingMode, setIsReadingMode] = useState(false);
+  const { setOpen: setSidebarOpen } = useSidebar();
   
   const handleFullScreen = () => {
     const iframe = document.getElementById(`pdf-iframe-${title.replace(/\s+/g, '-')}`) as HTMLIFrameElement;
@@ -30,15 +33,30 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
     setIsFullScreen(!isFullScreen);
   };
   
+  const handleReadingMode = () => {
+    setIsReadingMode(!isReadingMode);
+    
+    // Automatically hide sidebar when entering reading mode
+    if (!isReadingMode) {
+      setSidebarOpen(false);
+    }
+  };
+  
   return (
-    <div className="bg-[#1a1a1a] rounded-lg p-6 shadow-lg card-elevation h-full flex flex-col overflow-visible">
+    <div className={`bg-[#1a1a1a] rounded-lg p-6 shadow-lg card-elevation h-full flex flex-col overflow-visible ${isReadingMode ? 'fixed inset-4 z-50' : ''}`}>
       <div className="mb-4 flex justify-between items-center">
         <h2 className="font-serif text-xl font-medium">{title}</h2>
         {url && url !== 'placeholder.pdf' && (
-          <Button variant="ghost" size="sm" onClick={handleFullScreen}>
-            <Maximize size={16} className="mr-1" />
-            <span>Tela cheia</span>
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="sm" onClick={handleReadingMode}>
+              <BookOpen size={16} className="mr-1" />
+              <span>Modo de leitura</span>
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleFullScreen}>
+              <Maximize size={16} className="mr-1" />
+              <span>Tela cheia</span>
+            </Button>
+          </div>
         )}
       </div>
       <div className="w-full flex-grow bg-[#121212] rounded-md overflow-hidden" style={{ height: 'calc(100% - 60px)' }}>
@@ -57,6 +75,19 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
           </div>
         )}
       </div>
+      
+      {isReadingMode && (
+        <div className="absolute top-3 right-3">
+          <Button 
+            variant="secondary" 
+            size="sm" 
+            onClick={handleReadingMode}
+            className="bg-gray-700/60 hover:bg-gray-600"
+          >
+            Fechar
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

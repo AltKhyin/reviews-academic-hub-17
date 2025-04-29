@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Maximize, BookOpen } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Issue } from '@/types/issue';
@@ -13,11 +12,15 @@ import { RecommendedArticles } from '@/components/article/RecommendedArticles';
 import { ExternalLectures } from '@/components/article/ExternalLectures';
 import { ViewModeSwitcher } from '@/components/article/ViewModeSwitcher';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { useSidebar } from '@/components/ui/sidebar';
 
 const ArticleViewer: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'dual' | 'review' | 'original'>('review');
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isReadingMode, setIsReadingMode] = useState(false);
+  const { setOpen: setSidebarOpen } = useSidebar();
   
   // Enable scrolling on the main document
   useEffect(() => {
@@ -55,6 +58,29 @@ const ArticleViewer: React.FC = () => {
       errorMessage: "Couldn't load the article"
     }
   });
+
+  const handleFullScreenDual = () => {
+    const container = document.getElementById('dual-pdf-container');
+    if (container) {
+      if (!document.fullscreenElement) {
+        container.requestFullscreen().catch(err => {
+          console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+        });
+      } else {
+        document.exitFullscreen();
+      }
+    }
+    setIsFullScreen(!isFullScreen);
+  };
+  
+  const handleReadingMode = () => {
+    setIsReadingMode(!isReadingMode);
+    
+    // Automatically hide sidebar when entering reading mode
+    if (!isReadingMode) {
+      setSidebarOpen(false);
+    }
+  };
 
   if (isLoading) {
     return <div className="p-8 text-center">Carregando...</div>;
@@ -102,35 +128,72 @@ const ArticleViewer: React.FC = () => {
         </div>
       </Card>
 
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-between mb-4">
         <ViewModeSwitcher 
           viewMode={viewMode} 
           onViewModeChange={setViewMode} 
           hasOriginal={hasOriginalArticle} 
         />
+        
+        {viewMode === 'dual' && hasOriginalArticle && (
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleReadingMode}>
+              <BookOpen size={16} className="mr-1" />
+              <span>Modo de leitura</span>
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleFullScreenDual}>
+              <Maximize size={16} className="mr-1" />
+              <span>Tela cheia</span>
+            </Button>
+          </div>
+        )}
       </div>
 
-      <div className="h-[800px] w-full flex flex-col">
+      <div className={`h-[800px] w-full flex flex-col ${isReadingMode ? 'fixed inset-4 z-50 bg-[#111111] p-4 rounded-lg' : ''}`}>
         {viewMode === 'dual' ? (
-          <ResizablePanelGroup direction="horizontal" className="min-h-[800px] w-full flex-grow">
+          <ResizablePanelGroup 
+            id="dual-pdf-container" 
+            direction="horizontal" 
+            className={`min-h-[800px] w-full flex-grow ${isReadingMode ? 'h-full' : ''}`}
+          >
             <ResizablePanel defaultSize={50} className="min-h-[800px]">
-              <PDFViewer 
-                url={issue.pdf_url} 
-                title="Revisão"
-                fallbackContent={
-                  <p>PDF de revisão não disponível</p>
-                }
-              />
+              <div className="h-full bg-[#1a1a1a] rounded-lg p-6 shadow-lg card-elevation flex flex-col">
+                <h2 className="font-serif text-xl font-medium mb-4">Revisão</h2>
+                <div className="w-full flex-grow bg-[#121212] rounded-md overflow-hidden">
+                  {issue.pdf_url && issue.pdf_url !== 'placeholder.pdf' ? (
+                    <iframe
+                      src={issue.pdf_url}
+                      className="w-full h-full rounded-md"
+                      title="Revisão"
+                      style={{ display: 'block' }} // Ensures proper rendering in all browsers
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full p-4">
+                      <p className="text-gray-400 mb-4 text-center">PDF de revisão não disponível</p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </ResizablePanel>
             <ResizableHandle withHandle />
             <ResizablePanel defaultSize={50} className="min-h-[800px]">
-              <PDFViewer 
-                url={issue.article_pdf_url || ''} 
-                title="Artigo Original"
-                fallbackContent={
-                  <p>PDF do artigo original não disponível</p>
-                }
-              />
+              <div className="h-full bg-[#1a1a1a] rounded-lg p-6 shadow-lg card-elevation flex flex-col">
+                <h2 className="font-serif text-xl font-medium mb-4">Artigo Original</h2>
+                <div className="w-full flex-grow bg-[#121212] rounded-md overflow-hidden">
+                  {issue.article_pdf_url && issue.article_pdf_url !== 'placeholder.pdf' ? (
+                    <iframe
+                      src={issue.article_pdf_url}
+                      className="w-full h-full rounded-md"
+                      title="Artigo Original"
+                      style={{ display: 'block' }} // Ensures proper rendering in all browsers
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full p-4">
+                      <p className="text-gray-400 mb-4 text-center">PDF do artigo original não disponível</p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </ResizablePanel>
           </ResizablePanelGroup>
         ) : (
@@ -142,6 +205,19 @@ const ArticleViewer: React.FC = () => {
                 <p>{viewMode === 'review' ? "PDF de revisão" : "PDF do artigo original"} não disponível</p>
               }
             />
+          </div>
+        )}
+        
+        {isReadingMode && (
+          <div className="absolute top-3 right-3 z-50">
+            <Button 
+              variant="secondary" 
+              size="sm" 
+              onClick={handleReadingMode}
+              className="bg-gray-700/60 hover:bg-gray-600"
+            >
+              Fechar
+            </Button>
           </div>
         )}
       </div>

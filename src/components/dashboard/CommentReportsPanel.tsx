@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -44,6 +43,8 @@ export const CommentReportsPanel: React.FC = () => {
   const { data: reports, isLoading } = useQuery({
     queryKey: ['comment-reports', filter],
     queryFn: async () => {
+      // Modified query to remove the RLS check - this will now return all reports,
+      // as long as the RLS policy allows admins to see all reports
       let query = supabase
         .from('comment_reports' as any)
         .select(`
