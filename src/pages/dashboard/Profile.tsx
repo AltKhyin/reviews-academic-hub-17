@@ -1,9 +1,10 @@
+
 import React, { useState } from 'react';
 import { useSidebar } from '@/components/ui/sidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { useFileUpload } from '@/hooks/useFileUpload';
 
 // Mock user profile data for demo sections
 const mockData = {
@@ -28,8 +29,8 @@ const ActivityIcon = ({ type }: { type: string }) => {
 const Profile: React.FC = () => {
   const { state } = useSidebar();
   const { user, profile, updateProfile, refreshProfile } = useAuth();
-  const { uploadAvatar, isUploading } = useFileUpload();
   const isCollapsed = state === 'collapsed';
+  const [uploading, setUploading] = useState(false);
 
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files || !event.target.files.length || !user) {
@@ -37,14 +38,40 @@ const Profile: React.FC = () => {
     }
     
     try {
+      setUploading(true);
+      
       const file = event.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `${fileName}`;
       
-      // Upload avatar using the uploadAvatar function
-      const publicUrl = await uploadAvatar(file);
+      // Check if bucket exists before upload
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const bucketExists = buckets?.some(bucket => bucket.name === 'avatars');
       
-      if (!publicUrl) {
-        throw new Error("Failed to get public URL for the uploaded avatar");
+      if (!bucketExists) {
+        console.error('Bucket "avatars" not found');
+        try {
+          // Try to create the bucket if it doesn't exist
+          await supabase.storage.createBucket('avatars', { public: true });
+          console.log('Created avatars bucket');
+        } catch (bucketError) {
+          console.error('Failed to create bucket:', bucketError);
+          throw new Error('Storage bucket not available. Please contact support.');
+        }
       }
+      
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file);
+      
+      if (uploadError) throw uploadError;
+      
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
       
       // Update user profile
       await updateProfile({ avatar_url: publicUrl });
@@ -63,6 +90,8 @@ const Profile: React.FC = () => {
         duration: 5000,
       });
       console.error('Error uploading avatar:', error);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -78,7 +107,7 @@ const Profile: React.FC = () => {
                 className="hidden"
                 accept="image/*"
                 onChange={handleAvatarUpload}
-                disabled={isUploading}
+                disabled={uploading}
               />
               <label htmlFor="avatar-upload" className="cursor-pointer block">
                 <div className="w-24 h-24 rounded-full overflow-hidden">
@@ -96,7 +125,7 @@ const Profile: React.FC = () => {
                 </div>
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   <span className="bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
-                    {isUploading ? 'Enviando...' : 'Mudar foto'}
+                    {uploading ? 'Enviando...' : 'Mudar foto'}
                   </span>
                 </div>
               </label>

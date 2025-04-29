@@ -24,7 +24,6 @@ export const ArticleComments: React.FC<ArticleCommentsProps> = ({ articleId }) =
     isAddingComment,
     isDeletingComment,
     isReplying,
-    isVoting
   } = useComments(articleId, 'issue'); // Using 'issue' as the entity type
 
   const handleAddComment = async (content: string) => {
@@ -33,6 +32,10 @@ export const ArticleComments: React.FC<ArticleCommentsProps> = ({ articleId }) =
 
   const handleReply = async (parentId: string, content: string) => {
     await replyToComment(parentId, content);
+  };
+
+  const handleVote = async (params: { commentId: string; value: 1 | -1 | 0 }) => {
+    await voteComment(params);
   };
 
   const getSortedComments = () => {
@@ -104,8 +107,11 @@ export const ArticleComments: React.FC<ArticleCommentsProps> = ({ articleId }) =
       </div>
       
       <CommentAddForm 
-        onAddComment={handleAddComment}
-        isAddingComment={isAddingComment}
+        articleId={articleId} 
+        onSubmit={handleAddComment}
+        isSubmitting={isAddingComment}
+        entityType="issue"
+        placeholder="Participe da discussão deste artigo..."
       />
       
       <Card className="border-white/10 bg-white/5">
@@ -118,12 +124,12 @@ export const ArticleComments: React.FC<ArticleCommentsProps> = ({ articleId }) =
                   <CommentItem 
                     key={comment.id} 
                     comment={comment}
-                    voteComment={(commentId, value) => voteComment({ commentId, value })}
-                    replyToComment={handleReply}
-                    deleteComment={async (commentId) => await deleteComment(commentId)}
-                    isVoting={isVoting}
-                    isReplying={isReplying}
-                    isDeletingComment={isDeletingComment}
+                    onDelete={deleteComment}
+                    onReply={handleReply}
+                    onVote={handleVote}
+                    entityType="issue"
+                    entityId={articleId}
+                    isDeleting={isDeletingComment}
                   />
               ))}
             </div>
