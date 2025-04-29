@@ -13,7 +13,7 @@ const ContentWrapper = ({ children }: { children: React.ReactNode }) => {
   const isDualView = location.pathname.includes('/article/') && new URLSearchParams(location.search).get('view') === 'dual';
   
   return (
-    <div className={`flex-1 overflow-auto transition-all duration-300 ${isCollapsed ? 'ml-[60px]' : 'ml-[240px]'}`}>
+    <div className={`flex-1 overflow-y-auto transition-all duration-300 ${isCollapsed ? 'ml-[60px]' : 'ml-[240px]'}`}>
       <div className={`h-full ${isDualView ? 'max-w-[95%]' : 'max-w-6xl'} mx-auto`}>
         {children}
       </div>

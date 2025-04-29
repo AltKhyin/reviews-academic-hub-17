@@ -65,7 +65,7 @@ export const Sidebar = () => {
     <div className="fixed top-0 left-0 h-full z-40 bg-[#121212] border-r border-white/10">
       <div className="flex flex-col h-full">
         <div className="flex justify-center items-center py-6">
-          <Link to="/homepage">
+          <Link to="/homepage" className="flex justify-center w-full">
             {isCollapsed ? (
               <Logo dark={false} collapsed={true} />
             ) : (

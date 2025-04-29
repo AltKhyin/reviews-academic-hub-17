@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Maximize, BookOpen } from 'lucide-react';
+import { Maximize, BookOpen, FileText, SplitSquareVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSidebar } from '@/components/ui/sidebar';
 
@@ -43,7 +43,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   };
   
   return (
-    <div className={`bg-[#1a1a1a] rounded-lg p-6 shadow-lg card-elevation h-full flex flex-col overflow-visible ${isReadingMode ? 'fixed inset-4 z-50' : ''}`}>
+    <div className={`bg-[#1a1a1a] rounded-lg p-6 shadow-lg card-elevation h-full flex flex-col overflow-visible ${isReadingMode ? 'fixed inset-0 z-50' : ''}`}>
       <div className="mb-4 flex justify-between items-center">
         <h2 className="font-serif text-xl font-medium">{title}</h2>
         {url && url !== 'placeholder.pdf' && (
@@ -77,16 +77,47 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
       </div>
       
       {isReadingMode && (
-        <div className="absolute top-3 right-3">
-          <Button 
-            variant="secondary" 
-            size="sm" 
-            onClick={handleReadingMode}
-            className="bg-gray-700/60 hover:bg-gray-600"
-          >
-            Fechar
-          </Button>
-        </div>
+        <>
+          <div className="absolute top-3 right-3">
+            <Button 
+              variant="secondary" 
+              size="sm" 
+              onClick={handleReadingMode}
+              className="bg-gray-700/60 hover:bg-gray-600"
+            >
+              Fechar
+            </Button>
+          </div>
+          
+          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-50 bg-gray-800/70 px-4 py-2 rounded-full flex items-center gap-3">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => console.log('Original view not implemented in standalone viewer')}
+              className="p-2 rounded-full"
+            >
+              <FileText size={20} className="text-gray-400" />
+            </Button>
+            
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => console.log('Dual view not implemented in standalone viewer')}
+              className="p-2 rounded-full"
+            >
+              <SplitSquareVertical size={20} className="text-gray-400" />
+            </Button>
+            
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => console.log('Already in review view')}
+              className="p-2 rounded-full bg-gray-700/70"
+            >
+              <BookOpen size={20} className="text-white" />
+            </Button>
+          </div>
+        </>
       )}
     </div>
   );

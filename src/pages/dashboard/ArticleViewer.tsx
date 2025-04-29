@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, Maximize, BookOpen } from 'lucide-react';
+import { ArrowLeft, Maximize, BookOpen, SplitSquareVertical, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Issue } from '@/types/issue';
@@ -155,9 +155,9 @@ const ArticleViewer: React.FC = () => {
           <ResizablePanelGroup 
             id="dual-pdf-container" 
             direction="horizontal" 
-            className={`min-h-[800px] w-full flex-grow ${isReadingMode ? 'h-full' : ''}`}
+            className={`h-[800px] w-full flex-grow ${isReadingMode ? 'h-full' : ''}`}
           >
-            <ResizablePanel defaultSize={50} className="min-h-[800px]">
+            <ResizablePanel defaultSize={50} className="h-full">
               <div className="h-full bg-[#1a1a1a] rounded-lg p-6 shadow-lg card-elevation flex flex-col">
                 <h2 className="font-serif text-xl font-medium mb-4">Revisão</h2>
                 <div className="w-full flex-grow bg-[#121212] rounded-md overflow-hidden">
@@ -177,7 +177,7 @@ const ArticleViewer: React.FC = () => {
               </div>
             </ResizablePanel>
             <ResizableHandle withHandle />
-            <ResizablePanel defaultSize={50} className="min-h-[800px]">
+            <ResizablePanel defaultSize={50} className="h-full">
               <div className="h-full bg-[#1a1a1a] rounded-lg p-6 shadow-lg card-elevation flex flex-col">
                 <h2 className="font-serif text-xl font-medium mb-4">Artigo Original</h2>
                 <div className="w-full flex-grow bg-[#121212] rounded-md overflow-hidden">
@@ -198,7 +198,7 @@ const ArticleViewer: React.FC = () => {
             </ResizablePanel>
           </ResizablePanelGroup>
         ) : (
-          <div className="min-h-[800px] w-full flex-grow">
+          <div className="h-[800px] w-full flex-grow">
             <PDFViewer 
               url={viewMode === 'review' ? issue.pdf_url : issue.article_pdf_url || ''} 
               title={viewMode === 'review' ? "Revisão" : "Artigo Original"}
@@ -210,16 +210,49 @@ const ArticleViewer: React.FC = () => {
         )}
         
         {isReadingMode && (
-          <div className="absolute top-3 right-3 z-50">
-            <Button 
-              variant="secondary" 
-              size="sm" 
-              onClick={handleReadingMode}
-              className="bg-gray-700/60 hover:bg-gray-600"
-            >
-              Fechar
-            </Button>
-          </div>
+          <>
+            <div className="absolute top-3 right-3 z-50">
+              <Button 
+                variant="secondary" 
+                size="sm" 
+                onClick={handleReadingMode}
+                className="bg-gray-700/60 hover:bg-gray-600"
+              >
+                Fechar
+              </Button>
+            </div>
+            
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-50 bg-gray-800/70 px-4 py-2 rounded-full flex items-center gap-3">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setViewMode('original')}
+                disabled={!hasOriginalArticle}
+                className={`p-2 rounded-full ${viewMode === 'original' ? 'bg-gray-700/70' : 'bg-transparent'}`}
+              >
+                <FileText size={20} className={`${viewMode === 'original' ? 'text-white' : 'text-gray-400'} ${!hasOriginalArticle ? 'opacity-50' : ''}`} />
+              </Button>
+              
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setViewMode('dual')}
+                disabled={!hasOriginalArticle}
+                className={`p-2 rounded-full ${viewMode === 'dual' ? 'bg-gray-700/70' : 'bg-transparent'}`}
+              >
+                <SplitSquareVertical size={20} className={`${viewMode === 'dual' ? 'text-white' : 'text-gray-400'} ${!hasOriginalArticle ? 'opacity-50' : ''}`} />
+              </Button>
+              
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setViewMode('review')}
+                className={`p-2 rounded-full ${viewMode === 'review' ? 'bg-gray-700/70' : 'bg-transparent'}`}
+              >
+                <BookOpen size={20} className={viewMode === 'review' ? 'text-white' : 'text-gray-400'} />
+              </Button>
+            </div>
+          </>
         )}
       </div>
 

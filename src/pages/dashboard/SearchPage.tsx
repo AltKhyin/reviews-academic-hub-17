@@ -129,57 +129,62 @@ const SearchPage: React.FC = () => {
       );
 
   return (
-    <div className="h-full">
-      <div className="flex flex-col h-full">
-        {/* Logo Header - Equal spacing from top */}
-        <header className="flex-none h-24 flex items-center justify-center">
-          <Logo dark={false} size="2xlarge" />
-        </header>
+    <div className="flex flex-col h-full">
+      {/* Logo Header - Equal spacing from top */}
+      <header className="flex-none h-24 flex items-center justify-center">
+        <Logo dark={false} size="2xlarge" />
+      </header>
 
-        {/* Search area - centered vertically */}
-        <section className="flex-1 flex items-center justify-center px-4">
-          <div className="w-full max-w-5xl">
-            {/* Search Header Component in Card */}
-            <Card className="p-6 mb-6">
-              {/* Mobile filters */}
-              <div className="block md:hidden mb-4">
-                <Sheet>
-                  <SheetTrigger asChild>
-                    <Button variant="outline" size="sm" className="w-full">
-                      <SlidersHorizontal size={16} className="mr-2" />
-                      Filtros
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="left" className="w-[300px] sm:w-[400px]">
-                    {/* Sidebar Content for Mobile */}
-                    <div className="h-full py-4">
-                      <h3 className="font-bold mb-4">Filtros</h3>
-                      <SearchFilters 
-                        filters={filters}
-                        onFilterChange={handleFilterChange}
-                        facetGroups={facetGroups}
-                        areaSearchText={areaSearchText}
-                        setAreaSearchText={setAreaSearchText}
-                        filteredAreaOptions={filteredAreaOptions}
-                      />
-                    </div>
-                  </SheetContent>
-                </Sheet>
-              </div>
+      {/* Search area - centered vertically */}
+      <section className="flex-1 flex items-center justify-center px-4">
+        <div className="w-full max-w-5xl">
+          {/* Search Header Component in Card */}
+          <Card className="p-6 mb-6">
+            {/* Mobile filters */}
+            <div className="block md:hidden mb-4">
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="sm" className="w-full">
+                    <SlidersHorizontal size={16} className="mr-2" />
+                    Filtros
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+                  {/* Sidebar Content for Mobile */}
+                  <div className="h-full py-4">
+                    <h3 className="font-bold mb-4">Filtros</h3>
+                    <SearchFilters 
+                      filters={filters}
+                      onFilterChange={handleFilterChange}
+                      facetGroups={facetGroups}
+                      areaSearchText={areaSearchText}
+                      setAreaSearchText={setAreaSearchText}
+                      filteredAreaOptions={filteredAreaOptions}
+                    />
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
 
-              {/* Search Header Component */}
-              <SearchHeader 
-                queryText={queryText}
-                setQueryText={setQueryText}
-                handleSubmitSearch={handleSubmitSearch}
-                searchTags={searchTags}
-                handleTagRemove={handleTagRemove}
-                handleTagToggleExclude={handleTagToggleExclude}
-                clearFilters={clearFilters}
-                queryPreview={queryPreview}
-              />
-            </Card>
+            {/* Search Header Component */}
+            <SearchHeader 
+              queryText={queryText}
+              setQueryText={setQueryText}
+              handleSubmitSearch={handleSubmitSearch}
+              searchTags={searchTags}
+              handleTagRemove={handleTagRemove}
+              handleTagToggleExclude={handleTagToggleExclude}
+              clearFilters={clearFilters}
+              queryPreview={queryPreview}
+            />
+          </Card>
+        </div>
+      </section>
 
+      {/* Results area - at the bottom, only appears after search */}
+      {searchResults && searchResults.length > 0 && (
+        <section className="flex-none">
+          <div className="w-full max-w-5xl mx-auto">
             {/* Filters and Results Area */}
             <div className="flex gap-6">
               {/* Desktop Sidebar */}
@@ -215,7 +220,7 @@ const SearchPage: React.FC = () => {
             </div>
           </div>
         </section>
-      </div>
+      )}
     </div>
   );
 };
