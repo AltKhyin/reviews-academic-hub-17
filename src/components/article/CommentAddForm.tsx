@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { supabase } from "@/integrations/supabase/client";
 
 interface CommentAddFormProps {
   articleId: string;
@@ -25,6 +26,38 @@ export const CommentAddForm: React.FC<CommentAddFormProps> = ({
   const [comment, setComment] = useState('');
   const { user, profile } = useAuth();
   const { toast } = useToast();
+  const [isVerifyingEntity, setIsVerifyingEntity] = useState(false);
+
+  // Verify if the entity exists
+  const verifyEntityExists = async (): Promise<boolean> => {
+    try {
+      setIsVerifyingEntity(true);
+      let tableName;
+      let idField = 'id';
+      
+      if (entityType === 'article') tableName = 'articles';
+      else if (entityType === 'issue') tableName = 'issues';
+      else if (entityType === 'post') tableName = 'posts';
+      
+      const { data, error } = await supabase
+        .from(tableName)
+        .select('id')
+        .eq(idField, articleId)
+        .maybeSingle();
+        
+      if (error) {
+        console.error(`Error checking ${entityType}:`, error);
+        return false;
+      }
+      
+      return !!data;
+    } catch (err) {
+      console.error(`Error in verifyEntityExists for ${entityType}:`, err);
+      return false;
+    } finally {
+      setIsVerifyingEntity(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +83,18 @@ export const CommentAddForm: React.FC<CommentAddFormProps> = ({
     }
     
     try {
+      // Check if the entity exists
+      const exists = await verifyEntityExists();
+      if (!exists) {
+        toast({
+          title: "Erro",
+          description: `${entityType === 'article' ? 'O artigo' : entityType === 'issue' ? 'A edição' : 'A publicação'} não existe ou foi removida.`,
+          variant: "destructive",
+          duration: 5000,
+        });
+        return;
+      }
+      
       if (onSubmit) {
         await onSubmit(comment);
         setComment('');
@@ -90,7 +135,7 @@ export const CommentAddForm: React.FC<CommentAddFormProps> = ({
                 onChange={(e) => setComment(e.target.value)}
                 rows={4}
                 className="resize-none bg-gray-800/20 border-gray-700/30"
-                disabled={isSubmitting || !user}
+                disabled={isSubmitting || isVerifyingEntity || !user}
               />
               {!user && (
                 <p className="mt-2 text-sm text-yellow-400">
@@ -101,9 +146,9 @@ export const CommentAddForm: React.FC<CommentAddFormProps> = ({
               <div className="flex justify-end mt-3">
                 <Button 
                   type="submit" 
-                  disabled={isSubmitting || !user || !comment.trim()}
+                  disabled={isSubmitting || isVerifyingEntity || !user || !comment.trim()}
                 >
-                  {isSubmitting ? 'Enviando...' : 'Comentar'}
+                  {isSubmitting || isVerifyingEntity ? 'Enviando...' : 'Comentar'}
                 </Button>
               </div>
             </div>

@@ -43,11 +43,14 @@ export const PollSection: React.FC<PollSectionProps> = ({ poll, onVoteChange }) 
           .from('poll_votes')
           .update({ option_id: optionId })
           .eq('user_id', user.id)
-          .in('option_id', poll.options.map(o => o.id));
+          .eq('option_id', existingVote.option_id);
           
-        if (error) throw error;
+        if (error) {
+          console.error('Error updating vote:', error);
+          throw error;
+        }
       } else {
-        // New vote
+        // New vote - directly insert without using a trigger function
         const { error } = await supabase
           .from('poll_votes')
           .insert({ 
@@ -55,7 +58,10 @@ export const PollSection: React.FC<PollSectionProps> = ({ poll, onVoteChange }) 
             user_id: user.id 
           });
           
-        if (error) throw error;
+        if (error) {
+          console.error('Error inserting vote:', error);
+          throw error;
+        }
       }
       
       toast({
@@ -65,11 +71,11 @@ export const PollSection: React.FC<PollSectionProps> = ({ poll, onVoteChange }) 
       
       onVoteChange();
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error voting in poll:', error);
       toast({
         title: "Erro ao votar",
-        description: "Não foi possível registrar seu voto na enquete.",
+        description: error?.message || "Não foi possível registrar seu voto na enquete.",
         variant: "destructive",
       });
     } finally {

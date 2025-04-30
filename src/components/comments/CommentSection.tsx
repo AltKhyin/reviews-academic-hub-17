@@ -9,7 +9,7 @@ import { useComments } from '@/hooks/useComments';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { CommentItem } from '@/components/article/CommentItem';
-import { EntityType } from '@/types/comment';
+import { EntityType } from '@/types/commentTypes';
 
 interface CommentSectionProps {
   articleId?: string;
@@ -44,7 +44,7 @@ export const CommentSection = ({ articleId, issueId, postId }: CommentSectionPro
   
   // First, verify the entity exists before trying to use it with comments
   const { data: entityExists, isLoading: isCheckingEntity } = useQuery({
-    queryKey: [entityType, entityId, 'exists'],
+    queryKey: [`${entityType}_exists`, entityId],
     queryFn: async () => {
       if (entityType === 'article') {
         // For articles, check the articles table
@@ -80,7 +80,8 @@ export const CommentSection = ({ articleId, issueId, postId }: CommentSectionPro
       
       return false;
     },
-    retry: false
+    retry: 1,
+    staleTime: 30000
   });
   
   const { 
@@ -122,7 +123,7 @@ export const CommentSection = ({ articleId, issueId, postId }: CommentSectionPro
     return <div className="animate-pulse">Verificando publicação...</div>;
   }
   
-  if (!entityExists) {
+  if (entityExists === false) {
     return <div className="text-red-400">Esta publicação não existe ou foi removida.</div>;
   }
 
@@ -198,4 +199,3 @@ export const CommentSection = ({ articleId, issueId, postId }: CommentSectionPro
     </div>
   );
 };
-

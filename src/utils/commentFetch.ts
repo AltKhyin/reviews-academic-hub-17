@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { BaseComment, CommentVote, EntityType } from '@/types/commentTypes';
+import { getEntityIdField } from './commentHelpers';
 
 // This function fetches comments for various entity types (article, issue, post)
 export const fetchComments = async (
@@ -10,7 +11,7 @@ export const fetchComments = async (
 ): Promise<{ comments: BaseComment[], userVotes: CommentVote[] }> => {
   try {
     // Get entity field name
-    const entityField = getEntityFieldName(entityType);
+    const entityField = getEntityIdField(entityType);
 
     // Get comments for the entity
     const { data: comments, error } = await supabase
@@ -51,20 +52,6 @@ export const fetchComments = async (
     return { comments: [], userVotes: [] };
   }
 };
-
-// Helper function to get field name to avoid circular reference
-function getEntityFieldName(entityType: EntityType): string {
-  switch (entityType) {
-    case 'article':
-      return 'article_id';
-    case 'issue':
-      return 'issue_id';
-    case 'post':
-      return 'post_id';
-    default:
-      return 'article_id';
-  }
-}
 
 // Wrapper function for fetchComments with better naming for the hook
 export const fetchCommentsData = async (
