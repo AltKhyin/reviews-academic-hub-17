@@ -32,52 +32,41 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
 
   const addComment = useMutation({
     mutationFn: async (content: string) => {
-      const {
-        data: { user },
-        error: authError
-      } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
 
-      if (authError || !user) {
-        throw new Error('Not authenticated');
-      }
+  const commentData: any = {
+    content,
+    user_id: user.id,
+    score: 0,
+  };
 
-      const commentData: any = {
-        content,
-        user_id: user.id,
-        score: 0,
-      };
+  if (entityType === 'article') {
+    commentData.article_id = entityId;
+  } else if (entityType === 'issue') {
+    commentData.issue_id = entityId;
+  } else if (entityType === 'post') {
+    commentData.post_id = entityId;
+  } else {
+    throw new Error('Unknown entity type');
+  }
 
-      if (entityType === 'post') {
-        commentData.post_id = entityId;
-      } else if (entityType === 'article') {
-        commentData.article_id = entityId;
-      } else if (entityType === 'issue') {
-        commentData.issue_id = entityId;
-      }
+  const { error: commentError, data: newComment } = await supabase
+    .from('comments')
+    .insert(commentData)
+    .select()
+    .single();
 
-      const { error: commentError, data: newComment } = await supabase
-        .from('comments')
-        .insert(commentData)
-        .select()
-        .single();
+  if (commentError) throw commentError;
 
-      if (commentError) {
-        throw commentError;
-      }
+  await supabase.from('comment_votes').insert({
+    user_id: user.id,
+    comment_id: newComment.id,
+    value: 1,
+  });
 
-      if (newComment) {
-        const { error: voteError } = await supabase
-          .from('comment_votes')
-          .insert({
-            user_id: user.id,
-            comment_id: newComment.id,
-            value: 1
-          });
-
-        if (voteError) console.error('Error adding auto-upvote:', voteError);
-      }
-
-      return newComment;
+  return newComment;
+  }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['comments', entityId, entityType] });
