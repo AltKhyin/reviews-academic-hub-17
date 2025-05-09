@@ -15,7 +15,7 @@ export const fetchComments = async (
     // Get entity field name
     const entityField = getEntityIdField(entityType);
 
-    // Use a simplified query with explicit field selection to avoid deep nesting
+    // Use an explicit query without deeply nested joins to avoid type issues
     const { data, error } = await supabase
       .from('comments')
       .select(`
@@ -39,8 +39,8 @@ export const fetchComments = async (
       throw error;
     }
 
-    // Use type assertion with the specific array type
-    const comments = (data || []) as unknown as BaseComment[];
+    // Use simple array assertion to avoid excessive type depth
+    const comments = (data || []) as BaseComment[];
     
     // Get user votes if a userId is provided
     let userVotes: CommentVote[] = [];

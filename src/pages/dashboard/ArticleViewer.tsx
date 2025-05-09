@@ -14,10 +14,12 @@ import { ExternalLectures } from '@/components/article/ExternalLectures';
 import { ViewModeSwitcher } from '@/components/article/ViewModeSwitcher';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { useSidebar } from '@/components/ui/sidebar';
+import { useToast } from '@/hooks/use-toast';
 
 const ArticleViewer: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [viewMode, setViewMode] = useState<'dual' | 'review' | 'original'>('review');
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isReadingMode, setIsReadingMode] = useState(false);
@@ -32,26 +34,53 @@ const ArticleViewer: React.FC = () => {
     };
   }, []);
 
+  // Add debugging for the ID parameter
+  useEffect(() => {
+    console.log("ArticleViewer loaded with ID:", id);
+    console.log("Current route:", window.location.pathname);
+    
+    // Validate UUID format
+    const isValidUUID = id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    console.log("Is ID a valid UUID format:", isValidUUID);
+    
+    // Check if we're in the correct route expecting an 'issue'
+    const isArticleRoute = window.location.pathname.includes('/article/');
+    console.log("Is this an article route:", isArticleRoute);
+  }, [id]);
+
   const { data: issue, isLoading, error } = useQuery({
     queryKey: ['issue', id],
     queryFn: async () => {
-      if (!id) throw new Error('No issue ID provided');
+      if (!id) {
+        console.error("No issue ID provided");
+        throw new Error('No issue ID provided');
+      }
+      
+      console.log("Attempting to fetch issue with ID:", id);
+      
+      // Check if this is actually an article route but querying issues table
+      const isArticleRoute = window.location.pathname.includes('/article/');
+      const tableName = isArticleRoute ? 'articles' : 'issues';
+      console.log(`Querying ${tableName} table for ID: ${id}`);
       
       const { data, error } = await supabase
-        .from('issues')
+        .from(tableName)
         .select('*')
         .eq('id', id)
         .single();
 
       if (error) {
-        console.error('Error fetching issue:', error);
+        console.error(`Error fetching ${tableName}:`, error);
+        console.log("Full error details:", JSON.stringify(error, null, 2));
         throw error;
       }
       
       if (!data) {
-        throw new Error('Issue not found');
+        console.error(`${tableName} not found with ID: ${id}`);
+        throw new Error(`${tableName} not found`);
       }
 
+      console.log(`${tableName} data found:`, data);
       return data as Issue;
     },
     retry: 1,
@@ -59,6 +88,18 @@ const ArticleViewer: React.FC = () => {
       errorMessage: "Couldn't load the article"
     }
   });
+
+  // Add detailed error logging
+  useEffect(() => {
+    if (error) {
+      console.error("Query error details:", error);
+      toast({
+        title: "Erro ao carregar",
+        description: `Não foi possível carregar o conteúdo. Erro: ${(error as Error).message}`,
+        variant: "destructive"
+      });
+    }
+  }, [error, toast]);
 
   const handleFullScreenDual = () => {
     const container = document.getElementById('dual-pdf-container');
@@ -97,6 +138,9 @@ const ArticleViewer: React.FC = () => {
           <h2 className="text-xl font-semibold mb-2">Artigo não encontrado</h2>
           <p className="text-muted-foreground">
             O artigo que você está procurando não existe ou foi removido.
+          </p>
+          <p className="text-xs text-gray-500 mt-4">
+            ID: {id || 'não especificado'}
           </p>
         </Card>
       </div>
