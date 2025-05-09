@@ -75,10 +75,10 @@ export const ArticleComments: React.FC<ArticleCommentsProps> = ({ articleId }) =
     );
   }
 
-  // Pass the ID to the refactored CommentSection
+  // Pass the ID to the refactored CommentSection - critically, pass 'issue' as the entity type
   return (
     <div className="mt-8 border-t border-gray-800 pt-8">
-      <CommentSection articleId={articleId} />
+      <CommentSection issueId={articleId} />
     </div>
   );
 };

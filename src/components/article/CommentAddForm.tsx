@@ -9,7 +9,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from "@/integrations/supabase/client";
 
 interface CommentAddFormProps {
-  articleId: string;
+  articleId?: string;
+  issueId?: string;
   onSubmit?: (comment: string) => Promise<void>;
   isSubmitting?: boolean;
   entityType?: 'article' | 'issue' | 'post';
@@ -18,6 +19,7 @@ interface CommentAddFormProps {
 
 export const CommentAddForm: React.FC<CommentAddFormProps> = ({ 
   articleId,
+  issueId,
   onSubmit,
   isSubmitting = false,
   entityType = 'article',
@@ -28,21 +30,29 @@ export const CommentAddForm: React.FC<CommentAddFormProps> = ({
   const { toast } = useToast();
   const [isVerifyingEntity, setIsVerifyingEntity] = useState(false);
 
+  // Determine the entity ID based on props
+  const entityId = issueId || articleId;
+
   // Verify if the entity exists
   const verifyEntityExists = async (): Promise<boolean> => {
+    if (!entityId) return false;
+    
     try {
       setIsVerifyingEntity(true);
       let tableName;
       let idField = 'id';
       
+      // Determine which table to check based on entity type
       if (entityType === 'article') tableName = 'articles';
       else if (entityType === 'issue') tableName = 'issues';
       else if (entityType === 'post') tableName = 'posts';
       
+      console.log(`Verifying ${entityType} with ID ${entityId} in table ${tableName}`);
+      
       const { data, error } = await supabase
         .from(tableName)
         .select('id')
-        .eq(idField, articleId)
+        .eq(idField, entityId)
         .maybeSingle();
         
       if (error) {
