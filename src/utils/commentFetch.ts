@@ -14,8 +14,8 @@ export const fetchComments = async (
     const entityField = getEntityIdField(entityType);
 
     // Get comments for the entity with properly qualified column names
-    // Using a direct type cast to avoid the "Type instantiation is excessively deep" error
-    const { data: comments, error } = await supabase
+    // Using explicitly typed variables to avoid the "Type instantiation is excessively deep" error
+    const result = await supabase
       .from('comments')
       .select(`
         id,
@@ -35,7 +35,10 @@ export const fetchComments = async (
         )
       `)
       .eq(entityField, entityId)
-      .order('created_at', { ascending: true }) as { data: BaseComment[], error: any };
+      .order('created_at', { ascending: true });
+    
+    const comments = result.data as BaseComment[] || [];
+    const error = result.error;
 
     if (error) throw error;
 
@@ -43,7 +46,7 @@ export const fetchComments = async (
     let userVotes: CommentVote[] = [];
     if (userId && comments && comments.length > 0) {
       // Extract comment IDs as simple strings to avoid deep type inference
-      const commentIds: string[] = comments.map((c: any) => c.id);
+      const commentIds = comments.map(c => c.id);
       
       const { data: votes, error: votesError } = await supabase
         .from('comment_votes')
