@@ -48,7 +48,8 @@ export const CommentSection = ({ articleId, issueId, postId }: CommentSectionPro
     queryFn: async () => {
       console.log(`Checking if ${entityType} exists with ID: ${entityId}`);
       
-      let tableName: string;
+      // Use the literal string values to avoid TypeScript errors
+      let tableName = '';
       
       if (entityType === 'article') {
         tableName = 'articles';
@@ -60,8 +61,9 @@ export const CommentSection = ({ articleId, issueId, postId }: CommentSectionPro
         throw new Error(`Invalid entity type: ${entityType}`);
       }
       
+      // Use type assertion to help TypeScript understand this is a valid table name
       const { data, error } = await supabase
-        .from(tableName)
+        .from(tableName as any)
         .select('id')
         .eq('id', entityId)
         .maybeSingle();
