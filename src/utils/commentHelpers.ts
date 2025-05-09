@@ -37,8 +37,7 @@ export function buildCommentData(
   if (parentId) data.parent_id = parentId;
 
   return data;
-}ta;
-};
+}
 
 // Import these from other files to avoid duplication
 import { appendUserVotesToComments } from './commentFetch';
