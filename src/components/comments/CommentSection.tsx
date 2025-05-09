@@ -28,7 +28,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId }) => {
     voteComment,
     isAddingComment,
     isDeletingComment,
-    isReplying,
+    isReplying: isReplyingFromHook,
     isVoting
   } = useComments(postId, 'post');
 
@@ -91,7 +91,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId }) => {
               onReply={replyToComment}
               onVote={voteComment}
               isDeleting={isDeletingComment}
-              isReplying={isReplying}
+              isReplyingFromHook={isReplyingFromHook}
               isVoting={isVoting}
             />
           ))}
@@ -112,7 +112,7 @@ const CommentItem: React.FC<{
   onReply: (params: { parentId: string; content: string }) => Promise<any>;
   onVote: (params: { commentId: string; value: 1 | -1 | 0 }) => Promise<any>;
   isDeleting: boolean;
-  isReplying: boolean;
+  isReplyingFromHook: boolean;
   isVoting: boolean;
 }> = ({ 
   comment, 
@@ -120,7 +120,7 @@ const CommentItem: React.FC<{
   onReply,
   onVote,
   isDeleting,
-  isReplying,
+  isReplyingFromHook,
   isVoting
 }) => {
   const { user } = useAuth();
@@ -228,9 +228,9 @@ const CommentItem: React.FC<{
                 <Button 
                   type="submit" 
                   size="sm"
-                  disabled={!replyContent.trim() || isReplying}
+                  disabled={!replyContent.trim() || isReplyingFromHook}
                 >
-                  {isReplying ? 'Enviando...' : 'Responder'}
+                  {isReplyingFromHook ? 'Enviando...' : 'Responder'}
                 </Button>
               </div>
             </form>
@@ -246,7 +246,7 @@ const CommentItem: React.FC<{
                   onReply={onReply}
                   onVote={onVote}
                   isDeleting={isDeleting}
-                  isReplying={isReplying}
+                  isReplyingFromHook={isReplyingFromHook}
                   isVoting={isVoting}
                 />
               ))}
