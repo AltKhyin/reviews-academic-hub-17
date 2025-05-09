@@ -66,7 +66,11 @@ export async function fetchCommentsData(entityId: string, entityType: EntityType
       if (votesError) {
         console.error('Error fetching comment votes:', votesError);
       } else {
-        userVotes = votes;
+        // Cast the values to ensure they conform to the CommentVote type
+        userVotes = votes.map(vote => ({
+          ...vote,
+          value: vote.value === 1 ? 1 : -1 // Ensure value is strictly 1 or -1
+        })) as CommentVote[];
       }
     }
 
