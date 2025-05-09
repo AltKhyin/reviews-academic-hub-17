@@ -14,6 +14,7 @@ export const fetchComments = async (
     const entityField = getEntityIdField(entityType);
 
     // Get comments for the entity with properly qualified column names
+    // Use a type assertion to avoid the excessive type inference
     const { data: comments, error } = await supabase
       .from('comments')
       .select(`

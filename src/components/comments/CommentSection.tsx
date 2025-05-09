@@ -64,8 +64,12 @@ export const CommentSection = ({ articleId, issueId, postId }: CommentSectionPro
           throw new Error(`Invalid entity type: ${entityType}`);
       }
       
+      // Use as const to make the tableName literal type instead of string
+      // This prevents the "Type instantiation is excessively deep" error
+      const table = tableName as 'articles' | 'issues' | 'posts';
+      
       const { data, error } = await supabase
-        .from(tableName)
+        .from(table)
         .select('id')
         .eq('id', entityId)
         .maybeSingle();
