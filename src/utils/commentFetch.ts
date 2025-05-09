@@ -15,10 +15,22 @@ export const fetchComments = async (
     // Get entity field name
     const entityField = getEntityIdField(entityType);
 
-    // Using a more direct approach to avoid deep type inference issues
+    // Use a simplified query with explicit field selection to avoid deep nesting
     const { data, error } = await supabase
       .from('comments')
-      .select('*, profiles:user_id(id, full_name, avatar_url)')
+      .select(`
+        id, 
+        content, 
+        created_at, 
+        updated_at, 
+        user_id, 
+        article_id, 
+        issue_id, 
+        post_id, 
+        parent_id, 
+        score,
+        profiles:user_id (id, full_name, avatar_url)
+      `)
       .eq(entityField, entityId)
       .order('created_at', { ascending: true });
     
@@ -27,8 +39,8 @@ export const fetchComments = async (
       throw error;
     }
 
-    // Explicitly cast data to avoid deep type inference
-    const comments = data as unknown as BaseComment[];
+    // Use type assertion with the specific array type
+    const comments = (data || []) as unknown as BaseComment[];
     
     // Get user votes if a userId is provided
     let userVotes: CommentVote[] = [];
