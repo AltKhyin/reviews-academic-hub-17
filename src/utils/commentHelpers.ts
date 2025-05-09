@@ -17,7 +17,16 @@ export const getEntityIdField = (entityType: EntityType): string => {
 
 // Important: Create a function to build the comment data object correctly
 export const buildCommentData = (content: string, userId: string, entityType: EntityType, entityId: string, parentId?: string) => {
-  const commentData: any = {
+  // Start with base data without any entity-specific fields
+  const commentData: {
+    content: string;
+    user_id: string;
+    score: number;
+    parent_id?: string;
+    article_id?: string;
+    issue_id?: string;
+    post_id?: string;
+  } = {
     content,
     user_id: userId,
     score: 0

@@ -22,6 +22,7 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
   const { data: commentsData, isLoading } = useQuery({
     queryKey: ['comments', entityId, entityType],
     queryFn: async () => {
+      console.log(`Fetching comments for ${entityType} with ID: ${entityId}`);
       return fetchCommentsData(entityId, entityType);
     },
     refetchOnWindowFocus: false,
@@ -36,6 +37,8 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
   // Add a new comment
   const addComment = useMutation({
     mutationFn: async (content: string) => {
+      console.log(`Adding comment to ${entityType} with ID ${entityId}`);
+      
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
       
@@ -56,6 +59,8 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
         throw commentError;
       }
       
+      console.log('Comment added successfully:', newComment);
+      
       // Add the author's upvote
       if (newComment) {
         const { error: voteError } = await supabase
@@ -73,8 +78,14 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['comments', entityId, entityType] });
+      toast({
+        title: "Comentário adicionado",
+        description: "Seu comentário foi publicado com sucesso.",
+        duration: 3000,
+      });
     },
     onError: (error: Error) => {
+      console.error('Error in addComment mutation:', error);
       toast({
         title: "Erro",
         description: error.message,
@@ -131,6 +142,7 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
       });
     },
     onError: (error: Error) => {
+      console.error('Error in replyToComment mutation:', error);
       toast({
         title: "Erro",
         description: error.message,
@@ -160,6 +172,7 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
       });
     },
     onError: (error: Error) => {
+      console.error('Error in deleteComment mutation:', error);
       toast({
         title: "Erro",
         description: error.message,
@@ -219,6 +232,7 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
       queryClient.invalidateQueries({ queryKey: ['comments', entityId, entityType] });
     },
     onError: (error: Error) => {
+      console.error('Error in voteComment mutation:', error);
       toast({
         title: "Erro ao votar",
         description: error.message,
