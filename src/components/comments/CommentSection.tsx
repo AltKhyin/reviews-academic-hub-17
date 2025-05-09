@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -47,22 +48,24 @@ export const CommentSection = ({ articleId, issueId, postId }: CommentSectionPro
     queryFn: async () => {
       console.log(`Checking if ${entityType} exists with ID: ${entityId}`);
       
-      // Use the literal string values to avoid TypeScript errors
       let tableName = '';
       
-      if (entityType === 'article') {
-        tableName = 'articles';
-      } else if (entityType === 'issue') {
-        tableName = 'issues';
-      } else if (entityType === 'post') {
-        tableName = 'posts';
-      } else {
-        throw new Error(`Invalid entity type: ${entityType}`);
+      switch (entityType) {
+        case 'article':
+          tableName = 'articles';
+          break;
+        case 'issue':
+          tableName = 'issues';
+          break;
+        case 'post':
+          tableName = 'posts';
+          break;
+        default:
+          throw new Error(`Invalid entity type: ${entityType}`);
       }
       
-      // Use type assertion to help TypeScript understand this is a valid table name
       const { data, error } = await supabase
-        .from(tableName as any)
+        .from(tableName)
         .select('id')
         .eq('id', entityId)
         .maybeSingle();

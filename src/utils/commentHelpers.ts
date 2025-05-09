@@ -15,6 +15,36 @@ export const getEntityIdField = (entityType: EntityType): string => {
   }
 };
 
+// Important: Create a function to build the comment data object correctly
+export const buildCommentData = (content: string, userId: string, entityType: EntityType, entityId: string, parentId?: string) => {
+  const commentData: any = {
+    content,
+    user_id: userId,
+    score: 0
+  };
+  
+  // Add parent_id if it exists
+  if (parentId) {
+    commentData.parent_id = parentId;
+  }
+  
+  // Add ONLY the correct entity ID field based on the entity type
+  // This prevents foreign key constraint violations
+  switch (entityType) {
+    case 'article':
+      commentData.article_id = entityId;
+      break;
+    case 'issue':
+      commentData.issue_id = entityId;
+      break;
+    case 'post':
+      commentData.post_id = entityId;
+      break;
+  }
+  
+  return commentData;
+};
+
 // Import these from other files to avoid duplication
 import { appendUserVotesToComments } from './commentFetch';
 import { organizeCommentsInTree } from './commentOrganize';

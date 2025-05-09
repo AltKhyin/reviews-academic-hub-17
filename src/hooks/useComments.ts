@@ -1,3 +1,4 @@
+
 import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,7 +9,8 @@ import {
 } from '@/utils/commentFetch';
 import { 
   organizeComments, 
-  getEntityIdField 
+  getEntityIdField,
+  buildCommentData
 } from '@/utils/commentHelpers';
 
 export const useComments = (entityId: string, entityType: EntityType = 'article') => {
@@ -37,27 +39,8 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
       
-      // Create the comment object with only the required fields
-      const commentData: {
-        content: string;
-        user_id: string;
-        score: number;
-        [key: string]: any;
-      } = {
-        content,
-        user_id: user.id,
-        score: 0 // Initialize with 0, will be updated by trigger after upvote
-      };
-      
-      // Use the appropriate field based on entityType
-      // Only add the entity ID field that applies, don't include the others
-      if (entityType === 'article') {
-        commentData.article_id = entityId;
-      } else if (entityType === 'issue') {
-        commentData.issue_id = entityId;
-      } else if (entityType === 'post') {
-        commentData.post_id = entityId;
-      }
+      // Use the buildCommentData helper to construct a properly formatted comment object
+      const commentData = buildCommentData(content, user.id, entityType, entityId);
       
       console.log('Inserting comment with data:', commentData);
       
@@ -107,28 +90,8 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
       
-      // Create the reply comment object with only the required fields
-      const commentData: {
-        content: string;
-        user_id: string;
-        parent_id: string;
-        score: number;
-        [key: string]: any;
-      } = {
-        content,
-        user_id: user.id,
-        parent_id: parentId,
-        score: 0 // Initialize with 0, will be updated by trigger after upvote
-      };
-      
-      // Only add the entity ID field that applies, don't include the others
-      if (entityType === 'article') {
-        commentData.article_id = entityId;
-      } else if (entityType === 'issue') {
-        commentData.issue_id = entityId;
-      } else if (entityType === 'post') {
-        commentData.post_id = entityId;
-      }
+      // Use the buildCommentData helper to construct a properly formatted reply comment
+      const commentData = buildCommentData(content, user.id, entityType, entityId, parentId);
       
       console.log('Inserting reply comment with data:', commentData);
       
