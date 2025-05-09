@@ -46,17 +46,16 @@ export const CommentSection = ({ articleId, issueId, postId }: CommentSectionPro
   const { data: entityExists, isLoading: isCheckingEntity } = useQuery({
     queryKey: [`${entityType}_exists`, entityId],
     queryFn: async () => {
-      // Create a mapping of entity types to table names
-      const tableNameMap = {
-        'article': 'articles',
-        'issue': 'issues',
-        'post': 'posts'
-      };
+      // Use hardcoded table names to avoid TypeScript errors
+      let tableName: "articles" | "issues" | "posts";
       
-      // Get the table name based on entity type
-      const tableName = tableNameMap[entityType];
-      
-      if (!tableName) {
+      if (entityType === 'article') {
+        tableName = 'articles';
+      } else if (entityType === 'issue') {
+        tableName = 'issues';
+      } else if (entityType === 'post') {
+        tableName = 'posts';
+      } else {
         throw new Error(`Invalid entity type: ${entityType}`);
       }
       
