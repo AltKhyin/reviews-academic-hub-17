@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -386,7 +385,7 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
       {/* Comments Section - visible when showComments is true */}
       {showComments && (
         <div className="mt-4 pt-4 border-t border-gray-700/30">
-          <CommentSection articleId={post.id} />
+          <CommentSection postId={post.id} />
         </div>
       )}
 

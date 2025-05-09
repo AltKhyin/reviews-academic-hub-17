@@ -29,28 +29,26 @@ export const PollSection: React.FC<PollSectionProps> = ({ poll, onVoteChange }) 
     try {
       setIsVoting(true);
       
-      // First check if user already voted
-      const { data: existingVote } = await supabase
+      // First check if user already voted for any option in this poll
+      const { data: existingVotes } = await supabase
         .from('poll_votes')
-        .select('option_id')
+        .select('id, option_id')
         .eq('user_id', user.id)
-        .in('option_id', poll.options.map(o => o.id))
-        .maybeSingle();
-        
-      if (existingVote) {
+        .in('option_id', poll.options.map(o => o.id));
+      
+      if (existingVotes && existingVotes.length > 0) {
         // User has already voted, so update their vote
         const { error } = await supabase
           .from('poll_votes')
           .update({ option_id: optionId })
-          .eq('user_id', user.id)
-          .eq('option_id', existingVote.option_id);
+          .eq('id', existingVotes[0].id);
           
         if (error) {
           console.error('Error updating vote:', error);
           throw error;
         }
       } else {
-        // New vote - directly insert without using a trigger function
+        // New vote
         const { error } = await supabase
           .from('poll_votes')
           .insert({ 

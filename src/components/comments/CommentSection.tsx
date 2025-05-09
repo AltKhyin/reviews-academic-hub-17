@@ -46,39 +46,24 @@ export const CommentSection = ({ articleId, issueId, postId }: CommentSectionPro
   const { data: entityExists, isLoading: isCheckingEntity } = useQuery({
     queryKey: [`${entityType}_exists`, entityId],
     queryFn: async () => {
+      let tableName = '';
+      
       if (entityType === 'article') {
-        // For articles, check the articles table
-        const { data, error } = await supabase
-          .from('articles')
-          .select('id')
-          .eq('id', entityId)
-          .maybeSingle();
-          
-        if (error) throw error;
-        return !!data;
+        tableName = 'articles';
       } else if (entityType === 'issue') {
-        // For issues, check the issues table
-        const { data, error } = await supabase
-          .from('issues')
-          .select('id')
-          .eq('id', entityId)
-          .maybeSingle();
-          
-        if (error) throw error;
-        return !!data;
+        tableName = 'issues';
       } else if (entityType === 'post') {
-        // For posts, check the posts table
-        const { data, error } = await supabase
-          .from('posts')
-          .select('id')
-          .eq('id', entityId)
-          .maybeSingle();
-          
-        if (error) throw error;
-        return !!data;
+        tableName = 'posts';
       }
       
-      return false;
+      const { data, error } = await supabase
+        .from(tableName)
+        .select('id')
+        .eq('id', entityId)
+        .maybeSingle();
+        
+      if (error) throw error;
+      return !!data;
     },
     retry: 1,
     staleTime: 30000
