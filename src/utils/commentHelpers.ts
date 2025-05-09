@@ -16,42 +16,28 @@ export const getEntityIdField = (entityType: EntityType): string => {
 };
 
 // Important: Create a function to build the comment data object correctly
-export const buildCommentData = (content: string, userId: string, entityType: EntityType, entityId: string, parentId?: string) => {
-  // Start with base data WITHOUT any entity-specific fields
-  const commentData: {
-    content: string;
-    user_id: string;
-    score: number;
-    parent_id?: string;
-    article_id?: string;
-    issue_id?: string;
-    post_id?: string;
-  } = {
+export function buildCommentData(
+  content: string,
+  userId: string,
+  entityType: 'article' | 'post' | 'issue',
+  entityId: string,
+  parentId?: string
+) {
+  const data: any = {
     content,
     user_id: userId,
-    score: 0
+    score: 0,
   };
-  
-  // Add parent_id if it exists
-  if (parentId) {
-    commentData.parent_id = parentId;
-  }
-  
-  // Add ONLY the correct entity ID field based on the entity type
-  // This prevents foreign key constraint violations
-  switch (entityType) {
-    case 'article':
-      commentData.article_id = entityId;
-      break;
-    case 'issue':
-      commentData.issue_id = entityId;
-      break;
-    case 'post':
-      commentData.post_id = entityId;
-      break;
-  }
-  
-  return commentData;
+
+  if (entityType === 'article') data.article_id = entityId;
+  else if (entityType === 'post') data.post_id = entityId;
+  else if (entityType === 'issue') data.issue_id = entityId;
+  else throw new Error('Invalid entityType');
+
+  if (parentId) data.parent_id = parentId;
+
+  return data;
+}ta;
 };
 
 // Import these from other files to avoid duplication
