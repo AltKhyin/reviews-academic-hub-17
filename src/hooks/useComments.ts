@@ -1,3 +1,4 @@
+
 import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -49,8 +50,14 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
         score: 0 // Initialize with 0, will be updated by trigger after upvote
       };
       
-      // Set either article_id, issue_id, or post_id based on entityType
-      commentData[entityIdField] = entityId;
+      // Use the appropriate field based on entityType
+      if (entityType === 'article') {
+        commentData.article_id = entityId;
+      } else if (entityType === 'issue') {
+        commentData.issue_id = entityId;
+      } else if (entityType === 'post') {
+        commentData.post_id = entityId;
+      }
       
       // Insert the comment
       const { error: commentError, data: newComment } = await supabase
@@ -109,8 +116,14 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
         score: 0 // Initialize with 0, will be updated by trigger after upvote
       };
       
-      // Set either article_id, issue_id, or post_id based on entityType
-      commentData[entityIdField] = entityId;
+      // Use the appropriate field based on entityType
+      if (entityType === 'article') {
+        commentData.article_id = entityId;
+      } else if (entityType === 'issue') {
+        commentData.issue_id = entityId;
+      } else if (entityType === 'post') {
+        commentData.post_id = entityId;
+      }
       
       // Insert the comment
       const { error: commentError, data: newComment } = await supabase
