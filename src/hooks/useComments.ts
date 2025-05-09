@@ -1,4 +1,3 @@
-
 import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -38,7 +37,7 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
       
-      // Create the comment object with the right fields
+      // Create the comment object with only the required fields
       const commentData: {
         content: string;
         user_id: string;
@@ -51,6 +50,7 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
       };
       
       // Use the appropriate field based on entityType
+      // Only add the entity ID field that applies, don't include the others
       if (entityType === 'article') {
         commentData.article_id = entityId;
       } else if (entityType === 'issue') {
@@ -59,6 +59,8 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
         commentData.post_id = entityId;
       }
       
+      console.log('Inserting comment with data:', commentData);
+      
       // Insert the comment
       const { error: commentError, data: newComment } = await supabase
         .from('comments')
@@ -66,7 +68,10 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
         .select()
         .single();
 
-      if (commentError) throw commentError;
+      if (commentError) {
+        console.error('Error inserting comment:', commentError);
+        throw commentError;
+      }
       
       // Add the author's upvote
       if (newComment) {
@@ -102,7 +107,7 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
       
-      // Create the reply comment object
+      // Create the reply comment object with only the required fields
       const commentData: {
         content: string;
         user_id: string;
@@ -116,7 +121,7 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
         score: 0 // Initialize with 0, will be updated by trigger after upvote
       };
       
-      // Use the appropriate field based on entityType
+      // Only add the entity ID field that applies, don't include the others
       if (entityType === 'article') {
         commentData.article_id = entityId;
       } else if (entityType === 'issue') {
@@ -125,6 +130,8 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
         commentData.post_id = entityId;
       }
       
+      console.log('Inserting reply comment with data:', commentData);
+      
       // Insert the comment
       const { error: commentError, data: newComment } = await supabase
         .from('comments')
@@ -132,7 +139,10 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
         .select()
         .single();
 
-      if (commentError) throw commentError;
+      if (commentError) {
+        console.error('Error inserting reply comment:', commentError);
+        throw commentError;
+      }
       
       // Add the author's upvote
       if (newComment) {
