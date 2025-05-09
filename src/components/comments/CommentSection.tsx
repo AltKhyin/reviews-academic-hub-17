@@ -46,14 +46,18 @@ export const CommentSection = ({ articleId, issueId, postId }: CommentSectionPro
   const { data: entityExists, isLoading: isCheckingEntity } = useQuery({
     queryKey: [`${entityType}_exists`, entityId],
     queryFn: async () => {
-      let tableName = '';
+      // Create a mapping of entity types to table names
+      const tableNameMap = {
+        'article': 'articles',
+        'issue': 'issues',
+        'post': 'posts'
+      };
       
-      if (entityType === 'article') {
-        tableName = 'articles';
-      } else if (entityType === 'issue') {
-        tableName = 'issues';
-      } else if (entityType === 'post') {
-        tableName = 'posts';
+      // Get the table name based on entity type
+      const tableName = tableNameMap[entityType];
+      
+      if (!tableName) {
+        throw new Error(`Invalid entity type: ${entityType}`);
       }
       
       const { data, error } = await supabase

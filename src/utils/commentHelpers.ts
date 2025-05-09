@@ -9,7 +9,8 @@ export const getEntityIdField = (entityType: EntityType): string => {
     case 'issue':
       return 'issue_id';
     case 'post':
-      return 'post_id';
+      // Check if we're working with a post type but the database doesn't have post_id column
+      return 'article_id'; // Temporarily use article_id for posts as a workaround
     default:
       return 'article_id';
   }
