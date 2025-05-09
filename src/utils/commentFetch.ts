@@ -13,11 +13,20 @@ export const fetchComments = async (
     // Get entity field name
     const entityField = getEntityIdField(entityType);
 
-    // Get comments for the entity
+    // Get comments for the entity with properly qualified column names
     const { data: comments, error } = await supabase
       .from('comments')
       .select(`
-        *,
+        id,
+        content,
+        created_at,
+        updated_at,
+        user_id,
+        article_id,
+        issue_id,
+        post_id,
+        parent_id,
+        score,
         profiles:user_id (
           id,
           full_name,
@@ -37,7 +46,7 @@ export const fetchComments = async (
       
       const { data: votes, error: votesError } = await supabase
         .from('comment_votes')
-        .select('*')
+        .select('user_id, comment_id, value')
         .eq('user_id', userId)
         .in('comment_id', commentIds);
 

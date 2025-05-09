@@ -9,10 +9,7 @@ export const getEntityIdField = (entityType: EntityType): string => {
     case 'issue':
       return 'issue_id';
     case 'post':
-      // Use article_id for posts since the comments table doesn't have post_id column yet
-      // The SQL migration has added the post_id column, but we'll continue using article_id 
-      // for backward compatibility with existing comments
-      return 'article_id';
+      return 'post_id';
     default:
       return 'article_id';
   }

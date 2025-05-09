@@ -46,8 +46,9 @@ export const CommentSection = ({ articleId, issueId, postId }: CommentSectionPro
   const { data: entityExists, isLoading: isCheckingEntity } = useQuery({
     queryKey: [`${entityType}_exists`, entityId],
     queryFn: async () => {
-      // Use hardcoded table names to avoid TypeScript errors
-      let tableName: "articles" | "issues" | "posts";
+      console.log(`Checking if ${entityType} exists with ID: ${entityId}`);
+      
+      let tableName: string;
       
       if (entityType === 'article') {
         tableName = 'articles';
@@ -65,7 +66,11 @@ export const CommentSection = ({ articleId, issueId, postId }: CommentSectionPro
         .eq('id', entityId)
         .maybeSingle();
         
-      if (error) throw error;
+      if (error) {
+        console.error(`Error checking ${entityType} existence:`, error);
+        throw error;
+      }
+      console.log(`Entity exists check result:`, !!data);
       return !!data;
     },
     retry: 1,
@@ -88,6 +93,7 @@ export const CommentSection = ({ articleId, issueId, postId }: CommentSectionPro
     
     try {
       if (!entityExists) {
+        console.error(`Entity ${entityType} with ID ${entityId} does not exist`);
         toast({
           variant: "destructive",
           title: "Erro",
@@ -96,6 +102,7 @@ export const CommentSection = ({ articleId, issueId, postId }: CommentSectionPro
         return;
       }
       
+      console.log(`Adding comment to ${entityType} with ID ${entityId}: ${newComment}`);
       await addComment(newComment);
       setNewComment('');
     } catch (error) {
@@ -119,6 +126,7 @@ export const CommentSection = ({ articleId, issueId, postId }: CommentSectionPro
     return <div className="animate-pulse">Carregando comentários...</div>;
   }
 
+  console.log('Comments data:', comments);
   const userInitial = profile?.full_name ? profile.full_name[0] : 'U';
 
   // Wrapper functions to handle the type mismatch
