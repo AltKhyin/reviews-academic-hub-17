@@ -43,7 +43,7 @@ const ArticleViewer: React.FC = () => {
     const isValidUUID = id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
     console.log("Is ID a valid UUID format:", isValidUUID);
     
-    // Check if we're in the correct route expecting an 'issue'
+    // Check if we're in the correct route
     const isArticleRoute = window.location.pathname.includes('/article/');
     console.log("Is this an article route:", isArticleRoute);
   }, [id]);
@@ -58,29 +58,27 @@ const ArticleViewer: React.FC = () => {
       
       console.log("Attempting to fetch issue with ID:", id);
       
-      // Check if this is actually an article route but querying issues table
-      const isArticleRoute = window.location.pathname.includes('/article/');
-      const tableName = isArticleRoute ? 'articles' : 'issues';
-      console.log(`Querying ${tableName} table for ID: ${id}`);
-      
+      // The critical fix: When on /article/ route, we ALWAYS want to query the issues table
+      // This is because article pages in this app are showing content from the issues table
+      // The pathname check isn't relevant to the actual data source
       const { data, error } = await supabase
-        .from(tableName)
+        .from('issues')
         .select('*')
         .eq('id', id)
         .single();
 
       if (error) {
-        console.error(`Error fetching ${tableName}:`, error);
+        console.error(`Error fetching issue:`, error);
         console.log("Full error details:", JSON.stringify(error, null, 2));
         throw error;
       }
       
       if (!data) {
-        console.error(`${tableName} not found with ID: ${id}`);
-        throw new Error(`${tableName} not found`);
+        console.error(`Issue not found with ID: ${id}`);
+        throw new Error(`Issue not found`);
       }
 
-      console.log(`${tableName} data found:`, data);
+      console.log(`Issue data found:`, data);
       return data as Issue;
     },
     retry: 1,
