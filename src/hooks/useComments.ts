@@ -8,8 +8,7 @@ import {
 } from '@/utils/commentFetch';
 import { 
   organizeComments, 
-  getEntityIdField,
-  buildCommentData
+  getEntityIdField
 } from '@/utils/commentHelpers';
 
 export const useComments = (entityId: string, entityType: EntityType = 'article') => {
@@ -17,7 +16,6 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
   const { toast } = useToast();
   const entityIdField = getEntityIdField(entityType);
 
-  // Fetch comments for the entity with votes for current user
   const { data: commentsData, isLoading } = useQuery({
     queryKey: ['comments', entityId, entityType],
     queryFn: async () => {
@@ -28,25 +26,35 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
     staleTime: 30000
   });
 
-  // Organize comments into a hierarchical structure
   const organizedComments = useMemo(() => {
     return organizeComments(commentsData || { comments: [], userVotes: [] });
   }, [commentsData]);
 
-  // Add a new comment
   const addComment = useMutation({
     mutationFn: async (content: string) => {
-      console.log(`Adding comment to ${entityType} with ID ${entityId}`);
-      
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-      
-      // Use the buildCommentData helper to construct a properly formatted comment object
-      const commentData = buildCommentData(content, user.id, entityType, entityId);
-      
-      console.log('Inserting comment with data:', commentData);
-      
-      // Insert the comment
+      const {
+        data: { user },
+        error: authError
+      } = await supabase.auth.getUser();
+
+      if (authError || !user) {
+        throw new Error('Not authenticated');
+      }
+
+      const commentData: any = {
+        content,
+        user_id: user.id,
+        score: 0,
+      };
+
+      if (entityType === 'post') {
+        commentData.post_id = entityId;
+      } else if (entityType === 'article') {
+        commentData.article_id = entityId;
+      } else if (entityType === 'issue') {
+        commentData.issue_id = entityId;
+      }
+
       const { error: commentError, data: newComment } = await supabase
         .from('comments')
         .insert(commentData)
@@ -54,13 +62,9 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
         .single();
 
       if (commentError) {
-        console.error('Error inserting comment:', commentError);
         throw commentError;
       }
-      
-      console.log('Comment added successfully:', newComment);
-      
-      // Add the author's upvote
+
       if (newComment) {
         const { error: voteError } = await supabase
           .from('comment_votes')
@@ -69,10 +73,10 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
             comment_id: newComment.id,
             value: 1
           });
-        
+
         if (voteError) console.error('Error adding auto-upvote:', voteError);
       }
-      
+
       return newComment;
     },
     onSuccess: () => {
@@ -84,7 +88,6 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
       });
     },
     onError: (error: Error) => {
-      console.error('Error in addComment mutation:', error);
       toast({
         title: "Erro",
         description: error.message,
@@ -94,18 +97,32 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
     }
   });
 
-  // Reply to a comment
   const replyToComment = useMutation({
     mutationFn: async ({ parentId, content }: { parentId: string, content: string }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-      
-      // Use the buildCommentData helper to construct a properly formatted reply comment
-      const commentData = buildCommentData(content, user.id, entityType, entityId, parentId);
-      
-      console.log('Inserting reply comment with data:', commentData);
-      
-      // Insert the comment
+      const {
+        data: { user },
+        error: authError
+      } = await supabase.auth.getUser();
+
+      if (authError || !user) {
+        throw new Error('Not authenticated');
+      }
+
+      const commentData: any = {
+        content,
+        user_id: user.id,
+        score: 0,
+        parent_id: parentId
+      };
+
+      if (entityType === 'post') {
+        commentData.post_id = entityId;
+      } else if (entityType === 'article') {
+        commentData.article_id = entityId;
+      } else if (entityType === 'issue') {
+        commentData.issue_id = entityId;
+      }
+
       const { error: commentError, data: newComment } = await supabase
         .from('comments')
         .insert(commentData)
@@ -113,11 +130,9 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
         .single();
 
       if (commentError) {
-        console.error('Error inserting reply comment:', commentError);
         throw commentError;
       }
-      
-      // Add the author's upvote
+
       if (newComment) {
         const { error: voteError } = await supabase
           .from('comment_votes')
@@ -126,10 +141,10 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
             comment_id: newComment.id,
             value: 1
           });
-        
+
         if (voteError) console.error('Error adding auto-upvote:', voteError);
       }
-      
+
       return newComment;
     },
     onSuccess: () => {
@@ -141,7 +156,6 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
       });
     },
     onError: (error: Error) => {
-      console.error('Error in replyToComment mutation:', error);
       toast({
         title: "Erro",
         description: error.message,
@@ -151,7 +165,6 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
     }
   });
 
-  // Delete a comment
   const deleteComment = useMutation({
     mutationFn: async (commentId: string) => {
       const { error } = await supabase
@@ -171,7 +184,6 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
       });
     },
     onError: (error: Error) => {
-      console.error('Error in deleteComment mutation:', error);
       toast({
         title: "Erro",
         description: error.message,
@@ -181,35 +193,31 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
     }
   });
 
-  // Vote on a comment
   const voteComment = useMutation({
     mutationFn: async ({ commentId, value }: { commentId: string; value: 1 | -1 | 0 }) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
-      
-      // Check if the user has already voted on this comment
+
       const { data: existingVote, error: checkError } = await supabase
         .from('comment_votes')
         .select('*')
         .eq('user_id', user.id)
         .eq('comment_id', commentId)
         .maybeSingle();
-        
+
       if (checkError) throw checkError;
-      
-      // If value is 0, delete the vote if it exists
+
       if (value === 0 && existingVote) {
         const { error: deleteError } = await supabase
           .from('comment_votes')
           .delete()
           .eq('user_id', user.id)
           .eq('comment_id', commentId);
-          
+
         if (deleteError) throw deleteError;
         return { success: true };
       }
-      
-      // If value is not 0, upsert the vote
+
       if (value !== 0) {
         const { error: upsertError } = await supabase
           .from('comment_votes')
@@ -217,21 +225,20 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
             user_id: user.id,
             comment_id: commentId,
             value
-          }, { 
-            onConflict: 'user_id,comment_id', 
-            ignoreDuplicates: false 
+          }, {
+            onConflict: 'user_id,comment_id',
+            ignoreDuplicates: false
           });
-          
+
         if (upsertError) throw upsertError;
       }
-      
+
       return { success: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['comments', entityId, entityType] });
     },
     onError: (error: Error) => {
-      console.error('Error in voteComment mutation:', error);
       toast({
         title: "Erro ao votar",
         description: error.message,
