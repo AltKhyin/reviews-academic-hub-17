@@ -40,6 +40,7 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isBookmarking, setIsBookmarking] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  const [commentCount, setCommentCount] = useState(0);
 
   // Check if user is admin
   useEffect(() => {
@@ -101,6 +102,25 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
     autoUpvoteOwnPost();
   }, [user, post.id, post.user_id, onVoteChange]);
 
+  // Add code to count comments
+  useEffect(() => {
+    if (showComments || !post.id) return;
+    
+    // Get comment count when post is loaded
+    const fetchCommentCount = async () => {
+      const { count, error } = await supabase
+        .from('comments')
+        .select('*', { count: 'exact', head: true })
+        .eq('post_id', post.id);
+        
+      if (!error && count !== null) {
+        setCommentCount(count);
+      }
+    };
+    
+    fetchCommentCount();
+  }, [post.id, showComments]);
+  
   const formatDate = (dateString: string) => {
     return formatDistanceToNow(new Date(dateString), {
       addSuffix: true,
@@ -351,6 +371,11 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
             >
               <MessageSquare className="h-4 w-4 mr-1" />
               Comentários
+              {!showComments && commentCount > 0 && (
+                <span className="ml-1 text-xs bg-gray-700/50 px-1.5 py-0.5 rounded-full">
+                  {commentCount}
+                </span>
+              )}
             </Button>
             
             {/* Save button - bookmark */}

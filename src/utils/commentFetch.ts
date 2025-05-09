@@ -39,8 +39,8 @@ export const fetchComments = async (
       throw error;
     }
 
-    // Use simple array assertion to avoid excessive type depth
-    const comments = (data || []) as BaseComment[];
+    // Fix the type issue by explicitly typing the data
+    const comments = data as unknown as BaseComment[];
     
     // Get user votes if a userId is provided
     let userVotes: CommentVote[] = [];
