@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Comment, EntityType } from '@/types/commentTypes';
+import { BaseComment, Comment, CommentVote, EntityType } from '@/types/commentTypes';
 
 /**
  * Fetches comments and user votes for a specific entity
@@ -56,7 +56,7 @@ export async function fetchCommentsData(entityId: string, entityType: EntityType
     const userId = user?.id;
 
     // If user is authenticated, fetch their votes
-    let userVotes: any[] = [];
+    let userVotes: CommentVote[] = [];
     if (userId) {
       const { data: votes = [], error: votesError } = await supabase
         .from('comment_votes')
@@ -75,4 +75,36 @@ export async function fetchCommentsData(entityId: string, entityType: EntityType
     console.error('Error in fetchCommentsData:', error);
     return { comments: [], userVotes: [] };
   }
+}
+
+/**
+ * Adds user vote information to comments
+ * Appends userVote property to each comment based on the user's votes
+ */
+export function appendUserVotesToComments(
+  comments: BaseComment[],
+  userVotes: CommentVote[]
+): Comment[] {
+  if (!comments || comments.length === 0) {
+    return [];
+  }
+  
+  if (!userVotes || userVotes.length === 0) {
+    // If there are no user votes, just return comments as is
+    return comments as Comment[];
+  }
+
+  // Create a map for fast lookup of user votes by comment ID
+  const votesByCommentId = new Map<string, number>();
+  userVotes.forEach(vote => {
+    votesByCommentId.set(vote.comment_id, vote.value);
+  });
+
+  // Append userVote info to each comment
+  return comments.map(comment => ({
+    ...comment,
+    userVote: votesByCommentId.has(comment.id) 
+      ? votesByCommentId.get(comment.id) as 1 | -1 
+      : undefined
+  })) as Comment[];
 }

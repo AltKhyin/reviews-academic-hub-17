@@ -1,5 +1,7 @@
 
-import { EntityType } from '@/types/commentTypes';
+import { Comment, EntityType } from '@/types/commentTypes';
+import { appendUserVotesToComments } from './commentFetch';
+import { organizeCommentsInTree } from './commentOrganize';
 
 // Helper function to get the correct field name for entity ID
 export const getEntityIdField = (entityType: EntityType): string => {
@@ -38,10 +40,6 @@ export function buildCommentData(
 
   return data;
 }
-
-// Import these from other files to avoid duplication
-import { appendUserVotesToComments } from './commentFetch';
-import { organizeCommentsInTree } from './commentOrganize';
 
 // Helper function to organize comments and append user votes
 export const organizeComments = (commentsData: { 
