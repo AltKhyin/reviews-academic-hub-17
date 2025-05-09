@@ -32,8 +32,8 @@ export const fetchComments = async (
     // Get user votes if a userId is provided
     let userVotes: CommentVote[] = [];
     if (userId && comments && comments.length > 0) {
-      // Create an array of comment IDs to avoid deep type inference issues
-      const commentIds = comments.map(c => c.id);
+      // Use a simple array of strings to avoid deep type inference
+      const commentIds = comments.map((c: { id: string }) => c.id);
       
       const { data: votes, error: votesError } = await supabase
         .from('comment_votes')

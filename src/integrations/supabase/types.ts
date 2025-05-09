@@ -221,6 +221,7 @@ export type Database = {
           id: string
           issue_id: string | null
           parent_id: string | null
+          post_id: string | null
           score: number
           updated_at: string
           user_id: string
@@ -232,6 +233,7 @@ export type Database = {
           id?: string
           issue_id?: string | null
           parent_id?: string | null
+          post_id?: string | null
           score?: number
           updated_at?: string
           user_id: string
@@ -243,6 +245,7 @@ export type Database = {
           id?: string
           issue_id?: string | null
           parent_id?: string | null
+          post_id?: string | null
           score?: number
           updated_at?: string
           user_id?: string
@@ -267,6 +270,13 @@ export type Database = {
             columns: ["parent_id"]
             isOneToOne: false
             referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
             referencedColumns: ["id"]
           },
           {
