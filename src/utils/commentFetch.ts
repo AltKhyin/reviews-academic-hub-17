@@ -10,41 +10,29 @@ export const fetchComments = async (
   userId?: string
 ): Promise<{ comments: BaseComment[], userVotes: CommentVote[] }> => {
   try {
+    console.log(`Fetching comments for ${entityType} with ID: ${entityId}`);
+    
     // Get entity field name
     const entityField = getEntityIdField(entityType);
 
-    // Get comments for the entity with properly qualified column names
-    // Using more explicit type handling to avoid the "Type instantiation is excessively deep" error
+    // Simplify the query to avoid complex type inference issues
     const { data, error } = await supabase
       .from('comments')
-      .select(`
-        id,
-        content,
-        created_at,
-        updated_at,
-        user_id,
-        article_id,
-        issue_id,
-        post_id,
-        parent_id,
-        score,
-        profiles:user_id (
-          id,
-          full_name,
-          avatar_url
-        )
-      `)
+      .select('*, profiles:user_id(*)')
       .eq(entityField, entityId)
       .order('created_at', { ascending: true });
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching comments:', error);
+      throw error;
+    }
 
-    // Convert to BaseComment type explicitly after fetching
-    const comments = data as unknown as BaseComment[];
+    // Explicitly cast to BaseComment[] to avoid deep type inference
+    const comments = (data || []) as unknown as BaseComment[];
     
     // Get user votes if a userId is provided
     let userVotes: CommentVote[] = [];
-    if (userId && comments && comments.length > 0) {
+    if (userId && comments.length > 0) {
       // Extract comment IDs as an array of strings
       const commentIds = comments.map(c => c.id);
       
@@ -54,13 +42,15 @@ export const fetchComments = async (
         .eq('user_id', userId)
         .in('comment_id', commentIds);
 
-      if (!votesError && votes) {
+      if (votesError) {
+        console.error('Error fetching votes:', votesError);
+      } else if (votes) {
         userVotes = votes as CommentVote[];
       }
     }
 
     return { 
-      comments: comments || [], 
+      comments, 
       userVotes 
     };
   } catch (error) {

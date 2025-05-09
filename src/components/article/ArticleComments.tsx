@@ -11,6 +11,9 @@ interface ArticleCommentsProps {
 }
 
 export const ArticleComments: React.FC<ArticleCommentsProps> = ({ articleId }) => {
+  // Add debugging to verify articleId is passed correctly
+  console.log("DEBUG: Article ID for comments:", articleId);
+  
   const [sortMode, setSortMode] = useState<'best' | 'new' | 'top'>('best');
   
   const { 
@@ -23,7 +26,7 @@ export const ArticleComments: React.FC<ArticleCommentsProps> = ({ articleId }) =
     isAddingComment,
     isDeletingComment,
     isReplying,
-  } = useComments(articleId, 'article'); // Changed from 'issue' to 'article'
+  } = useComments(articleId, 'article');
 
   const handleAddComment = async (content: string) => {
     await addComment(content);

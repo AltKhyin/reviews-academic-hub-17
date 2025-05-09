@@ -1,3 +1,4 @@
+
 import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,6 +18,11 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
   const { toast } = useToast();
   const entityIdField = getEntityIdField(entityType);
 
+  // Validate entity information early in the hook
+  if (!entityId) {
+    console.error(`useComments hook called without entityId: ${entityId}, entityType: ${entityType}`);
+  }
+
   const { data: commentsData, isLoading } = useQuery({
     queryKey: ['comments', entityId, entityType],
     queryFn: async () => {
@@ -24,7 +30,8 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
       return fetchCommentsData(entityId, entityType);
     },
     refetchOnWindowFocus: false,
-    staleTime: 30000
+    staleTime: 30000,
+    enabled: !!entityId // Only enable query if entityId exists
   });
 
   const organizedComments = useMemo(() => {
@@ -33,6 +40,12 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
 
   const addComment = useMutation({
     mutationFn: async (content: string) => {
+      // Add validation as requested
+      if (!entityId || !entityType) {
+        console.error(`Cannot add comment: Missing entity info. entityId: ${entityId}, entityType: ${entityType}`);
+        throw new Error("Falha ao adicionar comentário: Informações da entidade ausentes.");
+      }
+      
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
@@ -81,6 +94,12 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
 
   const replyToComment = useMutation({
     mutationFn: async ({ parentId, content }: { parentId: string, content: string }) => {
+      // Add validation as requested
+      if (!entityId || !entityType) {
+        console.error(`Cannot add reply: Missing entity info. entityId: ${entityId}, entityType: ${entityType}`);
+        throw new Error("Falha ao adicionar resposta: Informações da entidade ausentes.");
+      }
+      
       const {
         data: { user },
         error: authError
