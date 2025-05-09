@@ -14,8 +14,8 @@ export const fetchComments = async (
     const entityField = getEntityIdField(entityType);
 
     // Get comments for the entity with properly qualified column names
-    // Fix the type instantiation issue by using explicit type casting
-    const query = supabase
+    // Fix the type instantiation issue by using a more direct approach without complex type inference
+    const { data: comments, error } = await supabase
       .from('comments')
       .select(`
         id,
@@ -35,9 +35,7 @@ export const fetchComments = async (
         )
       `)
       .eq(entityField, entityId)
-      .order('created_at', { ascending: true });
-      
-    const { data: comments, error } = await query;
+      .order('created_at', { ascending: true }) as any;
 
     if (error) throw error;
 

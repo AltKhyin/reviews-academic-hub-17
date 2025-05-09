@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -64,12 +64,9 @@ export const CommentSection = ({ articleId, issueId, postId }: CommentSectionPro
           throw new Error(`Invalid entity type: ${entityType}`);
       }
       
-      // Use as const to make the tableName literal type instead of string
-      // This prevents the "Type instantiation is excessively deep" error
-      const table = tableName as 'articles' | 'issues' | 'posts';
-      
+      // Use direct typing to avoid "Type instantiation is excessively deep" error
       const { data, error } = await supabase
-        .from(table)
+        .from(tableName as any)
         .select('id')
         .eq('id', entityId)
         .maybeSingle();
