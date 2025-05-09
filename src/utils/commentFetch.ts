@@ -1,109 +1,78 @@
 
-import { supabase } from "@/integrations/supabase/client";
-import { BaseComment, CommentVote, EntityType } from '@/types/commentTypes';
-import { getEntityIdField } from './commentHelpers';
+import { supabase } from '@/integrations/supabase/client';
+import { Comment, EntityType } from '@/types/commentTypes';
 
-// This function fetches comments for various entity types (article, issue, post)
-export const fetchComments = async (
-  entityType: EntityType,
-  entityId: string,
-  userId?: string
-): Promise<{ comments: BaseComment[], userVotes: CommentVote[] }> => {
+/**
+ * Fetches comments and user votes for a specific entity
+ */
+export async function fetchCommentsData(entityId: string, entityType: EntityType = 'article') {
+  console.log(`Fetching comments for ${entityType} with ID: ${entityId}`);
+  
+  if (!entityId) {
+    console.error('No entity ID provided for comment fetch');
+    return { comments: [], userVotes: [] };
+  }
+
+  // Determine which field to query on based on entity type
+  const idField = entityType === 'article' 
+    ? 'article_id' 
+    : entityType === 'post' 
+      ? 'post_id' 
+      : 'issue_id';
+  
   try {
-    console.log(`Fetching comments for ${entityType} with ID: ${entityId}`);
-    
-    // Get entity field name
-    const entityField = getEntityIdField(entityType);
+    // Check if the entity exists first
+    const entityTable = entityType === 'article' ? 'articles' : entityType === 'post' ? 'posts' : 'issues';
+    const { data: entityExists, error: entityCheckError } = await supabase
+      .from(entityTable)
+      .select('id')
+      .eq('id', entityId)
+      .maybeSingle();
 
-    console.log(`Using entity field: ${entityField} for query`);
-
-    // Use an explicit query without deeply nested joins to avoid type issues
-    const { data, error } = await supabase
-      .from('comments')
-      .select(`
-        id, 
-        content, 
-        created_at, 
-        updated_at, 
-        user_id, 
-        article_id, 
-        issue_id, 
-        post_id, 
-        parent_id, 
-        score,
-        profiles:user_id (id, full_name, avatar_url)
-      `)
-      .eq(entityField, entityId)
-      .order('created_at', { ascending: true });
-    
-    if (error) {
-      console.error('Error fetching comments:', error);
-      throw error;
+    if (entityCheckError) {
+      console.error(`Error checking if ${entityType} exists:`, entityCheckError);
+      throw entityCheckError;
     }
 
-    // Fix the type issue by explicitly typing the data
-    const comments = data as unknown as BaseComment[];
-    console.log(`Retrieved ${comments.length} comments for ${entityType} ID: ${entityId}`);
-    
-    // Get user votes if a userId is provided
-    let userVotes: CommentVote[] = [];
-    if (userId && comments.length > 0) {
-      // Extract comment IDs as an array of strings
-      const commentIds = comments.map(c => c.id);
-      
-      const { data: votes, error: votesError } = await supabase
+    if (!entityExists) {
+      console.warn(`${entityType} with ID ${entityId} does not exist`);
+      return { comments: [], userVotes: [] };
+    }
+
+    // Fetch comments for this entity
+    const { data: comments = [], error: commentError } = await supabase
+      .from('comments')
+      .select('*')
+      .eq(idField, entityId)
+      .order('created_at', { ascending: false });
+
+    if (commentError) {
+      console.error('Error fetching comments:', commentError);
+      throw commentError;
+    }
+
+    // Get the current user's ID from auth context
+    const { data: { user } } = await supabase.auth.getUser();
+    const userId = user?.id;
+
+    // If user is authenticated, fetch their votes
+    let userVotes: any[] = [];
+    if (userId) {
+      const { data: votes = [], error: votesError } = await supabase
         .from('comment_votes')
-        .select('user_id, comment_id, value')
-        .eq('user_id', userId)
-        .in('comment_id', commentIds);
+        .select('*')
+        .eq('user_id', userId);
 
       if (votesError) {
-        console.error('Error fetching votes:', votesError);
-      } else if (votes) {
-        userVotes = votes as CommentVote[];
-        console.log(`Retrieved ${userVotes.length} votes for user ${userId}`);
+        console.error('Error fetching comment votes:', votesError);
+      } else {
+        userVotes = votes;
       }
     }
 
-    return { 
-      comments, 
-      userVotes 
-    };
+    return { comments, userVotes };
   } catch (error) {
-    console.error('Error fetching comments:', error);
+    console.error('Error in fetchCommentsData:', error);
     return { comments: [], userVotes: [] };
   }
-};
-
-// Wrapper function for fetchComments with better naming for the hook
-export const fetchCommentsData = async (
-  entityId: string,
-  entityType: EntityType
-): Promise<{ comments: BaseComment[], userVotes: CommentVote[] }> => {
-  // Get current user if available
-  const { data } = await supabase.auth.getUser();
-  const userId = data?.user?.id;
-  
-  console.log(`Fetching comments with user ID: ${userId || 'not authenticated'}`);
-  return fetchComments(entityType, entityId, userId);
-};
-
-// This function adds user vote information to comments
-export const appendUserVotesToComments = (
-  comments: BaseComment[],
-  userVotes: CommentVote[]
-): BaseComment[] => {
-  if (!userVotes.length) return comments;
-  
-  // Create a map for faster lookup
-  const votesMap: Record<string, 1 | -1> = {};
-  userVotes.forEach(vote => {
-    votesMap[vote.comment_id] = vote.value;
-  });
-
-  // Append vote information to each comment
-  return comments.map(comment => ({
-    ...comment,
-    userVote: votesMap[comment.id] || 0
-  }));
-};
+}

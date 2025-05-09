@@ -23,6 +23,8 @@ const ArticleViewer: React.FC = () => {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isReadingMode, setIsReadingMode] = useState(false);
   const { setOpen: setSidebarOpen } = useSidebar();
+  const [isValidatingId, setIsValidatingId] = useState(true);
+  const [isValidId, setIsValidId] = useState<boolean | null>(null);
   
   // Enable scrolling on the main document
   useEffect(() => {
@@ -32,6 +34,44 @@ const ArticleViewer: React.FC = () => {
       document.body.style.overflow = 'auto'; // Reset on unmount
     };
   }, []);
+
+  // ADVANCED ID VALIDATION
+  // Check if the article/issue ID exists in the database before attempting to load content
+  useEffect(() => {
+    const validateEntityId = async () => {
+      if (!id) {
+        setIsValidId(false);
+        setIsValidatingId(false);
+        return;
+      }
+
+      try {
+        console.log('Validating entity ID:', id);
+        // We're looking in the issues table since that's the source table for our content
+        const { data, error } = await supabase
+          .from('issues')
+          .select('id')
+          .eq('id', id)
+          .single();
+
+        if (error || !data) {
+          console.error('ID validation error or not found:', error);
+          setIsValidId(false);
+        } else {
+          console.log('Valid ID confirmed:', data.id);
+          setIsValidId(true);
+        }
+      } catch (error) {
+        console.error('Error in ID validation:', error);
+        setIsValidId(false);
+      } finally {
+        setIsValidatingId(false);
+      }
+    };
+
+    setIsValidatingId(true);
+    validateEntityId();
+  }, [id]);
 
   // ENHANCED DIAGNOSTICS: Log detailed information about URL and ID parameter
   useEffect(() => {
@@ -47,10 +87,11 @@ const ArticleViewer: React.FC = () => {
     // Check if we're in the correct route
     const isArticleRoute = window.location.pathname.includes('/article/');
     console.log("Is this an article route:", isArticleRoute);
+    console.log("ID validation status:", isValidId);
     console.log("---------------------------------------------");
-  }, [id]);
+  }, [id, isValidId]);
 
-  // FIX: Always query the issues table for the content, regardless of route
+  // Only fetch the data if we've confirmed the ID exists
   const { data: issue, isLoading, error } = useQuery({
     queryKey: ['issue', id],
     queryFn: async () => {
@@ -91,6 +132,7 @@ const ArticleViewer: React.FC = () => {
       return data as Issue;
     },
     retry: 1,
+    enabled: !!id && isValidId === true, // Only run the query if we have a valid ID
     meta: {
       errorMessage: "Não foi possível carregar o artigo"
     }
@@ -107,6 +149,31 @@ const ArticleViewer: React.FC = () => {
       });
     }
   }, [error, toast]);
+
+  // Show loading state while we validate the ID
+  if (isValidatingId) {
+    return <div className="p-8 text-center">Verificando artigo...</div>;
+  }
+
+  // Show not found message if the ID is invalid
+  if (isValidId === false) {
+    return (
+      <div className="space-y-8">
+        <Button variant="ghost" onClick={() => navigate(-1)}>
+          <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
+        </Button>
+        <Card className="p-8 text-center">
+          <h2 className="text-xl font-semibold mb-2">Artigo não encontrado</h2>
+          <p className="text-muted-foreground">
+            O conteúdo que você está procurando não existe ou foi removido.
+          </p>
+          <p className="text-xs text-gray-500 mt-4">
+            ID: {id || 'não especificado'}
+          </p>
+        </Card>
+      </div>
+    );
+  }
 
   const handleFullScreenDual = () => {
     const container = document.getElementById('dual-pdf-container');
@@ -312,7 +379,8 @@ const ArticleViewer: React.FC = () => {
         <ExternalLectures issueId={issue.id} />
       </div>
       
-      <ArticleComments articleId={issue.id} />
+      {/* Only render comments if we have a valid ID */}
+      {isValidId && <ArticleComments articleId={issue.id} />}
     </div>
   );
 };
