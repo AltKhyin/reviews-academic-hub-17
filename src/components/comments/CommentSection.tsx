@@ -4,16 +4,36 @@ import { useComments } from '@/hooks/useComments';
 import { useAuth } from '@/contexts/AuthContext';
 import { CommentForm } from './CommentForm';
 import { CommentItem } from './CommentItem';
+import { CommentList } from './CommentList';
+import { CommentSectionHeader } from './CommentSectionHeader';
+import { EntityType } from '@/types/commentTypes';
 
 interface CommentSectionProps {
-  postId: string;
+  postId?: string;
+  articleId?: string;
+  issueId?: string;
 }
 
-export const CommentSection: React.FC<CommentSectionProps> = ({ postId }) => {
+export const CommentSection: React.FC<CommentSectionProps> = ({ postId, articleId, issueId }) => {
   const { user } = useAuth();
   
-  // Added debugging to verify postId is passed correctly
-  console.log("DEBUG: Post ID for comments:", postId);
+  // Determine entity type and ID
+  let entityId: string = '';
+  let entityType: EntityType = 'post';
+  
+  if (postId) {
+    entityId = postId;
+    entityType = 'post';
+  } else if (articleId) {
+    entityId = articleId;
+    entityType = 'article';
+  } else if (issueId) {
+    entityId = issueId;
+    entityType = 'issue';
+  }
+  
+  // Add debugging to verify entity information is correct
+  console.log(`CommentSection rendering for ${entityType} with ID: ${entityId}`);
   
   const {
     comments,
@@ -26,39 +46,30 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId }) => {
     isDeletingComment,
     isReplying,
     isVoting
-  } = useComments(postId, 'post');
+  } = useComments(entityId, entityType);
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-medium mb-2">Comentários</h3>
+      <CommentSectionHeader 
+        commentCount={comments.length} 
+        isLoading={isLoading}
+      />
       
       <CommentForm 
         onSubmit={addComment}
         isSubmitting={isAddingComment}
       />
 
-      {isLoading ? (
-        <div className="text-center text-gray-400">Carregando comentários...</div>
-      ) : comments && comments.length > 0 ? (
-        <div className="space-y-4">
-          {comments.map(comment => (
-            <CommentItem 
-              key={comment.id} 
-              comment={comment} 
-              onDelete={deleteComment}
-              onReply={replyToComment}
-              onVote={voteComment}
-              isDeleting={isDeletingComment}
-              isReplyingFromHook={isReplying}
-              isVoting={isVoting}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="text-center text-gray-400 p-4">
-          Nenhum comentário ainda. Seja o primeiro a comentar!
-        </div>
-      )}
+      <CommentList 
+        comments={comments}
+        isLoading={isLoading}
+        onDelete={deleteComment}
+        onReply={replyToComment}
+        onVote={voteComment}
+        isDeleting={isDeletingComment}
+        isReplying={isReplying}
+        isVoting={isVoting}
+      />
     </div>
   );
 };

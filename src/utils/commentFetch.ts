@@ -15,6 +15,8 @@ export const fetchComments = async (
     // Get entity field name
     const entityField = getEntityIdField(entityType);
 
+    console.log(`Using entity field: ${entityField} for query`);
+
     // Use an explicit query without deeply nested joins to avoid type issues
     const { data, error } = await supabase
       .from('comments')
@@ -41,6 +43,7 @@ export const fetchComments = async (
 
     // Fix the type issue by explicitly typing the data
     const comments = data as unknown as BaseComment[];
+    console.log(`Retrieved ${comments.length} comments for ${entityType} ID: ${entityId}`);
     
     // Get user votes if a userId is provided
     let userVotes: CommentVote[] = [];
@@ -58,6 +61,7 @@ export const fetchComments = async (
         console.error('Error fetching votes:', votesError);
       } else if (votes) {
         userVotes = votes as CommentVote[];
+        console.log(`Retrieved ${userVotes.length} votes for user ${userId}`);
       }
     }
 
@@ -80,6 +84,7 @@ export const fetchCommentsData = async (
   const { data } = await supabase.auth.getUser();
   const userId = data?.user?.id;
   
+  console.log(`Fetching comments with user ID: ${userId || 'not authenticated'}`);
   return fetchComments(entityType, entityId, userId);
 };
 

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -34,10 +33,12 @@ const ArticleViewer: React.FC = () => {
     };
   }, []);
 
-  // Add debugging for the ID parameter
+  // ENHANCED DIAGNOSTICS: Log detailed information about URL and ID parameter
   useEffect(() => {
+    console.log("--------- ARTICLE VIEWER DIAGNOSTICS ---------");
     console.log("ArticleViewer loaded with ID:", id);
     console.log("Current route:", window.location.pathname);
+    console.log("Full URL:", window.location.href);
     
     // Validate UUID format
     const isValidUUID = id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
@@ -46,8 +47,10 @@ const ArticleViewer: React.FC = () => {
     // Check if we're in the correct route
     const isArticleRoute = window.location.pathname.includes('/article/');
     console.log("Is this an article route:", isArticleRoute);
+    console.log("---------------------------------------------");
   }, [id]);
 
+  // FIX: Always query the issues table for the content, regardless of route
   const { data: issue, isLoading, error } = useQuery({
     queryKey: ['issue', id],
     queryFn: async () => {
@@ -56,11 +59,10 @@ const ArticleViewer: React.FC = () => {
         throw new Error('No issue ID provided');
       }
       
-      console.log("Attempting to fetch issue with ID:", id);
+      console.log("FETCH ATTEMPT: Querying issues table with ID:", id);
       
-      // The critical fix: When on /article/ route, we ALWAYS want to query the issues table
-      // This is because article pages in this app are showing content from the issues table
-      // The pathname check isn't relevant to the actual data source
+      // IMPORTANT: We always query the issues table regardless of the path
+      // This is the correct approach because all content is stored in the issues table
       const { data, error } = await supabase
         .from('issues')
         .select('*')
@@ -70,6 +72,13 @@ const ArticleViewer: React.FC = () => {
       if (error) {
         console.error(`Error fetching issue:`, error);
         console.log("Full error details:", JSON.stringify(error, null, 2));
+        
+        // Check if this is a "not found" error
+        if (error.code === 'PGRST116') {
+          console.error("No record found with the given ID");
+          throw new Error(`Article/Issue not found`);
+        }
+        
         throw error;
       }
       
@@ -78,19 +87,19 @@ const ArticleViewer: React.FC = () => {
         throw new Error(`Issue not found`);
       }
 
-      console.log(`Issue data found:`, data);
+      console.log(`DATA FOUND: Issue data retrieved successfully:`, data);
       return data as Issue;
     },
     retry: 1,
     meta: {
-      errorMessage: "Couldn't load the article"
+      errorMessage: "Não foi possível carregar o artigo"
     }
   });
 
   // Add detailed error logging
   useEffect(() => {
     if (error) {
-      console.error("Query error details:", error);
+      console.error("QUERY ERROR: Details:", error);
       toast({
         title: "Erro ao carregar",
         description: `Não foi possível carregar o conteúdo. Erro: ${(error as Error).message}`,
