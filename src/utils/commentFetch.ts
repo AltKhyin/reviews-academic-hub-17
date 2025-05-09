@@ -14,7 +14,7 @@ export const fetchComments = async (
     const entityField = getEntityIdField(entityType);
 
     // Get comments for the entity with properly qualified column names
-    // Fix the type instantiation issue by using a more direct approach without complex type inference
+    // Using a direct type cast to avoid the "Type instantiation is excessively deep" error
     const { data: comments, error } = await supabase
       .from('comments')
       .select(`
@@ -35,7 +35,7 @@ export const fetchComments = async (
         )
       `)
       .eq(entityField, entityId)
-      .order('created_at', { ascending: true }) as any;
+      .order('created_at', { ascending: true }) as { data: BaseComment[], error: any };
 
     if (error) throw error;
 
