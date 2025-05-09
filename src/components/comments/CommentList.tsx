@@ -2,6 +2,7 @@
 import React from 'react';
 import { CommentItem } from './CommentItem';
 import { Comment } from '@/types/commentTypes';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface CommentListProps {
   comments: Comment[];
@@ -38,18 +39,28 @@ export const CommentList: React.FC<CommentListProps> = ({
   
   return (
     <div className="space-y-4">
-      {comments.map(comment => (
-        <CommentItem 
-          key={comment.id} 
-          comment={comment} 
-          onDelete={onDelete}
-          onReply={onReply}
-          onVote={onVote}
-          isDeleting={isDeleting}
-          isReplyingFromHook={isReplying}
-          isVoting={isVoting}
-        />
-      ))}
+      <AnimatePresence>
+        {comments.map(comment => (
+          <motion.div
+            key={comment.id}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            layout
+          >
+            <CommentItem 
+              comment={comment} 
+              onDelete={onDelete}
+              onReply={onReply}
+              onVote={onVote}
+              isDeleting={isDeleting}
+              isReplyingFromHook={isReplying}
+              isVoting={isVoting}
+            />
+          </motion.div>
+        ))}
+      </AnimatePresence>
     </div>
   );
 };
