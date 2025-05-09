@@ -3,7 +3,6 @@ import React from 'react';
 import { useComments } from '@/hooks/useComments';
 import { useAuth } from '@/contexts/AuthContext';
 import { CommentForm } from './CommentForm';
-import { CommentItem } from './CommentItem';
 import { CommentList } from './CommentList';
 import { CommentSectionHeader } from './CommentSectionHeader';
 import { EntityType } from '@/types/commentTypes';
@@ -48,6 +47,27 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, articleI
     isVoting
   } = useComments(entityId, entityType);
 
+  // Create wrapper functions to handle the type mismatches
+  const handleAddComment = async (content: string): Promise<void> => {
+    await addComment(content);
+    return;
+  };
+
+  const handleDeleteComment = async (id: string): Promise<void> => {
+    await deleteComment(id);
+    return;
+  };
+
+  const handleReplyToComment = async (params: { parentId: string; content: string }): Promise<void> => {
+    await replyToComment(params);
+    return;
+  };
+
+  const handleVoteComment = async (params: { commentId: string; value: 1 | -1 | 0 }): Promise<void> => {
+    await voteComment(params);
+    return;
+  };
+
   return (
     <div className="space-y-4">
       <CommentSectionHeader 
@@ -56,16 +76,16 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, articleI
       />
       
       <CommentForm 
-        onSubmit={addComment}
+        onSubmit={handleAddComment}
         isSubmitting={isAddingComment}
       />
 
       <CommentList 
         comments={comments}
         isLoading={isLoading}
-        onDelete={deleteComment}
-        onReply={replyToComment}
-        onVote={voteComment}
+        onDelete={handleDeleteComment}
+        onReply={handleReplyToComment}
+        onVote={handleVoteComment}
         isDeleting={isDeletingComment}
         isReplying={isReplying}
         isVoting={isVoting}
