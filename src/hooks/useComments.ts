@@ -55,7 +55,12 @@ export function useComments(entityId: string, entityType: EntityType = 'article'
           .in('comment_id', commentsData?.map(c => c.id) || []);
 
         if (!votesError && votesData) {
-          userVotes = votesData;
+          // Explicitly cast the value to 1 or -1 to satisfy TypeScript
+          userVotes = votesData.map(vote => ({
+            comment_id: vote.comment_id,
+            user_id: vote.user_id,
+            value: vote.value === 1 ? 1 : -1
+          }));
         }
       }
 
@@ -239,10 +244,13 @@ export function useComments(entityId: string, entityType: EntityType = 'article'
 
           if (deleteError) throw deleteError;
         } else if (existingVote.value !== value) {
+          // Ensure we're storing only 1 or -1 in the database
+          const dbValue: 1 | -1 = value === 1 ? 1 : -1;
+          
           // Update vote
           const { error: updateError } = await supabase
             .from('comment_votes')
-            .update({ value })
+            .update({ value: dbValue })
             .eq('comment_id', commentId)
             .eq('user_id', user.id);
 
@@ -250,13 +258,16 @@ export function useComments(entityId: string, entityType: EntityType = 'article'
         }
         // If the vote is the same, do nothing (toggle handled in the UI)
       } else if (value !== 0) {
+        // Ensure we're storing only 1 or -1 in the database
+        const dbValue: 1 | -1 = value === 1 ? 1 : -1;
+        
         // Insert new vote
         const { error: insertError } = await supabase
           .from('comment_votes')
           .insert({
             comment_id: commentId,
             user_id: user.id,
-            value
+            value: dbValue
           });
 
         if (insertError) throw insertError;
