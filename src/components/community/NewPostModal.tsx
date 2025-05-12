@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '@/contexts/AuthContext';
@@ -49,14 +50,9 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose, onP
     }
   });
 
+  // Set a default flair if available
   React.useEffect(() => {
-    if (flairs && flairs.length > 0 && setValue) { // check setValue exists
-      // Check if flair_id is already set, if not, set default
-      // This avoids resetting on re-renders if a value was already selected or programmatically set
-      // For this specific case, we might want to always set default if it's empty
-      // Or, ensure this runs only once or when flairs change and no flair_id is set.
-      // The original logic was `!setValue` which is incorrect. Should be `setValue`.
-      // Assuming we want to set a default if no flair is selected yet.
+    if (flairs && flairs.length > 0 && !setValue) {
       setValue('flair_id', flairs[0].id);
     }
   }, [flairs, setValue]);
@@ -106,6 +102,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose, onP
       return;
     }
 
+    // Validate flair selection
     if (!data.flair_id) {
       toast({
         title: "Erro",
@@ -118,13 +115,14 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose, onP
     try {
       setIsSubmitting(true);
 
+      // If there is an image file, upload it
       let finalImageUrl = null;
       if (imageFile) {
         const fileExt = imageFile.name.split('.').pop();
         const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
         const filePath = `posts/${fileName}`;
 
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError, data: uploadData } = await supabase.storage
           .from('community')
           .upload(filePath, imageFile);
 
@@ -137,6 +135,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose, onP
         finalImageUrl = urlData.publicUrl;
       }
 
+      // Create the post
       const postData = {
         title: data.title,
         content: data.content || null,
@@ -145,51 +144,30 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose, onP
         user_id: user.id,
         flair_id: data.flair_id,
         published: true,
-        // score: 1, // Set initial score to 1, if not handled by trigger and post_votes insert
       };
       
       const { data: post, error: postError } = await supabase
         .from('posts')
         .insert(postData)
-        .select('id') // Only select id, score will be updated by trigger or fetched later
+        .select()
         .single();
         
       if (postError) throw postError;
-
-      // MODIFICATION: Insert initial upvote for the author
-      if (post && post.id && user && user.id) {
-        const { error: voteError } = await supabase
-          .from('post_votes')
-          .insert({
-            post_id: post.id,
-            user_id: user.id,
-            value: 1, // Author's initial upvote
-          });
-
-        if (voteError) {
-          console.error('Error inserting initial author vote:', voteError);
-          toast({
-            title: "Aviso",
-            description: "Publicação criada, mas houve um erro ao registrar o voto inicial do autor.",
-            variant: "default", // Consider a 'warning' variant if available
-          });
-        } 
-        // The post's score should ideally be updated by a database trigger 
-        // when a vote is inserted into 'post_votes'.
-        // If not, and the score was not set to 1 during post insertion,
-        // an explicit update to the post's score might be needed here or handled by refetching.
-      }
-      // END MODIFICATION
       
+      // If the poll is enabled and we have at least 2 options
       if (isPollEnabled && pollOptions.filter(o => o.trim()).length >= 2) {
+        // Create the poll
         const { data: poll, error: pollError } = await supabase
           .from('post_polls')
-          .insert({ post_id: post.id })
-          .select('id')
+          .insert({
+            post_id: post.id
+          })
+          .select()
           .single();
           
         if (pollError) throw pollError;
         
+        // Create the poll options
         const validOptions = pollOptions
           .filter(option => option.trim())
           .map((text, i) => ({
@@ -204,6 +182,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose, onP
           
         if (optionsError) throw optionsError;
         
+        // Update the post with the poll ID
         await supabase
           .from('posts')
           .update({ poll_id: poll.id })
@@ -216,7 +195,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose, onP
         variant: "default",
       });
       
-      onPostCreated(); // This should trigger a refetch of posts, including the new score
+      onPostCreated();
       onClose();
 
     } catch (error) {
@@ -268,8 +247,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose, onP
             <Select 
               defaultValue={flairs.length > 0 ? flairs[0].id : undefined}
               onValueChange={(value) => setValue('flair_id', value)}
-              // `required` attribute on Select might not work as expected for validation with react-hook-form.
-              // Validation should be handled by react-hook-form's rules if needed.
+              required
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione uma categoria" />
@@ -286,8 +264,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose, onP
                 ))}
               </SelectContent>
             </Select>
-            {/* Ensure you have a validation rule for flair_id in useForm if it's truly required beyond HTML5 `required` */}
-            {errors.flair_id && <p className="text-red-500 text-sm">{errors.flair_id.message || 'A categoria é obrigatória'}</p>}
+            {errors.flair_id && <p className="text-red-500 text-sm">A categoria é obrigatória</p>}
           </div>
 
           <div className="space-y-3">
@@ -300,6 +277,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose, onP
                   <TabsTrigger value="video">Vídeo</TabsTrigger>
                 </TabsList>
 
+                {/* Move TabsContent inside Tabs component */}
                 <TabsContent value="image" className="space-y-2 mt-2">
                   <Input
                     type="file"
@@ -332,6 +310,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose, onP
             </div>
           </div>
           
+          {/* Poll Section */}
           <div className="space-y-3 pt-2">
             <div className="flex items-center">
               <Button
@@ -398,4 +377,3 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose, onP
     </Dialog>
   );
 };
-
