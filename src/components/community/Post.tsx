@@ -289,7 +289,13 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
   const toggleComments = () => {
     setShowComments(!showComments);
   };
-  
+
+  // Modified to handle poll votes properly
+  const handlePollVoteChange = () => {
+    console.log("Poll vote changed, refreshing post data");
+    onVoteChange(); // This will trigger a refetch of the post data
+  };
+
   return (
     <div className="bg-gray-800/10 rounded-lg border border-gray-700/30 p-4 mb-6">
       <div className="flex items-start space-x-4">
@@ -333,7 +339,7 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
             </Badge>
           )}
           
-          <PostContent post={post} onVoteChange={onVoteChange} />
+          <PostContent post={post} onVoteChange={handlePollVoteChange} />
           
           <div className="flex mt-4 space-x-2 items-center">
             {/* Voting buttons side by side */}

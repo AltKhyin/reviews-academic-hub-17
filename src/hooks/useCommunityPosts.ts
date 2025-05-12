@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -156,6 +155,8 @@ export function useCommunityPosts(activeTab: string, searchTerm: string) {
       return postsWithDetails as PostData[];
     },
     enabled: true,
+    staleTime: 30000, // Consider data fresh for 30 seconds
+    refetchOnWindowFocus: true, // Refetch on window focus to get latest votes
   });
 }
 

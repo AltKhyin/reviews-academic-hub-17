@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
@@ -44,15 +45,17 @@ export const PollSection: React.FC<PollSectionProps> = ({ poll, onVoteChange }) 
       const updatedOptions = localPoll.options.map(option => ({
         ...option,
         votes: option.id === optionId 
-          ? option.votes + 1 
+          ? option.votes + (prevUserVote === optionId ? 0 : 1) 
           : prevUserVote && option.id === prevUserVote 
             ? Math.max(0, option.votes - 1) 
             : option.votes
       }));
       
-      const newTotalVotes = prevUserVote 
+      const newTotalVotes = prevUserVote && prevUserVote !== optionId
         ? localPoll.total_votes 
-        : localPoll.total_votes + 1;
+        : prevUserVote === optionId
+          ? localPoll.total_votes
+          : localPoll.total_votes + 1;
         
       setLocalPoll({
         ...localPoll,
@@ -71,7 +74,13 @@ export const PollSection: React.FC<PollSectionProps> = ({ poll, onVoteChange }) 
       let voteResult;
       
       if (existingVotes && existingVotes.length > 0) {
-        // User has already voted, so update their vote
+        // If user clicked the same option they already voted for, do nothing (leave the optimistic UI update)
+        if (existingVotes[0].option_id === optionId) {
+          setIsVoting(false);
+          return;
+        }
+        
+        // User has already voted for a different option, so update their vote
         voteResult = await supabase
           .from('poll_votes')
           .update({ option_id: optionId })
@@ -86,7 +95,7 @@ export const PollSection: React.FC<PollSectionProps> = ({ poll, onVoteChange }) 
           });
       }
           
-      if (voteResult.error) {
+      if (voteResult?.error) {
         console.error('Error voting in poll:', voteResult.error);
         
         // Revert optimistic updates on error
