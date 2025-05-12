@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '@/contexts/AuthContext';
@@ -153,6 +152,20 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose, onP
         .single();
         
       if (postError) throw postError;
+      
+      // Add an automatic upvote from the post author
+      const { error: voteError } = await supabase
+        .from('post_votes')
+        .insert({
+          post_id: post.id,
+          user_id: user.id,
+          value: 1
+        });
+        
+      if (voteError) {
+        console.error('Error adding author upvote:', voteError);
+        // Don't throw here - we still want to continue even if the auto-vote fails
+      }
       
       // If the poll is enabled and we have at least 2 options
       if (isPollEnabled && pollOptions.filter(o => o.trim()).length >= 2) {
