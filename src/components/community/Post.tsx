@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,6 +42,8 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
   const [isBookmarking, setIsBookmarking] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [commentCount, setCommentCount] = useState(0);
+  const [localScore, setLocalScore] = useState(post.score || 0);
+  const [localUserVote, setLocalUserVote] = useState(post.userVote || 0);
 
   // Check if user is admin
   useEffect(() => {
@@ -72,9 +75,9 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
     
     checkBookmarkStatus();
 
-    // Auto-upvote your own post if you're the author
+    // Auto-upvote your own post if you're the author (only once)
     const autoUpvoteOwnPost = async () => {
-      if (user.id === post.user_id) {
+      if (user.id === post.user_id && post.userVote !== 1) {
         // Check if user already voted
         const { data: existingVote } = await supabase
           .from('post_votes')
@@ -92,6 +95,9 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
             
             // Refresh the post to get updated score
             onVoteChange();
+            // Update local state
+            setLocalScore(prevScore => prevScore + 1);
+            setLocalUserVote(1);
           } catch (error) {
             console.error('Error auto-upvoting post:', error);
           }
@@ -99,8 +105,18 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
       }
     };
     
+    // Initialize local state with post values
+    setLocalScore(post.score || 0);
+    setLocalUserVote(post.userVote || 0);
+    
     autoUpvoteOwnPost();
-  }, [user, post.id, post.user_id, onVoteChange]);
+  }, [user, post.id, post.user_id, post.score, post.userVote, onVoteChange]);
+
+  // Synchronize local state when post prop changes
+  useEffect(() => {
+    setLocalScore(post.score || 0);
+    setLocalUserVote(post.userVote || 0);
+  }, [post.score, post.userVote]);
 
   // Add code to count comments
   useEffect(() => {
@@ -140,6 +156,28 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
 
     try {
       setIsVoting(true);
+      
+      // Optimistic UI update
+      const currentVote = localUserVote;
+      let scoreDelta = 0;
+      
+      if (currentVote === value) {
+        // Removing the vote
+        scoreDelta = -value;
+        setLocalUserVote(0);
+      } else if (currentVote === 0) {
+        // New vote
+        scoreDelta = value;
+        setLocalUserVote(value);
+      } else {
+        // Changing vote (e.g., from -1 to 1)
+        scoreDelta = value * 2;  // Double the effect (removing old vote + adding new)
+        setLocalUserVote(value);
+      }
+      
+      // Update score optimistically
+      setLocalScore(prevScore => prevScore + scoreDelta);
+      
       const { data, error } = await supabase
         .from('post_votes')
         .select('value')
@@ -173,9 +211,15 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
           .insert({ post_id: post.id, user_id: user.id, value });
       }
 
+      // Refresh posts data to get updated scores
       onVoteChange();
     } catch (error) {
       console.error('Error voting on post:', error);
+      
+      // Revert optimistic updates on error
+      setLocalScore(post.score || 0);
+      setLocalUserVote(post.userVote || 0);
+      
       toast({
         title: "Erro ao votar",
         description: "Não foi possível registrar seu voto.",
@@ -351,11 +395,11 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
                 onClick={() => handleVote(1)}
                 disabled={isVoting}
               >
-                <ArrowUp className={`h-5 w-5 ${post.userVote === 1 ? 'text-red-500' : ''}`} />
+                <ArrowUp className={`h-5 w-5 ${localUserVote === 1 ? 'text-red-500' : ''}`} />
                 <span className="sr-only">Vote up</span>
               </Button>
               
-              <span className="text-sm font-medium">{post.score}</span>
+              <span className="text-sm font-medium">{localScore}</span>
               
               <Button
                 variant="ghost"
@@ -364,7 +408,7 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
                 onClick={() => handleVote(-1)}
                 disabled={isVoting}
               >
-                <ArrowDown className={`h-5 w-5 ${post.userVote === -1 ? 'text-blue-500' : ''}`} />
+                <ArrowDown className={`h-5 w-5 ${localUserVote === -1 ? 'text-blue-500' : ''}`} />
                 <span className="sr-only">Vote down</span>
               </Button>
             </div>

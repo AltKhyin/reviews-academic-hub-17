@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
@@ -41,21 +40,25 @@ export const PollSection: React.FC<PollSectionProps> = ({ poll, onVoteChange }) 
         [opt.id]: opt.votes
       }), {})};
       
+      // Don't do anything if user is clicking the same option they already voted for
+      if (prevUserVote === optionId) {
+        setIsVoting(false);
+        return;
+      }
+      
       // Optimistically update UI first for better user experience
       const updatedOptions = localPoll.options.map(option => ({
         ...option,
         votes: option.id === optionId 
-          ? option.votes + (prevUserVote === optionId ? 0 : 1) 
+          ? option.votes + 1 
           : prevUserVote && option.id === prevUserVote 
             ? Math.max(0, option.votes - 1) 
             : option.votes
       }));
       
-      const newTotalVotes = prevUserVote && prevUserVote !== optionId
+      const newTotalVotes = prevUserVote
         ? localPoll.total_votes 
-        : prevUserVote === optionId
-          ? localPoll.total_votes
-          : localPoll.total_votes + 1;
+        : localPoll.total_votes + 1;
         
       setLocalPoll({
         ...localPoll,
@@ -64,27 +67,42 @@ export const PollSection: React.FC<PollSectionProps> = ({ poll, onVoteChange }) 
         total_votes: newTotalVotes
       });
       
-      // First check if user already voted for any option in this poll
+      // First get the poll ID for this option
+      const { data: optionData, error: optionError } = await supabase
+        .from('poll_options')
+        .select('poll_id')
+        .eq('id', optionId)
+        .single();
+        
+      if (optionError) {
+        throw optionError;
+      }
+      
+      // Check if user already voted for any option in this poll
       const { data: existingVotes } = await supabase
         .from('poll_votes')
-        .select('id, option_id')
+        .select('id')
         .eq('user_id', user.id)
-        .in('option_id', poll.options.map(o => o.id));
+        .eq('option_id', 'in', `(${localPoll.options.map(o => `'${o.id}'`).join(',')})`);
       
       let voteResult;
       
       if (existingVotes && existingVotes.length > 0) {
-        // If user clicked the same option they already voted for, do nothing (leave the optimistic UI update)
-        if (existingVotes[0].option_id === optionId) {
-          setIsVoting(false);
-          return;
-        }
+        // Delete existing vote first
+        const { error: deleteError } = await supabase
+          .from('poll_votes')
+          .delete()
+          .eq('id', existingVotes[0].id);
+          
+        if (deleteError) throw deleteError;
         
-        // User has already voted for a different option, so update their vote
+        // Create new vote
         voteResult = await supabase
           .from('poll_votes')
-          .update({ option_id: optionId })
-          .eq('id', existingVotes[0].id);
+          .insert({ 
+            option_id: optionId, 
+            user_id: user.id 
+          });
       } else {
         // New vote
         voteResult = await supabase
