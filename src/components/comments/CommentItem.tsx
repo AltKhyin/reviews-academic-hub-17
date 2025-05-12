@@ -30,6 +30,10 @@ export const CommentItem: React.FC<CommentItemProps> = ({
   const { user } = useAuth();
   const [isReplying, setIsReplying] = useState(false);
 
+  // Get user display name from profile data, with fallbacks
+  const displayName = comment.profiles?.full_name || 
+                      (comment.user_id === user?.id ? user?.user_metadata?.full_name : 'Usuário');
+
   const handleReply = async (content: string) => {
     try {
       await onReply({ parentId: comment.id, content });
@@ -50,14 +54,14 @@ export const CommentItem: React.FC<CommentItemProps> = ({
         <Avatar className="w-6 h-6 mt-1">
           <AvatarImage src={comment.profiles?.avatar_url || undefined} />
           <AvatarFallback>
-            {comment.profiles?.full_name?.[0] || 'U'}
+            {displayName?.[0] || 'U'}
           </AvatarFallback>
         </Avatar>
         
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <span className="font-medium text-sm">
-              {comment.profiles?.full_name || 'Usuário'}
+              {displayName}
             </span>
             <span className="text-xs text-gray-400">
               {new Date(comment.created_at).toLocaleDateString()}

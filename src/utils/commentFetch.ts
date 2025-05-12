@@ -39,10 +39,17 @@ export async function fetchCommentsData(entityId: string, entityType: EntityType
       return { comments: [], userVotes: [] };
     }
 
-    // Fetch comments for this entity
+    // Fetch comments for this entity with profiles data included
     const { data: comments = [], error: commentError } = await supabase
       .from('comments')
-      .select('*')
+      .select(`
+        *,
+        profiles:user_id (
+          id,
+          full_name, 
+          avatar_url
+        )
+      `)
       .eq(idField, entityId)
       .order('created_at', { ascending: false });
 

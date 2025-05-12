@@ -41,9 +41,10 @@ export const CommentItem: React.FC<CommentItemProps> = ({
   const [isCollapsed, setIsCollapsed] = useState(false);
   const isAuthor = user?.id === comment.user_id;
   
-  // Format profile name
-  const profileName = comment.profiles?.full_name || 'Anônimo';
-  const profileInitial = profileName ? profileName[0] : 'A';
+  // Format profile name - Fix for profile name not showing correctly
+  const profileName = comment.profiles?.full_name || 
+                     (comment.user_id === user?.id ? user?.user_metadata?.full_name : 'Usuário');
+  const profileInitial = profileName ? profileName[0] : 'U';
   
   // Check if comment should be collapsed due to low score
   const shouldAutoCollapse = localScore <= -4;
