@@ -91,9 +91,9 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
     }
   }, [post.score, post.userVote]);
 
-  // Add code to count comments and auto-upvote own post
+  // Add code to count comments without auto-upvoting own posts
   useEffect(() => {
-    if (!user || !post.id) return;
+    if (!post.id) return;
     
     // Get comment count when post is loaded
     const fetchCommentCount = async () => {
@@ -108,40 +108,7 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
     };
     
     fetchCommentCount();
-
-    // Auto-upvote your own post if you're the author (only once)
-    const autoUpvoteOwnPost = async () => {
-      if (user.id === post.user_id && post.userVote !== 1) {
-        // Check if user already voted
-        const { data: existingVote } = await supabase
-          .from('post_votes')
-          .select('*')
-          .eq('post_id', post.id)
-          .eq('user_id', user.id)
-          .maybeSingle();
-          
-        // If user hasn't voted on their post yet, auto-upvote
-        if (!existingVote) {
-          try {
-            await supabase
-              .from('post_votes')
-              .insert({ post_id: post.id, user_id: user.id, value: 1 });
-            
-            // Update local state
-            setLocalScore(prevScore => prevScore + 1);
-            setLocalUserVote(1);
-            
-            // Refresh the post to get updated score
-            onVoteChange();
-          } catch (error) {
-            console.error('Error auto-upvoting post:', error);
-          }
-        }
-      }
-    };
-    
-    autoUpvoteOwnPost();
-  }, [user, post.id, post.user_id]);
+  }, [post.id]);
 
   const handleVote = async (value: number) => {
     if (!user) {

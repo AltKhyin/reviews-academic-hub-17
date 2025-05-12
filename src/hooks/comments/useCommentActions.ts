@@ -52,7 +52,7 @@ export function useCommentActions(
 
       if (error) throw error;
 
-      // Auto-upvote the user's own comment
+      // Auto-upvote the user's own comment as a separate operation
       if (newComment) {
         await supabase
           .from('comment_votes')
@@ -105,7 +105,7 @@ export function useCommentActions(
 
       if (error) throw error;
 
-      // Auto-upvote the user's own reply
+      // Auto-upvote the user's own reply as a separate operation
       if (newReply) {
         await supabase
           .from('comment_votes')

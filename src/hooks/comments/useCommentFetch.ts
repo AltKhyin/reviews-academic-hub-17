@@ -10,6 +10,7 @@ import { organizeComments } from '@/utils/commentHelpers';
  * Hook for fetching comments for a specific entity
  */
 export function useCommentFetch(entityId: string, entityType: EntityType = 'article') {
+  // Use BaseComment instead of Comment to avoid recursive type issues
   const [comments, setComments] = useState<Comment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();

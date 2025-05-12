@@ -1,5 +1,5 @@
 
-import { Comment, EntityType } from '@/types/commentTypes';
+import { Comment, EntityType, BaseComment } from '@/types/commentTypes';
 import { appendUserVotesToComments } from './commentFetch';
 import { organizeCommentsInTree } from './commentOrganize';
 
@@ -43,9 +43,9 @@ export function buildCommentData(
 
 // Helper function to organize comments and append user votes
 export const organizeComments = (commentsData: { 
-  comments: any[], 
+  comments: BaseComment[], 
   userVotes: any[] 
-}) => {
+}): Comment[] => {
   if (!commentsData || !commentsData.comments) return [];
   
   // First append user votes to comments

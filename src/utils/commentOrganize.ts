@@ -1,55 +1,49 @@
 
-import { BaseComment, Comment, CommentWithReplies } from '@/types/commentTypes';
+import { Comment, BaseComment } from '@/types/commentTypes';
 
-// This function organizes flat comments into a nested structure
-export const organizeCommentsInTree = (comments: BaseComment[]): Comment[] => {
-  // Use a non-recursive approach to build the tree
-  const commentMap: Record<string, Comment> = {};
-  const rootComments: Comment[] = [];
-
-  // First pass: create comment objects in a map
+/**
+ * Organizes comments into a nested tree structure
+ * @param comments Flat array of comments
+ * @returns Array of comments with nested replies
+ */
+export function organizeCommentsInTree(comments: BaseComment[]): Comment[] {
+  if (!comments || comments.length === 0) return [];
+  
+  // Create a map to store comments by id for quick lookup
+  const commentMap = new Map<string, Comment>();
+  
+  // First pass: create Comment objects for all comments
   comments.forEach(comment => {
-    commentMap[comment.id] = { ...comment, replies: [] };
+    commentMap.set(comment.id, {
+      ...comment,
+      replies: [] // Initialize empty replies array
+    });
   });
-
+  
   // Second pass: organize into tree structure
+  const rootComments: Comment[] = [];
+  
   comments.forEach(comment => {
-    if (comment.parent_id && commentMap[comment.parent_id]) {
+    const commentWithReplies = commentMap.get(comment.id);
+    if (!commentWithReplies) return; // Skip if comment not found
+    
+    if (comment.parent_id) {
       // This is a reply, add it to its parent's replies
-      commentMap[comment.parent_id].replies = commentMap[comment.parent_id].replies || [];
-      commentMap[comment.parent_id].replies!.push(commentMap[comment.id]);
+      const parentComment = commentMap.get(comment.parent_id);
+      if (parentComment) {
+        if (!parentComment.replies) {
+          parentComment.replies = [];
+        }
+        parentComment.replies.push(commentWithReplies);
+      } else {
+        // If parent not found (unusual case), treat as root comment
+        rootComments.push(commentWithReplies);
+      }
     } else {
       // This is a root comment
-      rootComments.push(commentMap[comment.id]);
+      rootComments.push(commentWithReplies);
     }
   });
-
+  
   return rootComments;
-};
-
-// This function flattens nested comments with level information
-export const flattenCommentsWithLevel = (
-  comments: Comment[], 
-  level = 0
-): CommentWithReplies[] => {
-  const result: CommentWithReplies[] = [];
-  
-  comments.forEach(comment => {
-    const commentWithLevel: CommentWithReplies = {
-      ...comment,
-      replies: [],
-      level
-    };
-    
-    result.push(commentWithLevel);
-    
-    if (comment.replies && comment.replies.length > 0) {
-      const nestedReplies = flattenCommentsWithLevel(comment.replies, level + 1);
-      commentWithLevel.replies = nestedReplies;
-      // Don't duplicate the children in the flattened list
-      // result.push(...nestedReplies);
-    }
-  });
-  
-  return result;
-};
+}
