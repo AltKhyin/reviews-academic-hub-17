@@ -45,30 +45,24 @@ export function useCommentVoting(fetchComments: () => Promise<void>) {
 
           if (deleteError) throw deleteError;
         } else if (existingVote.value !== value) {
-          // Ensure we're storing only 1 or -1 in the database
-          const dbValue: 1 | -1 = value === 1 ? 1 : -1;
-          
           // Update vote
           const { error: updateError } = await supabase
             .from('comment_votes')
-            .update({ value: dbValue })
+            .update({ value: value })
             .eq('comment_id', commentId)
             .eq('user_id', user.id);
 
           if (updateError) throw updateError;
         }
-        // If the vote is the same, do nothing (toggle handled in the UI)
+        // If the vote is the same, do nothing
       } else if (value !== 0) {
-        // Ensure we're storing only 1 or -1 in the database
-        const dbValue: 1 | -1 = value === 1 ? 1 : -1;
-        
         // Insert new vote
         const { error: insertError } = await supabase
           .from('comment_votes')
           .insert({
             comment_id: commentId,
             user_id: user.id,
-            value: dbValue
+            value: value // This will be 1 or -1
           });
 
         if (insertError) throw insertError;

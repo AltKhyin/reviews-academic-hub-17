@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { BaseComment, Comment, CommentVote, EntityType } from '@/types/commentTypes';
 import { useToast } from '@/hooks/use-toast';
@@ -50,7 +50,7 @@ export function useCommentFetch(entityId: string, entityType: EntityType = 'arti
           .in('comment_id', commentsData?.map(c => c.id) || []);
 
         if (!votesError && votesData) {
-          // Explicitly cast the value to 1 or -1 to satisfy TypeScript
+          // Map votes to the correct CommentVote type
           userVotes = votesData.map(vote => ({
             comment_id: vote.comment_id,
             user_id: vote.user_id,
@@ -77,6 +77,13 @@ export function useCommentFetch(entityId: string, entityType: EntityType = 'arti
       setIsLoading(false);
     }
   };
+
+  // Run fetchComments on mount and whenever entityId or entityType changes
+  useEffect(() => {
+    if (entityId) {
+      fetchComments();
+    }
+  }, [entityId, entityType]);
 
   return {
     comments,

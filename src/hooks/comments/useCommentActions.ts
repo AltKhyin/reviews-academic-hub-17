@@ -19,7 +19,6 @@ export function useCommentActions(
   const [isAddingComment, setIsAddingComment] = useState(false);
   const [isDeletingComment, setIsDeletingComment] = useState(false);
   const [isReplying, setIsReplying] = useState(false);
-  const [isVoting, setIsVoting] = useState(false);
 
   const addComment = async (content: string): Promise<void> => {
     if (!user) {
@@ -38,7 +37,7 @@ export function useCommentActions(
       // Create the data object with the right entity ID field
       const commentData = buildCommentData(content, user.id, entityType, entityId);
       
-      const { data, error } = await supabase
+      const { data: newComment, error } = await supabase
         .from('comments')
         .insert(commentData)
         .select(`
@@ -52,6 +51,17 @@ export function useCommentActions(
         .single();
 
       if (error) throw error;
+
+      // Auto-upvote the user's own comment
+      if (newComment) {
+        await supabase
+          .from('comment_votes')
+          .insert({
+            comment_id: newComment.id,
+            user_id: user.id,
+            value: 1
+          });
+      }
 
       // Refresh comments to update the view
       await fetchComments();
@@ -87,11 +97,24 @@ export function useCommentActions(
         parent_id: parentId
       };
       
-      const { error } = await supabase
+      const { data: newReply, error } = await supabase
         .from('comments')
-        .insert(commentData);
+        .insert(commentData)
+        .select()
+        .single();
 
       if (error) throw error;
+
+      // Auto-upvote the user's own reply
+      if (newReply) {
+        await supabase
+          .from('comment_votes')
+          .insert({
+            comment_id: newReply.id,
+            user_id: user.id,
+            value: 1
+          });
+      }
 
       // Refresh all comments to get the proper structure
       await fetchComments();

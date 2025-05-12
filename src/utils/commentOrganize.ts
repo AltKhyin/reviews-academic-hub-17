@@ -3,6 +3,7 @@ import { BaseComment, Comment, CommentWithReplies } from '@/types/commentTypes';
 
 // This function organizes flat comments into a nested structure
 export const organizeCommentsInTree = (comments: BaseComment[]): Comment[] => {
+  // Use a non-recursive approach to build the tree
   const commentMap: Record<string, Comment> = {};
   const rootComments: Comment[] = [];
 
@@ -15,9 +16,7 @@ export const organizeCommentsInTree = (comments: BaseComment[]): Comment[] => {
   comments.forEach(comment => {
     if (comment.parent_id && commentMap[comment.parent_id]) {
       // This is a reply, add it to its parent's replies
-      if (!commentMap[comment.parent_id].replies) {
-        commentMap[comment.parent_id].replies = [];
-      }
+      commentMap[comment.parent_id].replies = commentMap[comment.parent_id].replies || [];
       commentMap[comment.parent_id].replies!.push(commentMap[comment.id]);
     } else {
       // This is a root comment
@@ -33,21 +32,24 @@ export const flattenCommentsWithLevel = (
   comments: Comment[], 
   level = 0
 ): CommentWithReplies[] => {
-  return comments.reduce<CommentWithReplies[]>((acc, comment) => {
-    const commentWithLevel = {
+  const result: CommentWithReplies[] = [];
+  
+  comments.forEach(comment => {
+    const commentWithLevel: CommentWithReplies = {
       ...comment,
       replies: [],
       level
     };
     
-    acc.push(commentWithLevel);
+    result.push(commentWithLevel);
     
     if (comment.replies && comment.replies.length > 0) {
       const nestedReplies = flattenCommentsWithLevel(comment.replies, level + 1);
       commentWithLevel.replies = nestedReplies;
-      acc.push(...nestedReplies);
+      // Don't duplicate the children in the flattened list
+      // result.push(...nestedReplies);
     }
-    
-    return acc;
-  }, []);
+  });
+  
+  return result;
 };

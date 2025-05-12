@@ -73,6 +73,33 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
     };
     
     checkBookmarkStatus();
+  }, [user, post.id]);
+
+  // Synchronize local state when post prop changes
+  useEffect(() => {
+    if (post) {
+      setLocalScore(post.score || 0);
+      setLocalUserVote(post.userVote || 0);
+    }
+  }, [post.score, post.userVote]);
+
+  // Add code to count comments and auto-upvote own post
+  useEffect(() => {
+    if (!user || !post.id) return;
+    
+    // Get comment count when post is loaded
+    const fetchCommentCount = async () => {
+      const { count, error } = await supabase
+        .from('comments')
+        .select('*', { count: 'exact', head: true })
+        .eq('post_id', post.id);
+        
+      if (!error && count !== null) {
+        setCommentCount(count);
+      }
+    };
+    
+    fetchCommentCount();
 
     // Auto-upvote your own post if you're the author (only once)
     const autoUpvoteOwnPost = async () => {
@@ -92,11 +119,12 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
               .from('post_votes')
               .insert({ post_id: post.id, user_id: user.id, value: 1 });
             
-            // Refresh the post to get updated score
-            onVoteChange();
             // Update local state
             setLocalScore(prevScore => prevScore + 1);
             setLocalUserVote(1);
+            
+            // Refresh the post to get updated score
+            onVoteChange();
           } catch (error) {
             console.error('Error auto-upvoting post:', error);
           }
@@ -104,44 +132,8 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
       }
     };
     
-    // Initialize local state with post values
-    setLocalScore(post.score || 0);
-    setLocalUserVote(post.userVote || 0);
-    
     autoUpvoteOwnPost();
-  }, [user, post.id, post.user_id, post.score, post.userVote, onVoteChange]);
-
-  // Synchronize local state when post prop changes
-  useEffect(() => {
-    setLocalScore(post.score || 0);
-    setLocalUserVote(post.userVote || 0);
-  }, [post.score, post.userVote]);
-
-  // Add code to count comments
-  useEffect(() => {
-    if (showComments || !post.id) return;
-    
-    // Get comment count when post is loaded
-    const fetchCommentCount = async () => {
-      const { count, error } = await supabase
-        .from('comments')
-        .select('*', { count: 'exact', head: true })
-        .eq('post_id', post.id);
-        
-      if (!error && count !== null) {
-        setCommentCount(count);
-      }
-    };
-    
-    fetchCommentCount();
-  }, [post.id, showComments]);
-  
-  const formatDate = (dateString: string) => {
-    return formatDistanceToNow(new Date(dateString), {
-      addSuffix: true,
-      locale: ptBR,
-    });
-  };
+  }, [user, post.id, post.user_id]);
 
   const handleVote = async (value: number) => {
     if (!user) {
@@ -158,23 +150,30 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
       
       // Optimistic UI update
       const currentVote = localUserVote;
+      
+      // Calculate the new vote value
+      // If clicking on the same vote button, remove the vote (toggle to 0)
+      const newVote = currentVote === value ? 0 : value;
+      
+      // Calculate score delta for optimistic update
       let scoreDelta = 0;
       
-      if (currentVote === value) {
-        // Removing the vote
-        scoreDelta = -value;
-        setLocalUserVote(0);
+      if (currentVote === newVote) {
+        // No change needed
+        scoreDelta = 0;
+      } else if (newVote === 0) {
+        // Removing vote: subtract current vote
+        scoreDelta = -currentVote;
       } else if (currentVote === 0) {
-        // New vote
-        scoreDelta = value;
-        setLocalUserVote(value);
+        // Adding new vote: add new vote
+        scoreDelta = newVote;
       } else {
-        // Changing vote (e.g., from -1 to 1)
-        scoreDelta = value * 2;  // Double the effect (removing old vote + adding new)
-        setLocalUserVote(value);
+        // Changing vote direction: subtract old and add new
+        scoreDelta = newVote - currentVote;
       }
       
-      // Update score optimistically
+      // Update local state optimistically
+      setLocalUserVote(newVote);
       setLocalScore(prevScore => prevScore + scoreDelta);
       
       const { data, error } = await supabase
@@ -187,9 +186,8 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
       if (error) throw error;
 
       if (data) {
-        // User already voted, need to update or delete
-        if (data.value === value) {
-          // Remove vote if clicking the same button
+        if (newVote === 0) {
+          // Remove vote if toggling off
           await supabase
             .from('post_votes')
             .delete()
@@ -199,15 +197,15 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
           // Update vote
           await supabase
             .from('post_votes')
-            .update({ value })
+            .update({ value: newVote })
             .eq('post_id', post.id)
             .eq('user_id', user.id);
         }
-      } else {
-        // New vote
+      } else if (newVote !== 0) {
+        // Insert new vote only if not zero
         await supabase
           .from('post_votes')
-          .insert({ post_id: post.id, user_id: user.id, value });
+          .insert({ post_id: post.id, user_id: user.id, value: newVote });
       }
 
       // Wait a brief moment to allow the trigger to update the score
@@ -505,3 +503,4 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
     </div>
   );
 };
+

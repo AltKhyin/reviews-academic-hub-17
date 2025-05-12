@@ -6,7 +6,20 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { Comment } from '@/types/commentTypes';
 import { CommentForm } from './CommentForm';
-import { ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowUp, ArrowDown, Trash2, MessageSquare } from 'lucide-react';
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle,
+  AlertDialogTrigger 
+} from '@/components/ui/alert-dialog';
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface CommentItemProps {
   comment: Comment;
@@ -30,7 +43,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
   const { user } = useAuth();
   const [isReplying, setIsReplying] = useState(false);
   const [localScore, setLocalScore] = useState(comment.score || 0);
-  const [localUserVote, setLocalUserVote] = useState(comment.userVote || 0);
+  const [localUserVote, setLocalUserVote] = useState<1 | -1 | 0>(comment.userVote || 0);
 
   // Get user display name from profile data, with fallbacks
   const displayName = comment.profiles?.full_name || 
@@ -45,40 +58,45 @@ export const CommentItem: React.FC<CommentItemProps> = ({
     }
   };
 
-  const handleVote = async (value: 1 | -1 | 0) => {
-    if (!user) {
-      return;
-    }
+  const handleUpvote = async () => {
+    if (!user) return;
+    
+    // If already upvoted, clicking again removes the vote
+    const newValue = localUserVote === 1 ? 0 : 1;
+    
+    // Optimistic update
+    const prevVote = localUserVote;
+    setLocalUserVote(newValue);
+    setLocalScore(prev => prev - prevVote + newValue);
     
     try {
-      // First, update local state for optimistic UI
-      const prevVote = localUserVote;
-      let scoreDelta = 0;
-      
-      if (prevVote === value) {
-        // Removing the vote
-        scoreDelta = -value;
-        setLocalUserVote(0);
-      } else if (prevVote === 0) {
-        // New vote
-        scoreDelta = value;
-        setLocalUserVote(value);
-      } else {
-        // Changing vote (e.g., from -1 to 1)
-        scoreDelta = value * 2;  // Double effect
-        setLocalUserVote(value);
-      }
-      
-      // Update local score optimistically
-      setLocalScore(prev => prev + scoreDelta);
-      
-      // Now perform the actual API call
-      await onVote({ commentId: comment.id, value });
+      await onVote({ commentId: comment.id, value: newValue });
     } catch (error) {
-      console.error('Error voting on comment:', error);
-      // Revert optimistic updates on error
+      // Revert on error
+      setLocalUserVote(prevVote);
       setLocalScore(comment.score || 0);
-      setLocalUserVote(comment.userVote || 0);
+      console.error('Error upvoting comment:', error);
+    }
+  };
+
+  const handleDownvote = async () => {
+    if (!user) return;
+    
+    // If already downvoted, clicking again removes the vote
+    const newValue = localUserVote === -1 ? 0 : -1;
+    
+    // Optimistic update
+    const prevVote = localUserVote;
+    setLocalUserVote(newValue);
+    setLocalScore(prev => prev - prevVote + newValue);
+    
+    try {
+      await onVote({ commentId: comment.id, value: newValue });
+    } catch (error) {
+      // Revert on error
+      setLocalUserVote(prevVote);
+      setLocalScore(comment.score || 0);
+      console.error('Error downvoting comment:', error);
     }
   };
 
@@ -98,7 +116,10 @@ export const CommentItem: React.FC<CommentItemProps> = ({
               {displayName}
             </span>
             <span className="text-xs text-gray-400">
-              {new Date(comment.created_at).toLocaleDateString()}
+              {formatDistanceToNow(new Date(comment.created_at), {
+                addSuffix: true,
+                locale: ptBR
+              })}
             </span>
           </div>
           
@@ -107,7 +128,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({
           <div className="flex items-center gap-3 text-xs">
             <div className="flex items-center space-x-1">
               <Button 
-                onClick={() => handleVote(localUserVote === 1 ? 0 : 1)}
+                onClick={handleUpvote}
                 className={`p-1 ${localUserVote === 1 ? 'text-orange-500' : 'text-gray-400'}`}
                 disabled={isVoting || !user}
                 variant="ghost"
@@ -115,9 +136,14 @@ export const CommentItem: React.FC<CommentItemProps> = ({
               >
                 <ArrowUp className="h-4 w-4" />
               </Button>
-              <span>{localScore}</span>
+              <span className={`${
+                localScore > 0 ? 'text-orange-500' : 
+                localScore < 0 ? 'text-blue-500' : 'text-gray-400'
+              }`}>
+                {localScore}
+              </span>
               <Button 
-                onClick={() => handleVote(localUserVote === -1 ? 0 : -1)}
+                onClick={handleDownvote}
                 className={`p-1 ${localUserVote === -1 ? 'text-blue-500' : 'text-gray-400'}`}
                 disabled={isVoting || !user}
                 variant="ghost"
@@ -133,19 +159,36 @@ export const CommentItem: React.FC<CommentItemProps> = ({
               variant="ghost"
               size="sm"
             >
+              <MessageSquare className="h-4 w-4 mr-1" />
               Responder
             </Button>
             
             {user && (user.id === comment.user_id) && (
-              <Button 
-                onClick={() => onDelete(comment.id)}
-                className="text-gray-400 hover:text-red-400"
-                disabled={isDeleting}
-                variant="ghost"
-                size="sm"
-              >
-                Excluir
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button 
+                    className="text-gray-400 hover:text-red-400"
+                    disabled={isDeleting}
+                    variant="ghost"
+                    size="sm"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" />
+                    Excluir
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Excluir comentário</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Tem certeza que deseja excluir este comentário? Esta ação não pode ser desfeita.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => onDelete(comment.id)}>Excluir</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
           </div>
           
@@ -182,4 +225,4 @@ export const CommentItem: React.FC<CommentItemProps> = ({
       </div>
     </div>
   );
-};
+}
