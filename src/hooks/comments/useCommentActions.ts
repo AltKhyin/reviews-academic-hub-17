@@ -52,15 +52,19 @@ export function useCommentActions(
 
       if (error) throw error;
 
-      // Auto-upvote the user's own comment as a separate operation
+      // Auto-upvote the user's own comment
       if (newComment) {
-        await supabase
+        const { error: voteError } = await supabase
           .from('comment_votes')
           .insert({
             comment_id: newComment.id,
             user_id: user.id,
             value: 1
           });
+          
+        if (voteError) {
+          console.error('Error auto-upvoting comment:', voteError);
+        }
       }
 
       // Refresh comments to update the view
@@ -105,15 +109,19 @@ export function useCommentActions(
 
       if (error) throw error;
 
-      // Auto-upvote the user's own reply as a separate operation
+      // Auto-upvote the user's own reply
       if (newReply) {
-        await supabase
+        const { error: voteError } = await supabase
           .from('comment_votes')
           .insert({
             comment_id: newReply.id,
             user_id: user.id,
             value: 1
           });
+          
+        if (voteError) {
+          console.error('Error auto-upvoting reply:', voteError);
+        }
       }
 
       // Refresh all comments to get the proper structure
@@ -135,6 +143,13 @@ export function useCommentActions(
 
     setIsDeletingComment(true);
     try {
+      // Delete comment votes first
+      await supabase
+        .from('comment_votes')
+        .delete()
+        .eq('comment_id', id);
+        
+      // Then delete the comment
       const { error } = await supabase
         .from('comments')
         .delete()

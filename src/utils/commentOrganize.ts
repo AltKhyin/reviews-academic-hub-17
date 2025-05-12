@@ -31,9 +31,6 @@ export function organizeCommentsInTree(comments: BaseComment[]): Comment[] {
       // This is a reply, add it to its parent's replies
       const parentComment = commentMap.get(comment.parent_id);
       if (parentComment) {
-        if (!parentComment.replies) {
-          parentComment.replies = [];
-        }
         parentComment.replies.push(commentWithReplies);
       } else {
         // If parent not found (unusual case), treat as root comment

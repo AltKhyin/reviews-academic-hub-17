@@ -28,7 +28,7 @@ export function buildCommentData(
   const data: any = {
     content,
     user_id: userId,
-    score: 0,
+    score: 0, // Initialize with 0 score - votes are handled separately
   };
 
   if (entityType === 'article') data.article_id = entityId;

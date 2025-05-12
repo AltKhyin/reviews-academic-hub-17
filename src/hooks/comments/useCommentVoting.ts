@@ -48,7 +48,7 @@ export function useCommentVoting(fetchComments: () => Promise<void>) {
           // Update vote
           const { error: updateError } = await supabase
             .from('comment_votes')
-            .update({ value: value })
+            .update({ value })
             .eq('comment_id', commentId)
             .eq('user_id', user.id);
 
@@ -62,13 +62,13 @@ export function useCommentVoting(fetchComments: () => Promise<void>) {
           .insert({
             comment_id: commentId,
             user_id: user.id,
-            value: value // This will be 1 or -1
+            value // This will be 1 or -1
           });
 
         if (insertError) throw insertError;
       }
 
-      // Wait briefly for the trigger to update the score
+      // Allow a brief moment for the trigger to update the score
       setTimeout(() => {
         // Refresh comments to get updated scores
         fetchComments();

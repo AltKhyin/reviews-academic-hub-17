@@ -26,12 +26,7 @@ export interface Comment extends BaseComment {
   replies?: Comment[];
 }
 
-// Comment with required replies array and level for the organized structure
-export interface CommentWithReplies extends BaseComment {
-  replies: CommentWithReplies[];
-  level: number;
-}
-
+// Comment vote interface
 export interface CommentVote {
   user_id: string;
   comment_id: string;

@@ -91,18 +91,19 @@ export async function fetchCommentsData(entityId: string, entityType: EntityType
 /**
  * Adds user vote information to comments
  * Appends userVote property to each comment based on the user's votes
+ * BUT does not modify the score - that comes from the database
  */
 export function appendUserVotesToComments(
   comments: BaseComment[],
   userVotes: CommentVote[]
-): Comment[] {
+): BaseComment[] {
   if (!comments || comments.length === 0) {
     return [];
   }
   
   if (!userVotes || userVotes.length === 0) {
     // If there are no user votes, just return comments as is
-    return comments as Comment[];
+    return comments;
   }
 
   // Create a map for fast lookup of user votes by comment ID
@@ -111,11 +112,11 @@ export function appendUserVotesToComments(
     votesByCommentId.set(vote.comment_id, vote.value);
   });
 
-  // Append userVote info to each comment
+  // Append userVote info to each comment WITHOUT modifying score
   return comments.map(comment => ({
     ...comment,
     userVote: votesByCommentId.has(comment.id) 
-      ? votesByCommentId.get(comment.id) as 1 | -1 
-      : undefined
-  })) as Comment[];
+      ? (votesByCommentId.get(comment.id) as 1 | -1) 
+      : 0
+  }));
 }
