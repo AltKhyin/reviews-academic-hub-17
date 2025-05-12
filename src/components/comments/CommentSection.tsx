@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useComments } from '@/hooks/useComments';
+import { useComments } from '@/hooks/comments';
 import { useAuth } from '@/contexts/AuthContext';
 import { CommentForm } from './CommentForm';
 import { CommentList } from './CommentList';
