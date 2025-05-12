@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
@@ -83,7 +84,7 @@ export const PollSection: React.FC<PollSectionProps> = ({ poll, onVoteChange }) 
         .from('poll_votes')
         .select('id')
         .eq('user_id', user.id)
-        .eq('option_id', 'in', `(${localPoll.options.map(o => `'${o.id}'`).join(',')})`);
+        .in('option_id', localPoll.options.map(o => o.id));
       
       let voteResult;
       
