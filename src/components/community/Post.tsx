@@ -44,6 +44,14 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
   const [localScore, setLocalScore] = useState(post.score || 0);
   const [localUserVote, setLocalUserVote] = useState(post.userVote || 0);
 
+  // Helper function to format dates
+  const formatPostDate = (dateString: string) => {
+    return formatDistanceToNow(new Date(dateString), { 
+      addSuffix: true, 
+      locale: ptBR 
+    });
+  };
+
   // Check if user is admin
   useEffect(() => {
     if (!user) return;
@@ -356,7 +364,7 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
               <span className="text-sm text-gray-300">
                 {post.profiles?.full_name || 'Usuário'}
                 <span className="mx-1">•</span>
-                {formatDate(post.created_at)}
+                {formatPostDate(post.created_at)}
               </span>
             </div>
             
@@ -503,4 +511,3 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
     </div>
   );
 };
-
