@@ -1,260 +1,294 @@
 
-import { useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Comment, EntityType } from '@/types/commentTypes';
-import { useToast } from '@/hooks/use-toast';
-import { fetchCommentsData } from '@/utils/commentFetch';
-import { organizeComments, getEntityIdField, buildCommentData } from '@/utils/commentHelpers';
 import { useAuth } from '@/contexts/AuthContext';
+import { BaseComment, Comment, CommentVote, EntityType } from '@/types/commentTypes';
+import { buildCommentData, getEntityIdField, organizeComments } from '@/utils/commentHelpers';
+import { useToast } from '@/hooks/use-toast';
 
-/**
- * Custom hook for managing comments for different entity types
- */
-export const useComments = (entityId: string, entityType: EntityType = 'article') => {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+export function useComments(entityId: string, entityType: EntityType = 'article') {
   const { user } = useAuth();
-  const entityIdField = getEntityIdField(entityType);
+  const { toast } = useToast();
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isAddingComment, setIsAddingComment] = useState(false);
+  const [isDeletingComment, setIsDeletingComment] = useState(false);
+  const [isReplying, setIsReplying] = useState(false);
+  const [isVoting, setIsVoting] = useState(false);
 
-  // Validate entity information early in the hook
-  if (!entityId) {
-    console.error(`useComments hook called without entityId: ${entityId}, entityType: ${entityType}`);
-  }
+  // Determine which field to use based on entity type
+  const idField = getEntityIdField(entityType);
 
-  // Query for fetching comments
-  const commentQuery = useQuery({
-    queryKey: ['comments', entityId, entityType],
-    queryFn: async () => {
-      console.log(`Fetching comments for ${entityType} with ID: ${entityId}`);
-      return fetchCommentsData(entityId, entityType);
-    },
-    refetchOnWindowFocus: false,
-    staleTime: 30000,
-    enabled: !!entityId // Only enable query if entityId exists
-  });
+  useEffect(() => {
+    if (!entityId) return;
+    fetchComments();
+  }, [entityId, entityType]);
 
-  // Organize comments into a tree structure
-  const organizedComments = useMemo(() => {
-    return organizeComments(commentQuery.data || { comments: [], userVotes: [] });
-  }, [commentQuery.data]);
-
-  // Add comment mutation
-  const addCommentMutation = useMutation({
-    mutationFn: async (content: string) => {
-      // Validate required data
-      if (!entityId || !entityType) {
-        console.error(`Cannot add comment: Missing entity info. entityId: ${entityId}, entityType: ${entityType}`);
-        throw new Error("Falha ao adicionar comentário: Informações da entidade ausentes.");
-      }
-      
-      if (!user) throw new Error('Not authenticated');
-
-      // Use the buildCommentData utility to create a properly structured comment
-      const commentData = buildCommentData(content, user.id, entityType, entityId);
-      console.log('Comment data being sent to Supabase:', commentData);
-
-      const { error: commentError, data: newComment } = await supabase
+  const fetchComments = async (): Promise<void> => {
+    if (!entityId) return;
+    
+    setIsLoading(true);
+    try {
+      // Fetch comments for this entity
+      const { data: commentsData, error: commentsError } = await supabase
         .from('comments')
-        .insert(commentData)
-        .select()
-        .single();
+        .select(`
+          *,
+          profiles:user_id (
+            id,
+            full_name,
+            avatar_url
+          )
+        `)
+        .eq(idField, entityId)
+        .order('created_at', { ascending: true });
 
-      if (commentError) {
-        console.error('Error creating comment:', commentError);
-        throw commentError;
-      }
+      if (commentsError) throw commentsError;
 
-      // Auto-upvote the user's own comment
-      if (newComment) {
-        await supabase.from('comment_votes').insert({
-          user_id: user.id,
-          comment_id: newComment.id,
-          value: 1,
-        });
-      }
-
-      return newComment;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['comments', entityId, entityType] });
-      toast({
-        title: "Comentário adicionado",
-        description: "Seu comentário foi publicado com sucesso.",
-        duration: 3000,
-      });
-    },
-    onError: (error: Error) => {
-      console.error('Error in addComment mutation:', error);
-      toast({
-        title: "Erro",
-        description: error.message,
-        variant: "destructive",
-        duration: 5000,
-      });
-    }
-  });
-
-  // Reply to comment mutation
-  const replyToCommentMutation = useMutation({
-    mutationFn: async ({ parentId, content }: { parentId: string, content: string }) => {
-      if (!entityId || !entityType) {
-        console.error(`Cannot add reply: Missing entity info. entityId: ${entityId}, entityType: ${entityType}`);
-        throw new Error("Falha ao adicionar resposta: Informações da entidade ausentes.");
-      }
-      
-      if (!user) throw new Error('Not authenticated');
-
-      // Use the buildCommentData utility with parentId
-      const commentData = buildCommentData(content, user.id, entityType, entityId, parentId);
-      console.log('Reply data being sent to Supabase:', commentData);
-
-      const { error: commentError, data: newComment } = await supabase
-        .from('comments')
-        .insert(commentData)
-        .select()
-        .single();
-
-      if (commentError) {
-        console.error('Error creating reply:', commentError);
-        throw commentError;
-      }
-
-      // Auto-upvote the user's own reply
-      if (newComment) {
-        await supabase
+      // If user is authenticated, fetch their votes
+      let userVotes: CommentVote[] = [];
+      if (user) {
+        const { data: votesData, error: votesError } = await supabase
           .from('comment_votes')
-          .insert({
-            user_id: user.id,
-            comment_id: newComment.id,
-            value: 1
-          });
+          .select('*')
+          .eq('user_id', user.id)
+          .in('comment_id', commentsData?.map(c => c.id) || []);
+
+        if (!votesError && votesData) {
+          userVotes = votesData;
+        }
       }
 
-      return newComment;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['comments', entityId, entityType] });
-      toast({
-        title: "Resposta adicionada",
-        description: "Sua resposta foi publicada com sucesso.",
-        duration: 3000,
+      // Organize comments into a tree structure
+      const organizedComments = organizeComments({
+        comments: commentsData || [],
+        userVotes
       });
-    },
-    onError: (error: Error) => {
-      console.error('Error in replyToComment mutation:', error);
-      toast({
-        title: "Erro",
-        description: error.message,
-        variant: "destructive",
-        duration: 5000,
-      });
-    }
-  });
 
-  // Delete comment mutation
-  const deleteCommentMutation = useMutation({
-    mutationFn: async (commentId: string) => {
+      setComments(organizedComments);
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+      toast({
+        title: "Erro ao carregar comentários",
+        description: "Não foi possível carregar os comentários.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const addComment = async (content: string): Promise<void> => {
+    if (!user) {
+      toast({
+        title: "Autenticação necessária",
+        description: "Faça login para comentar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!content.trim()) return;
+
+    setIsAddingComment(true);
+    try {
+      // Create the data object with the right entity ID field
+      const commentData = buildCommentData(content, user.id, entityType, entityId);
+      
+      const { data, error } = await supabase
+        .from('comments')
+        .insert(commentData)
+        .select(`
+          *,
+          profiles:user_id (
+            id, 
+            full_name,
+            avatar_url
+          )
+        `)
+        .single();
+
+      if (error) throw error;
+
+      // Add the new comment to the state
+      const newComment = {
+        ...data,
+        replies: []
+      };
+
+      setComments(prev => [...prev, newComment]);
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      toast({
+        title: "Erro ao adicionar comentário",
+        description: "Não foi possível adicionar seu comentário.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAddingComment(false);
+    }
+  };
+
+  const replyToComment = async ({ parentId, content }: { parentId: string; content: string }): Promise<void> => {
+    if (!user) {
+      toast({
+        title: "Autenticação necessária",
+        description: "Faça login para responder aos comentários.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!content.trim()) return;
+
+    setIsReplying(true);
+    try {
+      // Create comment data with parent_id
+      const commentData = {
+        ...buildCommentData(content, user.id, entityType, entityId),
+        parent_id: parentId
+      };
+      
+      const { data, error } = await supabase
+        .from('comments')
+        .insert(commentData)
+        .select(`
+          *,
+          profiles:user_id (
+            id, 
+            full_name,
+            avatar_url
+          )
+        `)
+        .single();
+
+      if (error) throw error;
+
+      // Refresh all comments to get the proper structure
+      await fetchComments();
+    } catch (error) {
+      console.error('Error replying to comment:', error);
+      toast({
+        title: "Erro ao responder",
+        description: "Não foi possível adicionar sua resposta.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsReplying(false);
+    }
+  };
+
+  const deleteComment = async (id: string): Promise<void> => {
+    if (!user) return;
+
+    setIsDeletingComment(true);
+    try {
       const { error } = await supabase
         .from('comments')
         .delete()
-        .eq('id', commentId);
-        
+        .eq('id', id)
+        .eq('user_id', user.id);
+
       if (error) throw error;
-      return true;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['comments', entityId, entityType] });
-      toast({
-        title: 'Sucesso',
-        description: 'Comentário excluído com sucesso.',
-        duration: 3000,
-      });
-    },
-    onError: (error: Error) => {
-      console.error('Error in deleteComment mutation:', error);
-      toast({
-        title: 'Erro',
-        description: error.message,
-        variant: 'destructive',
-        duration: 5000,
-      });
-    },
-  });
 
-  // Vote on comment mutation
-  const voteCommentMutation = useMutation({
-    mutationFn: async ({ commentId, value }: { commentId: string; value: 1 | -1 | 0 }) => {
-      if (!user) throw new Error('Not authenticated');
+      // Remove the comment from state
+      // For simplicity, just refetch comments to handle nested deletions
+      await fetchComments();
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      toast({
+        title: "Erro ao excluir",
+        description: "Não foi possível excluir o comentário.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeletingComment(false);
+    }
+  };
 
+  const voteComment = async ({ commentId, value }: { commentId: string; value: 1 | -1 | 0 }): Promise<void> => {
+    if (!user) {
+      toast({
+        title: "Autenticação necessária",
+        description: "Faça login para votar em comentários.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsVoting(true);
+    try {
+      // Check if user already voted on this comment
       const { data: existingVote, error: checkError } = await supabase
         .from('comment_votes')
         .select('*')
-        .eq('user_id', user.id)
         .eq('comment_id', commentId)
+        .eq('user_id', user.id)
         .maybeSingle();
 
       if (checkError) throw checkError;
 
-      // If removing vote (value=0), delete the vote record
-      if (value === 0 && existingVote) {
-        const { error: deleteError } = await supabase
-          .from('comment_votes')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('comment_id', commentId);
+      if (existingVote) {
+        if (value === 0) {
+          // Remove vote
+          const { error: deleteError } = await supabase
+            .from('comment_votes')
+            .delete()
+            .eq('comment_id', commentId)
+            .eq('user_id', user.id);
 
-        if (deleteError) throw deleteError;
-        return { success: true };
+          if (deleteError) throw deleteError;
+        } else if (existingVote.value !== value) {
+          // Update vote
+          const { error: updateError } = await supabase
+            .from('comment_votes')
+            .update({ value })
+            .eq('comment_id', commentId)
+            .eq('user_id', user.id);
+
+          if (updateError) throw updateError;
+        }
+        // If the vote is the same, do nothing (toggle handled in the UI)
+      } else if (value !== 0) {
+        // Insert new vote
+        const { error: insertError } = await supabase
+          .from('comment_votes')
+          .insert({
+            comment_id: commentId,
+            user_id: user.id,
+            value
+          });
+
+        if (insertError) throw insertError;
       }
 
-      // If voting (up/down), upsert the vote
-      if (value !== 0) {
-        const { error: upsertError } = await supabase
-          .from('comment_votes')
-          .upsert(
-            {
-              user_id: user.id,
-              comment_id: commentId,
-              value,
-            },
-            { onConflict: 'user_id,comment_id', ignoreDuplicates: false }
-          );
-
-        if (upsertError) throw upsertError;
-      }
-
-      return { success: true };
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['comments', entityId, entityType] });
-    },
-    onError: (error: Error) => {
-      console.error('Error in voteComment mutation:', error);
+      // Wait briefly for the trigger to update the score
+      setTimeout(() => {
+        // Refresh comments to get updated scores
+        fetchComments();
+      }, 300);
+    } catch (error) {
+      console.error('Error voting on comment:', error);
       toast({
-        title: 'Erro ao votar',
-        description: error.message,
-        variant: 'destructive',
-        duration: 5000,
+        title: "Erro ao votar",
+        description: "Não foi possível registrar seu voto no comentário.",
+        variant: "destructive",
       });
-    },
-  });
-
-  // Return data and functions for components to use
-  return {
-    comments: organizedComments,
-    isLoading: commentQuery.isLoading,
-    addComment: (content: string) => addCommentMutation.mutateAsync(content),
-    replyToComment: ({ parentId, content }: { parentId: string, content: string }) => {
-      return replyToCommentMutation.mutateAsync({ parentId, content });
-    },
-    deleteComment: (commentId: string) => deleteCommentMutation.mutateAsync(commentId),
-    voteComment: ({ commentId, value }: { commentId: string; value: 1 | -1 | 0 }) => {
-      return voteCommentMutation.mutateAsync({ commentId, value });
-    },
-    isAddingComment: addCommentMutation.isPending,
-    isDeletingComment: deleteCommentMutation.isPending,
-    isVoting: voteCommentMutation.isPending,
-    isReplying: replyToCommentMutation.isPending
+    } finally {
+      setIsVoting(false);
+    }
   };
-};
+
+  return {
+    comments,
+    isLoading,
+    addComment,
+    replyToComment,
+    deleteComment,
+    voteComment,
+    isAddingComment,
+    isDeletingComment,
+    isReplying,
+    isVoting
+  };
+}

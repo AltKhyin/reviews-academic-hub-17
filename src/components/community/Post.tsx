@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -211,8 +210,11 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
           .insert({ post_id: post.id, user_id: user.id, value });
       }
 
-      // Refresh posts data to get updated scores
-      onVoteChange();
+      // Wait a brief moment to allow the trigger to update the score
+      setTimeout(() => {
+        // Refresh posts data to get updated scores
+        onVoteChange();
+      }, 300);
     } catch (error) {
       console.error('Error voting on post:', error);
       

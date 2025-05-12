@@ -29,6 +29,8 @@ export const CommentItem: React.FC<CommentItemProps> = ({
 }) => {
   const { user } = useAuth();
   const [isReplying, setIsReplying] = useState(false);
+  const [localScore, setLocalScore] = useState(comment.score || 0);
+  const [localUserVote, setLocalUserVote] = useState(comment.userVote || 0);
 
   // Get user display name from profile data, with fallbacks
   const displayName = comment.profiles?.full_name || 
@@ -44,8 +46,40 @@ export const CommentItem: React.FC<CommentItemProps> = ({
   };
 
   const handleVote = async (value: 1 | -1 | 0) => {
-    if (!user) return;
-    await onVote({ commentId: comment.id, value });
+    if (!user) {
+      return;
+    }
+    
+    try {
+      // First, update local state for optimistic UI
+      const prevVote = localUserVote;
+      let scoreDelta = 0;
+      
+      if (prevVote === value) {
+        // Removing the vote
+        scoreDelta = -value;
+        setLocalUserVote(0);
+      } else if (prevVote === 0) {
+        // New vote
+        scoreDelta = value;
+        setLocalUserVote(value);
+      } else {
+        // Changing vote (e.g., from -1 to 1)
+        scoreDelta = value * 2;  // Double effect
+        setLocalUserVote(value);
+      }
+      
+      // Update local score optimistically
+      setLocalScore(prev => prev + scoreDelta);
+      
+      // Now perform the actual API call
+      await onVote({ commentId: comment.id, value });
+    } catch (error) {
+      console.error('Error voting on comment:', error);
+      // Revert optimistic updates on error
+      setLocalScore(comment.score || 0);
+      setLocalUserVote(comment.userVote || 0);
+    }
   };
 
   return (
@@ -73,19 +107,19 @@ export const CommentItem: React.FC<CommentItemProps> = ({
           <div className="flex items-center gap-3 text-xs">
             <div className="flex items-center space-x-1">
               <Button 
-                onClick={() => handleVote(comment.userVote === 1 ? 0 : 1)}
-                className={`p-1 ${comment.userVote === 1 ? 'text-orange-500' : 'text-gray-400'}`}
-                disabled={isVoting}
+                onClick={() => handleVote(localUserVote === 1 ? 0 : 1)}
+                className={`p-1 ${localUserVote === 1 ? 'text-orange-500' : 'text-gray-400'}`}
+                disabled={isVoting || !user}
                 variant="ghost"
                 size="sm"
               >
                 <ArrowUp className="h-4 w-4" />
               </Button>
-              <span>{comment.score}</span>
+              <span>{localScore}</span>
               <Button 
-                onClick={() => handleVote(comment.userVote === -1 ? 0 : -1)}
-                className={`p-1 ${comment.userVote === -1 ? 'text-blue-500' : 'text-gray-400'}`}
-                disabled={isVoting}
+                onClick={() => handleVote(localUserVote === -1 ? 0 : -1)}
+                className={`p-1 ${localUserVote === -1 ? 'text-blue-500' : 'text-gray-400'}`}
+                disabled={isVoting || !user}
                 variant="ghost"
                 size="sm"
               >
