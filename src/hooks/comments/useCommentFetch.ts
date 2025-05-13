@@ -43,11 +43,12 @@ export function useCommentFetch(entityId: string, entityType: EntityType = 'arti
       const { data: { user } } = await supabase.auth.getUser();
       
       if (user && commentsData && commentsData.length > 0) {
+        const commentIds = commentsData.map(c => c.id);
         const { data: votesData, error: votesError } = await supabase
           .from('comment_votes')
           .select('*')
           .eq('user_id', user.id)
-          .in('comment_id', commentsData.map(c => c.id));
+          .in('comment_id', commentIds);
 
         if (!votesError && votesData) {
           // Map votes to the correct CommentVote type

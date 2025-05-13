@@ -62,13 +62,16 @@ export async function fetchCommentsData(entityId: string, entityType: EntityType
     const { data: { user } } = await supabase.auth.getUser();
     const userId = user?.id;
 
-    // If user is authenticated, fetch their votes
+    // If user is authenticated and there are comments, fetch their votes
     let userVotes: CommentVote[] = [];
-    if (userId) {
+    if (userId && comments && comments.length > 0) {
+      const commentIds = comments.map(comment => comment.id);
+      
       const { data: votes = [], error: votesError } = await supabase
         .from('comment_votes')
         .select('*')
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .in('comment_id', commentIds);
 
       if (votesError) {
         console.error('Error fetching comment votes:', votesError);
