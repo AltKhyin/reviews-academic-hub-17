@@ -1,58 +1,54 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { CommentType } from '@/types/comment';
+import { Comment } from '@/types/commentTypes';
 import { toast } from '@/components/ui/use-toast';
-import { processComments } from '@/utils/commentHelpers';
+import { organizeComments } from '@/utils/commentOrganize';
 
-export const useCommentFetch = (articleId: string | undefined) => {
-  const [comments, setComments] = useState<CommentType[]>([]);
+export const useCommentFetch = (entityId: string, entityType: 'article' = 'article') => {
+  const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [refreshCounter, setRefreshCounter] = useState(0);
+  
+  const fetchComments = async () => {
+    if (!entityId) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const fieldName = `${entityType}_id`;
+      
+      const { data, error } = await supabase
+        .from('comments')
+        .select(`
+          *,
+          user:user_id (id, email),
+          votes:comment_votes (id, user_id, value)
+        `)
+        .eq(fieldName, entityId)
+        .order('created_at', { ascending: true });
 
-  const refreshComments = () => {
-    setRefreshCounter(prev => prev + 1);
+      if (error) throw error;
+
+      const processedComments = organizeComments(data || []);
+      setComments(processedComments);
+    } catch (err) {
+      console.error('Error fetching comments:', err);
+      setError('Failed to load comments');
+      toast({
+        title: 'Error',
+        description: 'Failed to load comments',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    const fetchComments = async () => {
-      if (!articleId) return;
-      
-      setLoading(true);
-      setError(null);
-      
-      try {
-        // Fixed the type issue by explicitly defining the return type
-        const { data, error } = await supabase
-          .from('comments')
-          .select(`
-            *,
-            user:user_id (id, email),
-            votes:comment_votes (id, user_id, value)
-          `)
-          .eq('article_id', articleId)
-          .order('created_at', { ascending: true });
-
-        if (error) throw error;
-
-        const processedComments = processComments(data || []);
-        setComments(processedComments);
-      } catch (err) {
-        console.error('Error fetching comments:', err);
-        setError('Failed to load comments');
-        toast({
-          title: 'Error',
-          description: 'Failed to load comments',
-          variant: 'destructive',
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchComments();
-  }, [articleId, refreshCounter]);
+  }, [entityId, entityType]);
 
-  return { comments, loading, error, refreshComments };
+  return { comments, loading, error, fetchComments };
 };

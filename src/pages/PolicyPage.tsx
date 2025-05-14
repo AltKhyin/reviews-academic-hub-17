@@ -92,6 +92,39 @@ const PolicyPage: React.FC = () => {
             </ul>
           </section>
 
+          <section className="bg-gray-800 p-6 rounded-lg border border-gray-700">
+            <h2 className="text-2xl font-bold mb-3 text-white">User Data Deletion</h2>
+            <p>We respect your right to have your data deleted from our systems. To request deletion of your personal data:</p>
+            
+            <div className="mt-4 space-y-4">
+              <div className="bg-gray-900 p-4 rounded-md">
+                <h3 className="text-lg font-semibold mb-2 text-white">Option 1: Email Request</h3>
+                <p>Send an email to <span className="text-blue-400">privacy@yourdomain.com</span> with the subject "Data Deletion Request".</p>
+                <p className="mt-2">Please include:</p>
+                <ul className="list-disc ml-6 mt-2">
+                  <li>Your full name</li>
+                  <li>WhatsApp phone number associated with your account</li>
+                  <li>Brief reason for deletion (optional)</li>
+                </ul>
+              </div>
+
+              <div className="bg-gray-900 p-4 rounded-md">
+                <h3 className="text-lg font-semibold mb-2 text-white">Option 2: In-App Request</h3>
+                <p>You can also request deletion directly through WhatsApp by sending the message "DELETE MY DATA" to our bot.</p>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <p className="font-medium text-white">Processing Time:</p>
+              <p>We will process all deletion requests within 30 days. You will receive confirmation once your data has been completely removed from our systems.</p>
+            </div>
+
+            <div className="mt-4">
+              <p className="font-medium text-white">Data Retention After Deletion:</p>
+              <p>Upon deletion, all your personal data will be permanently removed from our active systems. However, some information may remain in our backup systems for up to 90 days before being completely purged.</p>
+            </div>
+          </section>
+
           <section>
             <h2 className="text-2xl font-bold mb-3">9. Changes to This Policy</h2>
             <p>We may update this Privacy Policy; changes take effect when posted here. We'll notify active WhatsApp groups if there's a material update.</p>

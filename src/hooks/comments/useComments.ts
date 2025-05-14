@@ -8,7 +8,7 @@ import { useCommentVoting } from './useCommentVoting';
  * Main hook that combines fetching, actions, and voting for comments
  */
 export function useComments(entityId: string, entityType: EntityType = 'article') {
-  const { comments, isLoading, fetchComments } = useCommentFetch(entityId, entityType);
+  const { comments, loading: isLoading, fetchComments, error } = useCommentFetch(entityId, entityType);
   
   const { 
     addComment, 
@@ -32,7 +32,8 @@ export function useComments(entityId: string, entityType: EntityType = 'article'
     isDeletingComment,
     isReplying,
     isVoting,
-    fetchComments
+    fetchComments,
+    error
   };
 }
 
