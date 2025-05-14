@@ -79,22 +79,19 @@ export const ProfileSavedItems: React.FC<ProfileSavedItemsProps> = ({ userId, ty
           ]);
         } else {
           // Implementação futura: buscar posts salvos
-          // Por enquanto, usamos dados mockados ou tentamos buscar bookmarks reais
+          // Por enquanto, tentamos buscar bookmarks reais
           const { data: bookmarkData, error: bookmarkError } = await supabase
             .from('post_bookmarks')
             .select(`
               id,
               created_at,
+              post_id,
               posts:post_id (
                 id,
                 title,
                 content,
                 created_at,
-                user_id,
-                profiles:user_id (
-                  full_name,
-                  avatar_url
-                )
+                user_id
               )
             `)
             .eq('user_id', userId)
@@ -106,10 +103,26 @@ export const ProfileSavedItems: React.FC<ProfileSavedItemsProps> = ({ userId, ty
           }
           
           if (bookmarkData && bookmarkData.length > 0) {
+            // Fetch user profiles separately to avoid relation errors
+            const postUserIds = bookmarkData
+              .map(bookmark => bookmark.posts?.user_id)
+              .filter(Boolean);
+            
+            // Get profiles for the post authors
+            const { data: profilesData } = await supabase
+              .from('profiles')
+              .select('id, full_name, avatar_url')
+              .in('id', postUserIds);
+            
+            // Create a map of user_id to profile data for easy lookup
+            const profilesMap = (profilesData || []).reduce((map: Record<string, any>, profile) => {
+              if (profile.id) map[profile.id] = profile;
+              return map;
+            }, {});
+            
             const formattedItems = bookmarkData.map(bookmark => {
-              // Safely access nested properties using optional chaining
               const post = bookmark.posts;
-              const profile = post?.profiles;
+              const profile = post?.user_id ? profilesMap[post.user_id] : null;
               
               return {
                 id: bookmark.id,
