@@ -18,16 +18,19 @@ import {
   Calendar,
   Mail,
   Upload,
-  User
+  User,
+  Edit
 } from 'lucide-react';
 import { ProfileActivity } from '@/components/profile/ProfileActivity';
 import { ProfileSavedItems } from '@/components/profile/ProfileSavedItems';
+import { EditProfileDialog } from '@/components/profile/EditProfileDialog';
 
 const Profile: React.FC = () => {
   const { state } = useSidebar();
   const { user, profile, updateProfile, refreshProfile } = useAuth();
   const isCollapsed = state === 'collapsed';
   const [uploading, setUploading] = useState(false);
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [stats, setStats] = useState({
     articlesRead: 0,
     communityContributions: 0
@@ -35,18 +38,17 @@ const Profile: React.FC = () => {
 
   useEffect(() => {
     // Carrega estatísticas do usuário quando disponíveis
-    // Futuramente será substituído por chamadas reais à API
     const loadUserStats = async () => {
       if (!user) return;
       
       try {
-        // Exemplo de consulta para contar artigos lidos (implementação futura)
+        // Exemplo de consulta para contar artigos lidos
         const { count: articlesRead, error: readError } = await supabase
           .from('user_article_views')
           .select('id', { count: 'exact', head: true })
           .eq('user_id', user.id);
         
-        // Exemplo de consulta para contar contribuições (implementação futura)
+        // Exemplo de consulta para contar contribuições
         const { count: postsCount, error: postsError } = await supabase
           .from('posts')
           .select('id', { count: 'exact', head: true })
@@ -142,13 +144,13 @@ const Profile: React.FC = () => {
     : 'Data não disponível';
 
   return (
-    <div className={`animate-fade-in pb-12 transition-all duration-300 ${isCollapsed ? 'max-w-[95%]' : 'max-w-[85%]'} mx-auto`}>
+    <div className={`animate-fade-in pb-16 pt-8 transition-all duration-300 ${isCollapsed ? 'max-w-[95%]' : 'max-w-[85%]'} mx-auto`}>
       {/* Container 1: Informações do Perfil */}
-      <Card className="bg-[#1a1a1a] rounded-lg shadow-lg card-elevation mb-8">
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row items-center md:items-start md:space-x-6">
+      <Card className="bg-[#1a1a1a] rounded-lg shadow-lg card-elevation mb-10 p-2">
+        <CardContent className="p-8">
+          <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
             {/* Avatar e Upload */}
-            <div className="mb-6 md:mb-0">
+            <div className="mb-6 md:mb-0 relative">
               <div className="relative group">
                 <input
                   type="file"
@@ -159,7 +161,7 @@ const Profile: React.FC = () => {
                   disabled={uploading}
                 />
                 <label htmlFor="avatar-upload" className="cursor-pointer block">
-                  <Avatar className="w-24 h-24 border-2 border-gray-700">
+                  <Avatar className="w-36 h-36 border-2 border-gray-700">
                     {profile?.avatar_url ? (
                       <AvatarImage 
                         src={profile.avatar_url} 
@@ -167,65 +169,73 @@ const Profile: React.FC = () => {
                         className="object-cover transition-opacity group-hover:opacity-70"
                       />
                     ) : (
-                      <AvatarFallback className="bg-gray-700 text-3xl text-gray-300 transition-opacity group-hover:opacity-70">
-                        {profile?.full_name ? profile.full_name[0].toUpperCase() : <User />}
+                      <AvatarFallback className="bg-gray-700 text-5xl text-gray-300 transition-opacity group-hover:opacity-70">
+                        {profile?.full_name ? profile.full_name[0].toUpperCase() : <User size={48} />}
                       </AvatarFallback>
                     )}
                   </Avatar>
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="bg-black bg-opacity-60 text-white text-xs px-3 py-2 rounded-md flex items-center">
-                      <Upload className="w-3 h-3 mr-1" />
+                    <div className="bg-black bg-opacity-60 text-white text-sm px-3 py-2 rounded-md flex items-center">
+                      <Upload className="w-4 h-4 mr-2" />
                       <span>{uploading ? 'Enviando...' : 'Alterar foto'}</span>
                     </div>
                   </div>
                 </label>
-                <div className="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-status-green border-2 border-[#1a1a1a]"></div>
+                <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-status-green border-2 border-[#1a1a1a]"></div>
               </div>
             </div>
             
             {/* Informações Pessoais */}
             <div className="flex-1 text-center md:text-left">
-              <h1 className="font-serif text-2xl font-medium mb-1">{profile?.full_name || user?.email?.split('@')[0] || 'Usuário'}</h1>
-              <p className="text-gray-400 mb-4">{profile?.specialty || 'Especialidade não definida'}</p>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex items-center space-x-2">
-                  <Mail className="w-4 h-4 text-gray-400" />
-                  <span>{user?.email || 'Email não disponível'}</span>
+              <div className="flex flex-col md:flex-row md:justify-between md:items-start">
+                <div>
+                  <h1 className="font-serif text-3xl font-medium mb-2">{profile?.full_name || user?.email?.split('@')[0] || 'Usuário'}</h1>
+                  <p className="text-gray-400 mb-4">{profile?.specialty || 'Especialidade não definida'}</p>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-1 gap-4 mb-6">
+                    <div className="flex items-center space-x-2">
+                      <Mail className="w-4 h-4 text-gray-400" />
+                      <span>{user?.email || 'Email não disponível'}</span>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Calendar className="w-4 h-4 text-gray-400" />
+                      <span>Membro desde {createdAt}</span>
+                    </div>
+                  </div>
                 </div>
                 
-                <div className="flex items-center space-x-2">
-                  <Calendar className="w-4 h-4 text-gray-400" />
-                  <span>Membro desde {createdAt}</span>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <BookOpen className="w-4 h-4 text-gray-400" />
-                  <span>{stats.articlesRead} artigos lidos</span>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <MessageSquare className="w-4 h-4 text-gray-400" />
-                  <span>{stats.communityContributions} contribuições na comunidade</span>
+                {/* Badges de Estatísticas */}
+                <div className="flex flex-col md:flex-row gap-3 mb-6">
+                  <div className="flex flex-col items-center justify-center bg-[#212121] rounded-lg p-4 min-w-[140px] border border-[#2a2a2a]">
+                    <BookOpen className="w-5 h-5 text-status-green mb-1" />
+                    <span className="text-xl font-semibold">{stats.articlesRead}</span>
+                    <span className="text-xs text-gray-400">artigos lidos</span>
+                  </div>
+                  
+                  <div className="flex flex-col items-center justify-center bg-[#212121] rounded-lg p-4 min-w-[140px] border border-[#2a2a2a]">
+                    <MessageSquare className="w-5 h-5 text-status-amber mb-1" />
+                    <span className="text-xl font-semibold">{stats.communityContributions}</span>
+                    <span className="text-xs text-gray-400">contribuições</span>
+                  </div>
                 </div>
               </div>
+              
+              {/* Botão de Editar */}
+              <Button 
+                onClick={() => setEditProfileOpen(true)} 
+                className="bg-white text-[#121212] hover:bg-gray-200 flex items-center gap-2 px-5 py-2 rounded-full"
+              >
+                <Edit className="w-4 h-4" />
+                Editar perfil
+              </Button>
             </div>
-          </div>
-          
-          {/* Botões de Ação */}
-          <div className="mt-6 flex flex-col sm:flex-row justify-center md:justify-start space-y-3 sm:space-y-0 sm:space-x-4">
-            <Button className="bg-white text-[#121212] hover:bg-gray-200">
-              Editar perfil
-            </Button>
-            <Button variant="outline" className="border border-[#2a2a2a] hover:bg-[#2a2a2a]">
-              Preferências
-            </Button>
           </div>
         </CardContent>
       </Card>
       
       {/* Container 2: Atividade Recente */}
-      <ProfileActivity className="mb-8" userId={user?.id} />
+      <ProfileActivity className="mb-10" userId={user?.id} />
       
       {/* Container 3 e 4: Reviews Favoritas e Posts Salvos (Tabs) */}
       <Card className="bg-[#1a1a1a] rounded-lg shadow-lg card-elevation">
@@ -250,6 +260,14 @@ const Profile: React.FC = () => {
           </Tabs>
         </CardHeader>
       </Card>
+      
+      {/* Dialog de edição de perfil */}
+      <EditProfileDialog 
+        open={editProfileOpen} 
+        onOpenChange={setEditProfileOpen} 
+        profile={profile}
+        onProfileUpdated={refreshProfile}
+      />
     </div>
   );
 };

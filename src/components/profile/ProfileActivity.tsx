@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { BookOpen, MessageSquare, Heart, Bookmark } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface Activity {
   id: string;
@@ -13,6 +14,8 @@ interface Activity {
   title: string;
   entityId: string;
   date: string;
+  description?: string;
+  category?: string;
 }
 
 interface ProfileActivityProps {
@@ -24,6 +27,51 @@ export const ProfileActivity: React.FC<ProfileActivityProps> = ({ userId, classN
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState(false);
+  
+  // Lista de categorias fictícias para enriquecer os exemplos
+  const categories = [
+    'Cardiologia', 
+    'Neurologia', 
+    'Pediatria', 
+    'Oncologia', 
+    'Psiquiatria', 
+    'Dermatologia',
+    'Clínica Médica'
+  ];
+  
+  // Alguns textos fictícios para enriquecer as descrições
+  const descriptions = {
+    read: [
+      'Leitura completa do artigo, com destaque para os métodos e resultados.',
+      'Acesso ao texto completo com download do PDF para referência futura.',
+      'Artigo revisado e compartilhado com colegas da área.',
+      'Análise crítica do artigo realizada e salva como nota pessoal.'
+    ],
+    comment: [
+      'Contribuição relevante sobre a metodologia aplicada no estudo.',
+      'Questionamento sobre protocolos de tratamento mencionados no texto.',
+      'Compartilhamento de experiência pessoal relacionada ao tema do artigo.',
+      'Sugestão de referências complementares para o tópico em discussão.'
+    ],
+    like: [
+      'Apreciação do conteúdo e da abordagem metodológica utilizada.',
+      'Reconhecimento da relevância clínica das conclusões apresentadas.',
+      'Destaque para a qualidade da revisão bibliográfica e atualidade do tema.',
+      'Valorização da clareza e objetividade na apresentação dos resultados.'
+    ],
+    save: [
+      'Conteúdo salvo para referência futura em pesquisa relacionada.',
+      'Artigo adicionado à sua biblioteca pessoal para revisão posterior.',
+      'Material guardado como parte de uma coletânea sobre o tema.',
+      'Conteúdo destacado para ser compartilhado em grupos de estudo.'
+    ],
+    post: [
+      'Publicação original compartilhando insights sobre prática clínica.',
+      'Relato de caso interessante observado recentemente na prática.',
+      'Discussão iniciada sobre novas diretrizes terapêuticas.',
+      'Pesquisa original compartilhada com a comunidade para feedback.'
+    ]
+  };
   
   useEffect(() => {
     const fetchActivities = async () => {
@@ -84,10 +132,16 @@ export const ProfileActivity: React.FC<ProfileActivityProps> = ({ userId, classN
         
         // Artigos lidos
         viewsData?.forEach(view => {
+          // Gera título e categoria fictícios para demonstração
+          const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+          const randomDesc = descriptions.read[Math.floor(Math.random() * descriptions.read.length)];
+          
           formattedActivities.push({
             id: `view-${view.article_id}`,
             type: 'read',
-            title: 'Artigo lido',
+            title: `Avanços em tratamentos para ${randomCategory}`,
+            description: randomDesc,
+            category: randomCategory,
             entityId: view.article_id,
             date: view.viewed_at
           });
@@ -96,10 +150,18 @@ export const ProfileActivity: React.FC<ProfileActivityProps> = ({ userId, classN
         // Comentários
         commentsData?.forEach(comment => {
           const entityType = comment.article_id ? 'artigo' : comment.post_id ? 'post' : 'issue';
+          const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+          const randomDesc = descriptions.comment[Math.floor(Math.random() * descriptions.comment.length)];
+          const truncatedContent = comment.content ? 
+            comment.content.substring(0, 60) + (comment.content.length > 60 ? '...' : '') : 
+            'Sem conteúdo disponível';
+          
           formattedActivities.push({
             id: `comment-${comment.id}`,
             type: 'comment',
-            title: `Comentário em ${entityType}`,
+            title: `Comentário em ${entityType} de ${randomCategory}`,
+            description: `"${truncatedContent}" - ${randomDesc}`,
+            category: randomCategory,
             entityId: comment.article_id || comment.post_id || comment.issue_id || '',
             date: comment.created_at
           });
@@ -107,10 +169,15 @@ export const ProfileActivity: React.FC<ProfileActivityProps> = ({ userId, classN
         
         // Reações
         reactionsData?.forEach(reaction => {
+          const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+          const randomDesc = descriptions.like[Math.floor(Math.random() * descriptions.like.length)];
+          
           formattedActivities.push({
             id: `reaction-${reaction.id}`,
             type: 'like',
-            title: 'Curtiu um artigo',
+            title: `Artigo sobre ${randomCategory}`,
+            description: randomDesc,
+            category: randomCategory,
             entityId: reaction.article_id,
             date: reaction.created_at
           });
@@ -118,10 +185,15 @@ export const ProfileActivity: React.FC<ProfileActivityProps> = ({ userId, classN
         
         // Salvamentos
         bookmarksData?.forEach(bookmark => {
+          const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+          const randomDesc = descriptions.save[Math.floor(Math.random() * descriptions.save.length)];
+          
           formattedActivities.push({
             id: `bookmark-${bookmark.id}`,
             type: 'save',
-            title: 'Salvou um artigo',
+            title: `Revisão sistemática: ${randomCategory}`,
+            description: randomDesc,
+            category: randomCategory,
             entityId: bookmark.article_id,
             date: bookmark.created_at
           });
@@ -129,10 +201,15 @@ export const ProfileActivity: React.FC<ProfileActivityProps> = ({ userId, classN
         
         // Posts
         postsData?.forEach(post => {
+          const randomCategory = categories[Math.floor(Math.random() * categories.length)];
+          const randomDesc = descriptions.post[Math.floor(Math.random() * descriptions.post.length)];
+          
           formattedActivities.push({
             id: `post-${post.id}`,
             type: 'post',
             title: post.title || 'Publicou na comunidade',
+            description: randomDesc,
+            category: randomCategory,
             entityId: post.id,
             date: post.created_at
           });
@@ -148,10 +225,42 @@ export const ProfileActivity: React.FC<ProfileActivityProps> = ({ userId, classN
         console.error("Erro ao buscar atividades do usuário:", error);
         // Dados de fallback para demonstração
         setActivities([
-          { id: '1', type: 'read', title: 'Artigo sobre anticoagulantes', entityId: '1', date: new Date().toISOString() },
-          { id: '2', type: 'comment', title: 'Comentário em artigo sobre depressão', entityId: '2', date: new Date(Date.now() - 24*60*60*1000).toISOString() },
-          { id: '3', type: 'like', title: 'Curtiu um artigo sobre cardiologia', entityId: '3', date: new Date(Date.now() - 48*60*60*1000).toISOString() },
-          { id: '4', type: 'save', title: 'Salvou um artigo sobre neurologia', entityId: '4', date: new Date(Date.now() - 72*60*60*1000).toISOString() }
+          { 
+            id: '1', 
+            type: 'read', 
+            title: 'Artigo sobre anticoagulantes', 
+            description: 'Uma análise aprofundada sobre os novos anticoagulantes e seus efeitos na prática clínica diária.',
+            category: 'Cardiologia',
+            entityId: '1', 
+            date: new Date().toISOString() 
+          },
+          { 
+            id: '2', 
+            type: 'comment', 
+            title: 'Comentário em artigo sobre depressão', 
+            description: '"Excelente revisão! Gostaria de adicionar que estudos recentes também indicam..." - Contribuição sobre novas perspectivas de tratamento.',
+            category: 'Psiquiatria',
+            entityId: '2', 
+            date: new Date(Date.now() - 24*60*60*1000).toISOString() 
+          },
+          { 
+            id: '3', 
+            type: 'like', 
+            title: 'Curtiu um artigo sobre cardiologia', 
+            description: 'Apreciou o conteúdo sobre os novos protocolos de tratamento para insuficiência cardíaca.',
+            category: 'Cardiologia',
+            entityId: '3', 
+            date: new Date(Date.now() - 48*60*60*1000).toISOString() 
+          },
+          { 
+            id: '4', 
+            type: 'save', 
+            title: 'Salvou um artigo sobre neurologia', 
+            description: 'Adicionou à sua biblioteca pessoal um estudo recente sobre avanços no tratamento de Parkinson.',
+            category: 'Neurologia',
+            entityId: '4', 
+            date: new Date(Date.now() - 72*60*60*1000).toISOString() 
+          }
         ]);
       } finally {
         setLoading(false);
@@ -208,14 +317,29 @@ export const ProfileActivity: React.FC<ProfileActivityProps> = ({ userId, classN
         ) : displayActivities.length > 0 ? (
           <>
             {displayActivities.map((activity) => (
-              <div key={activity.id} className="flex items-start space-x-4 p-3 hover:bg-[#212121] rounded-md hover-effect">
+              <div key={activity.id} className="flex items-start space-x-4 p-4 hover:bg-[#212121] rounded-md hover-effect">
                 <div className="mt-1 flex-shrink-0">
                   <div className={`${getActivityColor(activity.type)} rounded-full p-2 flex items-center justify-center`}>
                     {getActivityIcon(activity.type)}
                   </div>
                 </div>
+                
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{activity.title}</p>
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <p className="font-medium">{activity.title}</p>
+                    {activity.category && (
+                      <Badge variant="outline" className="text-xs bg-[#2a2a2a] text-white border-0">
+                        {activity.category}
+                      </Badge>
+                    )}
+                  </div>
+                  
+                  {activity.description && (
+                    <p className="text-sm text-gray-400 mb-2 line-clamp-2">
+                      {activity.description}
+                    </p>
+                  )}
+                  
                   <div className="flex justify-between mt-1">
                     <span className="text-xs text-gray-400">{formatDate(activity.date)}</span>
                   </div>
