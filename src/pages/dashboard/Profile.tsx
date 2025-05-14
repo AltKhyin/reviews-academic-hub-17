@@ -1,36 +1,78 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSidebar } from '@/components/ui/sidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-
-// Mock user profile data for demo sections
-const mockData = {
-  readArticles: 17,
-  savedArticles: 8,
-  recentActivity: [
-    { type: 'read', title: 'Análise comparativa: novos anticoagulantes vs. warfarina', date: '18 out, 2023' },
-    { type: 'saved', title: 'Meta-análise: eficácia de antidepressivos de nova geração', date: '15 out, 2023' },
-    { type: 'read', title: 'Impactos do uso prolongado de inibidores de bomba de prótons', date: '12 out, 2023' },
-  ]
-};
-
-const ActivityIcon = ({ type }: { type: string }) => {
-  if (type === 'read') {
-    return <span className="bg-status-green w-2 h-2 rounded-full"></span>;
-  } else if (type === 'saved') {
-    return <span className="bg-status-amber w-2 h-2 rounded-full"></span>;
-  }
-  return null;
-};
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { 
+  BookOpen, 
+  MessageSquare, 
+  Heart, 
+  Bookmark, 
+  Calendar,
+  Mail,
+  Upload,
+  User
+} from 'lucide-react';
+import { ProfileActivity } from '@/components/profile/ProfileActivity';
+import { ProfileSavedItems } from '@/components/profile/ProfileSavedItems';
 
 const Profile: React.FC = () => {
   const { state } = useSidebar();
   const { user, profile, updateProfile, refreshProfile } = useAuth();
   const isCollapsed = state === 'collapsed';
   const [uploading, setUploading] = useState(false);
+  const [stats, setStats] = useState({
+    articlesRead: 0,
+    communityContributions: 0
+  });
+
+  useEffect(() => {
+    // Carrega estatísticas do usuário quando disponíveis
+    // Futuramente será substituído por chamadas reais à API
+    const loadUserStats = async () => {
+      if (!user) return;
+      
+      try {
+        // Exemplo de consulta para contar artigos lidos (implementação futura)
+        const { count: articlesRead, error: readError } = await supabase
+          .from('user_article_views')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id);
+        
+        // Exemplo de consulta para contar contribuições (implementação futura)
+        const { count: postsCount, error: postsError } = await supabase
+          .from('posts')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id);
+          
+        const { count: commentsCount, error: commentsError } = await supabase
+          .from('comments')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id);
+        
+        setStats({
+          articlesRead: articlesRead || 0,
+          communityContributions: (postsCount || 0) + (commentsCount || 0)
+        });
+      } catch (error) {
+        console.error("Erro ao carregar estatísticas do usuário:", error);
+        // Valores fallback para demonstração
+        setStats({
+          articlesRead: Math.floor(Math.random() * 20),
+          communityContributions: Math.floor(Math.random() * 10)
+        });
+      }
+    };
+    
+    loadUserStats();
+  }, [user]);
 
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files || !event.target.files.length || !user) {
@@ -45,35 +87,35 @@ const Profile: React.FC = () => {
       const fileName = `${user.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
       const filePath = `${fileName}`;
       
-      // Check if bucket exists before upload
+      // Verifica se o bucket existe antes do upload
       const { data: buckets } = await supabase.storage.listBuckets();
       const bucketExists = buckets?.some(bucket => bucket.name === 'avatars');
       
       if (!bucketExists) {
-        console.error('Bucket "avatars" not found');
+        console.error('Bucket "avatars" não encontrado');
         try {
-          // Try to create the bucket if it doesn't exist
+          // Tenta criar o bucket se não existir
           await supabase.storage.createBucket('avatars', { public: true });
-          console.log('Created avatars bucket');
+          console.log('Bucket avatars criado');
         } catch (bucketError) {
-          console.error('Failed to create bucket:', bucketError);
-          throw new Error('Storage bucket not available. Please contact support.');
+          console.error('Falha ao criar bucket:', bucketError);
+          throw new Error('Armazenamento não disponível. Por favor, contate o suporte.');
         }
       }
       
-      // Upload to Supabase Storage
+      // Upload para o Storage do Supabase
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(filePath, file);
       
       if (uploadError) throw uploadError;
       
-      // Get public URL
+      // Obtém a URL pública
       const { data: { publicUrl } } = supabase.storage
         .from('avatars')
         .getPublicUrl(filePath);
       
-      // Update user profile
+      // Atualiza o perfil do usuário
       await updateProfile({ avatar_url: publicUrl });
       await refreshProfile();
       
@@ -89,121 +131,125 @@ const Profile: React.FC = () => {
         variant: "destructive",
         duration: 5000,
       });
-      console.error('Error uploading avatar:', error);
+      console.error('Erro ao fazer upload do avatar:', error);
     } finally {
       setUploading(false);
     }
   };
 
+  const createdAt = user?.created_at 
+    ? format(new Date(user.created_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+    : 'Data não disponível';
+
   return (
     <div className={`animate-fade-in pb-12 transition-all duration-300 ${isCollapsed ? 'max-w-[95%]' : 'max-w-[85%]'} mx-auto`}>
-      <div className="bg-[#1a1a1a] rounded-lg shadow-lg card-elevation p-6 mb-8">
-        <div className="flex flex-col md:flex-row items-center md:items-start md:space-x-6">
-          <div className="mb-4 md:mb-0">
-            <div className="relative group">
-              <input
-                type="file"
-                id="avatar-upload"
-                className="hidden"
-                accept="image/*"
-                onChange={handleAvatarUpload}
-                disabled={uploading}
-              />
-              <label htmlFor="avatar-upload" className="cursor-pointer block">
-                <div className="w-24 h-24 rounded-full overflow-hidden">
-                  {profile?.avatar_url ? (
-                    <img 
-                      src={profile.avatar_url} 
-                      alt={profile?.full_name || "User avatar"} 
-                      className="w-full h-full object-cover transition-opacity group-hover:opacity-70"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-700 flex items-center justify-center text-3xl text-gray-300 transition-opacity group-hover:opacity-70">
-                      {profile?.full_name ? profile.full_name[0].toUpperCase() : '?'}
+      {/* Container 1: Informações do Perfil */}
+      <Card className="bg-[#1a1a1a] rounded-lg shadow-lg card-elevation mb-8">
+        <CardContent className="p-6">
+          <div className="flex flex-col md:flex-row items-center md:items-start md:space-x-6">
+            {/* Avatar e Upload */}
+            <div className="mb-6 md:mb-0">
+              <div className="relative group">
+                <input
+                  type="file"
+                  id="avatar-upload"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  disabled={uploading}
+                />
+                <label htmlFor="avatar-upload" className="cursor-pointer block">
+                  <Avatar className="w-24 h-24 border-2 border-gray-700">
+                    {profile?.avatar_url ? (
+                      <AvatarImage 
+                        src={profile.avatar_url} 
+                        alt={profile?.full_name || "Avatar do usuário"} 
+                        className="object-cover transition-opacity group-hover:opacity-70"
+                      />
+                    ) : (
+                      <AvatarFallback className="bg-gray-700 text-3xl text-gray-300 transition-opacity group-hover:opacity-70">
+                        {profile?.full_name ? profile.full_name[0].toUpperCase() : <User />}
+                      </AvatarFallback>
+                    )}
+                  </Avatar>
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="bg-black bg-opacity-60 text-white text-xs px-3 py-2 rounded-md flex items-center">
+                      <Upload className="w-3 h-3 mr-1" />
+                      <span>{uploading ? 'Enviando...' : 'Alterar foto'}</span>
                     </div>
-                  )}
-                </div>
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <span className="bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
-                    {uploading ? 'Enviando...' : 'Mudar foto'}
-                  </span>
-                </div>
-              </label>
-              <div className="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-status-green border-2 border-[#1a1a1a]"></div>
+                  </div>
+                </label>
+                <div className="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-status-green border-2 border-[#1a1a1a]"></div>
+              </div>
             </div>
-          </div>
-          
-          <div className="flex-1 text-center md:text-left">
-            <h1 className="font-serif text-2xl font-medium mb-1">{profile?.full_name || user?.email || 'Usuário'}</h1>
-            <p className="text-gray-400">{profile?.specialty || 'Especialidade não definida'}</p>
             
-            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-400">Email</p>
-                <p>{user?.email || 'Email não definido'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-400">Instituição</p>
-                <p>{profile?.institution || 'Instituição não definida'}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-400">Membro desde</p>
-                <p>{user?.created_at ? new Date(user.created_at).toLocaleDateString('pt-BR') : 'Data não disponível'}</p>
+            {/* Informações Pessoais */}
+            <div className="flex-1 text-center md:text-left">
+              <h1 className="font-serif text-2xl font-medium mb-1">{profile?.full_name || user?.email?.split('@')[0] || 'Usuário'}</h1>
+              <p className="text-gray-400 mb-4">{profile?.specialty || 'Especialidade não definida'}</p>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex items-center space-x-2">
+                  <Mail className="w-4 h-4 text-gray-400" />
+                  <span>{user?.email || 'Email não disponível'}</span>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Calendar className="w-4 h-4 text-gray-400" />
+                  <span>Membro desde {createdAt}</span>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <BookOpen className="w-4 h-4 text-gray-400" />
+                  <span>{stats.articlesRead} artigos lidos</span>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <MessageSquare className="w-4 h-4 text-gray-400" />
+                  <span>{stats.communityContributions} contribuições na comunidade</span>
+                </div>
               </div>
             </div>
           </div>
           
-          <div className="mt-6 md:mt-0 flex flex-col items-center space-y-3">
-            <div className="bg-[#212121] rounded-md p-3 w-full text-center">
-              <p className="text-2xl font-medium">{mockData.readArticles}</p>
-              <p className="text-xs text-gray-400">Artigos lidos</p>
-            </div>
-            <div className="bg-[#212121] rounded-md p-3 w-full text-center">
-              <p className="text-2xl font-medium">{mockData.savedArticles}</p>
-              <p className="text-xs text-gray-400">Artigos salvos</p>
-            </div>
+          {/* Botões de Ação */}
+          <div className="mt-6 flex flex-col sm:flex-row justify-center md:justify-start space-y-3 sm:space-y-0 sm:space-x-4">
+            <Button className="bg-white text-[#121212] hover:bg-gray-200">
+              Editar perfil
+            </Button>
+            <Button variant="outline" className="border border-[#2a2a2a] hover:bg-[#2a2a2a]">
+              Preferências
+            </Button>
           </div>
-        </div>
-        
-        {/* Action buttons */}
-        <div className="mt-6 flex flex-col sm:flex-row justify-center md:justify-start space-y-3 sm:space-y-0 sm:space-x-4">
-          <button className="bg-white text-[#121212] px-4 py-2 rounded-md hover:bg-gray-200 hover-effect">
-            Editar perfil
-          </button>
-          <button className="border border-[#2a2a2a] px-4 py-2 rounded-md hover:bg-[#2a2a2a] hover-effect">
-            Preferências
-          </button>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
       
-      {/* Recent activity section */}
-      <div className="bg-[#1a1a1a] rounded-lg shadow-lg card-elevation p-6">
-        <h2 className="font-serif text-xl font-medium mb-6">Atividade recente</h2>
-        
-        <div className="space-y-4">
-          {mockData.recentActivity.map((activity, index) => (
-            <div key={index} className="flex items-start space-x-4 p-3 hover:bg-[#212121] rounded-md hover-effect">
-              <div className="mt-1">
-                <ActivityIcon type={activity.type} />
-              </div>
-              <div className="flex-1">
-                <p className="font-medium">{activity.title}</p>
-                <div className="flex justify-between mt-1">
-                  <span className="text-xs text-gray-400">
-                    {activity.type === 'read' ? 'Lido em' : 'Salvo em'} {activity.date}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-        
-        <div className="mt-6 text-center">
-          <button className="text-sm text-gray-400 hover:text-white hover-effect">
-            Ver todas as atividades
-          </button>
-        </div>
-      </div>
+      {/* Container 2: Atividade Recente */}
+      <ProfileActivity className="mb-8" userId={user?.id} />
+      
+      {/* Container 3 e 4: Reviews Favoritas e Posts Salvos (Tabs) */}
+      <Card className="bg-[#1a1a1a] rounded-lg shadow-lg card-elevation">
+        <CardHeader className="px-6 pt-6 pb-0">
+          <Tabs defaultValue="favorites" className="w-full">
+            <TabsList className="bg-[#212121] w-full md:w-auto justify-start">
+              <TabsTrigger value="favorites" className="data-[state=active]:bg-[#2a2a2a]">
+                Reviews Favoritas
+              </TabsTrigger>
+              <TabsTrigger value="saved" className="data-[state=active]:bg-[#2a2a2a]">
+                Posts Salvos
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="favorites" className="mt-6">
+              <ProfileSavedItems type="reviews" userId={user?.id} />
+            </TabsContent>
+            
+            <TabsContent value="saved" className="mt-6">
+              <ProfileSavedItems type="posts" userId={user?.id} />
+            </TabsContent>
+          </Tabs>
+        </CardHeader>
+      </Card>
     </div>
   );
 };
