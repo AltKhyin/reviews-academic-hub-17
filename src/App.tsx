@@ -49,9 +49,11 @@ const App = () => {
           <Sonner />
           <BrowserRouter>
             <Routes>
+              {/* Public routes that don't require authentication */}
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/policy" element={<PolicyPage />} />
-
+              
+              {/* Protected routes that require authentication */}
               <Route path="/" element={<DashboardLayout />}>
                 <Route path="homepage" element={<Dashboard />} />
                 <Route path="article/:id" element={<ArticleViewer />} />

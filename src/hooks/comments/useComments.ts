@@ -1,41 +1,87 @@
 
-import { EntityType, Comment } from '@/types/commentTypes';
+import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Comment, BaseComment, EntityType } from '@/types/commentTypes';
+import { toast } from '@/components/ui/use-toast';
+import { buildCommentData } from '@/utils/commentHelpers';
 import { useCommentFetch } from './useCommentFetch';
-import { useCommentActions } from './useCommentActions';
 import { useCommentVoting } from './useCommentVoting';
+import { useCommentActions } from './useCommentActions';
 
-/**
- * Main hook that combines fetching, actions, and voting for comments
- */
-export function useComments(entityId: string, entityType: EntityType = 'article') {
-  const { comments, loading: isLoading, fetchComments, error } = useCommentFetch(entityId, entityType);
+export const useComments = (entityId: string, entityType: EntityType = 'article') => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Use hook for fetching comments
+  const { comments, loading, error, fetchComments } = useCommentFetch(entityId, entityType);
   
-  const { 
-    addComment, 
-    replyToComment, 
-    deleteComment,
-    isAddingComment,
-    isDeletingComment,
-    isReplying
-  } = useCommentActions(entityId, entityType, fetchComments);
+  // Use hook for voting on comments
+  const { voteOnComment } = useCommentVoting(fetchComments);
   
-  const { voteComment, isVoting } = useCommentVoting(fetchComments);
+  // Use hook for comment actions (edit, delete)
+  const { editComment, deleteComment } = useCommentActions(fetchComments);
+
+  // Function to add a new comment
+  const addComment = async (content: string, parentId?: string) => {
+    if (!content.trim()) {
+      toast({ 
+        title: 'Error', 
+        description: 'Comment content cannot be empty', 
+        variant: 'destructive' 
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Get the current user's ID from auth context
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User is not authenticated');
+
+      // Build comment data object
+      const data = buildCommentData(
+        content,
+        user.id,
+        entityType,
+        entityId,
+        parentId
+      );
+
+      // Insert the comment
+      const { error } = await supabase.from('comments').insert(data);
+      if (error) throw error;
+
+      // Refresh the comments list
+      fetchComments();
+      
+      toast({
+        title: 'Success',
+        description: 'Comment added successfully',
+      });
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to add comment',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return {
     comments,
-    isLoading,
+    loading,
+    error,
     addComment,
-    replyToComment,
+    voteOnComment,
+    editComment,
     deleteComment,
-    voteComment,
-    isAddingComment,
-    isDeletingComment,
-    isReplying,
-    isVoting,
-    fetchComments,
-    error
+    isSubmitting
   };
-}
+};
 
-// Re-export from the new structure to maintain the original import path
-export * from './useComments';
+export * from './useCommentFetch';
+export * from './useCommentVoting';
+export * from './useCommentActions';

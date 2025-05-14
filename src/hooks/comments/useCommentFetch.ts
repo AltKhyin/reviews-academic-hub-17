@@ -25,11 +25,11 @@ export const useCommentFetch = (entityId: string, entityType: EntityType = 'arti
         const userVote = userVotes.find(vote => vote.comment_id === comment.id);
         return {
           ...comment,
-          userVote: userVote ? userVote.value : 0
+          userVote: userVote ? userVote.value as 1 | -1 : 0 as 0
         };
       });
       
-      const processedComments = organizeCommentsInTree(commentsWithVotes);
+      const processedComments = organizeCommentsInTree(commentsWithVotes as BaseComment[]);
       setComments(processedComments);
     } catch (err) {
       console.error('Error fetching comments:', err);
