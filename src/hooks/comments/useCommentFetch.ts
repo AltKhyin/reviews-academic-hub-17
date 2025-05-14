@@ -1,95 +1,58 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { BaseComment, Comment, CommentVote, EntityType } from '@/types/commentTypes';
-import { useToast } from '@/hooks/use-toast';
-import { getEntityIdField } from '@/utils/commentHelpers';
-import { organizeComments } from '@/utils/commentHelpers';
+import { CommentType } from '@/types/comment';
+import { toast } from '@/components/ui/use-toast';
+import { processComments } from '@/utils/commentHelpers';
 
-/**
- * Hook for fetching comments for a specific entity
- */
-export function useCommentFetch(entityId: string, entityType: EntityType = 'article') {
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
-  
-  // Determine which field to use based on entity type
-  const idField = getEntityIdField(entityType);
+export const useCommentFetch = (articleId: string | undefined) => {
+  const [comments, setComments] = useState<CommentType[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshCounter, setRefreshCounter] = useState(0);
 
-  const fetchComments = async (): Promise<void> => {
-    if (!entityId) return;
-    
-    setIsLoading(true);
-    try {
-      // Fetch comments for this entity
-      const { data: commentsData, error: commentsError } = await supabase
-        .from('comments')
-        .select(`
-          *,
-          profiles:user_id (
-            id,
-            full_name,
-            avatar_url
-          )
-        `)
-        .eq(idField, entityId)
-        .order('created_at', { ascending: true });
-
-      if (commentsError) throw commentsError;
-
-      // If user is authenticated, fetch their votes
-      let userVotes: CommentVote[] = [];
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (user && commentsData && commentsData.length > 0) {
-        const commentIds = commentsData.map(c => c.id);
-        const { data: votesData, error: votesError } = await supabase
-          .from('comment_votes')
-          .select('*')
-          .eq('user_id', user.id)
-          .in('comment_id', commentIds);
-
-        if (!votesError && votesData) {
-          // Map votes to the correct CommentVote type
-          userVotes = votesData.map(vote => ({
-            comment_id: vote.comment_id,
-            user_id: vote.user_id,
-            value: vote.value === 1 ? 1 : -1
-          }));
-        }
-      }
-
-      // Organize comments into a tree structure with user votes
-      const organizedComments = organizeComments({
-        comments: commentsData || [],
-        userVotes
-      });
-
-      setComments(organizedComments);
-    } catch (error) {
-      console.error('Error fetching comments:', error);
-      toast({
-        title: "Erro ao carregar comentários",
-        description: "Não foi possível carregar os comentários.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+  const refreshComments = () => {
+    setRefreshCounter(prev => prev + 1);
   };
 
-  // Run fetchComments on mount and whenever entityId or entityType changes
   useEffect(() => {
-    if (entityId) {
-      fetchComments();
-    }
-  }, [entityId, entityType]);
+    const fetchComments = async () => {
+      if (!articleId) return;
+      
+      setLoading(true);
+      setError(null);
+      
+      try {
+        // Fixed the type issue by explicitly defining the return type
+        const { data, error } = await supabase
+          .from('comments')
+          .select(`
+            *,
+            user:user_id (id, email),
+            votes:comment_votes (id, user_id, value)
+          `)
+          .eq('article_id', articleId)
+          .order('created_at', { ascending: true });
 
-  return {
-    comments,
-    setComments,
-    isLoading,
-    fetchComments
-  };
-}
+        if (error) throw error;
+
+        const processedComments = processComments(data || []);
+        setComments(processedComments);
+      } catch (err) {
+        console.error('Error fetching comments:', err);
+        setError('Failed to load comments');
+        toast({
+          title: 'Error',
+          description: 'Failed to load comments',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchComments();
+  }, [articleId, refreshCounter]);
+
+  return { comments, loading, error, refreshComments };
+};

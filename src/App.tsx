@@ -19,6 +19,7 @@ import Settings from "./pages/dashboard/Settings";
 import Edit from "./pages/dashboard/Edit";
 import IssueEditor from "./pages/dashboard/IssueEditor";
 import NotFound from "./pages/NotFound";
+import PolicyPage from "./pages/PolicyPage";
 
 // Create the query client outside the component function
 const queryClient = new QueryClient({
@@ -49,6 +50,7 @@ const App = () => {
           <BrowserRouter>
             <Routes>
               <Route path="/auth" element={<AuthPage />} />
+              <Route path="/policy" element={<PolicyPage />} />
 
               <Route path="/" element={<DashboardLayout />}>
                 <Route path="homepage" element={<Dashboard />} />
