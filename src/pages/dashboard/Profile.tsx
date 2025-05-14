@@ -8,6 +8,7 @@ import { toast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { 
@@ -144,98 +145,112 @@ const Profile: React.FC = () => {
     : 'Data não disponível';
 
   return (
-    <div className={`animate-fade-in pb-16 pt-8 transition-all duration-300 ${isCollapsed ? 'max-w-[95%]' : 'max-w-[85%]'} mx-auto`}>
-      {/* Container 1: Informações do Perfil */}
-      <Card className="bg-[#1a1a1a] rounded-lg shadow-lg card-elevation mb-10 p-2">
-        <CardContent className="p-8">
-          <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
-            {/* Avatar e Upload */}
-            <div className="mb-6 md:mb-0 relative">
-              <div className="relative group">
-                <input
-                  type="file"
-                  id="avatar-upload"
-                  className="hidden"
-                  accept="image/*"
-                  onChange={handleAvatarUpload}
-                  disabled={uploading}
-                />
-                <label htmlFor="avatar-upload" className="cursor-pointer block">
-                  <Avatar className="w-36 h-36 border-2 border-gray-700">
-                    {profile?.avatar_url ? (
-                      <AvatarImage 
-                        src={profile.avatar_url} 
-                        alt={profile?.full_name || "Avatar do usuário"} 
-                        className="object-cover transition-opacity group-hover:opacity-70"
-                      />
-                    ) : (
-                      <AvatarFallback className="bg-gray-700 text-5xl text-gray-300 transition-opacity group-hover:opacity-70">
-                        {profile?.full_name ? profile.full_name[0].toUpperCase() : <User size={48} />}
-                      </AvatarFallback>
-                    )}
-                  </Avatar>
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="bg-black bg-opacity-60 text-white text-sm px-3 py-2 rounded-md flex items-center">
-                      <Upload className="w-4 h-4 mr-2" />
-                      <span>{uploading ? 'Enviando...' : 'Alterar foto'}</span>
-                    </div>
-                  </div>
-                </label>
-                <div className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-status-green border-2 border-[#1a1a1a]"></div>
-              </div>
-            </div>
-            
-            {/* Informações Pessoais */}
-            <div className="flex-1 text-center md:text-left">
-              <div className="flex flex-col md:flex-row md:justify-between md:items-start">
-                <div>
-                  <h1 className="font-serif text-3xl font-medium mb-2">{profile?.full_name || user?.email?.split('@')[0] || 'Usuário'}</h1>
-                  <p className="text-gray-400 mb-4">{profile?.specialty || 'Especialidade não definida'}</p>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-1 gap-4 mb-6">
-                    <div className="flex items-center space-x-2">
-                      <Mail className="w-4 h-4 text-gray-400" />
-                      <span>{user?.email || 'Email não disponível'}</span>
-                    </div>
-                    
-                    <div className="flex items-center space-x-2">
-                      <Calendar className="w-4 h-4 text-gray-400" />
-                      <span>Membro desde {createdAt}</span>
-                    </div>
+    <div className={`animate-fade-in pt-6 pb-8 transition-all duration-300 ${isCollapsed ? 'max-w-[95%]' : 'max-w-[85%]'} mx-auto`}>
+      {/* Container 1: Card de perfil redesenhado */}
+      <Card className="bg-[#1a1a1a] rounded-xl border-0 overflow-hidden shadow-lg card-elevation mb-6 relative">
+        {/* Background gradiente decorativo */}
+        <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-purple-900/30 to-blue-900/20"></div>
+        
+        <CardContent className="p-0">
+          <div className="flex flex-col">
+            {/* Área superior com informações do perfil */}
+            <div className="p-6 md:p-8 pt-10 md:pt-12 pb-6 relative z-10">
+              <div className="flex flex-col md:flex-row gap-6 md:gap-8 items-center md:items-start">
+                {/* Avatar e Upload */}
+                <div className="relative">
+                  <div className="relative group">
+                    <input
+                      type="file"
+                      id="avatar-upload"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleAvatarUpload}
+                      disabled={uploading}
+                    />
+                    <label htmlFor="avatar-upload" className="cursor-pointer block">
+                      <Avatar className="h-28 w-28 md:h-36 md:w-36 rounded-full border-4 border-[#2a2a2a]">
+                        {profile?.avatar_url ? (
+                          <AvatarImage 
+                            src={profile.avatar_url}
+                            alt={profile?.full_name || "Avatar do usuário"}
+                            className="object-cover transition-all group-hover:opacity-80"
+                          />
+                        ) : (
+                          <AvatarFallback className="bg-gradient-to-br from-indigo-800 to-purple-900 text-4xl text-white">
+                            {profile?.full_name ? profile.full_name[0].toUpperCase() : <User size={36} />}
+                          </AvatarFallback>
+                        )}
+                      </Avatar>
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="bg-black bg-opacity-75 rounded-full w-full h-full flex items-center justify-center">
+                          <Upload className="w-6 h-6 text-white" />
+                        </div>
+                      </div>
+                    </label>
+                    <div className="absolute bottom-1 right-1 h-5 w-5 rounded-full bg-status-green border-2 border-[#1a1a1a]"></div>
                   </div>
                 </div>
                 
-                {/* Badges de Estatísticas */}
-                <div className="flex flex-col md:flex-row gap-3 mb-6">
-                  <div className="flex flex-col items-center justify-center bg-[#212121] rounded-lg p-4 min-w-[140px] border border-[#2a2a2a]">
-                    <BookOpen className="w-5 h-5 text-status-green mb-1" />
-                    <span className="text-xl font-semibold">{stats.articlesRead}</span>
-                    <span className="text-xs text-gray-400">artigos lidos</span>
+                {/* Informações do perfil */}
+                <div className="flex flex-1 flex-col md:flex-row gap-4 justify-between items-center md:items-start">
+                  <div className="text-center md:text-left">
+                    <h1 className="font-serif text-3xl font-medium mb-1">
+                      {profile?.full_name || user?.email?.split('@')[0] || 'Usuário'}
+                    </h1>
+                    <p className="text-gray-400 mb-4">
+                      {profile?.specialty || 'Especialidade não definida'}
+                    </p>
+                    
+                    <div className="flex flex-col sm:flex-row gap-3 text-sm text-gray-300">
+                      <div className="flex items-center justify-center md:justify-start gap-2">
+                        <Mail className="w-4 h-4 text-gray-400" />
+                        <span className="truncate max-w-[250px]">{user?.email || 'Email não disponível'}</span>
+                      </div>
+                      
+                      <div className="hidden sm:flex items-center text-gray-500">•</div>
+                      
+                      <div className="flex items-center justify-center md:justify-start gap-2">
+                        <Calendar className="w-4 h-4 text-gray-400" />
+                        <span>Membro desde {createdAt}</span>
+                      </div>
+                    </div>
                   </div>
                   
-                  <div className="flex flex-col items-center justify-center bg-[#212121] rounded-lg p-4 min-w-[140px] border border-[#2a2a2a]">
-                    <MessageSquare className="w-5 h-5 text-status-amber mb-1" />
-                    <span className="text-xl font-semibold">{stats.communityContributions}</span>
-                    <span className="text-xs text-gray-400">contribuições</span>
+                  {/* Estatísticas do usuário */}
+                  <div className="flex flex-row gap-3 mt-2 md:mt-0">
+                    <div className="flex flex-col items-center justify-center bg-[#212121]/75 backdrop-blur-sm rounded-lg p-3 min-w-[100px] border border-[#2a2a2a]">
+                      <BookOpen className="w-4 h-4 text-status-green mb-1" />
+                      <span className="text-xl font-bold">{stats.articlesRead}</span>
+                      <span className="text-xs text-gray-400">artigos lidos</span>
+                    </div>
+                    
+                    <div className="flex flex-col items-center justify-center bg-[#212121]/75 backdrop-blur-sm rounded-lg p-3 min-w-[100px] border border-[#2a2a2a]">
+                      <MessageSquare className="w-4 h-4 text-status-amber mb-1" />
+                      <span className="text-xl font-bold">{stats.communityContributions}</span>
+                      <span className="text-xs text-gray-400">contribuições</span>
+                    </div>
                   </div>
                 </div>
               </div>
               
-              {/* Botão de Editar */}
-              <Button 
-                onClick={() => setEditProfileOpen(true)} 
-                className="bg-white text-[#121212] hover:bg-gray-200 flex items-center gap-2 px-5 py-2 rounded-full"
-              >
-                <Edit className="w-4 h-4" />
-                Editar perfil
-              </Button>
+              {/* Botão Editar Perfil */}
+              <div className="flex justify-center md:justify-start mt-6">
+                <Button
+                  onClick={() => setEditProfileOpen(true)}
+                  className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white border-0 transition-all shadow-md hover:shadow-lg rounded-full px-6"
+                  size="sm"
+                >
+                  <Edit className="w-4 h-4 mr-2" />
+                  Editar perfil
+                </Button>
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
       
       {/* Container 2: Atividade Recente */}
-      <ProfileActivity className="mb-10" userId={user?.id} />
+      <ProfileActivity className="mb-6" userId={user?.id} />
       
       {/* Container 3 e 4: Reviews Favoritas e Posts Salvos (Tabs) */}
       <Card className="bg-[#1a1a1a] rounded-lg shadow-lg card-elevation">
