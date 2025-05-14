@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { getSocialUrl } from '@/lib/utils';
 import { 
   BookOpen, 
   MessageSquare, 
@@ -20,7 +21,11 @@ import {
   Mail,
   Upload,
   User,
-  Edit
+  Edit,
+  Linkedin,
+  Youtube,
+  Instagram,
+  X
 } from 'lucide-react';
 import { ProfileActivity } from '@/components/profile/ProfileActivity';
 import { ProfileSavedItems } from '@/components/profile/ProfileSavedItems';
@@ -144,116 +149,176 @@ const Profile: React.FC = () => {
     ? format(new Date(user.created_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
     : 'Data não disponível';
 
+  // Define se temos algum perfil de rede social preenchido
+  const hasSocialMedia = profile?.linkedin || profile?.youtube || profile?.instagram || profile?.twitter;
+
   return (
-    <div className={`animate-fade-in pt-6 pb-8 transition-all duration-300 ${isCollapsed ? 'max-w-[95%]' : 'max-w-[85%]'} mx-auto`}>
-      {/* Container 1: Card de perfil redesenhado */}
-      <Card className="bg-[#1a1a1a] rounded-xl border-0 overflow-hidden shadow-lg card-elevation mb-6 relative">
-        {/* Background gradiente decorativo */}
-        <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-purple-900/30 to-blue-900/20"></div>
-        
-        <CardContent className="p-0">
-          <div className="flex flex-col">
-            {/* Área superior com informações do perfil */}
-            <div className="p-6 md:p-8 pt-10 md:pt-12 pb-6 relative z-10">
-              <div className="flex flex-col md:flex-row gap-6 md:gap-8 items-center md:items-start">
-                {/* Avatar e Upload */}
-                <div className="relative">
-                  <div className="relative group">
-                    <input
-                      type="file"
-                      id="avatar-upload"
-                      className="hidden"
-                      accept="image/*"
-                      onChange={handleAvatarUpload}
-                      disabled={uploading}
-                    />
-                    <label htmlFor="avatar-upload" className="cursor-pointer block">
-                      <Avatar className="h-28 w-28 md:h-36 md:w-36 rounded-full border-4 border-[#2a2a2a]">
-                        {profile?.avatar_url ? (
-                          <AvatarImage 
-                            src={profile.avatar_url}
-                            alt={profile?.full_name || "Avatar do usuário"}
-                            className="object-cover transition-all group-hover:opacity-80"
-                          />
-                        ) : (
-                          <AvatarFallback className="bg-gradient-to-br from-indigo-800 to-purple-900 text-4xl text-white">
-                            {profile?.full_name ? profile.full_name[0].toUpperCase() : <User size={36} />}
-                          </AvatarFallback>
-                        )}
-                      </Avatar>
-                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className="bg-black bg-opacity-75 rounded-full w-full h-full flex items-center justify-center">
-                          <Upload className="w-6 h-6 text-white" />
-                        </div>
-                      </div>
-                    </label>
-                    <div className="absolute bottom-1 right-1 h-5 w-5 rounded-full bg-status-green border-2 border-[#1a1a1a]"></div>
+    <div className={`animate-fade-in pt-4 pb-6 transition-all duration-300 ${isCollapsed ? 'max-w-[95%]' : 'max-w-[85%]'} mx-auto`}>
+      {/* Card de perfil monocromático e clean */}
+      <Card className="bg-[#1a1a1a] rounded-lg border border-[#2a2a2a] overflow-hidden shadow-md mb-4">
+        <CardContent className="p-5">
+          <div className="flex flex-col md:flex-row gap-5 items-start">
+            {/* Avatar */}
+            <div className="flex-shrink-0 relative">
+              <div className="relative group">
+                <input
+                  type="file"
+                  id="avatar-upload"
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  disabled={uploading}
+                />
+                <label htmlFor="avatar-upload" className="cursor-pointer block">
+                  <Avatar className="h-24 w-24 md:h-28 md:w-28 rounded-full border-2 border-[#2a2a2a]">
+                    {profile?.avatar_url ? (
+                      <AvatarImage 
+                        src={profile.avatar_url}
+                        alt={profile?.full_name || "Avatar do usuário"}
+                        className="object-cover transition-all group-hover:opacity-80"
+                      />
+                    ) : (
+                      <AvatarFallback className="bg-gradient-to-br from-gray-700 to-gray-900 text-2xl text-white">
+                        {profile?.full_name ? profile.full_name[0].toUpperCase() : <User size={32} />}
+                      </AvatarFallback>
+                    )}
+                  </Avatar>
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="bg-black bg-opacity-60 rounded-full w-full h-full flex items-center justify-center">
+                      <Upload className="w-6 h-6 text-white" />
+                    </div>
+                  </div>
+                </label>
+                <div className="absolute bottom-1 right-1 h-3 w-3 rounded-full bg-green-500 border border-[#1a1a1a]"></div>
+              </div>
+            </div>
+            
+            {/* Informações do perfil e badges */}
+            <div className="flex flex-1 flex-col space-y-3">
+              <div>
+                <h1 className="font-serif text-2xl font-medium mb-0.5">
+                  {profile?.full_name || user?.email?.split('@')[0] || 'Usuário'}
+                </h1>
+                <p className="text-gray-400 text-sm">
+                  {profile?.specialty || 'Especialidade não definida'}
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2 text-sm text-gray-300">
+                  <div className="flex items-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5 text-gray-400" />
+                    <span className="truncate max-w-[250px] text-sm">{user?.email || 'Email não disponível'}</span>
+                  </div>
+                  
+                  <div className="hidden sm:flex items-center text-gray-500 px-1">•</div>
+                  
+                  <div className="flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                    <span className="text-sm">Membro desde {createdAt}</span>
                   </div>
                 </div>
                 
-                {/* Informações do perfil */}
-                <div className="flex flex-1 flex-col md:flex-row gap-4 justify-between items-center md:items-start">
-                  <div className="text-center md:text-left">
-                    <h1 className="font-serif text-3xl font-medium mb-1">
-                      {profile?.full_name || user?.email?.split('@')[0] || 'Usuário'}
-                    </h1>
-                    <p className="text-gray-400 mb-4">
-                      {profile?.specialty || 'Especialidade não definida'}
-                    </p>
+                {hasSocialMedia && (
+                  <div className="flex gap-3 items-center pt-1">
+                    {profile?.linkedin && (
+                      <a 
+                        href={getSocialUrl('linkedin', profile.linkedin)} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-gray-400 hover:text-gray-200 transition-colors"
+                        title={`LinkedIn: ${profile.linkedin}`}
+                      >
+                        <Linkedin size={16} />
+                      </a>
+                    )}
                     
-                    <div className="flex flex-col sm:flex-row gap-3 text-sm text-gray-300">
-                      <div className="flex items-center justify-center md:justify-start gap-2">
-                        <Mail className="w-4 h-4 text-gray-400" />
-                        <span className="truncate max-w-[250px]">{user?.email || 'Email não disponível'}</span>
-                      </div>
-                      
-                      <div className="hidden sm:flex items-center text-gray-500">•</div>
-                      
-                      <div className="flex items-center justify-center md:justify-start gap-2">
-                        <Calendar className="w-4 h-4 text-gray-400" />
-                        <span>Membro desde {createdAt}</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Estatísticas do usuário */}
-                  <div className="flex flex-row gap-3 mt-2 md:mt-0">
-                    <div className="flex flex-col items-center justify-center bg-[#212121]/75 backdrop-blur-sm rounded-lg p-3 min-w-[100px] border border-[#2a2a2a]">
-                      <BookOpen className="w-4 h-4 text-status-green mb-1" />
-                      <span className="text-xl font-bold">{stats.articlesRead}</span>
-                      <span className="text-xs text-gray-400">artigos lidos</span>
-                    </div>
+                    {profile?.youtube && (
+                      <a 
+                        href={getSocialUrl('youtube', profile.youtube)} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-gray-400 hover:text-gray-200 transition-colors"
+                        title={`YouTube: ${profile.youtube}`}
+                      >
+                        <Youtube size={16} />
+                      </a>
+                    )}
                     
-                    <div className="flex flex-col items-center justify-center bg-[#212121]/75 backdrop-blur-sm rounded-lg p-3 min-w-[100px] border border-[#2a2a2a]">
-                      <MessageSquare className="w-4 h-4 text-status-amber mb-1" />
-                      <span className="text-xl font-bold">{stats.communityContributions}</span>
-                      <span className="text-xs text-gray-400">contribuições</span>
-                    </div>
+                    {profile?.instagram && (
+                      <a 
+                        href={getSocialUrl('instagram', profile.instagram)} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-gray-400 hover:text-gray-200 transition-colors"
+                        title={`Instagram: ${profile.instagram}`}
+                      >
+                        <Instagram size={16} />
+                      </a>
+                    )}
+                    
+                    {profile?.twitter && (
+                      <a 
+                        href={getSocialUrl('twitter', profile.twitter)} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-gray-400 hover:text-gray-200 transition-colors"
+                        title={`X (Twitter): ${profile.twitter}`}
+                      >
+                        <X size={16} />
+                      </a>
+                    )}
                   </div>
+                )}
+              </div>
+              
+              {profile?.bio && (
+                <div className="py-1">
+                  <p className="text-sm text-gray-300">{profile.bio}</p>
+                </div>
+              )}
+            </div>
+            
+            {/* Badges de estatísticas */}
+            <div className="flex flex-col gap-2 self-start mt-1">
+              <div className="flex flex-row items-center gap-3 bg-[#212121]/80 rounded-md p-2.5 border border-[#2a2a2a]">
+                <BookOpen className="w-4 h-4 text-gray-400" />
+                <div>
+                  <div className="text-base font-medium">{stats.articlesRead}</div>
+                  <div className="text-xs text-gray-400">artigos lidos</div>
                 </div>
               </div>
               
-              {/* Botão Editar Perfil */}
-              <div className="flex justify-center md:justify-start mt-6">
-                <Button
-                  onClick={() => setEditProfileOpen(true)}
-                  className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white border-0 transition-all shadow-md hover:shadow-lg rounded-full px-6"
-                  size="sm"
-                >
-                  <Edit className="w-4 h-4 mr-2" />
-                  Editar perfil
-                </Button>
+              <div className="flex flex-row items-center gap-3 bg-[#212121]/80 rounded-md p-2.5 border border-[#2a2a2a]">
+                <MessageSquare className="w-4 h-4 text-gray-400" />
+                <div>
+                  <div className="text-base font-medium">{stats.communityContributions}</div>
+                  <div className="text-xs text-gray-400">contribuições</div>
+                </div>
               </div>
             </div>
+          </div>
+          
+          {/* Botão discreto de editar perfil */}
+          <div className="flex justify-end mt-4">
+            <Button
+              onClick={() => setEditProfileOpen(true)}
+              variant="outline"
+              size="sm"
+              className="text-gray-400 hover:text-white bg-transparent border border-[#2a2a2a] hover:bg-[#2a2a2a] transition-colors"
+            >
+              <Edit className="w-3.5 h-3.5 mr-1.5" />
+              Editar perfil
+            </Button>
           </div>
         </CardContent>
       </Card>
       
       {/* Container 2: Atividade Recente */}
-      <ProfileActivity className="mb-6" userId={user?.id} />
+      <ProfileActivity className="mb-4" userId={user?.id} />
       
       {/* Container 3 e 4: Reviews Favoritas e Posts Salvos (Tabs) */}
-      <Card className="bg-[#1a1a1a] rounded-lg shadow-lg card-elevation">
+      <Card className="bg-[#1a1a1a] rounded-lg shadow-sm border border-[#2a2a2a]">
         <CardHeader className="px-6 pt-6 pb-0">
           <Tabs defaultValue="favorites" className="w-full">
             <TabsList className="bg-[#212121] w-full md:w-auto justify-start">

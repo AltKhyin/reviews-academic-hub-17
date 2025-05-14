@@ -24,7 +24,11 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
     specialty: profile?.specialty || '',
     bio: profile?.bio || '',
     website: profile?.website || '',
-    location: profile?.location || ''
+    location: profile?.location || '',
+    linkedin: profile?.linkedin || '',
+    youtube: profile?.youtube || '',
+    instagram: profile?.instagram || '',
+    twitter: profile?.twitter || '',
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -120,6 +124,18 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
             </div>
             
             <div className="space-y-2">
+              <Label htmlFor="location">Localização</Label>
+              <Input 
+                id="location"
+                name="location"
+                value={formData.location}
+                onChange={handleChange}
+                placeholder="São Paulo, Brasil"
+                className="bg-[#212121] border-[#2a2a2a]"
+              />
+            </div>
+            
+            <div className="space-y-2">
               <Label htmlFor="website">Website</Label>
               <Input 
                 id="website"
@@ -130,17 +146,70 @@ export function EditProfileDialog({ open, onOpenChange, profile, onProfileUpdate
                 className="bg-[#212121] border-[#2a2a2a]"
               />
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="location">Localização</Label>
-              <Input 
-                id="location"
-                name="location"
-                value={formData.location}
-                onChange={handleChange}
-                placeholder="São Paulo, Brasil"
-                className="bg-[#212121] border-[#2a2a2a]"
-              />
+
+            <div className="pt-2 border-t border-[#2a2a2a]">
+              <h4 className="text-sm font-medium mb-3 text-gray-400">Redes Sociais</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="linkedin" className="flex items-center gap-2">
+                    <span>LinkedIn</span>
+                    <span className="text-xs text-gray-500">@usuario</span>
+                  </Label>
+                  <Input 
+                    id="linkedin"
+                    name="linkedin"
+                    value={formData.linkedin}
+                    onChange={handleChange}
+                    placeholder="seunome"
+                    className="bg-[#212121] border-[#2a2a2a]"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="youtube" className="flex items-center gap-2">
+                    <span>YouTube</span>
+                    <span className="text-xs text-gray-500">@usuario</span>
+                  </Label>
+                  <Input 
+                    id="youtube"
+                    name="youtube"
+                    value={formData.youtube}
+                    onChange={handleChange}
+                    placeholder="seucanal"
+                    className="bg-[#212121] border-[#2a2a2a]"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="instagram" className="flex items-center gap-2">
+                    <span>Instagram</span>
+                    <span className="text-xs text-gray-500">@usuario</span>
+                  </Label>
+                  <Input 
+                    id="instagram"
+                    name="instagram"
+                    value={formData.instagram}
+                    onChange={handleChange}
+                    placeholder="seunome"
+                    className="bg-[#212121] border-[#2a2a2a]"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="twitter" className="flex items-center gap-2">
+                    <span>X (Twitter)</span>
+                    <span className="text-xs text-gray-500">@usuario</span>
+                  </Label>
+                  <Input 
+                    id="twitter"
+                    name="twitter"
+                    value={formData.twitter}
+                    onChange={handleChange}
+                    placeholder="seunome"
+                    className="bg-[#212121] border-[#2a2a2a]"
+                  />
+                </div>
+              </div>
             </div>
           </div>
           
