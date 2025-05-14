@@ -3,4 +3,4 @@
 export * from '@/types/commentTypes';
 export { fetchCommentsData, appendUserVotesToComments } from '@/utils/commentFetch';
 export { organizeCommentsInTree } from '@/utils/commentOrganize';
-export { organizeComments } from '@/utils/commentHelpers';
+export { processCommentsData, buildCommentData, getEntityIdField } from '@/utils/commentHelpers';

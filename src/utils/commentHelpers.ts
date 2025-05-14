@@ -21,7 +21,7 @@ export const getEntityIdField = (entityType: EntityType): string => {
 export function buildCommentData(
   content: string,
   userId: string,
-  entityType: 'article' | 'post' | 'issue',
+  entityType: EntityType,
   entityId: string,
   parentId?: string
 ) {
@@ -41,17 +41,14 @@ export function buildCommentData(
   return data;
 }
 
-// Helper function to organize comments and append user votes
-export const organizeComments = (commentsData: { 
-  comments: BaseComment[], 
-  userVotes: any[] 
-}): Comment[] => {
-  if (!commentsData || !commentsData.comments) return [];
+// Helper function to process comments data
+export const processCommentsData = (commentsData: BaseComment[], userVotes: any[] = []): Comment[] => {
+  if (!commentsData || commentsData.length === 0) return [];
   
   // First append user votes to comments
   const commentsWithVotes = appendUserVotesToComments(
-    commentsData.comments,
-    commentsData.userVotes || []
+    commentsData,
+    userVotes || []
   );
   
   // Then organize into tree structure

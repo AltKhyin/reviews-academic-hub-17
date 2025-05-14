@@ -1,11 +1,12 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Comment } from '@/types/commentTypes';
+import { Comment, EntityType, BaseComment } from '@/types/commentTypes';
 import { toast } from '@/components/ui/use-toast';
-import { organizeComments } from '@/utils/commentOrganize';
+import { organizeCommentsInTree } from '@/utils/commentOrganize';
+import { fetchCommentsData } from '@/utils/commentFetch';
 
-export const useCommentFetch = (entityId: string, entityType: 'article' = 'article') => {
+export const useCommentFetch = (entityId: string, entityType: EntityType = 'article') => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -17,21 +18,18 @@ export const useCommentFetch = (entityId: string, entityType: 'article' = 'artic
     setError(null);
     
     try {
-      const fieldName = `${entityType}_id`;
+      const { comments: fetchedComments, userVotes } = await fetchCommentsData(entityId, entityType);
       
-      const { data, error } = await supabase
-        .from('comments')
-        .select(`
-          *,
-          user:user_id (id, email),
-          votes:comment_votes (id, user_id, value)
-        `)
-        .eq(fieldName, entityId)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-
-      const processedComments = organizeComments(data || []);
+      // Append user votes to comments and organize them
+      const commentsWithVotes = fetchedComments.map(comment => {
+        const userVote = userVotes.find(vote => vote.comment_id === comment.id);
+        return {
+          ...comment,
+          userVote: userVote ? userVote.value : 0
+        };
+      });
+      
+      const processedComments = organizeCommentsInTree(commentsWithVotes);
       setComments(processedComments);
     } catch (err) {
       console.error('Error fetching comments:', err);
