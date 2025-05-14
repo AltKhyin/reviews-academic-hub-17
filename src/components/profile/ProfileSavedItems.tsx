@@ -6,6 +6,7 @@ import { ptBR } from 'date-fns/locale';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { toast } from '@/hooks/use-toast';
 
 interface SavedItem {
   id: string;
@@ -84,13 +85,13 @@ export const ProfileSavedItems: React.FC<ProfileSavedItemsProps> = ({ userId, ty
             .select(`
               id,
               created_at,
-              posts (
+              posts:post_id (
                 id,
                 title,
                 content,
                 created_at,
                 user_id,
-                profiles: user_id (
+                profiles:user_id (
                   full_name,
                   avatar_url
                 )
@@ -99,18 +100,30 @@ export const ProfileSavedItems: React.FC<ProfileSavedItemsProps> = ({ userId, ty
             .eq('user_id', userId)
             .order('created_at', { ascending: false });
           
+          if (bookmarkError) {
+            console.error('Error fetching bookmarks:', bookmarkError);
+            throw bookmarkError;
+          }
+          
           if (bookmarkData && bookmarkData.length > 0) {
-            const formattedItems = bookmarkData.map(bookmark => ({
-              id: bookmark.id,
-              title: bookmark.posts?.title || 'Post sem título',
-              description: bookmark.posts?.content?.substring(0, 100) || 'Sem descrição',
-              author: {
-                name: bookmark.posts?.profiles?.full_name || 'Usuário anônimo',
-                avatar: bookmark.posts?.profiles?.avatar_url
-              },
-              date: bookmark.created_at,
-              url: `/community?post=${bookmark.posts?.id}`
-            }));
+            const formattedItems = bookmarkData.map(bookmark => {
+              // Safely access nested properties using optional chaining
+              const post = bookmark.posts;
+              const profile = post?.profiles;
+              
+              return {
+                id: bookmark.id,
+                title: post?.title || 'Post sem título',
+                description: post?.content?.substring(0, 100) || 'Sem descrição',
+                author: {
+                  name: profile?.full_name || 'Usuário anônimo',
+                  avatar: profile?.avatar_url
+                },
+                date: bookmark.created_at,
+                url: `/community?post=${post?.id}`
+              };
+            });
+            
             setItems(formattedItems);
           } else {
             // Dados de exemplo
@@ -142,6 +155,12 @@ export const ProfileSavedItems: React.FC<ProfileSavedItemsProps> = ({ userId, ty
         }
       } catch (error) {
         console.error(`Erro ao buscar ${type === 'reviews' ? 'reviews' : 'posts'} salvos:`, error);
+        toast({
+          title: `Erro ao carregar ${type === 'reviews' ? 'reviews' : 'posts'}`,
+          description: "Não foi possível carregar os itens salvos",
+          variant: "destructive"
+        });
+        
         // Usamos dados mockados em caso de erro
         setItems([
           {
