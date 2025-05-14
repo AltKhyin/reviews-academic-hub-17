@@ -10,9 +10,9 @@ import { buildCommentData } from '@/utils/commentHelpers';
  * Hook for comment actions (add, reply, delete, vote)
  */
 export function useCommentActions(
-  entityId: string, 
-  entityType: EntityType = 'article',
-  fetchComments: () => Promise<void>
+  entityId?: string, 
+  entityType?: EntityType,
+  fetchComments?: () => Promise<void>
 ) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -21,7 +21,7 @@ export function useCommentActions(
   const [isReplying, setIsReplying] = useState(false);
 
   const addComment = async (content: string): Promise<void> => {
-    if (!user) {
+    if (!user || !entityId || !entityType) {
       toast({
         title: "Autenticação necessária",
         description: "Faça login para comentar.",
@@ -68,7 +68,7 @@ export function useCommentActions(
       }
 
       // Refresh comments to update the view
-      await fetchComments();
+      if (fetchComments) await fetchComments();
     } catch (error) {
       console.error('Error adding comment:', error);
       toast({
@@ -82,7 +82,7 @@ export function useCommentActions(
   };
 
   const replyToComment = async ({ parentId, content }: { parentId: string; content: string }): Promise<void> => {
-    if (!user) {
+    if (!user || !entityId || !entityType) {
       toast({
         title: "Autenticação necessária",
         description: "Faça login para responder aos comentários.",
@@ -125,7 +125,7 @@ export function useCommentActions(
       }
 
       // Refresh all comments to get the proper structure
-      await fetchComments();
+      if (fetchComments) await fetchComments();
     } catch (error) {
       console.error('Error replying to comment:', error);
       toast({
@@ -135,6 +135,30 @@ export function useCommentActions(
       });
     } finally {
       setIsReplying(false);
+    }
+  };
+
+  const editComment = async (id: string, content: string): Promise<void> => {
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('comments')
+        .update({ content, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      
+      // Refresh comments to update the view
+      if (fetchComments) await fetchComments();
+    } catch (error) {
+      console.error('Error editing comment:', error);
+      toast({
+        title: "Erro ao editar",
+        description: "Não foi possível editar o comentário.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -159,7 +183,7 @@ export function useCommentActions(
       if (error) throw error;
 
       // Refresh comments to update the view
-      await fetchComments();
+      if (fetchComments) await fetchComments();
     } catch (error) {
       console.error('Error deleting comment:', error);
       toast({
@@ -175,6 +199,7 @@ export function useCommentActions(
   return {
     addComment,
     replyToComment,
+    editComment,
     deleteComment,
     isAddingComment,
     isDeletingComment,

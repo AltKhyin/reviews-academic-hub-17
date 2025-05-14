@@ -15,10 +15,18 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
   const { comments, loading, error, fetchComments } = useCommentFetch(entityId, entityType);
   
   // Use hook for voting on comments
-  const { voteOnComment } = useCommentVoting(fetchComments);
+  const { voteComment, isVoting } = useCommentVoting(fetchComments);
   
   // Use hook for comment actions (edit, delete)
-  const { editComment, deleteComment } = useCommentActions(fetchComments);
+  const { 
+    addComment: addCommentAction, 
+    replyToComment, 
+    editComment, 
+    deleteComment, 
+    isAddingComment, 
+    isDeletingComment, 
+    isReplying 
+  } = useCommentActions(entityId, entityType, fetchComments);
 
   // Function to add a new comment
   const addComment = async (content: string, parentId?: string) => {
@@ -32,27 +40,13 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
     }
 
     setIsSubmitting(true);
-
+    
     try {
-      // Get the current user's ID from auth context
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User is not authenticated');
-
-      // Build comment data object
-      const data = buildCommentData(
-        content,
-        user.id,
-        entityType,
-        entityId,
-        parentId
-      );
-
-      // Insert the comment
-      const { error } = await supabase.from('comments').insert(data);
-      if (error) throw error;
-
-      // Refresh the comments list
-      fetchComments();
+      if (parentId) {
+        await replyToComment({ parentId, content });
+      } else {
+        await addCommentAction(content);
+      }
       
       toast({
         title: 'Success',
@@ -72,13 +66,16 @@ export const useComments = (entityId: string, entityType: EntityType = 'article'
 
   return {
     comments,
-    loading,
+    isLoading: loading,  // Rename to match expected property in CommentSection
     error,
     addComment,
-    voteOnComment,
-    editComment,
+    replyToComment,
     deleteComment,
-    isSubmitting
+    voteComment,       // Return voteComment instead of voteOnComment
+    isAddingComment,
+    isDeletingComment,
+    isReplying,
+    isVoting
   };
 };
 

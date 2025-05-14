@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 /**
  * Hook specifically for comment voting functionality
  */
-export function useCommentVoting(fetchComments: () => Promise<void>) {
+export function useCommentVoting(fetchComments?: () => Promise<void>) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isVoting, setIsVoting] = useState(false);
@@ -71,7 +71,7 @@ export function useCommentVoting(fetchComments: () => Promise<void>) {
       // Allow a brief moment for the trigger to update the score
       setTimeout(() => {
         // Refresh comments to get updated scores
-        fetchComments();
+        if (fetchComments) fetchComments();
       }, 300);
     } catch (error) {
       console.error('Error voting on comment:', error);
