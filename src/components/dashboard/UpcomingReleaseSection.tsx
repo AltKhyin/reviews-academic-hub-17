@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUpcomingRelease } from '@/hooks/useUpcomingRelease';
@@ -111,13 +112,9 @@ export const UpcomingReleaseSection = () => {
                 className="h-2 mt-2"
                 indicatorClassName="bg-primary"
               />
-              
-              <div className="text-xs text-muted-foreground mt-2 text-right">
-                {format(nextSaturday, "dd 'de' MMMM", { locale: ptBR })}
-              </div>
             </div>
             
-            <div className="space-y-4">              
+            <div className="space-y-4 flex flex-col justify-center">              
               {/* Suggestion input */}
               {user ? (
                 <form onSubmit={handleSubmitSuggestion} className="space-y-4">
@@ -144,16 +141,16 @@ export const UpcomingReleaseSection = () => {
           </div>
           
           {/* Right column - Suggestions with voting */}
-          <div className="bg-muted/10 flex flex-col">
+          <div className="bg-gray-800/20 flex flex-col">
             <div className="p-6 pb-3">
-              <p className="text-sm text-muted-foreground">
+              <h4 className="text-sm font-medium">
                 Vote nas sugestões que você gostaria de ver na próxima edição.
-              </p>
+              </h4>
             </div>
             
             {/* Scrollable suggestions list with improved styling */}
             <div className="flex-1 relative">
-              <ScrollArea className="h-[350px] px-6 pb-6 bg-gray-800/5">
+              <ScrollArea className="h-[350px] px-6 pb-6 pt-3">
                 <div className="space-y-3 pb-8">
                   {suggestions.map((suggestion) => (
                     <div 
@@ -220,7 +217,7 @@ export const UpcomingReleaseSection = () => {
                 </div>
               </ScrollArea>
               {/* Fade effect at bottom of scroll area */}
-              <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-background to-transparent pointer-events-none"></div>
+              <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-gray-800/20 to-transparent pointer-events-none"></div>
             </div>
           </div>
         </div>
