@@ -1,7 +1,24 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { CommentVote } from '@/types/comment';
+
+// Define extended suggestion type with user info
+interface Suggestion {
+  id: string;
+  title: string;
+  description?: string;
+  votes: number;
+  created_at: string;
+  user_id: string;
+  user?: {
+    full_name: string | null;
+    avatar_url: string | null;
+  };
+  hasVoted?: number; // -1, 0, or 1
+}
 
 export const useContentSuggestions = (upcomingReleaseId: string) => {
   const queryClient = useQueryClient();
@@ -15,18 +32,34 @@ export const useContentSuggestions = (upcomingReleaseId: string) => {
         // If using default release, just get suggestions ordered by votes
         const { data, error } = await supabase
           .from('content_suggestions')
-          .select('*')
+          .select(`
+            *,
+            profiles:user_id (
+              full_name,
+              avatar_url
+            )
+          `)
           .order('votes', { ascending: false });
 
         if (error) throw error;
-        return data;
+        
+        // Reshape data to include user info
+        return data.map(item => ({
+          ...item,
+          user: item.profiles,
+          profiles: undefined
+        })) as Suggestion[];
       }
 
       const { data, error } = await supabase
         .from('content_suggestions')
         .select(`
           *,
-          user_votes (user_id)
+          profiles:user_id (
+            full_name,
+            avatar_url
+          ),
+          user_votes (user_id, value)
         `)
         .eq('upcoming_release_id', upcomingReleaseId)
         .order('votes', { ascending: false });
@@ -34,10 +67,15 @@ export const useContentSuggestions = (upcomingReleaseId: string) => {
       if (error) throw error;
       
       // Add hasVoted property based on user_votes
-      return data.map(suggestion => ({
-        ...suggestion,
-        hasVoted: suggestion.user_votes && suggestion.user_votes.length > 0
-      }));
+      return data.map(suggestion => {
+        const userVote = suggestion.user_votes?.find(v => v.user_id === user?.id);
+        return {
+          ...suggestion,
+          user: suggestion.profiles,
+          profiles: undefined,
+          hasVoted: userVote ? userVote.value : 0
+        };
+      }) as Suggestion[];
     },
     enabled: !!upcomingReleaseId || upcomingReleaseId === 'default'
   });
@@ -78,7 +116,7 @@ export const useContentSuggestions = (upcomingReleaseId: string) => {
 
   // Vote on a suggestion
   const voteSuggestion = useMutation({
-    mutationFn: async (suggestionId: string) => {
+    mutationFn: async ({ suggestionId, value }: { suggestionId: string; value: 1 | -1 }) => {
       if (!user) throw new Error('Must be logged in to vote');
 
       // Check if user has already voted
@@ -91,7 +129,7 @@ export const useContentSuggestions = (upcomingReleaseId: string) => {
 
       if (checkError) throw checkError;
 
-      // If already voted, remove vote
+      // If already voted with same value, remove vote
       if (existingVote) {
         // Remove the vote record
         const { error: deleteError } = await supabase
@@ -132,7 +170,8 @@ export const useContentSuggestions = (upcomingReleaseId: string) => {
         .from('user_votes')
         .insert({
           user_id: user.id,
-          suggestion_id: suggestionId
+          suggestion_id: suggestionId,
+          value: value // Store the vote value (-1 or 1)
         });
 
       if (error) throw error;
@@ -152,15 +191,16 @@ export const useContentSuggestions = (upcomingReleaseId: string) => {
           
         if (fetchError) throw fetchError;
         
+        // Apply the vote value to the count (can be -1 or 1)
         const { error: directUpdateError } = await supabase
           .from('content_suggestions')
-          .update({ votes: suggestion.votes + 1 })
+          .update({ votes: suggestion.votes + value })
           .eq('id', suggestionId);
         
         if (directUpdateError) throw directUpdateError;
       }
       
-      return { action: 'added' };
+      return { action: 'added', value };
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['contentSuggestions', upcomingReleaseId] });
