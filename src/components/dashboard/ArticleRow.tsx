@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
 import ArticleCard from './ArticleCard';
 import { useMediaQuery } from '@/hooks/use-mobile';
-import type { EmblaCarouselType } from 'embla-carousel-react';
+import type { UseEmblaCarouselType } from 'embla-carousel-react';
 
 interface ArticleRowProps {
   title: string;
@@ -17,7 +17,7 @@ interface ArticleRowProps {
 }
 
 const ArticleRow = ({ title, articles }: ArticleRowProps) => {
-  const [carouselApi, setCarouselApi] = useState<EmblaCarouselType | null>(null);
+  const [carouselApi, setCarouselApi] = useState<UseEmblaCarouselType[1] | null>(null);
   const isMobile = useMediaQuery('(max-width: 768px)');
   
   // Determine how many slides to show based on screen size
