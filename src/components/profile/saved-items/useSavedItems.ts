@@ -30,44 +30,110 @@ export const useSavedItems = (userId?: string, type: 'reviews' | 'posts' = 'revi
       
       try {
         if (type === 'reviews') {
-          // Mock data for reviews for now
-          setItems([
-            {
-              id: '1',
-              title: 'Análise de anticoagulantes de nova geração',
-              description: 'Comparação de eficácia entre medicamentos recentes',
-              author: { 
-                name: 'Dra. Maria Silva', 
-                avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Maria' 
-              },
-              date: new Date(Date.now() - 7*24*60*60*1000).toISOString(),
-              url: '/article/1'
-            },
-            {
-              id: '2',
-              title: 'Meta-análise sobre antidepressivos',
-              description: 'Estudo sobre eficácia comparada em tratamentos prolongados',
-              author: { 
-                name: 'Dr. João Cardoso', 
-                avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Joao' 
-              },
-              date: new Date(Date.now() - 14*24*60*60*1000).toISOString(),
-              url: '/article/2'
-            },
-            {
-              id: '3',
-              title: 'Protocolo de tratamento para diabetes tipo 2',
-              description: 'Novas diretrizes baseadas em evidências recentes',
-              author: { 
-                name: 'Dra. Ana Martins', 
-                avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Ana' 
-              },
-              date: new Date(Date.now() - 21*24*60*60*1000).toISOString(),
-              url: '/article/3'
-            }
-          ]);
+          // Fetch bookmarked issues or "want_more" reactions
+          const { data: bookmarkedData, error: bookmarkError } = await supabase
+            .from('user_bookmarks')
+            .select(`
+              id,
+              created_at,
+              issue_id,
+              issues:issue_id (
+                id,
+                title,
+                description,
+                published_at,
+                cover_image_url
+              )
+            `)
+            .eq('user_id', userId)
+            .is('article_id', null)
+            .not('issue_id', 'is', null)
+            .order('created_at', { ascending: false });
+            
+          if (bookmarkError) {
+            console.error('Error fetching bookmarks:', bookmarkError);
+            throw bookmarkError;
+          }
+
+          // Also fetch "want_more" reactions
+          const { data: reactionsData, error: reactionsError } = await supabase
+            .from('user_article_reactions')
+            .select(`
+              id,
+              created_at,
+              reaction_type,
+              issue_id,
+              issues:issue_id (
+                id,
+                title,
+                description,
+                published_at,
+                cover_image_url
+              )
+            `)
+            .eq('user_id', userId)
+            .eq('reaction_type', 'want_more')
+            .is('article_id', null)
+            .not('issue_id', 'is', null)
+            .order('created_at', { ascending: false });
+            
+          if (reactionsError) {
+            console.error('Error fetching reactions:', reactionsError);
+            throw reactionsError;
+          }
+          
+          // Combine and deduplicate the results
+          const combinedItems: SavedItem[] = [];
+          const seenIssueIds = new Set();
+          
+          // Process bookmarked items
+          if (bookmarkedData && bookmarkedData.length > 0) {
+            bookmarkedData.forEach(bookmark => {
+              if (bookmark.issues && !seenIssueIds.has(bookmark.issues.id)) {
+                seenIssueIds.add(bookmark.issues.id);
+                combinedItems.push({
+                  id: bookmark.id,
+                  title: bookmark.issues.title || 'Review sem título',
+                  description: bookmark.issues.description || 'Sem descrição',
+                  author: {
+                    name: 'Reviews.',
+                    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Reviews'
+                  },
+                  date: bookmark.created_at,
+                  url: `/article/${bookmark.issues.id}`
+                });
+              }
+            });
+          }
+          
+          // Process reaction items
+          if (reactionsData && reactionsData.length > 0) {
+            reactionsData.forEach(reaction => {
+              if (reaction.issues && !seenIssueIds.has(reaction.issues.id)) {
+                seenIssueIds.add(reaction.issues.id);
+                combinedItems.push({
+                  id: reaction.id,
+                  title: reaction.issues.title || 'Review sem título',
+                  description: reaction.issues.description || 'Sem descrição',
+                  author: {
+                    name: 'Reviews.',
+                    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Reviews'
+                  },
+                  date: reaction.created_at,
+                  url: `/article/${reaction.issues.id}`
+                });
+              }
+            });
+          }
+          
+          // Sort by date (newest first)
+          combinedItems.sort((a, b) => 
+            new Date(b.date).getTime() - new Date(a.date).getTime()
+          );
+          
+          setItems(combinedItems);
         } else {
-          // Try to fetch real bookmarks
+          // Try to fetch real post bookmarks
           const { data: bookmarkData, error: bookmarkError } = await supabase
             .from('post_bookmarks')
             .select(`
