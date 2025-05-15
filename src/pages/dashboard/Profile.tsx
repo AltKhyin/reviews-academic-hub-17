@@ -30,6 +30,7 @@ import {
 import { ProfileActivity } from '@/components/profile/ProfileActivity';
 import { ProfileSavedItems } from '@/components/profile/ProfileSavedItems';
 import { EditProfileDialog } from '@/components/profile/EditProfileDialog';
+import { Badge } from '@/components/ui/badge';
 
 const Profile: React.FC = () => {
   const { state } = useSidebar();
@@ -193,7 +194,7 @@ const Profile: React.FC = () => {
               </div>
             </div>
             
-            {/* Conteúdo central e direito - realinhados */}
+            {/* Conteúdo central e direito - realinhados para ficarem no mesmo nível horizontal */}
             <div className="flex flex-1 flex-row items-center">
               {/* Nome e Profissão - Parte central */}
               <div className="flex-1">
@@ -207,55 +208,65 @@ const Profile: React.FC = () => {
                 </div>
               </div>
               
-              {/* Caixas de estatísticas - Realinhadas à direita */}
-              <div className="hidden md:flex gap-4 justify-end">
-                <div className="flex flex-col items-center justify-center bg-[#212121]/80 rounded-md p-3 border border-[#2a2a2a] min-w-[100px]">
-                  <BookOpen className="w-5 h-5 text-gray-400 mb-1" />
-                  <div className="text-sm font-medium">{stats.articlesRead}</div>
-                  <div className="text-xs text-gray-400">artigos lidos</div>
+              {/* Caixas de estatísticas - Realinhadas à direita como badges */}
+              <div className="hidden md:flex gap-4 justify-end items-center">
+                <div className="flex flex-col items-center justify-center bg-[#212121]/80 rounded-md px-4 py-3 border border-[#2a2a2a] min-w-[110px]">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm font-medium">{stats.articlesRead}</span>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">artigos lidos</p>
                 </div>
                 
-                <div className="flex flex-col items-center justify-center bg-[#212121]/80 rounded-md p-3 border border-[#2a2a2a] min-w-[100px]">
-                  <MessageSquare className="w-5 h-5 text-gray-400 mb-1" />
-                  <div className="text-sm font-medium">{stats.communityContributions}</div>
-                  <div className="text-xs text-gray-400">contribuições</div>
+                <div className="flex flex-col items-center justify-center bg-[#212121]/80 rounded-md px-4 py-3 border border-[#2a2a2a] min-w-[110px]">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4 text-gray-400" />
+                    <span className="text-sm font-medium">{stats.communityContributions}</span>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">contribuições</p>
                 </div>
                 
                 <Button
                   onClick={() => setEditProfileOpen(true)}
                   variant="outline"
-                  className="bg-[#212121]/80 text-gray-400 hover:text-white border border-[#2a2a2a] hover:bg-[#2a2a2a] transition-colors flex flex-col items-center justify-center p-3 rounded-md min-w-[100px] h-auto"
+                  className="bg-[#212121]/80 text-gray-400 hover:text-white border border-[#2a2a2a] hover:bg-[#2a2a2a] transition-colors px-4 py-3 rounded-md min-w-[60px] h-auto"
                 >
-                  <Edit className="w-5 h-5 mb-1" />
-                  <div className="text-sm font-medium"> </div>
-                  <span className="sr-only">Editar perfil</span>
+                  <div className="flex flex-col items-center justify-center">
+                    <Edit className="w-4 h-4" />
+                    <span className="text-xs text-gray-400 mt-1">editar</span>
+                  </div>
                 </Button>
               </div>
             </div>
           </div>
           
-          {/* Caixas de estatísticas para mobile - Visíveis apenas em telas pequenas */}
+          {/* Caixas de estatísticas para mobile - Visíveis apenas em telas pequenas, agora estilizadas como badges */}
           <div className="flex md:hidden gap-4 justify-center mt-4">
-            <div className="flex flex-col items-center justify-center bg-[#212121]/80 rounded-md p-3 border border-[#2a2a2a] min-w-[100px]">
-              <BookOpen className="w-5 h-5 text-gray-400 mb-1" />
-              <div className="text-sm font-medium">{stats.articlesRead}</div>
-              <div className="text-xs text-gray-400">artigos lidos</div>
+            <div className="flex flex-col items-center justify-center bg-[#212121]/80 rounded-md px-4 py-3 border border-[#2a2a2a] min-w-[110px]">
+              <div className="flex items-center gap-2">
+                <BookOpen className="w-4 h-4 text-gray-400" />
+                <span className="text-sm font-medium">{stats.articlesRead}</span>
+              </div>
+              <p className="text-xs text-gray-400 mt-1">artigos lidos</p>
             </div>
             
-            <div className="flex flex-col items-center justify-center bg-[#212121]/80 rounded-md p-3 border border-[#2a2a2a] min-w-[100px]">
-              <MessageSquare className="w-5 h-5 text-gray-400 mb-1" />
-              <div className="text-sm font-medium">{stats.communityContributions}</div>
-              <div className="text-xs text-gray-400">contribuições</div>
+            <div className="flex flex-col items-center justify-center bg-[#212121]/80 rounded-md px-4 py-3 border border-[#2a2a2a] min-w-[110px]">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-gray-400" />
+                <span className="text-sm font-medium">{stats.communityContributions}</span>
+              </div>
+              <p className="text-xs text-gray-400 mt-1">contribuições</p>
             </div>
             
             <Button
               onClick={() => setEditProfileOpen(true)}
               variant="outline"
-              className="bg-[#212121]/80 text-gray-400 hover:text-white border border-[#2a2a2a] hover:bg-[#2a2a2a] transition-colors flex flex-col items-center justify-center p-3 rounded-md min-w-[100px] h-auto"
+              className="bg-[#212121]/80 text-gray-400 hover:text-white border border-[#2a2a2a] hover:bg-[#2a2a2a] transition-colors px-4 py-3 rounded-md min-w-[60px] h-auto"
             >
-              <Edit className="w-5 h-5 mb-1" />
-              <div className="text-sm font-medium"> </div>
-              <span className="sr-only">Editar perfil</span>
+              <div className="flex flex-col items-center justify-center">
+                <Edit className="w-4 h-4" />
+                <span className="text-xs text-gray-400 mt-1">editar</span>
+              </div>
             </Button>
           </div>
           
