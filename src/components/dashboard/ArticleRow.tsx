@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
-import ArticleCard from './ArticleCard';
+import { ArticleCard } from './ArticleCard';
 
 interface ArticleRowProps {
   title: string;
