@@ -20,7 +20,7 @@ export interface Suggestion {
     full_name: string | null;
     avatar_url: string | null;
   } | null;
-  hasVoted?: number; // -1, 0, or 1
+  hasVoted?: number; // 0 or 1
 }
 
 export interface UserVote {

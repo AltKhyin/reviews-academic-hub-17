@@ -1,8 +1,9 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { CommentVote, Suggestion, UserVote } from '@/types/comment';
+import { Suggestion, UserVote } from '@/types/comment';
 
 export const useContentSuggestions = (upcomingReleaseId: string) => {
   const queryClient = useQueryClient();
@@ -18,7 +19,7 @@ export const useContentSuggestions = (upcomingReleaseId: string) => {
           .from('content_suggestions')
           .select(`
             *,
-            profiles(
+            profiles:user_id (
               full_name,
               avatar_url
             )
@@ -30,9 +31,13 @@ export const useContentSuggestions = (upcomingReleaseId: string) => {
         // Reshape data to include user info
         return data.map(item => ({
           ...item,
-          user: item.profiles,
-          profiles: undefined
-        })) as unknown as Suggestion[];
+          user: {
+            full_name: item.profiles?.full_name || null,
+            avatar_url: item.profiles?.avatar_url || null
+          },
+          profiles: undefined,
+          hasVoted: 0
+        })) as Suggestion[];
       }
 
       // For a specific release, include vote information
@@ -40,11 +45,11 @@ export const useContentSuggestions = (upcomingReleaseId: string) => {
         .from('content_suggestions')
         .select(`
           *,
-          profiles(
+          profiles:user_id (
             full_name,
             avatar_url
           ),
-          user_votes(
+          user_votes (
             id,
             user_id,
             created_at
@@ -57,10 +62,13 @@ export const useContentSuggestions = (upcomingReleaseId: string) => {
       
       // Add hasVoted property based on user_votes
       return data.map(suggestion => {
-        const hasUserVote = suggestion.user_votes?.find(v => v.user_id === user?.id);
+        const hasUserVote = suggestion.user_votes?.some(v => v.user_id === user?.id);
         return {
           ...suggestion,
-          user: suggestion.profiles,
+          user: {
+            full_name: suggestion.profiles?.full_name || null,
+            avatar_url: suggestion.profiles?.avatar_url || null
+          },
           profiles: undefined,
           user_votes: undefined,
           hasVoted: hasUserVote ? 1 : 0
@@ -119,7 +127,7 @@ export const useContentSuggestions = (upcomingReleaseId: string) => {
 
       if (checkError) throw checkError;
 
-      // If already voted with same value, remove vote
+      // If already voted, remove vote
       if (existingVote) {
         // Remove the vote record
         const { error: deleteError } = await supabase
@@ -129,7 +137,7 @@ export const useContentSuggestions = (upcomingReleaseId: string) => {
 
         if (deleteError) throw deleteError;
 
-        // Use direct update for vote count
+        // Update vote count directly
         const { data: suggestion, error: fetchError } = await supabase
           .from('content_suggestions')
           .select('votes')
@@ -158,7 +166,7 @@ export const useContentSuggestions = (upcomingReleaseId: string) => {
 
       if (error) throw error;
 
-      // Use direct update for vote count
+      // Update vote count directly
       const { data: suggestion, error: fetchError } = await supabase
         .from('content_suggestions')
         .select('votes')
@@ -168,9 +176,9 @@ export const useContentSuggestions = (upcomingReleaseId: string) => {
       if (fetchError) throw fetchError;
       
       const { error: updateError } = await supabase
-          .from('content_suggestions')
-          .update({ votes: suggestion.votes + value })
-          .eq('id', suggestionId);
+        .from('content_suggestions')
+        .update({ votes: suggestion.votes + value })
+        .eq('id', suggestionId);
       
       if (updateError) throw updateError;
       
