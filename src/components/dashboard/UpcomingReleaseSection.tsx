@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUpcomingRelease } from '@/hooks/useUpcomingRelease';
@@ -141,7 +140,7 @@ export const UpcomingReleaseSection = () => {
           </div>
           
           {/* Right column - Suggestions with voting */}
-          <div className="bg-secondary/30 dark:bg-secondary/50 flex flex-col">
+          <div className="bg-secondary/50 dark:bg-secondary/20 flex flex-col">
             <div className="p-6 pb-3">
               <h4 className="text-sm font-medium">
                 Vote nas sugestões que você gostaria de ver na próxima edição.
@@ -160,9 +159,9 @@ export const UpcomingReleaseSection = () => {
                       {/* Voting buttons and count */}
                       <div className="flex flex-col items-center">
                         <Button
-                          variant={suggestion.hasVoted ? "default" : "outline"}
+                          variant="outline"
                           size="sm"
-                          className={`h-8 w-8 rounded-full p-0 ${suggestion.hasVoted ? "bg-[#F97316] hover:bg-[#F97316]/90" : ""}`}
+                          className={`h-8 w-8 rounded-full p-0 ${suggestion.hasVoted ? "text-[#F97316] border-[#F97316] hover:text-[#F97316] hover:border-[#F97316]/90" : ""}`}
                           onClick={() => voteSuggestion.mutate({ suggestionId: suggestion.id, value: 1 })}
                           disabled={voteSuggestion.isPending || !user}
                           title="Votar nesta sugestão"
@@ -217,7 +216,7 @@ export const UpcomingReleaseSection = () => {
                 </div>
               </ScrollArea>
               {/* Fade effect at bottom of scroll area */}
-              <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-secondary/30 dark:from-secondary/50 to-transparent pointer-events-none"></div>
+              <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-secondary/50 dark:from-secondary/20 to-transparent pointer-events-none"></div>
             </div>
           </div>
         </div>
