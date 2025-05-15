@@ -21,7 +21,7 @@ const ArticleRow = ({ title, articles }: ArticleRowProps) => {
   const isMobile = useMediaQuery('(max-width: 768px)');
   
   // Determine how many slides to show based on screen size
-  const slidesPerView = isMobile ? 1 : 3;
+  const slidesPerView = isMobile ? 2 : 5;
   const slideCount = articles.length;
   
   useEffect(() => {
@@ -32,7 +32,7 @@ const ArticleRow = ({ title, articles }: ArticleRowProps) => {
   }, [carouselApi, isMobile]);
   
   return (
-    <section className="mb-16 first:mt-0 mt-8">
+    <section className="mb-16 first:mt-0 mt-8 w-full">
       <div className="border-t border-white/5 pt-8 first:border-0 first:pt-0">
         <h2 className="text-2xl font-serif mb-6">{title}</h2>
         
@@ -45,15 +45,15 @@ const ArticleRow = ({ title, articles }: ArticleRowProps) => {
           className="w-full relative"
           setApi={setCarouselApi}
         >
-          <CarouselContent className="-ml-4">
+          <CarouselContent className="-ml-2">
             {articles.map((article) => (
-              <CarouselItem key={article.id} className="pl-4 md:basis-1/3 lg:basis-1/3">
+              <CarouselItem key={article.id} className="pl-2 md:basis-1/5 lg:basis-1/5">
                 <ArticleCard article={article} />
               </CarouselItem>
             ))}
           </CarouselContent>
-          <CarouselPrevious className="-left-4 md:-left-10 bg-background" />
-          <CarouselNext className="-right-4 md:-right-10 bg-background" />
+          <CarouselPrevious className="-left-2 md:-left-4 bg-background" />
+          <CarouselNext className="-right-2 md:-right-4 bg-background" />
         </Carousel>
       </div>
     </section>
