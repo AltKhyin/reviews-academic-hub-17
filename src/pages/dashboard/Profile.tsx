@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useSidebar } from '@/components/ui/sidebar';
 import { useAuth } from '@/contexts/AuthContext';
@@ -157,9 +156,9 @@ const Profile: React.FC = () => {
       {/* Card de perfil monocromático e clean */}
       <Card className="bg-[#1a1a1a] rounded-lg border border-[#2a2a2a] overflow-hidden shadow-md mb-2">
         <CardContent className="p-5">
-          <div className="flex flex-col md:flex-row gap-5 items-start">
+          <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
             {/* Avatar - Aumentado */}
-            <div className="flex-shrink-0 relative">
+            <div className="flex-shrink-0 relative mt-2">
               <div className="relative group">
                 <input
                   type="file"
@@ -170,7 +169,7 @@ const Profile: React.FC = () => {
                   disabled={uploading}
                 />
                 <label htmlFor="avatar-upload" className="cursor-pointer block">
-                  <Avatar className="h-32 w-32 md:h-36 md:w-36 rounded-full border-2 border-[#2a2a2a]">
+                  <Avatar className="h-36 w-36 md:h-40 md:w-40 rounded-full border-2 border-[#2a2a2a]">
                     {profile?.avatar_url ? (
                       <AvatarImage 
                         src={profile.avatar_url}
@@ -193,48 +192,41 @@ const Profile: React.FC = () => {
               </div>
             </div>
             
-            {/* Informações do perfil e badges - Layout reorganizado */}
-            <div className="flex flex-1 flex-col space-y-3">
-              <div>
-                <h1 className="font-serif text-3xl font-medium mb-1">
+            {/* Informações do perfil reorganizadas */}
+            <div className="flex flex-1 flex-col mt-2">
+              <div className="mb-5">
+                <h1 className="font-serif text-3xl font-medium mb-1 text-center md:text-left">
                   {profile?.full_name || user?.email?.split('@')[0] || 'Usuário'}
                 </h1>
-                <p className="text-gray-400 text-base">
+                <p className="text-gray-400 text-base text-center md:text-left">
                   {profile?.specialty ? 'Profissão: ' + profile.specialty : 'Profissão não definida'}
                 </p>
               </div>
-            </div>
-            
-            {/* Badges de estatísticas + Botão de editar perfil na mesma linha */}
-            <div className="flex flex-row gap-3 self-start mt-1">
-              <div className="flex flex-row items-center gap-3 bg-[#212121]/80 rounded-md p-2.5 border border-[#2a2a2a]">
-                <BookOpen className="w-4 h-4 text-gray-400" />
-                <div>
+              
+              {/* Badges de estatísticas - alinhadas horizontalmente */}
+              <div className="flex flex-row gap-4 justify-center md:justify-start">
+                <div className="flex flex-col items-center justify-center bg-[#212121]/80 rounded-md p-3 border border-[#2a2a2a] min-w-[100px]">
+                  <BookOpen className="w-5 h-5 text-gray-400 mb-1" />
                   <div className="text-base font-medium">{stats.articlesRead}</div>
                   <div className="text-xs text-gray-400">artigos lidos</div>
                 </div>
-              </div>
-              
-              <div className="flex flex-row items-center gap-3 bg-[#212121]/80 rounded-md p-2.5 border border-[#2a2a2a]">
-                <MessageSquare className="w-4 h-4 text-gray-400" />
-                <div>
+                
+                <div className="flex flex-col items-center justify-center bg-[#212121]/80 rounded-md p-3 border border-[#2a2a2a] min-w-[100px]">
+                  <MessageSquare className="w-5 h-5 text-gray-400 mb-1" />
                   <div className="text-base font-medium">{stats.communityContributions}</div>
                   <div className="text-xs text-gray-400">contribuições</div>
                 </div>
+                
+                <Button
+                  onClick={() => setEditProfileOpen(true)}
+                  variant="outline"
+                  className="bg-[#212121]/80 text-gray-400 hover:text-white border border-[#2a2a2a] hover:bg-[#2a2a2a] transition-colors flex flex-col items-center justify-center p-3 rounded-md min-w-[100px] h-auto"
+                >
+                  <Edit className="w-5 h-5 mb-1" />
+                  <div className="text-base font-medium"> </div>
+                  <div className="text-xs text-gray-400">editar</div>
+                </Button>
               </div>
-              
-              <Button
-                onClick={() => setEditProfileOpen(true)}
-                variant="outline"
-                size="sm"
-                className="h-full bg-[#212121]/80 text-gray-400 hover:text-white border border-[#2a2a2a] hover:bg-[#2a2a2a] transition-colors flex flex-col items-center justify-center p-2.5 rounded-md"
-              >
-                <Edit className="w-4 h-4 mb-1" />
-                <div>
-                  <div className="text-base font-medium">Editar</div>
-                  <div className="text-xs text-gray-400">perfil</div>
-                </div>
-              </Button>
             </div>
           </div>
           
