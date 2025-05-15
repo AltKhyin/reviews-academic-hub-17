@@ -772,7 +772,7 @@ export type Database = {
       }
       user_article_reactions: {
         Row: {
-          article_id: string
+          article_id: string | null
           created_at: string
           id: string
           issue_id: string | null
@@ -780,7 +780,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          article_id: string
+          article_id?: string | null
           created_at?: string
           id?: string
           issue_id?: string | null
@@ -788,7 +788,7 @@ export type Database = {
           user_id: string
         }
         Update: {
-          article_id?: string
+          article_id?: string | null
           created_at?: string
           id?: string
           issue_id?: string | null
@@ -867,21 +867,21 @@ export type Database = {
       }
       user_bookmarks: {
         Row: {
-          article_id: string
+          article_id: string | null
           created_at: string
           id: string
           issue_id: string | null
           user_id: string
         }
         Insert: {
-          article_id: string
+          article_id?: string | null
           created_at?: string
           id?: string
           issue_id?: string | null
           user_id: string
         }
         Update: {
-          article_id?: string
+          article_id?: string | null
           created_at?: string
           id?: string
           issue_id?: string | null

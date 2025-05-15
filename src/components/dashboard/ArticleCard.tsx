@@ -32,44 +32,50 @@ const ArticleCard = ({ article, entityType = 'issue' }: ArticleCardProps) => {
 
   const bookmarkMutation = useMutation({
     mutationFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('User not authenticated');
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error('User not authenticated');
 
-      if (isBookmarked) {
-        // Remove bookmark
-        let deleteQuery = supabase
-          .from('user_bookmarks')
-          .delete()
-          .eq('user_id', session.user.id);
+        if (isBookmarked) {
+          // Remove bookmark
+          let deleteQuery = supabase
+            .from('user_bookmarks')
+            .delete()
+            .eq('user_id', session.user.id);
           
-        if (entityType === 'article') {
-          deleteQuery = deleteQuery.eq('article_id', article.id).is('issue_id', null);
-        } else {
-          deleteQuery = deleteQuery.eq('issue_id', article.id).is('article_id', null);
-        }
-        
-        const { error } = await deleteQuery;
-        
-        if (error) throw error;
-        return { action: 'removed' };
-      } else {
-        // Add bookmark
-        const payload: any = { 
-          user_id: session.user.id 
-        };
-        
-        if (entityType === 'article') {
-          payload.article_id = article.id;
-        } else {
-          payload.issue_id = article.id;
-        }
-        
-        const { error } = await supabase
-          .from('user_bookmarks')
-          .insert(payload);
+          if (entityType === 'article') {
+            deleteQuery = deleteQuery.eq('article_id', article.id).is('issue_id', null);
+          } else {
+            deleteQuery = deleteQuery.eq('issue_id', article.id).is('article_id', null);
+          }
           
-        if (error) throw error;
-        return { action: 'added' };
+          const { error } = await deleteQuery;
+          
+          if (error) throw error;
+          return { action: 'removed' };
+        } else {
+          // Add bookmark
+          const payload: any = { 
+            user_id: session.user.id 
+          };
+          
+          if (entityType === 'article') {
+            payload.article_id = article.id;
+          } else {
+            payload.issue_id = article.id;
+          }
+          
+          console.log("Bookmark payload:", payload);
+          const { error } = await supabase
+            .from('user_bookmarks')
+            .insert(payload);
+            
+          if (error) throw error;
+          return { action: 'added' };
+        }
+      } catch (err) {
+        console.error('Error updating bookmark:', err);
+        throw err;
       }
     },
     onSuccess: (result) => {
@@ -89,48 +95,54 @@ const ArticleCard = ({ article, entityType = 'issue' }: ArticleCardProps) => {
 
   const reactionMutation = useMutation({
     mutationFn: async ({ type }: { type: string }) => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('User not authenticated');
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error('User not authenticated');
 
-      const hasReaction = reactions?.includes(type);
-      
-      if (hasReaction) {
-        // Remove reaction
-        let deleteQuery = supabase
-          .from('user_article_reactions')
-          .delete()
-          .eq('user_id', session.user.id)
-          .eq('reaction_type', type);
+        const hasReaction = reactions?.includes(type);
         
-        if (entityType === 'article') {
-          deleteQuery = deleteQuery.eq('article_id', article.id).is('issue_id', null);
+        if (hasReaction) {
+          // Remove reaction
+          let deleteQuery = supabase
+            .from('user_article_reactions')
+            .delete()
+            .eq('user_id', session.user.id)
+            .eq('reaction_type', type);
+          
+          if (entityType === 'article') {
+            deleteQuery = deleteQuery.eq('article_id', article.id).is('issue_id', null);
+          } else {
+            deleteQuery = deleteQuery.eq('issue_id', article.id).is('article_id', null);
+          }
+          
+          const { error } = await deleteQuery;
+          
+          if (error) throw error;
+          return { added: false, type };
         } else {
-          deleteQuery = deleteQuery.eq('issue_id', article.id).is('article_id', null);
+          // Add reaction
+          const payload: any = { 
+            user_id: session.user.id,
+            reaction_type: type
+          };
+          
+          if (entityType === 'article') {
+            payload.article_id = article.id;
+          } else {
+            payload.issue_id = article.id;
+          }
+          
+          console.log("Reaction payload:", payload);
+          const { error } = await supabase
+            .from('user_article_reactions')
+            .insert(payload);
+          
+          if (error) throw error;
+          return { added: true, type };
         }
-        
-        const { error } = await deleteQuery;
-        
-        if (error) throw error;
-        return { added: false, type };
-      } else {
-        // Add reaction
-        const payload: any = { 
-          user_id: session.user.id,
-          reaction_type: type
-        };
-        
-        if (entityType === 'article') {
-          payload.article_id = article.id;
-        } else {
-          payload.issue_id = article.id;
-        }
-        
-        const { error } = await supabase
-          .from('user_article_reactions')
-          .insert(payload);
-        
-        if (error) throw error;
-        return { added: true, type };
+      } catch (err) {
+        console.error('Reaction error:', err);
+        throw err;
       }
     },
     onSuccess: (result) => {

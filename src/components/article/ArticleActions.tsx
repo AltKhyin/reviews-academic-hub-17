@@ -60,9 +60,10 @@ export const ArticleActions = ({ articleId, entityType = 'issue' }: ArticleActio
             payload.issue_id = articleId;
           }
           
+          console.log("Reaction payload:", payload);
           const { error } = await supabase
             .from('user_article_reactions')
-            .upsert(payload);
+            .insert(payload);
           
           if (error) throw error;
           return { added: true, type };
@@ -127,6 +128,7 @@ export const ArticleActions = ({ articleId, entityType = 'issue' }: ArticleActio
             payload.issue_id = articleId;
           }
           
+          console.log("Bookmark payload:", payload);
           const { error } = await supabase
             .from('user_bookmarks')
             .insert(payload);
