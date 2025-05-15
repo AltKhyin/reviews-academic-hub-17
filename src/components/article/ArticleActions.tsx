@@ -25,7 +25,7 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
         const { data, error } = await supabase
           .from('user_article_reactions')
           .select('reaction_type')
-          .eq('issue_id', articleId)
+          .eq('article_id', articleId)
           .eq('user_id', user.id);
         
         if (error) throw error;
@@ -50,7 +50,7 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
         const { data, error } = await supabase
           .from('user_bookmarks')
           .select('id')
-          .eq('issue_id', articleId)
+          .eq('article_id', articleId)
           .eq('user_id', user.id)
           .maybeSingle();
         
@@ -80,7 +80,7 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
           const { error } = await supabase
             .from('user_article_reactions')
             .delete()
-            .eq('issue_id', articleId)
+            .eq('article_id', articleId)
             .eq('user_id', user.id)
             .eq('reaction_type', type);
           
@@ -91,7 +91,7 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
           const { error } = await supabase
             .from('user_article_reactions')
             .upsert({ 
-              issue_id: articleId, 
+              article_id: articleId, 
               user_id: user.id,
               reaction_type: type
             });
@@ -134,7 +134,7 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
           const { error } = await supabase
             .from('user_bookmarks')
             .delete()
-            .eq('issue_id', articleId)
+            .eq('article_id', articleId)
             .eq('user_id', user.id);
             
           if (error) throw error;
@@ -143,7 +143,7 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
           const { error } = await supabase
             .from('user_bookmarks')
             .insert({ 
-              issue_id: articleId,
+              article_id: articleId,
               user_id: user.id 
             });
             

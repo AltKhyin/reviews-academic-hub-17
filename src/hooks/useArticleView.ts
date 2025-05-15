@@ -22,7 +22,7 @@ export const useArticleView = (articleId: string) => {
         const { error } = await supabase
           .from('user_article_views')
           .upsert({ 
-            issue_id: articleId,
+            article_id: articleId,
             user_id: user.id,
             viewed_at: new Date().toISOString()
           });

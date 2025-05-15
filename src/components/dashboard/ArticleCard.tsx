@@ -35,7 +35,7 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
         const { data, error } = await supabase
           .from('user_bookmarks')
           .select('id')
-          .eq('issue_id', article.id)
+          .eq('article_id', article.id)
           .eq('user_id', session.user.id)
           .maybeSingle();
         
@@ -59,7 +59,7 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
         const { data, error } = await supabase
           .from('user_article_reactions')
           .select('reaction_type')
-          .eq('issue_id', article.id)
+          .eq('article_id', article.id)
           .eq('user_id', session.user.id);
         
         if (error) throw error;
@@ -80,7 +80,7 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
         const { error } = await supabase
           .from('user_bookmarks')
           .delete()
-          .eq('issue_id', article.id)
+          .eq('article_id', article.id)
           .eq('user_id', session.user.id);
         if (error) throw error;
         return { action: 'removed' };
@@ -88,7 +88,7 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
         const { error } = await supabase
           .from('user_bookmarks')
           .insert({ 
-            issue_id: article.id,
+            article_id: article.id,
             user_id: session.user.id 
           });
         if (error) throw error;
@@ -122,7 +122,7 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
         const { error } = await supabase
           .from('user_article_reactions')
           .delete()
-          .eq('issue_id', article.id)
+          .eq('article_id', article.id)
           .eq('user_id', session.user.id)
           .eq('reaction_type', type);
         
@@ -133,7 +133,7 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
         const { error } = await supabase
           .from('user_article_reactions')
           .insert({ 
-            issue_id: article.id, 
+            article_id: article.id, 
             reaction_type: type,
             user_id: session.user.id
           });
