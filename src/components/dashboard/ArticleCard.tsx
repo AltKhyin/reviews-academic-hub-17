@@ -26,7 +26,7 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
 
   // Fetch bookmark status
   const { data: isBookmarked = false } = useQuery({
-    queryKey: ['article-bookmark', article.id],
+    queryKey: ['issue-bookmark', article.id],
     queryFn: async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -35,7 +35,7 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
         const { data, error } = await supabase
           .from('user_bookmarks')
           .select('id')
-          .eq('article_id', article.id)
+          .eq('issue_id', article.id)
           .eq('user_id', session.user.id)
           .maybeSingle();
         
@@ -50,7 +50,7 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
 
   // Fetch user reactions
   const { data: userReactions = [] } = useQuery({
-    queryKey: ['article-reactions', article.id],
+    queryKey: ['issue-reactions', article.id],
     queryFn: async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -59,7 +59,7 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
         const { data, error } = await supabase
           .from('user_article_reactions')
           .select('reaction_type')
-          .eq('article_id', article.id)
+          .eq('issue_id', article.id)
           .eq('user_id', session.user.id);
         
         if (error) throw error;
@@ -80,7 +80,7 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
         const { error } = await supabase
           .from('user_bookmarks')
           .delete()
-          .eq('article_id', article.id)
+          .eq('issue_id', article.id)
           .eq('user_id', session.user.id);
         if (error) throw error;
         return { action: 'removed' };
@@ -88,7 +88,7 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
         const { error } = await supabase
           .from('user_bookmarks')
           .insert({ 
-            article_id: article.id,
+            issue_id: article.id,
             user_id: session.user.id 
           });
         if (error) throw error;
@@ -96,12 +96,13 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
       }
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['article-bookmark', article.id] });
+      queryClient.invalidateQueries({ queryKey: ['issue-bookmark', article.id] });
       toast({
         description: result.action === 'added' ? "Artigo salvo nos favoritos" : "Artigo removido dos favoritos",
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Bookmark error:', error);
       toast({
         variant: "destructive",
         description: "Não foi possível atualizar os favoritos",
@@ -121,7 +122,7 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
         const { error } = await supabase
           .from('user_article_reactions')
           .delete()
-          .eq('article_id', article.id)
+          .eq('issue_id', article.id)
           .eq('user_id', session.user.id)
           .eq('reaction_type', type);
         
@@ -131,8 +132,8 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
         // Add reaction
         const { error } = await supabase
           .from('user_article_reactions')
-          .upsert({ 
-            article_id: article.id, 
+          .insert({ 
+            issue_id: article.id, 
             reaction_type: type,
             user_id: session.user.id
           });
@@ -142,7 +143,7 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
       }
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['article-reactions', article.id] });
+      queryClient.invalidateQueries({ queryKey: ['issue-reactions', article.id] });
       const reactionMessages: Record<string, string> = {
         'want_more': result.added ? 'Quero mais conteúdo como este' : 'Preferência removida',
         'like': result.added ? 'Você gostou deste artigo' : 'Avaliação removida',
@@ -153,7 +154,8 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
         description: reactionMessages[result.type] || "Sua reação foi atualizada",
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Reaction error:', error);
       toast({
         variant: "destructive",
         description: "Não foi possível registrar sua reação",

@@ -16,7 +16,7 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
 
   // Fetch current user's reactions
   const { data: reactions = [], isLoading: isLoadingReactions } = useQuery({
-    queryKey: ['article-reactions', articleId],
+    queryKey: ['issue-reactions', articleId],
     queryFn: async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
@@ -25,7 +25,7 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
         const { data, error } = await supabase
           .from('user_article_reactions')
           .select('reaction_type')
-          .eq('article_id', articleId)
+          .eq('issue_id', articleId)
           .eq('user_id', user.id);
         
         if (error) throw error;
@@ -41,7 +41,7 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
 
   // Fetch bookmark status
   const { data: isBookmarked = false, isLoading: isLoadingBookmark } = useQuery({
-    queryKey: ['article-bookmark', articleId],
+    queryKey: ['issue-bookmark', articleId],
     queryFn: async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
@@ -50,7 +50,7 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
         const { data, error } = await supabase
           .from('user_bookmarks')
           .select('id')
-          .eq('article_id', articleId)
+          .eq('issue_id', articleId)
           .eq('user_id', user.id)
           .maybeSingle();
         
@@ -80,7 +80,7 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
           const { error } = await supabase
             .from('user_article_reactions')
             .delete()
-            .eq('article_id', articleId)
+            .eq('issue_id', articleId)
             .eq('user_id', user.id)
             .eq('reaction_type', type);
           
@@ -91,7 +91,7 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
           const { error } = await supabase
             .from('user_article_reactions')
             .upsert({ 
-              article_id: articleId, 
+              issue_id: articleId, 
               user_id: user.id,
               reaction_type: type
             });
@@ -105,7 +105,7 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
       }
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['article-reactions', articleId] });
+      queryClient.invalidateQueries({ queryKey: ['issue-reactions', articleId] });
       const message = result.added 
         ? "Sua reação foi registrada" 
         : "Sua reação foi removida";
@@ -114,7 +114,8 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
         description: message,
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Reaction error:', error);
       toast({
         variant: "destructive",
         description: "Não foi possível registrar sua reação",
@@ -133,7 +134,7 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
           const { error } = await supabase
             .from('user_bookmarks')
             .delete()
-            .eq('article_id', articleId)
+            .eq('issue_id', articleId)
             .eq('user_id', user.id);
             
           if (error) throw error;
@@ -142,7 +143,7 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
           const { error } = await supabase
             .from('user_bookmarks')
             .insert({ 
-              article_id: articleId,
+              issue_id: articleId,
               user_id: user.id 
             });
             
@@ -155,12 +156,13 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
       }
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['article-bookmark', articleId] });
+      queryClient.invalidateQueries({ queryKey: ['issue-bookmark', articleId] });
       toast({
         description: result.added ? "Artigo salvo nos favoritos" : "Artigo removido dos favoritos",
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Bookmark error:', error);
       toast({
         variant: "destructive",
         description: "Não foi possível atualizar os favoritos",
