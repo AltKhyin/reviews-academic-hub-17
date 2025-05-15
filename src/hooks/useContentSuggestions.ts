@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -78,13 +77,15 @@ export const useContentSuggestions = (upcomingReleaseId: string) => {
         // Add hasVoted property based on user_votes
         const hasUserVote = suggestion.user_votes?.some(v => v.user_id === user?.id);
         
+        // Create a new suggestion object without the user_votes property
+        const { user_votes, ...suggestionWithoutUserVotes } = suggestion;
+        
         suggestionsWithUsers.push({
-          ...suggestion,
+          ...suggestionWithoutUserVotes,
           user: profileData ? {
             full_name: profileData.full_name,
             avatar_url: profileData.avatar_url
           } : null,
-          user_votes: undefined,
           hasVoted: hasUserVote ? 1 : 0
         });
       }
