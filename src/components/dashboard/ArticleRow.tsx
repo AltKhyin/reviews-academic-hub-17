@@ -30,7 +30,16 @@ const ArticleRow = ({ title, articles }: ArticleRowProps) => {
           <CarouselContent className="-ml-4">
             {articles.map((article) => (
               <CarouselItem key={article.id} className="pl-4 md:basis-auto flex-shrink-0">
-                <ArticleCard article={article} />
+                <ArticleCard 
+                  issue={{
+                    id: article.id,
+                    title: article.title,
+                    description: article.description,
+                    cover_image_url: article.image,
+                    specialty: article.category,
+                  }}
+                  className="w-[280px] h-full"
+                />
               </CarouselItem>
             ))}
           </CarouselContent>
