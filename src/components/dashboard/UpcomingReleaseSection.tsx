@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUpcomingRelease } from '@/hooks/useUpcomingRelease';
@@ -156,12 +157,16 @@ export const UpcomingReleaseSection = () => {
                       key={suggestion.id} 
                       className="flex items-start gap-3 p-3 rounded-lg bg-card shadow-sm hover:bg-accent/5 transition-colors"
                     >
-                      {/* Voting buttons and count */}
+                      {/* Voting buttons and count - FIX THE UPVOTE BUTTON HERE */}
                       <div className="flex flex-col items-center">
                         <Button
                           variant="outline"
                           size="sm"
-                          className={`h-8 w-8 rounded-full p-0 ${suggestion.hasVoted ? "text-[#F97316] border-[#F97316] hover:text-[#F97316] hover:border-[#F97316]/90" : ""}`}
+                          className={`h-8 w-8 rounded-full p-0 ${
+                            suggestion.hasVoted 
+                              ? "text-[#F97316] border-[#F97316] hover:text-[#F97316] hover:border-[#F97316]/90" 
+                              : ""
+                          }`}
                           onClick={() => voteSuggestion.mutate({ suggestionId: suggestion.id, value: 1 })}
                           disabled={voteSuggestion.isPending || !user}
                           title="Votar nesta sugestão"
