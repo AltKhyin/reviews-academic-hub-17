@@ -149,8 +149,8 @@ const Profile: React.FC = () => {
     ? format(new Date(user.created_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
     : 'Data não disponível';
 
-  // Define se temos algum perfil de rede social preenchido
-  const hasSocialMedia = profile?.linkedin || profile?.youtube || profile?.instagram || profile?.twitter;
+  // Define se temos algum perfil de rede social preenchido - verificando com operador opcional
+  const hasSocialMedia = !!(profile?.linkedin || profile?.youtube || profile?.instagram || profile?.twitter);
 
   return (
     <div className={`animate-fade-in pt-4 pb-6 transition-all duration-300 ${isCollapsed ? 'max-w-[95%]' : 'max-w-[85%]'} mx-auto`}>
@@ -223,7 +223,7 @@ const Profile: React.FC = () => {
                   <div className="flex gap-3 items-center pt-1">
                     {profile?.linkedin && (
                       <a 
-                        href={getSocialUrl('linkedin', profile.linkedin)} 
+                        href={getSocialUrl('linkedin', String(profile.linkedin))} 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="text-gray-400 hover:text-gray-200 transition-colors"
@@ -235,7 +235,7 @@ const Profile: React.FC = () => {
                     
                     {profile?.youtube && (
                       <a 
-                        href={getSocialUrl('youtube', profile.youtube)} 
+                        href={getSocialUrl('youtube', String(profile.youtube))} 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="text-gray-400 hover:text-gray-200 transition-colors"
@@ -247,7 +247,7 @@ const Profile: React.FC = () => {
                     
                     {profile?.instagram && (
                       <a 
-                        href={getSocialUrl('instagram', profile.instagram)} 
+                        href={getSocialUrl('instagram', String(profile.instagram))} 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="text-gray-400 hover:text-gray-200 transition-colors"
@@ -259,7 +259,7 @@ const Profile: React.FC = () => {
                     
                     {profile?.twitter && (
                       <a 
-                        href={getSocialUrl('twitter', profile.twitter)} 
+                        href={getSocialUrl('twitter', String(profile.twitter))} 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="text-gray-400 hover:text-gray-200 transition-colors"

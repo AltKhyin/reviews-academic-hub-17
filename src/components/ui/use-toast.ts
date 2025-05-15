@@ -1,5 +1,5 @@
 
-// This file re-exports the actual implementation from the shadcn/ui library
+// This file re-exports from the UI component's implementation
 import { useToast, toast } from "@/components/ui/toast/use-toast";
 
 export { useToast, toast };
