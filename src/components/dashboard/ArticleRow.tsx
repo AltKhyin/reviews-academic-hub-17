@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
 import ArticleCard from './ArticleCard';
 import { useMediaQuery } from '@/hooks/use-mobile';
-import type { EmblaCarouselType } from 'embla-carousel';
+import type { EmblaCarouselType } from 'embla-carousel-react';
 
 interface ArticleRowProps {
   title: string;
