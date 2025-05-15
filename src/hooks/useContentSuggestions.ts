@@ -101,16 +101,25 @@ export const useContentSuggestions = (upcomingReleaseId: string) => {
 
         if (deleteError) throw deleteError;
 
-        // Decrement vote count
-        const { error: updateError } = await supabase.rpc('decrement_votes', { 
-          suggestion_id: suggestionId 
-        });
+        // Decrement vote count directly
+        const { error: updateError } = await supabase
+          .from('content_suggestions')
+          .update({ votes: supabase.rpc('increment_votes', { suggestion_id: suggestionId, increment_by: -1 }) })
+          .eq('id', suggestionId);
 
         if (updateError) {
           // Fallback if RPC fails
+          const { data: suggestion, error: fetchError } = await supabase
+            .from('content_suggestions')
+            .select('votes')
+            .eq('id', suggestionId)
+            .single();
+            
+          if (fetchError) throw fetchError;
+          
           const { error: directUpdateError } = await supabase
             .from('content_suggestions')
-            .update({ votes: supabase.rpc('decrement', { value: 1 }) })
+            .update({ votes: suggestion.votes - 1 })
             .eq('id', suggestionId);
           
           if (directUpdateError) throw directUpdateError;
@@ -131,14 +140,23 @@ export const useContentSuggestions = (upcomingReleaseId: string) => {
 
       // Use the correct RPC function name 'increment_votes'
       const { error: rpcError } = await supabase.rpc('increment_votes', { 
-        suggestion_id: suggestionId 
+        suggestion_id: suggestionId,
+        increment_by: 1
       });
 
       if (rpcError) {
         // Fallback if RPC fails
+        const { data: suggestion, error: fetchError } = await supabase
+          .from('content_suggestions')
+          .select('votes')
+          .eq('id', suggestionId)
+          .single();
+          
+        if (fetchError) throw fetchError;
+        
         const { error: directUpdateError } = await supabase
           .from('content_suggestions')
-          .update({ votes: supabase.rpc('increment', { value: 1 }) })
+          .update({ votes: suggestion.votes + 1 })
           .eq('id', suggestionId);
         
         if (directUpdateError) throw directUpdateError;
