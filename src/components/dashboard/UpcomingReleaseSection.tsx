@@ -141,7 +141,7 @@ export const UpcomingReleaseSection = () => {
           </div>
           
           {/* Right column - Suggestions with voting */}
-          <div className="bg-gray-800/20 flex flex-col">
+          <div className="bg-secondary/30 dark:bg-secondary/50 flex flex-col">
             <div className="p-6 pb-3">
               <h4 className="text-sm font-medium">
                 Vote nas sugestões que você gostaria de ver na próxima edição.
@@ -217,7 +217,7 @@ export const UpcomingReleaseSection = () => {
                 </div>
               </ScrollArea>
               {/* Fade effect at bottom of scroll area */}
-              <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-gray-800/20 to-transparent pointer-events-none"></div>
+              <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-secondary/30 dark:from-secondary/50 to-transparent pointer-events-none"></div>
             </div>
           </div>
         </div>
