@@ -25,7 +25,7 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
         const { data, error } = await supabase
           .from('user_article_reactions')
           .select('reaction_type')
-          .eq('article_id', articleId)
+          .eq('issue_id', articleId)
           .eq('user_id', user.id);
         
         if (error) throw error;
@@ -50,7 +50,7 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
         const { data, error } = await supabase
           .from('user_bookmarks')
           .select('id')
-          .eq('article_id', articleId)
+          .eq('issue_id', articleId)
           .eq('user_id', user.id)
           .maybeSingle();
         
@@ -80,7 +80,7 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
           const { error } = await supabase
             .from('user_article_reactions')
             .delete()
-            .eq('article_id', articleId)
+            .eq('issue_id', articleId)
             .eq('user_id', user.id)
             .eq('reaction_type', type);
           
@@ -91,7 +91,8 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
           const { error } = await supabase
             .from('user_article_reactions')
             .upsert({ 
-              article_id: articleId, 
+              article_id: articleId, // Keep this for backward compatibility
+              issue_id: articleId, 
               user_id: user.id,
               reaction_type: type
             });
@@ -134,7 +135,7 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
           const { error } = await supabase
             .from('user_bookmarks')
             .delete()
-            .eq('article_id', articleId)
+            .eq('issue_id', articleId)
             .eq('user_id', user.id);
             
           if (error) throw error;
@@ -143,7 +144,8 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
           const { error } = await supabase
             .from('user_bookmarks')
             .insert({ 
-              article_id: articleId,
+              article_id: articleId, // Keep this for backward compatibility
+              issue_id: articleId,
               user_id: user.id 
             });
             

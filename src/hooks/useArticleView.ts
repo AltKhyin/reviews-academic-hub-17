@@ -23,6 +23,7 @@ export const useArticleView = (articleId: string) => {
           .from('user_article_views')
           .upsert({ 
             article_id: articleId,
+            issue_id: articleId, // Add the issue_id field
             user_id: user.id,
             viewed_at: new Date().toISOString()
           });

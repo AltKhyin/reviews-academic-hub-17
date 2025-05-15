@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Bookmark, ThumbsUp, ThumbsDown, Heart } from 'lucide-react';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
@@ -35,7 +34,7 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
         const { data, error } = await supabase
           .from('user_bookmarks')
           .select('id')
-          .eq('article_id', article.id)
+          .eq('issue_id', article.id)
           .eq('user_id', session.user.id)
           .maybeSingle();
         
@@ -59,7 +58,7 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
         const { data, error } = await supabase
           .from('user_article_reactions')
           .select('reaction_type')
-          .eq('article_id', article.id)
+          .eq('issue_id', article.id)
           .eq('user_id', session.user.id);
         
         if (error) throw error;
@@ -80,7 +79,7 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
         const { error } = await supabase
           .from('user_bookmarks')
           .delete()
-          .eq('article_id', article.id)
+          .eq('issue_id', article.id)
           .eq('user_id', session.user.id);
         if (error) throw error;
         return { action: 'removed' };
@@ -88,7 +87,8 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
         const { error } = await supabase
           .from('user_bookmarks')
           .insert({ 
-            article_id: article.id,
+            article_id: article.id, // Keep for backward compatibility
+            issue_id: article.id,
             user_id: session.user.id 
           });
         if (error) throw error;
@@ -122,7 +122,7 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
         const { error } = await supabase
           .from('user_article_reactions')
           .delete()
-          .eq('article_id', article.id)
+          .eq('issue_id', article.id)
           .eq('user_id', session.user.id)
           .eq('reaction_type', type);
         
@@ -133,7 +133,8 @@ const ArticleCard = ({ article }: ArticleCardProps) => {
         const { error } = await supabase
           .from('user_article_reactions')
           .insert({ 
-            article_id: article.id, 
+            article_id: article.id, // Keep for backward compatibility
+            issue_id: article.id, 
             reaction_type: type,
             user_id: session.user.id
           });

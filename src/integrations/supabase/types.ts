@@ -775,6 +775,7 @@ export type Database = {
           article_id: string
           created_at: string
           id: string
+          issue_id: string | null
           reaction_type: string
           user_id: string
         }
@@ -782,6 +783,7 @@ export type Database = {
           article_id: string
           created_at?: string
           id?: string
+          issue_id?: string | null
           reaction_type: string
           user_id: string
         }
@@ -789,6 +791,7 @@ export type Database = {
           article_id?: string
           created_at?: string
           id?: string
+          issue_id?: string | null
           reaction_type?: string
           user_id?: string
         }
@@ -798,6 +801,13 @@ export type Database = {
             columns: ["article_id"]
             isOneToOne: false
             referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_article_reactions_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "issues"
             referencedColumns: ["id"]
           },
           {
@@ -813,18 +823,21 @@ export type Database = {
         Row: {
           article_id: string
           id: string
+          issue_id: string | null
           user_id: string
           viewed_at: string
         }
         Insert: {
           article_id: string
           id?: string
+          issue_id?: string | null
           user_id: string
           viewed_at?: string
         }
         Update: {
           article_id?: string
           id?: string
+          issue_id?: string | null
           user_id?: string
           viewed_at?: string
         }
@@ -834,6 +847,13 @@ export type Database = {
             columns: ["article_id"]
             isOneToOne: false
             referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_article_views_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "issues"
             referencedColumns: ["id"]
           },
           {
@@ -850,18 +870,21 @@ export type Database = {
           article_id: string
           created_at: string
           id: string
+          issue_id: string | null
           user_id: string
         }
         Insert: {
           article_id: string
           created_at?: string
           id?: string
+          issue_id?: string | null
           user_id: string
         }
         Update: {
           article_id?: string
           created_at?: string
           id?: string
+          issue_id?: string | null
           user_id?: string
         }
         Relationships: [
@@ -870,6 +893,13 @@ export type Database = {
             columns: ["article_id"]
             isOneToOne: false
             referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_bookmarks_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "issues"
             referencedColumns: ["id"]
           },
           {
