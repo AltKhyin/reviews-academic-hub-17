@@ -3,51 +3,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Activity } from './ActivityItem';
 
-// Lista de categorias fictícias para enriquecer os exemplos
-const categories = [
-  'Cardiologia', 
-  'Neurologia', 
-  'Pediatria', 
-  'Oncologia', 
-  'Psiquiatria', 
-  'Dermatologia',
-  'Clínica Médica'
-];
-
-// Alguns textos fictícios para enriquecer as descrições
-const descriptions = {
-  read: [
-    'Leitura completa do artigo, com destaque para os métodos e resultados.',
-    'Acesso ao texto completo com download do PDF para referência futura.',
-    'Artigo revisado e compartilhado com colegas da área.',
-    'Análise crítica do artigo realizada e salva como nota pessoal.'
-  ],
-  comment: [
-    'Contribuição relevante sobre a metodologia aplicada no estudo.',
-    'Questionamento sobre protocolos de tratamento mencionados no texto.',
-    'Compartilhamento de experiência pessoal relacionada ao tema do artigo.',
-    'Sugestão de referências complementares para o tópico em discussão.'
-  ],
-  like: [
-    'Apreciação do conteúdo e da abordagem metodológica utilizada.',
-    'Reconhecimento da relevância clínica das conclusões apresentadas.',
-    'Destaque para a qualidade da revisão bibliográfica e atualidade do tema.',
-    'Valorização da clareza e objetividade na apresentação dos resultados.'
-  ],
-  save: [
-    'Conteúdo salvo para referência futura em pesquisa relacionada.',
-    'Artigo adicionado à sua biblioteca pessoal para revisão posterior.',
-    'Material guardado como parte de uma coletânea sobre o tema.',
-    'Conteúdo destacado para ser compartilhado em grupos de estudo.'
-  ],
-  post: [
-    'Publicação original compartilhando insights sobre prática clínica.',
-    'Relato de caso interessante observado recentemente na prática.',
-    'Discussão iniciada sobre novas diretrizes terapêuticas.',
-    'Pesquisa original compartilhada com a comunidade para feedback.'
-  ]
-};
-
 export const useActivities = (userId?: string) => {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,139 +17,167 @@ export const useActivities = (userId?: string) => {
       setLoading(true);
       
       try {
-        // Artigos lidos recentemente
-        const { data: viewsData, error: viewsError } = await supabase
-          .from('user_article_views')
-          .select('article_id, viewed_at')
-          .eq('user_id', userId)
-          .order('viewed_at', { ascending: false })
-          .limit(5);
-          
-        // Comentários recentes
-        const { data: commentsData, error: commentsError } = await supabase
-          .from('comments')
-          .select('id, content, created_at, article_id, post_id, issue_id')
-          .eq('user_id', userId)
-          .order('created_at', { ascending: false })
-          .limit(5);
-          
-        // Reações recentes (likes)
-        const { data: reactionsData, error: reactionsError } = await supabase
-          .from('user_article_reactions')
-          .select('id, article_id, reaction_type, created_at')
-          .eq('user_id', userId)
-          .eq('reaction_type', 'like')
-          .order('created_at', { ascending: false })
-          .limit(5);
-          
-        // Salvamentos recentes
-        const { data: bookmarksData, error: bookmarksError } = await supabase
-          .from('user_bookmarks')
-          .select('id, article_id, created_at')
-          .eq('user_id', userId)
-          .order('created_at', { ascending: false })
-          .limit(5);
-          
-        // Posts recentes na comunidade
+        // Fetch posts created by the user
         const { data: postsData, error: postsError } = await supabase
           .from('posts')
-          .select('id, title, created_at')
+          .select('id, title, created_at, flair_id')
           .eq('user_id', userId)
           .order('created_at', { ascending: false })
           .limit(5);
           
-        // Formata os dados para exibição
+        // Fetch comments made by the user
+        const { data: commentsData, error: commentsError } = await supabase
+          .from('comments')
+          .select(`
+            id, 
+            content, 
+            created_at, 
+            article_id, 
+            post_id, 
+            issue_id,
+            posts(title, flair_id),
+            articles(title),
+            issues(title, specialty)
+          `)
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(10);
+          
+        // Fetch articles/issues the user liked
+        const { data: reactionsData, error: reactionsError } = await supabase
+          .from('user_article_reactions')
+          .select(`
+            id, 
+            reaction_type,
+            created_at,
+            article_id, 
+            issue_id,
+            articles(title),
+            issues(title, specialty)
+          `)
+          .eq('user_id', userId)
+          .in('reaction_type', ['like', 'want_more'])
+          .order('created_at', { ascending: false })
+          .limit(5);
+          
+        // Fetch bookmarked content
+        const { data: bookmarksData, error: bookmarksError } = await supabase
+          .from('user_bookmarks')
+          .select(`
+            id, 
+            created_at,
+            article_id,
+            issue_id,
+            articles(title),
+            issues(title, specialty)
+          `)
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(5);
+          
+        // Format the activities
         const formattedActivities: Activity[] = [];
         
-        // Para simplificar, vamos usar dados de exemplo até que possamos realmente ter os títulos dos artigos
-        // Num projeto real, faríamos JOIN queries para obter os títulos
-        
-        // Artigos lidos
-        viewsData?.forEach(view => {
-          // Gera título e categoria fictícios para demonstração
-          const randomCategory = categories[Math.floor(Math.random() * categories.length)];
-          const randomDesc = descriptions.read[Math.floor(Math.random() * descriptions.read.length)];
-          
-          formattedActivities.push({
-            id: `view-${view.article_id}`,
-            type: 'read',
-            title: `Avanços em tratamentos para ${randomCategory}`,
-            description: randomDesc,
-            category: randomCategory,
-            entityId: view.article_id,
-            date: view.viewed_at
+        // Process posts
+        if (postsData) {
+          postsData.forEach(post => {
+            formattedActivities.push({
+              id: `post-${post.id}`,
+              type: 'post',
+              title: post.title || 'Publicação na comunidade',
+              entityId: post.id,
+              date: post.created_at
+            });
           });
-        });
+        }
         
-        // Comentários
-        commentsData?.forEach(comment => {
-          const entityType = comment.article_id ? 'artigo' : comment.post_id ? 'post' : 'issue';
-          const randomCategory = categories[Math.floor(Math.random() * categories.length)];
-          const randomDesc = descriptions.comment[Math.floor(Math.random() * descriptions.comment.length)];
-          const truncatedContent = comment.content ? 
-            comment.content.substring(0, 60) + (comment.content.length > 60 ? '...' : '') : 
-            'Sem conteúdo disponível';
-          
-          formattedActivities.push({
-            id: `comment-${comment.id}`,
-            type: 'comment',
-            title: `Comentário em ${entityType} de ${randomCategory}`,
-            description: `"${truncatedContent}" - ${randomDesc}`,
-            category: randomCategory,
-            entityId: comment.article_id || comment.post_id || comment.issue_id || '',
-            date: comment.created_at
+        // Process comments
+        if (commentsData) {
+          commentsData.forEach(comment => {
+            let title = 'Comentário';
+            let category = '';
+            const truncatedContent = comment.content 
+              ? `"${comment.content.substring(0, 60)}${comment.content.length > 60 ? '...' : ''}"`
+              : '';
+            
+            if (comment.post_id && comment.posts) {
+              title = `Comentário em post de ${comment.posts.title}`;
+            } else if (comment.article_id && comment.articles) {
+              title = `Comentário em artigo ${comment.articles.title}`;
+            } else if (comment.issue_id && comment.issues) {
+              title = `Comentário em post de ${comment.issues.title}`;
+              category = comment.issues.specialty || '';
+            }
+            
+            formattedActivities.push({
+              id: `comment-${comment.id}`,
+              type: 'comment',
+              title,
+              description: truncatedContent,
+              category,
+              entityId: comment.post_id || comment.article_id || comment.issue_id || '',
+              date: comment.created_at
+            });
           });
-        });
+        }
         
-        // Reações
-        reactionsData?.forEach(reaction => {
-          const randomCategory = categories[Math.floor(Math.random() * categories.length)];
-          const randomDesc = descriptions.like[Math.floor(Math.random() * descriptions.like.length)];
-          
-          formattedActivities.push({
-            id: `reaction-${reaction.id}`,
-            type: 'like',
-            title: `Artigo sobre ${randomCategory}`,
-            description: randomDesc,
-            category: randomCategory,
-            entityId: reaction.article_id,
-            date: reaction.created_at
+        // Process reactions
+        if (reactionsData) {
+          reactionsData.forEach(reaction => {
+            let title = '';
+            let category = '';
+            
+            if (reaction.article_id && reaction.articles) {
+              title = reaction.articles.title;
+            } else if (reaction.issue_id && reaction.issues) {
+              title = reaction.issues.title;
+              category = reaction.issues.specialty || '';
+            }
+            
+            if (!title) {
+              return; // Skip if we don't have a title
+            }
+            
+            formattedActivities.push({
+              id: `reaction-${reaction.id}`,
+              type: reaction.reaction_type === 'want_more' ? 'like' : reaction.reaction_type as any,
+              title,
+              category,
+              entityId: reaction.article_id || reaction.issue_id || '',
+              date: reaction.created_at
+            });
           });
-        });
+        }
         
-        // Salvamentos
-        bookmarksData?.forEach(bookmark => {
-          const randomCategory = categories[Math.floor(Math.random() * categories.length)];
-          const randomDesc = descriptions.save[Math.floor(Math.random() * descriptions.save.length)];
-          
-          formattedActivities.push({
-            id: `bookmark-${bookmark.id}`,
-            type: 'save',
-            title: `Revisão sistemática: ${randomCategory}`,
-            description: randomDesc,
-            category: randomCategory,
-            entityId: bookmark.article_id,
-            date: bookmark.created_at
+        // Process bookmarks
+        if (bookmarksData) {
+          bookmarksData.forEach(bookmark => {
+            let title = '';
+            let category = '';
+            
+            if (bookmark.article_id && bookmark.articles) {
+              title = bookmark.articles.title;
+            } else if (bookmark.issue_id && bookmark.issues) {
+              title = bookmark.issues.title;
+              category = bookmark.issues.specialty || '';
+            }
+            
+            if (!title) {
+              return; // Skip if we don't have a title
+            }
+            
+            formattedActivities.push({
+              id: `bookmark-${bookmark.id}`,
+              type: 'save',
+              title,
+              category,
+              entityId: bookmark.article_id || bookmark.issue_id || '',
+              date: bookmark.created_at
+            });
           });
-        });
+        }
         
-        // Posts
-        postsData?.forEach(post => {
-          const randomCategory = categories[Math.floor(Math.random() * categories.length)];
-          const randomDesc = descriptions.post[Math.floor(Math.random() * descriptions.post.length)];
-          
-          formattedActivities.push({
-            id: `post-${post.id}`,
-            type: 'post',
-            title: post.title || 'Publicou na comunidade',
-            description: randomDesc,
-            category: randomCategory,
-            entityId: post.id,
-            date: post.created_at
-          });
-        });
-        
-        // Ordena por data mais recente
+        // Sort by date (most recent first)
         formattedActivities.sort((a, b) => 
           new Date(b.date).getTime() - new Date(a.date).getTime()
         );
@@ -202,45 +185,7 @@ export const useActivities = (userId?: string) => {
         setActivities(formattedActivities);
       } catch (error) {
         console.error("Erro ao buscar atividades do usuário:", error);
-        // Dados de fallback para demonstração
-        setActivities([
-          { 
-            id: '1', 
-            type: 'read', 
-            title: 'Artigo sobre anticoagulantes', 
-            description: 'Uma análise aprofundada sobre os novos anticoagulantes e seus efeitos na prática clínica diária.',
-            category: 'Cardiologia',
-            entityId: '1', 
-            date: new Date().toISOString() 
-          },
-          { 
-            id: '2', 
-            type: 'comment', 
-            title: 'Comentário em artigo sobre depressão', 
-            description: '"Excelente revisão! Gostaria de adicionar que estudos recentes também indicam..." - Contribuição sobre novas perspectivas de tratamento.',
-            category: 'Psiquiatria',
-            entityId: '2', 
-            date: new Date(Date.now() - 24*60*60*1000).toISOString() 
-          },
-          { 
-            id: '3', 
-            type: 'like', 
-            title: 'Curtiu um artigo sobre cardiologia', 
-            description: 'Apreciou o conteúdo sobre os novos protocolos de tratamento para insuficiência cardíaca.',
-            category: 'Cardiologia',
-            entityId: '3', 
-            date: new Date(Date.now() - 48*60*60*1000).toISOString() 
-          },
-          { 
-            id: '4', 
-            type: 'save', 
-            title: 'Salvou um artigo sobre neurologia', 
-            description: 'Adicionou à sua biblioteca pessoal um estudo recente sobre avanços no tratamento de Parkinson.',
-            category: 'Neurologia',
-            entityId: '4', 
-            date: new Date(Date.now() - 72*60*60*1000).toISOString() 
-          }
-        ]);
+        setActivities([]);
       } finally {
         setLoading(false);
       }
