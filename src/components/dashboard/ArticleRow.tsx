@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
-import { ArticleCard } from './ArticleCard';
+import ArticleCard from './ArticleCard';
 
 interface ArticleRowProps {
   title: string;
@@ -30,16 +29,7 @@ const ArticleRow = ({ title, articles }: ArticleRowProps) => {
           <CarouselContent className="-ml-4">
             {articles.map((article) => (
               <CarouselItem key={article.id} className="pl-4 md:basis-auto flex-shrink-0">
-                <ArticleCard 
-                  issue={{
-                    id: article.id,
-                    title: article.title,
-                    description: article.description,
-                    cover_image_url: article.image,
-                    specialty: article.category,
-                  }}
-                  className="w-[280px] h-full"
-                />
+                <ArticleCard article={article} />
               </CarouselItem>
             ))}
           </CarouselContent>

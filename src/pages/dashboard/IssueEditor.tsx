@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,7 +11,6 @@ import { IssueActionButtons } from './components/issue/IssueActionButtons';
 import { IssueFormContainer } from './components/issue/IssueFormContainer';
 import { useIssueEditor } from './hooks/useIssueEditor';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
 
 const IssueEditor = () => {
   const { id } = useParams<{ id: string }>();
@@ -62,7 +61,7 @@ const IssueEditor = () => {
         cover_image_url: issue.cover_image_url || '',
         published: issue.published || false,
         featured: issue.featured || false,
-        // Additional fields - make sure to include all the fields from the database
+        // New fields
         authors: issue.authors || '',
         search_title: issue.search_title || '',
         real_title: issue.real_title || '',
@@ -70,19 +69,13 @@ const IssueEditor = () => {
         search_description: issue.search_description || '',
         year: issue.year || '',
         design: issue.design || '',
-        score: issue.score || 0,
-        population: issue.population || ''
+        score: issue.score || 0
       });
     }
   }, [issue, setFormValues]);
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-8 min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2">Carregando dados da edição...</span>
-      </div>
-    );
+    return <div className="p-8 text-center">Carregando...</div>;
   }
 
   return (

@@ -49,7 +49,7 @@ export const useIssueEditor = (id?: string) => {
           published: values.published,
           featured: values.featured,
           updated_at: new Date().toISOString(),
-          // All additional fields
+          // Fields
           authors: values.authors || '',
           search_title: values.search_title || '',
           real_title: values.real_title || '',
@@ -59,7 +59,7 @@ export const useIssueEditor = (id?: string) => {
           design: values.design || '',
           score: values.score || 0,
           population: values.population || '',
-          ...(values.published && !formValues.published ? { published_at: new Date().toISOString() } : {})
+          ...(values.published && { published_at: new Date().toISOString() })
         })
         .eq('id', id);
       
@@ -112,46 +112,57 @@ export const useIssueEditor = (id?: string) => {
   };
 
   const togglePublish = async () => {
-    // Toggle the published state in the form values first for immediate UI feedback
     setFormValues(prev => ({
       ...prev,
       published: !prev.published
     }));
     
-    // Create updated values with the toggled published state
+    // Make a new copy of the values to submit
     const updatedValues = {
       ...formValues,
       published: !formValues.published
     };
     
-    // Submit the updated values
     await onSubmit(updatedValues);
   };
 
   const toggleFeatured = async () => {
     if (!id) return;
 
-    // Toggle the featured state in the form values first for immediate UI feedback
-    setFormValues(prev => ({
-      ...prev,
-      featured: !prev.featured
-    }));
-    
-    // Create updated values with the toggled featured state
-    const updatedValues = {
-      ...formValues,
-      featured: !formValues.featured
-    };
-    
-    // Submit the updated values
-    await onSubmit(updatedValues);
-    
-    toast({
-      title: !formValues.featured ? "Edição destacada!" : "Edição removida dos destaques",
-      description: !formValues.featured 
-        ? "Esta edição será exibida em destaque na página inicial."
-        : "Esta edição não será mais exibida em destaque.",
-    });
+    try {
+      setIsSubmitting(true);
+      
+      // Update the form values
+      setFormValues(prev => ({
+        ...prev,
+        featured: !prev.featured
+      }));
+      
+      // Make a new copy of the values to submit
+      const updatedValues = {
+        ...formValues,
+        featured: !formValues.featured
+      };
+      
+      // Submit with updated value
+      await onSubmit(updatedValues);
+      
+      toast({
+        title: !formValues.featured ? "Edição destacada!" : "Edição removida dos destaques",
+        description: !formValues.featured 
+          ? "Esta edição será exibida em destaque na página inicial."
+          : "Esta edição não será mais exibida em destaque.",
+      });
+    } catch (error: any) {
+      console.error('Error toggling featured status:', error);
+      toast({
+        title: "Erro ao alterar destaque",
+        description: error.message || "Ocorreu um erro ao alterar o destaque da edição.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return {
