@@ -51,6 +51,13 @@ export interface UserProfile {
   bio?: string | null;
   specialty?: string | null;
   institution?: string | null;
+  // Adding social media fields
+  linkedin?: string | null;
+  youtube?: string | null;
+  instagram?: string | null;
+  twitter?: string | null;
+  website?: string | null;
+  location?: string | null;
 }
 
 export interface Comment {
