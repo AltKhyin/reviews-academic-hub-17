@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSidebar } from '@/components/ui/sidebar';
 import { useAuth } from '@/contexts/AuthContext';
@@ -156,9 +157,9 @@ const Profile: React.FC = () => {
       {/* Card de perfil monocromático e clean */}
       <Card className="bg-[#1a1a1a] rounded-lg border border-[#2a2a2a] overflow-hidden shadow-md mb-2">
         <CardContent className="p-5">
-          <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
-            {/* Avatar - Aumentado */}
-            <div className="flex-shrink-0 relative mt-2">
+          <div className="flex flex-col md:flex-row gap-6">
+            {/* Avatar - Lado esquerdo */}
+            <div className="flex-shrink-0 relative self-center md:self-start">
               <div className="relative group">
                 <input
                   type="file"
@@ -192,28 +193,31 @@ const Profile: React.FC = () => {
               </div>
             </div>
             
-            {/* Informações do perfil reorganizadas */}
-            <div className="flex flex-1 flex-col mt-2">
-              <div className="mb-5">
-                <h1 className="font-serif text-3xl font-medium mb-1 text-center md:text-left">
-                  {profile?.full_name || user?.email?.split('@')[0] || 'Usuário'}
-                </h1>
-                <p className="text-gray-400 text-base text-center md:text-left">
-                  {profile?.specialty ? 'Profissão: ' + profile.specialty : 'Profissão não definida'}
-                </p>
+            {/* Conteúdo central e direito - realinhados */}
+            <div className="flex flex-1 flex-row items-center">
+              {/* Nome e Profissão - Parte central */}
+              <div className="flex-1">
+                <div>
+                  <h1 className="font-serif text-3xl font-medium mb-1 text-center md:text-left">
+                    {profile?.full_name || user?.email?.split('@')[0] || 'Usuário'}
+                  </h1>
+                  <p className="text-gray-400 text-base text-center md:text-left">
+                    {profile?.specialty ? 'Profissão: ' + profile.specialty : 'Profissão não definida'}
+                  </p>
+                </div>
               </div>
               
-              {/* Badges de estatísticas - alinhadas horizontalmente */}
-              <div className="flex flex-row gap-4 justify-center md:justify-start">
+              {/* Caixas de estatísticas - Realinhadas à direita */}
+              <div className="hidden md:flex gap-4 justify-end">
                 <div className="flex flex-col items-center justify-center bg-[#212121]/80 rounded-md p-3 border border-[#2a2a2a] min-w-[100px]">
                   <BookOpen className="w-5 h-5 text-gray-400 mb-1" />
-                  <div className="text-base font-medium">{stats.articlesRead}</div>
+                  <div className="text-sm font-medium">{stats.articlesRead}</div>
                   <div className="text-xs text-gray-400">artigos lidos</div>
                 </div>
                 
                 <div className="flex flex-col items-center justify-center bg-[#212121]/80 rounded-md p-3 border border-[#2a2a2a] min-w-[100px]">
                   <MessageSquare className="w-5 h-5 text-gray-400 mb-1" />
-                  <div className="text-base font-medium">{stats.communityContributions}</div>
+                  <div className="text-sm font-medium">{stats.communityContributions}</div>
                   <div className="text-xs text-gray-400">contribuições</div>
                 </div>
                 
@@ -223,14 +227,39 @@ const Profile: React.FC = () => {
                   className="bg-[#212121]/80 text-gray-400 hover:text-white border border-[#2a2a2a] hover:bg-[#2a2a2a] transition-colors flex flex-col items-center justify-center p-3 rounded-md min-w-[100px] h-auto"
                 >
                   <Edit className="w-5 h-5 mb-1" />
-                  <div className="text-base font-medium"> </div>
-                  <div className="text-xs text-gray-400">editar</div>
+                  <div className="text-sm font-medium"> </div>
+                  <span className="sr-only">Editar perfil</span>
                 </Button>
               </div>
             </div>
           </div>
           
-          {/* Bloco de informações adicionais - movido para baixo */}
+          {/* Caixas de estatísticas para mobile - Visíveis apenas em telas pequenas */}
+          <div className="flex md:hidden gap-4 justify-center mt-4">
+            <div className="flex flex-col items-center justify-center bg-[#212121]/80 rounded-md p-3 border border-[#2a2a2a] min-w-[100px]">
+              <BookOpen className="w-5 h-5 text-gray-400 mb-1" />
+              <div className="text-sm font-medium">{stats.articlesRead}</div>
+              <div className="text-xs text-gray-400">artigos lidos</div>
+            </div>
+            
+            <div className="flex flex-col items-center justify-center bg-[#212121]/80 rounded-md p-3 border border-[#2a2a2a] min-w-[100px]">
+              <MessageSquare className="w-5 h-5 text-gray-400 mb-1" />
+              <div className="text-sm font-medium">{stats.communityContributions}</div>
+              <div className="text-xs text-gray-400">contribuições</div>
+            </div>
+            
+            <Button
+              onClick={() => setEditProfileOpen(true)}
+              variant="outline"
+              className="bg-[#212121]/80 text-gray-400 hover:text-white border border-[#2a2a2a] hover:bg-[#2a2a2a] transition-colors flex flex-col items-center justify-center p-3 rounded-md min-w-[100px] h-auto"
+            >
+              <Edit className="w-5 h-5 mb-1" />
+              <div className="text-sm font-medium"> </div>
+              <span className="sr-only">Editar perfil</span>
+            </Button>
+          </div>
+          
+          {/* Bloco de informações adicionais */}
           <div className="pt-5 mt-4 border-t border-[#2a2a2a]">
             <div className="flex flex-col space-y-3">
               <div className="space-y-2">
