@@ -1,24 +1,8 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { CommentVote } from '@/types/comment';
-
-// Define extended suggestion type with user info
-interface Suggestion {
-  id: string;
-  title: string;
-  description?: string;
-  votes: number;
-  created_at: string;
-  user_id: string;
-  user?: {
-    full_name: string | null;
-    avatar_url: string | null;
-  };
-  hasVoted?: number; // -1, 0, or 1
-}
+import { CommentVote, Suggestion, UserVote } from '@/types/comment';
 
 export const useContentSuggestions = (upcomingReleaseId: string) => {
   const queryClient = useQueryClient();
@@ -34,7 +18,7 @@ export const useContentSuggestions = (upcomingReleaseId: string) => {
           .from('content_suggestions')
           .select(`
             *,
-            profiles:user_id (
+            profiles(
               full_name,
               avatar_url
             )
@@ -48,18 +32,23 @@ export const useContentSuggestions = (upcomingReleaseId: string) => {
           ...item,
           user: item.profiles,
           profiles: undefined
-        })) as Suggestion[];
+        })) as unknown as Suggestion[];
       }
 
+      // For a specific release, include vote information
       const { data, error } = await supabase
         .from('content_suggestions')
         .select(`
           *,
-          profiles:user_id (
+          profiles(
             full_name,
             avatar_url
           ),
-          user_votes (user_id, value)
+          user_votes(
+            id,
+            user_id,
+            created_at
+          )
         `)
         .eq('upcoming_release_id', upcomingReleaseId)
         .order('votes', { ascending: false });
@@ -68,12 +57,13 @@ export const useContentSuggestions = (upcomingReleaseId: string) => {
       
       // Add hasVoted property based on user_votes
       return data.map(suggestion => {
-        const userVote = suggestion.user_votes?.find(v => v.user_id === user?.id);
+        const hasUserVote = suggestion.user_votes?.find(v => v.user_id === user?.id);
         return {
           ...suggestion,
           user: suggestion.profiles,
           profiles: undefined,
-          hasVoted: userVote ? userVote.value : 0
+          user_votes: undefined,
+          hasVoted: hasUserVote ? 1 : 0
         };
       }) as Suggestion[];
     },
@@ -139,28 +129,21 @@ export const useContentSuggestions = (upcomingReleaseId: string) => {
 
         if (deleteError) throw deleteError;
 
-        // Decrement vote count directly using Supabase RPC function
-        const { error: rpcError } = await supabase.rpc('increment_votes', { 
-          suggestion_id: suggestionId 
-        });
-
-        if (rpcError) {
-          // Fallback if RPC fails: fetch current value and decrement manually
-          const { data: suggestion, error: fetchError } = await supabase
-            .from('content_suggestions')
-            .select('votes')
-            .eq('id', suggestionId)
-            .single();
+        // Use direct update for vote count
+        const { data: suggestion, error: fetchError } = await supabase
+          .from('content_suggestions')
+          .select('votes')
+          .eq('id', suggestionId)
+          .single();
             
-          if (fetchError) throw fetchError;
-          
-          const { error: directUpdateError } = await supabase
-            .from('content_suggestions')
-            .update({ votes: suggestion.votes - 1 })
-            .eq('id', suggestionId);
-          
-          if (directUpdateError) throw directUpdateError;
-        }
+        if (fetchError) throw fetchError;
+        
+        const { error: updateError } = await supabase
+          .from('content_suggestions')
+          .update({ votes: suggestion.votes - 1 })
+          .eq('id', suggestionId);
+        
+        if (updateError) throw updateError;
         
         return { action: 'removed' };
       } 
@@ -170,35 +153,26 @@ export const useContentSuggestions = (upcomingReleaseId: string) => {
         .from('user_votes')
         .insert({
           user_id: user.id,
-          suggestion_id: suggestionId,
-          value: value // Store the vote value (-1 or 1)
+          suggestion_id: suggestionId
         });
 
       if (error) throw error;
 
-      // Use the RPC function to increment votes
-      const { error: rpcError } = await supabase.rpc('increment_votes', { 
-        suggestion_id: suggestionId
-      });
-
-      if (rpcError) {
-        // Fallback if RPC fails: fetch current value and increment manually
-        const { data: suggestion, error: fetchError } = await supabase
-          .from('content_suggestions')
-          .select('votes')
-          .eq('id', suggestionId)
-          .single();
-          
-        if (fetchError) throw fetchError;
+      // Use direct update for vote count
+      const { data: suggestion, error: fetchError } = await supabase
+        .from('content_suggestions')
+        .select('votes')
+        .eq('id', suggestionId)
+        .single();
         
-        // Apply the vote value to the count (can be -1 or 1)
-        const { error: directUpdateError } = await supabase
+      if (fetchError) throw fetchError;
+      
+      const { error: updateError } = await supabase
           .from('content_suggestions')
           .update({ votes: suggestion.votes + value })
           .eq('id', suggestionId);
-        
-        if (directUpdateError) throw directUpdateError;
-      }
+      
+      if (updateError) throw updateError;
       
       return { action: 'added', value };
     },
