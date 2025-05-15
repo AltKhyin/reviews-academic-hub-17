@@ -18,37 +18,41 @@ export const useContentSuggestions = (upcomingReleaseId: string) => {
         const { data, error } = await supabase
           .from('content_suggestions')
           .select(`
-            *,
-            profiles:user_id (
-              full_name,
-              avatar_url
-            )
+            *
           `)
           .order('votes', { ascending: false });
 
         if (error) throw error;
         
-        // Reshape data to include user info
-        return data.map(item => ({
-          ...item,
-          user: {
-            full_name: item.profiles?.full_name || null,
-            avatar_url: item.profiles?.avatar_url || null
-          },
-          profiles: undefined,
-          hasVoted: 0
-        })) as Suggestion[];
+        // After getting suggestions, fetch the user info for each one
+        const suggestionsWithUsers: Suggestion[] = [];
+        
+        for (const suggestion of data) {
+          // Get user profile for each suggestion
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('full_name, avatar_url')
+            .eq('id', suggestion.user_id)
+            .single();
+          
+          suggestionsWithUsers.push({
+            ...suggestion,
+            user: profileData ? {
+              full_name: profileData.full_name,
+              avatar_url: profileData.avatar_url
+            } : null,
+            hasVoted: 0
+          });
+        }
+        
+        return suggestionsWithUsers;
       }
 
-      // For a specific release, include vote information
-      const { data, error } = await supabase
+      // For a specific release, first get the suggestions
+      const { data: suggestionsData, error: suggestionsError } = await supabase
         .from('content_suggestions')
         .select(`
           *,
-          profiles:user_id (
-            full_name,
-            avatar_url
-          ),
           user_votes (
             id,
             user_id,
@@ -58,22 +62,34 @@ export const useContentSuggestions = (upcomingReleaseId: string) => {
         .eq('upcoming_release_id', upcomingReleaseId)
         .order('votes', { ascending: false });
 
-      if (error) throw error;
+      if (suggestionsError) throw suggestionsError;
       
-      // Add hasVoted property based on user_votes
-      return data.map(suggestion => {
+      // Now fetch user profile for each suggestion
+      const suggestionsWithUsers: Suggestion[] = [];
+      
+      for (const suggestion of suggestionsData) {
+        // Get user profile
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('full_name, avatar_url')
+          .eq('id', suggestion.user_id)
+          .single();
+        
+        // Add hasVoted property based on user_votes
         const hasUserVote = suggestion.user_votes?.some(v => v.user_id === user?.id);
-        return {
+        
+        suggestionsWithUsers.push({
           ...suggestion,
-          user: {
-            full_name: suggestion.profiles?.full_name || null,
-            avatar_url: suggestion.profiles?.avatar_url || null
-          },
-          profiles: undefined,
+          user: profileData ? {
+            full_name: profileData.full_name,
+            avatar_url: profileData.avatar_url
+          } : null,
           user_votes: undefined,
           hasVoted: hasUserVote ? 1 : 0
-        };
-      }) as Suggestion[];
+        });
+      }
+      
+      return suggestionsWithUsers;
     },
     enabled: !!upcomingReleaseId || upcomingReleaseId === 'default'
   });
