@@ -1,36 +1,15 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useSidebar } from '@/components/ui/sidebar';
 import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { AspectRatio } from '@/components/ui/aspect-ratio';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { getSocialUrl } from '@/lib/utils';
-import { 
-  BookOpen, 
-  MessageSquare, 
-  Heart, 
-  Bookmark, 
-  Calendar,
-  Mail,
-  Upload,
-  User,
-  Edit,
-  Linkedin,
-  Youtube,
-  Instagram,
-  X
-} from 'lucide-react';
+import { Card } from '@/components/ui/card';
 import { ProfileActivity } from '@/components/profile/ProfileActivity';
-import { ProfileSavedItems } from '@/components/profile/ProfileSavedItems';
 import { EditProfileDialog } from '@/components/profile/EditProfileDialog';
-import { Badge } from '@/components/ui/badge';
+import { ProfileHeader } from '@/components/profile/user-info/ProfileHeader';
+import { SavedContentTabs } from '@/components/profile/saved-content/SavedContentTabs';
+import { useUserStats } from '@/components/profile/user-stats/useUserStats';
 
 const Profile: React.FC = () => {
   const { state } = useSidebar();
@@ -38,50 +17,7 @@ const Profile: React.FC = () => {
   const isCollapsed = state === 'collapsed';
   const [uploading, setUploading] = useState(false);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
-  const [stats, setStats] = useState({
-    articlesRead: 0,
-    communityContributions: 0
-  });
-
-  useEffect(() => {
-    // Carrega estatísticas do usuário quando disponíveis
-    const loadUserStats = async () => {
-      if (!user) return;
-      
-      try {
-        // Exemplo de consulta para contar artigos lidos
-        const { count: articlesRead, error: readError } = await supabase
-          .from('user_article_views')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', user.id);
-        
-        // Exemplo de consulta para contar contribuições
-        const { count: postsCount, error: postsError } = await supabase
-          .from('posts')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', user.id);
-          
-        const { count: commentsCount, error: commentsError } = await supabase
-          .from('comments')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', user.id);
-        
-        setStats({
-          articlesRead: articlesRead || 0,
-          communityContributions: (postsCount || 0) + (commentsCount || 0)
-        });
-      } catch (error) {
-        console.error("Erro ao carregar estatísticas do usuário:", error);
-        // Valores fallback para demonstração
-        setStats({
-          articlesRead: Math.floor(Math.random() * 20),
-          communityContributions: Math.floor(Math.random() * 10)
-        });
-      }
-    };
-    
-    loadUserStats();
-  }, [user]);
+  const stats = useUserStats(user?.id);
 
   const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!event.target.files || !event.target.files.length || !user) {
@@ -146,237 +82,25 @@ const Profile: React.FC = () => {
     }
   };
 
-  const createdAt = user?.created_at 
-    ? format(new Date(user.created_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
-    : 'Data não disponível';
-
-  // Define se temos algum perfil de rede social preenchido - verificando com operador opcional
-  const hasSocialMedia = !!(profile?.linkedin || profile?.youtube || profile?.instagram || profile?.twitter);
-
   return (
     <div className={`animate-fade-in pt-4 pb-6 transition-all duration-300 ${isCollapsed ? 'max-w-[95%]' : 'max-w-[85%]'} mx-auto`}>
-      {/* Card de perfil monocromático e clean */}
+      {/* Card de perfil */}
       <Card className="bg-[#1a1a1a] rounded-lg border border-[#2a2a2a] overflow-hidden shadow-md mb-2">
-        <CardContent className="p-5">
-          <div className="flex flex-col md:flex-row gap-6">
-            {/* Avatar - Lado esquerdo */}
-            <div className="flex-shrink-0 relative self-center md:self-start">
-              <div className="relative group">
-                <input
-                  type="file"
-                  id="avatar-upload"
-                  className="hidden"
-                  accept="image/*"
-                  onChange={handleAvatarUpload}
-                  disabled={uploading}
-                />
-                <label htmlFor="avatar-upload" className="cursor-pointer block">
-                  <Avatar className="h-36 w-36 md:h-40 md:w-40 rounded-full border-2 border-[#2a2a2a]">
-                    {profile?.avatar_url ? (
-                      <AvatarImage 
-                        src={profile.avatar_url}
-                        alt={profile?.full_name || "Avatar do usuário"}
-                        className="object-cover transition-all group-hover:opacity-80"
-                      />
-                    ) : (
-                      <AvatarFallback className="bg-gradient-to-br from-gray-700 to-gray-900 text-3xl text-white">
-                        {profile?.full_name ? profile.full_name[0].toUpperCase() : <User size={42} />}
-                      </AvatarFallback>
-                    )}
-                  </Avatar>
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="bg-black bg-opacity-60 rounded-full w-full h-full flex items-center justify-center">
-                      <Upload className="w-6 h-6 text-white" />
-                    </div>
-                  </div>
-                </label>
-                <div className="absolute bottom-1 right-1 h-3 w-3 rounded-full bg-green-500 border border-[#1a1a1a]"></div>
-              </div>
-            </div>
-            
-            {/* Conteúdo central e direito - realinhados para ficarem no mesmo nível horizontal */}
-            <div className="flex flex-1 flex-row items-center">
-              {/* Nome e Profissão - Parte central */}
-              <div className="flex-1">
-                <div>
-                  <h1 className="font-serif text-3xl font-medium mb-1 text-center md:text-left">
-                    {profile?.full_name || user?.email?.split('@')[0] || 'Usuário'}
-                  </h1>
-                  <p className="text-gray-400 text-base text-center md:text-left">
-                    {profile?.specialty ? 'Profissão: ' + profile.specialty : 'Profissão não definida'}
-                  </p>
-                </div>
-              </div>
-              
-              {/* Caixas de estatísticas - Realinhadas à direita como badges */}
-              <div className="hidden md:flex gap-4 justify-end items-center">
-                <div className="flex flex-col items-center justify-center bg-[#212121]/80 rounded-md px-4 py-3 border border-[#2a2a2a] min-w-[110px]">
-                  <div className="flex items-center gap-2">
-                    <BookOpen className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm font-medium">{stats.articlesRead}</span>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-1">artigos lidos</p>
-                </div>
-                
-                <div className="flex flex-col items-center justify-center bg-[#212121]/80 rounded-md px-4 py-3 border border-[#2a2a2a] min-w-[110px]">
-                  <div className="flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-gray-400" />
-                    <span className="text-sm font-medium">{stats.communityContributions}</span>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-1">contribuições</p>
-                </div>
-                
-                <Button
-                  onClick={() => setEditProfileOpen(true)}
-                  variant="outline"
-                  className="bg-[#212121]/80 text-gray-400 hover:text-white border border-[#2a2a2a] hover:bg-[#2a2a2a] transition-colors px-4 py-3 rounded-md min-w-[60px] h-auto"
-                >
-                  <div className="flex flex-col items-center justify-center">
-                    <Edit className="w-4 h-4" />
-                    <span className="text-xs text-gray-400 mt-1">editar</span>
-                  </div>
-                </Button>
-              </div>
-            </div>
-          </div>
-          
-          {/* Caixas de estatísticas para mobile - Visíveis apenas em telas pequenas, agora estilizadas como badges */}
-          <div className="flex md:hidden gap-4 justify-center mt-4">
-            <div className="flex flex-col items-center justify-center bg-[#212121]/80 rounded-md px-4 py-3 border border-[#2a2a2a] min-w-[110px]">
-              <div className="flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-gray-400" />
-                <span className="text-sm font-medium">{stats.articlesRead}</span>
-              </div>
-              <p className="text-xs text-gray-400 mt-1">artigos lidos</p>
-            </div>
-            
-            <div className="flex flex-col items-center justify-center bg-[#212121]/80 rounded-md px-4 py-3 border border-[#2a2a2a] min-w-[110px]">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="w-4 h-4 text-gray-400" />
-                <span className="text-sm font-medium">{stats.communityContributions}</span>
-              </div>
-              <p className="text-xs text-gray-400 mt-1">contribuições</p>
-            </div>
-            
-            <Button
-              onClick={() => setEditProfileOpen(true)}
-              variant="outline"
-              className="bg-[#212121]/80 text-gray-400 hover:text-white border border-[#2a2a2a] hover:bg-[#2a2a2a] transition-colors px-4 py-3 rounded-md min-w-[60px] h-auto"
-            >
-              <div className="flex flex-col items-center justify-center">
-                <Edit className="w-4 h-4" />
-                <span className="text-xs text-gray-400 mt-1">editar</span>
-              </div>
-            </Button>
-          </div>
-          
-          {/* Bloco de informações adicionais */}
-          <div className="pt-5 mt-4 border-t border-[#2a2a2a]">
-            <div className="flex flex-col space-y-3">
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center gap-2 text-sm text-gray-300">
-                  <div className="flex items-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5 text-gray-400" />
-                    <span className="truncate max-w-[250px] text-sm">{user?.email || 'Email não disponível'}</span>
-                  </div>
-                  
-                  <div className="hidden sm:flex items-center text-gray-500 px-1">•</div>
-                  
-                  <div className="flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                    <span className="text-sm">Membro desde {createdAt}</span>
-                  </div>
-                </div>
-                
-                {hasSocialMedia && (
-                  <div className="flex gap-3 items-center pt-1">
-                    {profile?.linkedin && (
-                      <a 
-                        href={getSocialUrl('linkedin', String(profile.linkedin))} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-gray-400 hover:text-gray-200 transition-colors"
-                        title={`LinkedIn: ${profile.linkedin}`}
-                      >
-                        <Linkedin size={16} />
-                      </a>
-                    )}
-                    
-                    {profile?.youtube && (
-                      <a 
-                        href={getSocialUrl('youtube', String(profile.youtube))} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-gray-400 hover:text-gray-200 transition-colors"
-                        title={`YouTube: ${profile.youtube}`}
-                      >
-                        <Youtube size={16} />
-                      </a>
-                    )}
-                    
-                    {profile?.instagram && (
-                      <a 
-                        href={getSocialUrl('instagram', String(profile.instagram))} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-gray-400 hover:text-gray-200 transition-colors"
-                        title={`Instagram: ${profile.instagram}`}
-                      >
-                        <Instagram size={16} />
-                      </a>
-                    )}
-                    
-                    {profile?.twitter && (
-                      <a 
-                        href={getSocialUrl('twitter', String(profile.twitter))} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-gray-400 hover:text-gray-200 transition-colors"
-                        title={`X (Twitter): ${profile.twitter}`}
-                      >
-                        <X size={16} />
-                      </a>
-                    )}
-                  </div>
-                )}
-              </div>
-              
-              {profile?.bio && (
-                <div className="py-1">
-                  <p className="text-sm text-gray-300">{profile.bio}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </CardContent>
+        <ProfileHeader 
+          user={user}
+          profile={profile}
+          stats={stats}
+          onEditProfile={() => setEditProfileOpen(true)}
+          onAvatarUpdate={handleAvatarUpload}
+          uploading={uploading}
+        />
       </Card>
       
       {/* Container 2: Atividade Recente */}
       <ProfileActivity className="mb-2" userId={user?.id} />
       
       {/* Container 3 e 4: Reviews Favoritas e Posts Salvos (Tabs) */}
-      <Card className="bg-[#1a1a1a] rounded-lg shadow-sm border border-[#2a2a2a]">
-        <CardHeader className="px-6 pt-6 pb-0">
-          <Tabs defaultValue="favorites" className="w-full">
-            <TabsList className="bg-[#212121] w-full md:w-auto justify-start">
-              <TabsTrigger value="favorites" className="data-[state=active]:bg-[#2a2a2a]">
-                Reviews Favoritas
-              </TabsTrigger>
-              <TabsTrigger value="saved" className="data-[state=active]:bg-[#2a2a2a]">
-                Posts Salvos
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="favorites" className="mt-6">
-              <ProfileSavedItems type="reviews" userId={user?.id} />
-            </TabsContent>
-            
-            <TabsContent value="saved" className="mt-6">
-              <ProfileSavedItems type="posts" userId={user?.id} />
-            </TabsContent>
-          </Tabs>
-        </CardHeader>
-      </Card>
+      <SavedContentTabs userId={user?.id} />
       
       {/* Dialog de edição de perfil */}
       <EditProfileDialog 
