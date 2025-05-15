@@ -6,11 +6,13 @@ import { useContentSuggestions } from '@/hooks/useContentSuggestions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
-import { ArrowUp, ArrowDown, Calendar } from 'lucide-react';
-import { format, differenceInDays, differenceInHours, differenceInMinutes, addDays } from 'date-fns';
+import { ArrowUp, Calendar } from 'lucide-react';
+import { format, formatDistanceToNow, differenceInDays, differenceInHours, differenceInMinutes, addDays } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
 
 export const UpcomingReleaseSection = () => {
@@ -75,65 +77,72 @@ export const UpcomingReleaseSection = () => {
     });
   };
 
-  // Check if suggestion is less than 24 hours old
-  const isNew = (createdAt: string) => {
-    const created = new Date(createdAt);
-    const now = new Date();
-    return (now.getTime() - created.getTime()) < 24 * 60 * 60 * 1000;
+  // Format relative time for suggestions
+  const formatRelativeTime = (createdAt: string) => {
+    return formatDistanceToNow(new Date(createdAt), {
+      addSuffix: true,
+      locale: ptBR
+    });
   };
 
   if (releaseLoading) return null;
 
   return (
     <section className="mb-12">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-serif">Próxima Edição</h2>
-      </div>
-      
-      <Card className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <Card className="overflow-hidden bg-card">
+        <div className="grid grid-cols-1 md:grid-cols-2">
           {/* Left column - Countdown and suggestion form */}
-          <div className="space-y-6">
-            <div className="flex justify-between items-center">
-              <h3 className="text-xl font-bold">Próxima Edição</h3>
-              <div className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-primary" />
-                <span className="text-lg font-medium">
-                  {timeRemaining.days > 0 && `${timeRemaining.days} dias `}
-                  {timeRemaining.hours > 0 && `${timeRemaining.hours}h `}
-                  {timeRemaining.minutes > 0 && `${timeRemaining.minutes}min`}
-                </span>
+          <div className="p-6 space-y-6 border-r border-border md:border-r-0 md:border-b-0">
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold">Próxima Edição</h3>
+                <div className="flex items-center gap-2 text-primary">
+                  <Calendar className="h-5 w-5" />
+                  <span className="font-medium">
+                    {timeRemaining.days > 0 && `${timeRemaining.days}d `}
+                    {timeRemaining.hours > 0 && `${timeRemaining.hours}h `}
+                    {timeRemaining.minutes}min
+                  </span>
+                </div>
+              </div>
+              
+              {/* Progress bar showing the week's progress */}
+              <Progress 
+                value={timeRemaining.progressPercentage} 
+                className="h-2 mt-2"
+                indicatorClassName="bg-primary"
+              />
+              
+              <div className="text-xs text-muted-foreground mt-2 text-right">
+                {format(nextSaturday, "dd 'de' MMMM", { locale: ptBR })}
               </div>
             </div>
             
-            {/* Progress bar showing the week's progress */}
-            <Progress 
-              value={timeRemaining.progressPercentage} 
-              className="w-full h-2" 
-            />
-
             <div className="space-y-4">
               <h3 className="text-lg font-medium">Sugestões de Conteúdo</h3>
+              <p className="text-sm text-muted-foreground">
+                Compartilhe suas ideias para a próxima edição da revista.
+              </p>
               
               {/* Suggestion input */}
               {user ? (
-                <form onSubmit={handleSubmitSuggestion} className="flex gap-2">
+                <form onSubmit={handleSubmitSuggestion} className="space-y-4">
                   <Input
                     placeholder="Sugira um artigo ou tema..."
                     value={newSuggestion}
                     onChange={(e) => setNewSuggestion(e.target.value)}
-                    className="flex-1"
+                    className="w-full"
                   />
                   <Button 
                     type="submit" 
                     disabled={addSuggestion.isPending}
-                    className="whitespace-nowrap"
+                    className="w-full"
                   >
-                    📨 Sugerir
+                    Enviar Sugestão
                   </Button>
                 </form>
               ) : (
-                <div className="text-center text-muted-foreground text-sm p-2 bg-secondary/10 rounded-md">
+                <div className="text-center text-muted-foreground text-sm p-4 bg-secondary/10 rounded-md">
                   Faça login para sugerir e votar em temas
                 </div>
               )}
@@ -141,86 +150,81 @@ export const UpcomingReleaseSection = () => {
           </div>
           
           {/* Right column - Suggestions with voting */}
-          <div className="space-y-4 max-h-[400px] overflow-y-auto">
-            <h3 className="text-lg font-medium">Votação</h3>
+          <div className="bg-muted/5">
+            <div className="p-6 pb-3">
+              <h3 className="text-lg font-medium">Votação</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Vote nas sugestões que você gostaria de ver na próxima edição.
+              </p>
+            </div>
             
-            {/* Suggestions list */}
-            <div className="space-y-3">
-              {suggestions.map((suggestion) => (
-                <div 
-                  key={suggestion.id} 
-                  className="flex items-start gap-3 p-3 rounded-lg bg-secondary/5 hover:bg-secondary/10 transition-colors"
-                >
-                  {/* Voting buttons and count */}
-                  <div className="flex flex-col items-center space-y-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0"
-                      onClick={() => voteSuggestion.mutate({ suggestionId: suggestion.id, value: 1 })}
-                      disabled={voteSuggestion.isPending || !user}
-                      title="Votar positivamente nesta sugestão"
-                    >
-                      <ArrowUp className="h-4 w-4" />
-                    </Button>
-                    <span className="text-sm font-medium">
-                      {suggestion.votes}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0"
-                      onClick={() => voteSuggestion.mutate({ suggestionId: suggestion.id, value: -1 })}
-                      disabled={voteSuggestion.isPending || !user}
-                      title="Votar negativamente nesta sugestão"
-                    >
-                      <ArrowDown className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  
-                  {/* User info and suggestion content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <span className="font-medium line-clamp-2">{suggestion.title}</span>
-                        {isNew(suggestion.created_at) && (
-                          <Badge variant="secondary" size="sm" className="ml-2 shrink-0">
-                            Novo
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {suggestion.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-1 mt-1">
-                        {suggestion.description}
-                      </p>
-                    )}
-                    
-                    {/* Author info */}
-                    <div className="flex items-center mt-2 gap-2">
-                      <Avatar className="h-6 w-6">
-                        <AvatarFallback>
-                          {suggestion.user?.full_name?.[0] || 'U'}
-                        </AvatarFallback>
-                        {suggestion.user?.avatar_url && (
-                          <AvatarImage src={suggestion.user.avatar_url} />
-                        )}
-                      </Avatar>
-                      <span className="text-xs text-muted-foreground">
-                        {suggestion.user?.full_name || 'Usuário'}
+            {/* Scrollable suggestions list */}
+            <ScrollArea className="h-[350px] px-6 pb-6">
+              <div className="space-y-3">
+                {suggestions.map((suggestion) => (
+                  <div 
+                    key={suggestion.id} 
+                    className="flex items-start gap-3 p-3 rounded-lg bg-card shadow-sm hover:bg-accent/5 transition-colors"
+                  >
+                    {/* Voting buttons and count */}
+                    <div className="flex flex-col items-center">
+                      <Button
+                        variant={suggestion.hasVoted ? "default" : "outline"}
+                        size="sm"
+                        className="h-8 w-8 rounded-full p-0"
+                        onClick={() => voteSuggestion.mutate({ suggestionId: suggestion.id, value: 1 })}
+                        disabled={voteSuggestion.isPending || !user}
+                        title="Votar nesta sugestão"
+                      >
+                        <ArrowUp className="h-4 w-4" />
+                      </Button>
+                      <span className="text-sm font-medium my-1">
+                        {suggestion.votes}
                       </span>
                     </div>
+                    
+                    {/* User info and suggestion content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="mb-1">
+                        <span className="font-medium line-clamp-2">{suggestion.title}</span>
+                      </div>
+                      
+                      {suggestion.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
+                          {suggestion.description}
+                        </p>
+                      )}
+                      
+                      {/* Author info with timeframe */}
+                      <div className="flex items-center justify-between mt-2">
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-5 w-5">
+                            <AvatarFallback className="text-xs">
+                              {suggestion.user?.full_name?.[0] || 'U'}
+                            </AvatarFallback>
+                            {suggestion.user?.avatar_url && (
+                              <AvatarImage src={suggestion.user.avatar_url} />
+                            )}
+                          </Avatar>
+                          <span className="text-xs text-muted-foreground">
+                            {suggestion.user?.full_name || 'Usuário'}
+                          </span>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {formatRelativeTime(suggestion.created_at)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
-              
-              {suggestions.length === 0 && (
-                <div className="text-center text-muted-foreground p-4">
-                  Ainda não há sugestões. Seja o primeiro a sugerir!
-                </div>
-              )}
-            </div>
+                ))}
+                
+                {suggestions.length === 0 && (
+                  <div className="text-center text-muted-foreground p-4">
+                    Ainda não há sugestões. Seja o primeiro a sugerir!
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
           </div>
         </div>
       </Card>
