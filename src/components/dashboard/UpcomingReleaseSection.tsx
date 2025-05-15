@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUpcomingRelease } from '@/hooks/useUpcomingRelease';
@@ -140,24 +139,20 @@ export const UpcomingReleaseSection = () => {
             </div>
           </div>
           
-          {/* Right column - Suggestions with voting */}
+          {/* Right column - Suggestions with voting - Removed the header text */}
           <div className="bg-secondary/50 dark:bg-secondary/20 flex flex-col">
-            <div className="p-6 pb-3">
-              <h4 className="text-sm font-medium">
-                Vote nas sugestões que você gostaria de ver na próxima edição.
-              </h4>
-            </div>
+            {/* Removed the text heading here */}
             
-            {/* Scrollable suggestions list with improved styling */}
+            {/* Scrollable suggestions list with improved styling - expanded height */}
             <div className="flex-1 relative">
-              <ScrollArea className="h-[350px] px-6 pb-6 pt-3">
+              <ScrollArea className="h-[390px] px-6 pb-6 pt-6">
                 <div className="space-y-3 pb-8">
                   {suggestions.map((suggestion) => (
                     <div 
                       key={suggestion.id} 
                       className="flex items-start gap-3 p-3 rounded-lg bg-card shadow-sm hover:bg-accent/5 transition-colors"
                     >
-                      {/* Voting buttons and count - FIX THE UPVOTE BUTTON HERE */}
+                      {/* Voting buttons and count */}
                       <div className="flex flex-col items-center">
                         <Button
                           variant="outline"
