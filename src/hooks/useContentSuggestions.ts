@@ -101,14 +101,13 @@ export const useContentSuggestions = (upcomingReleaseId: string) => {
 
         if (deleteError) throw deleteError;
 
-        // Decrement vote count directly
-        const { error: updateError } = await supabase
-          .from('content_suggestions')
-          .update({ votes: supabase.rpc('increment_votes', { suggestion_id: suggestionId, increment_by: -1 }) })
-          .eq('id', suggestionId);
+        // Decrement vote count directly using Supabase RPC function
+        const { error: rpcError } = await supabase.rpc('increment_votes', { 
+          suggestion_id: suggestionId 
+        });
 
-        if (updateError) {
-          // Fallback if RPC fails
+        if (rpcError) {
+          // Fallback if RPC fails: fetch current value and decrement manually
           const { data: suggestion, error: fetchError } = await supabase
             .from('content_suggestions')
             .select('votes')
@@ -138,14 +137,13 @@ export const useContentSuggestions = (upcomingReleaseId: string) => {
 
       if (error) throw error;
 
-      // Use the correct RPC function name 'increment_votes'
+      // Use the RPC function to increment votes
       const { error: rpcError } = await supabase.rpc('increment_votes', { 
-        suggestion_id: suggestionId,
-        increment_by: 1
+        suggestion_id: suggestionId
       });
 
       if (rpcError) {
-        // Fallback if RPC fails
+        // Fallback if RPC fails: fetch current value and increment manually
         const { data: suggestion, error: fetchError } = await supabase
           .from('content_suggestions')
           .select('votes')
