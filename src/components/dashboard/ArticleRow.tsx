@@ -37,12 +37,6 @@ const ArticleRow = ({ title, articles }: ArticleRowProps) => {
                     description: article.description,
                     cover_image_url: article.image,
                     specialty: article.category,
-                    // Add the missing required properties from Issue type
-                    pdf_url: '',  // Add default empty string
-                    published: true, // Assuming the articles are published
-                    created_at: new Date().toISOString(), // Current date as ISO string
-                    updated_at: new Date().toISOString(), // Current date as ISO string
-                    featured: false // Default to false for non-featured
                   }}
                   className="w-[280px] h-full"
                 />
