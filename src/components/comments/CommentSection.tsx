@@ -18,7 +18,7 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, articleI
   
   // Determine entity type and ID
   let entityId: string = '';
-  let entityType: EntityType = 'post';
+  let entityType: 'article' | 'issue' | 'post' = 'issue'; // Default to 'issue'
   
   if (postId) {
     entityId = postId;
