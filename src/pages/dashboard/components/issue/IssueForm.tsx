@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
@@ -26,6 +25,14 @@ export const IssueForm: React.FC<IssueFormProps> = ({
     resolver: zodResolver(issueFormSchema),
     defaultValues,
   });
+
+  // Update form when defaultValues change
+  useEffect(() => {
+    console.log('Updating form with new defaults:', defaultValues);
+    if (defaultValues) {
+      form.reset(defaultValues);
+    }
+  }, [defaultValues, form]);
 
   return (
     <Form {...form}>

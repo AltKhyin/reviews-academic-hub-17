@@ -27,7 +27,7 @@ const IssueEditor = () => {
   } = useIssueEditor(id);
 
   // Fetch issue data
-  const { data: issue, isLoading } = useQuery({
+  const { data: issue, isLoading, error } = useQuery({
     queryKey: ['issue-edit', id],
     queryFn: async () => {
       if (!id) return null;
@@ -38,7 +38,17 @@ const IssueEditor = () => {
         .eq('id', id)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching issue:', error);
+        toast({
+          title: "Error loading issue",
+          description: "Could not load the issue data. Please try again.",
+          variant: "destructive",
+        });
+        throw error;
+      }
+      
+      console.log('Fetched issue data:', data);
       return data as Issue;
     },
     enabled: !!id,
@@ -48,6 +58,7 @@ const IssueEditor = () => {
   // Update form values when issue data is loaded
   useEffect(() => {
     if (issue) {
+      console.log('Setting form values with:', issue);
       const formattedTags = issue.specialty ? 
         issue.specialty.split(', ').map(tag => `[tag:${tag}]`).join('') : '';
 
@@ -77,6 +88,21 @@ const IssueEditor = () => {
 
   if (isLoading) {
     return <div className="p-8 text-center">Carregando...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="p-8 text-center">
+        <h2 className="text-xl font-bold text-destructive mb-2">Error loading issue</h2>
+        <p>Could not load the issue data. Please try again later.</p>
+        <button 
+          onClick={() => navigate('/edit')}
+          className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-md"
+        >
+          Back to issues list
+        </button>
+      </div>
+    );
   }
 
   return (
