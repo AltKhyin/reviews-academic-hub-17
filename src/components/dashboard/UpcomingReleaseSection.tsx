@@ -162,7 +162,7 @@ export const UpcomingReleaseSection = () => {
                         <Button
                           variant={suggestion.hasVoted ? "default" : "outline"}
                           size="sm"
-                          className="h-8 w-8 rounded-full p-0"
+                          className={`h-8 w-8 rounded-full p-0 ${suggestion.hasVoted ? "bg-[#F97316] hover:bg-[#F97316]/90" : ""}`}
                           onClick={() => voteSuggestion.mutate({ suggestionId: suggestion.id, value: 1 })}
                           disabled={voteSuggestion.isPending || !user}
                           title="Votar nesta sugestão"
