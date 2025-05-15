@@ -32,24 +32,30 @@ const IssueEditor = () => {
     queryFn: async () => {
       if (!id) return null;
 
-      const { data, error } = await supabase
-        .from('issues')
-        .select('*')
-        .eq('id', id)
-        .single();
+      try {
+        console.log('Fetching issue with id:', id);
+        const { data, error } = await supabase
+          .from('issues')
+          .select('*')
+          .eq('id', id)
+          .single();
 
-      if (error) {
-        console.error('Error fetching issue:', error);
-        toast({
-          title: "Error loading issue",
-          description: "Could not load the issue data. Please try again.",
-          variant: "destructive",
-        });
-        throw error;
+        if (error) {
+          console.error('Error fetching issue:', error);
+          toast({
+            title: "Error loading issue",
+            description: "Could not load the issue data. Please try again.",
+            variant: "destructive",
+          });
+          throw error;
+        }
+        
+        console.log('Fetched issue data:', data);
+        return data as Issue;
+      } catch (err) {
+        console.error('Exception in fetchIssue:', err);
+        throw err;
       }
-      
-      console.log('Fetched issue data:', data);
-      return data as Issue;
     },
     enabled: !!id,
     retry: 1,
@@ -105,6 +111,7 @@ const IssueEditor = () => {
     );
   }
 
+  // Even if we don't have issue data yet, we can still render the form
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">

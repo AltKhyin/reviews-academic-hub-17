@@ -40,30 +40,42 @@ export const useIssueEditor = (id?: string) => {
       console.log('Submitting with values:', values);
       console.log('Extracted tags:', extractedTags);
       
+      // Create an update object with only the properties that are present
+      const updateObj: any = {
+        title: values.title,
+        specialty: extractedTags.join(', '),
+        updated_at: new Date().toISOString(),
+      };
+
+      // Only include properties if they have a value
+      if (values.description !== undefined) updateObj.description = values.description;
+      if (values.pdf_url) updateObj.pdf_url = values.pdf_url;
+      else if (formValues.pdf_url) updateObj.pdf_url = formValues.pdf_url; // Keep the existing value
+      
+      if (values.article_pdf_url !== undefined) updateObj.article_pdf_url = values.article_pdf_url;
+      if (values.cover_image_url !== undefined) updateObj.cover_image_url = values.cover_image_url;
+      if (values.published !== undefined) updateObj.published = values.published;
+      if (values.featured !== undefined) updateObj.featured = values.featured;
+      
+      // Additional fields - only add if they exist
+      if (values.authors !== undefined) updateObj.authors = values.authors;
+      if (values.search_title !== undefined) updateObj.search_title = values.search_title;
+      if (values.real_title !== undefined) updateObj.real_title = values.real_title;
+      if (values.real_title_ptbr !== undefined) updateObj.real_title_ptbr = values.real_title_ptbr;
+      if (values.search_description !== undefined) updateObj.search_description = values.search_description;
+      if (values.year !== undefined) updateObj.year = values.year;
+      if (values.design !== undefined) updateObj.design = values.design;
+      if (values.score !== undefined) updateObj.score = values.score;
+      if (values.population !== undefined) updateObj.population = values.population;
+      
+      // If an issue is being published for the first time, set published_at
+      if (values.published && !formValues.published) {
+        updateObj.published_at = new Date().toISOString();
+      }
+      
       const { error } = await supabase
         .from('issues')
-        .update({
-          title: values.title,
-          description: values.description || '',
-          specialty: extractedTags.join(', '),
-          pdf_url: values.pdf_url || 'placeholder.pdf',
-          article_pdf_url: values.article_pdf_url || '',
-          cover_image_url: values.cover_image_url,
-          published: values.published,
-          featured: values.featured,
-          updated_at: new Date().toISOString(),
-          // Additional fields
-          authors: values.authors || '',
-          search_title: values.search_title || '',
-          real_title: values.real_title || '',
-          real_title_ptbr: values.real_title_ptbr || '',
-          search_description: values.search_description || '',
-          year: values.year || '',
-          design: values.design || '',
-          score: values.score || 0,
-          population: values.population || '',
-          ...(values.published && !formValues.published && { published_at: new Date().toISOString() })
-        })
+        .update(updateObj)
         .eq('id', id);
       
       if (error) throw error;
