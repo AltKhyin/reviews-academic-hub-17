@@ -49,7 +49,7 @@ export const useIssueEditor = (id?: string) => {
           published: values.published,
           featured: values.featured,
           updated_at: new Date().toISOString(),
-          // Fields
+          // Additional fields
           authors: values.authors || '',
           search_title: values.search_title || '',
           real_title: values.real_title || '',

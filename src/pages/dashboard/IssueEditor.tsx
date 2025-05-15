@@ -61,7 +61,7 @@ const IssueEditor = () => {
         cover_image_url: issue.cover_image_url || '',
         published: issue.published || false,
         featured: issue.featured || false,
-        // New fields
+        // Additional fields
         authors: issue.authors || '',
         search_title: issue.search_title || '',
         real_title: issue.real_title || '',
@@ -69,7 +69,8 @@ const IssueEditor = () => {
         search_description: issue.search_description || '',
         year: issue.year || '',
         design: issue.design || '',
-        score: issue.score || 0
+        score: issue.score || 0,
+        population: issue.population || ''
       });
     }
   }, [issue, setFormValues]);

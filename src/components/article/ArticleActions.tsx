@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useReactionData } from '@/hooks/comments/useReactionData';
+import { useBookmarkData } from '@/hooks/comments/useBookmarkData';
 
 interface ArticleActionsProps {
   articleId: string;
@@ -13,57 +15,8 @@ interface ArticleActionsProps {
 export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-
-  // Fetch current user's reactions
-  const { data: reactions = [], isLoading: isLoadingReactions } = useQuery({
-    queryKey: ['issue-reactions', articleId],
-    queryFn: async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return [];
-
-        const { data, error } = await supabase
-          .from('user_article_reactions')
-          .select('reaction_type')
-          .eq('issue_id', articleId)
-          .eq('user_id', user.id);
-        
-        if (error) throw error;
-        return data?.map(r => r.reaction_type) || [];
-      } catch (err) {
-        console.error('Error fetching reactions:', err);
-        return [];
-      }
-    },
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    retry: 1
-  });
-
-  // Fetch bookmark status
-  const { data: isBookmarked = false, isLoading: isLoadingBookmark } = useQuery({
-    queryKey: ['issue-bookmark', articleId],
-    queryFn: async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return false;
-
-        const { data, error } = await supabase
-          .from('user_bookmarks')
-          .select('id')
-          .eq('issue_id', articleId)
-          .eq('user_id', user.id)
-          .maybeSingle();
-        
-        if (error) throw error;
-        return !!data;
-      } catch (err) {
-        console.error('Error fetching bookmark status:', err);
-        return false;
-      }
-    },
-    staleTime: 1000 * 60 * 5, // 5 minutes
-    retry: 1
-  });
+  const { reactions, isLoadingReactions } = useReactionData(articleId);
+  const { isBookmarked, isLoadingBookmark } = useBookmarkData(articleId);
 
   // Handle reactions
   const reactionMutation = useMutation({

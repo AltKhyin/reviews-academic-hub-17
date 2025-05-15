@@ -4,3 +4,5 @@ export * from './useComments';
 export * from './useCommentFetch';
 export * from './useCommentActions';
 export * from './useCommentVoting';
+export * from './useReactionData';
+export * from './useBookmarkData';

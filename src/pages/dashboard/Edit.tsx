@@ -24,7 +24,17 @@ const formSchema = z.object({
   tags: z.string().optional(),
   pdf_url: z.string().optional(),
   article_pdf_url: z.string().optional(),
-  cover_image_url: z.string().optional()
+  cover_image_url: z.string().optional(),
+  // Include all fields that can be edited
+  authors: z.string().optional(),
+  search_title: z.string().optional(),
+  real_title: z.string().optional(),
+  real_title_ptbr: z.string().optional(),
+  search_description: z.string().optional(),
+  year: z.string().optional(),
+  design: z.string().optional(),
+  score: z.number().optional(),
+  population: z.string().optional()
 });
 
 const Edit = () => {
@@ -55,7 +65,16 @@ const Edit = () => {
       tags: '',
       pdf_url: '',
       article_pdf_url: '',
-      cover_image_url: ''
+      cover_image_url: '',
+      authors: '',
+      search_title: '',
+      real_title: '',
+      real_title_ptbr: '',
+      search_description: '',
+      year: '',
+      design: '',
+      score: 0,
+      population: ''
     }
   });
 
@@ -77,7 +96,17 @@ const Edit = () => {
         specialty: extractedTags.join(', '),
         pdf_url: values.pdf_url || 'placeholder.pdf',
         article_pdf_url: values.article_pdf_url || '',
-        cover_image_url: values.cover_image_url || null
+        cover_image_url: values.cover_image_url || null,
+        // Include all fields in the submission
+        authors: values.authors || '',
+        search_title: values.search_title || '',
+        real_title: values.real_title || '',
+        real_title_ptbr: values.real_title_ptbr || '',
+        search_description: values.search_description || '',
+        year: values.year || '',
+        design: values.design || '',
+        score: values.score || 0,
+        population: values.population || ''
       };
       
       const { error } = await supabase
