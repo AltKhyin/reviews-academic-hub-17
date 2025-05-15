@@ -3,20 +3,21 @@ import React from 'react';
 import { ThumbsUp, ThumbsDown, Heart, Bookmark } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useReactionData } from '@/hooks/comments/useReactionData';
 import { useBookmarkData } from '@/hooks/comments/useBookmarkData';
 
 interface ArticleActionsProps {
   articleId: string;
+  entityType?: 'article' | 'issue';
 }
 
-export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
+export const ArticleActions = ({ articleId, entityType = 'issue' }: ArticleActionsProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { reactions, isLoadingReactions } = useReactionData(articleId);
-  const { isBookmarked, isLoadingBookmark } = useBookmarkData(articleId);
+  const { reactions, isLoadingReactions } = useReactionData(articleId, entityType);
+  const { isBookmarked, isLoadingBookmark } = useBookmarkData(articleId, entityType);
 
   // Handle reactions
   const reactionMutation = useMutation({
@@ -30,25 +31,38 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
         
         if (hasReaction) {
           // Remove the reaction
-          const { error } = await supabase
+          let deleteQuery = supabase
             .from('user_article_reactions')
             .delete()
-            .eq('issue_id', articleId)
             .eq('user_id', user.id)
             .eq('reaction_type', type);
+            
+          if (entityType === 'article') {
+            deleteQuery = deleteQuery.eq('article_id', articleId).is('issue_id', null);
+          } else {
+            deleteQuery = deleteQuery.eq('issue_id', articleId).is('article_id', null);
+          }
+          
+          const { error } = await deleteQuery;
           
           if (error) throw error;
           return { added: false, type };
         } else {
           // Add or update the reaction
+          const payload: any = { 
+            user_id: user.id,
+            reaction_type: type
+          };
+          
+          if (entityType === 'article') {
+            payload.article_id = articleId;
+          } else {
+            payload.issue_id = articleId;
+          }
+          
           const { error } = await supabase
             .from('user_article_reactions')
-            .upsert({ 
-              article_id: articleId, // Keep this for backward compatibility
-              issue_id: articleId, 
-              user_id: user.id,
-              reaction_type: type
-            });
+            .upsert(payload);
           
           if (error) throw error;
           return { added: true, type };
@@ -59,7 +73,7 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
       }
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['issue-reactions', articleId] });
+      queryClient.invalidateQueries({ queryKey: ['entity-reactions', articleId, entityType] });
       const message = result.added 
         ? "Sua reação foi registrada" 
         : "Sua reação foi removida";
@@ -85,22 +99,37 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
         if (!user) throw new Error('User not authenticated');
 
         if (isBookmarked) {
-          const { error } = await supabase
+          // Remove bookmark
+          let deleteQuery = supabase
             .from('user_bookmarks')
             .delete()
-            .eq('issue_id', articleId)
             .eq('user_id', user.id);
+            
+          if (entityType === 'article') {
+            deleteQuery = deleteQuery.eq('article_id', articleId).is('issue_id', null);
+          } else {
+            deleteQuery = deleteQuery.eq('issue_id', articleId).is('article_id', null);
+          }
+          
+          const { error } = await deleteQuery;
             
           if (error) throw error;
           return { added: false };
         } else {
+          // Add bookmark
+          const payload: any = { 
+            user_id: user.id
+          };
+          
+          if (entityType === 'article') {
+            payload.article_id = articleId;
+          } else {
+            payload.issue_id = articleId;
+          }
+          
           const { error } = await supabase
             .from('user_bookmarks')
-            .insert({ 
-              article_id: articleId, // Keep this for backward compatibility
-              issue_id: articleId,
-              user_id: user.id 
-            });
+            .insert(payload);
             
           if (error) throw error;
           return { added: true };
@@ -111,7 +140,7 @@ export const ArticleActions = ({ articleId }: ArticleActionsProps) => {
       }
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['issue-bookmark', articleId] });
+      queryClient.invalidateQueries({ queryKey: ['entity-bookmark', articleId, entityType] });
       toast({
         description: result.added ? "Artigo salvo nos favoritos" : "Artigo removido dos favoritos",
       });

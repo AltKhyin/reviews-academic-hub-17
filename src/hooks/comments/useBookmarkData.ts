@@ -2,20 +2,27 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-export const useBookmarkData = (articleId: string) => {
+export const useBookmarkData = (entityId: string, entityType: 'article' | 'issue' = 'issue') => {
   const { data: isBookmarked = false, isLoading: isLoadingBookmark } = useQuery({
-    queryKey: ['issue-bookmark', articleId],
+    queryKey: ['entity-bookmark', entityId, entityType],
     queryFn: async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return false;
 
-        const { data, error } = await supabase
+        let query = supabase
           .from('user_bookmarks')
           .select('id')
-          .eq('issue_id', articleId)
-          .eq('user_id', user.id)
-          .maybeSingle();
+          .eq('user_id', user.id);
+        
+        // Apply the correct filter based on entityType
+        if (entityType === 'article') {
+          query = query.eq('article_id', entityId).is('issue_id', null);
+        } else {
+          query = query.eq('issue_id', entityId).is('article_id', null);
+        }
+        
+        const { data, error } = await query.maybeSingle();
         
         if (error) throw error;
         return !!data;

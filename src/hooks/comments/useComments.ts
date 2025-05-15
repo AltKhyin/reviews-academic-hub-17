@@ -1,84 +1,53 @@
 
-import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Comment, BaseComment, EntityType } from '@/types/commentTypes';
-import { toast } from '@/components/ui/use-toast';
-import { buildCommentData } from '@/utils/commentHelpers';
-import { useCommentFetch } from './useCommentFetch';
-import { useCommentVoting } from './useCommentVoting';
-import { useCommentActions } from './useCommentActions';
+import { useQuery } from '@tanstack/react-query';
+import { Comment } from '@/types/commentTypes';
 
-export const useComments = (entityId: string, entityType: EntityType = 'article') => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+export const useComments = (entityId: string, entityType: 'article' | 'issue' = 'issue') => {
+  const queryKey = ['comments', entityId, entityType];
 
-  // Use hook for fetching comments
-  const { comments, loading, error, fetchComments } = useCommentFetch(entityId, entityType);
-  
-  // Use hook for voting on comments
-  const { voteComment, isVoting } = useCommentVoting(fetchComments);
-  
-  // Use hook for comment actions (edit, delete)
-  const { 
-    addComment: addCommentAction, 
-    replyToComment, 
-    editComment, 
-    deleteComment, 
-    isAddingComment, 
-    isDeletingComment, 
-    isReplying 
-  } = useCommentActions(entityId, entityType, fetchComments);
+  const { data: comments = [], isLoading, error, refetch } = useQuery({
+    queryKey,
+    queryFn: async () => {
+      try {
+        let query = supabase
+          .from('comments')
+          .select(`
+            id,
+            content,
+            created_at,
+            updated_at,
+            user_id,
+            parent_id,
+            score,
+            profiles:user_id (
+              id,
+              full_name,
+              avatar_url
+            )
+          `)
+          .order('score', { ascending: false })
+          .order('created_at', { ascending: false });
 
-  // Function to add a new comment
-  const addComment = async (content: string, parentId?: string) => {
-    if (!content.trim()) {
-      toast({ 
-        title: 'Error', 
-        description: 'Comment content cannot be empty', 
-        variant: 'destructive' 
-      });
-      return;
-    }
+        // Apply the correct filter based on entityType
+        if (entityType === 'article') {
+          query = query.eq('article_id', entityId).is('issue_id', null);
+        } else {
+          query = query.eq('issue_id', entityId).is('article_id', null);
+        }
 
-    setIsSubmitting(true);
-    
-    try {
-      if (parentId) {
-        await replyToComment({ parentId, content });
-      } else {
-        await addCommentAction(content);
+        const { data, error } = await query;
+        
+        if (error) throw error;
+        
+        return data as Comment[];
+      } catch (err) {
+        console.error('Error fetching comments:', err);
+        return [];
       }
-      
-      toast({
-        title: 'Success',
-        description: 'Comment added successfully',
-      });
-    } catch (error) {
-      console.error('Error adding comment:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to add comment',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    },
+    staleTime: 1000 * 60 * 5 // 5 minutes
+  });
 
-  return {
-    comments,
-    isLoading: loading,  // Rename to match expected property in CommentSection
-    error,
-    addComment,
-    replyToComment,
-    deleteComment,
-    voteComment,       // Return voteComment instead of voteOnComment
-    isAddingComment,
-    isDeletingComment,
-    isReplying,
-    isVoting
-  };
+  return { comments, isLoading, error, refetch };
 };
-
-export * from './useCommentFetch';
-export * from './useCommentVoting';
-export * from './useCommentActions';
