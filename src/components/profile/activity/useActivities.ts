@@ -86,7 +86,8 @@ export const useActivities = (userId?: string) => {
               type: 'post',
               title: post.title || 'Publicação na comunidade',
               entityId: post.id,
-              date: post.created_at
+              date: post.created_at,
+              url: `/community?post=${post.id}` // Add URL for navigation
             });
           });
         }
@@ -96,17 +97,21 @@ export const useActivities = (userId?: string) => {
           commentsData.forEach(comment => {
             let title = 'Comentário';
             let category = '';
+            let url = '';
             const truncatedContent = comment.content 
               ? `"${comment.content.substring(0, 60)}${comment.content.length > 60 ? '...' : ''}"`
               : '';
             
             if (comment.post_id && comment.posts) {
               title = `Comentário em post de ${comment.posts.title}`;
+              url = `/community?post=${comment.post_id}`;
             } else if (comment.article_id && comment.articles) {
               title = `Comentário em artigo ${comment.articles.title}`;
+              url = `/article/${comment.article_id}`;
             } else if (comment.issue_id && comment.issues) {
               title = `Comentário em post de ${comment.issues.title}`;
               category = comment.issues.specialty || '';
+              url = `/article/${comment.issue_id}`;
             }
             
             formattedActivities.push({
@@ -116,7 +121,8 @@ export const useActivities = (userId?: string) => {
               description: truncatedContent,
               category,
               entityId: comment.post_id || comment.article_id || comment.issue_id || '',
-              date: comment.created_at
+              date: comment.created_at,
+              url // Add URL for navigation
             });
           });
         }
@@ -126,12 +132,15 @@ export const useActivities = (userId?: string) => {
           reactionsData.forEach(reaction => {
             let title = '';
             let category = '';
+            let url = '';
             
             if (reaction.article_id && reaction.articles) {
               title = reaction.articles.title;
+              url = `/article/${reaction.article_id}`;
             } else if (reaction.issue_id && reaction.issues) {
               title = reaction.issues.title;
               category = reaction.issues.specialty || '';
+              url = `/article/${reaction.issue_id}`;
             }
             
             if (!title) {
@@ -144,7 +153,8 @@ export const useActivities = (userId?: string) => {
               title,
               category,
               entityId: reaction.article_id || reaction.issue_id || '',
-              date: reaction.created_at
+              date: reaction.created_at,
+              url // Add URL for navigation
             });
           });
         }
@@ -154,12 +164,15 @@ export const useActivities = (userId?: string) => {
           bookmarksData.forEach(bookmark => {
             let title = '';
             let category = '';
+            let url = '';
             
             if (bookmark.article_id && bookmark.articles) {
               title = bookmark.articles.title;
+              url = `/article/${bookmark.article_id}`;
             } else if (bookmark.issue_id && bookmark.issues) {
               title = bookmark.issues.title;
               category = bookmark.issues.specialty || '';
+              url = `/article/${bookmark.issue_id}`;
             }
             
             if (!title) {
@@ -172,7 +185,8 @@ export const useActivities = (userId?: string) => {
               title,
               category,
               entityId: bookmark.article_id || bookmark.issue_id || '',
-              date: bookmark.created_at
+              date: bookmark.created_at,
+              url // Add URL for navigation
             });
           });
         }

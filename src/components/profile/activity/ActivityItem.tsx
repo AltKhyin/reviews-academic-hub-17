@@ -4,6 +4,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
 import { ActivityIcon, getActivityColor } from './ActivityIcon';
+import { Link } from 'react-router-dom';
 
 export interface Activity {
   id: string;
@@ -13,6 +14,7 @@ export interface Activity {
   date: string;
   description?: string;
   category?: string;
+  url?: string; // Added URL field for navigation
 }
 
 interface ActivityItemProps {
@@ -28,34 +30,48 @@ export const ActivityItem: React.FC<ActivityItemProps> = ({ activity }) => {
     }
   };
 
+  // Create wrapper component based on whether we have a URL or not
+  const Wrapper = ({ children }: { children: React.ReactNode }) => {
+    if (activity.url) {
+      return (
+        <Link to={activity.url} className="block hover:no-underline">
+          {children}
+        </Link>
+      );
+    }
+    return <>{children}</>;
+  };
+
   return (
-    <div className="flex items-start space-x-4 p-4 hover:bg-[#212121] rounded-md hover-effect">
-      <div className="mt-1 flex-shrink-0">
-        <div className={`${getActivityColor(activity.type)} rounded-full p-2 flex items-center justify-center`}>
-          <ActivityIcon type={activity.type} />
+    <Wrapper>
+      <div className="flex items-start space-x-4 p-4 hover:bg-[#212121] rounded-md hover-effect">
+        <div className="mt-1 flex-shrink-0">
+          <div className={`${getActivityColor(activity.type)} rounded-full p-2 flex items-center justify-center`}>
+            <ActivityIcon type={activity.type} />
+          </div>
         </div>
-      </div>
-      
-      <div className="flex-1 min-w-0">
-        <div className="flex flex-wrap items-center gap-2 mb-1">
-          <p className="font-medium">{activity.title}</p>
-          {activity.category && (
-            <Badge variant="outline" className="text-xs bg-[#2a2a2a] text-white border-0">
-              {activity.category}
-            </Badge>
+        
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-2 mb-1">
+            <p className="font-medium">{activity.title}</p>
+            {activity.category && (
+              <Badge variant="outline" className="text-xs bg-[#2a2a2a] text-white border-0">
+                {activity.category}
+              </Badge>
+            )}
+          </div>
+          
+          {activity.description && (
+            <p className="text-sm text-gray-400 mb-2 line-clamp-2">
+              {activity.description}
+            </p>
           )}
-        </div>
-        
-        {activity.description && (
-          <p className="text-sm text-gray-400 mb-2 line-clamp-2">
-            {activity.description}
-          </p>
-        )}
-        
-        <div className="flex justify-between mt-1">
-          <span className="text-xs text-gray-400">{formatDate(activity.date)}</span>
+          
+          <div className="flex justify-between mt-1">
+            <span className="text-xs text-gray-400">{formatDate(activity.date)}</span>
+          </div>
         </div>
       </div>
-    </div>
+    </Wrapper>
   );
 };

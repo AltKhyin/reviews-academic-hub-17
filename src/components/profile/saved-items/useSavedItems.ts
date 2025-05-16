@@ -13,6 +13,9 @@ interface SavedItem {
   };
   date: string;
   url: string;
+  coverImage?: string;
+  tags?: string[];
+  status?: 'published' | 'draft';
 }
 
 export const useSavedItems = (userId?: string, type: 'reviews' | 'posts' = 'reviews') => {
@@ -42,7 +45,9 @@ export const useSavedItems = (userId?: string, type: 'reviews' | 'posts' = 'revi
                 title,
                 description,
                 published_at,
-                cover_image_url
+                cover_image_url,
+                specialty,
+                published
               )
             `)
             .eq('user_id', userId)
@@ -68,7 +73,9 @@ export const useSavedItems = (userId?: string, type: 'reviews' | 'posts' = 'revi
                 title,
                 description,
                 published_at,
-                cover_image_url
+                cover_image_url,
+                specialty,
+                published
               )
             `)
             .eq('user_id', userId)
@@ -91,6 +98,12 @@ export const useSavedItems = (userId?: string, type: 'reviews' | 'posts' = 'revi
             bookmarkedData.forEach(bookmark => {
               if (bookmark.issues && !seenIssueIds.has(bookmark.issues.id)) {
                 seenIssueIds.add(bookmark.issues.id);
+                
+                // Split specialty into tags if available
+                const tags = bookmark.issues.specialty ? 
+                  bookmark.issues.specialty.split(',').map(tag => tag.trim()) : 
+                  [];
+                
                 combinedItems.push({
                   id: bookmark.id,
                   title: bookmark.issues.title || 'Review sem título',
@@ -100,7 +113,10 @@ export const useSavedItems = (userId?: string, type: 'reviews' | 'posts' = 'revi
                     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Reviews'
                   },
                   date: bookmark.created_at,
-                  url: `/article/${bookmark.issues.id}`
+                  url: `/article/${bookmark.issues.id}`,
+                  coverImage: bookmark.issues.cover_image_url,
+                  tags: tags,
+                  status: bookmark.issues.published ? 'published' : 'draft'
                 });
               }
             });
@@ -111,6 +127,12 @@ export const useSavedItems = (userId?: string, type: 'reviews' | 'posts' = 'revi
             reactionsData.forEach(reaction => {
               if (reaction.issues && !seenIssueIds.has(reaction.issues.id)) {
                 seenIssueIds.add(reaction.issues.id);
+                
+                // Split specialty into tags if available
+                const tags = reaction.issues.specialty ? 
+                  reaction.issues.specialty.split(',').map(tag => tag.trim()) : 
+                  [];
+                
                 combinedItems.push({
                   id: reaction.id,
                   title: reaction.issues.title || 'Review sem título',
@@ -120,7 +142,10 @@ export const useSavedItems = (userId?: string, type: 'reviews' | 'posts' = 'revi
                     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Reviews'
                   },
                   date: reaction.created_at,
-                  url: `/article/${reaction.issues.id}`
+                  url: `/article/${reaction.issues.id}`,
+                  coverImage: reaction.issues.cover_image_url,
+                  tags: tags,
+                  status: reaction.issues.published ? 'published' : 'draft'
                 });
               }
             });
