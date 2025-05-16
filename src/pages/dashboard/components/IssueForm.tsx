@@ -21,60 +21,228 @@ export const IssueForm: React.FC<IssueFormProps> = ({ form, onSubmit, onCancel, 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Título</FormLabel>
-              <FormControl>
-                <Input placeholder="Título da edição" {...field} />
-              </FormControl>
-              <FormDescription>
-                O título principal desta edição
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Descrição</FormLabel>
-              <FormControl>
-                <Textarea 
-                  placeholder="Descrição curta sobre o conteúdo desta edição" 
-                  {...field}
-                  rows={4} 
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
-          name="tags"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Tags</FormLabel>
-              <FormControl>
-                <Input 
-                  placeholder="[tag:hematologia][tag:medicina]" 
-                  {...field} 
-                />
-              </FormControl>
-              <FormDescription>
-                Use o formato [tag:nome] para cada tag
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* Basic Issue Information */}
+        <div>
+          <h3 className="text-lg font-medium mb-4">Informações Básicas</h3>
+          <div className="space-y-4">
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Título</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Título da edição" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    O título principal desta edição
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Descrição</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Descrição curta sobre o conteúdo desta edição" 
+                      {...field}
+                      rows={4} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="tags"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tags</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="[tag:hematologia][tag:medicina]" 
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Use o formato [tag:nome] para cada tag
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+
+        {/* Search Engine Optimization Fields */}
+        <div>
+          <h3 className="text-lg font-medium mb-4">Search Engine ID</h3>
+          <div className="space-y-4">
+            <FormField
+              control={form.control}
+              name="authors"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Autores</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Nome dos autores, separados por vírgula" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    Será exibido nos resultados de busca
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="search_title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Título para busca</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Título curto e direto para resultados de busca" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    Título breve para exibição nos resultados de busca
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="search_description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Descrição para busca</FormLabel>
+                  <FormControl>
+                    <Textarea placeholder="Descrição resumida para resultados de busca" rows={2} {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    Será exibido nos resultados de busca
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="real_title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Título real (para busca)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Título completo original" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      Para indexação no mecanismo de busca
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="real_title_ptbr"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Título real PT-BR (para busca)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Título completo em português" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      Para indexação no mecanismo de busca
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <FormField
+                control={form.control}
+                name="year"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Ano de publicação</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: 2023" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="design"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Design do estudo</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: Ensaio Clínico Randomizado, Coorte, etc" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="score"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Pontuação</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        placeholder="0" 
+                        {...field} 
+                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)} 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Usado para ordenação por popularidade
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            
+            <FormField
+              control={form.control}
+              name="population"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>População</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: Adultos, Pediátrico, Idosos, Gestantes" {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    Categoria da população do estudo
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
 
         <FormField
           control={form.control}

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { IssueFormValues } from '@/schemas/issue-form-schema';
-import { IssueForm } from './IssueForm';
+import { IssueForm } from '../issue/IssueForm';
 import { ExternalLecturesManager } from './ExternalLecturesManager';
 
 interface IssueFormContainerProps {
