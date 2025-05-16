@@ -6,7 +6,7 @@ import { toast } from '@/hooks/use-toast';
 export const useFileUpload = () => {
   const [isUploading, setIsUploading] = useState(false);
 
-  const uploadFile = async (file: File, folder: string): Promise<string | null> => {
+  const uploadFile = async (file: File, folder: string, options?: { useProcessingBucket?: boolean }): Promise<string | null> => {
     try {
       setIsUploading(true);
       
@@ -18,10 +18,13 @@ export const useFileUpload = () => {
 
       console.log(`Starting upload for file ${fileName} to ${folder}`);
       
-      // Determine which bucket to use based on folder
+      // Determine which bucket to use based on options and file type
       let bucketName = 'avatars'; // Default bucket
       
-      if (folder.includes('community')) {
+      if (options?.useProcessingBucket && file.type === 'application/pdf') {
+        bucketName = 'article_processing_pdfs';
+        console.log('Using article_processing_pdfs bucket for PDF processing');
+      } else if (folder.includes('community')) {
         bucketName = 'community';
       } else if (folder.includes('issue')) {
         bucketName = 'issues';
@@ -49,8 +52,17 @@ export const useFileUpload = () => {
         .from(bucketName)
         .getPublicUrl(filePath);
 
-      console.log('File uploaded successfully, public URL:', urlData.publicUrl);
-      return urlData.publicUrl;
+      const publicUrl = urlData.publicUrl;
+      console.log('File uploaded successfully, public URL:', publicUrl);
+      
+      // For PDFs going to the processing bucket, log the full path for AI processing
+      if (bucketName === 'article_processing_pdfs') {
+        const storagePath = `${bucketName}/${filePath}`;
+        console.log('PDF uploaded for processing. Storage path:', storagePath);
+        console.log('PDF public URL for processing:', publicUrl);
+      }
+      
+      return publicUrl;
     } catch (error: any) {
       console.error('Error uploading file:', error);
       toast({

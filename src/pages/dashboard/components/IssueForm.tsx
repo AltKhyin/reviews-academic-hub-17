@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { FormIssueValues } from '@/types/issue';
 import { UseFormReturn } from 'react-hook-form';
-import { IssueFileUpload } from '@/components/issue/IssueFileUpload';
+import { IssuePDFUpload } from '@/components/issue/IssuePDFUpload';
 import { SimpleFileUpload } from '@/components/upload/SimpleFileUpload';
 import { Loader2 } from 'lucide-react';
 
@@ -85,12 +85,11 @@ export const IssueForm: React.FC<IssueFormProps> = ({ form, onSubmit, onCancel, 
               <FormControl>
                 <div className="flex gap-2">
                   <Input placeholder="URL do arquivo PDF original" {...field} />
-                  <SimpleFileUpload
+                  <IssuePDFUpload
                     onUploadComplete={(url) => form.setValue('article_pdf_url', url)}
-                    accept="application/pdf"
                     label="Upload"
-                    bucket="issues"
                     folder="pdfs"
+                    useProcessingBucket={true}
                   />
                 </div>
               </FormControl>
@@ -111,12 +110,11 @@ export const IssueForm: React.FC<IssueFormProps> = ({ form, onSubmit, onCancel, 
               <FormControl>
                 <div className="flex gap-2">
                   <Input placeholder="URL do arquivo PDF da revisão" {...field} />
-                  <SimpleFileUpload
+                  <IssuePDFUpload
                     onUploadComplete={(url) => form.setValue('pdf_url', url)}
-                    accept="application/pdf"
                     label="Upload"
-                    bucket="issues"
                     folder="pdfs"
+                    useProcessingBucket={true}
                   />
                 </div>
               </FormControl>
