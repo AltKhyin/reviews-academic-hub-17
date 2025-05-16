@@ -9,7 +9,6 @@ import {
   Home,
   Search,
   FileText,
-  Settings,
   User,
   LogOut,
   ChevronRight,
@@ -59,12 +58,6 @@ export const Sidebar = () => {
       icon: <User size={24} strokeWidth={1.5} className="w-6 h-6" />,
       path: '/profile',
       active: isActive('/profile')
-    },
-    {
-      name: 'Configurações',
-      icon: <Settings size={24} strokeWidth={1.5} className="w-6 h-6" />,
-      path: '/settings',
-      active: isActive('/settings')
     }
   ];
 

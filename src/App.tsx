@@ -15,7 +15,6 @@ import ArticleViewer from "./pages/dashboard/ArticleViewer";
 import SearchPage from "./pages/dashboard/SearchPage";
 import Community from "./pages/dashboard/Community";
 import Profile from "./pages/dashboard/Profile";
-import Settings from "./pages/dashboard/Settings";
 import Edit from "./pages/dashboard/Edit";
 import IssueEditor from "./pages/dashboard/IssueEditor";
 import NotFound from "./pages/NotFound";
@@ -61,7 +60,6 @@ const App = () => {
                 <Route path="community" element={<Community />} />
                 <Route path="articles" element={<Dashboard />} />
                 <Route path="profile" element={<Profile />} />
-                <Route path="settings" element={<Settings />} />
                 <Route path="edit" element={<Edit />} />
                 <Route path="edit/issue/:id" element={<IssueEditor />} />
                 <Route path="edit/issue/new" element={<Edit />} />
