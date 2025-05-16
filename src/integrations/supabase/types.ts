@@ -400,45 +400,72 @@ export type Database = {
       issues: {
         Row: {
           article_pdf_url: string | null
+          authors: string | null
           cover_image_url: string | null
           created_at: string
           description: string | null
+          design: string | null
           featured: boolean | null
           id: string
           pdf_url: string
+          population: string | null
           published: boolean
           published_at: string | null
+          real_title: string | null
+          real_title_ptbr: string | null
+          score: number | null
+          search_description: string | null
+          search_title: string | null
           specialty: string
           title: string
           updated_at: string
+          year: string | null
         }
         Insert: {
           article_pdf_url?: string | null
+          authors?: string | null
           cover_image_url?: string | null
           created_at?: string
           description?: string | null
+          design?: string | null
           featured?: boolean | null
           id?: string
           pdf_url: string
+          population?: string | null
           published?: boolean
           published_at?: string | null
+          real_title?: string | null
+          real_title_ptbr?: string | null
+          score?: number | null
+          search_description?: string | null
+          search_title?: string | null
           specialty: string
           title: string
           updated_at?: string
+          year?: string | null
         }
         Update: {
           article_pdf_url?: string | null
+          authors?: string | null
           cover_image_url?: string | null
           created_at?: string
           description?: string | null
+          design?: string | null
           featured?: boolean | null
           id?: string
           pdf_url?: string
+          population?: string | null
           published?: boolean
           published_at?: string | null
+          real_title?: string | null
+          real_title_ptbr?: string | null
+          score?: number | null
+          search_description?: string | null
+          search_title?: string | null
           specialty?: string
           title?: string
           updated_at?: string
+          year?: string | null
         }
         Relationships: []
       }

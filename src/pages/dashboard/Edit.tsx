@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { PlusCircle } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { toast } from '@/hooks/use-toast';
 import { Issue, FormIssueValues } from '@/types/issue';
 import { IssueForm } from './components/IssueForm';
@@ -17,25 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ReviewerCommentSection } from '@/components/dashboard/ReviewerCommentSection';
 import HomepageSectionsManager from '@/components/dashboard/HomepageSectionsManager';
 import { CommentReportsPanel } from '@/components/dashboard/CommentReportsPanel';
-
-const formSchema = z.object({
-  title: z.string().min(3, "O título deve ter pelo menos 3 caracteres"),
-  description: z.string().optional(),
-  tags: z.string().optional(),
-  pdf_url: z.string().optional(),
-  article_pdf_url: z.string().optional(),
-  cover_image_url: z.string().optional(),
-  // Include all fields that can be edited
-  authors: z.string().optional(),
-  search_title: z.string().optional(),
-  real_title: z.string().optional(),
-  real_title_ptbr: z.string().optional(),
-  search_description: z.string().optional(),
-  year: z.string().optional(),
-  design: z.string().optional(),
-  score: z.number().optional(),
-  population: z.string().optional()
-});
+import { issueFormSchema } from '@/schemas/issue-form-schema';
 
 const Edit = () => {
   const [isCreating, setIsCreating] = useState(false);
@@ -58,7 +38,7 @@ const Edit = () => {
   });
 
   const form = useForm<FormIssueValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(issueFormSchema),
     defaultValues: {
       title: '',
       description: '',
@@ -98,22 +78,30 @@ const Edit = () => {
         article_pdf_url: values.article_pdf_url || '',
         cover_image_url: values.cover_image_url || null,
         // Include all fields in the submission
-        authors: values.authors || '',
-        search_title: values.search_title || '',
-        real_title: values.real_title || '',
-        real_title_ptbr: values.real_title_ptbr || '',
-        search_description: values.search_description || '',
-        year: values.year || '',
-        design: values.design || '',
+        authors: values.authors || null,
+        search_title: values.search_title || null,
+        real_title: values.real_title || null,
+        real_title_ptbr: values.real_title_ptbr || null,
+        search_description: values.search_description || null,
+        year: values.year || null,
+        design: values.design || null,
         score: values.score || 0,
-        population: values.population || ''
+        population: values.population || null
       };
       
-      const { error } = await supabase
-        .from('issues')
-        .insert(issueData);
+      console.log('Submitting issue data:', issueData);
       
-      if (error) throw error;
+      const { data, error } = await supabase
+        .from('issues')
+        .insert(issueData)
+        .select();
+      
+      if (error) {
+        console.error('Error creating issue:', error);
+        throw error;
+      }
+      
+      console.log('Issue created successfully:', data);
       
       toast({
         title: "Edição criada com sucesso!",

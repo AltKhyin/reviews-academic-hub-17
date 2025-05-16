@@ -73,6 +73,8 @@ export const useIssueEditor = (id?: string) => {
         updateObj.published_at = new Date().toISOString();
       }
       
+      console.log('Updating with:', updateObj);
+      
       const { error } = await supabase
         .from('issues')
         .update(updateObj)
