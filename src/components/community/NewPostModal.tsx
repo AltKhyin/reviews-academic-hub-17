@@ -77,12 +77,33 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
         uploadedImageUrl = publicUrl;
       }
       
+      // Create the post first
+      const postData = {
+        title: data.title,
+        content: data.content || null,
+        flair_id: data.flair_id,
+        published: true,
+        image_url: uploadedImageUrl,
+        video_url: videoUrl,
+        user_id: user.id
+      };
+      
+      const { data: createdPost, error: postError } = await supabase
+        .from('posts')
+        .insert(postData)
+        .select()
+        .single();
+        
+      if (postError) throw postError;
+      
       // Create poll if enabled
       let pollId = null;
       if (isPollEnabled && pollOptions.filter(option => option.trim()).length >= 2) {
         const { data: pollData, error: pollError } = await supabase
           .from('post_polls')
-          .insert({})
+          .insert({
+            post_id: createdPost.id
+          })
           .select()
           .single();
           
@@ -103,25 +124,15 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
           .insert(optionsToInsert);
           
         if (optionsError) throw optionsError;
-      }
-      
-      // Create the post
-      const postData = {
-        title: data.title,
-        content: data.content || null,
-        flair_id: data.flair_id,
-        published: true,
-        image_url: uploadedImageUrl,
-        video_url: videoUrl,
-        poll_id: pollId,
-        user_id: user.id
-      };
-      
-      const { error } = await supabase
-        .from('posts')
-        .insert(postData);
         
-      if (error) throw error;
+        // Update the post with the poll_id
+        const { error: updateError } = await supabase
+          .from('posts')
+          .update({ poll_id: pollId })
+          .eq('id', createdPost.id);
+          
+        if (updateError) throw updateError;
+      }
       
       toast({
         title: "Publicação criada!",
