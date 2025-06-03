@@ -31,6 +31,12 @@ export interface PostData {
   published: boolean;
   score: number;
   poll_id: string | null;
+  pinned: boolean;
+  pinned_at: string | null;
+  pinned_by: string | null;
+  issue_id: string | null;
+  auto_generated: boolean;
+  pin_duration_days: number | null;
   profiles: {
     full_name: string | null;
     avatar_url: string | null;
@@ -50,6 +56,16 @@ export interface CommunitySettings {
   theme_color: string;
   description: string;
   allow_polls: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IssueDiscussionSettings {
+  id: string;
+  issue_id: string;
+  discussion_content: string | null;
+  include_read_button: boolean;
+  pin_duration_days: number;
   created_at: string;
   updated_at: string;
 }

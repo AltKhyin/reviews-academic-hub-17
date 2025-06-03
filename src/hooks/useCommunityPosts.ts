@@ -9,47 +9,66 @@ export function useCommunityPosts(activeTab: string, searchTerm: string) {
   return useQuery({
     queryKey: ['community-posts', activeTab, searchTerm, user?.id],
     queryFn: async () => {
-      // First, fetch all posts
-      let query = supabase
+      // First, call the unpin expired posts function
+      await supabase.rpc('unpin_expired_posts');
+
+      // Fetch pinned posts separately
+      let pinnedQuery = supabase
         .from('posts')
-        .select(`
-          *
-        `)
-        .eq('published', true);
+        .select(`*`)
+        .eq('published', true)
+        .eq('pinned', true)
+        .order('pinned_at', { ascending: false });
+
+      // Fetch regular posts
+      let regularQuery = supabase
+        .from('posts')
+        .select(`*`)
+        .eq('published', true)
+        .eq('pinned', false);
       
       // Add search filter if searchTerm is provided
       if (searchTerm) {
-        query = query.ilike('title', `%${searchTerm}%`);
+        pinnedQuery = pinnedQuery.ilike('title', `%${searchTerm}%`);
+        regularQuery = regularQuery.ilike('title', `%${searchTerm}%`);
       }
       
+      // Apply sorting to regular posts only
       if (activeTab === 'popular') {
-        query = query.order('score', { ascending: false });
+        regularQuery = regularQuery.order('score', { ascending: false });
       } else if (activeTab === 'oldest') {
-        query = query.order('created_at', { ascending: true });
+        regularQuery = regularQuery.order('created_at', { ascending: true });
       } else {
-        // Default is latest (newest first)
-        query = query.order('created_at', { ascending: false });
+        regularQuery = regularQuery.order('created_at', { ascending: false });
       }
 
       // For "my" tab, filter by current user
       if (activeTab === 'my' && user) {
-        query = query.eq('user_id', user.id);
+        pinnedQuery = pinnedQuery.eq('user_id', user.id);
+        regularQuery = regularQuery.eq('user_id', user.id);
       }
 
-      const { data: posts, error } = await query;
+      const [{ data: pinnedPosts, error: pinnedError }, { data: regularPosts, error: regularError }] = await Promise.all([
+        pinnedQuery,
+        regularQuery
+      ]);
       
-      if (error) throw error;
-      if (!posts) return [];
+      if (pinnedError) throw pinnedError;
+      if (regularError) throw regularError;
+      
+      const allPosts = [...(pinnedPosts || []), ...(regularPosts || [])];
+      
+      if (!allPosts.length) return [];
       
       // Now fetch profiles for these posts
-      const userIds = posts.map(post => post.user_id);
+      const userIds = allPosts.map(post => post.user_id);
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id, full_name, avatar_url')
         .in('id', userIds);
       
       // Fetch flairs
-      const flairIds = posts.filter(post => post.flair_id).map(post => post.flair_id);
+      const flairIds = allPosts.filter(post => post.flair_id).map(post => post.flair_id);
       let flairs = [];
       
       if (flairIds.length > 0) {
@@ -69,7 +88,7 @@ export function useCommunityPosts(activeTab: string, searchTerm: string) {
           .from('post_votes')
           .select('post_id, value')
           .eq('user_id', user.id)
-          .in('post_id', posts.map(p => p.id));
+          .in('post_id', allPosts.map(p => p.id));
           
         if (votesData) {
           userVotes = votesData.reduce((acc: Record<string, number>, vote) => {
@@ -81,7 +100,7 @@ export function useCommunityPosts(activeTab: string, searchTerm: string) {
       
       // Fetch poll data for posts with polls
       const postsWithDetails = await Promise.all(
-        posts.map(async (post) => {
+        allPosts.map(async (post) => {
           // Find the profile for this post
           const profile = profiles?.find(p => p.id === post.user_id);
           // Find the flair for this post
@@ -155,8 +174,8 @@ export function useCommunityPosts(activeTab: string, searchTerm: string) {
       return postsWithDetails as PostData[];
     },
     enabled: true,
-    staleTime: 30000, // Consider data fresh for 30 seconds
-    refetchOnWindowFocus: true, // Refetch on window focus to get latest votes
+    staleTime: 30000,
+    refetchOnWindowFocus: true,
   });
 }
 

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,7 +7,7 @@ import { PostData } from '@/types/community';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowUp, ArrowDown, MessageSquare, Trash, BookmarkPlus, Flag } from 'lucide-react';
+import { ArrowUp, ArrowDown, MessageSquare, Trash, BookmarkPlus, Flag, Pin, PinOff, ExternalLink } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { PostContent } from '@/components/community/PostContent';
@@ -22,6 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { CommentSection } from '@/components/comments/CommentSection';
 import { useNavigate } from 'react-router-dom';
+import { usePinPost, useUnpinPost } from '@/hooks/useIssueDiscussion';
 
 interface PostProps {
   post: PostData;
@@ -43,6 +45,9 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
   const [commentCount, setCommentCount] = useState(0);
   const [localScore, setLocalScore] = useState(post.score || 0);
   const [localUserVote, setLocalUserVote] = useState(post.userVote || 0);
+
+  const pinPost = usePinPost();
+  const unpinPost = useUnpinPost();
 
   // Helper function to format dates
   const formatPostDate = (dateString: string) => {
@@ -309,14 +314,59 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
     setShowComments(!showComments);
   };
 
+  const handlePinToggle = async () => {
+    if (post.pinned) {
+      unpinPost.mutate(post.id);
+    } else {
+      pinPost.mutate({ postId: post.id, pinDurationDays: 7 });
+    }
+  };
+
   // Modified to handle poll votes properly
   const handlePollVoteChange = () => {
     console.log("Poll vote changed, refreshing post data");
     onVoteChange(); // This will trigger a refetch of the post data
   };
 
+  const isIssueDiscussion = post.post_flairs?.name === 'Discussão de Edição';
+  const cardClasses = `rounded-lg border p-4 mb-6 ${
+    post.pinned 
+      ? 'bg-yellow-50/5 border-yellow-500/30' 
+      : isIssueDiscussion 
+        ? 'bg-purple-50/5 border-purple-500/30'
+        : 'bg-gray-800/10 border-gray-700/30'
+  }`;
+
   return (
-    <div className="bg-gray-800/10 rounded-lg border border-gray-700/30 p-4 mb-6">
+    <div className={cardClasses}>
+      {/* Pinned indicator */}
+      {post.pinned && (
+        <div className="flex items-center mb-3 text-yellow-500 text-sm">
+          <Pin className="h-4 w-4 mr-1" />
+          <span>Fixado por admin</span>
+        </div>
+      )}
+
+      {/* Issue discussion banner */}
+      {isIssueDiscussion && post.issue_id && (
+        <div className="mb-4 p-3 bg-purple-900/20 border border-purple-500/30 rounded-lg">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-purple-200">
+              Esta discussão refere-se a uma edição publicada.
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(`/article/${post.issue_id}`)}
+              className="text-xs"
+            >
+              <ExternalLink className="h-3 w-3 mr-1" />
+              Ler esta edição
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-start space-x-4">
         {/* Post content */}
         <div className="flex-1 min-w-0">
@@ -332,6 +382,12 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
                 {post.profiles?.full_name || 'Usuário'}
                 <span className="mx-1">•</span>
                 {formatPostDate(post.created_at)}
+                {post.auto_generated && (
+                  <>
+                    <span className="mx-1">•</span>
+                    <span className="text-blue-400">Automático</span>
+                  </>
+                )}
               </span>
             </div>
             
@@ -414,6 +470,20 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
               <BookmarkPlus className="h-4 w-4 mr-1" />
               Salvar
             </Button>
+
+            {/* Pin/Unpin button - only for admins */}
+            {isAdmin && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`text-gray-400 ${post.pinned ? 'text-yellow-500 hover:text-yellow-600' : 'hover:text-white'}`}
+                onClick={handlePinToggle}
+                disabled={pinPost.isPending || unpinPost.isPending}
+              >
+                {post.pinned ? <PinOff className="h-4 w-4 mr-1" /> : <Pin className="h-4 w-4 mr-1" />}
+                {post.pinned ? 'Desafixar' : 'Fixar'}
+              </Button>
+            )}
 
             {/* Delete button - moved to far right, only visible to post owner or admin */}
             {user && (user.id === post.user_id || isAdmin) && (

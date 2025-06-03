@@ -397,6 +397,44 @@ export type Database = {
           },
         ]
       }
+      issue_discussion_settings: {
+        Row: {
+          created_at: string | null
+          discussion_content: string | null
+          id: string
+          include_read_button: boolean | null
+          issue_id: string
+          pin_duration_days: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          discussion_content?: string | null
+          id?: string
+          include_read_button?: boolean | null
+          issue_id: string
+          pin_duration_days?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          discussion_content?: string | null
+          id?: string
+          include_read_button?: boolean | null
+          issue_id?: string
+          pin_duration_days?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "issue_discussion_settings_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: true
+            referencedRelation: "issues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       issues: {
         Row: {
           article_pdf_url: string | null
@@ -634,11 +672,17 @@ export type Database = {
       }
       posts: {
         Row: {
+          auto_generated: boolean | null
           content: string | null
           created_at: string
           flair_id: string | null
           id: string
           image_url: string | null
+          issue_id: string | null
+          pin_duration_days: number | null
+          pinned: boolean | null
+          pinned_at: string | null
+          pinned_by: string | null
           poll_id: string | null
           published: boolean
           score: number
@@ -648,11 +692,17 @@ export type Database = {
           video_url: string | null
         }
         Insert: {
+          auto_generated?: boolean | null
           content?: string | null
           created_at?: string
           flair_id?: string | null
           id?: string
           image_url?: string | null
+          issue_id?: string | null
+          pin_duration_days?: number | null
+          pinned?: boolean | null
+          pinned_at?: string | null
+          pinned_by?: string | null
           poll_id?: string | null
           published?: boolean
           score?: number
@@ -662,11 +712,17 @@ export type Database = {
           video_url?: string | null
         }
         Update: {
+          auto_generated?: boolean | null
           content?: string | null
           created_at?: string
           flair_id?: string | null
           id?: string
           image_url?: string | null
+          issue_id?: string | null
+          pin_duration_days?: number | null
+          pinned?: boolean | null
+          pinned_at?: string | null
+          pinned_by?: string | null
           poll_id?: string | null
           published?: boolean
           score?: number
@@ -681,6 +737,13 @@ export type Database = {
             columns: ["flair_id"]
             isOneToOne: false
             referencedRelation: "post_flairs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "issues"
             referencedColumns: ["id"]
           },
           {
@@ -980,6 +1043,10 @@ export type Database = {
         Args: { "": unknown }
         Returns: undefined
       }
+      get_current_user_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_user_role: {
         Args: { user_id: string }
         Returns: string
@@ -996,7 +1063,15 @@ export type Database = {
         Args: Record<PropertyKey, never> | { uid: string }
         Returns: boolean
       }
+      is_authenticated: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       is_editor: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_editor_or_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
@@ -1083,6 +1158,10 @@ export type Database = {
       text2ltree: {
         Args: { "": string }
         Returns: unknown
+      }
+      unpin_expired_posts: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
     }
     Enums: {
