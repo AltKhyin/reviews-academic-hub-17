@@ -1,12 +1,17 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { MediaUploader } from './postModal/MediaUploader';
-import { PollCreator } from './postModal/PollCreator';
-import { PostForm, PostFormData } from './postModal/PostForm';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { PostForm, PostFormData } from '@/components/community/postModal/PostForm';
+import { MediaUploader } from '@/components/community/postModal/MediaUploader';
+import { PollCreator } from '@/components/community/postModal/PollCreator';
 
 interface Flair {
   id: string;
@@ -21,34 +26,131 @@ interface NewPostModalProps {
   flairs: Flair[];
 }
 
-export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose, onPostCreated, flairs }) => {
+export const NewPostModal: React.FC<NewPostModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  onPostCreated,
+  flairs
+}) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [mediaType, setMediaType] = useState<string | null>(null);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
-  const [isPollEnabled, setIsPollEnabled] = useState(false);
-  const [pollOptions, setPollOptions] = useState<string[]>(['', '']);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Media upload states
+  const [mediaType, setMediaType] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  
+  // Poll states
+  const [isPollEnabled, setIsPollEnabled] = useState(false);
+  const [pollOptions, setPollOptions] = useState(['', '']);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const addPollOption = () => {
-    if (pollOptions.length < 6) {
-      setPollOptions([...pollOptions, '']);
-    } else {
+  const handleSubmit = async (data: PostFormData) => {
+    if (!user) return;
+    
+    try {
+      setIsSubmitting(true);
+      
+      let uploadedImageUrl = null;
+      
+      // Handle image upload if present
+      if (imageFile) {
+        const fileExt = imageFile.name.split('.').pop();
+        const fileName = `${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('post-images')
+          .upload(fileName, imageFile);
+          
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          throw new Error('Falha no upload da imagem');
+        }
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('post-images')
+          .getPublicUrl(fileName);
+          
+        uploadedImageUrl = publicUrl;
+      }
+      
+      // Create poll if enabled
+      let pollId = null;
+      if (isPollEnabled && pollOptions.filter(option => option.trim()).length >= 2) {
+        const { data: pollData, error: pollError } = await supabase
+          .from('post_polls')
+          .insert({})
+          .select()
+          .single();
+          
+        if (pollError) throw pollError;
+        
+        pollId = pollData.id;
+        
+        // Insert poll options
+        const validOptions = pollOptions.filter(option => option.trim());
+        const optionsToInsert = validOptions.map((option, index) => ({
+          poll_id: pollId,
+          text: option.trim(),
+          position: index
+        }));
+        
+        const { error: optionsError } = await supabase
+          .from('poll_options')
+          .insert(optionsToInsert);
+          
+        if (optionsError) throw optionsError;
+      }
+      
+      // Create the post
+      const postData = {
+        title: data.title,
+        content: data.content || null,
+        flair_id: data.flair_id,
+        published: true,
+        image_url: uploadedImageUrl,
+        video_url: videoUrl,
+        poll_id: pollId,
+        user_id: user.id
+      };
+      
+      const { error } = await supabase
+        .from('posts')
+        .insert(postData);
+        
+      if (error) throw error;
+      
       toast({
-        title: "Limite de opções",
-        description: "Você pode adicionar no máximo 6 opções na enquete.",
-        variant: "default",
+        title: "Publicação criada!",
+        description: "Sua publicação foi criada com sucesso.",
       });
+      
+      onPostCreated();
+      onClose();
+      
+    } catch (error: any) {
+      console.error('Error creating post:', error);
+      toast({
+        title: "Erro ao criar publicação",
+        description: error.message || "Não foi possível criar a publicação.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const removePollOption = (index: number) => {
-    if (pollOptions.length > 2) {
-      const newOptions = [...pollOptions];
-      newOptions.splice(index, 1);
-      setPollOptions(newOptions);
+  const handleMediaTypeChange = (type: string | null) => {
+    setMediaType(type);
+    if (type !== 'image') {
+      setImageFile(null);
+      setImagePreview(null);
+    }
+    if (type !== 'video') {
+      setVideoUrl(null);
     }
   };
 
@@ -58,158 +160,54 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({ isOpen, onClose, onP
     setPollOptions(newOptions);
   };
 
-  const handleSubmit = async (data: PostFormData) => {
-    if (!user) {
-      toast({
-        title: "Erro",
-        description: "Você precisa estar autenticado para criar uma publicação.",
-        variant: "destructive",
-      });
-      return;
+  const addPollOption = () => {
+    if (pollOptions.length < 6) {
+      setPollOptions([...pollOptions, '']);
     }
+  };
 
-    try {
-      setIsSubmitting(true);
+  const removePollOption = (index: number) => {
+    if (pollOptions.length > 2) {
+      setPollOptions(pollOptions.filter((_, i) => i !== index));
+    }
+  };
 
-      // If there is an image file, upload it
-      let finalImageUrl = null;
-      if (imageFile) {
-        const fileExt = imageFile.name.split('.').pop();
-        const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-        const filePath = `posts/${fileName}`;
-
-        const { error: uploadError, data: uploadData } = await supabase.storage
-          .from('community')
-          .upload(filePath, imageFile);
-
-        if (uploadError) throw uploadError;
-
-        const { data: urlData } = supabase.storage
-          .from('community')
-          .getPublicUrl(filePath);
-
-        finalImageUrl = urlData.publicUrl;
-      }
-
-      // Create the post
-      const postData = {
-        title: data.title,
-        content: data.content || null,
-        image_url: mediaType === 'image' ? (finalImageUrl || imageUrl) : null,
-        video_url: mediaType === 'video' ? videoUrl : null,
-        user_id: user.id,
-        flair_id: data.flair_id,
-        published: true,
-      };
-      
-      const { data: post, error: postError } = await supabase
-        .from('posts')
-        .insert(postData)
-        .select()
-        .single();
-        
-      if (postError) throw postError;
-      
-      // Add an automatic upvote from the post author
-      const { error: voteError } = await supabase
-        .from('post_votes')
-        .insert({
-          post_id: post.id,
-          user_id: user.id,
-          value: 1
-        });
-        
-      if (voteError) {
-        console.error('Error adding author upvote:', voteError);
-      }
-      
-      // If the poll is enabled and we have at least 2 options
-      if (isPollEnabled && pollOptions.filter(o => o.trim()).length >= 2) {
-        // Create the poll
-        const { data: poll, error: pollError } = await supabase
-          .from('post_polls')
-          .insert({
-            post_id: post.id
-          })
-          .select()
-          .single();
-          
-        if (pollError) throw pollError;
-        
-        // Create the poll options
-        const validOptions = pollOptions
-          .filter(option => option.trim())
-          .map((text, i) => ({
-            poll_id: poll.id,
-            text,
-            position: i
-          }));
-          
-        const { error: optionsError } = await supabase
-          .from('poll_options')
-          .insert(validOptions);
-          
-        if (optionsError) throw optionsError;
-        
-        // Update the post with the poll ID
-        await supabase
-          .from('posts')
-          .update({ poll_id: poll.id })
-          .eq('id', post.id);
-      }
-
-      toast({
-        title: "Publicação criada",
-        description: "Sua publicação foi criada com sucesso.",
-        variant: "default",
-      });
-      
-      onPostCreated();
-      onClose();
-
-    } catch (error) {
-      console.error('Error creating post:', error);
-      toast({
-        title: "Erro",
-        description: "Ocorreu um erro ao criar a publicação. Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
+  const togglePoll = () => {
+    setIsPollEnabled(!isPollEnabled);
+    if (!isPollEnabled) {
+      // Reset poll options when enabling
+      setPollOptions(['', '']);
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Nova Publicação</DialogTitle>
-          <DialogDescription>
-            Compartilhe uma pergunta, ideia ou discussão com a comunidade.
-          </DialogDescription>
         </DialogHeader>
-
+        
         <div className="space-y-6">
           <PostForm 
-            onSubmit={handleSubmit} 
+            onSubmit={handleSubmit}
             isSubmitting={isSubmitting}
             flairs={flairs}
             onCancel={onClose}
           />
           
-          <MediaUploader 
+          <MediaUploader
             mediaType={mediaType}
-            onMediaTypeChange={setMediaType}
+            onMediaTypeChange={handleMediaTypeChange}
             onImageChange={setImageFile}
-            onImagePreviewChange={setImageUrl}
+            onImagePreviewChange={setImagePreview}
             onVideoUrlChange={setVideoUrl}
-            imageUrl={imageUrl}
+            imageUrl={imagePreview}
             videoUrl={videoUrl}
           />
           
-          <PollCreator 
+          <PollCreator
             isPollEnabled={isPollEnabled}
-            togglePoll={() => setIsPollEnabled(!isPollEnabled)}
+            togglePoll={togglePoll}
             pollOptions={pollOptions}
             updatePollOption={updatePollOption}
             addPollOption={addPollOption}

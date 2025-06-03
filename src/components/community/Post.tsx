@@ -45,6 +45,7 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
   const [commentCount, setCommentCount] = useState(0);
   const [localScore, setLocalScore] = useState(post.score || 0);
   const [localUserVote, setLocalUserVote] = useState(post.userVote || 0);
+  const [issueCoverUrl, setIssueCoverUrl] = useState<string | null>(null);
 
   const pinPost = usePinPost();
   const unpinPost = useUnpinPost();
@@ -56,6 +57,25 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
       locale: ptBR 
     });
   };
+
+  // Fetch issue cover if this is an issue discussion post
+  useEffect(() => {
+    if (post.issue_id) {
+      const fetchIssueCover = async () => {
+        const { data, error } = await supabase
+          .from('issues')
+          .select('cover_image_url')
+          .eq('id', post.issue_id)
+          .single();
+        
+        if (data?.cover_image_url) {
+          setIssueCoverUrl(data.cover_image_url);
+        }
+      };
+      
+      fetchIssueCover();
+    }
+  }, [post.issue_id]);
 
   // Check if user is admin
   useEffect(() => {
@@ -347,26 +367,6 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
         </div>
       )}
 
-      {/* Issue discussion banner */}
-      {isIssueDiscussion && post.issue_id && (
-        <div className="mb-4 p-3 bg-purple-900/20 border border-purple-500/30 rounded-lg">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-purple-200">
-              Esta discussão refere-se a uma edição publicada.
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate(`/article/${post.issue_id}`)}
-              className="text-xs"
-            >
-              <ExternalLink className="h-3 w-3 mr-1" />
-              Ler esta edição
-            </Button>
-          </div>
-        </div>
-      )}
-
       <div className="flex items-start space-x-4">
         {/* Post content */}
         <div className="flex-1 min-w-0">
@@ -382,12 +382,6 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
                 {post.profiles?.full_name || 'Usuário'}
                 <span className="mx-1">•</span>
                 {formatPostDate(post.created_at)}
-                {post.auto_generated && (
-                  <>
-                    <span className="mx-1">•</span>
-                    <span className="text-blue-400">Automático</span>
-                  </>
-                )}
               </span>
             </div>
             
@@ -415,6 +409,28 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
           )}
           
           <PostContent post={post} onVoteChange={handlePollVoteChange} />
+
+          {/* Issue discussion banner - positioned after content */}
+          {isIssueDiscussion && post.issue_id && issueCoverUrl && (
+            <div 
+              className="mt-4 mb-4 rounded-lg overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20 hover:scale-[1.02] group"
+              onClick={() => navigate(`/article/${post.issue_id}`)}
+            >
+              <div className="relative h-20 bg-gradient-to-r from-purple-600/20 to-purple-400/20 flex items-center">
+                <img 
+                  src={issueCoverUrl} 
+                  alt="Capa da edição" 
+                  className="h-full w-20 object-cover rounded-l-lg"
+                />
+                <div className="flex-1 px-4 flex items-center justify-between">
+                  <span className="text-sm text-purple-200 group-hover:text-purple-100 transition-colors">
+                    Esta discussão refere-se a uma edição publicada.
+                  </span>
+                  <ExternalLink className="h-4 w-4 text-purple-300 group-hover:text-purple-200 transition-colors" />
+                </div>
+              </div>
+            </div>
+          )}
           
           <div className="flex mt-4 space-x-2 items-center">
             {/* Voting buttons side by side */}

@@ -71,7 +71,7 @@ const Community = () => {
           </Button>
         </div>
         
-        {/* Centered Tabs */}
+        {/* Centered Tabs with constrained width */}
         <div className="flex justify-center mb-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-2xl">
             <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full mb-6">
@@ -81,47 +81,50 @@ const Community = () => {
               {user && <TabsTrigger value="my" className="text-sm">Minhas Publicações</TabsTrigger>}
             </TabsList>
             
-            <TabsContent value="latest" className="mt-0">
-              <PostsList 
-                posts={posts} 
-                emptyMessage="Nenhuma publicação encontrada." 
-                onVoteChange={refetchPosts}
-                isLoading={isLoading}
-                error={error}
-              />
-            </TabsContent>
-
-            <TabsContent value="popular" className="mt-0">
-              <PostsList 
-                posts={posts} 
-                emptyMessage="Nenhuma publicação encontrada." 
-                onVoteChange={refetchPosts}
-                isLoading={isLoading}
-                error={error}
-              />
-            </TabsContent>
-
-            <TabsContent value="oldest" className="mt-0">
-              <PostsList 
-                posts={posts} 
-                emptyMessage="Nenhuma publicação encontrada." 
-                onVoteChange={refetchPosts}
-                isLoading={isLoading}
-                error={error}
-              />
-            </TabsContent>
-
-            {user && (
-              <TabsContent value="my" className="mt-0">
+            {/* Constrain all TabsContent to the same width as tabs */}
+            <div className="w-full max-w-2xl mx-auto">
+              <TabsContent value="latest" className="mt-0">
                 <PostsList 
                   posts={posts} 
-                  emptyMessage="Você ainda não criou publicações." 
+                  emptyMessage="Nenhuma publicação encontrada." 
                   onVoteChange={refetchPosts}
                   isLoading={isLoading}
                   error={error}
                 />
               </TabsContent>
-            )}
+
+              <TabsContent value="popular" className="mt-0">
+                <PostsList 
+                  posts={posts} 
+                  emptyMessage="Nenhuma publicação encontrada." 
+                  onVoteChange={refetchPosts}
+                  isLoading={isLoading}
+                  error={error}
+                />
+              </TabsContent>
+
+              <TabsContent value="oldest" className="mt-0">
+                <PostsList 
+                  posts={posts} 
+                  emptyMessage="Nenhuma publicação encontrada." 
+                  onVoteChange={refetchPosts}
+                  isLoading={isLoading}
+                  error={error}
+                />
+              </TabsContent>
+
+              {user && (
+                <TabsContent value="my" className="mt-0">
+                  <PostsList 
+                    posts={posts} 
+                    emptyMessage="Você ainda não criou publicações." 
+                    onVoteChange={refetchPosts}
+                    isLoading={isLoading}
+                    error={error}
+                  />
+                </TabsContent>
+              )}
+            </div>
           </Tabs>
         </div>
       </div>
