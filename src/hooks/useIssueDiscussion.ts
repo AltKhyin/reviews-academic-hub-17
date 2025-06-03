@@ -40,6 +40,10 @@ export function useCreateDiscussionPost() {
       includeReadButton: boolean;
       pinDurationDays: number;
     }) => {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
       // First, get the "Discussão de Edição" flair
       const { data: flair } = await supabase
         .from('post_flairs')
@@ -61,7 +65,8 @@ export function useCreateDiscussionPost() {
         auto_generated: true,
         pinned: true,
         pinned_at: new Date().toISOString(),
-        pin_duration_days: pinDurationDays
+        pin_duration_days: pinDurationDays,
+        user_id: user.id
       };
 
       const { data: post, error } = await supabase
@@ -110,11 +115,16 @@ export function usePinPost() {
   
   return useMutation({
     mutationFn: async ({ postId, pinDurationDays }: { postId: string; pinDurationDays: number }) => {
+      // Get current user for pinned_by
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
       const { error } = await supabase
         .from('posts')
         .update({
           pinned: true,
           pinned_at: new Date().toISOString(),
+          pinned_by: user.id,
           pin_duration_days: pinDurationDays
         })
         .eq('id', postId);
