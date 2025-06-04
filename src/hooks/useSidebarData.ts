@@ -1,8 +1,7 @@
-
 // ABOUTME: Optimized sidebar data fetching with improved query parameters and caching
 // Manages all sidebar-related data fetching with proper loading states and error handling
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useSidebarStore } from '@/stores/sidebarStore';
@@ -10,6 +9,7 @@ import { OnlineUser, CommentHighlight, TopThread, Poll, SidebarConfig, SiteStats
 
 export const useSidebarData = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const {
     setConfig,
     setStats,
@@ -24,6 +24,29 @@ export const useSidebarData = () => {
   // SSR safety check
   const isClient = typeof window !== 'undefined';
 
+  // Default config
+  const defaultConfig: SidebarConfig = {
+    tagline: 'Bem-vindo à nossa comunidade científica',
+    nextReviewTs: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    bookmarks: [],
+    rules: [],
+    changelog: {
+      show: true,
+      entries: []
+    },
+    sections: [
+      { id: 'header', name: 'Cabeçalho da Comunidade', enabled: true, order: 0 },
+      { id: 'users', name: 'Usuários Ativos', enabled: true, order: 1 },
+      { id: 'comments', name: 'Comentários em Destaque', enabled: true, order: 2 },
+      { id: 'threads', name: 'Top Threads', enabled: true, order: 3 },
+      { id: 'poll', name: 'Enquete Semanal', enabled: true, order: 4 },
+      { id: 'countdown', name: 'Próxima Review', enabled: true, order: 5 },
+      { id: 'bookmarks', name: 'Links Úteis', enabled: true, order: 6 },
+      { id: 'rules', name: 'Regras da Comunidade', enabled: true, order: 7 },
+      { id: 'changelog', name: 'Changelog', enabled: true, order: 8 }
+    ]
+  };
+
   // Fetch sidebar configuration
   const { data: config } = useQuery({
     queryKey: ['sidebar-config'],
@@ -36,13 +59,15 @@ export const useSidebarData = () => {
           .eq('key', 'sidebar_config')
           .single();
         
-        if (error) throw error;
-        const config = data.value as unknown as SidebarConfig;
+        if (error && error.code !== 'PGRST116') throw error;
+        
+        const config = data?.value as unknown as SidebarConfig || defaultConfig;
         setConfig(config);
         return config;
       } catch (error) {
         console.error('Failed to fetch sidebar config:', error);
-        return null;
+        setConfig(defaultConfig);
+        return defaultConfig;
       } finally {
         setLoading('Config', false);
       }
@@ -51,6 +76,44 @@ export const useSidebarData = () => {
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: 2,
   });
+
+  // Mutation to save config
+  const saveConfigMutation = useMutation({
+    mutationFn: async (newConfig: SidebarConfig) => {
+      const { error } = await supabase
+        .from('site_meta')
+        .upsert({
+          key: 'sidebar_config',
+          value: newConfig as any,
+          updated_at: new Date().toISOString()
+        });
+      
+      if (error) throw error;
+      return newConfig;
+    },
+    onSuccess: (newConfig) => {
+      queryClient.setQueryData(['sidebar-config'], newConfig);
+      setConfig(newConfig);
+    }
+  });
+
+  // Helper functions
+  const updateConfig = (updates: Partial<SidebarConfig>) => {
+    if (!config) return;
+    const newConfig = { ...config, ...updates };
+    queryClient.setQueryData(['sidebar-config'], newConfig);
+    setConfig(newConfig);
+  };
+
+  const saveConfig = async () => {
+    if (!config) throw new Error('No config to save');
+    await saveConfigMutation.mutateAsync(config);
+  };
+
+  const resetConfig = () => {
+    queryClient.setQueryData(['sidebar-config'], defaultConfig);
+    setConfig(defaultConfig);
+  };
 
   // Fetch site statistics
   const { data: stats } = useQuery({
@@ -236,12 +299,15 @@ export const useSidebarData = () => {
   });
 
   return {
-    config,
+    config: config || defaultConfig,
     stats,
     onlineUsers,
     comments,
     threads,
     poll,
     userVote,
+    updateConfig,
+    saveConfig,
+    resetConfig,
   };
 };
