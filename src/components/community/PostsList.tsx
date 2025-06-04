@@ -25,9 +25,9 @@ export const PostsList: React.FC<PostsListProps> = ({
 }) => {
   if (isLoading) {
     return (
-      <div className="space-y-6 w-full">
+      <div className="space-y-6">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="bg-gray-800/10 rounded-lg border border-gray-700/30 p-4 w-full">
+          <div key={i} className="bg-gray-800/10 rounded-lg border border-gray-700/30 p-4">
             <div className="flex items-start space-x-4">
               <div className="flex flex-col items-center">
                 <Skeleton className="h-6 w-6 rounded-full" />
@@ -53,7 +53,7 @@ export const PostsList: React.FC<PostsListProps> = ({
   
   if (error) {
     return (
-      <Card className="p-6 text-center bg-red-950/20 w-full">
+      <Card className="p-6 text-center bg-red-950/20">
         <AlertTriangle className="mx-auto h-12 w-12 text-red-500 mb-4" />
         <h3 className="text-lg font-medium mb-2">Erro ao carregar publicações</h3>
         <p className="mb-4 text-gray-400">{error.message || 'Ocorreu um erro ao buscar as publicações. Por favor, tente novamente.'}</p>
@@ -67,7 +67,7 @@ export const PostsList: React.FC<PostsListProps> = ({
   }
   
   return (
-    <div className="space-y-6 w-full">
+    <div className="space-y-6">
       {posts.map((post) => (
         <Post 
           key={post.id} 
