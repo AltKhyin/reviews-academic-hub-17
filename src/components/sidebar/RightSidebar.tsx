@@ -1,6 +1,6 @@
 
 // ABOUTME: Right sidebar component with page-level scrolling integration
-// Now uses w-full since parent grid column controls width allocation
+// Now uses seamless background integration with muted color palette
 
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
@@ -53,7 +53,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
   const { isMobileDrawerOpen, toggleMobileDrawer, config } = useSidebarStore();
   const focusTrapRef = useFocusTrap(isMobile && isMobileDrawerOpen);
   
-  // Only show sidebar in community routes (this component should only be mounted in community now)
+  // Only show sidebar in community routes
   const shouldShowSidebar = location.pathname.startsWith('/community');
   
   // Initialize data fetching only when sidebar should be visible
@@ -76,12 +76,12 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isMobile, isMobileDrawerOpen, toggleMobileDrawer]);
 
-  // Don't render sidebar if not in community routes (defensive check)
+  // Don't render sidebar if not in community routes
   if (!shouldShowSidebar) {
     return null;
   }
 
-  // Get enabled sections in order - use default sections if config doesn't have sections yet
+  // Get enabled sections in order
   const enabledSections = (config?.sections || DEFAULT_SECTIONS)
     .filter(section => section.enabled)
     .sort((a, b) => a.order - b.order);
@@ -89,7 +89,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
   const content = (
     <SidebarErrorBoundary>
       <div 
-        className="w-full h-full"
+        className="w-full h-full bg-transparent"
         role="complementary"
         aria-label="Barra lateral da comunidade"
       >
@@ -106,9 +106,11 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
                   <Component />
                 </div>
                 
-                {/* Module Divider - only if not last item */}
+                {/* Subtle Module Divider - only if not last item */}
                 {index < enabledSections.length - 1 && (
-                  <div className="border-t border-gray-700/30"></div>
+                  <div className="mx-5">
+                    <div className="h-px bg-border/20"></div>
+                  </div>
                 )}
               </React.Fragment>
             );
@@ -130,11 +132,11 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
           />
         )}
         
-        {/* Mobile Drawer - still uses w-80 for mobile overlay */}
+        {/* Mobile Drawer */}
         <div 
           ref={focusTrapRef}
           className={`
-            fixed top-0 right-0 h-full w-80 bg-gray-900 border-l border-gray-700/30 z-50
+            fixed top-0 right-0 h-full w-80 bg-background border-l border-border/30 z-50
             transform transition-transform duration-300 ease-in-out overflow-y-auto
             ${isMobileDrawerOpen ? 'translate-x-0' : 'translate-x-full'}
           `}
@@ -142,14 +144,14 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
           aria-modal="true"
           aria-labelledby="mobile-sidebar-title"
         >
-          <div className="flex items-center justify-between p-4 border-b border-gray-700/30">
-            <h2 id="mobile-sidebar-title" className="text-lg font-semibold text-white">Comunidade</h2>
+          <div className="flex items-center justify-between p-4 border-b border-border/30">
+            <h2 id="mobile-sidebar-title" className="text-lg font-semibold text-foreground">Comunidade</h2>
             <button
               onClick={toggleMobileDrawer}
-              className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
               aria-label="Fechar barra lateral"
             >
-              <X className="w-5 h-5 text-gray-400" />
+              <X className="w-5 h-5 text-muted-foreground" />
             </button>
           </div>
           {content}
@@ -158,7 +160,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
     );
   }
 
-  // Desktop version - now uses w-full since grid column controls width
+  // Desktop version - seamless background integration
   return (
     <div className={`w-full bg-transparent h-full overflow-y-auto ${className}`}>
       {content}
