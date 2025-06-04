@@ -9,12 +9,13 @@ export interface Section {
 }
 
 export const useSectionVisibility = () => {
+  // Updated default sections for magazine layout
   const defaultSections: Section[] = [
-    { id: "reviews", title: "Reviews do Editor", visible: true, order: 0 },
-    { id: "reviewer", title: "Notas do Revisor", visible: true, order: 1 },
-    { id: "featured", title: "Edições em Destaque", visible: true, order: 2 },
-    { id: "upcoming", title: "Próximas Edições", visible: true, order: 3 },
-    { id: "recent", title: "Edições Recentes", visible: true, order: 4 },
+    { id: "featured", title: "Edições em Destaque", visible: true, order: 0 },
+    { id: "recent", title: "Edições Recentes", visible: true, order: 1 },
+    { id: "reviews", title: "Reviews do Editor", visible: true, order: 2 },
+    { id: "reviewer", title: "Notas do Revisor", visible: true, order: 3 },
+    { id: "upcoming", title: "Próximas Edições", visible: true, order: 4 },
     { id: "recommended", title: "Recomendados", visible: true, order: 5 },
     { id: "trending", title: "Mais Acessados", visible: true, order: 6 }
   ];
@@ -29,7 +30,7 @@ export const useSectionVisibility = () => {
         if (savedSections) {
           const parsed = JSON.parse(savedSections);
           
-          // Ensure all default sections exist, especially "reviews"
+          // Ensure all default sections exist, especially new magazine sections
           const updatedSections = [...defaultSections];
           
           // Update with saved preferences while preserving all sections

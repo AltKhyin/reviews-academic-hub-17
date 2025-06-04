@@ -1,5 +1,5 @@
 
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=Roboto+Mono:wght@400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -123,11 +123,48 @@
   .subtitle-text {
     @apply font-sans text-sm font-normal tracking-wide opacity-80;
   }
+  
+  /* Magazine-specific styles */
+  .magazine-hero {
+    @apply relative overflow-hidden rounded-xl shadow-paper;
+  }
+  
+  .magazine-card {
+    @apply bg-sheet rounded-xl shadow-paper transition-all duration-300;
+  }
+  
+  .magazine-card:hover {
+    @apply shadow-lg transform -translate-y-1;
+  }
+  
+  .magazine-grid {
+    @apply grid grid-cols-12 gap-magazine-x max-w-magazine mx-auto;
+  }
+  
+  .ticker-item {
+    @apply transition-all duration-300 hover:bg-accent/10 rounded-lg p-2;
+  }
+  
+  .ticker-container:hover .ticker-item {
+    animation-play-state: paused;
+  }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  
+  @media (prefers-reduced-motion: reduce) {
+    .magazine-hero,
+    .magazine-card,
+    .ticker-item {
+      @apply transition-none;
+    }
+    
+    .ticker-item {
+      animation: none;
+    }
   }
 }
 
