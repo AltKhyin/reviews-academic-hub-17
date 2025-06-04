@@ -13,7 +13,7 @@ import AuthPage from "./pages/auth/AuthPage";
 import Dashboard from "./pages/dashboard/Dashboard";
 import ArticleViewer from "./pages/dashboard/ArticleViewer";
 import SearchPage from "./pages/dashboard/SearchPage";
-import { Community } from "./pages/dashboard/Community";
+import Community from "./pages/dashboard/Community";
 import Profile from "./pages/dashboard/Profile";
 import Edit from "./pages/dashboard/Edit";
 import IssueEditor from "./pages/dashboard/IssueEditor";
