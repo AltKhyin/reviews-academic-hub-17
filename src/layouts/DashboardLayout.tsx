@@ -1,18 +1,19 @@
 
 // ABOUTME: Main dashboard layout with conditional sidebar rendering
-// Excludes sidebar on community routes to prevent duplicate rendering
+// Completely removes sidebar DOM element on non-community routes to eliminate layout gaps
 
 import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from '@/components/navigation/Sidebar';
 import { MobileSidebarToggle } from '@/components/sidebar/MobileSidebarToggle';
 import { RightSidebar } from '@/components/sidebar/RightSidebar';
+import { cn } from '@/lib/utils';
 
 export const DashboardLayout = () => {
   const location = useLocation();
   
-  // Don't show the old right sidebar on community routes since it has its own integrated sidebar
-  const shouldShowRightSidebar = !location.pathname.startsWith('/community');
+  // Route-based sidebar detection - only community routes get sidebar
+  const isCommunity = location.pathname.startsWith('/community');
 
   return (
     <div className="flex h-screen bg-background">
@@ -26,24 +27,32 @@ export const DashboardLayout = () => {
           <MobileSidebarToggle />
         </div>
         
-        {/* Content with conditional right sidebar */}
-        <div className="flex-1 flex overflow-hidden">
-          {/* Main Content - now takes full width */}
-          <main className="flex-1 overflow-auto w-full">
-            <Outlet />
-          </main>
-          
-          {/* Conditional Right Sidebar - only show outside community */}
-          {shouldShowRightSidebar && (
-            <aside className="hidden xl:block w-80 border-l bg-card overflow-hidden">
-              <RightSidebar isMobile={false} />
-            </aside>
-          )}
-        </div>
+        {/* Dynamic Layout Container */}
+        <main className="flex-1 overflow-auto">
+          <div className={cn(
+            "h-full",
+            // Community: Grid layout with sidebar column
+            isCommunity && "grid grid-cols-[1fr_320px] gap-6",
+            // Non-community: Single column, full width
+            !isCommunity && "flex flex-col"
+          )}>
+            {/* Main Content */}
+            <div className="flex-1 overflow-auto">
+              <Outlet />
+            </div>
+            
+            {/* Conditional Right Sidebar - only mount on community routes */}
+            {isCommunity && (
+              <aside className="border-l bg-card overflow-hidden">
+                <RightSidebar isMobile={false} />
+              </aside>
+            )}
+          </div>
+        </main>
       </div>
       
-      {/* Mobile Right Sidebar Drawer - only show outside community */}
-      {shouldShowRightSidebar && <RightSidebar isMobile={true} />}
+      {/* Mobile Right Sidebar Drawer - only mount on community routes */}
+      {isCommunity && <RightSidebar isMobile={true} />}
     </div>
   );
 };

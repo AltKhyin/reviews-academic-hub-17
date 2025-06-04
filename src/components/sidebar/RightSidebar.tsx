@@ -1,6 +1,6 @@
 
 // ABOUTME: Right sidebar component with page-level scrolling integration
-// Renders conditionally based on route and scrolls with main page content
+// Now uses w-full since parent grid column controls width allocation
 
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
@@ -53,7 +53,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
   const { isMobileDrawerOpen, toggleMobileDrawer, config } = useSidebarStore();
   const focusTrapRef = useFocusTrap(isMobile && isMobileDrawerOpen);
   
-  // Only show sidebar in community routes
+  // Only show sidebar in community routes (this component should only be mounted in community now)
   const shouldShowSidebar = location.pathname.startsWith('/community');
   
   // Initialize data fetching only when sidebar should be visible
@@ -76,7 +76,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isMobile, isMobileDrawerOpen, toggleMobileDrawer]);
 
-  // Don't render sidebar if not in community routes
+  // Don't render sidebar if not in community routes (defensive check)
   if (!shouldShowSidebar) {
     return null;
   }
@@ -89,7 +89,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
   const content = (
     <SidebarErrorBoundary>
       <div 
-        className="w-full"
+        className="w-full h-full"
         role="complementary"
         aria-label="Barra lateral da comunidade"
       >
@@ -130,7 +130,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
           />
         )}
         
-        {/* Mobile Drawer */}
+        {/* Mobile Drawer - still uses w-80 for mobile overlay */}
         <div 
           ref={focusTrapRef}
           className={`
@@ -158,8 +158,9 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
     );
   }
 
+  // Desktop version - now uses w-full since grid column controls width
   return (
-    <div className={`w-full bg-transparent ${className}`}>
+    <div className={`w-full bg-transparent h-full overflow-y-auto ${className}`}>
       {content}
     </div>
   );

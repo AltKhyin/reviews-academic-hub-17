@@ -1,6 +1,6 @@
 
 // ABOUTME: Landing page with hero section and articles grid
-// Now uses full screen width with responsive padding for better space utilization
+// Now uses proper responsive containers without fixed width constraints
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -26,64 +26,68 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Hero Section - Full width with responsive padding */}
-      <div className="text-center space-y-6 p-8 bg-white shadow-sm px-6 lg:px-12 xl:px-16">
-        <h1 className="text-4xl font-serif font-bold mb-4">Evidência Médica</h1>
-        <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-          Sua plataforma de referência para conteúdo médico baseado em evidências.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
-          <Button 
-            onClick={() => navigate('/dashboard')}
-            size="lg"
-            className="font-medium"
-          >
-            Explorar Conteúdos
-          </Button>
-          <Button 
-            onClick={() => navigate('/auth')}
-            variant="outline"
-            size="lg"
-            className="font-medium"
-          >
-            Acessar Conta
-          </Button>
+      {/* Hero Section - Full width with proper responsive padding */}
+      <div className="text-center space-y-6 p-8 bg-white shadow-sm">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
+          <h1 className="text-4xl font-serif font-bold mb-4">Evidência Médica</h1>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            Sua plataforma de referência para conteúdo médico baseado em evidências.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
+            <Button 
+              onClick={() => navigate('/dashboard')}
+              size="lg"
+              className="font-medium"
+            >
+              Explorar Conteúdos
+            </Button>
+            <Button 
+              onClick={() => navigate('/auth')}
+              variant="outline"
+              size="lg"
+              className="font-medium"
+            >
+              Acessar Conta
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Articles Grid - Full width with responsive padding and optimized grid */}
-      <div className="px-6 lg:px-12 xl:px-16 py-12">
-        {isLoading ? (
-          <div className="text-center">Carregando artigos...</div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-            {articles?.map((article) => (
-              <div 
-                key={article.id}
-                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
-              >
-                {article.image_url && (
-                  <img 
-                    src={article.image_url} 
-                    alt={article.title}
-                    className="w-full h-48 object-cover"
-                  />
-                )}
-                <div className="p-6">
-                  <h3 className="text-xl font-semibold mb-2">{article.title}</h3>
-                  <p className="text-gray-600">{article.summary}</p>
-                  <Button 
-                    onClick={() => navigate(`/article/${article.id}`)}
-                    variant="link" 
-                    className="mt-4 p-0"
-                  >
-                    Ler mais →
-                  </Button>
+      {/* Articles Grid - Full width responsive grid */}
+      <div className="py-12">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
+          {isLoading ? (
+            <div className="text-center">Carregando artigos...</div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+              {articles?.map((article) => (
+                <div 
+                  key={article.id}
+                  className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+                >
+                  {article.image_url && (
+                    <img 
+                      src={article.image_url} 
+                      alt={article.title}
+                      className="w-full h-48 object-cover"
+                    />
+                  )}
+                  <div className="p-6">
+                    <h3 className="text-xl font-semibold mb-2">{article.title}</h3>
+                    <p className="text-gray-600">{article.summary}</p>
+                    <Button 
+                      onClick={() => navigate(`/article/${article.id}`)}
+                      variant="link" 
+                      className="mt-4 p-0"
+                    >
+                      Ler mais →
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

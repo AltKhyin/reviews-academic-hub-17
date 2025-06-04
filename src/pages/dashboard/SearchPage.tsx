@@ -1,6 +1,6 @@
 
 // ABOUTME: Search page with filters and results display
-// Now uses full screen width with responsive padding for better space utilization
+// Now uses proper responsive containers without arbitrary width constraints
 
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -232,58 +232,60 @@ const SearchPage: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       {/* Logo Header */}
-      <header className="flex items-center justify-center px-6 pt-12 pb-6">
+      <header className="flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-12 pb-6">
         <Logo dark={false} size="2xlarge" />
       </header>
 
-      {/* Main content wrapper - Full width with responsive padding */}
-      <div className="flex-1 flex items-center justify-center px-6 lg:px-12 xl:px-16 mb-6">
-        <div className="w-full grid grid-cols-1 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-          {/* Filters Section */}
-          <div className="lg:col-span-1">
-            <Card className="p-6">
-              <h3 className="font-medium text-lg mb-2">Filtros</h3>
-              <SearchFilters 
-                filters={filters}
-                onFilterChange={handleFilterChange}
-                facetGroups={facetGroups}
-                areaSearchText={areaSearchText}
-                setAreaSearchText={setAreaSearchText}
-                filteredAreaOptions={filteredAreaOptions}
-              />
-            </Card>
-          </div>
+      {/* Main content wrapper - Full width responsive container */}
+      <div className="flex-1 flex items-center justify-center mb-6">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
+          <div className="grid grid-cols-1 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            {/* Filters Section */}
+            <div className="lg:col-span-1">
+              <Card className="p-6">
+                <h3 className="font-medium text-lg mb-2">Filtros</h3>
+                <SearchFilters 
+                  filters={filters}
+                  onFilterChange={handleFilterChange}
+                  facetGroups={facetGroups}
+                  areaSearchText={areaSearchText}
+                  setAreaSearchText={setAreaSearchText}
+                  filteredAreaOptions={filteredAreaOptions}
+                />
+              </Card>
+            </div>
 
-          {/* Search and Results Section - Now spans more columns for better width utilization */}
-          <div className="lg:col-span-3 xl:col-span-4">
-            {/* Search Header */}
-            <Card className="p-6 mb-6">
-              <SearchHeader 
-                queryText={queryText}
-                setQueryText={setQueryText}
-                handleSubmitSearch={handleSubmitSearch}
-                searchTags={searchTags}
-                handleTagRemove={handleTagRemove}
-                handleTagToggleExclude={handleTagToggleExclude}
+            {/* Search and Results Section - Now spans more columns for better width utilization */}
+            <div className="lg:col-span-3 xl:col-span-4">
+              {/* Search Header */}
+              <Card className="p-6 mb-6">
+                <SearchHeader 
+                  queryText={queryText}
+                  setQueryText={setQueryText}
+                  handleSubmitSearch={handleSubmitSearch}
+                  searchTags={searchTags}
+                  handleTagRemove={handleTagRemove}
+                  handleTagToggleExclude={handleTagToggleExclude}
+                  clearFilters={clearFilters}
+                  queryPreview={queryPreview}
+                />
+              </Card>
+
+              {/* Results area */}
+              <SearchResults 
+                isLoading={isLoading}
+                error={error}
+                searchResults={searchResults}
+                refetch={refetch}
+                sortBy={sortBy}
+                setSortBy={setSortBy}
+                currentPage={currentPage}
+                setCurrentPage={setCurrentPage}
                 clearFilters={clearFilters}
-                queryPreview={queryPreview}
+                filters={filters}
+                searchTags={searchTags}
               />
-            </Card>
-
-            {/* Results area */}
-            <SearchResults 
-              isLoading={isLoading}
-              error={error}
-              searchResults={searchResults}
-              refetch={refetch}
-              sortBy={sortBy}
-              setSortBy={setSortBy}
-              currentPage={currentPage}
-              setCurrentPage={setCurrentPage}
-              clearFilters={clearFilters}
-              filters={filters}
-              searchTags={searchTags}
-            />
+            </div>
           </div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 
 // ABOUTME: Main dashboard displaying issues with hero section and article rows
-// Now uses full screen width with responsive padding for optimal space utilization
+// Now uses proper full-width responsive containers without arbitrary constraints
 
 import React from 'react';
 import { useIssues } from '@/hooks/useIssues';
@@ -21,8 +21,8 @@ const Dashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="w-full">
-        <div className="max-w-[1280px] mx-auto px-6 py-6">
+      <div className="w-full min-h-screen">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-6">
           <DashboardSkeleton />
         </div>
       </div>
@@ -31,8 +31,8 @@ const Dashboard = () => {
 
   if (!issues || issues.length === 0) {
     return (
-      <div className="w-full">
-        <div className="max-w-[1280px] mx-auto px-6 py-6">
+      <div className="w-full min-h-screen">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-6">
           <div className="text-center py-16">
             <h2 className="text-2xl font-bold mb-4">Nenhum conteúdo disponível</h2>
             <p className="text-muted-foreground">
@@ -133,8 +133,8 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="w-full">
-      <div className="max-w-[1280px] mx-auto px-6 py-6">
+    <div className="w-full min-h-screen bg-background">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-6">
         <div className="space-y-8">
           {visibleSectionIds.map((sectionId, index) => {
             const sectionElement = renderSection(sectionId, index);

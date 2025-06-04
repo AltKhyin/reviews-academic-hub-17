@@ -1,7 +1,7 @@
 
 ---
 app: Reviews
-version: "1.1.0"
+version: "1.2.0"
 updated: 2025-06-04
 maintainer: lovable
 frontend: React 18 / Vite / Tailwind CSS / TypeScript
@@ -370,9 +370,9 @@ vote_content_suggestion(suggestion_id UUID, vote_type TEXT) → VOID
 ## 7. UI Component Index
 
 ### Layout Components
-- `DashboardLayout.tsx` - Main app shell with sidebar
+- `DashboardLayout.tsx` - **Route-scoped layout** with conditional sidebar mounting. Sidebar is only mounted on `/community` routes to prevent layout gaps.
 - `Sidebar.tsx` - Main navigation menu
-- `RightSidebar.tsx` - Community features sidebar
+- `RightSidebar.tsx` - Community features sidebar (community-only)
 
 ### Content Components  
 - `CarouselArticleCard.tsx` - Interactive issue card with hover effects and tooltips
@@ -433,10 +433,10 @@ vote_content_suggestion(suggestion_id UUID, vote_type TEXT) → VOID
 - **Tooltips:** Contextual labels for all interactive elements
 
 ### Spacing & Layout
-- **Grid:** 12-column responsive grid
-- **Containers:** max-w-6xl (dashboard), max-w-4xl (content)
+- **Responsive Containers:** `container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12` for consistent full-width layouts
+- **Grid Systems:** CSS Grid for community layout (grid-cols-[1fr_320px]), Flexbox for others
 - **Spacing:** 4px base unit (space-1 through space-16)
-- **Special Cases:** Reduced spacing between reviewer comments and featured content
+- **Layout Strategy:** Route-conditional mounting prevents ghost elements and layout gaps
 
 ## 9. Accessibility Contract
 
@@ -491,6 +491,7 @@ vote_content_suggestion(suggestion_id UUID, vote_type TEXT) → VOID
 - Image optimization and lazy loading
 - Code splitting at route and component levels
 - Skeleton loading states for perceived performance
+- **Layout Efficiency:** Conditional DOM mounting eliminates phantom elements
 
 ## 11. Security & Compliance
 
@@ -561,12 +562,14 @@ CREATE POLICY "Published content access"
 - **Community Health:** Posts per week, comment threads, suggestion submissions
 - **Search Success:** Query → result → engagement rate
 - **Interactive Features:** Reaction rates, bookmark rates, suggestion voting
+- **Layout Performance:** Full-width utilization metrics, sidebar engagement rates
 
 ### Technical Metrics
 - **Error Rates:** <1% 4xx, <0.1% 5xx
 - **Performance:** Core Web Vitals compliance
 - **Availability:** >99.9% uptime
 - **Security:** Zero data breaches, successful auth rate
+- **Layout Efficiency:** Zero phantom element detection, optimal content width usage
 
 ### Event Tracking
 ```typescript
@@ -580,6 +583,7 @@ CREATE POLICY "Published content access"
 - suggestion_voted
 - search_performed
 - user_registered
+- layout_width_utilized // new metric for space utilization
 ```
 
 ### User Engagement Metrics
@@ -587,6 +591,7 @@ CREATE POLICY "Published content access"
 - **Feature Adoption:** % users using reactions, bookmarks, suggestions
 - **Content Quality:** Ratio of positive to negative reactions
 - **Community Growth:** New users per week, retention rates
+- **Layout UX:** Full-width vs constrained layout user satisfaction
 
 ## 14. TODO / Backlog
 
@@ -612,7 +617,7 @@ CREATE POLICY "Published content access"
 - [ ] Social features (follow users, activity feeds)
 
 ### Technical Debt
-- [ ] Refactor large components (Post.tsx >200 lines, Dashboard.tsx complexity)
+- [ ] Refactor large components (Post.tsx >200 lines)
 - [ ] Implement proper error boundaries throughout app
 - [ ] Add comprehensive TypeScript coverage for interactive hooks
 - [ ] Optimize bundle splitting for better performance
@@ -626,3 +631,4 @@ CREATE POLICY "Published content access"
 | 2025-06-04 | lovable | Fixed infinite-recursion RLS on admin_users; migrated to profile-based auth |
 | 2025-06-04 | lovable | Added interactive features: reactions, bookmarks, tooltips, suggestions |
 | 2025-06-04 | lovable | Fixed reviewer comments system, spacing issues, comprehensive review |
+| 2025-06-04 | lovable | **Layout Revolution v1.2.0:** Eliminated layout gaps through conditional sidebar mounting and full-width responsive containers |
