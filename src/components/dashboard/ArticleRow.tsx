@@ -3,17 +3,12 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
 import ArticleCard from './ArticleCard';
 import { useMediaQuery } from '@/hooks/use-mobile';
+import { Issue } from '@/types/issue';
 import type { UseEmblaCarouselType } from 'embla-carousel-react';
 
 interface ArticleRowProps {
   title: string;
-  articles: Array<{
-    id: string;
-    title: string;
-    description: string;
-    image: string;
-    category: string;
-  }>;
+  articles: Issue[];
 }
 
 const ArticleRow = ({ title, articles }: ArticleRowProps) => {
@@ -46,9 +41,9 @@ const ArticleRow = ({ title, articles }: ArticleRowProps) => {
           setApi={setCarouselApi}
         >
           <CarouselContent className="-ml-2">
-            {articles.map((article) => (
-              <CarouselItem key={article.id} className="pl-2 md:basis-1/5 lg:basis-1/5">
-                <ArticleCard article={article} />
+            {articles.map((issue) => (
+              <CarouselItem key={issue.id} className="pl-2 md:basis-1/5 lg:basis-1/5">
+                <ArticleCard issue={issue} variant="compact" />
               </CarouselItem>
             ))}
           </CarouselContent>
