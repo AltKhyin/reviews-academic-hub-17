@@ -28,7 +28,7 @@ const Index = () => {
     <div className="min-h-screen bg-gray-100">
       {/* Hero Section - Centered with optimal max-width */}
       <div className="text-center space-y-6 p-8 bg-white shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1 className="text-4xl font-serif font-bold mb-4">Evidência Médica</h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Sua plataforma de referência para conteúdo médico baseado em evidências.
@@ -55,7 +55,7 @@ const Index = () => {
 
       {/* Articles Grid - Centered with optimal max-width */}
       <div className="py-12">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           {isLoading ? (
             <div className="text-center">Carregando artigos...</div>
           ) : (
