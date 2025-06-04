@@ -3,7 +3,6 @@ import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { SidebarProvider } from "@/components/ui/sidebar";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -45,35 +44,33 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AuthProvider>
-          <SidebarProvider>
-            <div className="min-h-screen flex w-full">
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <Routes>
-                  {/* Public routes that don't require authentication */}
-                  <Route path="/auth" element={<AuthPage />} />
-                  <Route path="/policy" element={<PolicyPage />} />
-                  
-                  {/* Protected routes that require authentication */}
-                  <Route path="/" element={<DashboardLayout />}>
-                    <Route path="homepage" element={<Dashboard />} />
-                    <Route path="article/:id" element={<ArticleViewer />} />
-                    <Route path="search" element={<SearchPage />} />
-                    <Route path="community" element={<Community />} />
-                    <Route path="articles" element={<Dashboard />} />
-                    <Route path="profile" element={<Profile />} />
-                    <Route path="edit" element={<Edit />} />
-                    <Route path="edit/issue/:id" element={<IssueEditor />} />
-                    <Route path="edit/issue/new" element={<IssueEditor />} />
-                    <Route index element={<Navigate to="/homepage" replace />} />
-                  </Route>
+          <div className="min-h-screen flex w-full">
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                {/* Public routes that don't require authentication */}
+                <Route path="/auth" element={<AuthPage />} />
+                <Route path="/policy" element={<PolicyPage />} />
+                
+                {/* Protected routes that require authentication */}
+                <Route path="/" element={<DashboardLayout />}>
+                  <Route path="homepage" element={<Dashboard />} />
+                  <Route path="article/:id" element={<ArticleViewer />} />
+                  <Route path="search" element={<SearchPage />} />
+                  <Route path="community" element={<Community />} />
+                  <Route path="articles" element={<Dashboard />} />
+                  <Route path="profile" element={<Profile />} />
+                  <Route path="edit" element={<Edit />} />
+                  <Route path="edit/issue/:id" element={<IssueEditor />} />
+                  <Route path="edit/issue/new" element={<IssueEditor />} />
+                  <Route index element={<Navigate to="/homepage" replace />} />
+                </Route>
 
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </BrowserRouter>
-            </div>
-          </SidebarProvider>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </div>
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
