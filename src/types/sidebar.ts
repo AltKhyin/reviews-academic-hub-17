@@ -67,7 +67,8 @@ export type SidebarSectionId =
   | 'countdown'
   | 'bookmarks'
   | 'rules'
-  | 'changelog';
+  | 'changelog'
+  | 'advanced';
 
 export interface SidebarSection {
   id: SidebarSectionId;
@@ -110,15 +111,15 @@ export interface SidebarSection {
     showDaysOnly?: boolean;
     urgentAlert?: boolean;
     
-    // Visual config
-    cardSpacing?: number;
-    fontSize?: 'sm' | 'md' | 'lg';
-    
     // Advanced config
     refreshInterval?: number;
     enableCaching?: boolean;
     debugMode?: boolean;
     preloadData?: boolean;
+    
+    // Visual config
+    cardSpacing?: number;
+    fontSize?: 'sm' | 'md' | 'lg';
   };
 }
 
@@ -138,6 +139,7 @@ export interface SidebarConfig {
     colorTheme?: 'default' | 'dark' | 'light' | 'blue' | 'green';
     backgroundColor?: string;
     textColor?: string;
+    fontSize?: 'sm' | 'md' | 'lg';
   };
 }
 

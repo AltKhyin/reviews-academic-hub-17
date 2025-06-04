@@ -1,3 +1,4 @@
+
 // ABOUTME: Enhanced sidebar data hook with complete configuration management
 // Manages all sidebar-related data fetching with proper loading states and error handling
 
@@ -122,13 +123,26 @@ export const useSidebarData = () => {
         name: 'Changelog', 
         enabled: true, 
         order: 8 
+      },
+      { 
+        id: 'advanced', 
+        name: 'Configurações Avançadas', 
+        enabled: false, 
+        order: 9,
+        config: {
+          refreshInterval: 30,
+          enableCaching: true,
+          debugMode: false,
+          preloadData: true
+        }
       }
     ],
     visual: {
       width: 320,
       colorTheme: 'default',
       backgroundColor: '#ffffff',
-      textColor: '#000000'
+      textColor: '#000000',
+      fontSize: 'md'
     }
   };
 
