@@ -65,13 +65,21 @@ const Dashboard = () => {
   console.log('Dashboard: Visible sections:', visibleSectionIds);
   console.log('Dashboard: Featured issue:', featuredIssue?.id);
 
-  const renderSection = (sectionId: string) => {
+  const renderSection = (sectionId: string, index: number) => {
     if (!isSectionVisible(sectionId)) return null;
 
+    // Special spacing for reviewer comments when followed by featured section
+    const isReviewerSection = sectionId === 'reviews';
+    const nextSection = visibleSectionIds[index + 1];
+    const isFollowedByFeatured = nextSection === 'featured';
+    
     switch (sectionId) {
       case 'reviews':
-        // Only show one reviewer comments section
-        return <ReviewerCommentsDisplay key="reviews" />;
+        return (
+          <div key="reviews" className={isFollowedByFeatured ? 'mb-4' : ''}>
+            <ReviewerCommentsDisplay />
+          </div>
+        );
         
       case 'reviewer':
         // Skip duplicate reviewer section
@@ -104,7 +112,7 @@ const Dashboard = () => {
   return (
     <div className="h-full max-w-6xl mx-auto">
       <div className="pt-4 pb-16 space-y-8 transition-all duration-300 max-w-[95%] mx-auto">
-        {visibleSectionIds.map(sectionId => renderSection(sectionId))}
+        {visibleSectionIds.map((sectionId, index) => renderSection(sectionId, index))}
       </div>
     </div>
   );
