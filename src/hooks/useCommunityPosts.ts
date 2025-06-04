@@ -1,181 +1,21 @@
+
 import { useQuery } from '@tanstack/react-query';
-import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { CommunitySettings, PostData } from '@/types/community';
+import { CommunitySettings } from '@/types/community';
+import { usePosts } from '@/hooks/community/usePosts';
+import { enhancePostsWithDetails } from '@/hooks/community/usePostEnhancement';
 
 export function useCommunityPosts(activeTab: string, searchTerm: string) {
-  const { user } = useAuth();
+  const { data: posts, ...queryProps } = usePosts(activeTab, searchTerm);
   
   return useQuery({
-    queryKey: ['community-posts', activeTab, searchTerm, user?.id],
+    queryKey: ['enhanced-posts', posts],
     queryFn: async () => {
-      // First, call the unpin expired posts function
-      await supabase.rpc('unpin_expired_posts');
-
-      // Fetch pinned posts separately
-      let pinnedQuery = supabase
-        .from('posts')
-        .select(`*`)
-        .eq('published', true)
-        .eq('pinned', true)
-        .order('pinned_at', { ascending: false });
-
-      // Fetch regular posts
-      let regularQuery = supabase
-        .from('posts')
-        .select(`*`)
-        .eq('published', true)
-        .eq('pinned', false);
-      
-      // Add search filter if searchTerm is provided
-      if (searchTerm) {
-        pinnedQuery = pinnedQuery.ilike('title', `%${searchTerm}%`);
-        regularQuery = regularQuery.ilike('title', `%${searchTerm}%`);
-      }
-      
-      // Apply sorting to regular posts only
-      if (activeTab === 'popular') {
-        regularQuery = regularQuery.order('score', { ascending: false });
-      } else if (activeTab === 'oldest') {
-        regularQuery = regularQuery.order('created_at', { ascending: true });
-      } else {
-        regularQuery = regularQuery.order('created_at', { ascending: false });
-      }
-
-      // For "my" tab, filter by current user
-      if (activeTab === 'my' && user) {
-        pinnedQuery = pinnedQuery.eq('user_id', user.id);
-        regularQuery = regularQuery.eq('user_id', user.id);
-      }
-
-      const [{ data: pinnedPosts, error: pinnedError }, { data: regularPosts, error: regularError }] = await Promise.all([
-        pinnedQuery,
-        regularQuery
-      ]);
-      
-      if (pinnedError) throw pinnedError;
-      if (regularError) throw regularError;
-      
-      const allPosts = [...(pinnedPosts || []), ...(regularPosts || [])];
-      
-      if (!allPosts.length) return [];
-      
-      // Now fetch profiles for these posts
-      const userIds = allPosts.map(post => post.user_id);
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name, avatar_url')
-        .in('id', userIds);
-      
-      // Fetch flairs
-      const flairIds = allPosts.filter(post => post.flair_id).map(post => post.flair_id);
-      let flairs = [];
-      
-      if (flairIds.length > 0) {
-        const { data: flairsData } = await supabase
-          .from('post_flairs')
-          .select('*')
-          .in('id', flairIds);
-          
-        flairs = flairsData || [];
-      }
-      
-      // Fetch user votes if logged in
-      let userVotes: Record<string, number> = {};
-      
-      if (user) {
-        const { data: votesData } = await supabase
-          .from('post_votes')
-          .select('post_id, value')
-          .eq('user_id', user.id)
-          .in('post_id', allPosts.map(p => p.id));
-          
-        if (votesData) {
-          userVotes = votesData.reduce((acc: Record<string, number>, vote) => {
-            acc[vote.post_id] = vote.value;
-            return acc;
-          }, {});
-        }
-      }
-      
-      // Fetch poll data for posts with polls
-      const postsWithDetails = await Promise.all(
-        allPosts.map(async (post) => {
-          // Find the profile for this post
-          const profile = profiles?.find(p => p.id === post.user_id);
-          // Find the flair for this post
-          const postFlair = flairs.find(f => f.id === post.flair_id);
-          
-          const enhancedPost = {
-            ...post,
-            profiles: profile ? {
-              full_name: profile.full_name,
-              avatar_url: profile.avatar_url
-            } : null,
-            post_flairs: postFlair || null,
-            poll: null as any,
-            userVote: userVotes[post.id] || 0
-          };
-          
-          if (!post.poll_id) return enhancedPost;
-          
-          // Fetch poll options
-          const { data: pollOptions } = await supabase
-            .from('poll_options')
-            .select('id, text, position')
-            .eq('poll_id', post.poll_id)
-            .order('position');
-            
-          if (!pollOptions) return enhancedPost;
-            
-          // Fetch vote counts for each option
-          const optionsWithVotes = await Promise.all(
-            pollOptions.map(async (option) => {
-              const { count } = await supabase
-                .from('poll_votes')
-                .select('*', { count: 'exact', head: true })
-                .eq('option_id', option.id);
-                
-              return {
-                ...option,
-                votes: count || 0
-              };
-            })
-          );
-          
-          // Check if current user has voted
-          let userVote = null;
-          if (user) {
-            const { data: voteData } = await supabase
-              .from('poll_votes')
-              .select('option_id')
-              .eq('user_id', user.id)
-              .in('option_id', optionsWithVotes.map(o => o.id))
-              .maybeSingle();
-            
-            userVote = voteData?.option_id || null;
-          }
-          
-          // Calculate total votes
-          const totalVotes = optionsWithVotes.reduce((sum, o) => sum + o.votes, 0);
-          
-          return {
-            ...enhancedPost,
-            poll: {
-              id: post.poll_id,
-              options: optionsWithVotes,
-              total_votes: totalVotes,
-              user_vote: userVote
-            }
-          };
-        })
-      );
-      
-      return postsWithDetails as PostData[];
+      if (!posts) return [];
+      return enhancePostsWithDetails(posts);
     },
-    enabled: true,
-    staleTime: 30000,
-    refetchOnWindowFocus: true,
+    enabled: !!posts,
+    ...queryProps
   });
 }
 
@@ -199,8 +39,6 @@ export function useCommunitySettings() {
     queryKey: ['community-settings'],
     queryFn: async () => {
       try {
-        // Since the database table might not be in the TypeScript types yet,
-        // use REST API directly with proper typing
         const response = await fetch(
           'https://kznasfgubbyinomtetiu.supabase.co/rest/v1/community_settings?select=*&limit=1',
           {
@@ -219,9 +57,7 @@ export function useCommunitySettings() {
         
         const settings = await response.json();
         
-        // If no settings found, return default
         if (!settings || settings.length === 0) {
-          // Create default settings
           const defaultSettings: Omit<CommunitySettings, 'id' | 'created_at' | 'updated_at'> = {
             header_image_url: 'https://images.unsplash.com/photo-1618044733300-9472054094ee?q=80&w=2942&auto=format&fit=crop',
             theme_color: '#1e40af',
@@ -229,7 +65,6 @@ export function useCommunitySettings() {
             allow_polls: true
           };
           
-          // Insert default settings
           const insertResponse = await fetch(
             'https://kznasfgubbyinomtetiu.supabase.co/rest/v1/community_settings',
             {
@@ -255,7 +90,6 @@ export function useCommunitySettings() {
       } catch (error) {
         console.error("Error fetching community settings:", error);
         
-        // Return default settings as fallback
         return {
           id: 'default',
           header_image_url: 'https://images.unsplash.com/photo-1618044733300-9472054094ee?q=80&w=2942&auto=format&fit=crop',
