@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { Maximize, BookOpen, FileText, SplitSquareVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useSidebar } from '@/components/ui/sidebar';
 
 interface PDFViewerProps {
   url?: string;
@@ -17,7 +16,6 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
 }) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isReadingMode, setIsReadingMode] = useState(false);
-  const { setOpen: setSidebarOpen } = useSidebar();
   
   const handleFullScreen = () => {
     const iframe = document.getElementById(`pdf-iframe-${title.replace(/\s+/g, '-')}`) as HTMLIFrameElement;
@@ -35,11 +33,7 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   
   const handleReadingMode = () => {
     setIsReadingMode(!isReadingMode);
-    
-    // Automatically hide sidebar when entering reading mode
-    if (!isReadingMode) {
-      setSidebarOpen(false);
-    }
+    // Note: Removed sidebar control since this app uses a different sidebar system
   };
   
   return (
