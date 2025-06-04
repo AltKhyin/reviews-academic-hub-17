@@ -77,21 +77,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       if (profileData) {
-        const isUserEditor = profileData.role === 'editor' || isUserAdmin;
+        // Ensure role is properly typed
+        const validRole = (['user', 'editor', 'admin'].includes(profileData.role)) 
+          ? profileData.role as 'user' | 'editor' | 'admin'
+          : 'user';
+          
+        const isUserEditor = validRole === 'editor' || isUserAdmin;
         
-        console.log("Setting role flags:", { isAdmin: isUserAdmin, isEditor: isUserEditor });
+        console.log("Setting role flags:", { isAdmin: isUserAdmin, isEditor: isUserEditor, role: validRole });
         
-        setProfile(profileData as UserProfile);
+        const typedProfile: UserProfile = {
+          ...profileData,
+          role: validRole
+        };
+        
+        setProfile(typedProfile);
         setIsAdmin(isUserAdmin);
         setIsEditor(isUserEditor);
       } else {
         console.log("No profile found, creating default");
-        const defaultProfile = {
+        const defaultProfile: UserProfile = {
           id: userId,
           role: 'user',
           full_name: null,
           avatar_url: null
-        } as UserProfile;
+        };
         
         // Try to create profile if it doesn't exist
         const { error: insertError } = await supabase
@@ -119,7 +129,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       // Set a basic profile in case of persistent error
-      const fallbackProfile = {
+      const fallbackProfile: UserProfile = {
         id: userId,
         role: 'user',
         full_name: null,
