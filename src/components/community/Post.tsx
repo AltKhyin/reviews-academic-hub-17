@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -410,23 +409,24 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
           
           <PostContent post={post} onVoteChange={handlePollVoteChange} />
 
-          {/* Issue discussion banner - positioned after content */}
+          {/* Issue discussion banner - positioned after content with cover as background */}
           {isIssueDiscussion && post.issue_id && issueCoverUrl && (
             <div 
-              className="mt-4 mb-4 rounded-lg overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20 hover:scale-[1.02] group"
+              className="mt-4 mb-4 rounded-lg overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20 hover:scale-[1.02] group relative"
               onClick={() => navigate(`/article/${post.issue_id}`)}
             >
-              <div className="relative h-20 bg-gradient-to-r from-purple-600/20 to-purple-400/20 flex items-center">
-                <img 
-                  src={issueCoverUrl} 
-                  alt="Capa da edição" 
-                  className="h-full w-20 object-cover rounded-l-lg"
-                />
-                <div className="flex-1 px-4 flex items-center justify-between">
-                  <span className="text-sm text-purple-200 group-hover:text-purple-100 transition-colors">
+              <div 
+                className="relative h-20 flex items-center bg-cover bg-center"
+                style={{ backgroundImage: `url(${issueCoverUrl})` }}
+              >
+                {/* Dark overlay for text readability */}
+                <div className="absolute inset-0 bg-black/60 group-hover:bg-black/50 transition-colors"></div>
+                
+                <div className="relative z-10 flex-1 px-4 flex items-center justify-between">
+                  <span className="text-sm text-white font-medium group-hover:text-purple-100 transition-colors">
                     Esta discussão refere-se a uma edição publicada.
                   </span>
-                  <ExternalLink className="h-4 w-4 text-purple-300 group-hover:text-purple-200 transition-colors" />
+                  <ExternalLink className="h-4 w-4 text-white group-hover:text-purple-200 transition-colors" />
                 </div>
               </div>
             </div>
