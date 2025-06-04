@@ -1,5 +1,8 @@
 
-import React, { useEffect } from 'react';
+// ABOUTME: Right sidebar component with integrated scrolling and theme-aware styling
+// Renders conditionally based on route and provides mobile drawer functionality
+
+import React, { useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { useSidebarStore } from '@/stores/sidebarStore';
@@ -27,6 +30,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
   const location = useLocation();
   const { isMobileDrawerOpen, toggleMobileDrawer } = useSidebarStore();
   const focusTrapRef = useFocusTrap(isMobile && isMobileDrawerOpen);
+  const scrollRef = useRef<HTMLDivElement>(null);
   
   // Only show sidebar in community routes
   const shouldShowSidebar = location.pathname.startsWith('/community');
@@ -36,6 +40,28 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
   if (shouldFetchData) {
     useSidebarData();
   }
+
+  // Handle scroll events for scrollbar visibility
+  useEffect(() => {
+    const scrollElement = scrollRef.current;
+    if (!scrollElement) return;
+
+    let scrollTimeout: NodeJS.Timeout;
+
+    const handleScroll = () => {
+      scrollElement.classList.add('scrolling');
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        scrollElement.classList.remove('scrolling');
+      }, 1000);
+    };
+
+    scrollElement.addEventListener('scroll', handleScroll);
+    return () => {
+      scrollElement.removeEventListener('scroll', handleScroll);
+      clearTimeout(scrollTimeout);
+    };
+  }, []);
 
   // Handle escape key to close mobile drawer
   useEffect(() => {
@@ -59,7 +85,8 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
   const content = (
     <SidebarErrorBoundary>
       <div 
-        className="max-h-[calc(100vh-theme(spacing.24))] overflow-y-auto scrollbar-thin scrollbar-track-gray-800 scrollbar-thumb-gray-600"
+        ref={scrollRef}
+        className="max-h-[calc(100vh-theme(spacing.24))] overflow-y-auto community-scroll"
         role="complementary"
         aria-label="Barra lateral da comunidade"
       >
@@ -154,13 +181,13 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
           aria-labelledby="mobile-sidebar-title"
         >
           <div className="flex items-center justify-between p-4 border-b border-gray-700">
-            <h2 id="mobile-sidebar-title" className="text-lg font-semibold">Comunidade</h2>
+            <h2 id="mobile-sidebar-title" className="text-lg font-semibold text-white">Comunidade</h2>
             <button
               onClick={toggleMobileDrawer}
               className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
               aria-label="Fechar barra lateral"
             >
-              <X className="w-5 h-5" />
+              <X className="w-5 h-5 text-gray-400" />
             </button>
           </div>
           {content}
@@ -170,7 +197,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
   }
 
   return (
-    <div className={`w-full bg-gray-900 border border-gray-700 rounded-lg ${className}`}>
+    <div className={`w-full bg-transparent ${className}`}>
       {content}
     </div>
   );

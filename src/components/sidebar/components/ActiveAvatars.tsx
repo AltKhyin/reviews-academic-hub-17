@@ -1,7 +1,9 @@
 
+// ABOUTME: Enhanced active users avatar strip with tooltips and improved visual design
+// Shows recent community activity through user avatars with online indicators
+
 import React from 'react';
-import { formatDistanceToNow } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { Users, Circle } from 'lucide-react';
 import { useSidebarStore } from '@/stores/sidebarStore';
 
 export const ActiveAvatars: React.FC = () => {
@@ -11,85 +13,69 @@ export const ActiveAvatars: React.FC = () => {
     return (
       <div className="space-y-3">
         <div className="h-4 bg-gray-700 rounded w-24 animate-pulse" />
-        <div className="flex space-x-[-8px]">
+        <div className="flex items-center space-x-[-8px]">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="w-7 h-7 bg-gray-700 rounded-full animate-pulse" />
           ))}
         </div>
-        <div className="h-3 bg-gray-700 rounded w-20 animate-pulse" />
       </div>
     );
   }
 
-  if (!onlineUsers?.length) {
-    return (
-      <div className="space-y-3">
-        <h3 className="text-xs font-medium text-gray-300 uppercase tracking-wide">Usuários Ativos</h3>
-        <p className="text-xs text-gray-500">Nenhum usuário online no momento</p>
-        <p className="text-xs text-gray-400">{stats?.totalUsers || 0} inscritos</p>
-      </div>
-    );
-  }
-
-  // Show max 6 users in avatar strip
   const displayUsers = onlineUsers.slice(0, 6);
-  const remainingCount = Math.max(0, onlineUsers.length - 6);
+  const overflowCount = Math.max(0, onlineUsers.length - 6);
+  const totalOnline = stats?.onlineUsers || 0;
 
   return (
     <div className="space-y-3">
-      <h3 className="text-xs font-medium text-gray-300 uppercase tracking-wide">Usuários Ativos</h3>
-      
-      {/* Avatar Strip */}
-      <div className="flex items-center space-x-[-8px]">
-        {displayUsers.map((user, index) => {
-          const timeAgo = formatDistanceToNow(new Date(user.last_active), {
-            addSuffix: true,
-            locale: ptBR
-          });
-
-          return (
-            <div
-              key={user.id}
-              className="relative group"
-              title={`${user.full_name || 'Usuário'} - visto ${timeAgo}`}
-            >
-              <div className="w-7 h-7 rounded-full overflow-hidden border-2 border-gray-800 shadow-sm">
-                {user.avatar_url ? (
-                  <img
-                    src={user.avatar_url}
-                    alt={user.full_name || 'Usuário'}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gray-600 flex items-center justify-center text-xs font-medium text-white">
-                    {(user.full_name || 'U')[0].toUpperCase()}
-                  </div>
-                )}
-              </div>
-              
-              {/* Green dot for top 3 users */}
-              {index < 3 && (
-                <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-900 animate-pulse" />
-              )}
-            </div>
-          );
-        })}
-        
-        {/* +N bubble for remaining users */}
-        {remainingCount > 0 && (
-          <div 
-            className="w-7 h-7 rounded-full bg-gray-700 border-2 border-gray-800 flex items-center justify-center"
-            title={`Mais ${remainingCount} usuários online`}
-          >
-            <span className="text-xs font-medium text-gray-300">+{remainingCount}</span>
-          </div>
-        )}
+      <div className="flex items-center space-x-2">
+        <Users className="w-4 h-4 text-green-400" />
+        <h3 className="text-xs font-medium text-gray-300 uppercase tracking-wide">Atividade Recente</h3>
       </div>
       
-      {/* Stats line */}
-      <div className="text-xs text-gray-400">
-        {stats?.onlineUsers || 0} online • {stats?.totalUsers || 0} inscritos
+      <div className="space-y-3">
+        {/* Avatar Strip */}
+        <div className="flex items-center space-x-[-8px]">
+          {displayUsers.map((user, index) => (
+            <div key={user.id} className="relative group">
+              <img
+                src={user.avatar_url || '/placeholder.svg'}
+                alt={user.full_name || 'Usuário'}
+                className="w-7 h-7 rounded-full border-2 border-gray-800 shadow-sm transition-transform group-hover:scale-110 group-hover:z-10"
+                onError={(e) => {
+                  const img = e.target as HTMLImageElement;
+                  img.src = '/placeholder.svg';
+                }}
+              />
+              
+              {/* Online indicator for first 3 users */}
+              {index < 3 && (
+                <Circle className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 text-green-400 fill-green-400" />
+              )}
+              
+              {/* Tooltip */}
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-20">
+                {user.full_name || 'Usuário'}
+                <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-2 border-transparent border-t-gray-800"></div>
+              </div>
+            </div>
+          ))}
+          
+          {/* Overflow indicator */}
+          {overflowCount > 0 && (
+            <div className="w-7 h-7 flex items-center justify-center text-xs bg-gray-700 text-gray-300 rounded-full border-2 border-gray-800 font-medium">
+              +{overflowCount}
+            </div>
+          )}
+        </div>
+        
+        {/* Stats */}
+        <div className="text-xs text-gray-400">
+          <div className="flex items-center space-x-1">
+            <Circle className="w-2 h-2 text-green-400 fill-green-400" />
+            <span>{totalOnline} online agora</span>
+          </div>
+        </div>
       </div>
     </div>
   );

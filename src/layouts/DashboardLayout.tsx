@@ -1,110 +1,49 @@
 
-import React, { useEffect, useState } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Sidebar } from '../components/navigation/Sidebar';
-import { RightSidebar } from '../components/sidebar/RightSidebar';
-import { MobileSidebarToggle } from '../components/sidebar/MobileSidebarToggle';
-import { supabase } from '@/integrations/supabase/client';
-import { SidebarProvider, useSidebar } from '@/components/ui/sidebar';
-import { useAuth } from '@/contexts/AuthContext';
-import { ErrorBoundary } from '@/components/common/ErrorBoundary';
+// ABOUTME: Main dashboard layout with conditional sidebar rendering
+// Excludes sidebar on community routes to prevent duplicate rendering
 
-const ContentWrapper = ({ children }: { children: React.ReactNode }) => {
-  const { state } = useSidebar();
+import React from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
+import { Sidebar } from '@/components/navigation/Sidebar';
+import { MobileSidebarToggle } from '@/components/sidebar/MobileSidebarToggle';
+import { RightSidebar } from '@/components/sidebar/RightSidebar';
+
+export const DashboardLayout = () => {
   const location = useLocation();
-  const isCollapsed = state === 'collapsed';
-  const isDualView = location.pathname.includes('/article/') && new URLSearchParams(location.search).get('view') === 'dual';
-  const isCommunityRoute = location.pathname.startsWith('/community');
   
+  // Don't show the old right sidebar on community routes since it has its own integrated sidebar
+  const shouldShowRightSidebar = !location.pathname.startsWith('/community');
+
   return (
-    <div className="flex flex-1 overflow-hidden">
-      <div className={`flex-1 overflow-y-auto transition-all duration-300 ${isCollapsed ? 'ml-[60px]' : 'ml-[240px]'}`}>
-        <div className={`h-full ${isDualView ? 'max-w-[95%]' : 'max-w-6xl'} mx-auto`}>
-          <ErrorBoundary>
-            {children}
-          </ErrorBoundary>
+    <div className="flex h-screen bg-background">
+      {/* Left Navigation Sidebar */}
+      <Sidebar />
+      
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Mobile Header with Sidebar Toggle */}
+        <div className="lg:hidden flex items-center justify-between p-4 border-b">
+          <MobileSidebarToggle />
+        </div>
+        
+        {/* Content with conditional right sidebar */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Main Content */}
+          <main className="flex-1 overflow-auto">
+            <Outlet />
+          </main>
+          
+          {/* Conditional Right Sidebar - only show outside community */}
+          {shouldShowRightSidebar && (
+            <aside className="hidden xl:block w-80 border-l bg-card overflow-hidden">
+              <RightSidebar isMobile={false} />
+            </aside>
+          )}
         </div>
       </div>
       
-      {/* Right Sidebar - Desktop - Only in community routes */}
-      {isCommunityRoute && (
-        <div className="hidden lg:block">
-          <RightSidebar />
-        </div>
-      )}
-      
-      {/* Mobile Sidebar Toggle - Only in community routes */}
-      <MobileSidebarToggle />
-      
-      {/* Right Sidebar - Mobile - Only in community routes */}
-      {isCommunityRoute && (
-        <div className="lg:hidden">
-          <RightSidebar isMobile />
-        </div>
-      )}
+      {/* Mobile Right Sidebar Drawer - only show outside community */}
+      {shouldShowRightSidebar && <RightSidebar isMobile={true} />}
     </div>
   );
 };
-
-const DashboardLayout: React.FC = () => {
-  const navigate = useNavigate();
-  const { session, isLoading } = useAuth();
-  const [authChecked, setAuthChecked] = useState(false);
-  
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const { data } = await supabase.auth.getSession();
-        console.log("Dashboard layout auth check:", data.session?.user?.email || "No session");
-        
-        if (!data.session) {
-          console.log("No session found, redirecting to /auth");
-          navigate('/auth');
-        }
-      } catch (error) {
-        console.error("Error checking auth:", error);
-        navigate('/auth');
-      } finally {
-        setAuthChecked(true);
-      }
-    };
-
-    checkAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("Auth state change in layout:", event);
-      if (event === 'SIGNED_OUT') {
-        console.log("User signed out, redirecting to auth");
-        navigate('/auth');
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
-  if (isLoading || !authChecked) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-[#121212] text-white">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white mx-auto"></div>
-          <p className="mt-4">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <ErrorBoundary>
-      <SidebarProvider defaultOpen={true}>
-        <div className="flex h-screen overflow-hidden bg-[#121212] text-white">
-          <Sidebar />
-          <ContentWrapper>
-            <Outlet />
-          </ContentWrapper>
-        </div>
-      </SidebarProvider>
-    </ErrorBoundary>
-  );
-};
-
-export default DashboardLayout;
