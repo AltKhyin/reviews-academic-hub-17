@@ -25,6 +25,8 @@ interface SidebarState {
   // UI state
   commentCarouselIndex: number;
   isMobileDrawerOpen: boolean;
+  changelogHidden: boolean;
+  isRulesExpanded: boolean;
   
   // Actions
   setConfig: (config: SidebarConfig | null) => void;
@@ -37,6 +39,8 @@ interface SidebarState {
   setLoading: (section: keyof SidebarState['loadingStates'], loading: boolean) => void;
   setCommentCarouselIndex: (index: number) => void;
   toggleMobileDrawer: () => void;
+  hideChangelog: () => void;
+  toggleRules: () => void;
   
   // Computed getters
   isLoadingConfig: boolean;
@@ -66,6 +70,8 @@ export const useSidebarStore = create<SidebarState>((set, get) => ({
   },
   commentCarouselIndex: 0,
   isMobileDrawerOpen: false,
+  changelogHidden: false,
+  isRulesExpanded: false,
   
   // Actions
   setConfig: (config) => set({ config }),
@@ -81,6 +87,10 @@ export const useSidebarStore = create<SidebarState>((set, get) => ({
   setCommentCarouselIndex: (commentCarouselIndex) => set({ commentCarouselIndex }),
   toggleMobileDrawer: () => set((state) => ({ 
     isMobileDrawerOpen: !state.isMobileDrawerOpen 
+  })),
+  hideChangelog: () => set({ changelogHidden: true }),
+  toggleRules: () => set((state) => ({ 
+    isRulesExpanded: !state.isRulesExpanded 
   })),
   
   // Computed getters
