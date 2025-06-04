@@ -8,7 +8,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 
 // Components
-import DashboardLayout from "./layouts/DashboardLayout";
+import { DashboardLayout } from "./layouts/DashboardLayout";
 import AuthPage from "./pages/auth/AuthPage";
 import Dashboard from "./pages/dashboard/Dashboard";
 import ArticleViewer from "./pages/dashboard/ArticleViewer";
