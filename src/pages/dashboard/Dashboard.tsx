@@ -12,30 +12,47 @@ import { useSectionVisibility } from '@/hooks/useSectionVisibility';
 
 const Dashboard = () => {
   const { state } = useSidebar();
-  const { user, profile } = useAuth();
+  const { user, profile, isAdmin, isEditor } = useAuth();
   const { data: issues = [], isLoading, refetch } = useIssues();
   const isCollapsed = state === 'collapsed';
   const { isLoading: sectionsLoading, getSortedVisibleSectionIds, isSectionVisible } = useSectionVisibility();
 
+  console.log("Dashboard render - Profile:", profile, "IsAdmin:", isAdmin, "IsEditor:", isEditor);
+
   const visibleIssues = React.useMemo(() => {
     if (!issues) return [];
     
-    console.log("Issues count:", issues.length, "User role:", profile?.role);
+    console.log("Processing issues:", issues.length, "User role:", profile?.role, "IsAdmin:", isAdmin);
     
-    const isAdminOrEditor = profile?.role === 'admin' || profile?.role === 'editor';
-    
-    if (!profile) {
-      return issues.filter(issue => issue.published);
+    // For admin and editor users, show ALL issues (published and unpublished)
+    if (isAdmin || isEditor || profile?.role === 'admin' || profile?.role === 'editor') {
+      console.log("Admin/Editor view - showing all issues");
+      return issues;
     }
     
-    return isAdminOrEditor ? issues : issues.filter(issue => issue.published);
-  }, [issues, profile]);
+    // For regular users, only show published issues
+    return issues.filter(issue => issue.published);
+  }, [issues, profile, isAdmin, isEditor]);
 
   const featuredIssue = visibleIssues?.find(issue => issue.featured) || visibleIssues?.[0];
 
   // Component mapping for each section type
   const renderSection = (sectionId: string) => {
     switch(sectionId) {
+      case 'reviews':
+        // Show editor reviews section - could be a different component than reviewer comments
+        return (
+          <div key="reviews" className="mb-8">
+            <h2 className="text-2xl font-bold mb-6">Reviews do Editor</h2>
+            <div className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-500/20 rounded-lg p-6">
+              <p className="text-gray-300">
+                {isAdmin || isEditor ? 
+                  "Aqui você pode adicionar reviews e comentários editoriais." : 
+                  "Aguarde novos reviews e comentários da equipe editorial."}
+              </p>
+            </div>
+          </div>
+        );
       case 'reviewer':
         return <ReviewerCommentsDisplay key="reviewer" />;
       case 'featured':
@@ -77,6 +94,16 @@ const Dashboard = () => {
 
   return (
     <div className={`pt-4 pb-16 space-y-8 transition-all duration-300 ${isCollapsed ? 'max-w-full' : 'max-w-[95%] mx-auto'}`}>
+      {/* Debug info for admin */}
+      {(isAdmin || isEditor) && (
+        <div className="bg-green-600/10 border border-green-500/20 rounded-lg p-4 mb-4">
+          <p className="text-green-400 text-sm">
+            🔧 Admin Mode: Showing {visibleIssues.length} issues (including unpublished). 
+            Role: {profile?.role} | IsAdmin: {isAdmin ? 'Yes' : 'No'} | IsEditor: {isEditor ? 'Yes' : 'No'}
+          </p>
+        </div>
+      )}
+
       {isLoading || sectionsLoading ? (
         <DashboardSkeleton />
       ) : visibleIssues.length > 0 ? (

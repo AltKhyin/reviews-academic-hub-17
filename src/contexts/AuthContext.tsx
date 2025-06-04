@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
@@ -28,31 +29,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAdmin, setIsAdmin] = useState(false);
   const [isEditor, setIsEditor] = useState(false);
 
-  const fetchProfile = async (userId: string) => {
+  const checkAdminStatus = async (userId: string): Promise<boolean> => {
     try {
-      console.log("Fetching profile for user:", userId);
+      console.log("Checking admin status for user:", userId);
       
-      // First check if user is in admin_users table
+      // Use maybeSingle() to avoid errors when no record exists
       const { data: adminData, error: adminError } = await supabase
         .from('admin_users')
         .select('user_id')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
       
       console.log("Admin check result:", { adminData, adminError });
+      
+      if (adminError) {
+        console.error("Admin check error:", adminError);
+        return false;
+      }
+      
+      return adminData !== null;
+    } catch (error) {
+      console.error("Exception in admin check:", error);
+      return false;
+    }
+  };
 
+  const fetchProfile = async (userId: string, retryCount = 0) => {
+    const maxRetries = 3;
+    
+    try {
+      console.log(`Fetching profile for user: ${userId} (attempt ${retryCount + 1})`);
+      
+      // Check admin status first with error isolation
+      const isUserAdmin = await checkAdminStatus(userId);
+      
+      // Fetch user profile
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
       
       console.log("Profile fetch result:", { profileData, profileError });
       
-      if (profileError) throw profileError;
+      if (profileError) {
+        throw profileError;
+      }
       
       if (profileData) {
-        const isUserAdmin = adminData !== null;
         const isUserEditor = profileData.role === 'editor' || isUserAdmin;
         
         console.log("Setting role flags:", { isAdmin: isUserAdmin, isEditor: isUserEditor });
@@ -69,25 +93,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           avatar_url: null
         } as UserProfile;
         
-        await supabase
+        // Try to create profile if it doesn't exist
+        const { error: insertError } = await supabase
           .from('profiles')
           .insert(defaultProfile);
           
+        if (insertError) {
+          console.error("Error creating default profile:", insertError);
+        }
+          
         setProfile(defaultProfile);
-        setIsAdmin(false);
-        setIsEditor(false);
+        setIsAdmin(isUserAdmin);
+        setIsEditor(isUserAdmin); // Admin is also editor
       }
     } catch (error: any) {
-      console.error('Error in profile handling:', error);
-      // Set a basic profile in case of error
-      setProfile({
+      console.error(`Error in profile handling (attempt ${retryCount + 1}):`, error);
+      
+      // Retry logic for transient errors
+      if (retryCount < maxRetries && error.code !== '42P17') {
+        console.log(`Retrying profile fetch in 2 seconds...`);
+        setTimeout(() => {
+          fetchProfile(userId, retryCount + 1);
+        }, 2000);
+        return;
+      }
+      
+      // Set a basic profile in case of persistent error
+      const fallbackProfile = {
         id: userId,
         role: 'user',
         full_name: null,
         avatar_url: null
-      });
+      };
+      
+      setProfile(fallbackProfile);
       setIsAdmin(false);
       setIsEditor(false);
+      
+      // Only show toast for non-RLS errors
+      if (error.code !== '42P17') {
+        toast({
+          title: "Profile Loading Error",
+          description: "Some features may not work correctly. Please refresh the page.",
+          variant: "destructive"
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -95,6 +145,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshProfile = async () => {
     if (!user) return;
+    setIsLoading(true);
     await fetchProfile(user.id);
   };
 
@@ -105,13 +156,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(currentSession?.user || null);
       
       if (event === 'SIGNED_IN' && currentSession?.user) {
+        // Defer profile fetch to avoid auth deadlocks
         setTimeout(() => {
           fetchProfile(currentSession.user.id);
-        }, 0);
+        }, 100);
       } else if (event === 'SIGNED_OUT') {
         setProfile(null);
         setIsAdmin(false);
         setIsEditor(false);
+        setIsLoading(false);
       }
     });
 
