@@ -100,6 +100,18 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    font-optical-sizing: auto;
+  }
+  
+  /* Enhanced Typography for Homepage */
+  h1, h2, h3, h4, h5, h6 {
+    letter-spacing: -0.025em;
+    font-feature-settings: "kern" 1, "liga" 1;
+  }
+  
+  .font-serif {
+    font-optical-sizing: auto;
+    font-variation-settings: "opsz" auto;
   }
 }
 
@@ -109,11 +121,11 @@
   }
   
   .hover-effect {
-    @apply transition-all duration-200;
+    @apply transition-all duration-300 ease-out;
   }
   
   .card-elevation {
-    @apply shadow-[0_2px_4px_rgba(0,0,0,0.05)];
+    @apply shadow-[0_8px_32px_rgba(0,0,0,0.12)];
   }
   
   .logo-text {
@@ -123,11 +135,55 @@
   .subtitle-text {
     @apply font-sans text-sm font-normal tracking-wide opacity-80;
   }
+  
+  /* Enhanced Homepage Components */
+  .homepage-section {
+    @apply transition-all duration-500 ease-out;
+  }
+  
+  .homepage-card {
+    @apply transition-all duration-500 ease-out;
+    transform-style: preserve-3d;
+  }
+  
+  .homepage-card:hover {
+    transform: translateY(-8px) scale(1.02);
+  }
+  
+  /* Smooth Scrolling for Better UX */
+  .smooth-scroll {
+    scroll-behavior: smooth;
+  }
+  
+  /* Enhanced Button Styles */
+  .btn-primary {
+    @apply bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700;
+    @apply transition-all duration-300 ease-out;
+    @apply shadow-lg hover:shadow-xl;
+  }
+  
+  /* Better Focus States */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2 focus:ring-offset-background;
+  }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  
+  /* Enhanced Animation Utilities */
+  .animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out forwards;
+  }
+  
+  .animate-scale-in {
+    animation: scaleIn 0.4s ease-out forwards;
+  }
+  
+  .animate-slide-in-left {
+    animation: slideInLeft 0.5s ease-out forwards;
   }
 }
 
@@ -140,5 +196,88 @@
   }
   100% {
     transform: translate(0, 0) scale(1.1);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Enhanced Gradient Text Animation */
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.gradient-text {
+  background: linear-gradient(-45deg, #ffffff, #e5e5e5, #ffffff, #f0f0f0);
+  background-size: 400% 400%;
+  animation: gradient-shift 8s ease infinite;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Improved Backdrop Blur Effects */
+.backdrop-blur-enhanced {
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+}
+
+/* Better Shadow Utilities */
+.shadow-glow {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
+}
+
+.shadow-glow-purple {
+  box-shadow: 0 0 20px rgba(147, 51, 234, 0.15);
+}
+
+/* Enhanced Loading States */
+.loading-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
   }
 }

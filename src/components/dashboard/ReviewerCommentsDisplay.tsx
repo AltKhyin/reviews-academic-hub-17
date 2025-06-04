@@ -1,112 +1,109 @@
 
 import React from 'react';
 import { useReviewerComments } from '@/hooks/useReviewerComments';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { CheckCircle2, MessageSquare, Plus, Trash2 } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useAuth } from '@/contexts/AuthContext';
+import { MessageCircle } from 'lucide-react';
 
 export const ReviewerCommentsDisplay = () => {
-  const { comments, hasComments, isLoading, deleteComment } = useReviewerComments();
-  const { isAdmin, isEditor } = useAuth();
+  const { data: comments, isLoading, error } = useReviewerComments();
 
   if (isLoading) {
     return (
       <section className="mb-16">
-        <Card className="border-white/10 bg-gradient-to-r from-white/5 to-transparent">
-          <CardContent className="pt-6">
-            <div className="animate-pulse space-y-4">
-              <div className="h-20 bg-gray-700 rounded"></div>
-              <div className="h-20 bg-gray-700 rounded"></div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="mb-8">
+          <h2 className="text-3xl font-serif font-semibold mb-3 tracking-tight bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+            Notas do Revisor
+          </h2>
+          <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
+        </div>
+        <div className="bg-gradient-to-br from-purple-600/5 to-blue-600/5 border border-purple-500/10 rounded-2xl p-8 backdrop-blur-sm">
+          <p className="text-gray-300 text-lg leading-relaxed">Carregando comentários...</p>
+        </div>
       </section>
     );
   }
 
-  if (!hasComments) {
+  if (error) {
     return (
       <section className="mb-16">
-        <Card className="border-white/10 bg-gradient-to-r from-white/5 to-transparent">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MessageSquare className="w-5 h-5" />
-              Notas do Revisor
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-center py-8">
-              <MessageSquare className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-300 mb-2">
-                Nenhum comentário do revisor disponível
-              </h3>
-              <p className="text-gray-400 mb-4">
-                {isAdmin || isEditor ? 
-                  "Seja o primeiro a adicionar um comentário como revisor." :
-                  "Aguarde novos comentários da equipe de revisão."}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="mb-8">
+          <h2 className="text-3xl font-serif font-semibold mb-3 tracking-tight bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+            Notas do Revisor
+          </h2>
+          <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
+        </div>
+        <div className="bg-gradient-to-br from-red-600/5 to-orange-600/5 border border-red-500/10 rounded-2xl p-8 backdrop-blur-sm">
+          <p className="text-red-300 text-lg leading-relaxed">Erro ao carregar comentários do revisor.</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (!comments || comments.length === 0) {
+    return (
+      <section className="mb-16">
+        <div className="mb-8">
+          <h2 className="text-3xl font-serif font-semibold mb-3 tracking-tight bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+            Notas do Revisor
+          </h2>
+          <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
+        </div>
+        <div className="bg-gradient-to-br from-purple-600/5 to-blue-600/5 border border-purple-500/10 rounded-2xl p-8 text-center backdrop-blur-sm">
+          <MessageCircle className="w-12 h-12 text-purple-400/50 mx-auto mb-4" />
+          <p className="text-gray-300 text-lg leading-relaxed">
+            Aguarde novas notas e insights da equipe de revisão.
+          </p>
+        </div>
       </section>
     );
   }
 
   return (
     <section className="mb-16">
-      <Card className="border-white/10 bg-gradient-to-r from-white/5 to-transparent">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MessageSquare className="w-5 h-5" />
-            Notas do Revisor
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0 space-y-6">
-          {comments.map((comment) => (
-            <div key={comment.id} className="flex space-x-6">
-              <div className="flex-shrink-0">
-                <Avatar className="border-2 border-primary/20" style={{ width: '80px', height: '80px' }}>
-                  <AvatarImage src={comment.reviewer_avatar} alt={comment.reviewer_name} />
-                  <AvatarFallback>{comment.reviewer_name.charAt(0)}</AvatarFallback>
-                </Avatar>
-              </div>
+      <div className="mb-8">
+        <h2 className="text-3xl font-serif font-semibold mb-3 tracking-tight bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+          Notas do Revisor
+        </h2>
+        <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
+      </div>
+      
+      <div className="space-y-6">
+        {comments.map((comment) => (
+          <div 
+            key={comment.id} 
+            className="bg-gradient-to-br from-purple-600/5 to-blue-600/5 border border-purple-500/10 rounded-2xl p-8 backdrop-blur-sm hover:shadow-lg hover:shadow-purple-500/10 transition-all duration-300"
+          >
+            <div className="flex items-start space-x-4">
+              <Avatar className="w-12 h-12 ring-2 ring-purple-500/20">
+                <AvatarImage src={comment.reviewer_avatar || undefined} />
+                <AvatarFallback className="bg-purple-500/20 text-purple-300 font-semibold">
+                  {comment.reviewer_name?.[0] || 'R'}
+                </AvatarFallback>
+              </Avatar>
               
-              <div className="flex-1">
+              <div className="flex-1 space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <h3 className="font-medium text-lg">{comment.reviewer_name}</h3>
-                    <CheckCircle2 className="h-4 w-4 ml-1 text-blue-500" />
-                  </div>
-                  
-                  {(isAdmin || isEditor) && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => deleteComment.mutate(comment.id)}
-                      className="text-gray-400 hover:text-red-400"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
+                  <h3 className="font-serif font-semibold text-lg text-purple-300 tracking-tight">
+                    {comment.reviewer_name}
+                  </h3>
+                  <span className="text-sm text-gray-400 font-medium">
+                    {formatDistanceToNow(new Date(comment.created_at), { 
+                      addSuffix: true, 
+                      locale: ptBR 
+                    })}
+                  </span>
                 </div>
                 
-                <p className="text-muted-foreground text-xs mb-2">
-                  {formatDistanceToNow(new Date(comment.created_at), { 
-                    addSuffix: true,
-                    locale: ptBR
-                  })}
+                <p className="text-gray-200 leading-relaxed text-lg">
+                  {comment.comment}
                 </p>
-                
-                <p className="text-gray-200 leading-relaxed">{comment.comment}</p>
               </div>
             </div>
-          ))}
-        </CardContent>
-      </Card>
+          </div>
+        ))}
+      </div>
     </section>
   );
 };

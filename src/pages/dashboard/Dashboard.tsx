@@ -8,7 +8,6 @@ import { FeaturedSection } from '@/components/dashboard/FeaturedSection';
 import { ArticlesSection } from '@/components/dashboard/ArticlesSection';
 import { UpcomingReleaseSection } from '@/components/dashboard/UpcomingReleaseSection';
 import { ReviewerCommentsDisplay } from '@/components/dashboard/ReviewerCommentsDisplay';
-import { ReviewerCommentSection } from '@/components/dashboard/ReviewerCommentSection';
 import { useSectionVisibility } from '@/hooks/useSectionVisibility';
 
 const Dashboard = () => {
@@ -40,15 +39,15 @@ const Dashboard = () => {
   if (issuesError) {
     console.error("Dashboard: Issues loading error:", issuesError);
     return (
-      <div className="pt-4 pb-16">
-        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-6 mb-4">
-          <h2 className="text-red-400 text-lg font-semibold mb-2">Error Loading Content</h2>
-          <p className="text-red-300 mb-4">Failed to load issues: {issuesError.message}</p>
+      <div className="pt-8 pb-24">
+        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-8 mb-6 backdrop-blur-sm">
+          <h2 className="text-red-400 text-xl font-serif font-semibold mb-3 tracking-tight">Erro ao Carregar Conteúdo</h2>
+          <p className="text-red-300 mb-6 text-base leading-relaxed">Falha ao carregar edições: {issuesError.message}</p>
           <button 
             onClick={() => refetch()}
-            className="bg-red-500/20 hover:bg-red-500/30 text-red-300 px-4 py-2 rounded-md transition-colors"
+            className="bg-red-500/20 hover:bg-red-500/30 text-red-300 px-6 py-3 rounded-lg transition-all duration-200 font-medium hover:scale-105"
           >
-            Try Again
+            Tentar Novamente
           </button>
         </div>
       </div>
@@ -83,19 +82,20 @@ const Dashboard = () => {
     console.log(`Rendering section: ${sectionId}`);
     switch(sectionId) {
       case 'reviews':
-        // Show both reviewer comment section (for adding) and display (for viewing)
+        // Show only display for viewing (editing moved to /edit page)
         return (
-          <div key="reviews" className="mb-8">
-            <h2 className="text-2xl font-bold mb-6">Reviews do Editor</h2>
-            {(isAdmin || isEditor) ? (
-              <ReviewerCommentSection />
-            ) : (
-              <div className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-500/20 rounded-lg p-6">
-                <p className="text-gray-300">
-                  Aguarde novos reviews e comentários da equipe editorial.
-                </p>
-              </div>
-            )}
+          <div key="reviews" className="mb-12">
+            <div className="mb-8">
+              <h2 className="text-3xl font-serif font-semibold mb-2 tracking-tight bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                Reviews do Editor
+              </h2>
+              <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full mb-6"></div>
+            </div>
+            <div className="bg-gradient-to-br from-blue-600/5 to-purple-600/5 border border-blue-500/10 rounded-2xl p-8 backdrop-blur-sm">
+              <p className="text-gray-300 text-lg leading-relaxed">
+                Aguarde novos reviews e comentários da equipe editorial.
+              </p>
+            </div>
           </div>
         );
       case 'reviewer':
@@ -140,19 +140,19 @@ const Dashboard = () => {
   console.log("Dashboard: Visible section IDs:", visibleSectionIds);
 
   return (
-    <div className={`pt-4 pb-16 space-y-8 transition-all duration-300 ${isCollapsed ? 'max-w-full' : 'max-w-[95%] mx-auto'}`}>
+    <div className={`pt-6 pb-24 space-y-16 transition-all duration-300 ${isCollapsed ? 'max-w-full px-6' : 'max-w-[96%] mx-auto px-8'}`}>
       {/* Enhanced debug info for admin */}
       {(isAdmin || isEditor) && (
-        <div className="bg-green-600/10 border border-green-500/20 rounded-lg p-4 mb-4">
-          <p className="text-green-400 text-sm">
-            🔧 Admin Mode: Showing {visibleIssues.length} of {issues.length} total issues. 
-            Role: {profile?.role} | IsAdmin: {isAdmin ? 'Yes' : 'No'} | IsEditor: {isEditor ? 'Yes' : 'No'} | UserID: {user?.id}
+        <div className="bg-gradient-to-r from-green-600/10 to-emerald-600/10 border border-green-500/20 rounded-xl p-6 mb-8 backdrop-blur-sm">
+          <p className="text-green-400 text-sm font-medium leading-relaxed">
+            🔧 Modo Admin: Exibindo {visibleIssues.length} de {issues.length} edições totais. 
+            Papel: {profile?.role} | IsAdmin: {isAdmin ? 'Sim' : 'Não'} | IsEditor: {isEditor ? 'Sim' : 'Não'} | UserID: {user?.id}
           </p>
-          <p className="text-green-400 text-xs mt-1">
-            Visible sections: {visibleSectionIds.join(', ')}
+          <p className="text-green-400 text-xs mt-2 opacity-80">
+            Seções visíveis: {visibleSectionIds.join(', ')}
           </p>
-          <p className="text-green-400 text-xs mt-1">
-            Issues loading: {issuesLoading ? 'Yes' : 'No'} | Sections loading: {sectionsLoading ? 'Yes' : 'No'}
+          <p className="text-green-400 text-xs mt-1 opacity-80">
+            Carregando edições: {issuesLoading ? 'Sim' : 'Não'} | Carregando seções: {sectionsLoading ? 'Sim' : 'Não'}
           </p>
         </div>
       )}
@@ -164,25 +164,27 @@ const Dashboard = () => {
           {visibleSectionIds.map(renderSection)}
         </>
       ) : (
-        <div className="text-center py-12">
-          <h2 className="text-xl font-medium mb-2">
-            {issues.length === 0 ? 'No articles available' : 'No published articles available'}
-          </h2>
-          <p className="text-muted-foreground">
-            {profile?.role === 'admin' || profile?.role === 'editor'
-              ? issues.length === 0 
-                ? 'Create your first article to get started.'
-                : `You have ${issues.length} unpublished articles. Publish some to make them visible to users.`
-              : 'Check back later for new articles.'}
-          </p>
-          {(isAdmin || isEditor) && (
-            <button
-              onClick={() => window.location.href = '/edit'}
-              className="mt-4 bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90 transition-colors"
-            >
-              Go to Admin Panel
-            </button>
-          )}
+        <div className="text-center py-20">
+          <div className="max-w-2xl mx-auto">
+            <h2 className="text-2xl font-serif font-medium mb-4 tracking-tight">
+              {issues.length === 0 ? 'Nenhum artigo disponível' : 'Nenhum artigo publicado disponível'}
+            </h2>
+            <p className="text-muted-foreground text-lg leading-relaxed mb-8">
+              {profile?.role === 'admin' || profile?.role === 'editor'
+                ? issues.length === 0 
+                  ? 'Crie seu primeiro artigo para começar.'
+                  : `Você tem ${issues.length} artigos não publicados. Publique alguns para torná-los visíveis aos usuários.`
+                : 'Volte mais tarde para novos artigos.'}
+            </p>
+            {(isAdmin || isEditor) && (
+              <button
+                onClick={() => window.location.href = '/edit'}
+                className="bg-primary text-primary-foreground px-8 py-4 rounded-xl hover:bg-primary/90 transition-all duration-200 font-medium text-lg hover:scale-105 shadow-lg"
+              >
+                Ir para Painel Admin
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
