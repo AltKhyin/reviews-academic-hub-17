@@ -1,80 +1,78 @@
 
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AuthProvider } from '@/contexts/AuthContext';
-import { Toaster } from '@/components/ui/toaster';
-import { SidebarProvider } from '@/components/ui/sidebar';
+import React from 'react';
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
 
-// Pages
-import Index from '@/pages/Index';
-import Login from '@/pages/auth/Login';
-import Register from '@/pages/auth/Register';
-import Dashboard from '@/pages/dashboard/Dashboard';
-import ArticleViewer from '@/pages/dashboard/ArticleViewer';
-import Community from '@/pages/dashboard/Community';
-import Edit from '@/pages/dashboard/Edit';
-import IssueEditor from '@/pages/dashboard/IssueEditor';
-import IssueCreator from '@/pages/dashboard/IssueCreator';
-import Profile from '@/pages/dashboard/Profile';
-import SearchPage from '@/pages/dashboard/SearchPage';
-import NotFound from '@/pages/NotFound';
-import PolicyPage from '@/pages/PolicyPage';
-import DashboardLayout from '@/layouts/DashboardLayout';
+// Components
+import DashboardLayout from "./layouts/DashboardLayout";
+import AuthPage from "./pages/auth/AuthPage";
+import Dashboard from "./pages/dashboard/Dashboard";
+import ArticleViewer from "./pages/dashboard/ArticleViewer";
+import SearchPage from "./pages/dashboard/SearchPage";
+import Community from "./pages/dashboard/Community";
+import Profile from "./pages/dashboard/Profile";
+import Edit from "./pages/dashboard/Edit";
+import IssueEditor from "./pages/dashboard/IssueEditor";
+import NotFound from "./pages/NotFound";
+import PolicyPage from "./pages/PolicyPage";
 
-import './App.css';
-
+// Create the query client outside the component function
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,
+      retry: 2,
       refetchOnWindowFocus: false,
+      staleTime: 30000,
+      meta: {
+        errorMessage: "An error occurred while fetching data"
+      }
     },
   },
 });
 
-function App() {
+const App = () => {
+  // Move React hooks inside the component function
+  React.useEffect(() => {
+    document.documentElement.classList.add('dark');
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Router>
-          <SidebarProvider>
+      <TooltipProvider>
+        <AuthProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
             <Routes>
-              {/* Public routes */}
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
+              {/* Public routes that don't require authentication */}
+              <Route path="/auth" element={<AuthPage />} />
               <Route path="/policy" element={<PolicyPage />} />
-
-              {/* Dashboard routes */}
-              <Route path="/dashboard" element={<DashboardLayout />}>
-                <Route index element={<Dashboard />} />
-                <Route path="articles/:id" element={<ArticleViewer />} />
-                <Route path="community" element={<Community />} />
-                <Route path="profile" element={<Profile />} />
+              
+              {/* Protected routes that require authentication */}
+              <Route path="/" element={<DashboardLayout />}>
+                <Route path="homepage" element={<Dashboard />} />
+                <Route path="article/:id" element={<ArticleViewer />} />
                 <Route path="search" element={<SearchPage />} />
+                <Route path="community" element={<Community />} />
+                <Route path="articles" element={<Dashboard />} />
+                <Route path="profile" element={<Profile />} />
+                <Route path="edit" element={<Edit />} />
+                <Route path="edit/issue/:id" element={<IssueEditor />} />
+                <Route path="edit/issue/new" element={<Edit />} />
+                <Route index element={<Navigate to="/homepage" replace />} />
               </Route>
 
-              {/* Admin/Editor routes */}
-              <Route path="/edit" element={<DashboardLayout />}>
-                <Route index element={<Edit />} />
-              </Route>
-
-              {/* Issue management routes */}
-              <Route path="/issues" element={<DashboardLayout />}>
-                <Route path="create" element={<IssueCreator />} />
-                <Route path=":id" element={<ArticleViewer />} />
-                <Route path=":id/edit" element={<IssueEditor />} />
-              </Route>
-
-              {/* Catch all route */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </SidebarProvider>
-        </Router>
-        <Toaster />
-      </AuthProvider>
+          </BrowserRouter>
+        </AuthProvider>
+      </TooltipProvider>
     </QueryClientProvider>
   );
-}
+};
 
 export default App;

@@ -19,7 +19,6 @@ const Dashboard = () => {
   const { isLoading: sectionsLoading, getSortedVisibleSectionIds, isSectionVisible } = useSectionVisibility();
 
   console.log("Dashboard render - Profile:", profile, "IsAdmin:", isAdmin, "IsEditor:", isEditor, "AuthLoading:", authLoading);
-  console.log("Issues data:", { issues, issuesLoading, issuesCount: issues.length });
 
   // Wait for authentication to complete before making decisions
   if (authLoading) {
@@ -27,23 +26,19 @@ const Dashboard = () => {
   }
 
   const visibleIssues = React.useMemo(() => {
-    if (!issues || issues.length === 0) {
-      console.log("No issues available");
-      return [];
-    }
+    if (!issues) return [];
     
     console.log("Processing issues:", issues.length, "User role:", profile?.role, "IsAdmin:", isAdmin, "IsEditor:", isEditor);
     
     // For admin and editor users, show ALL issues (published and unpublished)
     if (isAdmin || isEditor || profile?.role === 'admin' || profile?.role === 'editor') {
-      console.log("Admin/Editor view - showing all issues:", issues.length);
+      console.log("Admin/Editor view - showing all issues");
       return issues;
     }
     
     // For regular users, only show published issues
-    const publishedIssues = issues.filter(issue => issue.published);
-    console.log("Regular user view - showing only published issues:", publishedIssues.length, "out of", issues.length);
-    return publishedIssues;
+    console.log("Regular user view - showing only published issues");
+    return issues.filter(issue => issue.published);
   }, [issues, profile, isAdmin, isEditor]);
 
   const featuredIssue = visibleIssues?.find(issue => issue.featured) || visibleIssues?.[0];
@@ -116,43 +111,26 @@ const Dashboard = () => {
             Role: {profile?.role} | IsAdmin: {isAdmin ? 'Yes' : 'No'} | IsEditor: {isEditor ? 'Yes' : 'No'} | UserID: {user?.id}
           </p>
           <p className="text-green-400 text-xs mt-1">
-            Visible sections: {visibleSectionIds.join(', ')} | Total issues: {issues.length}
+            Visible sections: {visibleSectionIds.join(', ')}
           </p>
         </div>
       )}
 
       {issuesLoading || sectionsLoading ? (
         <DashboardSkeleton />
-      ) : (
+      ) : visibleIssues.length > 0 ? (
         <>
           {visibleSectionIds.map(renderSection)}
-          
-          {/* Show message if no issues are available but user can create them */}
-          {visibleIssues.length === 0 && (isAdmin || isEditor) && (
-            <div className="text-center py-12">
-              <h2 className="text-xl font-medium mb-2">Nenhuma edição disponível</h2>
-              <p className="text-muted-foreground mb-4">
-                Crie sua primeira edição para começar a popular o conteúdo.
-              </p>
-              <button 
-                onClick={() => window.location.href = '/issues/create'}
-                className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90"
-              >
-                Criar Primeira Edição
-              </button>
-            </div>
-          )}
-          
-          {/* Show message for regular users when no published content is available */}
-          {visibleIssues.length === 0 && !isAdmin && !isEditor && (
-            <div className="text-center py-12">
-              <h2 className="text-xl font-medium mb-2">Conteúdo em breve</h2>
-              <p className="text-muted-foreground">
-                Aguarde novas edições sendo publicadas pela equipe editorial.
-              </p>
-            </div>
-          )}
         </>
+      ) : (
+        <div className="text-center py-12">
+          <h2 className="text-xl font-medium mb-2">No articles available</h2>
+          <p className="text-muted-foreground">
+            {profile?.role === 'admin' || profile?.role === 'editor'
+              ? 'Create your first article to get started.'
+              : 'Check back later for new articles.'}
+          </p>
+        </div>
       )}
     </div>
   );

@@ -3,12 +3,11 @@ import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { IssuesManagement } from '@/components/admin/IssuesManagement';
 import { SidebarConfigPanel } from '@/components/admin/SidebarConfigPanel';
 import { UserManagementPanel } from '@/components/admin/UserManagementPanel';
 import { CommentReportsPanel } from '@/components/dashboard/CommentReportsPanel';
 import HomepageSectionsManager from '@/components/dashboard/HomepageSectionsManager';
-import { Settings, BarChart3, Users, MessageSquare, Crown, Layout, FileText } from 'lucide-react';
+import { Settings, BarChart3, Users, MessageSquare, Crown, Layout } from 'lucide-react';
 
 const Edit = () => {
   const { isAdmin, isEditor, isLoading, user, profile } = useAuth();
@@ -72,12 +71,8 @@ const Edit = () => {
         )}
       </div>
       
-      <Tabs defaultValue="issues" className="w-full">
+      <Tabs defaultValue="sections" className="w-full">
         <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="issues" className="flex items-center gap-2">
-            <FileText className="w-4 h-4" />
-            Edições
-          </TabsTrigger>
           <TabsTrigger value="sections" className="flex items-center gap-2">
             <Layout className="w-4 h-4" />
             Seções
@@ -100,11 +95,11 @@ const Edit = () => {
             <BarChart3 className="w-4 h-4" />
             Analytics
           </TabsTrigger>
+          <TabsTrigger value="system" className="flex items-center gap-2">
+            <Users className="w-4 h-4" />
+            Sistema
+          </TabsTrigger>
         </TabsList>
-        
-        <TabsContent value="issues">
-          <IssuesManagement />
-        </TabsContent>
         
         <TabsContent value="sections">
           <HomepageSectionsManager />
@@ -131,6 +126,17 @@ const Edit = () => {
             </CardHeader>
             <CardContent>
               <p>Funcionalidade de analytics em desenvolvimento...</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="system">
+          <Card>
+            <CardHeader>
+              <CardTitle>Configurações do Sistema</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>Configurações avançadas do sistema em desenvolvimento...</p>
             </CardContent>
           </Card>
         </TabsContent>
