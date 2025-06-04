@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,6 @@ import { RecommendedArticles } from '@/components/article/RecommendedArticles';
 import { ExternalLectures } from '@/components/article/ExternalLectures';
 import { ViewModeSwitcher } from '@/components/article/ViewModeSwitcher';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
-import { useSidebar } from '@/components/ui/sidebar';
 import { useToast } from '@/hooks/use-toast';
 
 const ArticleViewer: React.FC = () => {
@@ -22,7 +22,6 @@ const ArticleViewer: React.FC = () => {
   const [viewMode, setViewMode] = useState<'dual' | 'review' | 'original'>('review');
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isReadingMode, setIsReadingMode] = useState(false);
-  const { setOpen: setSidebarOpen } = useSidebar();
   const [isValidatingId, setIsValidatingId] = useState(true);
   const [isValidId, setIsValidId] = useState<boolean | null>(null);
   
@@ -191,11 +190,7 @@ const ArticleViewer: React.FC = () => {
   
   const handleReadingMode = () => {
     setIsReadingMode(!isReadingMode);
-    
-    // Automatically hide sidebar when entering reading mode
-    if (!isReadingMode) {
-      setSidebarOpen(false);
-    }
+    // Note: Removed sidebar control since this app uses a different sidebar system
   };
 
   if (isLoading) {
