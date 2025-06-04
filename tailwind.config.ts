@@ -53,32 +53,20 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Netflix-style journal tokens
-        journal: {
-          primary: "hsl(var(--journal-primary))",
-          secondary: "hsl(var(--journal-secondary))",
-          accent: "hsl(var(--journal-accent))",
-          muted: "hsl(var(--journal-muted))",
-          surface: "hsl(var(--journal-surface))",
-          border: "hsl(var(--journal-border))",
+        // New magazine design tokens
+        canvas: '#111827',
+        sheet: '#1F2430',
+        'accent-blue': {
+          400: '#3B82F6',
+          500: '#4F63F6', 
+          600: '#6366F1'
         },
-      },
-      fontFamily: {
-        'serif': ['Playfair Display', 'serif'],
-        'sans': ['Inter', 'system-ui', 'sans-serif'],
-        'journal': ['Playfair Display', 'serif'],
-      },
-      fontSize: {
-        'journal-hero': ['3.5rem', { lineHeight: '1.1', letterSpacing: '-0.02em' }],
-        'journal-heading': ['2.25rem', { lineHeight: '1.2', letterSpacing: '-0.01em' }],
-        'journal-subhead': ['1.5rem', { lineHeight: '1.3', letterSpacing: '0' }],
-        'journal-body': ['1rem', { lineHeight: '1.6', letterSpacing: '0.01em' }],
-        'journal-caption': ['0.875rem', { lineHeight: '1.4', letterSpacing: '0.02em' }],
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        xl: "20px", // Magazine-style cards
       },
       keyframes: {
         "accordion-down": {
@@ -89,26 +77,37 @@ const config: Config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
-        "fade-in": {
-          "0%": { opacity: "0", transform: "translateY(20px)" },
-          "100%": { opacity: "1", transform: "translateY(0)" }
+        "ticker": {
+          "0%": { transform: "translateY(100%)" },
+          "100%": { transform: "translateY(-100%)" }
         },
-        "slide-left": {
-          "0%": { transform: "translateX(100%)" },
-          "100%": { transform: "translateX(0)" }
-        },
-        "cover-hover": {
-          "0%": { transform: "scale(1)" },
-          "100%": { transform: "scale(1.05)" }
+        "flip": {
+          "0%": { transform: "rotateX(0)" },
+          "50%": { transform: "rotateX(-90deg)" },
+          "100%": { transform: "rotateX(0)" }
         }
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "fade-in": "fade-in 0.6s ease-out",
-        "slide-left": "slide-left 0.3s ease-out",
-        "cover-hover": "cover-hover 0.3s ease-out",
+        "ticker": "ticker 20s linear infinite",
+        "flip": "flip 0.6s ease-in-out"
       },
+      boxShadow: {
+        'paper': '0 2px 4px rgb(0 0 0 / 0.15)',
+      },
+      fontFamily: {
+        'serif': ['Playfair Display', 'Georgia', 'serif'],
+        'sans': ['Inter', 'system-ui', 'sans-serif'],
+        'mono': ['Roboto Mono', 'Monaco', 'monospace']
+      },
+      maxWidth: {
+        'magazine': '1440px'
+      },
+      gap: {
+        'magazine-x': '2rem',
+        'magazine-y': '3rem'
+      }
     },
   },
   plugins: [
