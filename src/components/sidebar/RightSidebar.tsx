@@ -23,12 +23,23 @@ interface RightSidebarProps {
   isMobile?: boolean;
 }
 
+const SECTION_COMPONENTS = {
+  'community-header': CommunityHeader,
+  'active-avatars': ActiveAvatars,
+  'top-threads': TopThreads,
+  'next-review': NextReviewCountdown,
+  'weekly-poll': WeeklyPoll,
+  'resource-bookmarks': ResourceBookmarks,
+  'rules-accordion': RulesAccordion,
+  'mini-changelog': MiniChangelog,
+};
+
 export const RightSidebar: React.FC<RightSidebarProps> = ({
   className = '',
   isMobile = false
 }) => {
   const location = useLocation();
-  const { isMobileDrawerOpen, toggleMobileDrawer } = useSidebarStore();
+  const { isMobileDrawerOpen, toggleMobileDrawer, config } = useSidebarStore();
   const focusTrapRef = useFocusTrap(isMobile && isMobileDrawerOpen);
   
   // Only show sidebar in community routes
@@ -59,6 +70,11 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
     return null;
   }
 
+  // Get enabled sections in order
+  const enabledSections = (config?.sections || [])
+    .filter(section => section.enabled)
+    .sort((a, b) => a.order - b.order);
+
   const content = (
     <SidebarErrorBoundary>
       <div 
@@ -67,66 +83,25 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
         aria-label="Barra lateral da comunidade"
       >
         <div className="space-y-0">
-          {/* Community Header Module */}
-          <div className="py-4 px-5">
-            <CommunityHeader />
-          </div>
-          
-          {/* Module Divider */}
-          <div className="border-t border-gray-700"></div>
-          
-          {/* Active Avatars Module */}
-          <div className="py-4 px-5">
-            <ActiveAvatars />
-          </div>
-          
-          {/* Module Divider */}
-          <div className="border-t border-gray-700"></div>
-          
-          {/* Top Threads Module */}
-          <div className="py-4 px-5">
-            <TopThreads />
-          </div>
-          
-          {/* Module Divider */}
-          <div className="border-t border-gray-700"></div>
-          
-          {/* Next Review Countdown Module */}
-          <div className="py-4 px-5">
-            <NextReviewCountdown />
-          </div>
-          
-          {/* Module Divider */}
-          <div className="border-t border-gray-700"></div>
-          
-          {/* Weekly Poll Module */}
-          <div className="py-4 px-5">
-            <WeeklyPoll />
-          </div>
-          
-          {/* Module Divider */}
-          <div className="border-t border-gray-700"></div>
-          
-          {/* Resource Bookmarks Module */}
-          <div className="py-4 px-5">
-            <ResourceBookmarks />
-          </div>
-          
-          {/* Module Divider */}
-          <div className="border-t border-gray-700"></div>
-          
-          {/* Rules Accordion Module */}
-          <div className="py-4 px-5">
-            <RulesAccordion />
-          </div>
-          
-          {/* Module Divider */}
-          <div className="border-t border-gray-700"></div>
-          
-          {/* Mini Changelog Module */}
-          <div className="py-4 px-5">
-            <MiniChangelog />
-          </div>
+          {enabledSections.map((section, index) => {
+            const Component = SECTION_COMPONENTS[section.id as keyof typeof SECTION_COMPONENTS];
+            
+            if (!Component) return null;
+            
+            return (
+              <React.Fragment key={section.id}>
+                {/* Section Content */}
+                <div className="py-4 px-5">
+                  <Component />
+                </div>
+                
+                {/* Module Divider - only if not last item */}
+                {index < enabledSections.length - 1 && (
+                  <div className="border-t border-gray-700/30"></div>
+                )}
+              </React.Fragment>
+            );
+          })}
         </div>
       </div>
     </SidebarErrorBoundary>
@@ -148,7 +123,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
         <div 
           ref={focusTrapRef}
           className={`
-            fixed top-0 right-0 h-full w-80 bg-gray-900 border-l border-gray-700 z-50
+            fixed top-0 right-0 h-full w-80 bg-gray-900 border-l border-gray-700/30 z-50
             transform transition-transform duration-300 ease-in-out overflow-y-auto
             ${isMobileDrawerOpen ? 'translate-x-0' : 'translate-x-full'}
           `}
@@ -156,7 +131,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
           aria-modal="true"
           aria-labelledby="mobile-sidebar-title"
         >
-          <div className="flex items-center justify-between p-4 border-b border-gray-700">
+          <div className="flex items-center justify-between p-4 border-b border-gray-700/30">
             <h2 id="mobile-sidebar-title" className="text-lg font-semibold text-white">Comunidade</h2>
             <button
               onClick={toggleMobileDrawer}

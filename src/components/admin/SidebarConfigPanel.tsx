@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Plus, Trash2, Save, AlertTriangle } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Plus, Trash2, Save, AlertTriangle, GripVertical, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { SidebarConfig } from '@/types/sidebar';
@@ -23,6 +24,13 @@ const changelogEntrySchema = z.object({
   text: z.string().min(1, 'Texto é obrigatório'),
 });
 
+const sectionConfigSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  enabled: z.boolean(),
+  order: z.number(),
+});
+
 const configSchema = z.object({
   tagline: z.string().min(1, 'Tagline é obrigatória'),
   nextReviewTs: z.string().min(1, 'Data da próxima review é obrigatória'),
@@ -32,14 +40,27 @@ const configSchema = z.object({
     show: z.boolean(),
     entries: z.array(changelogEntrySchema),
   }),
+  sections: z.array(sectionConfigSchema),
 });
 
 type ConfigFormData = z.infer<typeof configSchema>;
+
+const DEFAULT_SECTIONS = [
+  { id: 'community-header', name: 'Cabeçalho da Comunidade', enabled: true, order: 0 },
+  { id: 'active-avatars', name: 'Avatares Ativos', enabled: true, order: 1 },
+  { id: 'top-threads', name: 'Discussões em Alta', enabled: true, order: 2 },
+  { id: 'next-review', name: 'Próxima Edição', enabled: true, order: 3 },
+  { id: 'weekly-poll', name: 'Enquete da Semana', enabled: true, order: 4 },
+  { id: 'resource-bookmarks', name: 'Links Úteis', enabled: true, order: 5 },
+  { id: 'rules-accordion', name: 'Regras da Comunidade', enabled: true, order: 6 },
+  { id: 'mini-changelog', name: 'Changelog', enabled: true, order: 7 },
+];
 
 export const SidebarConfigPanel: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [draggedItem, setDraggedItem] = useState<number | null>(null);
 
   const form = useForm<ConfigFormData>({
     resolver: zodResolver(configSchema),
@@ -52,6 +73,7 @@ export const SidebarConfigPanel: React.FC = () => {
         show: true,
         entries: [],
       },
+      sections: DEFAULT_SECTIONS,
     },
   });
 
@@ -59,6 +81,7 @@ export const SidebarConfigPanel: React.FC = () => {
   const bookmarks = watch('bookmarks');
   const rules = watch('rules');
   const changelogEntries = watch('changelog.entries');
+  const sections = watch('sections');
 
   useEffect(() => {
     loadConfig();
@@ -80,7 +103,6 @@ export const SidebarConfigPanel: React.FC = () => {
       if (data) {
         const config = data.value as unknown as SidebarConfig;
         
-        // Validate the loaded config
         if (config && typeof config === 'object') {
           form.reset({
             tagline: config.tagline || '',
@@ -96,16 +118,17 @@ export const SidebarConfigPanel: React.FC = () => {
               entries: Array.isArray(config.changelog?.entries) ? 
                 config.changelog.entries.filter(entry => entry && entry.date && entry.text) : []
             },
+            sections: (config as any).sections || DEFAULT_SECTIONS,
           });
         }
       } else {
-        // Set default values if no config exists
         form.reset({
           tagline: 'Quem aprende junto, cresce.',
           nextReviewTs: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
           bookmarks: [],
           rules: [],
           changelog: { show: true, entries: [] },
+          sections: DEFAULT_SECTIONS,
         });
       }
     } catch (error) {
@@ -151,6 +174,42 @@ export const SidebarConfigPanel: React.FC = () => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedItem(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    
+    if (draggedItem === null || draggedItem === dropIndex) return;
+    
+    const newSections = [...sections];
+    const draggedSection = newSections[draggedItem];
+    newSections.splice(draggedItem, 1);
+    newSections.splice(dropIndex, 0, draggedSection);
+    
+    // Update order values
+    const updatedSections = newSections.map((section, index) => ({
+      ...section,
+      order: index
+    }));
+    
+    setValue('sections', updatedSections);
+    setDraggedItem(null);
+  };
+
+  const toggleSectionEnabled = (index: number) => {
+    const newSections = [...sections];
+    newSections[index] = { ...newSections[index], enabled: !newSections[index].enabled };
+    setValue('sections', newSections);
   };
 
   const addBookmark = () => {
@@ -213,6 +272,52 @@ export const SidebarConfigPanel: React.FC = () => {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Ordem e Visibilidade das Seções</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {sections
+                  .sort((a, b) => a.order - b.order)
+                  .map((section, index) => (
+                  <div
+                    key={section.id}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, index)}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, index)}
+                    className="flex items-center space-x-3 p-3 bg-gray-800/50 rounded-lg border border-gray-700/50 cursor-move hover:bg-gray-800/70 transition-colors"
+                  >
+                    <GripVertical className="w-4 h-4 text-gray-400" />
+                    
+                    <div className="flex-1">
+                      <span className="text-sm font-medium text-gray-200">{section.name}</span>
+                    </div>
+                    
+                    <button
+                      type="button"
+                      onClick={() => toggleSectionEnabled(index)}
+                      className="flex items-center space-x-1 text-sm"
+                    >
+                      {section.enabled ? (
+                        <>
+                          <Eye className="w-4 h-4 text-green-400" />
+                          <span className="text-green-400">Visível</span>
+                        </>
+                      ) : (
+                        <>
+                          <EyeOff className="w-4 h-4 text-gray-500" />
+                          <span className="text-gray-500">Oculta</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Informações Gerais</CardTitle>

@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 
 interface PostVotingProps {
@@ -106,29 +105,36 @@ export const PostVoting: React.FC<PostVotingProps> = ({
 
   return (
     <div className="flex items-center space-x-3 mr-3">
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+      <button
+        className={`
+          p-1 hover:bg-gray-800 rounded transition-colors disabled:opacity-50
+          ${localUserVote === 1 ? 'text-orange-500' : 'text-gray-400 hover:text-gray-300'}
+        `}
         onClick={() => handleVote(1)}
         disabled={isVoting}
+        aria-label="Vote up"
       >
-        <ArrowUp className={`h-5 w-5 ${localUserVote === 1 ? 'text-red-500' : ''}`} />
-        <span className="sr-only">Vote up</span>
-      </Button>
+        <ArrowUp className="h-5 w-5" />
+      </button>
       
-      <span className="text-sm font-medium">{localScore}</span>
+      <span className={`text-sm font-medium min-w-[24px] text-center ${
+        localScore > 0 ? 'text-orange-500' : 
+        localScore < 0 ? 'text-blue-500' : 'text-gray-400'
+      }`}>
+        {localScore}
+      </span>
       
-      <Button
-        variant="ghost"
-        size="sm"
-        className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+      <button
+        className={`
+          p-1 hover:bg-gray-800 rounded transition-colors disabled:opacity-50
+          ${localUserVote === -1 ? 'text-blue-500' : 'text-gray-400 hover:text-gray-300'}
+        `}
         onClick={() => handleVote(-1)}
         disabled={isVoting}
+        aria-label="Vote down"
       >
-        <ArrowDown className={`h-5 w-5 ${localUserVote === -1 ? 'text-blue-500' : ''}`} />
-        <span className="sr-only">Vote down</span>
-      </Button>
+        <ArrowDown className="h-5 w-5" />
+      </button>
     </div>
   );
 };

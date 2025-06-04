@@ -1,37 +1,34 @@
 
 import React, { useState, useEffect } from 'react';
-import { Clock, ExternalLink } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Clock } from 'lucide-react';
 import { useSidebarStore } from '@/stores/sidebarStore';
 
 export const NextReviewCountdown: React.FC = () => {
-  const navigate = useNavigate();
   const { config, isLoadingConfig } = useSidebarStore();
-  const [timeLeft, setTimeLeft] = useState<{
+  const [timeRemaining, setTimeRemaining] = useState<{
     days: number;
     hours: number;
     minutes: number;
-    isExpired: boolean;
   } | null>(null);
 
   useEffect(() => {
     if (!config?.nextReviewTs) return;
 
     const updateCountdown = () => {
-      const now = new Date().getTime();
-      const target = new Date(config.nextReviewTs).getTime();
-      const difference = target - now;
+      const now = new Date();
+      const target = new Date(config.nextReviewTs);
+      const diff = target.getTime() - now.getTime();
 
-      if (difference <= 0) {
-        setTimeLeft({ days: 0, hours: 0, minutes: 0, isExpired: true });
+      if (diff <= 0) {
+        setTimeRemaining(null);
         return;
       }
 
-      const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
-      setTimeLeft({ days, hours, minutes, isExpired: false });
+      setTimeRemaining({ days, hours, minutes });
     };
 
     updateCountdown();
@@ -45,66 +42,39 @@ export const NextReviewCountdown: React.FC = () => {
       <div className="space-y-3">
         <div className="h-4 bg-gray-700 rounded w-32 animate-pulse" />
         <div className="h-16 bg-gray-700 rounded animate-pulse" />
-        <div className="h-2 bg-gray-700 rounded animate-pulse" />
       </div>
     );
   }
 
-  if (!config?.nextReviewTs || !timeLeft) {
+  if (!timeRemaining) {
     return null;
   }
-
-  const handleClick = () => {
-    if (timeLeft.isExpired) {
-      navigate('/homepage'); // Navigate to latest review
-    }
-  };
-
-  const progressPercentage = timeLeft.isExpired ? 100 : Math.max(0, 
-    100 - ((timeLeft.days * 24 + timeLeft.hours) / 168) * 100 // Assuming 7-day cycle
-  );
 
   return (
     <div className="space-y-3">
       <div className="flex items-center space-x-2">
-        <Clock className="w-4 h-4 text-blue-400" />
-        <h3 className="text-xs font-medium text-gray-300 uppercase tracking-wide">Próxima Review</h3>
+        <Clock className="w-4 h-4 text-gray-400" />
+        <h3 className="text-xs font-medium text-gray-300 uppercase tracking-wide">Próxima Edição</h3>
       </div>
       
-      {timeLeft.isExpired ? (
-        <button
-          onClick={handleClick}
-          className="w-full p-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors group"
-        >
-          <div className="flex items-center justify-center space-x-2 text-white">
-            <span className="font-medium text-sm">Ler agora</span>
-            <ExternalLink className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+      <div className="space-y-2">
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div className="px-2 py-1 bg-gray-800/50 rounded">
+            <div className="text-lg font-bold text-gray-300">{timeRemaining.days}</div>
+            <div className="text-xs text-gray-500">dias</div>
           </div>
-        </button>
-      ) : (
-        <div className="space-y-3">
-          <div 
-            className="text-center p-3 bg-gray-800 rounded-lg"
-            aria-live="polite"
-          >
-            <div className="text-lg font-semibold text-white">
-              {timeLeft.days > 0 && `${timeLeft.days}d `}
-              {timeLeft.hours.toString().padStart(2, '0')}h{' '}
-              {timeLeft.minutes.toString().padStart(2, '0')}m
-            </div>
-            <div className="text-xs text-gray-400 mt-1">
-              {timeLeft.days > 0 ? 'restantes' : 'hoje!'}
-            </div>
+          <div className="px-2 py-1 bg-gray-800/50 rounded">
+            <div className="text-lg font-bold text-gray-300">{timeRemaining.hours}</div>
+            <div className="text-xs text-gray-500">horas</div>
           </div>
-          
-          <div className="w-full bg-gray-700 rounded-full h-2">
-            <div 
-              className="bg-blue-500 h-2 rounded-full transition-all duration-1000"
-              style={{ width: `${progressPercentage}%` }}
-            />
+          <div className="px-2 py-1 bg-gray-800/50 rounded">
+            <div className="text-lg font-bold text-gray-300">{timeRemaining.minutes}</div>
+            <div className="text-xs text-gray-500">min</div>
           </div>
         </div>
-      )}
+        
+        <p className="text-xs text-gray-500 text-center">restantes</p>
+      </div>
     </div>
   );
 };

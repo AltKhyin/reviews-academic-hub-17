@@ -50,24 +50,24 @@ export const TopThreads: React.FC = () => {
         {threads.slice(0, 3).map((thread, index) => (
           <div
             key={thread.id}
-            className="cursor-pointer hover:bg-gray-800 -mx-2 px-2 py-2 rounded transition-colors group"
+            className="cursor-pointer hover:bg-gray-800/30 -mx-2 px-2 py-2 rounded transition-colors group"
             onClick={() => handleThreadClick(thread)}
           >
             <div className="space-y-2">
               <div className="flex items-start space-x-2">
-                <div className="flex items-center space-x-1 text-gray-400 mt-0.5 flex-shrink-0">
+                <div className="flex items-center space-x-1 text-gray-500 mt-0.5 flex-shrink-0">
                   <ArrowUp className="w-3 h-3" />
                   <span className="text-xs">{thread.votes || 0}</span>
                 </div>
                 
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-200 font-medium line-clamp-2 group-hover:text-white transition-colors">
+                  <p className="text-sm text-gray-300 font-medium line-clamp-2 group-hover:text-gray-200 transition-colors">
                     {thread.title}
                   </p>
                 </div>
               </div>
               
-              <div className="flex items-center justify-between text-xs text-gray-400 ml-8">
+              <div className="flex items-center justify-between text-xs text-gray-500 ml-8">
                 <div className="flex items-center space-x-1">
                   <MessageSquare className="w-3 h-3" />
                   <span>{thread.comments} comentários</span>

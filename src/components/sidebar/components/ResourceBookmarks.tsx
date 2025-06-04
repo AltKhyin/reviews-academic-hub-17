@@ -26,7 +26,7 @@ export const ResourceBookmarks: React.FC = () => {
   return (
     <div className="space-y-3">
       <div className="flex items-center space-x-2">
-        <BookOpen className="w-4 h-4 text-green-400" />
+        <BookOpen className="w-4 h-4 text-gray-400" />
         <h3 className="text-xs font-medium text-gray-300 uppercase tracking-wide">Links Úteis</h3>
       </div>
       
@@ -39,15 +39,14 @@ export const ResourceBookmarks: React.FC = () => {
             rel="noopener noreferrer"
             className="
               inline-flex items-center space-x-1 px-3 py-1.5 
-              bg-gray-800 hover:bg-gray-700 
-              border border-gray-600 hover:border-gray-500
+              bg-gray-800/50 hover:bg-gray-700/50 
               rounded-full transition-colors group
-              text-xs text-gray-300 hover:text-white
+              text-xs text-gray-300 hover:text-gray-200
             "
           >
             <span className="text-xs">{bookmark.icon}</span>
             <span>{bookmark.label}</span>
-            <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-70 transition-opacity" />
           </a>
         ))}
       </div>

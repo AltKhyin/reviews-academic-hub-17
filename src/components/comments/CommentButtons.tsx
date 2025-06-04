@@ -42,30 +42,36 @@ export const CommentButtons: React.FC<CommentButtonsProps> = ({
   return (
     <div className="flex items-center gap-3 text-xs">
       <div className="flex items-center space-x-1">
-        <Button 
+        <button 
           onClick={onUpvoteClick}
-          className={`p-1 ${userVote === 1 ? 'text-orange-500' : 'text-gray-400'}`}
+          className={`
+            p-1 hover:bg-gray-800 rounded transition-colors disabled:opacity-50
+            ${userVote === 1 ? 'text-orange-500' : 'text-gray-400 hover:text-gray-300'}
+          `}
           disabled={isVoting || !isAuthenticated}
-          variant="ghost"
-          size="sm"
+          aria-label="Vote up"
         >
           <ArrowUp className="h-4 w-4" />
-        </Button>
-        <span className={`${
+        </button>
+        
+        <span className={`min-w-[20px] text-center ${
           score > 0 ? 'text-orange-500' : 
           score < 0 ? 'text-blue-500' : 'text-gray-400'
         }`}>
           {score}
         </span>
-        <Button 
+        
+        <button 
           onClick={onDownvoteClick}
-          className={`p-1 ${userVote === -1 ? 'text-blue-500' : 'text-gray-400'}`}
+          className={`
+            p-1 hover:bg-gray-800 rounded transition-colors disabled:opacity-50
+            ${userVote === -1 ? 'text-blue-500' : 'text-gray-400 hover:text-gray-300'}
+          `}
           disabled={isVoting || !isAuthenticated}
-          variant="ghost"
-          size="sm"
+          aria-label="Vote down"
         >
           <ArrowDown className="h-4 w-4" />
-        </Button>
+        </button>
       </div>
       
       <Button 
