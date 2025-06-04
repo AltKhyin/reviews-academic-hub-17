@@ -5,10 +5,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SidebarConfigPanel } from '@/components/admin/SidebarConfigPanel';
 import { UserManagementPanel } from '@/components/admin/UserManagementPanel';
-import { Settings, BarChart3, Users, MessageSquare, Crown } from 'lucide-react';
+import { CommentReportsPanel } from '@/components/dashboard/CommentReportsPanel';
+import { HomepageSectionsManager } from '@/components/dashboard/HomepageSectionsManager';
+import { Settings, BarChart3, Users, MessageSquare, Crown, Layout } from 'lucide-react';
 
 const Edit = () => {
-  const { isAdmin, isLoading } = useAuth();
+  const { isAdmin, isEditor, isLoading, user, profile } = useAuth();
+
+  console.log("Edit page render - IsAdmin:", isAdmin, "IsEditor:", isEditor, "IsLoading:", isLoading, "User:", user?.id, "Profile:", profile);
 
   if (isLoading) {
     return (
@@ -21,7 +25,13 @@ const Edit = () => {
     );
   }
 
-  if (!isAdmin) {
+  // Enhanced admin check with detailed logging
+  const hasAdminAccess = isAdmin || profile?.role === 'admin';
+  const hasEditorAccess = isEditor || profile?.role === 'editor' || hasAdminAccess;
+
+  console.log("Access check - HasAdminAccess:", hasAdminAccess, "HasEditorAccess:", hasEditorAccess);
+
+  if (!hasAdminAccess && !hasEditorAccess) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <Card className="w-96">
@@ -33,7 +43,10 @@ const Edit = () => {
               Você não tem permissão para acessar esta página.
             </p>
             <div className="mt-4 text-xs text-center text-muted-foreground">
-              Esta página requer privilégios de administrador.
+              Esta página requer privilégios de administrador ou editor.
+            </div>
+            <div className="mt-2 text-xs text-center text-gray-500">
+              Debug: IsAdmin={isAdmin ? 'true' : 'false'}, IsEditor={isEditor ? 'true' : 'false'}, Role={profile?.role || 'none'}
             </div>
           </CardContent>
         </Card>
@@ -46,30 +59,41 @@ const Edit = () => {
       <div className="mb-6">
         <h1 className="text-3xl font-bold flex items-center gap-2">
           <Crown className="w-8 h-8 text-yellow-500" />
-          Painel Administrativo
+          Painel {hasAdminAccess ? 'Administrativo' : 'Editorial'}
         </h1>
         <p className="text-muted-foreground mt-2">
           Gerencie configurações do sistema, usuários e conteúdo
         </p>
+        {hasAdminAccess && (
+          <div className="mt-2 text-sm text-green-400">
+            ✅ Acesso de administrador confirmado
+          </div>
+        )}
       </div>
       
-      <Tabs defaultValue="users" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="users" className="flex items-center gap-2">
-            <Crown className="w-4 h-4" />
-            Usuários
+      <Tabs defaultValue="sections" className="w-full">
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="sections" className="flex items-center gap-2">
+            <Layout className="w-4 h-4" />
+            Seções
           </TabsTrigger>
+          {hasAdminAccess && (
+            <TabsTrigger value="users" className="flex items-center gap-2">
+              <Crown className="w-4 h-4" />
+              Usuários
+            </TabsTrigger>
+          )}
           <TabsTrigger value="sidebar" className="flex items-center gap-2">
             <Settings className="w-4 h-4" />
             Barra Lateral
           </TabsTrigger>
+          <TabsTrigger value="reports" className="flex items-center gap-2">
+            <MessageSquare className="w-4 h-4" />
+            Denúncias
+          </TabsTrigger>
           <TabsTrigger value="analytics" className="flex items-center gap-2">
             <BarChart3 className="w-4 h-4" />
             Analytics
-          </TabsTrigger>
-          <TabsTrigger value="content" className="flex items-center gap-2">
-            <MessageSquare className="w-4 h-4" />
-            Conteúdo
           </TabsTrigger>
           <TabsTrigger value="system" className="flex items-center gap-2">
             <Users className="w-4 h-4" />
@@ -77,12 +101,22 @@ const Edit = () => {
           </TabsTrigger>
         </TabsList>
         
-        <TabsContent value="users">
-          <UserManagementPanel />
+        <TabsContent value="sections">
+          <HomepageSectionsManager />
         </TabsContent>
+        
+        {hasAdminAccess && (
+          <TabsContent value="users">
+            <UserManagementPanel />
+          </TabsContent>
+        )}
         
         <TabsContent value="sidebar">
           <SidebarConfigPanel />
+        </TabsContent>
+        
+        <TabsContent value="reports">
+          <CommentReportsPanel />
         </TabsContent>
         
         <TabsContent value="analytics">
@@ -92,17 +126,6 @@ const Edit = () => {
             </CardHeader>
             <CardContent>
               <p>Funcionalidade de analytics em desenvolvimento...</p>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="content">
-          <Card>
-            <CardHeader>
-              <CardTitle>Gerenciamento de Conteúdo</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p>Funcionalidade de gerenciamento de conteúdo em desenvolvimento...</p>
             </CardContent>
           </Card>
         </TabsContent>

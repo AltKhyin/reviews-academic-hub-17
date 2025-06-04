@@ -33,24 +33,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log("Checking admin status for user:", userId);
       
-      // Use maybeSingle() to avoid errors when no record exists
-      const { data: adminData, error: adminError } = await supabase
-        .from('admin_users')
-        .select('user_id')
-        .eq('user_id', userId)
-        .maybeSingle();
+      // Use the database function to check admin status
+      const { data: adminCheck, error: adminError } = await supabase
+        .rpc('is_admin_user', { uid: userId });
       
-      console.log("Admin check result:", { adminData, adminError });
+      console.log("Admin check result:", { adminCheck, adminError });
       
       if (adminError) {
         console.error("Admin check error:", adminError);
         return false;
       }
       
-      return adminData !== null;
+      return adminCheck === true;
     } catch (error) {
       console.error("Exception in admin check:", error);
       return false;
+    }
+  };
+
+  const checkEditorStatus = async (userId: string, userRole: string): Promise<boolean> => {
+    try {
+      console.log("Checking editor status for user:", userId, "with role:", userRole);
+      
+      // Use the database function to check editor status
+      const { data: editorCheck, error: editorError } = await supabase
+        .rpc('is_editor_or_admin');
+      
+      console.log("Editor check result:", { editorCheck, editorError });
+      
+      if (editorError) {
+        console.error("Editor check error:", editorError);
+        // Fallback to role-based check
+        return userRole === 'editor' || userRole === 'admin';
+      }
+      
+      return editorCheck === true;
+    } catch (error) {
+      console.error("Exception in editor check:", error);
+      // Fallback to role-based check
+      return userRole === 'editor' || userRole === 'admin';
     }
   };
 
@@ -60,10 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log(`Fetching profile for user: ${userId} (attempt ${retryCount + 1})`);
       
-      // Check admin status first with error isolation
-      const isUserAdmin = await checkAdminStatus(userId);
-      
-      // Fetch user profile
+      // Fetch user profile first
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -76,27 +94,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw profileError;
       }
       
+      let userProfile: UserProfile;
+      
       if (profileData) {
         // Ensure role is properly typed
         const validRole = (['user', 'editor', 'admin'].includes(profileData.role)) 
           ? profileData.role as 'user' | 'editor' | 'admin'
           : 'user';
           
-        const isUserEditor = validRole === 'editor' || isUserAdmin;
-        
-        console.log("Setting role flags:", { isAdmin: isUserAdmin, isEditor: isUserEditor, role: validRole });
-        
-        const typedProfile: UserProfile = {
+        userProfile = {
           ...profileData,
           role: validRole
         };
         
-        setProfile(typedProfile);
-        setIsAdmin(isUserAdmin);
-        setIsEditor(isUserEditor);
+        setProfile(userProfile);
       } else {
         console.log("No profile found, creating default");
-        const defaultProfile: UserProfile = {
+        userProfile = {
           id: userId,
           role: 'user',
           full_name: null,
@@ -106,16 +120,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Try to create profile if it doesn't exist
         const { error: insertError } = await supabase
           .from('profiles')
-          .insert(defaultProfile);
+          .insert(userProfile);
           
         if (insertError) {
           console.error("Error creating default profile:", insertError);
         }
           
-        setProfile(defaultProfile);
-        setIsAdmin(isUserAdmin);
-        setIsEditor(isUserAdmin); // Admin is also editor
+        setProfile(userProfile);
       }
+      
+      // Check admin and editor status after profile is set
+      const [isUserAdmin, isUserEditor] = await Promise.all([
+        checkAdminStatus(userId),
+        checkEditorStatus(userId, userProfile.role)
+      ]);
+      
+      console.log("Final role flags:", { 
+        isAdmin: isUserAdmin, 
+        isEditor: isUserEditor, 
+        profileRole: userProfile.role,
+        userId 
+      });
+      
+      setIsAdmin(isUserAdmin);
+      setIsEditor(isUserEditor);
+      
     } catch (error: any) {
       console.error(`Error in profile handling (attempt ${retryCount + 1}):`, error);
       
