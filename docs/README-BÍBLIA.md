@@ -1,7 +1,7 @@
 
 ---
 app: Reviews
-version: "1.0.0"
+version: "1.0.1"
 updated: 2025-06-04
 maintainer: lovable
 frontend: React 18 / Vite / Tailwind CSS / TypeScript
@@ -182,10 +182,28 @@ CREATE TABLE posts (
 | AuthGuard | `src/components/auth/AuthGuard.tsx` | requireAdmin, requireEditor |
 | AuthForm | `src/components/auth/AuthForm.tsx` | mode |
 
-#### User Roles
+#### User Roles & Authorization Model
 - **User:** Read access, comment, vote
-- **Editor:** Content creation, user management
+- **Editor:** Content creation, user management  
 - **Admin:** Full system access, configuration
+
+**CRITICAL:** Role-based authorization uses `profiles.role` as the canonical source of truth. Admin privileges are determined by:
+1. `profiles.role = 'admin'` (primary check)
+2. `admin_users` table serves as secondary lookup for legacy compatibility
+3. All RLS policies use profile-based functions to avoid infinite recursion
+
+#### Authorization Functions
+```sql
+-- Primary admin check (uses profiles table)
+is_current_user_admin() → checks profiles.role = 'admin'
+
+-- Editor check (includes admin)
+is_current_user_editor_or_admin() → checks profiles.role IN ('admin', 'editor')
+
+-- Legacy compatibility (maps to profile-based checks)
+is_admin() → calls is_current_user_admin()
+is_editor() → calls is_current_user_editor_or_admin()
+```
 
 ### 5.5 Search & Discovery
 
@@ -230,7 +248,7 @@ CREATE TABLE posts (
 | Table | Purpose | Key Relationships |
 |-------|---------|-------------------|
 | `issues` | Academic papers/reviews | → `comments`, `external_lectures` |
-| `profiles` | User information | → `admin_users`, `comments` |
+| `profiles` | User information + roles | → `admin_users`, `comments` |
 | `comments` | Threaded discussions | → `comment_votes`, `issues/posts` |
 | `posts` | Community content | → `post_votes`, `post_flairs` |
 | `polls` | Voting mechanisms | → `poll_user_votes` |
@@ -245,15 +263,17 @@ get_online_users_count() → INTEGER
 get_top_threads(min_comments INTEGER) → TABLE
 unpin_expired_posts() → VOID
 
--- Authorization helpers
-is_admin() → BOOLEAN
-is_editor() → BOOLEAN
+-- Authorization helpers (RLS-safe, profile-based)
+is_current_user_admin() → BOOLEAN
+is_current_user_editor_or_admin() → BOOLEAN
 ```
 
 ### Row Level Security Patterns
 - **User Ownership:** `user_id = auth.uid()`
 - **Published Content:** `published = true OR user_id = auth.uid()`
-- **Admin Only:** `is_admin()` OR `is_editor()`
+- **Admin Only:** `is_current_user_admin()` OR `is_current_user_editor_or_admin()`
+
+**SECURITY NOTE:** All admin-related RLS policies use profile-based functions (`is_current_user_admin()`) instead of querying `admin_users` directly to prevent infinite recursion errors.
 
 ## 7. UI Component Index
 
@@ -354,13 +374,15 @@ is_editor() → BOOLEAN
 - GDPR-compliant data deletion
 - No sensitive data in client logs
 
-### Authorization Model
+### Authorization Model & RLS Security
 ```sql
--- Example RLS Policy
-CREATE POLICY "Users can edit own comments"
-  ON comments FOR UPDATE
-  USING (auth.uid() = user_id);
+-- Fixed RLS pattern (prevents infinite recursion)
+CREATE POLICY "Admin access example"
+  ON sensitive_table FOR ALL
+  USING (is_current_user_admin());  -- Uses profiles.role, not admin_users
 ```
+
+**Key Security Fix (v1.0.1):** Eliminated infinite recursion in admin RLS policies by migrating from self-referential `admin_users` queries to profile-based authorization functions. All admin checks now use `profiles.role` as canonical source.
 
 ## 12. Admin & Ops
 
@@ -373,7 +395,7 @@ CREATE POLICY "Users can edit own comments"
 
 ### Key Admin Functions
 - **Issue Management:** Create, edit, publish, feature issues
-- **User Roles:** Promote users to editor/admin status
+- **User Roles:** Promote users to editor/admin status via profiles table
 - **Community Moderation:** Pin posts, manage reports
 - **System Configuration:** Sidebar settings, polls, announcements
 
@@ -432,3 +454,4 @@ CREATE POLICY "Users can edit own comments"
 | Date | Author | Change Summary |
 |------|--------|----------------|
 | 2025-06-04 | lovable | Created initial knowledge base with complete app documentation |
+| 2025-06-04 | lovable | Fixed infinite-recursion RLS on admin_users; migrated to profile-based auth |

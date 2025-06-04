@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
@@ -33,9 +32,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log("Checking admin status for user:", userId);
       
-      // Use the database function to check admin status
+      // Use the fixed database function that checks profiles table
       const { data: adminCheck, error: adminError } = await supabase
-        .rpc('is_admin_user', { uid: userId });
+        .rpc('is_current_user_admin');
       
       console.log("Admin check result:", { adminCheck, adminError });
       
@@ -55,9 +54,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log("Checking editor status for user:", userId, "with role:", userRole);
       
-      // Use the database function to check editor status
+      // Use the fixed database function that checks profiles table
       const { data: editorCheck, error: editorError } = await supabase
-        .rpc('is_editor_or_admin');
+        .rpc('is_current_user_editor_or_admin');
       
       console.log("Editor check result:", { editorCheck, editorError });
       
