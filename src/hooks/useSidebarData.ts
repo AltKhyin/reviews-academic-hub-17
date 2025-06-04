@@ -31,7 +31,7 @@ export const useSidebarData = () => {
           .single();
         
         if (error) throw error;
-        const config = data.value as SidebarConfig;
+        const config = data.value as unknown as SidebarConfig;
         setConfig(config);
         return config;
       } finally {
