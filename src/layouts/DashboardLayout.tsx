@@ -19,8 +19,8 @@ export const DashboardLayout = () => {
       {/* Left Navigation Sidebar */}
       <Sidebar />
       
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      {/* Main Content Area - with left margin to account for sidebar */}
+      <div className="flex-1 flex flex-col overflow-hidden ml-64">
         {/* Mobile Header with Sidebar Toggle */}
         <div className="lg:hidden flex items-center justify-between p-4 border-b">
           <MobileSidebarToggle />
