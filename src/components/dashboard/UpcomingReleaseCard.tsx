@@ -4,92 +4,98 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
 import { Calendar, ArrowUp } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useUpcomingRelease } from '@/hooks/useUpcomingRelease';
-
-// Mock suggestions data - in real app this would come from API
-const mockSuggestions = [
-  {
-    id: '1',
-    title: 'Test 9891',
-    votes: 1,
-    author: {
-      name: 'Igor Cogo Koehler',
-      avatar: 'https://kznasfgubbyinomtetiu.supabase.co/storage/v1/object/public/avatars/b0b09a72-c43c-4061-b6f7-7ac8b156b4e7-s1noze3niio.jpg'
-    },
-    createdAt: 'há 20 dias'
-  },
-  {
-    id: '2',
-    title: 'Testing again',
-    votes: 0,
-    author: {
-      name: 'Igor Cogo Koehler',
-      avatar: 'https://kznasfgubbyinomtetiu.supabase.co/storage/v1/object/public/avatars/b0b09a72-c43c-4061-b6f7-7ac8b156b4e7-s1noze3niio.jpg'
-    },
-    createdAt: 'há 20 dias'
-  },
-  {
-    id: '3',
-    title: 'teste',
-    votes: 0,
-    author: {
-      name: 'Igor Cogo Koehler',
-      avatar: 'https://kznasfgubbyinomtetiu.supabase.co/storage/v1/object/public/avatars/b0b09a72-c43c-4061-b6f7-7ac8b156b4e7-s1noze3niio.jpg'
-    },
-    createdAt: 'há cerca de 1 mês'
-  },
-  {
-    id: '4',
-    title: 'Test 2',
-    votes: 0,
-    author: {
-      name: 'Igor Cogo Koehler',
-      avatar: 'https://kznasfgubbyinomtetiu.supabase.co/storage/v1/object/public/avatars/b0b09a72-c43c-4061-b6f7-7ac8b156b4e7-s1noze3niio.jpg'
-    },
-    createdAt: 'há 20 dias'
-  },
-  {
-    id: '5',
-    title: 'Test',
-    votes: 0,
-    author: {
-      name: 'Igor Cogo Koehler',
-      avatar: 'https://kznasfgubbyinomtetiu.supabase.co/storage/v1/object/public/avatars/b0b09a72-c43c-4061-b6f7-7ac8b156b4e7-s1noze3niio.jpg'
-    },
-    createdAt: 'há 20 dias'
-  }
-];
+import { useContentSuggestions } from '@/hooks/useContentSuggestions';
+import { useAuth } from '@/contexts/AuthContext';
+import { formatDistanceToNow, differenceInDays, differenceInHours, differenceInMinutes, addDays } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { toast } from '@/hooks/use-toast';
 
 export const UpcomingReleaseCard = () => {
+  const { user } = useAuth();
   const { data: upcomingRelease } = useUpcomingRelease();
+  const { suggestions, addSuggestion, voteSuggestion } = useContentSuggestions(upcomingRelease?.id || 'default');
   const [suggestion, setSuggestion] = useState('');
-  const [timeLeft, setTimeLeft] = useState({ days: 2, hours: 21, minutes: 4 });
-  const [progress, setProgress] = useState(58.9);
 
-  // Calculate time left and progress (simplified for demo)
-  useEffect(() => {
-    const timer = setInterval(() => {
-      // This would be calculated based on actual release date
-      // For now using static values from reference
-    }, 60000);
+  // Get the next Saturday at 9am BRT
+  const getNextSaturday = () => {
+    const now = new Date();
+    const day = now.getDay();
+    const daysUntilSaturday = day === 6 ? 7 : 6 - day;
+    let nextSaturday = addDays(now, daysUntilSaturday);
+    nextSaturday.setHours(9, 0, 0, 0);
+    
+    if (day === 6 && now.getHours() >= 9) {
+      nextSaturday = addDays(nextSaturday, 7);
+    }
+    
+    return nextSaturday;
+  };
 
-    return () => clearInterval(timer);
-  }, []);
+  const nextSaturday = getNextSaturday();
+  
+  const getTimeRemaining = () => {
+    const now = new Date();
+    const totalTime = nextSaturday.getTime() - now.getTime();
+    const totalDuration = 7 * 24 * 60 * 60 * 1000;
+    const progressPercentage = Math.max(0, Math.min(100, (1 - totalTime / totalDuration) * 100));
+    
+    const days = differenceInDays(nextSaturday, now);
+    const hours = differenceInHours(nextSaturday, now) % 24;
+    const minutes = differenceInMinutes(nextSaturday, now) % 60;
+    
+    return { days, hours, minutes, progressPercentage };
+  };
+
+  const timeRemaining = getTimeRemaining();
 
   const handleSuggestionSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (suggestion.trim()) {
-      console.log('Suggestion submitted:', suggestion);
-      setSuggestion('');
-      // In real app, this would submit to API
+    if (!suggestion.trim()) return;
+    
+    if (!user) {
+      toast({
+        title: "Autenticação necessária",
+        description: "Faça login para enviar sugestões.",
+        variant: "destructive",
+      });
+      return;
     }
+    
+    addSuggestion.mutate({
+      title: suggestion.trim()
+    }, {
+      onSuccess: () => {
+        setSuggestion('');
+        toast({
+          title: "Sugestão enviada!",
+          description: "Obrigado pela sua contribuição.",
+        });
+      }
+    });
   };
 
   const handleVote = (suggestionId: string) => {
-    console.log('Vote for suggestion:', suggestionId);
-    // In real app, this would submit vote to API
+    if (!user) {
+      toast({
+        title: "Autenticação necessária",
+        description: "Faça login para votar em sugestões.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    voteSuggestion.mutate({ suggestionId, value: 1 });
+  };
+
+  const formatRelativeTime = (createdAt: string) => {
+    return formatDistanceToNow(new Date(createdAt), {
+      addSuffix: true,
+      locale: ptBR
+    });
   };
 
   return (
@@ -103,24 +109,38 @@ export const UpcomingReleaseCard = () => {
                 <h3 className="text-xl font-bold">Próxima Edição</h3>
                 <div className="flex items-center gap-2 text-primary">
                   <Calendar className="h-5 w-5" />
-                  <span className="font-medium">{timeLeft.days}d {timeLeft.hours}h {timeLeft.minutes}min</span>
+                  <span className="font-medium">
+                    {timeRemaining.days > 0 && `${timeRemaining.days}d `}
+                    {timeRemaining.hours > 0 && `${timeRemaining.hours}h `}
+                    {timeRemaining.minutes}min
+                  </span>
                 </div>
               </div>
-              <Progress value={progress} className="h-2 mt-2" />
+              <Progress value={timeRemaining.progressPercentage} className="h-2 mt-2" />
             </div>
             
             <div className="space-y-4 flex flex-col justify-center">
-              <form onSubmit={handleSuggestionSubmit} className="space-y-4">
-                <input 
-                  className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm w-full"
-                  placeholder="Sugira um artigo ou tema para a próxima edição"
-                  value={suggestion}
-                  onChange={(e) => setSuggestion(e.target.value)}
-                />
-                <Button className="w-full" type="submit">
-                  Enviar Sugestão
-                </Button>
-              </form>
+              {user ? (
+                <form onSubmit={handleSuggestionSubmit} className="space-y-4">
+                  <Input
+                    placeholder="Sugira um artigo ou tema para a próxima edição"
+                    value={suggestion}
+                    onChange={(e) => setSuggestion(e.target.value)}
+                    className="w-full"
+                  />
+                  <Button 
+                    className="w-full" 
+                    type="submit"
+                    disabled={addSuggestion.isPending || !suggestion.trim()}
+                  >
+                    {addSuggestion.isPending ? 'Enviando...' : 'Enviar Sugestão'}
+                  </Button>
+                </form>
+              ) : (
+                <div className="text-center text-muted-foreground text-sm p-4 bg-secondary/10 rounded-md">
+                  Faça login para sugerir e votar em temas
+                </div>
+              )}
             </div>
           </div>
 
@@ -129,14 +149,19 @@ export const UpcomingReleaseCard = () => {
             <div className="flex-1 relative">
               <ScrollArea className="h-[390px] px-6 pb-6 pt-6">
                 <div className="space-y-3 pb-8">
-                  {mockSuggestions.map((item) => (
+                  {suggestions.map((item) => (
                     <div key={item.id} className="flex items-start gap-3 p-3 rounded-lg bg-card shadow-sm hover:bg-accent/5 transition-colors">
                       <div className="flex flex-col items-center">
                         <Button
                           variant="outline"
                           size="icon"
-                          className="h-8 w-8 rounded-full p-0"
+                          className={`h-8 w-8 rounded-full p-0 ${
+                            item.hasVoted 
+                              ? "text-[#F97316] border-[#F97316] hover:text-[#F97316] hover:border-[#F97316]/90" 
+                              : ""
+                          }`}
                           onClick={() => handleVote(item.id)}
+                          disabled={voteSuggestion.isPending || !user}
                           title="Votar nesta sugestão"
                         >
                           <ArrowUp className="h-4 w-4" />
@@ -151,16 +176,26 @@ export const UpcomingReleaseCard = () => {
                         <div className="flex items-center justify-between mt-2">
                           <div className="flex items-center gap-2">
                             <Avatar className="h-5 w-5">
-                              <AvatarImage src={item.author.avatar} />
-                              <AvatarFallback>{item.author.name.charAt(0)}</AvatarFallback>
+                              <AvatarImage src={item.user?.avatar_url} />
+                              <AvatarFallback>{item.user?.full_name?.[0] || 'U'}</AvatarFallback>
                             </Avatar>
-                            <span className="text-xs text-muted-foreground">{item.author.name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {item.user?.full_name || 'Usuário'}
+                            </span>
                           </div>
-                          <span className="text-xs text-muted-foreground">{item.createdAt}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {formatRelativeTime(item.created_at)}
+                          </span>
                         </div>
                       </div>
                     </div>
                   ))}
+                  
+                  {suggestions.length === 0 && (
+                    <div className="text-center text-muted-foreground p-4">
+                      Ainda não há sugestões. Seja o primeiro a sugerir!
+                    </div>
+                  )}
                 </div>
               </ScrollArea>
               

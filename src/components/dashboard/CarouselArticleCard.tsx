@@ -3,6 +3,10 @@ import React, { useState } from 'react';
 import { Issue } from '@/types/issue';
 import { useNavigate } from 'react-router-dom';
 import { Bookmark, Heart, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { useReactionData } from '@/hooks/comments/useReactionData';
+import { useBookmarkData } from '@/hooks/comments/useBookmarkData';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CarouselArticleCardProps {
   issue: Issue;
@@ -14,17 +18,48 @@ export const CarouselArticleCard: React.FC<CarouselArticleCardProps> = ({
   className = '' 
 }) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [isHovered, setIsHovered] = useState(false);
+  
+  const { reactions, reactionMutation } = useReactionData(issue.id, 'issue');
+  const { isBookmarked, bookmarkMutation } = useBookmarkData(issue.id, 'issue');
 
   const handleClick = () => {
     navigate(`/article/${issue.id}`);
   };
 
+  const checkAuthAndProceed = async (callback: () => void) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toast({
+        variant: "destructive",
+        description: "Você precisa estar logado para realizar essa ação",
+      });
+      return;
+    }
+    callback();
+  };
+
   const handleActionClick = (e: React.MouseEvent, action: string) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log(`${action} clicked for issue:`, issue.id);
-    // Action handlers would be implemented here
+    
+    checkAuthAndProceed(() => {
+      switch (action) {
+        case 'bookmark':
+          bookmarkMutation.mutate();
+          break;
+        case 'heart':
+          reactionMutation.mutate({ type: 'want_more' });
+          break;
+        case 'thumbs-up':
+          reactionMutation.mutate({ type: 'like' });
+          break;
+        case 'thumbs-down':
+          reactionMutation.mutate({ type: 'dislike' });
+          break;
+      }
+    });
   };
 
   return (
@@ -48,8 +83,8 @@ export const CarouselArticleCard: React.FC<CarouselArticleCardProps> = ({
           }}
         />
         
-        {/* Specialty tag - always visible at bottom left */}
-        <div className="absolute bottom-4 left-4 opacity-100 transition-opacity">
+        {/* Specialty tag - hide when hovered and actions are shown */}
+        <div className={`absolute bottom-4 left-4 transition-opacity ${isHovered ? 'opacity-0' : 'opacity-100'}`}>
           <span className="text-xs font-medium text-white bg-black/60 px-2 py-1 rounded">
             {issue.specialty || ''}
           </span>
@@ -60,8 +95,9 @@ export const CarouselArticleCard: React.FC<CarouselArticleCardProps> = ({
           <button 
             className="bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors text-white"
             onClick={(e) => handleActionClick(e, 'bookmark')}
+            disabled={bookmarkMutation.isPending}
           >
-            <Bookmark className="w-4 h-4" />
+            <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-white' : ''}`} />
           </button>
         </div>
 
@@ -70,20 +106,23 @@ export const CarouselArticleCard: React.FC<CarouselArticleCardProps> = ({
           <button 
             className="bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors text-white"
             onClick={(e) => handleActionClick(e, 'heart')}
+            disabled={reactionMutation.isPending}
           >
-            <Heart className="w-4 h-4" />
+            <Heart className={`w-4 h-4 ${reactions?.includes('want_more') ? 'fill-white' : ''}`} />
           </button>
           <button 
             className="bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors text-white"
             onClick={(e) => handleActionClick(e, 'thumbs-up')}
+            disabled={reactionMutation.isPending}
           >
-            <ThumbsUp className="w-4 h-4" />
+            <ThumbsUp className={`w-4 h-4 ${reactions?.includes('like') ? 'fill-white' : ''}`} />
           </button>
           <button 
             className="bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors text-white"
             onClick={(e) => handleActionClick(e, 'thumbs-down')}
+            disabled={reactionMutation.isPending}
           >
-            <ThumbsDown className="w-4 h-4" />
+            <ThumbsDown className={`w-4 h-4 ${reactions?.includes('dislike') ? 'fill-white' : ''}`} />
           </button>
         </div>
       </div>

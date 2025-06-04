@@ -14,13 +14,9 @@ export const Logo = ({
   collapsed = false,
   size = 'medium'
 }: LogoProps) => {
-  // Changed to always black on auth page (dark = true)
   const textColor = dark ? 'text-black' : 'text-white';
   
-  // Font weight map
-  const fontWeight = 'font-extrabold';
-  
-  // Size map with adjusted sizes to make the logo feel more premium
+  // Size map with proper serif typography
   const sizeClasses = {
     small: 'text-2xl',
     medium: 'text-4xl',
@@ -32,7 +28,7 @@ export const Logo = ({
   if (collapsed) {
     return (
       <div className="flex justify-center">
-        <h1 className={`logo-text ${sizeClasses[size]} ${fontWeight} ${textColor} flex items-center`}>
+        <h1 className={`font-serif font-medium tracking-tight ${sizeClasses[size]} ${textColor} flex items-center`}>
           R.
         </h1>
       </div>
@@ -41,7 +37,7 @@ export const Logo = ({
 
   return (
     <div className="flex flex-col">
-      <h1 className={`logo-text ${sizeClasses[size]} ${fontWeight} ${textColor} flex items-center`}>
+      <h1 className={`font-serif font-medium tracking-tight ${sizeClasses[size]} ${textColor} flex items-center`}>
         Reviews.
       </h1>
       {showSubtitle && (

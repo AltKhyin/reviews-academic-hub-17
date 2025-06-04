@@ -70,12 +70,12 @@ const Dashboard = () => {
 
     switch (sectionId) {
       case 'reviews':
-        // Only show for admin/editor
-        if (!isAdmin && !isEditor) return null;
+        // Only show one reviewer comments section
         return <ReviewerCommentsDisplay key="reviews" />;
         
       case 'reviewer':
-        return <ReviewerCommentsDisplay key="reviewer" />;
+        // Skip duplicate reviewer section
+        return null;
         
       case 'featured':
         if (!featuredIssue) return null;
