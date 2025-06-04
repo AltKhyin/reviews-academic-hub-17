@@ -34,6 +34,17 @@ const SECTION_COMPONENTS = {
   'mini-changelog': MiniChangelog,
 };
 
+const DEFAULT_SECTIONS = [
+  { id: 'community-header', name: 'Cabeçalho da Comunidade', enabled: true, order: 0 },
+  { id: 'active-avatars', name: 'Avatares Ativos', enabled: true, order: 1 },
+  { id: 'top-threads', name: 'Discussões em Alta', enabled: true, order: 2 },
+  { id: 'next-review', name: 'Próxima Edição', enabled: true, order: 3 },
+  { id: 'weekly-poll', name: 'Enquete da Semana', enabled: true, order: 4 },
+  { id: 'resource-bookmarks', name: 'Links Úteis', enabled: true, order: 5 },
+  { id: 'rules-accordion', name: 'Regras da Comunidade', enabled: true, order: 6 },
+  { id: 'mini-changelog', name: 'Changelog', enabled: true, order: 7 },
+];
+
 export const RightSidebar: React.FC<RightSidebarProps> = ({
   className = '',
   isMobile = false
@@ -70,8 +81,8 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
     return null;
   }
 
-  // Get enabled sections in order
-  const enabledSections = (config?.sections || [])
+  // Get enabled sections in order - use default sections if config doesn't have sections yet
+  const enabledSections = (config?.sections || DEFAULT_SECTIONS)
     .filter(section => section.enabled)
     .sort((a, b) => a.order - b.order);
 

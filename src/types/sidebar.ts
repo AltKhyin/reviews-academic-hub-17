@@ -54,6 +54,13 @@ export interface ChangelogEntry {
   text: string;
 }
 
+export interface SidebarSection {
+  id: string;
+  name: string;
+  enabled: boolean;
+  order: number;
+}
+
 export interface SidebarConfig {
   tagline: string;
   nextReviewTs: string;
@@ -63,6 +70,7 @@ export interface SidebarConfig {
     show: boolean;
     entries: ChangelogEntry[];
   };
+  sections: SidebarSection[];
 }
 
 export interface SiteStats {
