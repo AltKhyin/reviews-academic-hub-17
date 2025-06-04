@@ -1,4 +1,7 @@
 
+// ABOUTME: User profile page with profile header, activity, and saved content tabs
+// Displays user information, avatar upload, stats, and manages saved content
+
 import React, { useState } from 'react';
 import { useSidebar } from '@/components/ui/sidebar';
 import { useAuth } from '@/contexts/AuthContext';
@@ -83,7 +86,7 @@ const Profile: React.FC = () => {
   };
 
   return (
-    <div className={`animate-fade-in pt-4 pb-6 transition-all duration-300 ${isCollapsed ? 'max-w-[95%]' : 'max-w-[85%]'} mx-auto`}>
+    <div className="w-full animate-fade-in pt-4 pb-6 transition-all duration-300 px-4">
       {/* Card de perfil */}
       <Card className="bg-[#1a1a1a] rounded-lg border border-[#2a2a2a] overflow-hidden shadow-md mb-2">
         <ProfileHeader 

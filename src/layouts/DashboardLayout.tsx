@@ -28,8 +28,8 @@ export const DashboardLayout = () => {
         
         {/* Content with conditional right sidebar */}
         <div className="flex-1 flex overflow-hidden">
-          {/* Main Content */}
-          <main className="flex-1 overflow-auto">
+          {/* Main Content - now takes full width */}
+          <main className="flex-1 overflow-auto w-full">
             <Outlet />
           </main>
           
