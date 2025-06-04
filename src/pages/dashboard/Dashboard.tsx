@@ -5,7 +5,7 @@ import { useSectionVisibility } from '@/hooks/useSectionVisibility';
 import { useAuth } from '@/contexts/AuthContext';
 import { ReviewerCommentsDisplay } from '@/components/dashboard/ReviewerCommentsDisplay';
 import { HeroSection } from '@/components/dashboard/HeroSection';
-import { ArticleRow } from '@/components/dashboard/ArticleRow';
+import ArticleRow from '@/components/dashboard/ArticleRow';
 import { UpcomingReleaseCard } from '@/components/dashboard/UpcomingReleaseCard';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 
