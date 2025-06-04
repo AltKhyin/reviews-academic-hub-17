@@ -137,11 +137,9 @@ const Community = () => {
           </div>
         </div>
 
-        {/* Integrated sidebar - desktop only, sticky positioned */}
+        {/* Integrated sidebar - desktop only, now scrolls with page content */}
         <div className="hidden lg:block">
-          <div className="sticky top-6">
-            <RightSidebar isMobile={false} className="border-0 bg-transparent" />
-          </div>
+          <RightSidebar isMobile={false} className="border-0 bg-transparent" />
         </div>
       </div>
       

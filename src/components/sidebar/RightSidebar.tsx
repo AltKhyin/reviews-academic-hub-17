@@ -1,8 +1,8 @@
 
-// ABOUTME: Right sidebar component with integrated scrolling and theme-aware styling
-// Renders conditionally based on route and provides mobile drawer functionality
+// ABOUTME: Right sidebar component with page-level scrolling integration
+// Renders conditionally based on route and scrolls with main page content
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { useSidebarStore } from '@/stores/sidebarStore';
@@ -30,7 +30,6 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
   const location = useLocation();
   const { isMobileDrawerOpen, toggleMobileDrawer } = useSidebarStore();
   const focusTrapRef = useFocusTrap(isMobile && isMobileDrawerOpen);
-  const scrollRef = useRef<HTMLDivElement>(null);
   
   // Only show sidebar in community routes
   const shouldShowSidebar = location.pathname.startsWith('/community');
@@ -40,28 +39,6 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
   if (shouldFetchData) {
     useSidebarData();
   }
-
-  // Handle scroll events for scrollbar visibility
-  useEffect(() => {
-    const scrollElement = scrollRef.current;
-    if (!scrollElement) return;
-
-    let scrollTimeout: NodeJS.Timeout;
-
-    const handleScroll = () => {
-      scrollElement.classList.add('scrolling');
-      clearTimeout(scrollTimeout);
-      scrollTimeout = setTimeout(() => {
-        scrollElement.classList.remove('scrolling');
-      }, 1000);
-    };
-
-    scrollElement.addEventListener('scroll', handleScroll);
-    return () => {
-      scrollElement.removeEventListener('scroll', handleScroll);
-      clearTimeout(scrollTimeout);
-    };
-  }, []);
 
   // Handle escape key to close mobile drawer
   useEffect(() => {
@@ -85,8 +62,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
   const content = (
     <SidebarErrorBoundary>
       <div 
-        ref={scrollRef}
-        className="max-h-[calc(100vh-theme(spacing.24))] overflow-y-auto community-scroll"
+        className="w-full"
         role="complementary"
         aria-label="Barra lateral da comunidade"
       >
@@ -173,7 +149,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
           ref={focusTrapRef}
           className={`
             fixed top-0 right-0 h-full w-80 bg-gray-900 border-l border-gray-700 z-50
-            transform transition-transform duration-300 ease-in-out
+            transform transition-transform duration-300 ease-in-out overflow-y-auto
             ${isMobileDrawerOpen ? 'translate-x-0' : 'translate-x-full'}
           `}
           role="dialog"
