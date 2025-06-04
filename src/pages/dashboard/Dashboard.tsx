@@ -10,6 +10,10 @@ import { CoverStackHero } from '@/components/homepage/CoverStackHero';
 import { EditorialRibbon } from '@/components/homepage/EditorialRibbon';
 import { IssueMasonry } from '@/components/homepage/IssueMasonry';
 import { MetricWidget } from '@/components/homepage/MetricWidget';
+import { DiscussionTicker } from '@/components/homepage/DiscussionTicker';
+import { SmartCarousel } from '@/components/homepage/SmartCarousel';
+import { MiniPollBanner } from '@/components/homepage/MiniPollBanner';
+import { InlineAdmonition } from '@/components/homepage/InlineAdmonition';
 
 // Existing components for other sections
 import { ReviewerCommentsDisplay } from '@/components/dashboard/ReviewerCommentsDisplay';
@@ -59,6 +63,16 @@ const Dashboard = () => {
       topThreads: homepageData.topThreads.length
     });
   }
+
+  // Mock poll data for MiniPollBanner (replace with real data later)
+  const mockPoll = homepageData?.activePoll ? {
+    id: homepageData.activePoll.id,
+    question: homepageData.activePoll.question,
+    options: homepageData.activePoll.options || [],
+    totalVotes: homepageData.activePoll.votes?.reduce((sum: number, vote: number) => sum + vote, 0) || 0,
+    closesAt: homepageData.activePoll.closes_at,
+    userHasVoted: false // This should come from user data
+  } : null;
 
   // Component mapping for each section type
   const renderSection = (sectionId: string) => {
@@ -116,9 +130,28 @@ const Dashboard = () => {
         );
         
       case 'recommended':
+        return (
+          <SmartCarousel
+            key="recommended"
+            title="Recomendados para Você"
+            issues={homepageData?.recommendedIssues || []}
+            kind="recommended"
+            isLoading={dataLoading}
+            className="mb-8"
+          />
+        );
+        
       case 'trending':
-        // These will be implemented as SmartCarousel components in the next phase
-        return null;
+        return (
+          <SmartCarousel
+            key="trending"
+            title="Mais Acessados"
+            issues={homepageData?.trendingIssues || []}
+            kind="popular"
+            isLoading={dataLoading}
+            className="mb-8"
+          />
+        );
         
       default:
         console.warn(`Unknown section type: ${sectionId}`);
@@ -150,6 +183,35 @@ const Dashboard = () => {
       <main className="space-y-12 pb-16">
         {/* Render sections in order */}
         {visibleSectionIds.map(renderSection)}
+        
+        {/* Discussion Ticker */}
+        {homepageData?.topThreads && homepageData.topThreads.length > 0 && (
+          <DiscussionTicker 
+            threads={homepageData.topThreads}
+            isLoading={dataLoading}
+          />
+        )}
+        
+        {/* Mini Poll Banner */}
+        {mockPoll && (
+          <MiniPollBanner 
+            poll={mockPoll}
+            onVote={(optionId) => console.log('Vote:', optionId)}
+            isLoading={dataLoading}
+          />
+        )}
+        
+        {/* Pre-print disclaimer example */}
+        {homepageData?.featuredIssue && (
+          <div className="max-w-magazine mx-auto px-6">
+            <InlineAdmonition type="warning" title="Aviso Importante">
+              <p>
+                Este conteúdo é baseado em artigos científicos em pré-publicação. 
+                As informações podem estar sujeitas a revisões antes da publicação final.
+              </p>
+            </InlineAdmonition>
+          </div>
+        )}
         
         {/* Fallback if no content */}
         {(!homepageData?.featuredIssue && (!homepageData?.recentIssues || homepageData.recentIssues.length === 0)) && (

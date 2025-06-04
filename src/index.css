@@ -148,6 +148,30 @@
   .ticker-container:hover .ticker-item {
     animation-play-state: paused;
   }
+
+  /* Carousel specific styles */
+  .carousel-card {
+    @apply transition-all duration-300;
+  }
+  
+  .carousel-card:hover {
+    @apply transform -translate-y-1;
+  }
+  
+  /* Hide scrollbar */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Animation pause utility */
+  .animation-paused {
+    animation-play-state: paused;
+  }
 }
 
 @layer utilities {
@@ -158,7 +182,8 @@
   @media (prefers-reduced-motion: reduce) {
     .magazine-hero,
     .magazine-card,
-    .ticker-item {
+    .ticker-item,
+    .carousel-card {
       @apply transition-none;
     }
     
