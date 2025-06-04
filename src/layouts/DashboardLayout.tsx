@@ -1,6 +1,6 @@
 
-// ABOUTME: Main dashboard layout with conditional sidebar rendering and dynamic spacing
-// Excludes right sidebar on community routes to prevent duplicate rendering
+// ABOUTME: Main dashboard layout with conditional sidebar rendering
+// Excludes sidebar on community routes to prevent duplicate rendering
 
 import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
@@ -11,7 +11,7 @@ import { RightSidebar } from '@/components/sidebar/RightSidebar';
 export const DashboardLayout = () => {
   const location = useLocation();
   
-  // Don't show the right sidebar on community routes since it has its own integrated sidebar
+  // Don't show the old right sidebar on community routes since it has its own integrated sidebar
   const shouldShowRightSidebar = !location.pathname.startsWith('/community');
 
   return (
@@ -19,8 +19,8 @@ export const DashboardLayout = () => {
       {/* Left Navigation Sidebar */}
       <Sidebar />
       
-      {/* Main Content Area with dynamic margin based on sidebar */}
-      <div className="flex-1 flex flex-col overflow-hidden ml-64">
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile Header with Sidebar Toggle */}
         <div className="lg:hidden flex items-center justify-between p-4 border-b">
           <MobileSidebarToggle />

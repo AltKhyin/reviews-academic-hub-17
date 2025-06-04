@@ -1,9 +1,10 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import Logo from '@/components/common/Logo';
+import { useSidebar } from '@/components/ui/sidebar';
 import {
   Home,
   Search,
@@ -18,14 +19,12 @@ import {
 export const Sidebar = () => {
   const { user, isAdmin, signOut } = useAuth();
   const location = useLocation();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const { state, toggleSidebar } = useSidebar();
+  
+  const isCollapsed = state === 'collapsed';
   
   const isActive = (path: string) => {
     return location.pathname.startsWith(path);
-  };
-
-  const toggleSidebar = () => {
-    setIsCollapsed(!isCollapsed);
   };
 
   const menuItems = [
@@ -63,9 +62,7 @@ export const Sidebar = () => {
   ];
 
   return (
-    <div className={`fixed top-0 left-0 h-full z-40 bg-[#121212] border-r border-white/10 transition-all duration-300 ${
-      isCollapsed ? 'w-16' : 'w-64'
-    }`}>
+    <div className="fixed top-0 left-0 h-full z-40 bg-[#121212] border-r border-white/10">
       <div className="flex flex-col h-full">
         <div className="flex justify-center items-center py-6">
           <Link to="/homepage" className="flex justify-center w-full">
