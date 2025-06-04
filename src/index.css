@@ -45,6 +45,14 @@
     --sidebar-accent-foreground: 0 0% 13%;
     --sidebar-border: 0 0% 89%;
     --sidebar-ring: 0 0% 13%;
+
+    /* Netflix-style journal tokens */
+    --journal-primary: 0 0% 5%;
+    --journal-secondary: 0 0% 25%;
+    --journal-accent: 22 58% 55%;
+    --journal-muted: 0 0% 60%;
+    --journal-surface: 0 0% 98%;
+    --journal-border: 0 0% 90%;
   }
 
   .dark {
@@ -84,6 +92,14 @@
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 0 0% 15%;
     --sidebar-ring: 0 0% 83%;
+
+    /* Dark mode journal tokens */
+    --journal-primary: 0 0% 95%;
+    --journal-secondary: 0 0% 75%;
+    --journal-accent: 22 58% 65%;
+    --journal-muted: 0 0% 40%;
+    --journal-surface: 0 0% 8%;
+    --journal-border: 0 0% 15%;
   }
   
   html, body, #root {
@@ -123,14 +139,60 @@
   .subtitle-text {
     @apply font-sans text-sm font-normal tracking-wide opacity-80;
   }
+
+  /* Netflix-style components */
+  .hero-gradient {
+    background: linear-gradient(135deg, hsl(var(--journal-surface)) 0%, hsl(var(--journal-border)) 100%);
+  }
+
+  .cover-hover {
+    @apply transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-black/20;
+  }
+
+  .journal-text {
+    @apply font-journal text-journal-primary;
+  }
+
+  .journal-body {
+    @apply font-sans text-journal-body text-journal-secondary leading-relaxed;
+  }
+
+  .section-spacing {
+    @apply mb-12 first:mt-0;
+  }
+
+  .carousel-container {
+    @apply relative overflow-hidden;
+  }
+
+  .carousel-track {
+    @apply flex gap-4 transition-transform duration-300 ease-out;
+  }
+
+  .scientific-grid {
+    background-image: 
+      linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
 
+/* Netflix-style animations */
 @keyframes subtle-pan {
   0% {
     transform: translate(0, 0) scale(1.1);
@@ -141,4 +203,8 @@
   100% {
     transform: translate(0, 0) scale(1.1);
   }
+}
+
+.hero-background {
+  animation: subtle-pan 20s ease-in-out infinite;
 }

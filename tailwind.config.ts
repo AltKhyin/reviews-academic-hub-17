@@ -53,6 +53,27 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Netflix-style journal tokens
+        journal: {
+          primary: "hsl(var(--journal-primary))",
+          secondary: "hsl(var(--journal-secondary))",
+          accent: "hsl(var(--journal-accent))",
+          muted: "hsl(var(--journal-muted))",
+          surface: "hsl(var(--journal-surface))",
+          border: "hsl(var(--journal-border))",
+        },
+      },
+      fontFamily: {
+        'serif': ['Playfair Display', 'serif'],
+        'sans': ['Inter', 'system-ui', 'sans-serif'],
+        'journal': ['Playfair Display', 'serif'],
+      },
+      fontSize: {
+        'journal-hero': ['3.5rem', { lineHeight: '1.1', letterSpacing: '-0.02em' }],
+        'journal-heading': ['2.25rem', { lineHeight: '1.2', letterSpacing: '-0.01em' }],
+        'journal-subhead': ['1.5rem', { lineHeight: '1.3', letterSpacing: '0' }],
+        'journal-body': ['1rem', { lineHeight: '1.6', letterSpacing: '0.01em' }],
+        'journal-caption': ['0.875rem', { lineHeight: '1.4', letterSpacing: '0.02em' }],
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -68,10 +89,25 @@ const config: Config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        "fade-in": {
+          "0%": { opacity: "0", transform: "translateY(20px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" }
+        },
+        "slide-left": {
+          "0%": { transform: "translateX(100%)" },
+          "100%": { transform: "translateX(0)" }
+        },
+        "cover-hover": {
+          "0%": { transform: "scale(1)" },
+          "100%": { transform: "scale(1.05)" }
+        }
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "fade-in": "fade-in 0.6s ease-out",
+        "slide-left": "slide-left 0.3s ease-out",
+        "cover-hover": "cover-hover 0.3s ease-out",
       },
     },
   },
