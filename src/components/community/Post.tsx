@@ -164,7 +164,7 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
             <IssueDiscussionBanner issueId={post.issue_id} />
           )}
           
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center space-x-1 mt-4">
             <PostVoting
               postId={post.id}
               initialScore={post.score || 0}

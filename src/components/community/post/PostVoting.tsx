@@ -107,14 +107,14 @@ export const PostVoting: React.FC<PostVotingProps> = ({
     <div className="flex items-center space-x-1">
       <button
         className={`
-          p-1 hover:bg-gray-800 rounded transition-colors disabled:opacity-50
+          p-1.5 hover:bg-gray-800 rounded transition-colors disabled:opacity-50 flex items-center justify-center
           ${localUserVote === 1 ? 'text-orange-500' : 'text-gray-400 hover:text-gray-300'}
         `}
         onClick={() => handleVote(1)}
         disabled={isVoting}
         aria-label="Vote up"
       >
-        <ArrowUp className="h-5 w-5" />
+        <ArrowUp className="h-4 w-4" />
       </button>
       
       <span className={`text-sm font-medium min-w-[24px] text-center ${
@@ -126,14 +126,14 @@ export const PostVoting: React.FC<PostVotingProps> = ({
       
       <button
         className={`
-          p-1 hover:bg-gray-800 rounded transition-colors disabled:opacity-50
+          p-1.5 hover:bg-gray-800 rounded transition-colors disabled:opacity-50 flex items-center justify-center
           ${localUserVote === -1 ? 'text-blue-500' : 'text-gray-400 hover:text-gray-300'}
         `}
         onClick={() => handleVote(-1)}
         disabled={isVoting}
         aria-label="Vote down"
       >
-        <ArrowDown className="h-5 w-5" />
+        <ArrowDown className="h-4 w-4" />
       </button>
     </div>
   );

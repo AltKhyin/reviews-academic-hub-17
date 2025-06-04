@@ -23,9 +23,14 @@ export const ResourceBookmarks: React.FC = () => {
     return null;
   }
 
-  // Helper function to clean bookmark labels
+  // Enhanced helper function to clean bookmark labels more thoroughly
   const cleanLabel = (label: string) => {
-    return label.replace(/\blink\b/gi, '').trim();
+    return label
+      .replace(/\blink\b/gi, '') // Remove "link" (case insensitive)
+      .replace(/\blinks\b/gi, '') // Remove "links" (case insensitive)
+      .replace(/^\s*[-•·]\s*/, '') // Remove leading dashes or bullet points
+      .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+      .trim(); // Remove leading/trailing whitespace
   };
 
   return (
