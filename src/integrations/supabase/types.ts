@@ -64,6 +64,13 @@ export type Database = {
             foreignKeyName: "article_reviews_reviewer_id_fkey"
             columns: ["reviewer_id"]
             isOneToOne: false
+            referencedRelation: "online_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "article_reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -141,6 +148,13 @@ export type Database = {
             foreignKeyName: "articles_author_id_fkey"
             columns: ["author_id"]
             isOneToOne: false
+            referencedRelation: "online_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "articles_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -185,6 +199,13 @@ export type Database = {
             referencedRelation: "comments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "comment_reports_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments_highlight"
+            referencedColumns: ["id"]
+          },
         ]
       }
       comment_votes: {
@@ -209,6 +230,13 @@ export type Database = {
             columns: ["comment_id"]
             isOneToOne: false
             referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comment_votes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments_highlight"
             referencedColumns: ["id"]
           },
         ]
@@ -273,10 +301,31 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "comments_highlight"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "comments_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "threads_top"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "online_users"
             referencedColumns: ["id"]
           },
           {
@@ -539,6 +588,38 @@ export type Database = {
           },
         ]
       }
+      poll_user_votes: {
+        Row: {
+          created_at: string | null
+          id: string
+          option_index: number
+          poll_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          option_index: number
+          poll_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          option_index?: number
+          poll_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_user_votes_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       poll_votes: {
         Row: {
           created_at: string
@@ -568,6 +649,39 @@ export type Database = {
           },
         ]
       }
+      polls: {
+        Row: {
+          active: boolean | null
+          closes_at: string
+          created_at: string | null
+          id: string
+          options: Json
+          question: string
+          updated_at: string | null
+          votes: Json | null
+        }
+        Insert: {
+          active?: boolean | null
+          closes_at: string
+          created_at?: string | null
+          id?: string
+          options: Json
+          question: string
+          updated_at?: string | null
+          votes?: Json | null
+        }
+        Update: {
+          active?: boolean | null
+          closes_at?: string
+          created_at?: string | null
+          id?: string
+          options?: Json
+          question?: string
+          updated_at?: string | null
+          votes?: Json | null
+        }
+        Relationships: []
+      }
       post_bookmarks: {
         Row: {
           created_at: string
@@ -593,6 +707,13 @@ export type Database = {
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_bookmarks_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "threads_top"
             referencedColumns: ["id"]
           },
         ]
@@ -642,6 +763,13 @@ export type Database = {
             referencedRelation: "posts"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "post_polls_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
+            referencedRelation: "threads_top"
+            referencedColumns: ["id"]
+          },
         ]
       }
       post_votes: {
@@ -666,6 +794,13 @@ export type Database = {
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_votes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "threads_top"
             referencedColumns: ["id"]
           },
         ]
@@ -818,6 +953,30 @@ export type Database = {
         }
         Relationships: []
       }
+      site_meta: {
+        Row: {
+          created_at: string | null
+          id: string
+          key: string
+          updated_at: string | null
+          value: Json
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          key: string
+          updated_at?: string | null
+          value: Json
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          key?: string
+          updated_at?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       tags: {
         Row: {
           created_at: string
@@ -904,6 +1063,13 @@ export type Database = {
             foreignKeyName: "user_article_reactions_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "online_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_article_reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -944,6 +1110,13 @@ export type Database = {
             columns: ["issue_id"]
             isOneToOne: false
             referencedRelation: "issues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_article_views_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "online_users"
             referencedColumns: ["id"]
           },
           {
@@ -996,6 +1169,13 @@ export type Database = {
             foreignKeyName: "user_bookmarks_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "online_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_bookmarks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1032,7 +1212,38 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      comments_highlight: {
+        Row: {
+          author_avatar: string | null
+          author_name: string | null
+          body: string | null
+          created_at: string | null
+          id: string | null
+          thread_id: string | null
+          votes: number | null
+        }
+        Relationships: []
+      }
+      online_users: {
+        Row: {
+          avatar_url: string | null
+          full_name: string | null
+          id: string | null
+          last_active: string | null
+        }
+        Relationships: []
+      }
+      threads_top: {
+        Row: {
+          comments: number | null
+          created_at: string | null
+          id: string | null
+          thread_type: string | null
+          title: string | null
+          votes: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       _ltree_compress: {
@@ -1046,6 +1257,14 @@ export type Database = {
       get_current_user_id: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_online_users_count: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      get_total_users: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       get_user_role: {
         Args: { user_id: string }

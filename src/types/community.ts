@@ -69,3 +69,16 @@ export interface IssueDiscussionSettings {
   created_at: string;
   updated_at: string;
 }
+
+// Re-export sidebar types for convenience
+export type {
+  OnlineUser,
+  CommentHighlight,
+  TopThread,
+  Poll as SidebarPoll,
+  PollVote,
+  Bookmark,
+  ChangelogEntry,
+  SidebarConfig,
+  SiteStats
+} from './sidebar';
