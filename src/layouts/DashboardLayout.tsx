@@ -7,6 +7,7 @@ import { MobileSidebarToggle } from '../components/sidebar/MobileSidebarToggle';
 import { supabase } from '@/integrations/supabase/client';
 import { SidebarProvider, useSidebar } from '@/components/ui/sidebar';
 import { useAuth } from '@/contexts/AuthContext';
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 
 const ContentWrapper = ({ children }: { children: React.ReactNode }) => {
   const { state } = useSidebar();
@@ -19,7 +20,9 @@ const ContentWrapper = ({ children }: { children: React.ReactNode }) => {
     <div className="flex flex-1 overflow-hidden">
       <div className={`flex-1 overflow-y-auto transition-all duration-300 ${isCollapsed ? 'ml-[60px]' : 'ml-[240px]'}`}>
         <div className={`h-full ${isDualView ? 'max-w-[95%]' : 'max-w-6xl'} mx-auto`}>
-          {children}
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
         </div>
       </div>
       
@@ -91,14 +94,16 @@ const DashboardLayout: React.FC = () => {
   }
 
   return (
-    <SidebarProvider defaultOpen={true}>
-      <div className="flex h-screen overflow-hidden bg-[#121212] text-white">
-        <Sidebar />
-        <ContentWrapper>
-          <Outlet />
-        </ContentWrapper>
-      </div>
-    </SidebarProvider>
+    <ErrorBoundary>
+      <SidebarProvider defaultOpen={true}>
+        <div className="flex h-screen overflow-hidden bg-[#121212] text-white">
+          <Sidebar />
+          <ContentWrapper>
+            <Outlet />
+          </ContentWrapper>
+        </div>
+      </SidebarProvider>
+    </ErrorBoundary>
   );
 };
 

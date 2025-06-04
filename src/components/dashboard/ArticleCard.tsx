@@ -1,178 +1,159 @@
-import React, { useState } from 'react';
-import { Bookmark, ThumbsUp, ThumbsDown, Heart, BookmarkIcon, ThumbsUpIcon, ThumbsDownIcon, HeartIcon } from 'lucide-react';
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Link } from 'react-router-dom';
-import { ArticleActions } from '../article/ArticleActions';
-import { useToast } from '@/hooks/use-toast';
-import { useReactionData } from '@/hooks/comments/useReactionData';
-import { useBookmarkData } from '@/hooks/comments/useBookmarkData';
-import { supabase } from '@/integrations/supabase/client';
+
+import React from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Issue } from '@/types/issue';
+import { useNavigate } from 'react-router-dom';
+import { Calendar, User, FileText, Star } from 'lucide-react';
 
 interface ArticleCardProps {
-  article: {
-    id: string;
-    title: string;
-    description: string;
-    image: string;
-    category: string;
-  };
-  entityType?: 'article' | 'issue';
+  issue: Issue;
+  featured?: boolean;
+  variant?: 'default' | 'compact' | 'featured';
+  className?: string;
 }
 
-const ArticleCard = ({ article, entityType = 'issue' }: ArticleCardProps) => {
-  const [isHovered, setIsHovered] = useState(false);
-  const { toast } = useToast();
+export const ArticleCard: React.FC<ArticleCardProps> = ({ 
+  issue, 
+  featured = false, 
+  variant = 'default',
+  className = '' 
+}) => {
+  const navigate = useNavigate();
 
-  const { isBookmarked, isLoadingBookmark, bookmarkMutation } = useBookmarkData(article.id, entityType);
-  const { reactions, isLoadingReactions, reactionMutation } = useReactionData(article.id, entityType);
+  const handleClick = () => {
+    navigate(`/article/${issue.id}`);
+  };
 
-  // Check if user is authenticated
-  const checkAuthAndProceed = async (callback: () => void) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      toast({
-        variant: "destructive",
-        description: "Você precisa estar logado para realizar essa ação",
-      });
-      return;
+  const getCardSizeClass = () => {
+    switch (variant) {
+      case 'compact':
+        return 'h-32';
+      case 'featured':
+        return 'h-64 md:h-80';
+      default:
+        return 'h-48';
     }
-    callback();
   };
 
-  const handleBookmark = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    checkAuthAndProceed(() => bookmarkMutation.mutate());
+  const formatDate = (date: string) => {
+    try {
+      return new Date(date).toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    } catch {
+      return 'Data inválida';
+    }
   };
 
-  const handleReaction = (e: React.MouseEvent, type: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    checkAuthAndProceed(() => reactionMutation.mutate({ type }));
+  const getSpecialtyColor = (specialty: string) => {
+    const colors = {
+      'Cardiologia': 'bg-red-500/20 text-red-300',
+      'Neurologia': 'bg-purple-500/20 text-purple-300',
+      'Oncologia': 'bg-orange-500/20 text-orange-300',
+      'Pediatria': 'bg-green-500/20 text-green-300',
+      'Psiquiatria': 'bg-blue-500/20 text-blue-300',
+      'Nutrição': 'bg-yellow-500/20 text-yellow-300',
+    };
+    return colors[specialty as keyof typeof colors] || 'bg-gray-500/20 text-gray-300';
   };
 
   return (
-    <HoverCard>
-      <HoverCardTrigger asChild>
-        <Link 
-          to={`/article/${article.id}`} 
-          className="block"
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-        >
-          <div className="relative rounded-md overflow-hidden h-[360px] w-[202px] cursor-pointer group">
+    <Card 
+      className={`group cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:scale-[1.02] border-white/10 bg-white/5 backdrop-blur-sm ${getCardSizeClass()} ${className}`}
+      onClick={handleClick}
+    >
+      <CardContent className="p-0 h-full flex flex-col">
+        {/* Cover Image */}
+        <div className="relative h-1/2 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-t-lg overflow-hidden">
+          {issue.cover_image_url ? (
             <img 
-              src={article.image} 
-              alt={article.title}
-              className="w-full h-full object-cover transition-transform duration-300 hover:scale-105 hover:brightness-75"
+              src={issue.cover_image_url} 
+              alt={issue.title}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }}
             />
-            
-            <div className={`absolute bottom-4 left-4 ${isHovered ? 'opacity-0' : 'opacity-100'} transition-opacity`}>
-              <span className="text-xs font-medium text-white bg-black/60 px-2 py-1 rounded">
-                {article.category}
-              </span>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <FileText className="w-12 h-12 text-white/30" />
             </div>
-            
-            <div className={`absolute top-4 right-4 ${isHovered ? 'opacity-100' : 'opacity-0'} transition-opacity`}>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button 
-                      className={`bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors text-white`}
-                      onClick={handleBookmark}
-                      disabled={isLoadingBookmark || bookmarkMutation.isPending}
-                    >
-                      {isBookmarked ? (
-                        <BookmarkIcon size={16} className="fill-white" />
-                      ) : (
-                        <Bookmark size={16} />
-                      )}
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    <p>{isBookmarked ? 'Remover dos favoritos' : 'Salvar'}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+          )}
+          
+          {/* Featured Badge */}
+          {(featured || issue.featured) && (
+            <div className="absolute top-2 right-2">
+              <Badge className="bg-yellow-500/90 text-yellow-900 hover:bg-yellow-500">
+                <Star className="w-3 h-3 mr-1" />
+                Destaque
+              </Badge>
             </div>
+          )}
+          
+          {/* Published Status */}
+          {!issue.published && (
+            <div className="absolute top-2 left-2">
+              <Badge variant="secondary" className="bg-gray-500/90 text-white">
+                Rascunho
+              </Badge>
+            </div>
+          )}
+        </div>
 
-            <div className={`absolute bottom-4 right-4 ${isHovered ? 'opacity-100' : 'opacity-0'} transition-opacity flex gap-2`}>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button 
-                      className={`bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors text-white`}
-                      onClick={(e) => handleReaction(e, 'want_more')}
-                      disabled={isLoadingReactions || reactionMutation.isPending}
-                    >
-                      {reactions?.includes('want_more') ? (
-                        <HeartIcon size={16} className="fill-white" />
-                      ) : (
-                        <Heart size={16} />
-                      )}
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    <p>Quero mais como esse</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+        {/* Content */}
+        <div className="p-4 h-1/2 flex flex-col justify-between">
+          <div className="space-y-2">
+            {/* Title */}
+            <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors">
+              {issue.title}
+            </h3>
+            
+            {/* Description */}
+            {issue.description && variant !== 'compact' && (
+              <p className="text-xs text-muted-foreground line-clamp-2">
+                {issue.description}
+              </p>
+            )}
+          </div>
 
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button 
-                      className={`bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors text-white`}
-                      onClick={(e) => handleReaction(e, 'like')}
-                      disabled={isLoadingReactions || reactionMutation.isPending}
-                    >
-                      {reactions?.includes('like') ? (
-                        <ThumbsUpIcon size={16} className="fill-white" />
-                      ) : (
-                        <ThumbsUp size={16} />
-                      )}
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    <p>Gostei</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button 
-                      className={`bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors text-white`}
-                      onClick={(e) => handleReaction(e, 'dislike')}
-                      disabled={isLoadingReactions || reactionMutation.isPending}
-                    >
-                      {reactions?.includes('dislike') ? (
-                        <ThumbsDownIcon size={16} className="fill-white" />
-                      ) : (
-                        <ThumbsDown size={16} />
-                      )}
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    <p>Mostre menos conteúdos como este</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+          {/* Meta Information */}
+          <div className="space-y-2 mt-auto">
+            {/* Specialty Tags */}
+            {issue.specialty && (
+              <div className="flex flex-wrap gap-1">
+                {issue.specialty.split(', ').slice(0, 2).map((tag, index) => (
+                  <Badge 
+                    key={index} 
+                    variant="outline" 
+                    className={`text-xs px-2 py-0.5 ${getSpecialtyColor(tag.trim())}`}
+                  >
+                    {tag.trim()}
+                  </Badge>
+                ))}
+              </div>
+            )}
+            
+            {/* Bottom Meta */}
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <Calendar className="w-3 h-3" />
+                <span>{formatDate(issue.created_at)}</span>
+              </div>
+              
+              {issue.authors && (
+                <div className="flex items-center gap-1">
+                  <User className="w-3 h-3" />
+                  <span className="truncate max-w-20">{issue.authors}</span>
+                </div>
+              )}
             </div>
           </div>
-        </Link>
-      </HoverCardTrigger>
-      
-      <HoverCardContent className="w-80 p-0 overflow-hidden border-none shadow-lg">
-        <div className="p-4 bg-card text-card-foreground">
-          <h3 className="text-lg font-medium mb-2">{article.title}</h3>
-          <p className="text-sm text-muted-foreground">{article.description}</p>
-          <ArticleActions articleId={article.id} entityType={entityType} />
         </div>
-      </HoverCardContent>
-    </HoverCard>
+      </CardContent>
+    </Card>
   );
 };
 

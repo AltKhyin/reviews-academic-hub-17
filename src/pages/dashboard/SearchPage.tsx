@@ -2,14 +2,16 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import Logo from '@/components/common/Logo';
 import { SearchHeader } from '@/components/search/SearchHeader';
 import { SearchFilters } from '@/components/search/SearchFilters';
 import { SearchResults } from '@/components/search/SearchResults';
 import { Card } from '@/components/ui/card';
+import { Issue } from '@/types/issue';
 
-// Define the main SearchPage component
 const SearchPage: React.FC = () => {
+  const { user, profile, isAdmin, isEditor } = useAuth();
   const [currentPage, setCurrentPage] = React.useState<number>(1);
   const [sortBy, setSortBy] = React.useState<'relevance' | 'recent' | 'popular'>('relevance');
   const [searchTags, setSearchTags] = React.useState<{ term: string; exclude: boolean }[]>([]);
@@ -38,23 +40,115 @@ const SearchPage: React.FC = () => {
   }, [queryText]);
 
   // Search query function
-  const searchQuery = async () => {
-    const query = supabase
-      .from('issues')
-      .select('*')
-      .limit(10)
-      .order('created_at', { ascending: false });
+  const searchQuery = async (): Promise<Issue[]> => {
+    try {
+      console.log("SearchPage: Executing search query", { 
+        debouncedQuery, 
+        searchTags, 
+        filters, 
+        currentPage, 
+        sortBy 
+      });
+
+      let query = supabase
+        .from('issues')
+        .select('*');
+
+      // Apply role-based filtering
+      const hasAdminAccess = isAdmin || profile?.role === 'admin';
+      const hasEditorAccess = isEditor || profile?.role === 'editor' || hasAdminAccess;
       
-    // Apply filters from searchTags and filters
-    const { data, error } = await query;
-    
-    if (error) throw error;
-    return data;
+      if (!hasAdminAccess && !hasEditorAccess) {
+        // Regular users only see published content
+        query = query.eq('published', true);
+      }
+
+      // Apply text search across multiple fields
+      if (debouncedQuery.trim()) {
+        const searchTerm = debouncedQuery.trim();
+        query = query.or(`title.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,specialty.ilike.%${searchTerm}%,authors.ilike.%${searchTerm}%`);
+      }
+
+      // Apply search tags
+      searchTags.forEach(tag => {
+        if (tag.exclude) {
+          query = query.not('title', 'ilike', `%${tag.term}%`);
+        } else {
+          query = query.ilike('title', `%${tag.term}%`);
+        }
+      });
+
+      // Apply filters
+      if (filters.area.length > 0) {
+        const areaQuery = filters.area.map(area => `specialty.ilike.%${area}%`).join(',');
+        query = query.or(areaQuery);
+      }
+
+      if (filters.year[0] > 1980 || filters.year[1] < CURRENT_YEAR) {
+        if (filters.year[0] === filters.year[1]) {
+          query = query.eq('year', filters.year[0].toString());
+        } else {
+          query = query.gte('year', filters.year[0].toString())
+                     .lte('year', filters.year[1].toString());
+        }
+      }
+
+      if (filters.studyType.length > 0) {
+        const designQuery = filters.studyType.map(type => `design.ilike.%${type}%`).join(',');
+        query = query.or(designQuery);
+      }
+
+      if (filters.population.length > 0) {
+        const populationQuery = filters.population.map(pop => `population.ilike.%${pop}%`).join(',');
+        query = query.or(populationQuery);
+      }
+
+      // Apply sorting
+      switch (sortBy) {
+        case 'recent':
+          query = query.order('created_at', { ascending: false });
+          break;
+        case 'popular':
+          query = query.order('score', { ascending: false });
+          break;
+        case 'relevance':
+        default:
+          if (debouncedQuery.trim()) {
+            query = query.order('created_at', { ascending: false });
+          } else {
+            query = query.order('featured', { ascending: false })
+                         .order('created_at', { ascending: false });
+          }
+          break;
+      }
+
+      // Apply pagination
+      const itemsPerPage = 10;
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      query = query.range(startIndex, startIndex + itemsPerPage - 1);
+
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error("SearchPage: Query error:", error);
+        throw error;
+      }
+      
+      console.log(`SearchPage: Successfully fetched ${data?.length || 0} results`);
+      return data as Issue[] || [];
+      
+    } catch (error: any) {
+      console.error("SearchPage: Search query failed:", error);
+      throw error;
+    }
   };
 
   const { data: searchResults, isLoading, error, refetch } = useQuery({
-    queryKey: ['search', debouncedQuery, searchTags, filters, currentPage, sortBy],
-    queryFn: searchQuery
+    queryKey: ['search-issues', debouncedQuery, searchTags, filters, currentPage, sortBy, user?.id, profile?.role],
+    queryFn: searchQuery,
+    staleTime: 30000,
+    enabled: true,
+    retry: 1,
   });
 
   const handleSubmitSearch = (e: React.FormEvent) => {
@@ -62,17 +156,20 @@ const SearchPage: React.FC = () => {
     if (queryText.trim()) {
       setSearchTags(prev => [...prev, { term: queryText.trim(), exclude: false }]);
       setQueryText('');
+      setCurrentPage(1); // Reset to first page
     }
   };
 
   const handleTagRemove = (index: number) => {
     setSearchTags(searchTags.filter((_, i) => i !== index));
+    setCurrentPage(1);
   };
 
   const handleTagToggleExclude = (index: number) => {
     setSearchTags(searchTags.map((tag, i) => 
       i === index ? { ...tag, exclude: !tag.exclude } : tag
     ));
+    setCurrentPage(1);
   };
 
   const handleFilterChange = (filterType: keyof typeof DEFAULT_FILTERS, value: any) => {
@@ -80,11 +177,15 @@ const SearchPage: React.FC = () => {
       ...prev,
       [filterType]: value
     }));
+    setCurrentPage(1);
   };
 
   const clearFilters = () => {
     setFilters(DEFAULT_FILTERS);
     setSearchTags([]);
+    setQueryText('');
+    setDebouncedQuery('');
+    setCurrentPage(1);
   };
 
   // Generate a preview of the search query

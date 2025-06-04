@@ -1,62 +1,67 @@
 
 import React from 'react';
 import { Issue } from '@/types/issue';
-import ArticleRow from './ArticleRow';
+import { ArticleCard } from './ArticleCard';
 
 interface ArticlesSectionProps {
   issues: Issue[];
   featuredIssueId?: string;
-  sectionTitle?: string;
-  sectionType?: string;
+  sectionTitle: string;
+  sectionType: 'recent' | 'recommended' | 'trending';
 }
 
-export const ArticlesSection = ({ 
-  issues, 
+export const ArticlesSection: React.FC<ArticlesSectionProps> = ({
+  issues,
   featuredIssueId,
   sectionTitle,
-  sectionType = "recent"
-}: ArticlesSectionProps) => {
-  const transformIssueToArticle = (issue: Issue) => ({
-    id: issue.id,
-    title: issue.title,
-    description: issue.description || '',
-    image: issue.cover_image_url || '/placeholder.svg',
-    category: issue.specialty,
-    date: new Date(issue.created_at).toLocaleDateString('pt-BR')
-  });
+  sectionType
+}) => {
+  console.log(`ArticlesSection (${sectionType}): Rendering with ${issues.length} issues`);
 
-  // Filter issues based on section type
-  const getFilteredIssues = () => {
-    const filteredIssues = issues.filter(issue => issue.id !== featuredIssueId);
-    
-    switch(sectionType) {
-      case 'recent':
-        return filteredIssues.slice(0, 5);
-      case 'recommended':
-        // For demo purposes, just randomize and take 5
-        return [...filteredIssues]
-          .sort(() => Math.random() - 0.5)
-          .slice(0, 5);
-      case 'trending':
-        // Another randomization for demo
-        return [...filteredIssues]
-          .sort(() => Math.random() - 0.5)
-          .slice(0, 5);
-      default:
-        return filteredIssues.slice(0, 5);
-    }
-  };
-
-  const displayIssues = getFilteredIssues();
-  
-  if (displayIssues.length === 0) {
-    return null;
+  if (!issues || issues.length === 0) {
+    console.log(`ArticlesSection (${sectionType}): No issues to display`);
+    return (
+      <section className="mb-8">
+        <h2 className="text-2xl font-bold mb-6">{sectionTitle}</h2>
+        <div className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-500/20 rounded-lg p-6 text-center">
+          <p className="text-gray-300">
+            Nenhum artigo disponível nesta seção no momento.
+          </p>
+        </div>
+      </section>
+    );
   }
 
+  // Filter out the featured issue from other sections to avoid duplication
+  const filteredIssues = featuredIssueId 
+    ? issues.filter(issue => issue.id !== featuredIssueId)
+    : issues;
+
+  console.log(`ArticlesSection (${sectionType}): Filtered to ${filteredIssues.length} issues (excluding featured)`);
+
   return (
-    <ArticleRow 
-      title={sectionTitle || "Artigos"} 
-      articles={displayIssues.map(transformIssueToArticle)} 
-    />
+    <section className="mb-8">
+      <h2 className="text-2xl font-bold mb-6">{sectionTitle}</h2>
+      
+      {filteredIssues.length === 0 ? (
+        <div className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-500/20 rounded-lg p-6 text-center">
+          <p className="text-gray-300">
+            Todos os artigos desta seção estão sendo exibidos em destaque.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filteredIssues.map((issue) => (
+            <ArticleCard
+              key={issue.id}
+              issue={issue}
+              variant="default"
+            />
+          ))}
+        </div>
+      )}
+    </section>
   );
 };
+
+export default ArticlesSection;
