@@ -22,7 +22,7 @@ const Dashboard = () => {
   if (isLoading) {
     return (
       <div className="w-full">
-        <div className="px-6 lg:px-12 xl:px-16 pt-4 pb-16 space-y-8 transition-all duration-300">
+        <div className="max-w-[1280px] mx-auto px-6 py-6">
           <DashboardSkeleton />
         </div>
       </div>
@@ -32,7 +32,7 @@ const Dashboard = () => {
   if (!issues || issues.length === 0) {
     return (
       <div className="w-full">
-        <div className="px-6 lg:px-12 xl:px-16 pt-4 pb-16 space-y-8 transition-all duration-300">
+        <div className="max-w-[1280px] mx-auto px-6 py-6">
           <div className="text-center py-16">
             <h2 className="text-2xl font-bold mb-4">Nenhum conteúdo disponível</h2>
             <p className="text-muted-foreground">
@@ -79,7 +79,7 @@ const Dashboard = () => {
     switch (sectionId) {
       case 'reviews':
         return (
-          <div key="reviews" className={isFollowedByFeatured ? 'mb-4' : ''}>
+          <div key={`reviews-${index}`} className={isFollowedByFeatured ? 'mb-4' : ''}>
             <ReviewerCommentsDisplay />
           </div>
         );
@@ -90,22 +90,42 @@ const Dashboard = () => {
         
       case 'featured':
         if (!featuredIssue) return null;
-        return <HeroSection key="featured" featuredIssue={featuredIssue} />;
+        return (
+          <div key={`featured-${featuredIssue.id}-${index}`}>
+            <HeroSection featuredIssue={featuredIssue} />
+          </div>
+        );
         
       case 'upcoming':
-        return <UpcomingReleaseCard key="upcoming" />;
+        return (
+          <div key={`upcoming-${index}`}>
+            <UpcomingReleaseCard />
+          </div>
+        );
         
       case 'recent':
         if (recentIssues.length === 0) return null;
-        return <ArticleRow key="recent" title="Edições Recentes" articles={recentIssues} />;
+        return (
+          <div key={`recent-${index}`}>
+            <ArticleRow title="Edições Recentes" articles={recentIssues} />
+          </div>
+        );
         
       case 'recommended':
         if (recommendedIssues.length === 0) return null;
-        return <ArticleRow key="recommended" title="Recomendados para você" articles={recommendedIssues} />;
+        return (
+          <div key={`recommended-${index}`}>
+            <ArticleRow title="Recomendados para você" articles={recommendedIssues} />
+          </div>
+        );
         
       case 'trending':
         if (trendingIssues.length === 0) return null;
-        return <ArticleRow key="trending" title="Mais acessados" articles={trendingIssues} />;
+        return (
+          <div key={`trending-${index}`}>
+            <ArticleRow title="Mais acessados" articles={trendingIssues} />
+          </div>
+        );
         
       default:
         return null;
@@ -114,8 +134,15 @@ const Dashboard = () => {
 
   return (
     <div className="w-full">
-      <div className="px-6 lg:px-12 xl:px-16 pt-4 pb-16 space-y-8 transition-all duration-300">
-        {visibleSectionIds.map((sectionId, index) => renderSection(sectionId, index))}
+      <div className="max-w-[1280px] mx-auto px-6 py-6">
+        <div className="space-y-8">
+          {visibleSectionIds.map((sectionId, index) => {
+            const sectionElement = renderSection(sectionId, index);
+            // Only render if we have a valid element
+            if (!sectionElement) return null;
+            return sectionElement;
+          })}
+        </div>
       </div>
     </div>
   );

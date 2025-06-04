@@ -23,6 +23,11 @@ const ArticleRow = ({ title, articles }: ArticleRowProps) => {
       carouselApi.reInit();
     }
   }, [carouselApi, isMobile]);
+
+  // Add error boundary for carousel rendering
+  if (!articles || articles.length === 0) {
+    return null;
+  }
   
   return (
     <section className="mb-16 first:mt-0 mt-8 w-full">
@@ -39,8 +44,8 @@ const ArticleRow = ({ title, articles }: ArticleRowProps) => {
           setApi={setCarouselApi}
         >
           <CarouselContent className="-ml-2">
-            {articles.map((issue) => (
-              <CarouselItem key={issue.id} className="pl-2 md:basis-1/5 lg:basis-1/5">
+            {articles.map((issue, index) => (
+              <CarouselItem key={`${issue.id}-${index}`} className="pl-2 md:basis-1/5 lg:basis-1/5">
                 <CarouselArticleCard issue={issue} />
               </CarouselItem>
             ))}
