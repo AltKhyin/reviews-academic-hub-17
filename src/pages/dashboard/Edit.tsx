@@ -5,9 +5,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SidebarConfigPanel } from '@/components/admin/SidebarConfigPanel';
 import { UserManagementPanel } from '@/components/admin/UserManagementPanel';
+import { IssuesManagementPanel } from '@/components/admin/IssuesManagementPanel';
 import { CommentReportsPanel } from '@/components/dashboard/CommentReportsPanel';
 import HomepageSectionsManager from '@/components/dashboard/HomepageSectionsManager';
-import { Settings, BarChart3, Users, MessageSquare, Crown, Layout } from 'lucide-react';
+import { Settings, BarChart3, Users, MessageSquare, Crown, Layout, FileText } from 'lucide-react';
 
 const Edit = () => {
   const { isAdmin, isEditor, isLoading, user, profile } = useAuth();
@@ -71,8 +72,12 @@ const Edit = () => {
         )}
       </div>
       
-      <Tabs defaultValue="sections" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+      <Tabs defaultValue="issues" className="w-full">
+        <TabsList className="grid w-full grid-cols-7">
+          <TabsTrigger value="issues" className="flex items-center gap-2">
+            <FileText className="w-4 h-4" />
+            Issues
+          </TabsTrigger>
           <TabsTrigger value="sections" className="flex items-center gap-2">
             <Layout className="w-4 h-4" />
             Seções
@@ -100,6 +105,10 @@ const Edit = () => {
             Sistema
           </TabsTrigger>
         </TabsList>
+        
+        <TabsContent value="issues">
+          <IssuesManagementPanel />
+        </TabsContent>
         
         <TabsContent value="sections">
           <HomepageSectionsManager />

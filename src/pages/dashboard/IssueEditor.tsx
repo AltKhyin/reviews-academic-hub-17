@@ -15,6 +15,8 @@ import { useQuery } from '@tanstack/react-query';
 const IssueEditor = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const isNewIssue = id === 'new';
+  
   const { 
     formValues,
     setFormValues,
@@ -24,13 +26,13 @@ const IssueEditor = () => {
     handleDelete,
     togglePublish,
     toggleFeatured
-  } = useIssueEditor(id);
+  } = useIssueEditor(isNewIssue ? undefined : id);
 
-  // Fetch issue data
+  // Fetch issue data only if editing existing issue
   const { data: issue, isLoading, error } = useQuery({
     queryKey: ['issue-edit', id],
     queryFn: async () => {
-      if (!id) return null;
+      if (!id || id === 'new') return null;
 
       try {
         console.log('Fetching issue with id:', id);
@@ -57,13 +59,36 @@ const IssueEditor = () => {
         throw err;
       }
     },
-    enabled: !!id,
+    enabled: !isNewIssue && !!id,
     retry: 1,
   });
 
   // Update form values when issue data is loaded
   useEffect(() => {
-    if (issue) {
+    if (isNewIssue) {
+      // Set default values for new issue
+      console.log('Setting default values for new issue');
+      setFormValues({
+        id: '',
+        title: '',
+        description: '',
+        tags: '',
+        pdf_url: '',
+        article_pdf_url: '',
+        cover_image_url: '',
+        published: false,
+        featured: false,
+        authors: '',
+        search_title: '',
+        real_title: '',
+        real_title_ptbr: '',
+        search_description: '',
+        year: '',
+        design: '',
+        score: 0,
+        population: ''
+      });
+    } else if (issue) {
       console.log('Setting form values with:', issue);
       const formattedTags = issue.specialty ? 
         issue.specialty.split(', ').map(tag => `[tag:${tag}]`).join('') : '';
@@ -78,7 +103,6 @@ const IssueEditor = () => {
         cover_image_url: issue.cover_image_url || '',
         published: issue.published || false,
         featured: issue.featured || false,
-        // Additional fields
         authors: issue.authors || '',
         search_title: issue.search_title || '',
         real_title: issue.real_title || '',
@@ -90,13 +114,13 @@ const IssueEditor = () => {
         population: issue.population || ''
       });
     }
-  }, [issue, setFormValues]);
+  }, [issue, isNewIssue, setFormValues]);
 
-  if (isLoading) {
+  if (!isNewIssue && isLoading) {
     return <div className="p-8 text-center">Carregando...</div>;
   }
 
-  if (error) {
+  if (!isNewIssue && error) {
     return (
       <div className="p-8 text-center">
         <h2 className="text-xl font-bold text-destructive mb-2">Error loading issue</h2>
@@ -111,29 +135,32 @@ const IssueEditor = () => {
     );
   }
 
-  // Even if we don't have issue data yet, we can still render the form
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <IssueHeader />
-        <IssueActionButtons
-          onDelete={handleDelete}
-          onTogglePublish={togglePublish}
-          onToggleFeatured={toggleFeatured}
-          isPublished={formValues.published}
-          isFeatured={formValues.featured}
-          isDisabled={isSubmitting}
-        />
+        {!isNewIssue && (
+          <IssueActionButtons
+            onDelete={handleDelete}
+            onTogglePublish={togglePublish}
+            onToggleFeatured={toggleFeatured}
+            isPublished={formValues.published}
+            isFeatured={formValues.featured}
+            isDisabled={isSubmitting}
+          />
+        )}
       </div>
 
       <Card className="border-white/10 bg-white/5">
         <CardHeader>
-          <CardTitle>Edit Issue</CardTitle>
-          <CardDescription>Manage issue details</CardDescription>
+          <CardTitle>{isNewIssue ? 'Create New Issue' : 'Edit Issue'}</CardTitle>
+          <CardDescription>
+            {isNewIssue ? 'Create a new issue or article' : 'Manage issue details'}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <IssueFormContainer 
-            issueId={id}
+            issueId={isNewIssue ? undefined : id}
             defaultValues={formValues}
             onSubmit={onSubmit} 
             onCancel={() => navigate('/edit')} 

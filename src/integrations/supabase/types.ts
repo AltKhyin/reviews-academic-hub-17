@@ -1258,6 +1258,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_online_users_count: {
         Args: Record<PropertyKey, never>
         Returns: number
@@ -1294,6 +1298,14 @@ export type Database = {
         Returns: boolean
       }
       is_authenticated: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_current_user_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_current_user_editor_or_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }

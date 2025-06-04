@@ -62,7 +62,7 @@ const App = () => {
                 <Route path="profile" element={<Profile />} />
                 <Route path="edit" element={<Edit />} />
                 <Route path="edit/issue/:id" element={<IssueEditor />} />
-                <Route path="edit/issue/new" element={<Edit />} />
+                <Route path="edit/issue/new" element={<IssueEditor />} />
                 <Route index element={<Navigate to="/homepage" replace />} />
               </Route>
 
