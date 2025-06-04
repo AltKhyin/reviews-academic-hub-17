@@ -31,8 +31,9 @@ export const usePollVoting = () => {
       // Update local state optimistically
       setUserVote(optionIndex);
       
-      // Update poll votes count
-      const newVotes = [...poll.votes];
+      // Update poll votes count with normalization
+      const normalizedVotes = poll.votes.map(v => v ?? 0);
+      const newVotes = [...normalizedVotes];
       newVotes[optionIndex] = (newVotes[optionIndex] || 0) + 1;
       setPoll({ ...poll, votes: newVotes });
 

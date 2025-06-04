@@ -1262,6 +1262,17 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      get_top_threads: {
+        Args: { min_comments?: number }
+        Returns: {
+          id: string
+          title: string
+          comments: number
+          votes: number
+          created_at: string
+          thread_type: string
+        }[]
+      }
       get_total_users: {
         Args: Record<PropertyKey, never>
         Returns: number

@@ -5,14 +5,19 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useSidebarStore } from '@/stores/sidebarStore';
 import { toast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
 
 export const WeeklyPoll: React.FC = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const { poll, userVote, setPoll, setUserVote, isLoadingPoll } = useSidebarStore();
+  const [isVoting, setIsVoting] = React.useState(false);
 
   const handleVote = async (optionIndex: number) => {
-    if (!user || !poll || userVote !== null) return;
+    if (!user || !poll || userVote !== null || isVoting) return;
 
+    setIsVoting(true);
+    
     try {
       const { error } = await supabase
         .from('poll_user_votes')
@@ -27,10 +32,14 @@ export const WeeklyPoll: React.FC = () => {
       // Update local state optimistically
       setUserVote(optionIndex);
       
-      // Update poll votes count
-      const newVotes = [...poll.votes];
+      // Update poll votes count with normalization
+      const newVotes = [...poll.votes.map(v => v ?? 0)];
       newVotes[optionIndex] = (newVotes[optionIndex] || 0) + 1;
       setPoll({ ...poll, votes: newVotes });
+
+      // Invalidate queries to refetch fresh data
+      queryClient.invalidateQueries({ queryKey: ['sidebar-poll'] });
+      queryClient.invalidateQueries({ queryKey: ['sidebar-poll-vote'] });
 
       toast({
         title: "Voto registrado!",
@@ -43,6 +52,8 @@ export const WeeklyPoll: React.FC = () => {
         description: "Tente novamente em alguns instantes.",
         variant: "destructive",
       });
+    } finally {
+      setIsVoting(false);
     }
   };
 
@@ -66,9 +77,11 @@ export const WeeklyPoll: React.FC = () => {
     return null;
   }
 
-  const totalVotes = poll.votes.reduce((sum, count) => sum + count, 0);
+  // Normalize votes to handle null values
+  const normalizedVotes = poll.votes.map(v => v ?? 0);
+  const totalVotes = normalizedVotes.reduce((sum, count) => sum + count, 0);
   const isExpired = new Date(poll.closes_at) < new Date();
-  const canVote = user && userVote === null && !isExpired;
+  const canVote = user && userVote === null && !isExpired && !isVoting;
 
   return (
     <div className="space-y-2">
@@ -82,7 +95,7 @@ export const WeeklyPoll: React.FC = () => {
         
         <div className="space-y-2">
           {poll.options.map((option, index) => {
-            const voteCount = poll.votes[index] || 0;
+            const voteCount = normalizedVotes[index] || 0;
             const percentage = totalVotes > 0 ? (voteCount / totalVotes) * 100 : 0;
             const isUserChoice = userVote === index;
             const isSelected = userVote !== null || isExpired;

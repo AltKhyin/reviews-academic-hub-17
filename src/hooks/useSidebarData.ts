@@ -69,7 +69,7 @@ export const useSidebarData = () => {
     staleTime: 30 * 1000, // 30 seconds
   });
 
-  // Fetch online users
+  // Fetch online users (limited to 7 in view)
   const { data: onlineUsers } = useQuery({
     queryKey: ['sidebar-online-users'],
     queryFn: async () => {
@@ -77,8 +77,7 @@ export const useSidebarData = () => {
       try {
         const { data, error } = await supabase
           .from('online_users')
-          .select('*')
-          .limit(7);
+          .select('*');
         
         if (error) throw error;
         const users = data as OnlineUser[];
@@ -115,16 +114,13 @@ export const useSidebarData = () => {
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
 
-  // Fetch top threads
+  // Fetch top threads using new function
   const { data: threads } = useQuery({
     queryKey: ['sidebar-threads'],
     queryFn: async () => {
       setLoading('Threads', true);
       try {
-        const { data, error } = await supabase
-          .from('threads_top')
-          .select('*')
-          .limit(3);
+        const { data, error } = await supabase.rpc('get_top_threads', { min_comments: 5 });
         
         if (error) throw error;
         const threads = data as TopThread[];
@@ -154,7 +150,13 @@ export const useSidebarData = () => {
           .maybeSingle();
         
         if (error) throw error;
-        const poll = data as Poll | null;
+        
+        // Normalize poll votes to handle null values
+        const poll = data ? {
+          ...data,
+          votes: (data.votes as number[]).map(v => v ?? 0)
+        } as Poll : null;
+        
         setPoll(poll);
         return poll;
       } finally {

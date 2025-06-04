@@ -10,9 +10,10 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const ContentWrapper = ({ children }: { children: React.ReactNode }) => {
   const { state } = useSidebar();
-  const isCollapsed = state === 'collapsed';
   const location = useLocation();
+  const isCollapsed = state === 'collapsed';
   const isDualView = location.pathname.includes('/article/') && new URLSearchParams(location.search).get('view') === 'dual';
+  const isCommunityRoute = location.pathname.startsWith('/community');
   
   return (
     <div className="flex flex-1 overflow-hidden">
@@ -22,18 +23,22 @@ const ContentWrapper = ({ children }: { children: React.ReactNode }) => {
         </div>
       </div>
       
-      {/* Right Sidebar - Desktop */}
-      <div className="hidden lg:block">
-        <RightSidebar />
-      </div>
+      {/* Right Sidebar - Desktop - Only in community routes */}
+      {isCommunityRoute && (
+        <div className="hidden lg:block">
+          <RightSidebar />
+        </div>
+      )}
       
-      {/* Mobile Sidebar Toggle */}
+      {/* Mobile Sidebar Toggle - Only in community routes */}
       <MobileSidebarToggle />
       
-      {/* Right Sidebar - Mobile */}
-      <div className="lg:hidden">
-        <RightSidebar isMobile />
-      </div>
+      {/* Right Sidebar - Mobile - Only in community routes */}
+      {isCommunityRoute && (
+        <div className="lg:hidden">
+          <RightSidebar isMobile />
+        </div>
+      )}
     </div>
   );
 };

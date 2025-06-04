@@ -1,8 +1,10 @@
 
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { useSidebarStore } from '@/stores/sidebarStore';
 import { useSidebarData } from '@/hooks/useSidebarData';
+import { SidebarErrorBoundary } from './components/SidebarErrorBoundary';
 import { CommunityHeader } from './components/CommunityHeader';
 import { ActiveAvatars } from './components/ActiveAvatars';
 import { CommentCarousel } from './components/CommentCarousel';
@@ -22,10 +24,17 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
   className = '',
   isMobile = false
 }) => {
+  const location = useLocation();
   const { isMobileDrawerOpen, toggleMobileDrawer } = useSidebarStore();
   
-  // Initialize data fetching
-  useSidebarData();
+  // Only show sidebar in community routes
+  const shouldShowSidebar = location.pathname.startsWith('/community');
+  
+  // Initialize data fetching only when sidebar should be visible
+  const shouldFetchData = shouldShowSidebar;
+  if (shouldFetchData) {
+    useSidebarData();
+  }
 
   // Handle escape key to close mobile drawer
   useEffect(() => {
@@ -41,24 +50,31 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isMobile, isMobileDrawerOpen, toggleMobileDrawer]);
 
+  // Don't render sidebar if not in community routes
+  if (!shouldShowSidebar) {
+    return null;
+  }
+
   const content = (
-    <div 
-      className="h-full overflow-y-auto scrollbar-thin scrollbar-track-gray-800 scrollbar-thumb-gray-600"
-      role="complementary"
-      aria-label="Barra lateral da comunidade"
-    >
-      <div className="p-4 space-y-6">
-        <CommunityHeader />
-        <ActiveAvatars />
-        <CommentCarousel />
-        <TopThreads />
-        <NextReviewCountdown />
-        <WeeklyPoll />
-        <ResourceBookmarks />
-        <RulesAccordion />
-        <MiniChangelog />
+    <SidebarErrorBoundary>
+      <div 
+        className="sticky top-16 max-h-[calc(100vh-theme(spacing.16))] overflow-y-auto scrollbar-thin scrollbar-track-gray-800 scrollbar-thumb-gray-600"
+        role="complementary"
+        aria-label="Barra lateral da comunidade"
+      >
+        <div className="p-4 space-y-6">
+          <CommunityHeader />
+          <ActiveAvatars />
+          <CommentCarousel />
+          <TopThreads />
+          <NextReviewCountdown />
+          <WeeklyPoll />
+          <ResourceBookmarks />
+          <RulesAccordion />
+          <MiniChangelog />
+        </div>
       </div>
-    </div>
+    </SidebarErrorBoundary>
   );
 
   if (isMobile) {
@@ -79,9 +95,12 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
             transform transition-transform duration-300 ease-in-out
             ${isMobileDrawerOpen ? 'translate-x-0' : 'translate-x-full'}
           `}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="mobile-sidebar-title"
         >
           <div className="flex items-center justify-between p-4 border-b border-gray-700">
-            <h2 className="text-lg font-semibold">Comunidade</h2>
+            <h2 id="mobile-sidebar-title" className="text-lg font-semibold">Comunidade</h2>
             <button
               onClick={toggleMobileDrawer}
               className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
