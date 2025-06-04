@@ -27,8 +27,8 @@ export const CommentCarousel: React.FC = () => {
   if (isLoadingComments) {
     return (
       <div className="space-y-2">
-        <div className="h-4 bg-gray-800/30 rounded w-32 animate-pulse" />
-        <div className="h-24 bg-gray-800/30 rounded animate-pulse" />
+        <div className="h-4 bg-gray-700 rounded w-32 animate-pulse" />
+        <div className="h-24 bg-gray-700 rounded animate-pulse" />
       </div>
     );
   }
@@ -36,7 +36,7 @@ export const CommentCarousel: React.FC = () => {
   if (!comments?.length) {
     return (
       <div className="space-y-2">
-        <h3 className="text-sm font-medium text-gray-400">Comentários em Destaque</h3>
+        <h3 className="text-sm font-medium text-gray-300">Comentários em Destaque</h3>
         <p className="text-xs text-gray-500">Nenhum comentário em destaque</p>
       </div>
     );
@@ -64,29 +64,29 @@ export const CommentCarousel: React.FC = () => {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-gray-400">Comentários em Destaque</h3>
+        <h3 className="text-sm font-medium text-gray-300">Comentários em Destaque</h3>
         {canNavigate && (
           <div className="flex items-center space-x-1">
             <button
               onClick={goToPrevious}
-              className="p-1 hover:bg-gray-800/20 rounded transition-colors"
+              className="p-1 hover:bg-gray-700 rounded transition-colors"
               aria-label="Comentário anterior"
             >
-              <ChevronLeft className="w-3 h-3 text-gray-500" />
+              <ChevronLeft className="w-3 h-3 text-gray-400" />
             </button>
             <button
               onClick={goToNext}
-              className="p-1 hover:bg-gray-800/20 rounded transition-colors"
+              className="p-1 hover:bg-gray-700 rounded transition-colors"
               aria-label="Próximo comentário"
             >
-              <ChevronRight className="w-3 h-3 text-gray-500" />
+              <ChevronRight className="w-3 h-3 text-gray-400" />
             </button>
           </div>
         )}
       </div>
       
       <div 
-        className="p-3 bg-gray-800/20 rounded-lg space-y-3 transition-all duration-300"
+        className="p-3 bg-gray-800 rounded-lg space-y-3 transition-all duration-300"
         role="region"
         aria-live="polite"
         aria-label="Comentário em destaque"
@@ -101,8 +101,8 @@ export const CommentCarousel: React.FC = () => {
                 loading="lazy"
               />
             ) : (
-              <div className="w-6 h-6 bg-gray-700 rounded-full flex items-center justify-center">
-                <span className="text-xs font-medium text-gray-300">
+              <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center">
+                <span className="text-xs font-medium text-white">
                   {(currentComment.author_name || 'U')[0].toUpperCase()}
                 </span>
               </div>
@@ -111,21 +111,21 @@ export const CommentCarousel: React.FC = () => {
           
           <div className="flex-1 min-w-0">
             <div className="flex items-center space-x-2 mb-1">
-              <span className="text-xs font-medium text-gray-400">
+              <span className="text-xs font-medium text-gray-300">
                 {currentComment.author_name || 'Usuário'}
               </span>
               <span className="text-xs text-gray-500">•</span>
               <span className="text-xs text-gray-500">{timeAgo}</span>
             </div>
             
-            <p className="text-sm text-gray-300 leading-relaxed">
+            <p className="text-sm text-gray-200 leading-relaxed">
               {currentComment.body}
             </p>
           </div>
         </div>
         
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-1 text-xs text-gray-500">
+          <div className="flex items-center space-x-1 text-xs text-gray-400">
             <MessageSquare className="w-3 h-3" />
             <span>{currentComment.votes} curtidas</span>
           </div>
@@ -137,7 +137,7 @@ export const CommentCarousel: React.FC = () => {
                   key={index}
                   onClick={() => setCommentCarouselIndex(index)}
                   className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                    index === commentCarouselIndex ? 'bg-gray-400' : 'bg-gray-700'
+                    index === commentCarouselIndex ? 'bg-blue-400' : 'bg-gray-600'
                   }`}
                   aria-label={`Ir para comentário ${index + 1}`}
                 />
