@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useReviewerComments } from '@/hooks/useReviewerComments';
 import { Card, CardHeader, CardContent } from '@/components/ui/card';
@@ -19,32 +20,33 @@ const DEFAULT_REVIEWER = {
 };
 
 const ReviewerCommentItem = ({ comment }: { comment: ReviewerCommentType }) => {
-  const { profile } = useAuth();
-  const isEditorOrAdmin = profile?.role === 'admin' || profile?.role === 'editor';
+  const { isAdmin, isEditor } = useAuth();
   const { deleteComment } = useReviewerComments();
   
   return (
     <div className="flex space-x-6">
       <div className="flex-shrink-0">
-        <Avatar className="h-24 w-24 border-2 border-primary/20" style={{ width: '48px', height: '48px' }}>
+        <Avatar className="h-12 w-12 border-2 border-primary/20">
           <AvatarImage src={comment.reviewer_avatar} alt={comment.reviewer_name} />
           <AvatarFallback>{comment.reviewer_name.charAt(0)}</AvatarFallback>
         </Avatar>
       </div>
       
       <div className="flex-1">
-        <div className="flex items-center">
-          <h3 className="font-medium text-lg">{comment.reviewer_name}</h3>
-          <CheckCircle2 className="h-4 w-4 ml-1 text-blue-500" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <h3 className="font-medium text-lg">{comment.reviewer_name}</h3>
+            <CheckCircle2 className="h-4 w-4 ml-1 text-blue-500" />
+          </div>
           
-          {isEditorOrAdmin && (
+          {(isAdmin || isEditor) && (
             <Button 
               variant="ghost" 
               size="sm" 
-              className="ml-auto" 
               onClick={() => deleteComment.mutate(comment.id)}
+              className="text-gray-400 hover:text-red-400"
             >
-              <Trash2 className="h-4 w-4 text-muted-foreground" />
+              <Trash2 className="h-4 w-4" />
             </Button>
           )}
         </div>
@@ -56,7 +58,7 @@ const ReviewerCommentItem = ({ comment }: { comment: ReviewerCommentType }) => {
           })}
         </p>
         
-        <p>{comment.comment}</p>
+        <p className="text-gray-200 leading-relaxed">{comment.comment}</p>
       </div>
     </div>
   );
@@ -116,11 +118,15 @@ const CustomReviewerForm = ({
 
 export const ReviewerCommentSection = () => {
   const { comments, hasComments, addComment } = useReviewerComments();
-  const { profile } = useAuth();
+  const { isAdmin, isEditor } = useAuth();
   const [newComment, setNewComment] = useState('');
   const [customReviewer, setCustomReviewer] = useState(DEFAULT_REVIEWER);
   const [isCustomizing, setIsCustomizing] = useState(false);
-  const isEditorOrAdmin = profile?.role === 'admin' || profile?.role === 'editor';
+
+  // Only show this section for admin/editor users
+  if (!isAdmin && !isEditor) {
+    return null;
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -137,8 +143,6 @@ export const ReviewerCommentSection = () => {
       }
     );
   };
-
-  if (!isEditorOrAdmin) return null;
 
   return (
     <section className="mb-12">

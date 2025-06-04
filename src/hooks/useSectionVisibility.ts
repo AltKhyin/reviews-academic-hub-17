@@ -28,20 +28,23 @@ export const useSectionVisibility = () => {
         const savedSections = localStorage.getItem('homepage_sections');
         if (savedSections) {
           const parsed = JSON.parse(savedSections);
-          // Check if the saved sections include the "reviews" section
-          const hasReviewsSection = parsed.some((s: Section) => s.id === 'reviews');
           
-          if (!hasReviewsSection) {
-            // Add the reviews section if it's missing from saved data
-            const updatedSections = [
-              { id: "reviews", title: "Reviews do Editor", visible: true, order: 0 },
-              ...parsed.map((s: Section) => ({ ...s, order: s.order + 1 }))
-            ];
-            localStorage.setItem('homepage_sections', JSON.stringify(updatedSections));
-            setSections(updatedSections);
-          } else {
-            setSections(parsed);
-          }
+          // Ensure all default sections exist, especially "reviews"
+          const updatedSections = [...defaultSections];
+          
+          // Update with saved preferences while preserving all sections
+          parsed.forEach((savedSection: Section) => {
+            const existingIndex = updatedSections.findIndex(s => s.id === savedSection.id);
+            if (existingIndex !== -1) {
+              updatedSections[existingIndex] = { ...savedSection };
+            }
+          });
+          
+          // Sort by order
+          updatedSections.sort((a, b) => a.order - b.order);
+          
+          localStorage.setItem('homepage_sections', JSON.stringify(updatedSections));
+          setSections(updatedSections);
         } else {
           setSections(defaultSections);
           localStorage.setItem('homepage_sections', JSON.stringify(defaultSections));

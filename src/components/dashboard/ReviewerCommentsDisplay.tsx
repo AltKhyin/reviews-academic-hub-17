@@ -4,13 +4,13 @@ import { useReviewerComments } from '@/hooks/useReviewerComments';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, MessageSquare, Plus } from 'lucide-react';
+import { CheckCircle2, MessageSquare, Plus, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAuth } from '@/contexts/AuthContext';
 
 export const ReviewerCommentsDisplay = () => {
-  const { comments, hasComments, isLoading } = useReviewerComments();
+  const { comments, hasComments, isLoading, deleteComment } = useReviewerComments();
   const { isAdmin, isEditor } = useAuth();
 
   if (isLoading) {
@@ -49,12 +49,6 @@ export const ReviewerCommentsDisplay = () => {
                   "Seja o primeiro a adicionar um comentário como revisor." :
                   "Aguarde novos comentários da equipe de revisão."}
               </p>
-              {(isAdmin || isEditor) && (
-                <Button variant="outline" className="mt-4">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Adicionar Comentário
-                </Button>
-              )}
             </div>
           </CardContent>
         </Card>
@@ -82,9 +76,22 @@ export const ReviewerCommentsDisplay = () => {
               </div>
               
               <div className="flex-1">
-                <div className="flex items-center">
-                  <h3 className="font-medium text-lg">{comment.reviewer_name}</h3>
-                  <CheckCircle2 className="h-4 w-4 ml-1 text-blue-500" />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <h3 className="font-medium text-lg">{comment.reviewer_name}</h3>
+                    <CheckCircle2 className="h-4 w-4 ml-1 text-blue-500" />
+                  </div>
+                  
+                  {(isAdmin || isEditor) && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => deleteComment.mutate(comment.id)}
+                      className="text-gray-400 hover:text-red-400"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
                 
                 <p className="text-muted-foreground text-xs mb-2">
@@ -98,15 +105,6 @@ export const ReviewerCommentsDisplay = () => {
               </div>
             </div>
           ))}
-          
-          {(isAdmin || isEditor) && (
-            <div className="pt-4 border-t border-white/10">
-              <Button variant="outline" size="sm">
-                <Plus className="w-4 h-4 mr-2" />
-                Adicionar Novo Comentário
-              </Button>
-            </div>
-          )}
         </CardContent>
       </Card>
     </section>

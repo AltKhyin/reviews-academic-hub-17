@@ -98,6 +98,11 @@ const HomepageSectionsManager = () => {
                 <Badge variant={section.visible ? "default" : "outline"}>
                   {section.visible ? "Visível" : "Oculta"}
                 </Badge>
+                {section.id === "reviews" && (
+                  <Badge variant="secondary" className="text-xs">
+                    Admin/Editor
+                  </Badge>
+                )}
               </div>
               
               <div className="flex items-center gap-2">
