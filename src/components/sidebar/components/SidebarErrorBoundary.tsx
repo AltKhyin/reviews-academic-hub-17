@@ -1,38 +1,28 @@
 
-import React from 'react';
+import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 
-interface SidebarErrorBoundaryProps {
-  children: React.ReactNode;
+interface Props {
+  children: ReactNode;
 }
 
-interface SidebarErrorBoundaryState {
+interface State {
   hasError: boolean;
   error?: Error;
 }
 
-export class SidebarErrorBoundary extends React.Component<
-  SidebarErrorBoundaryProps,
-  SidebarErrorBoundaryState
-> {
-  constructor(props: SidebarErrorBoundaryProps) {
+export class SidebarErrorBoundary extends Component<Props, State> {
+  constructor(props: Props) {
     super(props);
     this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(error: Error): SidebarErrorBoundaryState {
+  static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Sidebar Error:', error, errorInfo);
-    // Log to Sentry or other error reporting service
-    if (typeof window !== 'undefined' && (window as any).Sentry) {
-      (window as any).Sentry.captureException(error, {
-        contexts: { component: 'Sidebar' },
-        extra: errorInfo,
-      });
-    }
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('Sidebar Error Boundary caught an error:', error, errorInfo);
   }
 
   handleRetry = () => {
@@ -42,18 +32,29 @@ export class SidebarErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className="p-4 space-y-4 text-center">
-          <div className="flex items-center justify-center space-x-2 text-gray-400">
-            <AlertTriangle className="w-5 h-5" />
-            <span className="text-sm">Não foi possível carregar a barra lateral</span>
+        <div className="p-4 space-y-4">
+          <div className="text-center">
+            <AlertTriangle className="w-8 h-8 text-red-400 mx-auto mb-2" />
+            <h3 className="text-sm font-medium text-red-400 mb-1">
+              Erro na Barra Lateral
+            </h3>
+            <p className="text-xs text-gray-400 mb-3">
+              Ocorreu um erro ao carregar o conteúdo
+            </p>
+            <button
+              onClick={this.handleRetry}
+              className="inline-flex items-center space-x-1 px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"
+            >
+              <RefreshCw className="w-3 h-3" />
+              <span>Tentar Novamente</span>
+            </button>
           </div>
-          <button
-            onClick={this.handleRetry}
-            className="flex items-center justify-center space-x-2 mx-auto px-3 py-1 text-xs bg-gray-700 hover:bg-gray-600 rounded-md transition-colors"
-          >
-            <RefreshCw className="w-3 h-3" />
-            <span>Tentar novamente</span>
-          </button>
+          
+          {process.env.NODE_ENV === 'development' && this.state.error && (
+            <div className="mt-4 p-2 bg-gray-800 rounded text-xs text-gray-300 overflow-auto">
+              <pre>{this.state.error.message}</pre>
+            </div>
+          )}
         </div>
       );
     }

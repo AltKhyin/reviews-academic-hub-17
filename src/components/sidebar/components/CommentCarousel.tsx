@@ -1,11 +1,11 @@
 
 import React, { useEffect } from 'react';
-import { ChevronUp } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { useSidebarStore } from '@/stores/sidebarStore';
 
 export const CommentCarousel: React.FC = () => {
-  const navigate = useNavigate();
   const { 
     comments, 
     commentCarouselIndex, 
@@ -13,13 +13,13 @@ export const CommentCarousel: React.FC = () => {
     isLoadingComments 
   } = useSidebarStore();
 
-  // Auto-rotate comments every 6 seconds
+  // Auto-rotate comments every 8 seconds
   useEffect(() => {
     if (!comments?.length || comments.length <= 1) return;
 
     const interval = setInterval(() => {
       setCommentCarouselIndex((commentCarouselIndex + 1) % comments.length);
-    }, 6000);
+    }, 8000);
 
     return () => clearInterval(interval);
   }, [comments, commentCarouselIndex, setCommentCarouselIndex]);
@@ -28,13 +28,7 @@ export const CommentCarousel: React.FC = () => {
     return (
       <div className="space-y-2">
         <div className="h-4 bg-gray-700 rounded w-32 animate-pulse" />
-        <div className="p-3 bg-gray-800 rounded-lg space-y-2 h-24">
-          <div className="flex items-center space-x-2">
-            <div className="w-6 h-6 bg-gray-700 rounded-full animate-pulse" />
-            <div className="h-3 bg-gray-700 rounded flex-1 animate-pulse" />
-          </div>
-          <div className="h-12 bg-gray-700 rounded animate-pulse" />
-        </div>
+        <div className="h-24 bg-gray-700 rounded animate-pulse" />
       </div>
     );
   }
@@ -43,98 +37,114 @@ export const CommentCarousel: React.FC = () => {
     return (
       <div className="space-y-2">
         <h3 className="text-sm font-medium text-gray-300">Comentários em Destaque</h3>
-        <p className="text-xs text-gray-500">Nenhum comentário destacado</p>
+        <p className="text-xs text-gray-500">Nenhum comentário em destaque</p>
       </div>
     );
   }
 
   const currentComment = comments[commentCarouselIndex];
+  const canNavigate = comments.length > 1;
 
-  const handleCommentClick = () => {
-    if (currentComment.thread_id) {
-      navigate(`/community`);
-    }
+  const goToPrevious = () => {
+    if (!canNavigate) return;
+    const newIndex = commentCarouselIndex === 0 ? comments.length - 1 : commentCarouselIndex - 1;
+    setCommentCarouselIndex(newIndex);
   };
 
-  const truncateText = (text: string, maxLength: number = 140) => {
-    if (text.length <= maxLength) return text;
-    return text.slice(0, maxLength) + '...';
+  const goToNext = () => {
+    if (!canNavigate) return;
+    setCommentCarouselIndex((commentCarouselIndex + 1) % comments.length);
   };
+
+  const timeAgo = formatDistanceToNow(new Date(currentComment.created_at), {
+    addSuffix: true,
+    locale: ptBR
+  });
 
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-gray-300">Comentários em Destaque</h3>
-        {comments.length > 1 && (
-          <div className="flex space-x-1" role="tablist" aria-label="Navegação de comentários">
-            {comments.map((_, index) => (
-              <button
-                key={index}
-                role="tab"
-                onClick={() => setCommentCarouselIndex(index)}
-                className={`w-1.5 h-1.5 rounded-full transition-colors ${
-                  index === commentCarouselIndex ? 'bg-blue-500' : 'bg-gray-600'
-                }`}
-                aria-label={`Ir para comentário ${index + 1} de ${comments.length}`}
-                aria-selected={index === commentCarouselIndex}
-              />
-            ))}
+        {canNavigate && (
+          <div className="flex items-center space-x-1">
+            <button
+              onClick={goToPrevious}
+              className="p-1 hover:bg-gray-700 rounded transition-colors"
+              aria-label="Comentário anterior"
+            >
+              <ChevronLeft className="w-3 h-3 text-gray-400" />
+            </button>
+            <button
+              onClick={goToNext}
+              className="p-1 hover:bg-gray-700 rounded transition-colors"
+              aria-label="Próximo comentário"
+            >
+              <ChevronRight className="w-3 h-3 text-gray-400" />
+            </button>
           </div>
         )}
       </div>
       
-      {/* Fixed height container to prevent layout shift */}
-      <div className="h-24">
-        <div 
-          className="p-3 bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-750 transition-colors h-full flex flex-col"
-          onClick={handleCommentClick}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              handleCommentClick();
-            }
-          }}
-          aria-label={`Comentário de ${currentComment.author_name}: ${currentComment.body}`}
-        >
-          <div className="flex items-center space-x-2 mb-2">
-            <div className="w-6 h-6 rounded-full overflow-hidden">
-              {currentComment.author_avatar ? (
-                <img
-                  src={currentComment.author_avatar}
-                  alt={currentComment.author_name || 'Usuário'}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-              ) : (
-                <div className="w-full h-full bg-gray-600 flex items-center justify-center text-xs font-medium text-white">
+      <div 
+        className="p-3 bg-gray-800 rounded-lg space-y-3 transition-all duration-300"
+        role="region"
+        aria-live="polite"
+        aria-label="Comentário em destaque"
+      >
+        <div className="flex items-start space-x-2">
+          <div className="flex-shrink-0">
+            {currentComment.author_avatar ? (
+              <img
+                src={currentComment.author_avatar}
+                alt={currentComment.author_name || 'Autor'}
+                className="w-6 h-6 rounded-full object-cover"
+                loading="lazy"
+              />
+            ) : (
+              <div className="w-6 h-6 bg-gray-600 rounded-full flex items-center justify-center">
+                <span className="text-xs font-medium text-white">
                   {(currentComment.author_name || 'U')[0].toUpperCase()}
-                </div>
-              )}
-            </div>
-            <span className="text-xs text-gray-400 truncate">
-              {currentComment.author_name || 'Usuário anônimo'}
-            </span>
-            <div className="flex items-center space-x-1 text-xs text-green-400 ml-auto">
-              <ChevronUp className="w-3 h-3" />
-              <span>{currentComment.votes}</span>
-            </div>
+                </span>
+              </div>
+            )}
           </div>
           
-          <p className="text-sm text-gray-200 leading-relaxed line-clamp-3 flex-1">
-            {truncateText(currentComment.body)}
-          </p>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center space-x-2 mb-1">
+              <span className="text-xs font-medium text-gray-300">
+                {currentComment.author_name || 'Usuário'}
+              </span>
+              <span className="text-xs text-gray-500">•</span>
+              <span className="text-xs text-gray-500">{timeAgo}</span>
+            </div>
+            
+            <p className="text-sm text-gray-200 leading-relaxed">
+              {currentComment.body}
+            </p>
+          </div>
         </div>
-      </div>
-      
-      {/* Screen reader live region for carousel changes */}
-      <div 
-        className="sr-only" 
-        aria-live="polite" 
-        aria-atomic="true"
-      >
-        Mostrando comentário {commentCarouselIndex + 1} de {comments.length}
+        
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-1 text-xs text-gray-400">
+            <MessageSquare className="w-3 h-3" />
+            <span>{currentComment.votes} curtidas</span>
+          </div>
+          
+          {canNavigate && (
+            <div className="flex space-x-1">
+              {comments.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCommentCarouselIndex(index)}
+                  className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                    index === commentCarouselIndex ? 'bg-blue-400' : 'bg-gray-600'
+                  }`}
+                  aria-label={`Ir para comentário ${index + 1}`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

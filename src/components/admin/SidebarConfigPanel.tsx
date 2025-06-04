@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Plus, Trash2, Save } from 'lucide-react';
+import { Plus, Trash2, Save, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { SidebarConfig } from '@/types/sidebar';
@@ -40,6 +39,7 @@ type ConfigFormData = z.infer<typeof configSchema>;
 export const SidebarConfigPanel: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const form = useForm<ConfigFormData>({
     resolver: zodResolver(configSchema),
@@ -66,32 +66,51 @@ export const SidebarConfigPanel: React.FC = () => {
 
   const loadConfig = async () => {
     setLoading(true);
+    setError(null);
+    
     try {
       const { data, error } = await supabase
         .from('site_meta')
         .select('value')
         .eq('key', 'sidebar_config')
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error) throw error;
 
       if (data) {
-        // Properly cast the value to SidebarConfig
         const config = data.value as unknown as SidebarConfig;
+        
+        // Validate the loaded config
+        if (config && typeof config === 'object') {
+          form.reset({
+            tagline: config.tagline || '',
+            nextReviewTs: config.nextReviewTs || '',
+            bookmarks: config.bookmarks?.map(bookmark => ({
+              label: bookmark.label || '',
+              url: bookmark.url || '',
+              icon: (bookmark.icon === 'external' ? 'external' : 'link') as 'link' | 'external'
+            })) || [],
+            rules: Array.isArray(config.rules) ? config.rules.filter(rule => rule && rule.trim()) : [],
+            changelog: {
+              show: Boolean(config.changelog?.show ?? true),
+              entries: Array.isArray(config.changelog?.entries) ? 
+                config.changelog.entries.filter(entry => entry && entry.date && entry.text) : []
+            },
+          });
+        }
+      } else {
+        // Set default values if no config exists
         form.reset({
-          tagline: config.tagline || '',
-          nextReviewTs: config.nextReviewTs || '',
-          bookmarks: config.bookmarks?.map(bookmark => ({
-            label: bookmark.label,
-            url: bookmark.url,
-            icon: bookmark.icon as 'link' | 'external' // Ensure proper type casting
-          })) || [],
-          rules: config.rules || [],
-          changelog: config.changelog || { show: true, entries: [] },
+          tagline: 'Quem aprende junto, cresce.',
+          nextReviewTs: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
+          bookmarks: [],
+          rules: [],
+          changelog: { show: true, entries: [] },
         });
       }
     } catch (error) {
       console.error('Error loading config:', error);
+      setError('Não foi possível carregar a configuração atual.');
       toast({
         title: 'Erro ao carregar configuração',
         description: 'Não foi possível carregar a configuração atual.',
@@ -104,12 +123,15 @@ export const SidebarConfigPanel: React.FC = () => {
 
   const onSubmit = async (data: ConfigFormData) => {
     setSaving(true);
+    setError(null);
+    
     try {
       const { error } = await supabase
         .from('site_meta')
         .upsert({
           key: 'sidebar_config',
           value: data,
+          updated_at: new Date().toISOString(),
         });
 
       if (error) throw error;
@@ -120,6 +142,7 @@ export const SidebarConfigPanel: React.FC = () => {
       });
     } catch (error) {
       console.error('Error saving config:', error);
+      setError('Não foi possível salvar a configuração.');
       toast({
         title: 'Erro ao salvar',
         description: 'Não foi possível salvar a configuração.',
@@ -155,18 +178,38 @@ export const SidebarConfigPanel: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="p-6">Carregando configuração...</div>;
+    return (
+      <div className="p-6 space-y-4">
+        <div className="h-8 bg-gray-700 rounded w-64 animate-pulse" />
+        <div className="space-y-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-32 bg-gray-700 rounded animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Configuração da Barra Lateral</h1>
-        <Button onClick={() => form.handleSubmit(onSubmit)()} disabled={saving}>
+        <Button 
+          onClick={() => form.handleSubmit(onSubmit)()} 
+          disabled={saving}
+          className="bg-blue-600 hover:bg-blue-700"
+        >
           <Save className="w-4 h-4 mr-2" />
           {saving ? 'Salvando...' : 'Salvar'}
         </Button>
       </div>
+
+      {error && (
+        <div className="flex items-center space-x-2 p-4 bg-red-900/20 border border-red-500/30 rounded-lg">
+          <AlertTriangle className="w-5 h-5 text-red-400" />
+          <span className="text-red-400">{error}</span>
+        </div>
+      )}
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
