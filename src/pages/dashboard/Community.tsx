@@ -43,11 +43,11 @@ const Community = () => {
   };
 
   return (
-    <div className="container mx-auto py-6 max-w-[1280px]">
+    <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
       <CommunityHeader />
       
       {/* Two-column layout: main content + integrated sidebar */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
         {/* Main content column */}
         <div className="min-w-0">
           <div className="mb-8">
@@ -139,9 +139,14 @@ const Community = () => {
 
         {/* Integrated sidebar - desktop only, now scrolls with page content */}
         <div className="hidden lg:block">
-          <RightSidebar isMobile={false} className="border-0 bg-transparent" />
+          <div className="border-l border-gray-700/30 bg-gray-900 overflow-hidden">
+            <RightSidebar isMobile={false} className="border-0 bg-transparent" />
+          </div>
         </div>
       </div>
+      
+      {/* Mobile Right Sidebar Drawer - preserving mobile functionality */}
+      <RightSidebar isMobile={true} />
       
       {isNewPostModalOpen && (
         <NewPostModal 

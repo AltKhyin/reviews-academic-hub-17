@@ -1,6 +1,6 @@
 
 // ABOUTME: User profile page with profile header, activity, and saved content tabs
-// Now uses proper responsive containers without arbitrary width constraints
+// Now uses optimal max-width containers for better content centering
 
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -84,7 +84,7 @@ const Profile: React.FC = () => {
 
   return (
     <div className="w-full min-h-screen bg-background">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-6 space-y-6">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* Card de perfil */}
         <Card className="bg-[#1a1a1a] rounded-lg border border-[#2a2a2a] overflow-hidden shadow-md">
           <ProfileHeader 

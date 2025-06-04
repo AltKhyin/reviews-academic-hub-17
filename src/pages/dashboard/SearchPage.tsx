@@ -1,6 +1,6 @@
 
 // ABOUTME: Search page with filters and results display
-// Now uses proper responsive containers without arbitrary width constraints
+// Now uses optimal max-width containers for better content centering
 
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -236,10 +236,10 @@ const SearchPage: React.FC = () => {
         <Logo dark={false} size="2xlarge" />
       </header>
 
-      {/* Main content wrapper - Full width responsive container */}
+      {/* Main content wrapper - Centered with optimal max-width */}
       <div className="flex-1 flex items-center justify-center mb-6">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
-          <div className="grid grid-cols-1 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Filters Section */}
             <div className="lg:col-span-1">
               <Card className="p-6">
@@ -255,8 +255,8 @@ const SearchPage: React.FC = () => {
               </Card>
             </div>
 
-            {/* Search and Results Section - Now spans more columns for better width utilization */}
-            <div className="lg:col-span-3 xl:col-span-4">
+            {/* Search and Results Section */}
+            <div className="lg:col-span-3">
               {/* Search Header */}
               <Card className="p-6 mb-6">
                 <SearchHeader 

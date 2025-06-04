@@ -1,6 +1,6 @@
 
 // ABOUTME: Landing page with hero section and articles grid
-// Now uses proper responsive containers without fixed width constraints
+// Now uses optimal max-width containers for better content centering
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -26,9 +26,9 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Hero Section - Full width with proper responsive padding */}
+      {/* Hero Section - Centered with optimal max-width */}
       <div className="text-center space-y-6 p-8 bg-white shadow-sm">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1 className="text-4xl font-serif font-bold mb-4">Evidência Médica</h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Sua plataforma de referência para conteúdo médico baseado em evidências.
@@ -53,13 +53,13 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Articles Grid - Full width responsive grid */}
+      {/* Articles Grid - Centered with optimal max-width */}
       <div className="py-12">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           {isLoading ? (
             <div className="text-center">Carregando artigos...</div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {articles?.map((article) => (
                 <div 
                   key={article.id}
