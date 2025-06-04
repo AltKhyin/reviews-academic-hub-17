@@ -1,7 +1,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
-import ArticleCard from './ArticleCard';
+import { CarouselArticleCard } from './CarouselArticleCard';
 import { useMediaQuery } from '@/hooks/use-mobile';
 import { Issue } from '@/types/issue';
 import type { UseEmblaCarouselType } from 'embla-carousel-react';
@@ -17,11 +17,9 @@ const ArticleRow = ({ title, articles }: ArticleRowProps) => {
   
   // Determine how many slides to show based on screen size
   const slidesPerView = isMobile ? 2 : 5;
-  const slideCount = articles.length;
   
   useEffect(() => {
     if (carouselApi) {
-      // Configure carousel
       carouselApi.reInit();
     }
   }, [carouselApi, isMobile]);
@@ -43,7 +41,7 @@ const ArticleRow = ({ title, articles }: ArticleRowProps) => {
           <CarouselContent className="-ml-2">
             {articles.map((issue) => (
               <CarouselItem key={issue.id} className="pl-2 md:basis-1/5 lg:basis-1/5">
-                <ArticleCard issue={issue} variant="compact" />
+                <CarouselArticleCard issue={issue} />
               </CarouselItem>
             ))}
           </CarouselContent>
