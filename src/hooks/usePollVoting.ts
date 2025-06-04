@@ -42,6 +42,7 @@ export const usePollVoting = () => {
       if (updatedPoll) {
         const poll = {
           ...updatedPoll,
+          options: Array.isArray(updatedPoll.options) ? updatedPoll.options as string[] : [],
           votes: (updatedPoll.votes as number[]).map(v => v ?? 0)
         };
         setPoll(poll);
