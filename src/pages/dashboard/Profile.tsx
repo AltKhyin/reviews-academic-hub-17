@@ -1,6 +1,6 @@
 
 // ABOUTME: User profile page with profile header, activity, and saved content tabs
-// Displays user information, avatar upload, stats, and manages saved content
+// Now uses full screen width with responsive padding for optimal space utilization
 
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -83,32 +83,34 @@ const Profile: React.FC = () => {
   };
 
   return (
-    <div className="w-full animate-fade-in pt-4 pb-6 transition-all duration-300 px-4">
-      {/* Card de perfil */}
-      <Card className="bg-[#1a1a1a] rounded-lg border border-[#2a2a2a] overflow-hidden shadow-md mb-2">
-        <ProfileHeader 
-          user={user}
+    <div className="w-full">
+      <div className="px-6 lg:px-12 xl:px-16 pt-4 pb-6 space-y-6 transition-all duration-300">
+        {/* Card de perfil */}
+        <Card className="bg-[#1a1a1a] rounded-lg border border-[#2a2a2a] overflow-hidden shadow-md">
+          <ProfileHeader 
+            user={user}
+            profile={profile}
+            stats={stats}
+            onEditProfile={() => setEditProfileOpen(true)}
+            onAvatarUpdate={handleAvatarUpload}
+            uploading={uploading}
+          />
+        </Card>
+        
+        {/* Container 2: Atividade Recente */}
+        <ProfileActivity className="" userId={user?.id} />
+        
+        {/* Container 3 e 4: Reviews Favoritas e Posts Salvos (Tabs) */}
+        <SavedContentTabs userId={user?.id} />
+        
+        {/* Dialog de edição de perfil */}
+        <EditProfileDialog 
+          open={editProfileOpen} 
+          onOpenChange={setEditProfileOpen} 
           profile={profile}
-          stats={stats}
-          onEditProfile={() => setEditProfileOpen(true)}
-          onAvatarUpdate={handleAvatarUpload}
-          uploading={uploading}
+          onProfileUpdated={refreshProfile}
         />
-      </Card>
-      
-      {/* Container 2: Atividade Recente */}
-      <ProfileActivity className="mb-2" userId={user?.id} />
-      
-      {/* Container 3 e 4: Reviews Favoritas e Posts Salvos (Tabs) */}
-      <SavedContentTabs userId={user?.id} />
-      
-      {/* Dialog de edição de perfil */}
-      <EditProfileDialog 
-        open={editProfileOpen} 
-        onOpenChange={setEditProfileOpen} 
-        profile={profile}
-        onProfileUpdated={refreshProfile}
-      />
+      </div>
     </div>
   );
 };

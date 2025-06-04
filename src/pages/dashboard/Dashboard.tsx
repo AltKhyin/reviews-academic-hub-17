@@ -1,6 +1,6 @@
 
 // ABOUTME: Main dashboard displaying issues with hero section and article rows
-// Shows featured content, recent editions, recommendations and trending articles
+// Now uses full screen width with responsive padding for optimal space utilization
 
 import React from 'react';
 import { useIssues } from '@/hooks/useIssues';
@@ -21,8 +21,8 @@ const Dashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="h-full w-full">
-        <div className="pt-4 pb-16 space-y-8 transition-all duration-300 px-4">
+      <div className="w-full">
+        <div className="px-6 lg:px-12 xl:px-16 pt-4 pb-16 space-y-8 transition-all duration-300">
           <DashboardSkeleton />
         </div>
       </div>
@@ -31,8 +31,8 @@ const Dashboard = () => {
 
   if (!issues || issues.length === 0) {
     return (
-      <div className="h-full w-full">
-        <div className="pt-4 pb-16 space-y-8 transition-all duration-300 px-4">
+      <div className="w-full">
+        <div className="px-6 lg:px-12 xl:px-16 pt-4 pb-16 space-y-8 transition-all duration-300">
           <div className="text-center py-16">
             <h2 className="text-2xl font-bold mb-4">Nenhum conteúdo disponível</h2>
             <p className="text-muted-foreground">
@@ -113,8 +113,8 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="h-full w-full">
-      <div className="pt-4 pb-16 space-y-8 transition-all duration-300 px-4">
+    <div className="w-full">
+      <div className="px-6 lg:px-12 xl:px-16 pt-4 pb-16 space-y-8 transition-all duration-300">
         {visibleSectionIds.map((sectionId, index) => renderSection(sectionId, index))}
       </div>
     </div>

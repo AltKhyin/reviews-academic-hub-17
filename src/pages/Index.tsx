@@ -1,4 +1,7 @@
 
+// ABOUTME: Landing page with hero section and articles grid
+// Now uses full screen width with responsive padding for better space utilization
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -23,10 +26,10 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Hero Section */}
-      <div className="text-center space-y-6 p-8 bg-white shadow-sm">
+      {/* Hero Section - Full width with responsive padding */}
+      <div className="text-center space-y-6 p-8 bg-white shadow-sm px-6 lg:px-12 xl:px-16">
         <h1 className="text-4xl font-serif font-bold mb-4">Evidência Médica</h1>
-        <p className="text-xl text-gray-600 max-w-md mx-auto">
+        <p className="text-xl text-gray-600 max-w-2xl mx-auto">
           Sua plataforma de referência para conteúdo médico baseado em evidências.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
@@ -48,12 +51,12 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Articles Grid */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      {/* Articles Grid - Full width with responsive padding and optimized grid */}
+      <div className="px-6 lg:px-12 xl:px-16 py-12">
         {isLoading ? (
           <div className="text-center">Carregando artigos...</div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
             {articles?.map((article) => (
               <div 
                 key={article.id}

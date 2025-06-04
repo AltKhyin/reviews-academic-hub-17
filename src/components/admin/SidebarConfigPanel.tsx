@@ -92,36 +92,48 @@ export const SidebarConfigPanel: React.FC = () => {
     setError(null);
     
     try {
+      console.log('Loading sidebar configuration...');
+      
       const { data, error } = await supabase
         .from('site_meta')
         .select('value')
         .eq('key', 'sidebar_config')
         .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error loading config:', error);
+        throw error;
+      }
 
       if (data) {
+        console.log('Found existing configuration:', data.value);
         const config = data.value as unknown as SidebarConfig;
         
         if (config && typeof config === 'object') {
-          form.reset({
-            tagline: config.tagline || '',
-            nextReviewTs: config.nextReviewTs || '',
-            bookmarks: config.bookmarks?.map(bookmark => ({
+          // Enhanced migration logic to handle missing properties
+          const migratedConfig = {
+            tagline: config.tagline || 'Quem aprende junto, cresce.',
+            nextReviewTs: config.nextReviewTs || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
+            bookmarks: Array.isArray(config.bookmarks) ? config.bookmarks.map(bookmark => ({
               label: bookmark.label || '',
               url: bookmark.url || '',
               icon: (bookmark.icon === 'external' ? 'external' : 'link') as 'link' | 'external'
-            })) || [],
+            })) : [],
             rules: Array.isArray(config.rules) ? config.rules.filter(rule => rule && rule.trim()) : [],
             changelog: {
               show: Boolean(config.changelog?.show ?? true),
               entries: Array.isArray(config.changelog?.entries) ? 
                 config.changelog.entries.filter(entry => entry && entry.date && entry.text) : []
             },
-            sections: (config as any).sections || DEFAULT_SECTIONS,
-          });
+            // Handle missing sections property with backward compatibility
+            sections: Array.isArray((config as any).sections) ? (config as any).sections : DEFAULT_SECTIONS,
+          };
+          
+          console.log('Migrated configuration:', migratedConfig);
+          form.reset(migratedConfig);
         }
       } else {
+        console.log('No existing configuration found, using defaults');
         form.reset({
           tagline: 'Quem aprende junto, cresce.',
           nextReviewTs: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
@@ -132,7 +144,7 @@ export const SidebarConfigPanel: React.FC = () => {
         });
       }
     } catch (error) {
-      console.error('Error loading config:', error);
+      console.error('Error loading configuration:', error);
       setError('Não foi possível carregar a configuração atual.');
       toast({
         title: 'Erro ao carregar configuração',
@@ -149,26 +161,60 @@ export const SidebarConfigPanel: React.FC = () => {
     setError(null);
     
     try {
+      console.log('Saving sidebar configuration:', data);
+      
+      // Prepare data with proper structure and ensure sections have correct order
+      const configData = {
+        ...data,
+        sections: data.sections.map((section, index) => ({
+          ...section,
+          order: index // Ensure order is sequential based on current array position
+        }))
+      };
+
+      console.log('Prepared config data for save:', configData);
+
+      // Enhanced upsert with explicit conflict resolution
       const { error } = await supabase
         .from('site_meta')
-        .upsert({
-          key: 'sidebar_config',
-          value: data,
-          updated_at: new Date().toISOString(),
-        });
+        .upsert(
+          {
+            key: 'sidebar_config',
+            value: configData,
+            updated_at: new Date().toISOString(),
+          },
+          {
+            onConflict: 'key',
+            ignoreDuplicates: false
+          }
+        );
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error saving config:', error);
+        
+        // Provide specific error messages based on error type
+        if (error.message.includes('duplicate key')) {
+          throw new Error('Conflito de configuração - tentando novamente...');
+        } else if (error.message.includes('permission denied')) {
+          throw new Error('Permissões insuficientes para salvar a configuração');
+        } else {
+          throw new Error(`Erro no banco de dados: ${error.message}`);
+        }
+      }
 
+      console.log('Configuration saved successfully');
+      
       toast({
         title: 'Configuração salva',
         description: 'A configuração da barra lateral foi atualizada com sucesso.',
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving config:', error);
-      setError('Não foi possível salvar a configuração.');
+      const errorMessage = error.message || 'Não foi possível salvar a configuração.';
+      setError(errorMessage);
       toast({
         title: 'Erro ao salvar',
-        description: 'Não foi possível salvar a configuração.',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {

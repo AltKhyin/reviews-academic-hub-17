@@ -1,4 +1,7 @@
 
+// ABOUTME: Search page with filters and results display
+// Now uses full screen width with responsive padding for better space utilization
+
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -233,11 +236,11 @@ const SearchPage: React.FC = () => {
         <Logo dark={false} size="2xlarge" />
       </header>
 
-      {/* Main content wrapper with vertical centering */}
-      <div className="flex-1 flex items-center justify-center px-6 mb-6">
-        <div className="w-full max-w-7xl grid grid-cols-1 md:grid-cols-4 gap-6">
+      {/* Main content wrapper - Full width with responsive padding */}
+      <div className="flex-1 flex items-center justify-center px-6 lg:px-12 xl:px-16 mb-6">
+        <div className="w-full grid grid-cols-1 lg:grid-cols-4 xl:grid-cols-5 gap-6">
           {/* Filters Section */}
-          <div className="md:col-span-1">
+          <div className="lg:col-span-1">
             <Card className="p-6">
               <h3 className="font-medium text-lg mb-2">Filtros</h3>
               <SearchFilters 
@@ -251,8 +254,8 @@ const SearchPage: React.FC = () => {
             </Card>
           </div>
 
-          {/* Search and Results Section */}
-          <div className="md:col-span-3">
+          {/* Search and Results Section - Now spans more columns for better width utilization */}
+          <div className="lg:col-span-3 xl:col-span-4">
             {/* Search Header */}
             <Card className="p-6 mb-6">
               <SearchHeader 
