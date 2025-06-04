@@ -4,12 +4,11 @@ import { useSidebar } from '@/components/ui/sidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIssues } from '@/hooks/useIssues';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
-import { FeaturedSection } from '@/components/dashboard/FeaturedSection';
-import { ArticlesSection } from '@/components/dashboard/ArticlesSection';
 import { UpcomingReleaseSection } from '@/components/dashboard/UpcomingReleaseSection';
 import { ReviewerCommentsDisplay } from '@/components/dashboard/ReviewerCommentsDisplay';
-import { ReviewerCommentSection } from '@/components/dashboard/ReviewerCommentSection';
 import { useSectionVisibility } from '@/hooks/useSectionVisibility';
+import { CoverStackHero } from '@/components/homepage/CoverStackHero';
+import { SmartCarousel } from '@/components/homepage/SmartCarousel';
 
 const Dashboard = () => {
   const { state } = useSidebar();
@@ -82,53 +81,37 @@ const Dashboard = () => {
   const renderSection = (sectionId: string) => {
     console.log(`Rendering section: ${sectionId}`);
     switch(sectionId) {
-      case 'reviews':
-        // Show both reviewer comment section (for adding) and display (for viewing)
-        return (
-          <div key="reviews" className="mb-8">
-            <h2 className="text-2xl font-bold mb-6">Reviews do Editor</h2>
-            {(isAdmin || isEditor) ? (
-              <ReviewerCommentSection />
-            ) : (
-              <div className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-500/20 rounded-lg p-6">
-                <p className="text-gray-300">
-                  Aguarde novos reviews e comentários da equipe editorial.
-                </p>
-              </div>
-            )}
-          </div>
-        );
-      case 'reviewer':
-        return <ReviewerCommentsDisplay key="reviewer" />;
-      case 'featured':
-        return <FeaturedSection key="featured" issues={visibleIssues} />;
+      case 'hero':
+        return <CoverStackHero key="hero" featuredIssue={featuredIssue} />;
       case 'upcoming':
         return <UpcomingReleaseSection key="upcoming" />;
+      case 'reviewer':
+        return <ReviewerCommentsDisplay key="reviewer" />;
       case 'recent':
-        return <ArticlesSection 
+        return <SmartCarousel 
           key="recent"
-          issues={visibleIssues.slice(0, 5)} 
-          featuredIssueId={featuredIssue?.id} 
-          sectionTitle="Edições Recentes"
-          sectionType="recent"
+          title="Edições Recentes"
+          subtitle="As publicações mais recentes da nossa revista"
+          items={visibleIssues.slice(0, 8)}
+          featuredIssueId={featuredIssue?.id}
         />;
       case 'recommended':
-        const recommended = [...visibleIssues].sort(() => Math.random() - 0.5).slice(0, 5);
-        return <ArticlesSection 
+        const recommended = [...visibleIssues].sort(() => Math.random() - 0.5).slice(0, 8);
+        return <SmartCarousel 
           key="recommended"
-          issues={recommended} 
-          featuredIssueId={featuredIssue?.id} 
-          sectionTitle="Recomendados para você"
-          sectionType="recommended"
+          title="Recomendados para você"
+          subtitle="Artigos selecionados baseados no seu interesse"
+          items={recommended}
+          featuredIssueId={featuredIssue?.id}
         />;
       case 'trending':
-        const trending = [...visibleIssues].sort(() => Math.random() - 0.5).slice(0, 5);
-        return <ArticlesSection 
+        const trending = [...visibleIssues].sort(() => Math.random() - 0.5).slice(0, 8);
+        return <SmartCarousel 
           key="trending"
-          issues={trending} 
-          featuredIssueId={featuredIssue?.id} 
-          sectionTitle="Mais acessados"
-          sectionType="trending"
+          title="Mais Acessados"
+          subtitle="Os artigos mais populares da semana"
+          items={trending}
+          featuredIssueId={featuredIssue?.id}
         />;
       default:
         console.warn(`Unknown section type: ${sectionId}`);
@@ -140,10 +123,10 @@ const Dashboard = () => {
   console.log("Dashboard: Visible section IDs:", visibleSectionIds);
 
   return (
-    <div className={`pt-4 pb-16 space-y-8 transition-all duration-300 ${isCollapsed ? 'max-w-full' : 'max-w-[95%] mx-auto'}`}>
+    <div className={`pb-16 space-y-0 transition-all duration-300 ${isCollapsed ? 'max-w-full' : 'max-w-full'}`}>
       {/* Enhanced debug info for admin */}
       {(isAdmin || isEditor) && (
-        <div className="bg-green-600/10 border border-green-500/20 rounded-lg p-4 mb-4">
+        <div className="bg-green-600/10 border border-green-500/20 rounded-lg p-4 mb-4 mx-6">
           <p className="text-green-400 text-sm">
             🔧 Admin Mode: Showing {visibleIssues.length} of {issues.length} total issues. 
             Role: {profile?.role} | IsAdmin: {isAdmin ? 'Yes' : 'No'} | IsEditor: {isEditor ? 'Yes' : 'No'} | UserID: {user?.id}
@@ -164,7 +147,7 @@ const Dashboard = () => {
           {visibleSectionIds.map(renderSection)}
         </>
       ) : (
-        <div className="text-center py-12">
+        <div className="text-center py-12 px-6">
           <h2 className="text-xl font-medium mb-2">
             {issues.length === 0 ? 'No articles available' : 'No published articles available'}
           </h2>
