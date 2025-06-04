@@ -11,12 +11,12 @@ export const WeeklyPoll: React.FC = () => {
   if (isLoadingPoll) {
     return (
       <div className="space-y-3">
-        <div className="h-4 bg-gray-700 rounded w-24 animate-pulse" />
+        <div className="h-4 bg-gray-800/30 rounded w-24 animate-pulse" />
         <div className="space-y-2">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="space-y-1">
-              <div className="h-3 bg-gray-700 rounded animate-pulse" />
-              <div className="h-2 bg-gray-700 rounded animate-pulse" />
+              <div className="h-3 bg-gray-800/30 rounded animate-pulse" />
+              <div className="h-2 bg-gray-800/30 rounded animate-pulse" />
             </div>
           ))}
         </div>
@@ -38,12 +38,12 @@ export const WeeklyPoll: React.FC = () => {
   return (
     <div className="space-y-3">
       <div className="flex items-center space-x-2">
-        <BarChart3 className="w-4 h-4 text-gray-400" />
-        <h3 className="text-xs font-medium text-gray-300 uppercase tracking-wide">Enquete da Semana</h3>
+        <BarChart3 className="w-4 h-4 text-gray-500" />
+        <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wide">Enquete da Semana</h3>
       </div>
       
       <div className="space-y-3">
-        <h4 className="text-sm font-medium text-gray-200 leading-tight">{poll.question}</h4>
+        <h4 className="text-sm font-medium text-gray-300 leading-tight">{poll.question}</h4>
         
         <div className="space-y-2">
           {poll.options.map((option, index) => {
@@ -59,8 +59,8 @@ export const WeeklyPoll: React.FC = () => {
                 className={`
                   w-full text-left p-2 rounded transition-colors group
                   ${isSelected 
-                    ? 'bg-gray-700/80 text-gray-100' 
-                    : 'hover:bg-gray-800/50 text-gray-300'
+                    ? 'bg-gray-800/30 text-gray-200' 
+                    : 'hover:bg-gray-800/20 text-gray-400'
                   }
                 `}
               >
@@ -69,10 +69,10 @@ export const WeeklyPoll: React.FC = () => {
                   <span className="text-xs text-gray-500">{percentage.toFixed(1)}%</span>
                 </div>
                 
-                <div className="w-full bg-gray-800/50 rounded-full h-1.5">
+                <div className="w-full bg-gray-800/30 rounded-full h-1.5">
                   <div 
                     className={`h-1.5 rounded-full transition-all duration-300 ${
-                      isSelected ? 'bg-gray-500' : 'bg-gray-600'
+                      isSelected ? 'bg-gray-600' : 'bg-gray-700'
                     }`}
                     style={{ width: `${percentage}%` }}
                   />

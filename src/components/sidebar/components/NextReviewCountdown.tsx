@@ -40,8 +40,8 @@ export const NextReviewCountdown: React.FC = () => {
   if (isLoadingConfig) {
     return (
       <div className="space-y-3">
-        <div className="h-4 bg-gray-700 rounded w-32 animate-pulse" />
-        <div className="h-16 bg-gray-700 rounded animate-pulse" />
+        <div className="h-4 bg-gray-800/30 rounded w-32 animate-pulse" />
+        <div className="h-16 bg-gray-800/30 rounded animate-pulse" />
       </div>
     );
   }
@@ -53,21 +53,21 @@ export const NextReviewCountdown: React.FC = () => {
   return (
     <div className="space-y-3">
       <div className="flex items-center space-x-2">
-        <Clock className="w-4 h-4 text-gray-400" />
-        <h3 className="text-xs font-medium text-gray-300 uppercase tracking-wide">Próxima Edição</h3>
+        <Clock className="w-4 h-4 text-gray-500" />
+        <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wide">Próxima Edição</h3>
       </div>
       
       <div className="space-y-2">
         <div className="grid grid-cols-3 gap-2 text-center">
-          <div className="px-2 py-1 bg-gray-800/50 rounded">
+          <div className="px-2 py-1 bg-gray-800/20 rounded">
             <div className="text-lg font-bold text-gray-300">{timeRemaining.days}</div>
             <div className="text-xs text-gray-500">dias</div>
           </div>
-          <div className="px-2 py-1 bg-gray-800/50 rounded">
+          <div className="px-2 py-1 bg-gray-800/20 rounded">
             <div className="text-lg font-bold text-gray-300">{timeRemaining.hours}</div>
             <div className="text-xs text-gray-500">horas</div>
           </div>
-          <div className="px-2 py-1 bg-gray-800/50 rounded">
+          <div className="px-2 py-1 bg-gray-800/20 rounded">
             <div className="text-lg font-bold text-gray-300">{timeRemaining.minutes}</div>
             <div className="text-xs text-gray-500">min</div>
           </div>

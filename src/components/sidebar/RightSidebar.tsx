@@ -1,6 +1,6 @@
 
 // ABOUTME: Right sidebar component with page-level scrolling integration
-// Now uses w-full since parent grid column controls width allocation
+// Now uses seamless background integration with main page
 
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
@@ -108,7 +108,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
                 
                 {/* Module Divider - only if not last item */}
                 {index < enabledSections.length - 1 && (
-                  <div className="border-t border-gray-700/30"></div>
+                  <div className="border-t border-gray-800/20"></div>
                 )}
               </React.Fragment>
             );
@@ -130,11 +130,11 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
           />
         )}
         
-        {/* Mobile Drawer - still uses w-80 for mobile overlay */}
+        {/* Mobile Drawer - uses background to match main page */}
         <div 
           ref={focusTrapRef}
           className={`
-            fixed top-0 right-0 h-full w-80 bg-gray-900 border-l border-gray-700/30 z-50
+            fixed top-0 right-0 h-full w-80 bg-background
             transform transition-transform duration-300 ease-in-out overflow-y-auto
             ${isMobileDrawerOpen ? 'translate-x-0' : 'translate-x-full'}
           `}
@@ -142,11 +142,11 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
           aria-modal="true"
           aria-labelledby="mobile-sidebar-title"
         >
-          <div className="flex items-center justify-between p-4 border-b border-gray-700/30">
-            <h2 id="mobile-sidebar-title" className="text-lg font-semibold text-white">Comunidade</h2>
+          <div className="flex items-center justify-between p-4 border-b border-gray-800/20">
+            <h2 id="mobile-sidebar-title" className="text-lg font-semibold text-gray-200">Comunidade</h2>
             <button
               onClick={toggleMobileDrawer}
-              className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-800/20 rounded-lg transition-colors"
               aria-label="Fechar barra lateral"
             >
               <X className="w-5 h-5 text-gray-400" />
@@ -158,9 +158,9 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
     );
   }
 
-  // Desktop version - now uses w-full since grid column controls width
+  // Desktop version - seamless background integration
   return (
-    <div className={`w-full bg-transparent h-full overflow-y-auto ${className}`}>
+    <div className={`w-full bg-background h-full overflow-y-auto ${className}`}>
       {content}
     </div>
   );
