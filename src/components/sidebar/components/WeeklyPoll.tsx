@@ -34,18 +34,18 @@ export const WeeklyPoll: React.FC = () => {
 
   const handleVote = (optionIndex: number) => {
     if (!canVote || isVoting) return;
-    vote({ pollId: poll.id, optionIndex });
+    vote(poll.id, optionIndex);
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div className="flex items-center space-x-2">
         <BarChart3 className="w-4 h-4 text-purple-400" />
         <h3 className="text-xs font-medium text-gray-300 uppercase tracking-wide">Enquete da Semana</h3>
       </div>
       
       <div className="space-y-3">
-        <h4 className="text-sm font-medium text-white">{poll.question}</h4>
+        <h4 className="text-sm font-medium text-white leading-tight">{poll.question}</h4>
         
         <div className="space-y-2">
           {poll.options.map((option, index) => {
@@ -62,7 +62,7 @@ export const WeeklyPoll: React.FC = () => {
                   className={`
                     w-full text-left p-3 rounded-lg transition-colors relative overflow-hidden
                     ${canVote ? 'hover:bg-gray-700 cursor-pointer' : 'cursor-not-allowed'}
-                    ${isSelected ? 'bg-purple-900/30 border border-purple-500' : 'bg-gray-800 border border-gray-700'}
+                    ${isSelected ? 'bg-purple-900/30 border border-purple-500' : 'bg-gray-800 border border-gray-600'}
                     ${!canVote && !isSelected ? 'opacity-75' : ''}
                   `}
                 >
@@ -92,8 +92,10 @@ export const WeeklyPoll: React.FC = () => {
           })}
         </div>
         
-        <div className="text-xs text-gray-400 text-center pt-2 border-t border-gray-700">
-          {isExpired ? 'Enquete encerrada' : `${totalVotes} votos • ${hasVoted ? 'Você já votou' : 'Clique para votar'}`}
+        <div className="pt-2 border-t border-gray-700">
+          <div className="text-xs text-gray-400 text-center">
+            {isExpired ? 'Enquete encerrada' : `${totalVotes} votos • ${hasVoted ? 'Você já votou' : 'Clique para votar'}`}
+          </div>
         </div>
       </div>
     </div>
