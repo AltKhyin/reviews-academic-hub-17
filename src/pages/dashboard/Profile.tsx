@@ -3,7 +3,6 @@
 // Displays user information, avatar upload, stats, and manages saved content
 
 import React, { useState } from 'react';
-import { useSidebar } from '@/components/ui/sidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -15,9 +14,7 @@ import { SavedContentTabs } from '@/components/profile/saved-content/SavedConten
 import { useUserStats } from '@/components/profile/user-stats/useUserStats';
 
 const Profile: React.FC = () => {
-  const { state } = useSidebar();
   const { user, profile, updateProfile, refreshProfile } = useAuth();
-  const isCollapsed = state === 'collapsed';
   const [uploading, setUploading] = useState(false);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const stats = useUserStats(user?.id);
