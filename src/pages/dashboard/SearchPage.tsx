@@ -238,7 +238,7 @@ const SearchPage: React.FC = () => {
 
       {/* Main content wrapper - Centered with optimal max-width */}
       <div className="flex-1 flex items-center justify-center mb-6">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Filters Section */}
             <div className="lg:col-span-1">
