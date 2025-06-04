@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { useSidebarStore } from '@/stores/sidebarStore';
 import { useSidebarData } from '@/hooks/useSidebarData';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { SidebarErrorBoundary } from './components/SidebarErrorBoundary';
 import { CommunityHeader } from './components/CommunityHeader';
 import { ActiveAvatars } from './components/ActiveAvatars';
@@ -26,6 +27,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
 }) => {
   const location = useLocation();
   const { isMobileDrawerOpen, toggleMobileDrawer } = useSidebarStore();
+  const focusTrapRef = useFocusTrap(isMobile && isMobileDrawerOpen);
   
   // Only show sidebar in community routes
   const shouldShowSidebar = location.pathname.startsWith('/community');
@@ -85,11 +87,13 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
           <div 
             className="fixed inset-0 bg-black/50 z-40"
             onClick={toggleMobileDrawer}
+            aria-hidden="true"
           />
         )}
         
         {/* Mobile Drawer */}
         <div 
+          ref={focusTrapRef}
           className={`
             fixed top-0 right-0 h-full w-80 bg-gray-900 border-l border-gray-700 z-50
             transform transition-transform duration-300 ease-in-out

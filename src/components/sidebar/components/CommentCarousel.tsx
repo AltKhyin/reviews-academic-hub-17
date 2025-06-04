@@ -66,15 +66,17 @@ export const CommentCarousel: React.FC = () => {
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-gray-300">Comentários em Destaque</h3>
         {comments.length > 1 && (
-          <div className="flex space-x-1">
+          <div className="flex space-x-1" role="tablist" aria-label="Navegação de comentários">
             {comments.map((_, index) => (
               <button
                 key={index}
+                role="tab"
                 onClick={() => setCommentCarouselIndex(index)}
                 className={`w-1.5 h-1.5 rounded-full transition-colors ${
                   index === commentCarouselIndex ? 'bg-blue-500' : 'bg-gray-600'
                 }`}
-                aria-label={`Ir para comentário ${index + 1}`}
+                aria-label={`Ir para comentário ${index + 1} de ${comments.length}`}
+                aria-selected={index === commentCarouselIndex}
               />
             ))}
           </div>
@@ -86,6 +88,15 @@ export const CommentCarousel: React.FC = () => {
         <div 
           className="p-3 bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-750 transition-colors h-full flex flex-col"
           onClick={handleCommentClick}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              handleCommentClick();
+            }
+          }}
+          aria-label={`Comentário de ${currentComment.author_name}: ${currentComment.body}`}
         >
           <div className="flex items-center space-x-2 mb-2">
             <div className="w-6 h-6 rounded-full overflow-hidden">
@@ -115,6 +126,15 @@ export const CommentCarousel: React.FC = () => {
             {truncateText(currentComment.body)}
           </p>
         </div>
+      </div>
+      
+      {/* Screen reader live region for carousel changes */}
+      <div 
+        className="sr-only" 
+        aria-live="polite" 
+        aria-atomic="true"
+      >
+        Mostrando comentário {commentCarouselIndex + 1} de {comments.length}
       </div>
     </div>
   );

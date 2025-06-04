@@ -18,6 +18,9 @@ export const useSidebarData = () => {
     setLoading
   } = useSidebarStore();
 
+  // SSR safety check
+  const isClient = typeof window !== 'undefined';
+
   // Fetch sidebar configuration
   const { data: config } = useQuery({
     queryKey: ['sidebar-config'],
@@ -38,6 +41,7 @@ export const useSidebarData = () => {
         setLoading('Config', false);
       }
     },
+    enabled: isClient,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
@@ -65,11 +69,12 @@ export const useSidebarData = () => {
         setLoading('Stats', false);
       }
     },
+    enabled: isClient,
     refetchInterval: 60 * 1000, // 1 minute
     staleTime: 30 * 1000, // 30 seconds
   });
 
-  // Fetch online users (limited to 7 in view)
+  // Fetch online users (from view, limited to 7 in display)
   const { data: onlineUsers } = useQuery({
     queryKey: ['sidebar-online-users'],
     queryFn: async () => {
@@ -87,6 +92,7 @@ export const useSidebarData = () => {
         setLoading('Users', false);
       }
     },
+    enabled: isClient,
     refetchInterval: 30 * 1000, // 30 seconds
     staleTime: 15 * 1000, // 15 seconds
   });
@@ -110,6 +116,7 @@ export const useSidebarData = () => {
         setLoading('Comments', false);
       }
     },
+    enabled: isClient,
     refetchInterval: 5 * 60 * 1000, // 5 minutes
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
@@ -130,6 +137,7 @@ export const useSidebarData = () => {
         setLoading('Threads', false);
       }
     },
+    enabled: isClient,
     refetchInterval: 5 * 60 * 1000, // 5 minutes
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
@@ -163,6 +171,7 @@ export const useSidebarData = () => {
         setLoading('Poll', false);
       }
     },
+    enabled: isClient,
     refetchInterval: 5 * 60 * 1000, // 5 minutes
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
@@ -185,7 +194,7 @@ export const useSidebarData = () => {
       setUserVote(vote);
       return vote;
     },
-    enabled: !!user && !!poll,
+    enabled: isClient && !!user && !!poll,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
