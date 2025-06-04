@@ -29,7 +29,7 @@ const Index = () => {
     <PageLayoutContainer
       globalPadding={config.globalPadding}
       globalMargin={config.globalMargin}
-      globalSize={config.globalSize}
+      globalSize={{ maxWidth: 'max-w-4xl', width: 'w-full' }}
       className="bg-gray-100"
     >
       {visibleSections.map((section) => (
