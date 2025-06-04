@@ -8,7 +8,6 @@ import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { SidebarErrorBoundary } from './components/SidebarErrorBoundary';
 import { CommunityHeader } from './components/CommunityHeader';
 import { ActiveAvatars } from './components/ActiveAvatars';
-import { CommentCarousel } from './components/CommentCarousel';
 import { TopThreads } from './components/TopThreads';
 import { NextReviewCountdown } from './components/NextReviewCountdown';
 import { WeeklyPoll } from './components/WeeklyPoll';
@@ -60,20 +59,71 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
   const content = (
     <SidebarErrorBoundary>
       <div 
-        className="sticky top-16 max-h-[calc(100vh-theme(spacing.16))] overflow-y-auto scrollbar-thin scrollbar-track-gray-800 scrollbar-thumb-gray-600"
+        className="max-h-[calc(100vh-theme(spacing.24))] overflow-y-auto scrollbar-thin scrollbar-track-gray-800 scrollbar-thumb-gray-600"
         role="complementary"
         aria-label="Barra lateral da comunidade"
       >
-        <div className="p-4 space-y-6">
-          <CommunityHeader />
-          <ActiveAvatars />
-          <CommentCarousel />
-          <TopThreads />
-          <NextReviewCountdown />
-          <WeeklyPoll />
-          <ResourceBookmarks />
-          <RulesAccordion />
-          <MiniChangelog />
+        <div className="space-y-0">
+          {/* Community Header Module */}
+          <div className="py-4 px-5">
+            <CommunityHeader />
+          </div>
+          
+          {/* Module Divider */}
+          <div className="border-t border-gray-700"></div>
+          
+          {/* Active Avatars Module */}
+          <div className="py-4 px-5">
+            <ActiveAvatars />
+          </div>
+          
+          {/* Module Divider */}
+          <div className="border-t border-gray-700"></div>
+          
+          {/* Top Threads Module */}
+          <div className="py-4 px-5">
+            <TopThreads />
+          </div>
+          
+          {/* Module Divider */}
+          <div className="border-t border-gray-700"></div>
+          
+          {/* Next Review Countdown Module */}
+          <div className="py-4 px-5">
+            <NextReviewCountdown />
+          </div>
+          
+          {/* Module Divider */}
+          <div className="border-t border-gray-700"></div>
+          
+          {/* Weekly Poll Module */}
+          <div className="py-4 px-5">
+            <WeeklyPoll />
+          </div>
+          
+          {/* Module Divider */}
+          <div className="border-t border-gray-700"></div>
+          
+          {/* Resource Bookmarks Module */}
+          <div className="py-4 px-5">
+            <ResourceBookmarks />
+          </div>
+          
+          {/* Module Divider */}
+          <div className="border-t border-gray-700"></div>
+          
+          {/* Rules Accordion Module */}
+          <div className="py-4 px-5">
+            <RulesAccordion />
+          </div>
+          
+          {/* Module Divider */}
+          <div className="border-t border-gray-700"></div>
+          
+          {/* Mini Changelog Module */}
+          <div className="py-4 px-5">
+            <MiniChangelog />
+          </div>
         </div>
       </div>
     </SidebarErrorBoundary>
@@ -120,7 +170,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
   }
 
   return (
-    <div className={`w-80 bg-gray-900 border-l border-gray-700 ${className}`}>
+    <div className={`w-full bg-gray-900 border border-gray-700 rounded-lg ${className}`}>
       {content}
     </div>
   );

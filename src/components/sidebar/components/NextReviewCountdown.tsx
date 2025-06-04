@@ -42,9 +42,9 @@ export const NextReviewCountdown: React.FC = () => {
 
   if (isLoadingConfig) {
     return (
-      <div className="space-y-2">
+      <div className="space-y-3">
         <div className="h-4 bg-gray-700 rounded w-32 animate-pulse" />
-        <div className="h-8 bg-gray-700 rounded animate-pulse" />
+        <div className="h-16 bg-gray-700 rounded animate-pulse" />
         <div className="h-2 bg-gray-700 rounded animate-pulse" />
       </div>
     );
@@ -68,7 +68,7 @@ export const NextReviewCountdown: React.FC = () => {
     <div className="space-y-3">
       <div className="flex items-center space-x-2">
         <Clock className="w-4 h-4 text-blue-400" />
-        <h3 className="text-sm font-medium text-gray-300">Próxima Review</h3>
+        <h3 className="text-xs font-medium text-gray-300 uppercase tracking-wide">Próxima Review</h3>
       </div>
       
       {timeLeft.isExpired ? (
@@ -77,12 +77,12 @@ export const NextReviewCountdown: React.FC = () => {
           className="w-full p-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors group"
         >
           <div className="flex items-center justify-center space-x-2 text-white">
-            <span className="font-medium">Ler agora</span>
+            <span className="font-medium text-sm">Ler agora</span>
             <ExternalLink className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
           </div>
         </button>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <div 
             className="text-center p-3 bg-gray-800 rounded-lg"
             aria-live="polite"
