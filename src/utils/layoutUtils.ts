@@ -1,46 +1,46 @@
 
-// ABOUTME: Utility functions for layout customization system
-// Handles conversion between config objects and Tailwind CSS classes
+// ABOUTME: Utility functions for generating Tailwind CSS classes from layout configurations
+// Converts spacing and sizing configs into proper CSS class strings
 
-import { SpacingConfig, SizeConfig, TailwindSpacing, TailwindMaxWidth, TailwindWidth } from '@/types/layout';
+import { SpacingConfig, SizeConfig } from '@/types/layout';
 
 /**
- * Converts spacing config to Tailwind padding classes
+ * Generates Tailwind padding classes from SpacingConfig
  */
-export const spacingToPaddingClasses = (spacing: SpacingConfig): string => {
+export const generatePaddingClasses = (padding: SpacingConfig): string => {
   const classes: string[] = [];
   
-  if (spacing.top > 0) classes.push(`pt-${spacing.top}`);
-  if (spacing.right > 0) classes.push(`pr-${spacing.right}`);
-  if (spacing.bottom > 0) classes.push(`pb-${spacing.bottom}`);
-  if (spacing.left > 0) classes.push(`pl-${spacing.left}`);
+  if (padding.top > 0) classes.push(`pt-${padding.top}`);
+  if (padding.right > 0) classes.push(`pr-${padding.right}`);
+  if (padding.bottom > 0) classes.push(`pb-${padding.bottom}`);
+  if (padding.left > 0) classes.push(`pl-${padding.left}`);
   
   return classes.join(' ');
 };
 
 /**
- * Converts spacing config to Tailwind margin classes
+ * Generates Tailwind margin classes from SpacingConfig
  */
-export const spacingToMarginClasses = (spacing: SpacingConfig): string => {
+export const generateMarginClasses = (margin: SpacingConfig): string => {
   const classes: string[] = [];
   
-  if (spacing.top > 0) classes.push(`mt-${spacing.top}`);
-  if (spacing.right > 0) classes.push(`mr-${spacing.right}`);
-  if (spacing.bottom > 0) classes.push(`mb-${spacing.bottom}`);
-  if (spacing.left > 0) classes.push(`ml-${spacing.left}`);
+  if (margin.top > 0) classes.push(`mt-${margin.top}`);
+  if (margin.right > 0) classes.push(`mr-${margin.right}`);
+  if (margin.bottom > 0) classes.push(`mb-${margin.bottom}`);
+  if (margin.left > 0) classes.push(`ml-${margin.left}`);
   
   return classes.join(' ');
 };
 
 /**
- * Converts size config to Tailwind size classes
+ * Generates Tailwind size classes from SizeConfig
  */
-export const sizeToClasses = (size: SizeConfig): string => {
-  return `${size.maxWidth} ${size.width}`;
+export const generateSizeClasses = (size: SizeConfig): string => {
+  return `${size.maxWidth} ${size.width}`.trim();
 };
 
 /**
- * Generates complete Tailwind class string for a section
+ * Generates complete section classes by combining all layout configs
  */
 export const generateSectionClasses = (
   padding: SpacingConfig,
@@ -48,81 +48,106 @@ export const generateSectionClasses = (
   size: SizeConfig,
   additionalClasses: string = ''
 ): string => {
-  const paddingClasses = spacingToPaddingClasses(padding);
-  const marginClasses = spacingToMarginClasses(margin);
-  const sizeClasses = sizeToClasses(size);
+  const paddingClasses = generatePaddingClasses(padding);
+  const marginClasses = generateMarginClasses(margin);
+  const sizeClasses = generateSizeClasses(size);
   
   return [paddingClasses, marginClasses, sizeClasses, additionalClasses]
-    .filter(Boolean)
+    .filter(cls => cls.trim().length > 0)
     .join(' ')
     .trim();
 };
 
 /**
- * Validates Tailwind spacing value
+ * Validates that spacing values are within acceptable range
  */
-export const isValidTailwindSpacing = (value: number): value is number => {
-  const validSpacings = [
-    0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 5, 6, 7, 8, 9, 10, 
-    11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 40, 44, 48, 52, 
-    56, 60, 64, 72, 80, 96
-  ];
-  return validSpacings.includes(value);
+export const validateSpacing = (spacing: SpacingConfig): boolean => {
+  const values = [spacing.top, spacing.right, spacing.bottom, spacing.left];
+  return values.every(val => val >= 0 && val <= 96);
 };
 
 /**
- * Validates Tailwind max-width class
+ * Creates a responsive breakpoint class string
  */
-export const isValidTailwindMaxWidth = (value: string): value is TailwindMaxWidth => {
-  const validMaxWidths = [
-    'max-w-xs', 'max-w-sm', 'max-w-md', 'max-w-lg', 'max-w-xl', 'max-w-2xl', 'max-w-3xl',
-    'max-w-4xl', 'max-w-5xl', 'max-w-6xl', 'max-w-7xl', 'max-w-full', 'max-w-screen-sm',
-    'max-w-screen-md', 'max-w-screen-lg', 'max-w-screen-xl', 'max-w-screen-2xl'
-  ];
-  return validMaxWidths.includes(value as TailwindMaxWidth);
+export const generateResponsiveClasses = (
+  baseClasses: string,
+  smClasses?: string,
+  mdClasses?: string,
+  lgClasses?: string,
+  xlClasses?: string
+): string => {
+  const responsive: string[] = [baseClasses];
+  
+  if (smClasses) responsive.push(`sm:${smClasses}`);
+  if (mdClasses) responsive.push(`md:${mdClasses}`);
+  if (lgClasses) responsive.push(`lg:${lgClasses}`);
+  if (xlClasses) responsive.push(`xl:${xlClasses}`);
+  
+  return responsive.join(' ');
 };
 
 /**
- * Validates Tailwind width class
+ * Converts numeric spacing to Tailwind class suffix
  */
-export const isValidTailwindWidth = (value: string): value is TailwindWidth => {
-  const validWidths = [
-    'w-auto', 'w-full', 'w-screen', 'w-min', 'w-max', 'w-fit',
-    'w-1/2', 'w-1/3', 'w-2/3', 'w-1/4', 'w-3/4', 'w-1/5', 'w-2/5', 'w-3/5', 'w-4/5'
-  ];
-  return validWidths.includes(value as TailwindWidth);
+export const spacingToTailwind = (value: number): string => {
+  // Handle decimal values like 0.5, 1.5, 2.5, 3.5
+  if (value === 0.5) return '0.5';
+  if (value === 1.5) return '1.5';
+  if (value === 2.5) return '2.5';
+  if (value === 3.5) return '3.5';
+  
+  return value.toString();
 };
 
 /**
- * Clamps spacing value to valid Tailwind range
+ * Merges multiple spacing configurations with priority
  */
-export const clampSpacingValue = (value: number): number => {
-  return Math.max(0, Math.min(96, value));
-};
-
-/**
- * Parses Tailwind spacing class to numeric value
- */
-export const parseTailwindSpacing = (className: string): number => {
-  const match = className.match(/^(p|m)[trblxy]?-(\d+(?:\.\d+)?)$/);
-  return match ? parseFloat(match[2]) : 0;
-};
-
-/**
- * Creates a CSS-in-JS style object from layout config (for dynamic styles)
- */
-export const configToInlineStyles = (
-  padding: SpacingConfig,
-  margin: SpacingConfig
-): React.CSSProperties => {
+export const mergeSpacingConfigs = (
+  base: SpacingConfig,
+  override: Partial<SpacingConfig>
+): SpacingConfig => {
   return {
-    paddingTop: `${padding.top * 0.25}rem`,
-    paddingRight: `${padding.right * 0.25}rem`,
-    paddingBottom: `${padding.bottom * 0.25}rem`,
-    paddingLeft: `${padding.left * 0.25}rem`,
-    marginTop: `${margin.top * 0.25}rem`,
-    marginRight: `${margin.right * 0.25}rem`,
-    marginBottom: `${margin.bottom * 0.25}rem`,
-    marginLeft: `${margin.left * 0.25}rem`,
+    top: override.top ?? base.top,
+    right: override.right ?? base.right,
+    bottom: override.bottom ?? base.bottom,
+    left: override.left ?? base.left,
   };
+};
+
+/**
+ * Creates a deep copy of spacing configuration
+ */
+export const cloneSpacingConfig = (spacing: SpacingConfig): SpacingConfig => {
+  return {
+    top: spacing.top,
+    right: spacing.right,
+    bottom: spacing.bottom,
+    left: spacing.left,
+  };
+};
+
+/**
+ * Checks if two spacing configurations are equal
+ */
+export const isSpacingEqual = (a: SpacingConfig, b: SpacingConfig): boolean => {
+  return (
+    a.top === b.top &&
+    a.right === b.right &&
+    a.bottom === b.bottom &&
+    a.left === b.left
+  );
+};
+
+/**
+ * Gets the total horizontal spacing (left + right)
+ */
+export const getTotalHorizontalSpacing = (spacing: SpacingConfig): number => {
+  return spacing.left + spacing.right;
+};
+
+/**
+ * Gets the total vertical spacing (top + bottom)
+ */
+export const getTotalVerticalSpacing = (spacing: SpacingConfig): number => {
+  return spacing.top + spacing.bottom;
 };

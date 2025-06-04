@@ -1,15 +1,18 @@
 
 // ABOUTME: Landing page with hero section and articles grid
-// Now uses optimal max-width containers for better content centering
+// Now uses dynamic layout customization system for spacing and sizing
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useLayoutConfig } from '@/hooks/useLayoutConfig';
+import { LayoutContainer, PageLayoutContainer } from '@/components/layout/LayoutContainer';
 
 const Index = () => {
   const navigate = useNavigate();
+  const { config, getSection, getOrderedVisibleSections } = useLayoutConfig();
 
   const { data: articles, isLoading } = useQuery({
     queryKey: ['articles'],
@@ -24,11 +27,27 @@ const Index = () => {
     }
   });
 
+  const heroSection = getSection('hero');
+  const articlesSection = getSection('articles');
+  const visibleSections = getOrderedVisibleSections();
+
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Hero Section - Centered with optimal max-width */}
-      <div className="text-center space-y-6 p-8 bg-white shadow-sm">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+    <PageLayoutContainer
+      globalPadding={config.globalPadding}
+      globalMargin={config.globalMargin}
+      globalSize={config.globalSize}
+      className="bg-gray-100"
+    >
+      {/* Hero Section */}
+      {visibleSections.find(s => s.id === 'hero') && heroSection && (
+        <LayoutContainer
+          sectionId="hero"
+          padding={heroSection.padding}
+          margin={heroSection.margin}
+          size={heroSection.size}
+          className="text-center space-y-6 bg-white shadow-sm"
+          centerContent={true}
+        >
           <h1 className="text-4xl font-serif font-bold mb-4">Evidência Médica</h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Sua plataforma de referência para conteúdo médico baseado em evidências.
@@ -50,12 +69,18 @@ const Index = () => {
               Acessar Conta
             </Button>
           </div>
-        </div>
-      </div>
+        </LayoutContainer>
+      )}
 
-      {/* Articles Grid - Centered with optimal max-width */}
-      <div className="py-12">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Articles Grid */}
+      {visibleSections.find(s => s.id === 'articles') && articlesSection && (
+        <LayoutContainer
+          sectionId="articles"
+          padding={articlesSection.padding}
+          margin={articlesSection.margin}
+          size={articlesSection.size}
+          centerContent={true}
+        >
           {isLoading ? (
             <div className="text-center">Carregando artigos...</div>
           ) : (
@@ -87,9 +112,9 @@ const Index = () => {
               ))}
             </div>
           )}
-        </div>
-      </div>
-    </div>
+        </LayoutContainer>
+      )}
+    </PageLayoutContainer>
   );
 };
 

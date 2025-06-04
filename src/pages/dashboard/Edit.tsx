@@ -1,4 +1,7 @@
 
+// ABOUTME: Admin panel with tabs for managing various system configurations
+// Includes layout customization for homepage sections
+
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -8,8 +11,9 @@ import { UserManagementPanel } from '@/components/admin/UserManagementPanel';
 import { IssuesManagementPanel } from '@/components/admin/IssuesManagementPanel';
 import { CommentReportsPanel } from '@/components/dashboard/CommentReportsPanel';
 import { ReviewerCommentsManager } from '@/components/admin/ReviewerCommentsManager';
+import { LayoutCustomizationPanel } from '@/components/admin/LayoutCustomizationPanel';
 import HomepageSectionsManager from '@/components/dashboard/HomepageSectionsManager';
-import { Settings, BarChart3, Users, MessageSquare, Crown, Layout, FileText, Edit } from 'lucide-react';
+import { Settings, BarChart3, Users, MessageSquare, Crown, Layout, FileText, Edit, Palette } from 'lucide-react';
 
 const EditPage = () => {
   const { isAdmin, isEditor, isLoading, user, profile } = useAuth();
@@ -73,7 +77,7 @@ const EditPage = () => {
       </div>
       
       <Tabs defaultValue="issues" className="w-full">
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="grid w-full grid-cols-9">
           <TabsTrigger value="issues" className="flex items-center gap-2">
             <FileText className="w-4 h-4" />
             Issues
@@ -81,6 +85,10 @@ const EditPage = () => {
           <TabsTrigger value="sections" className="flex items-center gap-2">
             <Layout className="w-4 h-4" />
             Seções
+          </TabsTrigger>
+          <TabsTrigger value="layout" className="flex items-center gap-2">
+            <Palette className="w-4 h-4" />
+            Layout
           </TabsTrigger>
           <TabsTrigger value="reviewer" className="flex items-center gap-2">
             <Edit className="w-4 h-4" />
@@ -116,6 +124,10 @@ const EditPage = () => {
         
         <TabsContent value="sections">
           <HomepageSectionsManager />
+        </TabsContent>
+        
+        <TabsContent value="layout">
+          <LayoutCustomizationPanel />
         </TabsContent>
         
         <TabsContent value="reviewer">
