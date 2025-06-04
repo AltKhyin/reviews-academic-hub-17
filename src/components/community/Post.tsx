@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -349,7 +348,7 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
   };
 
   const isIssueDiscussion = post.post_flairs?.name === 'Discussão de Edição';
-  const cardClasses = `rounded-lg border p-4 mb-6 ${
+  const cardClasses = `rounded-lg border p-4 mb-6 w-full ${
     post.pinned 
       ? 'bg-yellow-50/5 border-yellow-500/30' 
       : isIssueDiscussion 
@@ -410,24 +409,24 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
           
           <PostContent post={post} onVoteChange={handlePollVoteChange} />
 
-          {/* Issue discussion banner - positioned after content */}
+          {/* Issue discussion banner - positioned after content with full cover background */}
           {isIssueDiscussion && post.issue_id && issueCoverUrl && (
             <div 
-              className="mt-4 mb-4 rounded-lg overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/20 hover:scale-[1.02] group"
+              className="mt-4 mb-4 rounded-lg overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-yellow-500/20 hover:scale-[1.02] group relative h-20"
               onClick={() => navigate(`/article/${post.issue_id}`)}
+              style={{
+                backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.7)), url(${issueCoverUrl})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat'
+              }}
             >
-              <div className="relative h-20 bg-gradient-to-r from-purple-600/20 to-purple-400/20 flex items-center">
-                <img 
-                  src={issueCoverUrl} 
-                  alt="Capa da edição" 
-                  className="h-full w-20 object-cover rounded-l-lg"
-                />
-                <div className="flex-1 px-4 flex items-center justify-between">
-                  <span className="text-sm text-purple-200 group-hover:text-purple-100 transition-colors">
-                    Esta discussão refere-se a uma edição publicada.
-                  </span>
-                  <ExternalLink className="h-4 w-4 text-purple-300 group-hover:text-purple-200 transition-colors" />
-                </div>
+              <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-black/30" />
+              <div className="relative h-full flex items-center justify-between px-4">
+                <span className="text-sm text-white font-medium group-hover:text-yellow-100 transition-colors drop-shadow-lg">
+                  Esta discussão refere-se a uma edição publicada.
+                </span>
+                <ExternalLink className="h-4 w-4 text-white group-hover:text-yellow-200 transition-colors drop-shadow-lg" />
               </div>
             </div>
           )}

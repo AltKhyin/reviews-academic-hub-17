@@ -10,7 +10,7 @@ import { NewPostModal } from '@/components/community/NewPostModal';
 import { PostsList } from '@/components/community/PostsList';
 import { useCommunityPosts, usePostFlairs } from '@/hooks/useCommunityPosts';
 import { CommunityHeader } from '@/components/community/CommunityHeader';
-import { Search } from 'lucide-react';
+import { Search, Plus } from 'lucide-react';
 
 const Community = () => {
   const { user } = useAuth();
@@ -45,15 +45,24 @@ const Community = () => {
     <div className="container mx-auto py-6 max-w-4xl">
       <CommunityHeader />
       
-      <div className="mb-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
-          {/* Search bar */}
-          <form onSubmit={handleSearch} className="relative flex-1 w-full">
+      {/* Editorial Community Navigation Block */}
+      <div className="bg-muted rounded-xl p-6 shadow-sm w-full mb-8">
+        {/* Title and Subtitle */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-serif tracking-tight">Comunidade</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Discussões abertas, inteligentes e com fontes.
+          </p>
+        </div>
+        
+        {/* Actions Line: Search + New Post */}
+        <div className="flex flex-wrap md:flex-nowrap items-center gap-4 mb-6">
+          <form onSubmit={handleSearch} className="relative w-full max-w-md">
             <Input
               placeholder="Buscar publicações..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pr-10"
+              className="w-full bg-background border px-3 py-2 rounded-md text-sm pr-10"
             />
             <Button 
               type="submit" 
@@ -65,68 +74,71 @@ const Community = () => {
             </Button>
           </form>
           
-          {/* New post button */}
-          <Button onClick={handleCreatePost} className="sm:ml-auto whitespace-nowrap">
+          <Button 
+            onClick={handleCreatePost} 
+            className="bg-black text-white px-4 py-2 rounded-md text-sm hover:bg-gray-800 whitespace-nowrap"
+          >
+            <Plus className="h-4 w-4 mr-1" />
             Nova Publicação
           </Button>
         </div>
         
-        {/* Centered Tabs with constrained width */}
-        <div className="flex justify-center mb-6">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-2xl">
-            <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full mb-6">
-              <TabsTrigger value="latest" className="text-sm">Recentes</TabsTrigger>
-              <TabsTrigger value="popular" className="text-sm">Populares</TabsTrigger>
-              <TabsTrigger value="oldest" className="text-sm">Mais Antigos</TabsTrigger>
-              {user && <TabsTrigger value="my" className="text-sm">Minhas Publicações</TabsTrigger>}
-            </TabsList>
-            
-            {/* Constrain all TabsContent to the same width as tabs */}
-            <div className="w-full max-w-2xl mx-auto">
-              <TabsContent value="latest" className="mt-0">
-                <PostsList 
-                  posts={posts} 
-                  emptyMessage="Nenhuma publicação encontrada." 
-                  onVoteChange={refetchPosts}
-                  isLoading={isLoading}
-                  error={error}
-                />
-              </TabsContent>
+        {/* Filter Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-4 border border-border rounded-md overflow-hidden">
+            <TabsTrigger value="latest" className="text-sm">Recentes</TabsTrigger>
+            <TabsTrigger value="popular" className="text-sm">Populares</TabsTrigger>
+            <TabsTrigger value="oldest" className="text-sm">Mais Antigos</TabsTrigger>
+            {user && <TabsTrigger value="my" className="text-sm">Minhas Publi.</TabsTrigger>}
+          </TabsList>
+        </Tabs>
+      </div>
+      
+      {/* Posts Content - Full Width */}
+      <div className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsContent value="latest" className="mt-0 w-full">
+            <PostsList 
+              posts={posts} 
+              emptyMessage="Nenhuma publicação encontrada." 
+              onVoteChange={refetchPosts}
+              isLoading={isLoading}
+              error={error}
+            />
+          </TabsContent>
 
-              <TabsContent value="popular" className="mt-0">
-                <PostsList 
-                  posts={posts} 
-                  emptyMessage="Nenhuma publicação encontrada." 
-                  onVoteChange={refetchPosts}
-                  isLoading={isLoading}
-                  error={error}
-                />
-              </TabsContent>
+          <TabsContent value="popular" className="mt-0 w-full">
+            <PostsList 
+              posts={posts} 
+              emptyMessage="Nenhuma publicação encontrada." 
+              onVoteChange={refetchPosts}
+              isLoading={isLoading}
+              error={error}
+            />
+          </TabsContent>
 
-              <TabsContent value="oldest" className="mt-0">
-                <PostsList 
-                  posts={posts} 
-                  emptyMessage="Nenhuma publicação encontrada." 
-                  onVoteChange={refetchPosts}
-                  isLoading={isLoading}
-                  error={error}
-                />
-              </TabsContent>
+          <TabsContent value="oldest" className="mt-0 w-full">
+            <PostsList 
+              posts={posts} 
+              emptyMessage="Nenhuma publicação encontrada." 
+              onVoteChange={refetchPosts}
+              isLoading={isLoading}
+              error={error}
+            />
+          </TabsContent>
 
-              {user && (
-                <TabsContent value="my" className="mt-0">
-                  <PostsList 
-                    posts={posts} 
-                    emptyMessage="Você ainda não criou publicações." 
-                    onVoteChange={refetchPosts}
-                    isLoading={isLoading}
-                    error={error}
-                  />
-                </TabsContent>
-              )}
-            </div>
-          </Tabs>
-        </div>
+          {user && (
+            <TabsContent value="my" className="mt-0 w-full">
+              <PostsList 
+                posts={posts} 
+                emptyMessage="Você ainda não criou publicações." 
+                onVoteChange={refetchPosts}
+                isLoading={isLoading}
+                error={error}
+              />
+            </TabsContent>
+          )}
+        </Tabs>
       </div>
       
       {isNewPostModalOpen && (
