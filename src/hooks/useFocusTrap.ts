@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 export const useFocusTrap = (isActive: boolean) => {
   const firstFocusableElementRef = useRef<HTMLElement | null>(null);
   const lastFocusableElementRef = useRef<HTMLElement | null>(null);
-  const containerRef = useRef<HTMLElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null); // Changed to HTMLDivElement
 
   useEffect(() => {
     if (!isActive || !containerRef.current) return;

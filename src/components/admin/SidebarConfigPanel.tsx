@@ -76,11 +76,16 @@ export const SidebarConfigPanel: React.FC = () => {
       if (error && error.code !== 'PGRST116') throw error;
 
       if (data) {
-        const config = data.value as SidebarConfig;
+        // Properly cast the value to SidebarConfig
+        const config = data.value as unknown as SidebarConfig;
         form.reset({
           tagline: config.tagline || '',
           nextReviewTs: config.nextReviewTs || '',
-          bookmarks: config.bookmarks || [],
+          bookmarks: config.bookmarks?.map(bookmark => ({
+            label: bookmark.label,
+            url: bookmark.url,
+            icon: bookmark.icon as 'link' | 'external' // Ensure proper type casting
+          })) || [],
           rules: config.rules || [],
           changelog: config.changelog || { show: true, entries: [] },
         });
@@ -126,7 +131,7 @@ export const SidebarConfigPanel: React.FC = () => {
   };
 
   const addBookmark = () => {
-    setValue('bookmarks', [...bookmarks, { label: '', url: '', icon: 'link' }]);
+    setValue('bookmarks', [...bookmarks, { label: '', url: '', icon: 'link' as const }]);
   };
 
   const removeBookmark = (index: number) => {
