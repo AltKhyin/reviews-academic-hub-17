@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SidebarConfigPanel } from '@/components/admin/SidebarConfigPanel';
 import { UserManagementPanel } from '@/components/admin/UserManagementPanel';
 import { CommentReportsPanel } from '@/components/dashboard/CommentReportsPanel';
-import { HomepageSectionsManager } from '@/components/dashboard/HomepageSectionsManager';
+import HomepageSectionsManager from '@/components/dashboard/HomepageSectionsManager';
 import { Settings, BarChart3, Users, MessageSquare, Crown, Layout } from 'lucide-react';
 
 const Edit = () => {
