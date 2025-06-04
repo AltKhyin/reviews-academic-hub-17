@@ -104,7 +104,7 @@ export const PostVoting: React.FC<PostVotingProps> = ({
   };
 
   return (
-    <div className="flex items-center space-x-3 mr-3">
+    <div className="flex items-center space-x-1">
       <button
         className={`
           p-1 hover:bg-gray-800 rounded transition-colors disabled:opacity-50

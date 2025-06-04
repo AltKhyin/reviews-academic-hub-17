@@ -23,6 +23,11 @@ export const ResourceBookmarks: React.FC = () => {
     return null;
   }
 
+  // Helper function to clean bookmark labels
+  const cleanLabel = (label: string) => {
+    return label.replace(/\blink\b/gi, '').trim();
+  };
+
   return (
     <div className="space-y-3">
       <div className="flex items-center space-x-2">
@@ -38,15 +43,15 @@ export const ResourceBookmarks: React.FC = () => {
             target="_blank"
             rel="noopener noreferrer"
             className="
-              w-full flex items-center justify-between px-3 py-2.5
-              bg-muted/40 hover:bg-muted/50
+              w-full flex items-center justify-between px-4 py-3
+              bg-muted/40 hover:bg-muted/60
               rounded-md transition-colors group
-              text-sm font-medium text-foreground/80 hover:text-foreground/90
+              text-sm font-semibold text-foreground/90 hover:text-foreground
             "
           >
-            <div className="flex items-center space-x-2">
-              <span className="text-sm">{bookmark.icon}</span>
-              <span>{bookmark.label}</span>
+            <div className="flex items-center space-x-3">
+              <span className="text-base">{bookmark.icon}</span>
+              <span>{cleanLabel(bookmark.label)}</span>
             </div>
             <ExternalLink className="w-3.5 h-3.5 opacity-0 group-hover:opacity-60 transition-opacity flex-shrink-0" />
           </a>
