@@ -9,10 +9,10 @@ export const RulesAccordion: React.FC = () => {
   if (isLoadingConfig) {
     return (
       <div className="space-y-3">
-        <div className="h-4 bg-gray-700 rounded w-32 animate-pulse" />
+        <div className="h-4 bg-muted/30 rounded w-32 animate-pulse" />
         <div className="space-y-2">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-4 bg-gray-700 rounded animate-pulse" />
+            <div key={i} className="h-4 bg-muted/30 rounded animate-pulse" />
           ))}
         </div>
       </div>
@@ -29,22 +29,22 @@ export const RulesAccordion: React.FC = () => {
   return (
     <div className="space-y-3">
       <div className="flex items-center space-x-2">
-        <Shield className="w-4 h-4 text-red-400" />
-        <h3 className="text-xs font-medium text-gray-300 uppercase tracking-wide">Regras da Comunidade</h3>
+        <Shield className="w-4 h-4 text-red-400/70" />
+        <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Regras da Comunidade</h3>
       </div>
       
       <div className="space-y-2">
         {visibleRules.map((rule, index) => (
           <div key={index} className="flex items-start space-x-2">
-            <span className="text-xs text-gray-400 mt-0.5 flex-shrink-0">{index + 1}.</span>
-            <p className="text-xs text-gray-300 leading-relaxed">{rule}</p>
+            <span className="text-xs text-muted-foreground/60 mt-0.5 flex-shrink-0">{index + 1}.</span>
+            <p className="text-xs text-muted-foreground leading-relaxed">{rule}</p>
           </div>
         ))}
         
         {hasMoreRules && (
           <button
             onClick={toggleRules}
-            className="flex items-center space-x-1 text-xs text-blue-400 hover:text-blue-300 transition-colors mt-2"
+            className="flex items-center space-x-1 text-xs text-muted-foreground hover:text-foreground/80 transition-colors mt-2"
           >
             <span>{isRulesExpanded ? 'Mostrar menos' : `Ver todas (${config.rules.length})`}</span>
             {isRulesExpanded ? (

@@ -137,9 +137,9 @@ const Community = () => {
           </div>
         </div>
 
-        {/* Integrated sidebar - desktop only, now scrolls with page content */}
+        {/* Integrated sidebar - desktop only, now uses bg-background for seamless integration */}
         <div className="hidden lg:block">
-          <div className="border-l border-gray-700/30 bg-gray-900 overflow-hidden">
+          <div className="bg-background overflow-hidden">
             <RightSidebar isMobile={false} className="border-0 bg-transparent" />
           </div>
         </div>

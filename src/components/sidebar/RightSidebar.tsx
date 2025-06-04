@@ -1,6 +1,6 @@
 
 // ABOUTME: Right sidebar component with page-level scrolling integration
-// Now uses w-full since parent grid column controls width allocation
+// Now uses seamless background integration with no visual boundaries
 
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
@@ -106,9 +106,9 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
                   <Component />
                 </div>
                 
-                {/* Module Divider - only if not last item */}
+                {/* Module Divider - softened and barely visible */}
                 {index < enabledSections.length - 1 && (
-                  <div className="border-t border-gray-700/30"></div>
+                  <div className="border-t border-muted/20"></div>
                 )}
               </React.Fragment>
             );
@@ -158,7 +158,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
     );
   }
 
-  // Desktop version - now uses w-full since grid column controls width
+  // Desktop version - now uses completely transparent background for seamless integration
   return (
     <div className={`w-full bg-transparent h-full overflow-y-auto ${className}`}>
       {content}
