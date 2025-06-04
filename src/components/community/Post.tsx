@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -165,7 +164,7 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
             <IssueDiscussionBanner issueId={post.issue_id} />
           )}
           
-          <div className="flex items-center">
+          <div className="flex items-center space-x-1">
             <PostVoting
               postId={post.id}
               initialScore={post.score || 0}

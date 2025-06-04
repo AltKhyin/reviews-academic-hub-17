@@ -106,9 +106,9 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
                   <Component />
                 </div>
                 
-                {/* Module Divider - softened and barely visible */}
+                {/* Module Divider - subtle and clean hierarchy separator */}
                 {index < enabledSections.length - 1 && (
-                  <div className="border-t border-muted/20"></div>
+                  <div className="border-t border-muted/30 mx-4"></div>
                 )}
               </React.Fragment>
             );

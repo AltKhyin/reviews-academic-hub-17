@@ -12,7 +12,7 @@ export const ResourceBookmarks: React.FC = () => {
         <div className="h-4 bg-muted/30 rounded w-24 animate-pulse" />
         <div className="space-y-2">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-8 bg-muted/30 rounded animate-pulse" />
+            <div key={i} className="h-10 bg-muted/30 rounded animate-pulse" />
           ))}
         </div>
       </div>
@@ -30,7 +30,7 @@ export const ResourceBookmarks: React.FC = () => {
         <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Links Úteis</h3>
       </div>
       
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col gap-2">
         {config.bookmarks.map((bookmark, index) => (
           <a
             key={index}
@@ -38,15 +38,17 @@ export const ResourceBookmarks: React.FC = () => {
             target="_blank"
             rel="noopener noreferrer"
             className="
-              inline-flex items-center space-x-1 px-3 py-1.5 
-              bg-muted/20 hover:bg-muted/30 
-              rounded-full transition-colors group
-              text-xs text-muted-foreground hover:text-foreground/90
+              w-full flex items-center justify-between px-3 py-2.5
+              bg-muted/40 hover:bg-muted/50
+              rounded-md transition-colors group
+              text-sm font-medium text-foreground/80 hover:text-foreground/90
             "
           >
-            <span className="text-xs">{bookmark.icon}</span>
-            <span>{bookmark.label}</span>
-            <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-60 transition-opacity" />
+            <div className="flex items-center space-x-2">
+              <span className="text-sm">{bookmark.icon}</span>
+              <span>{bookmark.label}</span>
+            </div>
+            <ExternalLink className="w-3.5 h-3.5 opacity-0 group-hover:opacity-60 transition-opacity flex-shrink-0" />
           </a>
         ))}
       </div>
