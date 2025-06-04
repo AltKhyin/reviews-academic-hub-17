@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { PostData } from '@/types/community';
 
 export async function enhancePostsWithDetails(posts: any[]) {
-  const { user } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
   
   if (!posts.length) return [];
   
@@ -28,11 +28,11 @@ export async function enhancePostsWithDetails(posts: any[]) {
   
   let userVotes: Record<string, number> = {};
   
-  if (user?.data?.user) {
+  if (user) {
     const { data: votesData } = await supabase
       .from('post_votes')
       .select('post_id, value')
-      .eq('user_id', user.data.user.id)
+      .eq('user_id', user.id)
       .in('post_id', posts.map(p => p.id));
       
     if (votesData) {
@@ -84,11 +84,11 @@ export async function enhancePostsWithDetails(posts: any[]) {
       );
       
       let userVote = null;
-      if (user?.data?.user) {
+      if (user) {
         const { data: voteData } = await supabase
           .from('poll_votes')
           .select('option_id')
-          .eq('user_id', user.data.user.id)
+          .eq('user_id', user.id)
           .in('option_id', optionsWithVotes.map(o => o.id))
           .maybeSingle();
         
