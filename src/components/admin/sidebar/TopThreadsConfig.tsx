@@ -6,21 +6,34 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 
 interface TopThreadsConfigProps {
+  config: any;
   onConfigChange: (config: any) => void;
 }
 
 export const TopThreadsConfig: React.FC<TopThreadsConfigProps> = ({
+  config,
   onConfigChange
 }) => {
-  const [maxThreads, setMaxThreads] = React.useState(5);
-  const [sortBy, setSortBy] = React.useState('votes');
-  const [timeRange, setTimeRange] = React.useState('week');
-  const [threadTypes, setThreadTypes] = React.useState(['discussion', 'question', 'announcement']);
+  const handleChange = (field: string, value: any) => {
+    onConfigChange({ [field]: value });
+  };
+
+  const handleThreadTypeChange = (type: string, checked: boolean) => {
+    const currentTypes = config.threadTypes || ['discussion', 'question', 'announcement'];
+    let updatedTypes;
+    
+    if (checked) {
+      updatedTypes = [...currentTypes, type];
+    } else {
+      updatedTypes = currentTypes.filter((t: string) => t !== type);
+    }
+    
+    handleChange('threadTypes', updatedTypes);
+  };
 
   return (
     <Card>
@@ -35,15 +48,18 @@ export const TopThreadsConfig: React.FC<TopThreadsConfigProps> = ({
             type="number"
             min="1"
             max="10"
-            value={maxThreads}
-            onChange={(e) => setMaxThreads(parseInt(e.target.value) || 5)}
+            value={config.maxThreads || 5}
+            onChange={(e) => handleChange('maxThreads', parseInt(e.target.value) || 5)}
             className="mt-1"
           />
         </div>
         
         <div>
           <Label htmlFor="sort-by">Ordenar Por</Label>
-          <Select value={sortBy} onValueChange={setSortBy}>
+          <Select 
+            value={config.sortBy || 'votes'} 
+            onValueChange={(value) => handleChange('sortBy', value)}
+          >
             <SelectTrigger className="mt-1">
               <SelectValue />
             </SelectTrigger>
@@ -58,7 +74,10 @@ export const TopThreadsConfig: React.FC<TopThreadsConfigProps> = ({
         
         <div>
           <Label htmlFor="time-range">Período de Tempo</Label>
-          <Select value={timeRange} onValueChange={setTimeRange}>
+          <Select 
+            value={config.timeRange || 'week'} 
+            onValueChange={(value) => handleChange('timeRange', value)}
+          >
             <SelectTrigger className="mt-1">
               <SelectValue />
             </SelectTrigger>
@@ -78,14 +97,8 @@ export const TopThreadsConfig: React.FC<TopThreadsConfigProps> = ({
               <div key={type} className="flex items-center space-x-2">
                 <Checkbox
                   id={type}
-                  checked={threadTypes.includes(type)}
-                  onCheckedChange={(checked) => {
-                    if (checked) {
-                      setThreadTypes([...threadTypes, type]);
-                    } else {
-                      setThreadTypes(threadTypes.filter(t => t !== type));
-                    }
-                  }}
+                  checked={(config.threadTypes || ['discussion', 'question', 'announcement']).includes(type)}
+                  onCheckedChange={(checked) => handleThreadTypeChange(type, checked as boolean)}
                 />
                 <Label htmlFor={type} className="capitalize">
                   {type === 'discussion' ? 'Discussão' : 

@@ -1,6 +1,6 @@
 
-// ABOUTME: Right sidebar component with page-level scrolling integration
-// Now uses seamless background integration with no visual boundaries
+// ABOUTME: Right sidebar component with unified configuration integration
+// Now uses the new section renderer system with proper configuration support
 
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
@@ -9,59 +9,25 @@ import { useSidebarStore } from '@/stores/sidebarStore';
 import { useSidebarData } from '@/hooks/useSidebarData';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { SidebarErrorBoundary } from './components/SidebarErrorBoundary';
-import { CommunityHeader } from './components/CommunityHeader';
-import { ActiveAvatars } from './components/ActiveAvatars';
-import { TopThreads } from './components/TopThreads';
-import { NextReviewCountdown } from './components/NextReviewCountdown';
-import { WeeklyPoll } from './components/WeeklyPoll';
-import { ResourceBookmarks } from './components/ResourceBookmarks';
-import { RulesAccordion } from './components/RulesAccordion';
-import { MiniChangelog } from './components/MiniChangelog';
+import { SidebarSectionRenderer } from './SidebarSectionRenderer';
 
 interface RightSidebarProps {
   className?: string;
   isMobile?: boolean;
 }
 
-const SECTION_COMPONENTS = {
-  'community-header': CommunityHeader,
-  'active-avatars': ActiveAvatars,
-  'top-threads': TopThreads,
-  'next-review': NextReviewCountdown,
-  'weekly-poll': WeeklyPoll,
-  'resource-bookmarks': ResourceBookmarks,
-  'rules-accordion': RulesAccordion,
-  'mini-changelog': MiniChangelog,
-};
-
-const DEFAULT_SECTIONS = [
-  { id: 'community-header', name: 'Cabeçalho da Comunidade', enabled: true, order: 0 },
-  { id: 'active-avatars', name: 'Avatares Ativos', enabled: true, order: 1 },
-  { id: 'top-threads', name: 'Discussões em Alta', enabled: true, order: 2 },
-  { id: 'next-review', name: 'Próxima Edição', enabled: true, order: 3 },
-  { id: 'weekly-poll', name: 'Enquete da Semana', enabled: true, order: 4 },
-  { id: 'resource-bookmarks', name: 'Links Úteis', enabled: true, order: 5 },
-  { id: 'rules-accordion', name: 'Regras da Comunidade', enabled: true, order: 6 },
-  { id: 'mini-changelog', name: 'Changelog', enabled: true, order: 7 },
-];
-
 export const RightSidebar: React.FC<RightSidebarProps> = ({
   className = '',
   isMobile = false
 }) => {
   const location = useLocation();
-  const { isMobileDrawerOpen, toggleMobileDrawer, config } = useSidebarStore();
+  const { isMobileDrawerOpen, toggleMobileDrawer } = useSidebarStore();
+  const { config } = useSidebarData();
   const focusTrapRef = useFocusTrap(isMobile && isMobileDrawerOpen);
   
-  // Only show sidebar in community routes (this component should only be mounted in community now)
+  // Only show sidebar in community routes
   const shouldShowSidebar = location.pathname.startsWith('/community');
   
-  // Initialize data fetching only when sidebar should be visible
-  const shouldFetchData = shouldShowSidebar;
-  if (shouldFetchData) {
-    useSidebarData();
-  }
-
   // Handle escape key to close mobile drawer
   useEffect(() => {
     if (!isMobile) return;
@@ -76,13 +42,13 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isMobile, isMobileDrawerOpen, toggleMobileDrawer]);
 
-  // Don't render sidebar if not in community routes (defensive check)
+  // Don't render sidebar if not in community routes
   if (!shouldShowSidebar) {
     return null;
   }
 
-  // Get enabled sections in order - use default sections if config doesn't have sections yet
-  const enabledSections = (config?.sections || DEFAULT_SECTIONS)
+  // Get enabled sections in order from configuration
+  const enabledSections = config.sections
     .filter(section => section.enabled)
     .sort((a, b) => a.order - b.order);
 
@@ -92,27 +58,21 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
         className="w-full h-full"
         role="complementary"
         aria-label="Barra lateral da comunidade"
+        style={{
+          fontSize: config.visual?.fontSize === 'sm' ? '0.875rem' : 
+                   config.visual?.fontSize === 'lg' ? '1.125rem' : '1rem',
+          backgroundColor: config.visual?.backgroundColor,
+          color: config.visual?.textColor,
+        }}
       >
         <div className="space-y-0">
-          {enabledSections.map((section, index) => {
-            const Component = SECTION_COMPONENTS[section.id as keyof typeof SECTION_COMPONENTS];
-            
-            if (!Component) return null;
-            
-            return (
-              <React.Fragment key={section.id}>
-                {/* Section Content */}
-                <div className="py-4 px-5">
-                  <Component />
-                </div>
-                
-                {/* Module Divider - subtle and clean hierarchy separator */}
-                {index < enabledSections.length - 1 && (
-                  <div className="border-t border-muted/30 mx-4"></div>
-                )}
-              </React.Fragment>
-            );
-          })}
+          {enabledSections.map((section, index) => (
+            <SidebarSectionRenderer
+              key={section.id}
+              section={section}
+              isLast={index === enabledSections.length - 1}
+            />
+          ))}
         </div>
       </div>
     </SidebarErrorBoundary>
@@ -130,14 +90,15 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
           />
         )}
         
-        {/* Mobile Drawer - still uses w-80 for mobile overlay */}
+        {/* Mobile Drawer */}
         <div 
           ref={focusTrapRef}
           className={`
-            fixed top-0 right-0 h-full w-80 bg-gray-900 border-l border-gray-700/30 z-50
+            fixed top-0 right-0 h-full bg-gray-900 border-l border-gray-700/30 z-50
             transform transition-transform duration-300 ease-in-out overflow-y-auto
             ${isMobileDrawerOpen ? 'translate-x-0' : 'translate-x-full'}
           `}
+          style={{ width: config.visual?.width || 320 }}
           role="dialog"
           aria-modal="true"
           aria-labelledby="mobile-sidebar-title"
@@ -158,9 +119,15 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
     );
   }
 
-  // Desktop version - now uses completely transparent background for seamless integration
+  // Desktop version with configuration-based styling
   return (
-    <div className={`w-full bg-transparent h-full overflow-y-auto ${className}`}>
+    <div 
+      className={`w-full bg-transparent h-full overflow-y-auto ${className}`}
+      style={{ 
+        width: config.visual?.width || 320,
+        maxWidth: config.visual?.width || 320 
+      }}
+    >
       {content}
     </div>
   );

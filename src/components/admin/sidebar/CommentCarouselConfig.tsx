@@ -10,16 +10,17 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface CommentCarouselConfigProps {
+  config: any;
   onConfigChange: (config: any) => void;
 }
 
 export const CommentCarouselConfig: React.FC<CommentCarouselConfigProps> = ({
+  config,
   onConfigChange
 }) => {
-  const [maxComments, setMaxComments] = React.useState(5);
-  const [rotationSpeed, setRotationSpeed] = React.useState('5000');
-  const [minVotes, setMinVotes] = React.useState(1);
-  const [autoRotate, setAutoRotate] = React.useState(true);
+  const handleChange = (field: string, value: any) => {
+    onConfigChange({ [field]: value });
+  };
 
   return (
     <Card>
@@ -34,25 +35,23 @@ export const CommentCarouselConfig: React.FC<CommentCarouselConfigProps> = ({
             type="number"
             min="1"
             max="10"
-            value={maxComments}
-            onChange={(e) => setMaxComments(parseInt(e.target.value) || 5)}
+            value={config.maxComments || 5}
+            onChange={(e) => handleChange('maxComments', parseInt(e.target.value) || 5)}
             className="mt-1"
           />
         </div>
         
         <div>
-          <Label htmlFor="rotation-speed">Velocidade de Rotação</Label>
-          <Select value={rotationSpeed} onValueChange={setRotationSpeed}>
-            <SelectTrigger className="mt-1">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="3000">Rápida (3s)</SelectItem>
-              <SelectItem value="5000">Normal (5s)</SelectItem>
-              <SelectItem value="8000">Lenta (8s)</SelectItem>
-              <SelectItem value="0">Manual</SelectItem>
-            </SelectContent>
-          </Select>
+          <Label htmlFor="rotation-speed">Velocidade de Rotação (ms)</Label>
+          <Input
+            id="rotation-speed"
+            type="number"
+            min="1000"
+            max="10000"
+            value={config.rotationSpeed || 5000}
+            onChange={(e) => handleChange('rotationSpeed', parseInt(e.target.value) || 5000)}
+            className="mt-1"
+          />
         </div>
         
         <div>
@@ -61,8 +60,8 @@ export const CommentCarouselConfig: React.FC<CommentCarouselConfigProps> = ({
             id="min-votes"
             type="number"
             min="0"
-            value={minVotes}
-            onChange={(e) => setMinVotes(parseInt(e.target.value) || 1)}
+            value={config.minVotes || 1}
+            onChange={(e) => handleChange('minVotes', parseInt(e.target.value) || 1)}
             className="mt-1"
           />
         </div>
@@ -70,8 +69,8 @@ export const CommentCarouselConfig: React.FC<CommentCarouselConfigProps> = ({
         <div className="flex items-center space-x-2">
           <Switch
             id="auto-rotate"
-            checked={autoRotate}
-            onCheckedChange={setAutoRotate}
+            checked={config.autoRotate ?? true}
+            onCheckedChange={(checked) => handleChange('autoRotate', checked)}
           />
           <Label htmlFor="auto-rotate">Rotação automática</Label>
         </div>
@@ -79,8 +78,8 @@ export const CommentCarouselConfig: React.FC<CommentCarouselConfigProps> = ({
         <div className="flex items-center space-x-2">
           <Switch
             id="show-vote-count"
-            checked={true}
-            onCheckedChange={() => {}}
+            checked={config.showVoteCount ?? true}
+            onCheckedChange={(checked) => handleChange('showVoteCount', checked)}
           />
           <Label htmlFor="show-vote-count">Mostrar contagem de votos</Label>
         </div>

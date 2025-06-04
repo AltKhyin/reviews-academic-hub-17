@@ -4,24 +4,32 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { SidebarConfig } from '@/types/sidebar';
 
 interface AdvancedSidebarConfigProps {
-  onConfigChange: (config: any) => void;
+  config: SidebarConfig;
+  onConfigChange: (config: Partial<SidebarConfig>) => void;
 }
 
 export const AdvancedSidebarConfig: React.FC<AdvancedSidebarConfigProps> = ({
+  config,
   onConfigChange
 }) => {
-  const [refreshInterval, setRefreshInterval] = React.useState('30');
-  const [enableCaching, setEnableCaching] = React.useState(true);
-  const [debugMode, setDebugMode] = React.useState(false);
-  const [preloadData, setPreloadData] = React.useState(true);
+  const advancedConfig = config.sections.find(s => s.id === 'advanced')?.config || {};
+
+  const handleChange = (field: string, value: any) => {
+    const updatedSections = config.sections.map(section =>
+      section.id === 'advanced'
+        ? { ...section, config: { ...section.config, [field]: value } }
+        : section
+    );
+    onConfigChange({ sections: updatedSections });
+  };
 
   return (
     <Card>
@@ -33,8 +41,11 @@ export const AdvancedSidebarConfig: React.FC<AdvancedSidebarConfigProps> = ({
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <Label htmlFor="refresh-interval">Intervalo de Atualização (segundos)</Label>
-          <Select value={refreshInterval} onValueChange={setRefreshInterval}>
+          <Label htmlFor="refresh-interval">Intervalo de Atualização</Label>
+          <Select 
+            value={(advancedConfig.refreshInterval || 30).toString()} 
+            onValueChange={(value) => handleChange('refreshInterval', parseInt(value))}
+          >
             <SelectTrigger className="mt-1">
               <SelectValue />
             </SelectTrigger>
@@ -51,8 +62,8 @@ export const AdvancedSidebarConfig: React.FC<AdvancedSidebarConfigProps> = ({
         <div className="flex items-center space-x-2">
           <Switch
             id="enable-caching"
-            checked={enableCaching}
-            onCheckedChange={setEnableCaching}
+            checked={advancedConfig.enableCaching ?? true}
+            onCheckedChange={(checked) => handleChange('enableCaching', checked)}
           />
           <Label htmlFor="enable-caching">Habilitar cache de dados</Label>
         </div>
@@ -60,26 +71,17 @@ export const AdvancedSidebarConfig: React.FC<AdvancedSidebarConfigProps> = ({
         <div className="flex items-center space-x-2">
           <Switch
             id="preload-data"
-            checked={preloadData}
-            onCheckedChange={setPreloadData}
+            checked={advancedConfig.preloadData ?? true}
+            onCheckedChange={(checked) => handleChange('preloadData', checked)}
           />
           <Label htmlFor="preload-data">Pré-carregar dados da sidebar</Label>
         </div>
         
         <div className="flex items-center space-x-2">
           <Switch
-            id="lazy-loading"
-            checked={true}
-            onCheckedChange={() => {}}
-          />
-          <Label htmlFor="lazy-loading">Carregamento lazy de componentes</Label>
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <Switch
             id="debug-mode"
-            checked={debugMode}
-            onCheckedChange={setDebugMode}
+            checked={advancedConfig.debugMode ?? false}
+            onCheckedChange={(checked) => handleChange('debugMode', checked)}
           />
           <Label htmlFor="debug-mode">Modo de debug (logs detalhados)</Label>
         </div>
@@ -99,7 +101,7 @@ export const AdvancedSidebarConfig: React.FC<AdvancedSidebarConfigProps> = ({
           </div>
         </div>
         
-        {debugMode && (
+        {advancedConfig.debugMode && (
           <div className="p-3 bg-gray-100 rounded-md">
             <Label className="text-xs font-mono">Debug Info</Label>
             <pre className="text-xs mt-1 text-gray-600">

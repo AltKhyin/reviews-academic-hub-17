@@ -10,15 +10,17 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface ActiveUsersConfigProps {
+  config: any;
   onConfigChange: (config: any) => void;
 }
 
 export const ActiveUsersConfig: React.FC<ActiveUsersConfigProps> = ({
+  config,
   onConfigChange
 }) => {
-  const [maxAvatars, setMaxAvatars] = React.useState(8);
-  const [avatarSize, setAvatarSize] = React.useState('md');
-  const [showOnlineStatus, setShowOnlineStatus] = React.useState(true);
+  const handleChange = (field: string, value: any) => {
+    onConfigChange({ [field]: value });
+  };
 
   return (
     <Card>
@@ -33,15 +35,18 @@ export const ActiveUsersConfig: React.FC<ActiveUsersConfigProps> = ({
             type="number"
             min="1"
             max="20"
-            value={maxAvatars}
-            onChange={(e) => setMaxAvatars(parseInt(e.target.value) || 8)}
+            value={config.maxAvatars || 8}
+            onChange={(e) => handleChange('maxAvatars', parseInt(e.target.value) || 8)}
             className="mt-1"
           />
         </div>
         
         <div>
           <Label htmlFor="avatar-size">Tamanho do Avatar</Label>
-          <Select value={avatarSize} onValueChange={setAvatarSize}>
+          <Select 
+            value={config.avatarSize || 'md'} 
+            onValueChange={(value) => handleChange('avatarSize', value)}
+          >
             <SelectTrigger className="mt-1">
               <SelectValue />
             </SelectTrigger>
@@ -56,8 +61,8 @@ export const ActiveUsersConfig: React.FC<ActiveUsersConfigProps> = ({
         <div className="flex items-center space-x-2">
           <Switch
             id="show-online-status"
-            checked={showOnlineStatus}
-            onCheckedChange={setShowOnlineStatus}
+            checked={config.showOnlineStatus ?? true}
+            onCheckedChange={(checked) => handleChange('showOnlineStatus', checked)}
           />
           <Label htmlFor="show-online-status">Mostrar indicador de status online</Label>
         </div>
@@ -65,8 +70,8 @@ export const ActiveUsersConfig: React.FC<ActiveUsersConfigProps> = ({
         <div className="flex items-center space-x-2">
           <Switch
             id="show-tooltips"
-            checked={true}
-            onCheckedChange={() => {}}
+            checked={config.showTooltips ?? true}
+            onCheckedChange={(checked) => handleChange('showTooltips', checked)}
           />
           <Label htmlFor="show-tooltips">Mostrar tooltips com nomes de usuário</Label>
         </div>

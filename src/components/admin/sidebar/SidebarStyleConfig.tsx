@@ -10,16 +10,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 
 interface SidebarStyleConfigProps {
+  config: any;
   onConfigChange: (config: any) => void;
 }
 
 export const SidebarStyleConfig: React.FC<SidebarStyleConfigProps> = ({
+  config,
   onConfigChange
 }) => {
-  const [sidebarWidth, setSidebarWidth] = React.useState([320]);
-  const [fontSize, setFontSize] = React.useState('md');
-  const [colorTheme, setColorTheme] = React.useState('default');
-  const [cardSpacing, setCardSpacing] = React.useState([4]);
+  const handleChange = (field: string, value: any) => {
+    onConfigChange({ [field]: value });
+  };
 
   return (
     <Card>
@@ -28,10 +29,10 @@ export const SidebarStyleConfig: React.FC<SidebarStyleConfigProps> = ({
       </CardHeader>
       <CardContent className="space-y-6">
         <div>
-          <Label>Largura da Barra Lateral: {sidebarWidth[0]}px</Label>
+          <Label>Largura da Barra Lateral: {config.width || 320}px</Label>
           <Slider
-            value={sidebarWidth}
-            onValueChange={setSidebarWidth}
+            value={[config.width || 320]}
+            onValueChange={(values) => handleChange('width', values[0])}
             max={500}
             min={280}
             step={10}
@@ -40,22 +41,11 @@ export const SidebarStyleConfig: React.FC<SidebarStyleConfigProps> = ({
         </div>
         
         <div>
-          <Label htmlFor="font-size">Tamanho da Fonte</Label>
-          <Select value={fontSize} onValueChange={setFontSize}>
-            <SelectTrigger className="mt-1">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="sm">Pequena</SelectItem>
-              <SelectItem value="md">Média</SelectItem>
-              <SelectItem value="lg">Grande</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div>
           <Label htmlFor="color-theme">Tema de Cores</Label>
-          <Select value={colorTheme} onValueChange={setColorTheme}>
+          <Select 
+            value={config.colorTheme || 'default'} 
+            onValueChange={(value) => handleChange('colorTheme', value)}
+          >
             <SelectTrigger className="mt-1">
               <SelectValue />
             </SelectTrigger>
@@ -69,25 +59,14 @@ export const SidebarStyleConfig: React.FC<SidebarStyleConfigProps> = ({
           </Select>
         </div>
         
-        <div>
-          <Label>Espaçamento entre Cards: {cardSpacing[0]}</Label>
-          <Slider
-            value={cardSpacing}
-            onValueChange={setCardSpacing}
-            max={8}
-            min={1}
-            step={1}
-            className="mt-2"
-          />
-        </div>
-        
         <div className="grid grid-cols-2 gap-4">
           <div>
             <Label htmlFor="bg-color">Cor de Fundo</Label>
             <Input
               id="bg-color"
               type="color"
-              defaultValue="#ffffff"
+              value={config.backgroundColor || '#ffffff'}
+              onChange={(e) => handleChange('backgroundColor', e.target.value)}
               className="mt-1 h-10"
             />
           </div>
@@ -96,7 +75,8 @@ export const SidebarStyleConfig: React.FC<SidebarStyleConfigProps> = ({
             <Input
               id="text-color"
               type="color"
-              defaultValue="#000000"
+              value={config.textColor || '#000000'}
+              onChange={(e) => handleChange('textColor', e.target.value)}
               className="mt-1 h-10"
             />
           </div>

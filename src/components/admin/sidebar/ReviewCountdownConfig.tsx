@@ -11,16 +11,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { SidebarConfig } from '@/types/sidebar';
 
 interface ReviewCountdownConfigProps {
-  config: SidebarConfig;
-  onConfigChange: (updates: Partial<SidebarConfig>) => void;
+  config: any;
+  globalConfig: SidebarConfig;
+  onConfigChange: (config: any) => void;
+  onGlobalConfigChange: (updates: Partial<SidebarConfig>) => void;
 }
 
 export const ReviewCountdownConfig: React.FC<ReviewCountdownConfigProps> = ({
   config,
-  onConfigChange
+  globalConfig,
+  onConfigChange,
+  onGlobalConfigChange
 }) => {
-  const [timezone, setTimezone] = React.useState('America/Sao_Paulo');
-  const [showProgress, setShowProgress] = React.useState(true);
+  const handleChange = (field: string, value: any) => {
+    onConfigChange({ [field]: value });
+  };
 
   return (
     <Card>
@@ -33,15 +38,18 @@ export const ReviewCountdownConfig: React.FC<ReviewCountdownConfigProps> = ({
           <Input
             id="next-review"
             type="datetime-local"
-            value={config.nextReviewTs ? new Date(config.nextReviewTs).toISOString().slice(0, 16) : ''}
-            onChange={(e) => onConfigChange({ nextReviewTs: new Date(e.target.value).toISOString() })}
+            value={globalConfig.nextReviewTs ? new Date(globalConfig.nextReviewTs).toISOString().slice(0, 16) : ''}
+            onChange={(e) => onGlobalConfigChange({ nextReviewTs: new Date(e.target.value).toISOString() })}
             className="mt-1"
           />
         </div>
         
         <div>
           <Label htmlFor="timezone">Fuso Horário</Label>
-          <Select value={timezone} onValueChange={setTimezone}>
+          <Select 
+            value={config.timezone || 'America/Sao_Paulo'} 
+            onValueChange={(value) => handleChange('timezone', value)}
+          >
             <SelectTrigger className="mt-1">
               <SelectValue />
             </SelectTrigger>
@@ -57,8 +65,8 @@ export const ReviewCountdownConfig: React.FC<ReviewCountdownConfigProps> = ({
         <div className="flex items-center space-x-2">
           <Switch
             id="show-progress"
-            checked={showProgress}
-            onCheckedChange={setShowProgress}
+            checked={config.showProgress ?? true}
+            onCheckedChange={(checked) => handleChange('showProgress', checked)}
           />
           <Label htmlFor="show-progress">Mostrar barra de progresso</Label>
         </div>
@@ -66,8 +74,8 @@ export const ReviewCountdownConfig: React.FC<ReviewCountdownConfigProps> = ({
         <div className="flex items-center space-x-2">
           <Switch
             id="show-days-only"
-            checked={false}
-            onCheckedChange={() => {}}
+            checked={config.showDaysOnly ?? false}
+            onCheckedChange={(checked) => handleChange('showDaysOnly', checked)}
           />
           <Label htmlFor="show-days-only">Mostrar apenas dias (sem horas)</Label>
         </div>
@@ -75,8 +83,8 @@ export const ReviewCountdownConfig: React.FC<ReviewCountdownConfigProps> = ({
         <div className="flex items-center space-x-2">
           <Switch
             id="urgent-alert"
-            checked={false}
-            onCheckedChange={() => {}}
+            checked={config.urgentAlert ?? false}
+            onCheckedChange={(checked) => handleChange('urgentAlert', checked)}
           />
           <Label htmlFor="urgent-alert">Alerta quando restarem menos de 24h</Label>
         </div>

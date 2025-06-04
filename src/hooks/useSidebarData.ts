@@ -1,11 +1,11 @@
-// ABOUTME: Optimized sidebar data fetching with improved query parameters and caching
+// ABOUTME: Enhanced sidebar data hook with complete configuration management
 // Manages all sidebar-related data fetching with proper loading states and error handling
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useSidebarStore } from '@/stores/sidebarStore';
-import { OnlineUser, CommentHighlight, TopThread, Poll, SidebarConfig, SiteStats } from '@/types/sidebar';
+import { OnlineUser, CommentHighlight, TopThread, Poll, SidebarConfig, SiteStats, SidebarSectionId } from '@/types/sidebar';
 
 export const useSidebarData = () => {
   const { user } = useAuth();
@@ -24,7 +24,7 @@ export const useSidebarData = () => {
   // SSR safety check
   const isClient = typeof window !== 'undefined';
 
-  // Default config
+  // Default config with unified section IDs
   const defaultConfig: SidebarConfig = {
     tagline: 'Bem-vindo à nossa comunidade científica',
     nextReviewTs: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
@@ -35,16 +35,101 @@ export const useSidebarData = () => {
       entries: []
     },
     sections: [
-      { id: 'header', name: 'Cabeçalho da Comunidade', enabled: true, order: 0 },
-      { id: 'users', name: 'Usuários Ativos', enabled: true, order: 1 },
-      { id: 'comments', name: 'Comentários em Destaque', enabled: true, order: 2 },
-      { id: 'threads', name: 'Top Threads', enabled: true, order: 3 },
-      { id: 'poll', name: 'Enquete Semanal', enabled: true, order: 4 },
-      { id: 'countdown', name: 'Próxima Review', enabled: true, order: 5 },
-      { id: 'bookmarks', name: 'Links Úteis', enabled: true, order: 6 },
-      { id: 'rules', name: 'Regras da Comunidade', enabled: true, order: 7 },
-      { id: 'changelog', name: 'Changelog', enabled: true, order: 8 }
-    ]
+      { 
+        id: 'header', 
+        name: 'Cabeçalho da Comunidade', 
+        enabled: true, 
+        order: 0,
+        config: {
+          showStats: true,
+          showOnlineCount: true
+        }
+      },
+      { 
+        id: 'users', 
+        name: 'Usuários Ativos', 
+        enabled: true, 
+        order: 1,
+        config: {
+          maxAvatars: 8,
+          avatarSize: 'md' as const,
+          showOnlineStatus: true,
+          showTooltips: true
+        }
+      },
+      { 
+        id: 'comments', 
+        name: 'Comentários em Destaque', 
+        enabled: true, 
+        order: 2,
+        config: {
+          maxComments: 5,
+          rotationSpeed: 5000,
+          minVotes: 1,
+          autoRotate: true,
+          showVoteCount: true
+        }
+      },
+      { 
+        id: 'threads', 
+        name: 'Top Threads', 
+        enabled: true, 
+        order: 3,
+        config: {
+          maxThreads: 5,
+          sortBy: 'votes' as const,
+          timeRange: 'week' as const,
+          threadTypes: ['discussion', 'question', 'announcement']
+        }
+      },
+      { 
+        id: 'poll', 
+        name: 'Enquete Semanal', 
+        enabled: true, 
+        order: 4,
+        config: {
+          allowMultiple: false,
+          showResults: true,
+          anonymousVoting: false
+        }
+      },
+      { 
+        id: 'countdown', 
+        name: 'Próxima Review', 
+        enabled: true, 
+        order: 5,
+        config: {
+          timezone: 'America/Sao_Paulo',
+          showProgress: true,
+          showDaysOnly: false,
+          urgentAlert: false
+        }
+      },
+      { 
+        id: 'bookmarks', 
+        name: 'Links Úteis', 
+        enabled: true, 
+        order: 6 
+      },
+      { 
+        id: 'rules', 
+        name: 'Regras da Comunidade', 
+        enabled: true, 
+        order: 7 
+      },
+      { 
+        id: 'changelog', 
+        name: 'Changelog', 
+        enabled: true, 
+        order: 8 
+      }
+    ],
+    visual: {
+      width: 320,
+      colorTheme: 'default',
+      backgroundColor: '#ffffff',
+      textColor: '#000000'
+    }
   };
 
   // Fetch sidebar configuration
@@ -73,7 +158,7 @@ export const useSidebarData = () => {
       }
     },
     enabled: isClient,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
     retry: 2,
   });
 
@@ -105,6 +190,16 @@ export const useSidebarData = () => {
     setConfig(newConfig);
   };
 
+  const updateSectionConfig = (sectionId: SidebarSectionId, sectionConfig: any) => {
+    if (!config) return;
+    const updatedSections = config.sections.map(section =>
+      section.id === sectionId
+        ? { ...section, config: { ...section.config, ...sectionConfig } }
+        : section
+    );
+    updateConfig({ sections: updatedSections });
+  };
+
   const saveConfig = async () => {
     if (!config) throw new Error('No config to save');
     await saveConfigMutation.mutateAsync(config);
@@ -113,6 +208,11 @@ export const useSidebarData = () => {
   const resetConfig = () => {
     queryClient.setQueryData(['sidebar-config'], defaultConfig);
     setConfig(defaultConfig);
+  };
+
+  const getSectionConfig = (sectionId: SidebarSectionId) => {
+    const section = config?.sections.find(s => s.id === sectionId);
+    return section?.config || {};
   };
 
   // Fetch site statistics
@@ -307,6 +407,8 @@ export const useSidebarData = () => {
     poll,
     userVote,
     updateConfig,
+    updateSectionConfig,
+    getSectionConfig,
     saveConfig,
     resetConfig,
   };
