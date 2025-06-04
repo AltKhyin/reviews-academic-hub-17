@@ -32,7 +32,7 @@ export const NextReviewCountdown: React.FC = () => {
     };
 
     updateCountdown();
-    const interval = setInterval(updateCountdown, 60000);
+    const interval = setInterval(updateCountdown, 60000); // Update every minute
 
     return () => clearInterval(interval);
   }, [config?.nextReviewTs]);
@@ -40,8 +40,8 @@ export const NextReviewCountdown: React.FC = () => {
   if (isLoadingConfig) {
     return (
       <div className="space-y-3">
-        <div className="h-4 bg-muted/50 rounded w-32 animate-pulse" />
-        <div className="h-16 bg-muted/50 rounded animate-pulse" />
+        <div className="h-4 bg-gray-800/30 rounded w-32 animate-pulse" />
+        <div className="h-16 bg-gray-800/30 rounded animate-pulse" />
       </div>
     );
   }
@@ -53,27 +53,27 @@ export const NextReviewCountdown: React.FC = () => {
   return (
     <div className="space-y-3">
       <div className="flex items-center space-x-2">
-        <Clock className="w-4 h-4 text-muted-foreground" />
-        <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Próxima Edição</h3>
+        <Clock className="w-4 h-4 text-gray-500" />
+        <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wide">Próxima Edição</h3>
       </div>
       
       <div className="space-y-2">
         <div className="grid grid-cols-3 gap-2 text-center">
-          <div className="px-2 py-1 bg-muted/20 rounded">
-            <div className="text-lg font-bold text-foreground/80">{timeRemaining.days}</div>
-            <div className="text-xs text-muted-foreground">dias</div>
+          <div className="px-2 py-1 bg-gray-800/20 rounded">
+            <div className="text-lg font-bold text-gray-300">{timeRemaining.days}</div>
+            <div className="text-xs text-gray-500">dias</div>
           </div>
-          <div className="px-2 py-1 bg-muted/20 rounded">
-            <div className="text-lg font-bold text-foreground/80">{timeRemaining.hours}</div>
-            <div className="text-xs text-muted-foreground">horas</div>
+          <div className="px-2 py-1 bg-gray-800/20 rounded">
+            <div className="text-lg font-bold text-gray-300">{timeRemaining.hours}</div>
+            <div className="text-xs text-gray-500">horas</div>
           </div>
-          <div className="px-2 py-1 bg-muted/20 rounded">
-            <div className="text-lg font-bold text-foreground/80">{timeRemaining.minutes}</div>
-            <div className="text-xs text-muted-foreground">min</div>
+          <div className="px-2 py-1 bg-gray-800/20 rounded">
+            <div className="text-lg font-bold text-gray-300">{timeRemaining.minutes}</div>
+            <div className="text-xs text-gray-500">min</div>
           </div>
         </div>
         
-        <p className="text-xs text-muted-foreground text-center">restantes</p>
+        <p className="text-xs text-gray-500 text-center">restantes</p>
       </div>
     </div>
   );

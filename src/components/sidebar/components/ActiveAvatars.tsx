@@ -12,10 +12,10 @@ export const ActiveAvatars: React.FC = () => {
   if (isLoadingUsers || isLoadingStats) {
     return (
       <div className="space-y-3">
-        <div className="h-4 bg-gray-700 rounded w-24 animate-pulse" />
+        <div className="h-4 bg-gray-800/30 rounded w-24 animate-pulse" />
         <div className="flex items-center space-x-[-8px]">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="w-7 h-7 bg-gray-700 rounded-full animate-pulse" />
+            <div key={i} className="w-7 h-7 bg-gray-800/30 rounded-full animate-pulse" />
           ))}
         </div>
       </div>
@@ -29,8 +29,8 @@ export const ActiveAvatars: React.FC = () => {
   return (
     <div className="space-y-3">
       <div className="flex items-center space-x-2">
-        <Users className="w-4 h-4 text-green-400" />
-        <h3 className="text-xs font-medium text-gray-300 uppercase tracking-wide">Atividade Recente</h3>
+        <Users className="w-4 h-4 text-gray-500" />
+        <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wide">Atividade Recente</h3>
       </div>
       
       <div className="space-y-3">
@@ -41,7 +41,7 @@ export const ActiveAvatars: React.FC = () => {
               <img
                 src={user.avatar_url || '/placeholder.svg'}
                 alt={user.full_name || 'Usuário'}
-                className="w-7 h-7 rounded-full border-2 border-gray-800 shadow-sm transition-transform group-hover:scale-110 group-hover:z-10"
+                className="w-7 h-7 rounded-full border-2 border-gray-800/50 shadow-sm transition-transform group-hover:scale-110 group-hover:z-10"
                 onError={(e) => {
                   const img = e.target as HTMLImageElement;
                   img.src = '/placeholder.svg';
@@ -50,7 +50,7 @@ export const ActiveAvatars: React.FC = () => {
               
               {/* Online indicator for first 3 users */}
               {index < 3 && (
-                <Circle className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 text-green-400 fill-green-400" />
+                <Circle className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 text-green-500 fill-green-500" />
               )}
               
               {/* Tooltip */}
@@ -63,16 +63,16 @@ export const ActiveAvatars: React.FC = () => {
           
           {/* Overflow indicator */}
           {overflowCount > 0 && (
-            <div className="w-7 h-7 flex items-center justify-center text-xs bg-gray-700 text-gray-300 rounded-full border-2 border-gray-800 font-medium">
+            <div className="w-7 h-7 flex items-center justify-center text-xs bg-gray-800/30 text-gray-400 rounded-full border-2 border-gray-800/50 font-medium">
               +{overflowCount}
             </div>
           )}
         </div>
         
         {/* Stats */}
-        <div className="text-xs text-gray-400">
+        <div className="text-xs text-gray-500">
           <div className="flex items-center space-x-1">
-            <Circle className="w-2 h-2 text-green-400 fill-green-400" />
+            <Circle className="w-2 h-2 text-green-500 fill-green-500" />
             <span>{totalOnline} online agora</span>
           </div>
         </div>

@@ -1,6 +1,6 @@
 
 // ABOUTME: Right sidebar component with page-level scrolling integration
-// Now uses seamless background integration with muted color palette
+// Now uses seamless background integration with main page
 
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
@@ -53,7 +53,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
   const { isMobileDrawerOpen, toggleMobileDrawer, config } = useSidebarStore();
   const focusTrapRef = useFocusTrap(isMobile && isMobileDrawerOpen);
   
-  // Only show sidebar in community routes
+  // Only show sidebar in community routes (this component should only be mounted in community now)
   const shouldShowSidebar = location.pathname.startsWith('/community');
   
   // Initialize data fetching only when sidebar should be visible
@@ -76,12 +76,12 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isMobile, isMobileDrawerOpen, toggleMobileDrawer]);
 
-  // Don't render sidebar if not in community routes
+  // Don't render sidebar if not in community routes (defensive check)
   if (!shouldShowSidebar) {
     return null;
   }
 
-  // Get enabled sections in order
+  // Get enabled sections in order - use default sections if config doesn't have sections yet
   const enabledSections = (config?.sections || DEFAULT_SECTIONS)
     .filter(section => section.enabled)
     .sort((a, b) => a.order - b.order);
@@ -89,7 +89,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
   const content = (
     <SidebarErrorBoundary>
       <div 
-        className="w-full h-full bg-transparent"
+        className="w-full h-full"
         role="complementary"
         aria-label="Barra lateral da comunidade"
       >
@@ -106,11 +106,9 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
                   <Component />
                 </div>
                 
-                {/* Subtle Module Divider - only if not last item */}
+                {/* Module Divider - only if not last item */}
                 {index < enabledSections.length - 1 && (
-                  <div className="mx-5">
-                    <div className="h-px bg-border/20"></div>
-                  </div>
+                  <div className="border-t border-gray-800/20"></div>
                 )}
               </React.Fragment>
             );
@@ -132,11 +130,11 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
           />
         )}
         
-        {/* Mobile Drawer */}
+        {/* Mobile Drawer - uses background to match main page */}
         <div 
           ref={focusTrapRef}
           className={`
-            fixed top-0 right-0 h-full w-80 bg-background border-l border-border/30 z-50
+            fixed top-0 right-0 h-full w-80 bg-background
             transform transition-transform duration-300 ease-in-out overflow-y-auto
             ${isMobileDrawerOpen ? 'translate-x-0' : 'translate-x-full'}
           `}
@@ -144,14 +142,14 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
           aria-modal="true"
           aria-labelledby="mobile-sidebar-title"
         >
-          <div className="flex items-center justify-between p-4 border-b border-border/30">
-            <h2 id="mobile-sidebar-title" className="text-lg font-semibold text-foreground">Comunidade</h2>
+          <div className="flex items-center justify-between p-4 border-b border-gray-800/20">
+            <h2 id="mobile-sidebar-title" className="text-lg font-semibold text-gray-200">Comunidade</h2>
             <button
               onClick={toggleMobileDrawer}
-              className="p-2 hover:bg-muted rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-800/20 rounded-lg transition-colors"
               aria-label="Fechar barra lateral"
             >
-              <X className="w-5 h-5 text-muted-foreground" />
+              <X className="w-5 h-5 text-gray-400" />
             </button>
           </div>
           {content}
@@ -162,7 +160,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
 
   // Desktop version - seamless background integration
   return (
-    <div className={`w-full bg-transparent h-full overflow-y-auto ${className}`}>
+    <div className={`w-full bg-background h-full overflow-y-auto ${className}`}>
       {content}
     </div>
   );
