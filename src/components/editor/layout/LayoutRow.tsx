@@ -100,6 +100,13 @@ export const LayoutRow: React.FC<LayoutRowProps> = ({
     handleDragEnd();
   };
 
+  // Create wrapper function for onUpdate
+  const createBlockUpdateWrapper = (blockId: number) => {
+    return (updates: Partial<ReviewBlock>) => {
+      onUpdateBlock(blockId, updates);
+    };
+  };
+
   // Render empty slot for adding blocks
   const renderEmptySlot = (position: number) => (
     <div
@@ -152,7 +159,7 @@ export const LayoutRow: React.FC<LayoutRowProps> = ({
       {/* Block Content */}
       <BlockRenderer
         block={block}
-        onUpdate={onUpdateBlock}
+        onUpdate={createBlockUpdateWrapper(block.id)}
         readonly={readonly}
         className={cn(
           "transition-all duration-200",

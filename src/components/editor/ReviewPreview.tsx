@@ -121,13 +121,16 @@ export const ReviewPreview: React.FC<ReviewPreviewProps> = ({
         {layoutGroups.map((group, groupIndex) => (
           <div key={`group-${groupIndex}`} className="layout-group mb-8">
             {group.type === 'grid' ? (
-              <BlockRenderer
-                block={group.blocks[0]}
-                readonly={true}
-                renderAsGrid={true}
-                gridBlocks={group.blocks}
-                className="preview-grid-block"
-              />
+              <div className="grid-group">
+                {group.blocks.map((block) => (
+                  <BlockRenderer
+                    key={block.id}
+                    block={block}
+                    readonly={true}
+                    className="preview-grid-block"
+                  />
+                ))}
+              </div>
             ) : (
               group.blocks.map((block) => (
                 <div key={block.id} className="preview-single-block">

@@ -250,8 +250,6 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
               <BlockRenderer
                 key={block.id}
                 block={block}
-                onInteraction={handleBlockInteraction}
-                onSectionView={handleSectionView}
                 readonly={true}
               />
             ))}
@@ -311,8 +309,6 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
                   <BlockRenderer
                     key={block.id}
                     block={block}
-                    onInteraction={handleBlockInteraction}
-                    onSectionView={handleSectionView}
                     readonly={true}
                     className="text-sm"
                   />

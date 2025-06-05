@@ -107,6 +107,13 @@ export const GridPanel: React.FC<GridPanelProps> = ({
     onAddBlock(rowId, position);
   }, [rowId, position, onAddBlock]);
 
+  // Create wrapper function for onUpdate
+  const createBlockUpdateWrapper = useCallback((blockId: number) => {
+    return (updates: Partial<ReviewBlock>) => {
+      onUpdateBlock(blockId, updates);
+    };
+  }, [onUpdateBlock]);
+
   if (block) {
     const isActive = activeBlockId === block.id;
     const isDragging = dragState?.draggedBlockId === block.id;
@@ -165,7 +172,7 @@ export const GridPanel: React.FC<GridPanelProps> = ({
           <div className="p-4 h-full">
             <BlockRenderer
               block={block}
-              onUpdate={onUpdateBlock}
+              onUpdate={createBlockUpdateWrapper(block.id)}
               readonly={readonly}
             />
           </div>

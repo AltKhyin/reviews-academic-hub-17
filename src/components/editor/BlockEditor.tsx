@@ -298,6 +298,13 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     processingDropRef.current = false;
   }, []);
 
+  // Create wrapper function for onUpdate
+  const createBlockUpdateWrapper = useCallback((blockId: number) => {
+    return (updates: Partial<ReviewBlock>) => {
+      onUpdateBlock(blockId, updates);
+    };
+  }, [onUpdateBlock]);
+
   // Render single block
   const renderSingleBlock = (block: ReviewBlock, globalIndex: number) => {
     const isActive = activeBlockId === block.id;
@@ -417,7 +424,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
 
           <BlockRenderer
             block={block}
-            onUpdate={onUpdateBlock}
+            onUpdate={createBlockUpdateWrapper(block.id)}
             readonly={false}
           />
         </Card>

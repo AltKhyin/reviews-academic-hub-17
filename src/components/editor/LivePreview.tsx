@@ -42,6 +42,15 @@ export const LivePreview: React.FC<LivePreviewProps> = ({
       .sort((a, b) => a.sort_index - b.sort_index);
   }, [blocks]);
 
+  // Create wrapper function for onUpdate
+  const createBlockUpdateWrapper = (blockId: number) => {
+    return (updates: Partial<ReviewBlock>) => {
+      if (onBlockUpdate) {
+        onBlockUpdate(blockId, updates);
+      }
+    };
+  };
+
   const getViewportClasses = () => {
     switch (viewportSize) {
       case 'mobile':
@@ -195,7 +204,7 @@ export const LivePreview: React.FC<LivePreviewProps> = ({
                 >
                   <BlockRenderer
                     block={block}
-                    onUpdate={onBlockUpdate}
+                    onUpdate={createBlockUpdateWrapper(block.id)}
                     readonly={true}
                     className="preview-block"
                   />

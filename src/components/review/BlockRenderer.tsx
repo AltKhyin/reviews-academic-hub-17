@@ -1,6 +1,6 @@
 
-// ABOUTME: Enhanced block renderer with vertical alignment support
-// Handles all block types with consistent alignment application
+// ABOUTME: Enhanced block renderer with vertical alignment support and grid rendering
+// Handles all block types with consistent alignment application and grid layout support
 
 import React from 'react';
 import { ReviewBlock } from '@/types/review';
@@ -21,13 +21,21 @@ interface BlockRendererProps {
   onUpdate?: (updates: Partial<ReviewBlock>) => void;
   readonly?: boolean;
   className?: string;
+  renderAsGrid?: boolean;
+  gridBlocks?: ReviewBlock[];
+  onInteraction?: (blockId: string, interactionType: string, data?: any) => void;
+  onSectionView?: (blockId: string) => void;
 }
 
 export const BlockRenderer: React.FC<BlockRendererProps> = ({
   block,
   onUpdate,
   readonly = false,
-  className
+  className,
+  renderAsGrid = false,
+  gridBlocks = [],
+  onInteraction,
+  onSectionView
 }) => {
   // Get vertical alignment from block metadata
   const verticalAlign = block.meta?.alignment?.vertical || 'top';
@@ -43,6 +51,52 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
         return 'flex items-start';
     }
   };
+
+  // Handle interaction events
+  const handleInteraction = (interactionType: string, data?: any) => {
+    if (onInteraction) {
+      onInteraction(block.id.toString(), interactionType, data);
+    }
+  };
+
+  // Handle section view tracking
+  const handleSectionView = () => {
+    if (onSectionView) {
+      onSectionView(block.id.toString());
+    }
+  };
+
+  // If rendering as grid, render the grid blocks
+  if (renderAsGrid && gridBlocks.length > 0) {
+    const layout = block.meta?.layout;
+    const columns = layout?.columns || gridBlocks.length;
+    const columnWidths = layout?.columnWidths || [];
+    
+    return (
+      <div className={cn("grid-renderer", className)}>
+        <div 
+          className="grid gap-4"
+          style={{ 
+            gridTemplateColumns: columnWidths.length > 0 
+              ? columnWidths.map(w => `${w}%`).join(' ')
+              : `repeat(${columns}, 1fr)`
+          }}
+        >
+          {gridBlocks.map((gridBlock) => (
+            <div key={gridBlock.id} className={getAlignmentClass(gridBlock.meta?.alignment?.vertical || 'top')}>
+              <BlockRenderer
+                block={gridBlock}
+                onUpdate={onUpdate}
+                readonly={readonly}
+                onInteraction={onInteraction}
+                onSectionView={onSectionView}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   const renderBlockContent = () => {
     switch (block.type) {
@@ -82,6 +136,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
         getAlignmentClass(verticalAlign),
         className
       )}
+      onClick={handleSectionView}
     >
       <div className="w-full">
         {renderBlockContent()}
