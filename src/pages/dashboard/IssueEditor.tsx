@@ -2,7 +2,7 @@
 // Supports both traditional PDF and native block-based content creation
 
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -20,13 +20,12 @@ import { IssueFormContainer } from './components/issue/IssueFormContainer';
 import { NativeEditor } from '@/components/editor/NativeEditor';
 import { useIssueEditor } from './hooks/useIssueEditor';
 import { useQuery } from '@tanstack/react-query';
-import { FileText, Layers, Upload } from 'lucide-react';
+import { FileText, Layers, Upload, SplitSquareHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const IssueEditor = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const location = useLocation();
   const isNewIssue = id === 'new';
   
   const [contentType, setContentType] = useState<'pdf' | 'native'>('pdf');
@@ -43,9 +42,6 @@ const IssueEditor = () => {
     togglePublish,
     toggleFeatured
   } = useIssueEditor(isNewIssue ? undefined : id);
-
-  // Check if we're in native editor tab for layout adjustments
-  const isNativeEditorTab = location.hash === '#content' || location.search.includes('tab=content');
 
   // Fetch issue data only if editing existing issue
   const { data: issue, isLoading, error } = useQuery({
@@ -259,40 +255,141 @@ const IssueEditor = () => {
   }
 
   return (
-    <div 
-      className={cn(
-        "min-h-screen",
-        isNativeEditorTab && contentType === 'native' && editorMode === 'split' 
-          ? "pl-0" // No padding for full-width split view
-          : "p-6" // Standard padding for other modes
-      )} 
-      style={{ backgroundColor: '#121212', color: '#ffffff' }}
-    >
-      <div className={cn(
-        "space-y-6",
-        isNativeEditorTab && contentType === 'native' && editorMode === 'split' 
-          ? "max-w-none" // Full width for split view
-          : "max-w-7xl mx-auto" // Standard container for other modes
-      )}>
-        {/* Header - only show with standard padding */}
-        {!(isNativeEditorTab && contentType === 'native' && editorMode === 'split') && (
-          <div className="flex items-center justify-between">
-            <IssueHeader />
-            {!isNewIssue && (
-              <IssueActionButtons
-                onDelete={handleDelete}
-                onTogglePublish={togglePublish}
-                onToggleFeatured={toggleFeatured}
-                isPublished={formValues.published}
-                isFeatured={formValues.featured}
-                isDisabled={isSubmitting}
-              />
-            )}
-          </div>
+    <div className="space-y-6" style={{ backgroundColor: '#121212', minHeight: '100vh', color: '#ffffff' }}>
+      <div className="flex items-center justify-between">
+        <IssueHeader />
+        {!isNewIssue && (
+          <IssueActionButtons
+            onDelete={handleDelete}
+            onTogglePublish={togglePublish}
+            onToggleFeatured={toggleFeatured}
+            isPublished={formValues.published}
+            isFeatured={formValues.featured}
+            isDisabled={isSubmitting}
+          />
         )}
+      </div>
 
-        {/* Content Type Selection - hide in full split view */}
-        {!(isNativeEditorTab && contentType === 'native' && editorMode === 'split') && (
+      {/* Content Type Selection - Fixed Contrast */}
+      <Card 
+        className="issue-editor-card"
+        style={{ 
+          backgroundColor: '#1a1a1a',
+          borderColor: '#2a2a2a',
+          color: '#ffffff'
+        }}
+      >
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2" style={{ color: '#ffffff' }}>
+            <Layers className="w-5 h-5" />
+            Tipo de Conteúdo
+          </CardTitle>
+          <CardDescription style={{ color: '#d1d5db' }}>
+            Escolha como você deseja criar e apresentar esta revisão
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <RadioGroup 
+            value={contentType} 
+            onValueChange={(value: 'pdf' | 'native') => setContentType(value)}
+            className="grid grid-cols-1 md:grid-cols-2 gap-4"
+          >
+            <div 
+              className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-gray-800 transition-colors"
+              style={{ 
+                backgroundColor: '#212121',
+                borderColor: '#2a2a2a',
+                color: '#ffffff'
+              }}
+            >
+              <RadioGroupItem value="pdf" id="pdf" />
+              <div className="flex-1">
+                <Label htmlFor="pdf" className="flex items-center gap-2 cursor-pointer" style={{ color: '#ffffff' }}>
+                  <FileText className="w-5 h-5 text-gray-400" />
+                  <div>
+                    <div className="font-medium" style={{ color: '#ffffff' }}>PDF Tradicional</div>
+                    <div className="text-sm" style={{ color: '#d1d5db' }}>
+                      Upload de arquivo PDF da revisão
+                    </div>
+                  </div>
+                </Label>
+              </div>
+            </div>
+            
+            <div 
+              className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-gray-800 transition-colors"
+              style={{ 
+                backgroundColor: '#212121',
+                borderColor: '#2a2a2a',
+                color: '#ffffff'
+              }}
+            >
+              <RadioGroupItem value="native" id="native" />
+              <div className="flex-1">
+                <Label htmlFor="native" className="flex items-center gap-2 cursor-pointer" style={{ color: '#ffffff' }}>
+                  <Layers className="w-5 h-5 text-blue-400" />
+                  <div>
+                    <div className="font-medium flex items-center gap-2" style={{ color: '#ffffff' }}>
+                      Revisão Nativa
+                      <Badge 
+                        variant="secondary" 
+                        className="text-xs"
+                        style={{ backgroundColor: '#3b82f6', color: '#ffffff' }}
+                      >
+                        Novo
+                      </Badge>
+                    </div>
+                    <div className="text-sm" style={{ color: '#d1d5db' }}>
+                      Editor de blocos interativo
+                    </div>
+                  </div>
+                </Label>
+              </div>
+            </div>
+          </RadioGroup>
+        </CardContent>
+      </Card>
+
+      {/* Content Editor */}
+      <Tabs defaultValue="basic" className="space-y-6">
+        <TabsList 
+          className="grid w-full grid-cols-3"
+          style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}
+        >
+          <TabsTrigger 
+            value="basic"
+            style={{ 
+              color: '#ffffff',
+              backgroundColor: 'transparent'
+            }}
+            className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+          >
+            Informações Básicas
+          </TabsTrigger>
+          <TabsTrigger 
+            value="content" 
+            disabled={isNewIssue}
+            style={{ 
+              color: isNewIssue ? '#6b7280' : '#ffffff',
+              backgroundColor: 'transparent'
+            }}
+            className="data-[state=active]:bg-blue-600 data-[state=active]:text-white disabled:opacity-50"
+          >
+            {contentType === 'native' ? 'Editor Nativo' : 'Upload PDF'}
+          </TabsTrigger>
+          <TabsTrigger 
+            value="original"
+            style={{ 
+              color: '#ffffff',
+              backgroundColor: 'transparent'
+            }}
+            className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+          >
+            Artigo Original
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="basic">
           <Card 
             className="issue-editor-card"
             style={{ 
@@ -302,123 +399,25 @@ const IssueEditor = () => {
             }}
           >
             <CardHeader>
-              <CardTitle className="flex items-center gap-2" style={{ color: '#ffffff' }}>
-                <Layers className="w-5 h-5" />
-                Tipo de Conteúdo
-              </CardTitle>
+              <CardTitle style={{ color: '#ffffff' }}>Informações da Revisão</CardTitle>
               <CardDescription style={{ color: '#d1d5db' }}>
-                Escolha como você deseja criar e apresentar esta revisão
+                Metadados e informações básicas da revisão
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {/* ... keep existing code (content type selection) */}
-              <RadioGroup 
-                value={contentType} 
-                onValueChange={(value: 'pdf' | 'native') => setContentType(value)}
-                className="grid grid-cols-1 md:grid-cols-2 gap-4"
-              >
-                <div 
-                  className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-gray-800 transition-colors"
-                  style={{ 
-                    backgroundColor: '#212121',
-                    borderColor: '#2a2a2a',
-                    color: '#ffffff'
-                  }}
-                >
-                  <RadioGroupItem value="pdf" id="pdf" />
-                  <div className="flex-1">
-                    <Label htmlFor="pdf" className="flex items-center gap-2 cursor-pointer" style={{ color: '#ffffff' }}>
-                      <FileText className="w-5 h-5 text-gray-400" />
-                      <div>
-                        <div className="font-medium" style={{ color: '#ffffff' }}>PDF Tradicional</div>
-                        <div className="text-sm" style={{ color: '#d1d5db' }}>
-                          Upload de arquivo PDF da revisão
-                        </div>
-                      </div>
-                    </Label>
-                  </div>
-                </div>
-                
-                <div 
-                  className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-gray-800 transition-colors"
-                  style={{ 
-                    backgroundColor: '#212121',
-                    borderColor: '#2a2a2a',
-                    color: '#ffffff'
-                  }}
-                >
-                  <RadioGroupItem value="native" id="native" />
-                  <div className="flex-1">
-                    <Label htmlFor="native" className="flex items-center gap-2 cursor-pointer" style={{ color: '#ffffff' }}>
-                      <Layers className="w-5 h-5 text-blue-400" />
-                      <div>
-                        <div className="font-medium flex items-center gap-2" style={{ color: '#ffffff' }}>
-                          Revisão Nativa
-                          <Badge 
-                            variant="secondary" 
-                            className="text-xs"
-                            style={{ backgroundColor: '#3b82f6', color: '#ffffff' }}
-                          >
-                            Novo
-                          </Badge>
-                        </div>
-                        <div className="text-sm" style={{ color: '#d1d5db' }}>
-                          Editor de blocos interativo
-                        </div>
-                      </div>
-                    </Label>
-                  </div>
-                </div>
-              </RadioGroup>
+              <IssueFormContainer 
+                issueId={isNewIssue ? undefined : id}
+                defaultValues={formValues}
+                onSubmit={onSubmit} 
+                onCancel={() => navigate('/edit')} 
+                isSubmitting={isSubmitting}
+              />
             </CardContent>
           </Card>
-        )}
+        </TabsContent>
 
-        {/* Content Editor */}
-        <Tabs defaultValue="basic" className="space-y-6">
-          {/* Hide tabs in full split view */}
-          {!(isNativeEditorTab && contentType === 'native' && editorMode === 'split') && (
-            <TabsList 
-              className="grid w-full grid-cols-3"
-              style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}
-            >
-              <TabsTrigger 
-                value="basic"
-                style={{ 
-                  color: '#ffffff',
-                  backgroundColor: 'transparent'
-                }}
-                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-              >
-                Informações Básicas
-              </TabsTrigger>
-              <TabsTrigger 
-                value="content" 
-                disabled={isNewIssue}
-                style={{ 
-                  color: isNewIssue ? '#6b7280' : '#ffffff',
-                  backgroundColor: 'transparent'
-                }}
-                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white disabled:opacity-50"
-              >
-                {contentType === 'native' ? 'Editor de Conteúdo Nativo' : 'Upload PDF'}
-              </TabsTrigger>
-              <TabsTrigger 
-                value="original"
-                style={{ 
-                  color: '#ffffff',
-                  backgroundColor: 'transparent'
-                }}
-                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-              >
-                Artigo Original
-              </TabsTrigger>
-            </TabsList>
-          )}
-
-          {/* Tab Contents */}
-          <TabsContent value="basic">
-            {/* ... keep existing code (basic tab content) */}
+        <TabsContent value="content">
+          {isNewIssue ? (
             <Card 
               className="issue-editor-card"
               style={{ 
@@ -427,85 +426,93 @@ const IssueEditor = () => {
                 color: '#ffffff'
               }}
             >
-              <CardHeader>
-                <CardTitle style={{ color: '#ffffff' }}>Informações da Revisão</CardTitle>
-                <CardDescription style={{ color: '#d1d5db' }}>
-                  Metadados e informações básicas da revisão
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <IssueFormContainer 
-                  issueId={isNewIssue ? undefined : id}
-                  defaultValues={formValues}
-                  onSubmit={onSubmit} 
-                  onCancel={() => navigate('/edit')} 
-                  isSubmitting={isSubmitting}
-                />
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Upload className="w-12 h-12 text-gray-400 mb-4" />
+                <h3 className="text-lg font-medium mb-2" style={{ color: '#ffffff' }}>
+                  Salve Primeiro as Informações Básicas
+                </h3>
+                <p className="text-center max-w-md" style={{ color: '#d1d5db' }}>
+                  Complete e salve as informações básicas na aba anterior antes de adicionar conteúdo.
+                </p>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="content">
-            {isNewIssue ? (
-              <Card 
-                className="issue-editor-card"
-                style={{ 
-                  backgroundColor: '#1a1a1a',
-                  borderColor: '#2a2a2a',
-                  color: '#ffffff'
-                }}
-              >
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <Upload className="w-12 h-12 text-gray-400 mb-4" />
-                  <h3 className="text-lg font-medium mb-2" style={{ color: '#ffffff' }}>
-                    Salve Primeiro as Informações Básicas
-                  </h3>
-                  <p className="text-center max-w-md" style={{ color: '#d1d5db' }}>
-                    Complete e salve as informações básicas na aba anterior antes de adicionar conteúdo.
-                  </p>
-                </CardContent>
-              </Card>
-            ) : contentType === 'native' ? (
-              <div className={cn(
-                editorMode === 'split' 
-                  ? "fixed inset-0 z-50" // Full screen for split mode
-                  : "h-[800px]" // Fixed height for other modes
-              )}>
+          ) : contentType === 'native' ? (
+            <Card 
+              className="issue-editor-card h-[800px] flex flex-col"
+              style={{ 
+                backgroundColor: '#1a1a1a',
+                borderColor: '#2a2a2a',
+                color: '#ffffff'
+              }}
+            >
+              <CardHeader className="flex-shrink-0">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2" style={{ color: '#ffffff' }}>
+                      <Layers className="w-5 h-5" />
+                      Editor de Conteúdo Nativo
+                    </CardTitle>
+                    <CardDescription style={{ color: '#d1d5db' }}>
+                      Crie conteúdo interativo usando blocos com design otimizado
+                    </CardDescription>
+                  </div>
+                  
+                  {/* Editor Mode Selector */}
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm" style={{ color: '#ffffff' }}>
+                      Modo:
+                    </Label>
+                    <div className="flex items-center border rounded-md" style={{ borderColor: '#2a2a2a' }}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setEditorMode('edit')}
+                        className={cn(
+                          "h-8 px-3 rounded-r-none text-xs",
+                          editorMode === 'edit' && "bg-blue-600 text-white"
+                        )}
+                      >
+                        Editar
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setEditorMode('split')}
+                        className={cn(
+                          "h-8 px-3 rounded-none border-x text-xs",
+                          editorMode === 'split' && "bg-blue-600 text-white"
+                        )}
+                        style={{ borderColor: '#2a2a2a' }}
+                      >
+                        <SplitSquareHorizontal className="w-3 h-3 mr-1" />
+                        Dividir
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setEditorMode('preview')}
+                        className={cn(
+                          "h-8 px-3 rounded-l-none text-xs",
+                          editorMode === 'preview' && "bg-blue-600 text-white"
+                        )}
+                      >
+                        Preview
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="flex-1 p-0">
                 <NativeEditor
                   issueId={id}
                   initialBlocks={nativeBlocks}
                   onSave={handleSaveNativeBlocks}
                   onCancel={() => {}}
                   mode={editorMode}
-                  className="h-full"
                 />
-              </div>
-            ) : (
-              <Card 
-                className="issue-editor-card"
-                style={{ 
-                  backgroundColor: '#1a1a1a',
-                  borderColor: '#2a2a2a',
-                  color: '#ffffff'
-                }}
-              >
-                <CardHeader>
-                  <CardTitle style={{ color: '#ffffff' }}>Upload de PDF da Revisão</CardTitle>
-                  <CardDescription style={{ color: '#d1d5db' }}>
-                    Upload do arquivo PDF da revisão para visualização tradicional
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8" style={{ color: '#d1d5db' }}>
-                    Componente de upload PDF será implementado aqui
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-
-          <TabsContent value="original">
-            {/* ... keep existing code (original tab content) */}
+              </CardContent>
+            </Card>
+          ) : (
             <Card 
               className="issue-editor-card"
               style={{ 
@@ -515,20 +522,43 @@ const IssueEditor = () => {
               }}
             >
               <CardHeader>
-                <CardTitle style={{ color: '#ffffff' }}>Artigo Científico Original</CardTitle>
+                <CardTitle style={{ color: '#ffffff' }}>Upload de PDF da Revisão</CardTitle>
                 <CardDescription style={{ color: '#d1d5db' }}>
-                  Upload do PDF do artigo original que está sendo revisado (recomendado)
+                  Upload do arquivo PDF da revisão para visualização tradicional
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="text-center py-8" style={{ color: '#d1d5db' }}>
-                  Componente de upload do artigo original será implementado aqui
+                  Componente de upload PDF será implementado aqui
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="original">
+          <Card 
+            className="issue-editor-card"
+            style={{ 
+              backgroundColor: '#1a1a1a',
+              borderColor: '#2a2a2a',
+              color: '#ffffff'
+            }}
+          >
+            <CardHeader>
+              <CardTitle style={{ color: '#ffffff' }}>Artigo Científico Original</CardTitle>
+              <CardDescription style={{ color: '#d1d5db' }}>
+                Upload do PDF do artigo original que está sendo revisado (recomendado)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-8" style={{ color: '#d1d5db' }}>
+                Componente de upload do artigo original será implementado aqui
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

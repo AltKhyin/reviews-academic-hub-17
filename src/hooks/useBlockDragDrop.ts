@@ -1,51 +1,30 @@
 
-// ABOUTME: Enhanced drag and drop functionality for block reordering and grid operations
-// Provides comprehensive drag-and-drop state management with proper TypeScript interfaces
+// ABOUTME: Drag and drop functionality for block reordering
+// Provides comprehensive drag-and-drop state management and operations
 
 import { useState, useRef, useCallback } from 'react';
-import { ReviewBlock } from '@/types/review';
 
-export interface DragState {
-  draggedBlockId: number | null;
-  dragOverRowId: string | null;
-  dragOverPosition: number | null;
-  draggedFromRowId: string | null;
-  dropTargetType: 'grid' | 'single' | 'merge' | null;
-  isDragging: boolean;
+interface DragState {
   draggedIndex: number | null;
   draggedOver: number | null;
+  isDragging: boolean;
 }
 
-interface UseBlockDragDropProps {
-  blocks: ReviewBlock[];
-  onMoveBlock: (fromIndex: number, toIndex: number) => void;
-  onMergeBlockIntoGrid: (blockId: number, targetRowId: string, position?: number) => void;
-}
-
-export const useBlockDragDrop = ({ blocks, onMoveBlock, onMergeBlockIntoGrid }: UseBlockDragDropProps) => {
+export const useBlockDragDrop = (onMoveBlock: (blockId: number, direction: 'up' | 'down') => void) => {
   const [dragState, setDragState] = useState<DragState>({
-    draggedBlockId: null,
-    dragOverRowId: null,
-    dragOverPosition: null,
-    draggedFromRowId: null,
-    dropTargetType: null,
-    isDragging: false,
     draggedIndex: null,
-    draggedOver: null
+    draggedOver: null,
+    isDragging: false
   });
   
   const dragItemRef = useRef<number | null>(null);
   const dragOverItemRef = useRef<number | null>(null);
 
-  const handleDragStart = useCallback((e: React.DragEvent, blockId: number) => {
-    console.log('Drag start:', blockId);
-    const blockIndex = blocks.findIndex(b => b.id === blockId);
-    dragItemRef.current = blockIndex;
-    
+  const handleDragStart = useCallback((e: React.DragEvent, index: number) => {
+    dragItemRef.current = index;
     setDragState(prev => ({
       ...prev,
-      draggedBlockId: blockId,
-      draggedIndex: blockIndex,
+      draggedIndex: index,
       isDragging: true
     }));
     
@@ -55,73 +34,58 @@ export const useBlockDragDrop = ({ blocks, onMoveBlock, onMergeBlockIntoGrid }: 
     if (e.currentTarget instanceof HTMLElement) {
       e.currentTarget.style.opacity = '0.5';
     }
-  }, [blocks]);
+  }, []);
 
-  const handleDragEnd = useCallback((e: React.DragEvent) => {
-    console.log('Drag end');
+  const handleDragEnd = useCallback((e: React.DragEvent, blocks: any[]) => {
     if (e.currentTarget instanceof HTMLElement) {
       e.currentTarget.style.opacity = '1';
     }
     
-    // Perform the actual move operation if needed
     if (dragItemRef.current !== null && dragOverItemRef.current !== null && 
         dragItemRef.current !== dragOverItemRef.current) {
-      onMoveBlock(dragItemRef.current, dragOverItemRef.current);
+      
+      const fromIndex = dragItemRef.current;
+      const toIndex = dragOverItemRef.current;
+      
+      if (fromIndex < toIndex) {
+        for (let i = fromIndex; i < toIndex; i++) {
+          onMoveBlock(blocks[fromIndex].id, 'down');
+        }
+      } else {
+        for (let i = fromIndex; i > toIndex; i--) {
+          onMoveBlock(blocks[fromIndex].id, 'up');
+        }
+      }
     }
     
     setDragState({
-      draggedBlockId: null,
-      dragOverRowId: null,
-      dragOverPosition: null,
-      draggedFromRowId: null,
-      dropTargetType: null,
-      isDragging: false,
       draggedIndex: null,
-      draggedOver: null
+      draggedOver: null,
+      isDragging: false
     });
     dragItemRef.current = null;
     dragOverItemRef.current = null;
   }, [onMoveBlock]);
 
-  const handleDragOver = useCallback((e: React.DragEvent, targetRowId?: string, targetPosition?: number, targetType?: 'grid' | 'single' | 'merge') => {
+  const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    
-    setDragState(prev => ({
-      ...prev,
-      dragOverRowId: targetRowId || null,
-      dragOverPosition: targetPosition || null,
-      dropTargetType: targetType || 'single'
-    }));
   }, []);
 
   const handleDragEnter = useCallback((e: React.DragEvent, index: number) => {
     e.preventDefault();
-    if (index !== dragItemRef.current) {
-      dragOverItemRef.current = index;
-      setDragState(prev => ({
-        ...prev,
-        draggedOver: index
-      }));
-    }
+    dragOverItemRef.current = index;
+    setDragState(prev => ({
+      ...prev,
+      draggedOver: index
+    }));
   }, []);
-
-  const handleDrop = useCallback((e: React.DragEvent, targetRowId?: string, targetPosition?: number, dropType?: 'grid' | 'single' | 'merge') => {
-    e.preventDefault();
-    console.log('Drop:', { draggedBlockId: dragState.draggedBlockId, targetRowId, targetPosition, dropType });
-    
-    if (dragItemRef.current !== null && dragOverItemRef.current !== null && 
-        dragItemRef.current !== dragOverItemRef.current) {
-      onMoveBlock(dragItemRef.current, dragOverItemRef.current);
-    }
-  }, [dragState.draggedBlockId, onMoveBlock]);
 
   return {
     dragState,
     handleDragStart,
     handleDragEnd,
     handleDragOver,
-    handleDragEnter,
-    handleDrop
+    handleDragEnter
   };
 };
