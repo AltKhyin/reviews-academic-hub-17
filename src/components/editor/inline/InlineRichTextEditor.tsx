@@ -40,17 +40,24 @@ export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
   const editorRef = useRef<HTMLDivElement>(null);
   
   const { formatState, formatActions, updateFormatState } = useRichTextFormat(
-    (newValue) => setTempValue(newValue), 
+    (newValue) => {
+      console.log('Rich text value changed:', newValue);
+      setTempValue(newValue);
+    }, 
     editorRef
   );
 
   useEffect(() => {
     if (isEditing && editorRef.current) {
-      // Fix: Proper focus and cursor positioning
       const editor = editorRef.current;
       editor.focus();
       
-      // Set cursor to end of content - fixed approach
+      // Ensure proper text direction
+      editor.style.direction = 'ltr';
+      editor.style.textAlign = 'left';
+      editor.style.unicodeBidi = 'normal';
+      
+      // Set cursor to end of content
       setTimeout(() => {
         const range = document.createRange();
         const selection = window.getSelection();
@@ -85,6 +92,7 @@ export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
   };
 
   const handleSave = () => {
+    console.log('Saving rich text value:', tempValue);
     onChange(tempValue);
     setIsEditing(false);
   };
@@ -97,6 +105,7 @@ export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
   const handleInput = () => {
     if (editorRef.current) {
       const newContent = editorRef.current.innerHTML;
+      console.log('Editor content changed:', newContent);
       setTempValue(newContent);
       updateFormatState();
     }
@@ -130,10 +139,11 @@ export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
   // Clean display value for preview
   const getDisplayValue = () => {
     if (!value) return placeholder;
-    // Strip HTML tags for display
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = value;
-    return tempDiv.textContent || tempDiv.innerText || placeholder;
+    // Strip HTML tags for display or show formatted content
+    if (value.includes('<')) {
+      return value; // Keep HTML for formatted display
+    }
+    return value;
   };
 
   if (isEditing) {
@@ -152,6 +162,10 @@ export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
               variant={formatState.bold ? "default" : "ghost"}
               onClick={formatActions.bold}
               className="w-8 h-8 p-0"
+              style={{
+                backgroundColor: formatState.bold ? '#3b82f6' : 'transparent',
+                color: formatState.bold ? '#ffffff' : '#d1d5db'
+              }}
             >
               <Bold className="w-4 h-4" />
             </Button>
@@ -160,6 +174,10 @@ export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
               variant={formatState.italic ? "default" : "ghost"}
               onClick={formatActions.italic}
               className="w-8 h-8 p-0"
+              style={{
+                backgroundColor: formatState.italic ? '#3b82f6' : 'transparent',
+                color: formatState.italic ? '#ffffff' : '#d1d5db'
+              }}
             >
               <Italic className="w-4 h-4" />
             </Button>
@@ -168,6 +186,10 @@ export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
               variant={formatState.underline ? "default" : "ghost"}
               onClick={formatActions.underline}
               className="w-8 h-8 p-0"
+              style={{
+                backgroundColor: formatState.underline ? '#3b82f6' : 'transparent',
+                color: formatState.underline ? '#ffffff' : '#d1d5db'
+              }}
             >
               <Underline className="w-4 h-4" />
             </Button>
@@ -207,6 +229,8 @@ export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
             borderColor: '#3b82f6',
             color: '#ffffff',
             textAlign: 'left',
+            direction: 'ltr',
+            unicodeBidi: 'normal',
             ...style
           }}
           dangerouslySetInnerHTML={{ __html: tempValue }}
@@ -234,6 +258,8 @@ export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
       style={{
         color: isEmpty ? '#9ca3af' : '#ffffff',
         textAlign: 'left',
+        direction: 'ltr',
+        unicodeBidi: 'normal',
         ...style
       }}
     >
@@ -244,8 +270,8 @@ export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
             <span className="italic">{placeholder}</span>
           ) : (
             <div 
-              dangerouslySetInnerHTML={{ __html: value }}
-              style={{ textAlign: 'left' }}
+              dangerouslySetInnerHTML={{ __html: displayValue }}
+              style={{ textAlign: 'left', direction: 'ltr', unicodeBidi: 'normal' }}
             />
           )}
         </div>

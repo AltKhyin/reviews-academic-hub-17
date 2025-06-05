@@ -31,40 +31,48 @@ export const InlineColorPicker: React.FC<InlineColorPickerProps> = ({
   compact = true,
   className = ''
 }) => {
-  const [activeColor, setActiveColor] = useState<string>('');
+  const [customColor, setCustomColor] = useState<string>('');
 
   const presetColors = [
+    // Whites and Grays
     '#ffffff', '#f8fafc', '#e2e8f0', '#cbd5e1', '#94a3b8', '#64748b', '#475569', '#334155', '#1e293b', '#0f172a',
+    // Black and Colors
     '#000000', '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e', '#10b981', '#06b6d4', '#0ea5e9',
     '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#d946ef', '#ec4899', '#f43f5e'
   ];
 
   const handleColorSelect = (colorType: string, value: string) => {
+    console.log(`Setting ${colorType} to ${value}`);
     onChange(colorType, value);
   };
 
   const handleCustomColorChange = (colorType: string, value: string) => {
-    // Validate hex color
+    // Validate hex color or allow 'transparent'
     const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
-    if (hexRegex.test(value) || value === 'transparent') {
-      onChange(colorType, value);
+    if (hexRegex.test(value) || value === 'transparent' || value === '') {
+      setCustomColor(value);
+      if (value) {
+        onChange(colorType, value);
+      }
     }
   };
 
   const resetColor = (colorType: string) => {
     const defaultValues: Record<string, string> = {
-      'text': '#ffffff',
-      'background': 'transparent',
-      'border': 'transparent',
-      'accent': '#3b82f6'
+      'text_color': '#ffffff',
+      'background_color': 'transparent',
+      'border_color': 'transparent',
+      'accent_color': '#3b82f6'
     };
     
-    const defaultValue = defaultValues[colorType.toLowerCase()] || 'transparent';
+    const key = colorType.toLowerCase().replace(/\s+/g, '_');
+    const defaultValue = defaultValues[key] || 'transparent';
+    console.log(`Resetting ${key} to ${defaultValue}`);
     onChange(colorType, defaultValue);
   };
 
-  const getColorTypeKey = (name: string): string => {
-    return name.toLowerCase().replace(/[^a-z]/g, '');
+  const getColorKey = (name: string): string => {
+    return name.toLowerCase().replace(/\s+/g, '_');
   };
 
   if (readonly) {
@@ -76,7 +84,9 @@ export const InlineColorPicker: React.FC<InlineColorPickerProps> = ({
               className="w-4 h-4 rounded border"
               style={{ 
                 backgroundColor: color.value === 'transparent' ? 'transparent' : color.value,
-                borderColor: color.value === 'transparent' ? '#4b5563' : color.value
+                borderColor: color.value === 'transparent' ? '#4b5563' : color.value,
+                borderWidth: '1px',
+                borderStyle: 'solid'
               }}
               title={`${color.name}: ${color.value}`}
             />
@@ -99,7 +109,7 @@ export const InlineColorPicker: React.FC<InlineColorPickerProps> = ({
       </div>
 
       {colors.map((color) => {
-        const colorKey = getColorTypeKey(color.name);
+        const colorKey = getColorKey(color.name);
         
         return (
           <div key={color.name} className="space-y-2">
@@ -112,7 +122,9 @@ export const InlineColorPicker: React.FC<InlineColorPickerProps> = ({
                   className="w-4 h-4 rounded border cursor-pointer"
                   style={{ 
                     backgroundColor: color.value === 'transparent' ? 'transparent' : color.value,
-                    borderColor: color.value === 'transparent' ? '#4b5563' : color.value
+                    borderColor: color.value === 'transparent' ? '#4b5563' : '#2a2a2a',
+                    borderWidth: '1px',
+                    borderStyle: 'solid'
                   }}
                   title={color.value}
                 />
@@ -135,7 +147,7 @@ export const InlineColorPicker: React.FC<InlineColorPickerProps> = ({
                     variant="outline"
                     size="sm"
                     className="w-full h-8 justify-start text-xs"
-                    style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}
+                    style={{ backgroundColor: '#212121', borderColor: '#2a2a2a', color: '#ffffff' }}
                   >
                     <Pipette className="w-3 h-3 mr-2" />
                     {color.value}
@@ -166,7 +178,7 @@ export const InlineColorPicker: React.FC<InlineColorPickerProps> = ({
                         Cor personalizada
                       </Label>
                       <Input
-                        value={color.value}
+                        value={customColor}
                         onChange={(e) => handleCustomColorChange(colorKey, e.target.value)}
                         placeholder="#ffffff"
                         className="h-8 text-xs"
@@ -203,7 +215,7 @@ export const InlineColorPicker: React.FC<InlineColorPickerProps> = ({
                 </div>
                 
                 <Input
-                  value={color.value}
+                  value={customColor}
                   onChange={(e) => handleCustomColorChange(colorKey, e.target.value)}
                   placeholder="#ffffff ou transparent"
                   className="h-7 text-xs"
