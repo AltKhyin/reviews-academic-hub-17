@@ -1,12 +1,12 @@
 
-// ABOUTME: Enhanced grid panel with improved drop zones covering entire block area
-// Better drag and drop experience with full-block drop targets
+// ABOUTME: Individual grid panel for block rendering and interactions
+// Handles block display, empty states, and drag-and-drop within grid cells
 
 import React, { useCallback } from 'react';
 import { ReviewBlock } from '@/types/review';
-import { BlockRenderer } from '@/components/review/BlockRenderer';
+import { BlockRenderer } from '../blocks/BlockRenderer';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Grip } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface DragState {
@@ -28,10 +28,11 @@ interface GridPanelProps {
   onActiveBlockChange?: (blockId: number | null) => void;
   onUpdateBlock: (blockId: number, updates: Partial<ReviewBlock>) => void;
   onDeleteBlock: (blockId: number) => void;
-  onAddBlock: (rowId: string, position: number) => void;
+  onAddBlock: (targetRowId: string, position: number) => void;
   onDragOver?: (e: React.DragEvent, targetRowId: string, targetPosition?: number, targetType?: 'grid' | 'single' | 'merge') => void;
   onDragLeave?: (e: React.DragEvent) => void;
   onDrop?: (e: React.DragEvent, targetRowId: string, targetPosition?: number, dropType?: 'grid' | 'single' | 'merge') => void;
+  className?: string;
 }
 
 export const GridPanel: React.FC<GridPanelProps> = ({
@@ -47,183 +48,141 @@ export const GridPanel: React.FC<GridPanelProps> = ({
   onAddBlock,
   onDragOver,
   onDragLeave,
-  onDrop
+  onDrop,
+  className
 }) => {
+
+  const isActive = block && activeBlockId === block.id;
   const isDropTarget = dragState?.dragOverRowId === rowId && 
-                      dragState?.dragOverPosition === position && 
-                      dragState?.dropTargetType === 'merge';
+                      dragState?.dragOverPosition === position;
+  const isDraggedBlock = block && dragState?.draggedBlockId === block.id;
 
-  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (onDragOver && dragState?.isDragging) {
-      onDragOver(e, rowId, position, 'merge');
-    }
-  }, [onDragOver, rowId, position, dragState]);
-
-  const handleDragDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    if (onDrop && dragState?.isDragging) {
-      onDrop(e, rowId, position, 'merge');
-    }
-  }, [onDrop, rowId, position, dragState]);
-
-  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX;
-    const y = e.clientY;
-    
-    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-      if (onDragLeave) {
-        onDragLeave(e);
-      }
-    }
-  }, [onDragLeave]);
-
-  const handleBlockClick = useCallback((blockId: number, event: React.MouseEvent) => {
-    if (!readonly && onActiveBlockChange) {
-      const target = event.target as Element;
-      
-      const isInteractiveElement = target.closest(
-        '.inline-editor-display, .inline-rich-editor-display, input, textarea, button, select, [contenteditable], .grid-controls'
-      );
-      
-      if (!isInteractiveElement) {
-        event.stopPropagation();
-        onActiveBlockChange(activeBlockId === blockId ? null : blockId);
-      }
-    }
-  }, [activeBlockId, onActiveBlockChange, readonly]);
-
-  const handleAddBlock = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleAddBlock = useCallback(() => {
     onAddBlock(rowId, position);
   }, [rowId, position, onAddBlock]);
 
-  const createBlockUpdateWrapper = useCallback((blockId: number) => {
-    return (updates: Partial<ReviewBlock>) => {
-      onUpdateBlock(blockId, updates);
-    };
-  }, [onUpdateBlock]);
+  const handleBlockClick = useCallback(() => {
+    if (block && onActiveBlockChange) {
+      onActiveBlockChange(block.id);
+    }
+  }, [block, onActiveBlockChange]);
 
-  if (block) {
-    const isActive = activeBlockId === block.id;
-    const isDragging = dragState?.draggedBlockId === block.id;
+  const handleDragStart = useCallback((e: React.DragEvent) => {
+    if (!block || readonly) {
+      e.preventDefault();
+      return;
+    }
 
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', block.id.toString());
+    e.dataTransfer.setData('application/json', JSON.stringify({
+      blockId: block.id,
+      sourceRowId: rowId,
+      sourcePosition: position
+    }));
+
+    console.log('Started dragging block from grid panel:', {
+      blockId: block.id,
+      rowId,
+      position
+    });
+  }, [block, readonly, rowId, position]);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    if (onDragOver && !readonly) {
+      onDragOver(e, rowId, position, 'grid');
+    }
+  }, [onDragOver, readonly, rowId, position]);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    if (onDrop && !readonly) {
+      onDrop(e, rowId, position, 'grid');
+    }
+  }, [onDrop, readonly, rowId, position]);
+
+  if (!block) {
     return (
       <div 
-        className="relative group h-full" 
-        key={`block-${block.id}`}
+        className={cn(
+          "grid-panel-empty h-full flex items-center justify-center",
+          "border border-dashed border-gray-600 rounded-lg transition-all",
+          isDropTarget && "border-green-500 bg-green-500/10",
+          "hover:border-gray-500",
+          className
+        )}
         onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDragDrop}
+        onDragLeave={onDragLeave}
+        onDrop={handleDrop}
       >
-        {/* Full-coverage drop zone overlay */}
+        {!readonly && (
+          <Button
+            onClick={handleAddBlock}
+            variant="ghost"
+            size="sm"
+            className="text-gray-500 hover:text-gray-300 hover:bg-gray-800"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Adicionar bloco
+          </Button>
+        )}
+        
         {isDropTarget && (
-          <div className="absolute inset-0 border-2 border-green-500 rounded-lg z-20 animate-pulse bg-green-500/20 flex items-center justify-center">
-            <div className="text-center">
-              <div className="text-green-400 font-medium text-sm mb-2">
-                ↓ Soltar bloco aqui ↓
-              </div>
-              <div className="text-green-300 text-xs">
-                Será mesclado na posição {position + 1}
-              </div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-green-400 text-sm font-medium animate-pulse">
+              Soltar aqui
             </div>
           </div>
         )}
-
-        <div
-          className={cn(
-            "h-full transition-all duration-200 cursor-pointer rounded-lg relative",
-            isActive ? "ring-2 ring-blue-500 shadow-lg" : "hover:shadow-md",
-            !block.visible && "opacity-50",
-            isDragging && "opacity-30 scale-95"
-          )}
-          style={{ 
-            backgroundColor: isActive ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-            borderColor: isActive ? '#3b82f6' : 'transparent'
-          }}
-          onClick={(e) => handleBlockClick(block.id, e)}
-        >
-          {/* Block Controls */}
-          {!readonly && (
-            <div className={cn(
-              "absolute -top-2 -right-2 z-10 transition-opacity",
-              isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-            )}>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  onDeleteBlock(block.id);
-                }}
-                className="h-6 w-6 p-0 bg-red-800 border border-red-600 hover:bg-red-700"
-                title="Remover bloco"
-              >
-                <Trash2 className="w-3 h-3" />
-              </Button>
-            </div>
-          )}
-
-          {/* Block Content */}
-          <div className="p-4 h-full">
-            <BlockRenderer
-              block={block}
-              onUpdate={createBlockUpdateWrapper(block.id)}
-              readonly={readonly}
-            />
-          </div>
-        </div>
       </div>
     );
   }
 
-  // Empty slot with full-area drop zone
   return (
-    <div
+    <div 
       className={cn(
-        "min-h-[120px] border-2 border-dashed rounded-lg flex flex-col items-center justify-center transition-all relative group",
-        "border-gray-600 hover:border-gray-500",
-        isDropTarget && "border-green-500 bg-green-500/20 animate-pulse"
+        "grid-panel-filled h-full relative group",
+        isActive && "ring-2 ring-blue-500",
+        isDraggedBlock && "opacity-50",
+        isDropTarget && "ring-2 ring-green-500",
+        className
       )}
-      style={{ borderColor: isDropTarget ? '#22c55e' : '#2a2a2a' }}
+      onClick={handleBlockClick}
       onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDragDrop}
+      onDragLeave={onDragLeave}
+      onDrop={handleDrop}
     >
-      {isDropTarget && (
-        <div className="absolute inset-0 flex items-center justify-center bg-green-500/30 rounded-lg z-10">
-          <div className="text-center">
-            <div className="text-green-400 font-medium text-sm mb-2">
-              ↓ Soltar bloco aqui ↓
-            </div>
-            <div className="text-green-300 text-xs">
-              Será adicionado à posição {position + 1}
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {!readonly && !isDropTarget && (
-        <div className="text-center opacity-60 group-hover:opacity-100 transition-opacity">
-          <div className="text-gray-400 text-sm mb-3">Posição {position + 1}</div>
+      {/* Drag Handle */}
+      {!readonly && (
+        <div 
+          className="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
+          draggable
+          onDragStart={handleDragStart}
+        >
           <Button
             variant="ghost"
             size="sm"
-            onClick={handleAddBlock}
-            className="text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500"
+            className="w-6 h-6 p-0 bg-gray-800/80 hover:bg-gray-700/80 text-gray-400 hover:text-white"
           >
-            <Plus className="w-4 h-4 mr-2" />
-            Adicionar Bloco
+            <Grip className="w-3 h-3" />
           </Button>
-          <div className="text-xs text-gray-500 mt-2">
-            ou arraste um bloco existente
+        </div>
+      )}
+
+      {/* Block Content */}
+      <div className="h-full overflow-hidden">
+        <BlockRenderer
+          block={block}
+          readonly={readonly}
+          onUpdate={onUpdateBlock}
+          className="h-full"
+        />
+      </div>
+
+      {/* Drop Indicator */}
+      {isDropTarget && (
+        <div className="absolute inset-0 border-2 border-green-500 rounded-lg bg-green-500/5 flex items-center justify-center pointer-events-none">
+          <div className="text-green-400 text-sm font-medium animate-pulse">
+            ↓ Soltar bloco aqui ↓
           </div>
         </div>
       )}

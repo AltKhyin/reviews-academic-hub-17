@@ -1,10 +1,10 @@
 
-// ABOUTME: Hook for managing 2D grid layouts
-// Provides state management and operations for vertical grid functionality
+// ABOUTME: 2D grid management hook with vertical and horizontal operations
+// Provides complete 2D grid functionality including row/column operations
 
-import { useState, useCallback, useMemo } from 'react';
-import { Grid2DLayout, GridPosition, GridOperationResult } from '@/types/grid';
+import { useCallback, useMemo, useState } from 'react';
 import { ReviewBlock } from '@/types/review';
+import { Grid2DLayout, GridPosition, GridRow, GridCell } from '@/types/grid';
 import { 
   createEmptyGrid, 
   addRowToGrid, 
@@ -13,14 +13,13 @@ import {
   removeBlockFromGrid,
   getBlocksFromGrid,
   findBlockInGrid,
-  gridHasBlocks,
   validateGrid
 } from '@/utils/grid2DUtils';
 
 interface UseGrid2DManagerProps {
   onUpdateBlock: (blockId: number, updates: Partial<ReviewBlock>) => void;
   onDeleteBlock: (blockId: number) => void;
-  onAddBlock?: (type: string, position?: number) => void;
+  onAddBlock: (type: string, position?: number) => void;
 }
 
 export const useGrid2DManager = ({
@@ -28,267 +27,331 @@ export const useGrid2DManager = ({
   onDeleteBlock,
   onAddBlock
 }: UseGrid2DManagerProps) => {
-  const [grids, setGrids] = useState<Map<string, Grid2DLayout>>(new Map());
+  const [grids, setGrids] = useState<Grid2DLayout[]>([]);
 
-  // Create new grid
-  const createGrid = useCallback((
-    columns: number, 
-    rows: number = 1, 
-    initialBlocks?: ReviewBlock[]
-  ): GridOperationResult => {
-    try {
-      const newGrid = createEmptyGrid(columns, rows);
+  // Extract grids from blocks with grid_id metadata
+  const extractGridsFromBlocks = useCallback((blocks: ReviewBlock[]): Grid2DLayout[] => {
+    const gridMap = new Map<string, Grid2DLayout>();
+    
+    blocks.forEach(block => {
+      const gridId = block.meta?.layout?.grid_id;
+      const gridPosition = block.meta?.layout?.grid_position;
       
-      // Place initial blocks if provided
-      if (initialBlocks) {
-        let updatedGrid = newGrid;
-        initialBlocks.forEach((block, index) => {
-          const row = Math.floor(index / columns);
-          const column = index % columns;
-          
-          if (row < rows) {
-            const position: GridPosition = { row, column };
-            updatedGrid = placeBlockInGrid(updatedGrid, block, position);
-          }
-        });
+      if (gridId && gridPosition) {
+        if (!gridMap.has(gridId)) {
+          // Create new grid from block metadata
+          const gridMetadata = block.meta.layout;
+          const newGrid = createEmptyGrid(
+            gridMetadata.columns || 2,
+            gridMetadata.grid_rows || 1,
+            gridMetadata.gap || 4
+          );
+          newGrid.id = gridId;
+          gridMap.set(gridId, newGrid);
+        }
         
-        setGrids(prev => new Map(prev).set(newGrid.id, updatedGrid));
-        return { success: true, grid: updatedGrid };
+        const grid = gridMap.get(gridId)!;
+        const updatedGrid = placeBlockInGrid(grid, block, gridPosition);
+        gridMap.set(gridId, updatedGrid);
       }
-      
-      setGrids(prev => new Map(prev).set(newGrid.id, newGrid));
-      return { success: true, grid: newGrid };
-    } catch (error) {
-      console.error('Failed to create grid:', error);
-      return { success: false, error: String(error) };
-    }
+    });
+    
+    return Array.from(gridMap.values());
   }, []);
 
-  // Add row to grid
+  // Create new 2D grid
+  const createGrid = useCallback((columns: number = 2, rows: number = 1): Grid2DLayout => {
+    const newGrid = createEmptyGrid(columns, rows, 4);
+    
+    setGrids(prev => [...prev, newGrid]);
+    
+    console.log('Created new 2D grid:', { 
+      gridId: newGrid.id, 
+      columns, 
+      rows 
+    });
+    
+    return newGrid;
+  }, []);
+
+  // Add row to existing grid
   const addRowToGridById = useCallback((
     gridId: string, 
     position: 'above' | 'below', 
     targetRowIndex: number
-  ): GridOperationResult => {
-    try {
-      const grid = grids.get(gridId);
-      if (!grid) {
-        return { success: false, error: 'Grid not found' };
-      }
+  ): boolean => {
+    const grid = grids.find(g => g.id === gridId);
+    if (!grid) {
+      console.error('Grid not found for row addition:', gridId);
+      return false;
+    }
 
+    try {
       const updatedGrid = addRowToGrid(grid, position, targetRowIndex);
       
-      if (!validateGrid(updatedGrid)) {
-        return { success: false, error: 'Invalid grid structure after row addition' };
-      }
-
-      setGrids(prev => new Map(prev).set(gridId, updatedGrid));
-      return { success: true, grid: updatedGrid };
+      setGrids(prev => prev.map(g => 
+        g.id === gridId ? updatedGrid : g
+      ));
+      
+      // Update all blocks in the grid with new row count
+      const gridBlocks = getBlocksFromGrid(updatedGrid);
+      gridBlocks.forEach(block => {
+        onUpdateBlock(block.id, {
+          meta: {
+            ...block.meta,
+            layout: {
+              ...block.meta?.layout,
+              grid_rows: updatedGrid.rows.length,
+              rowHeights: updatedGrid.rowHeights
+            }
+          }
+        });
+      });
+      
+      console.log('Added row to grid:', { 
+        gridId, 
+        position, 
+        targetRowIndex, 
+        newRowCount: updatedGrid.rows.length 
+      });
+      
+      return true;
     } catch (error) {
       console.error('Failed to add row to grid:', error);
-      return { success: false, error: String(error) };
+      return false;
     }
-  }, [grids]);
+  }, [grids, onUpdateBlock]);
 
-  // Remove row from grid
+  // Remove row from existing grid
   const removeRowFromGridById = useCallback((
     gridId: string, 
     rowIndex: number
-  ): GridOperationResult => {
+  ): boolean => {
+    const grid = grids.find(g => g.id === gridId);
+    if (!grid) {
+      console.error('Grid not found for row removal:', gridId);
+      return false;
+    }
+
     try {
-      const grid = grids.get(gridId);
-      if (!grid) {
-        return { success: false, error: 'Grid not found' };
-      }
-
-      // Check if row has blocks and handle deletion
+      // Get blocks in the row to be removed
       const rowToRemove = grid.rows[rowIndex];
-      if (rowToRemove) {
-        rowToRemove.cells.forEach(cell => {
-          if (cell.block) {
-            onDeleteBlock(cell.block.id);
-          }
-        });
-      }
+      const blocksToRemove = rowToRemove.cells
+        .filter(cell => cell.block)
+        .map(cell => cell.block!);
 
+      // Remove blocks from the row
+      blocksToRemove.forEach(block => {
+        onDeleteBlock(block.id);
+      });
+
+      // Update grid structure
       const updatedGrid = removeRowFromGrid(grid, rowIndex);
       
-      if (!validateGrid(updatedGrid)) {
-        return { success: false, error: 'Invalid grid structure after row removal' };
-      }
-
-      setGrids(prev => new Map(prev).set(gridId, updatedGrid));
-      return { success: true, grid: updatedGrid };
+      setGrids(prev => prev.map(g => 
+        g.id === gridId ? updatedGrid : g
+      ));
+      
+      // Update remaining blocks with new row positions
+      const remainingBlocks = getBlocksFromGrid(updatedGrid);
+      remainingBlocks.forEach(block => {
+        const newPosition = findBlockInGrid(updatedGrid, block.id);
+        if (newPosition) {
+          onUpdateBlock(block.id, {
+            meta: {
+              ...block.meta,
+              layout: {
+                ...block.meta?.layout,
+                grid_position: newPosition,
+                grid_rows: updatedGrid.rows.length,
+                rowHeights: updatedGrid.rowHeights
+              }
+            }
+          });
+        }
+      });
+      
+      console.log('Removed row from grid:', { 
+        gridId, 
+        rowIndex, 
+        newRowCount: updatedGrid.rows.length,
+        blocksRemoved: blocksToRemove.length
+      });
+      
+      return true;
     } catch (error) {
       console.error('Failed to remove row from grid:', error);
-      return { success: false, error: String(error) };
+      return false;
     }
-  }, [grids, onDeleteBlock]);
+  }, [grids, onDeleteBlock, onUpdateBlock]);
 
-  // Place block in grid
+  // Place block in specific grid position
   const placeBlockInGridById = useCallback((
-    gridId: string,
-    block: ReviewBlock,
+    gridId: string, 
+    block: ReviewBlock, 
     position: GridPosition
-  ): GridOperationResult => {
-    try {
-      const grid = grids.get(gridId);
-      if (!grid) {
-        return { success: false, error: 'Grid not found' };
-      }
+  ): boolean => {
+    const grid = grids.find(g => g.id === gridId);
+    if (!grid) {
+      console.error('Grid not found for block placement:', gridId);
+      return false;
+    }
 
+    try {
       const updatedGrid = placeBlockInGrid(grid, block, position);
       
-      // Update block metadata
+      setGrids(prev => prev.map(g => 
+        g.id === gridId ? updatedGrid : g
+      ));
+      
+      console.log('Placed block in grid:', { 
+        gridId, 
+        blockId: block.id, 
+        position 
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to place block in grid:', error);
+      return false;
+    }
+  }, [grids]);
+
+  // Remove block from grid
+  const removeBlockFromGridById = useCallback((
+    gridId: string, 
+    position: GridPosition
+  ): boolean => {
+    const grid = grids.find(g => g.id === gridId);
+    if (!grid) {
+      console.error('Grid not found for block removal:', gridId);
+      return false;
+    }
+
+    try {
+      const updatedGrid = removeBlockFromGrid(grid, position);
+      
+      setGrids(prev => prev.map(g => 
+        g.id === gridId ? updatedGrid : g
+      ));
+      
+      console.log('Removed block from grid:', { 
+        gridId, 
+        position 
+      });
+      
+      return true;
+    } catch (error) {
+      console.error('Failed to remove block from grid:', error);
+      return false;
+    }
+  }, [grids]);
+
+  // Update grid layout (dimensions, gaps, etc.)
+  const updateGridLayout = useCallback((
+    gridId: string, 
+    updates: Partial<Grid2DLayout>
+  ): boolean => {
+    const grid = grids.find(g => g.id === gridId);
+    if (!grid) {
+      console.error('Grid not found for layout update:', gridId);
+      return false;
+    }
+
+    const updatedGrid = { ...grid, ...updates };
+    
+    setGrids(prev => prev.map(g => 
+      g.id === gridId ? updatedGrid : g
+    ));
+    
+    // Update all blocks in grid with new layout metadata
+    const gridBlocks = getBlocksFromGrid(updatedGrid);
+    gridBlocks.forEach(block => {
       onUpdateBlock(block.id, {
         meta: {
           ...block.meta,
           layout: {
             ...block.meta?.layout,
-            grid_id: gridId,
-            grid_position: position,
-            grid_rows: updatedGrid.rows.length,
-            columns: updatedGrid.columns,
             gap: updatedGrid.gap,
             columnWidths: updatedGrid.columnWidths,
             rowHeights: updatedGrid.rowHeights
           }
         }
       });
-
-      setGrids(prev => new Map(prev).set(gridId, updatedGrid));
-      return { success: true, grid: updatedGrid };
-    } catch (error) {
-      console.error('Failed to place block in grid:', error);
-      return { success: false, error: String(error) };
-    }
+    });
+    
+    console.log('Updated grid layout:', { 
+      gridId, 
+      updates 
+    });
+    
+    return true;
   }, [grids, onUpdateBlock]);
-
-  // Remove block from grid
-  const removeBlockFromGridById = useCallback((
-    gridId: string,
-    position: GridPosition
-  ): GridOperationResult => {
-    try {
-      const grid = grids.get(gridId);
-      if (!grid) {
-        return { success: false, error: 'Grid not found' };
-      }
-
-      const updatedGrid = removeBlockFromGrid(grid, position);
-      setGrids(prev => new Map(prev).set(gridId, updatedGrid));
-      return { success: true, grid: updatedGrid };
-    } catch (error) {
-      console.error('Failed to remove block from grid:', error);
-      return { success: false, error: String(error) };
-    }
-  }, [grids]);
 
   // Get grid by ID
-  const getGrid = useCallback((gridId: string): Grid2DLayout | undefined => {
-    return grids.get(gridId);
+  const getGridById = useCallback((gridId: string): Grid2DLayout | null => {
+    return grids.find(g => g.id === gridId) || null;
   }, [grids]);
 
-  // Get all grids
-  const getAllGrids = useCallback((): Grid2DLayout[] => {
-    return Array.from(grids.values());
+  // Validate all grids
+  const validateAllGrids = useCallback((): boolean => {
+    return grids.every(grid => validateGrid(grid));
   }, [grids]);
 
-  // Delete grid
-  const deleteGrid = useCallback((gridId: string): boolean => {
-    const grid = grids.get(gridId);
-    if (!grid) return false;
+  // Convert 1D grid to 2D grid
+  const convertTo2DGrid = useCallback((
+    blocks: ReviewBlock[], 
+    rowId: string
+  ): Grid2DLayout | null => {
+    if (blocks.length === 0) return null;
 
-    // Delete all blocks in grid
-    const blocks = getBlocksFromGrid(grid);
-    blocks.forEach(block => onDeleteBlock(block.id));
-
-    setGrids(prev => {
-      const newMap = new Map(prev);
-      newMap.delete(gridId);
-      return newMap;
-    });
-
-    return true;
-  }, [grids, onDeleteBlock]);
-
-  // Update grid layout properties
-  const updateGridLayout = useCallback((
-    gridId: string,
-    updates: Partial<Pick<Grid2DLayout, 'gap' | 'columnWidths' | 'rowHeights'>>
-  ): GridOperationResult => {
-    try {
-      const grid = grids.get(gridId);
-      if (!grid) {
-        return { success: false, error: 'Grid not found' };
-      }
-
-      const updatedGrid: Grid2DLayout = {
-        ...grid,
-        ...updates
-      };
-
-      // Update all block metadata in grid
-      const blocks = getBlocksFromGrid(updatedGrid);
-      blocks.forEach(block => {
-        onUpdateBlock(block.id, {
-          meta: {
-            ...block.meta,
-            layout: {
-              ...block.meta?.layout,
-              gap: updatedGrid.gap,
-              columnWidths: updatedGrid.columnWidths,
-              rowHeights: updatedGrid.rowHeights
-            }
-          }
-        });
-      });
-
-      setGrids(prev => new Map(prev).set(gridId, updatedGrid));
-      return { success: true, grid: updatedGrid };
-    } catch (error) {
-      console.error('Failed to update grid layout:', error);
-      return { success: false, error: String(error) };
-    }
-  }, [grids, onUpdateBlock]);
-
-  // Get statistics
-  const gridStats = useMemo(() => {
-    const totalGrids = grids.size;
-    const totalBlocks = Array.from(grids.values())
-      .reduce((sum, grid) => sum + getBlocksFromGrid(grid).length, 0);
+    const columns = blocks.length;
+    const newGrid = createEmptyGrid(columns, 1, 4);
     
-    return { totalGrids, totalBlocks };
-  }, [grids]);
+    // Place existing blocks in first row
+    blocks.forEach((block, index) => {
+      const position: GridPosition = { row: 0, column: index };
+      placeBlockInGrid(newGrid, block, position);
+    });
+    
+    setGrids(prev => [...prev, newGrid]);
+    
+    // Update blocks with 2D grid metadata
+    blocks.forEach((block, index) => {
+      onUpdateBlock(block.id, {
+        meta: {
+          ...block.meta,
+          layout: {
+            ...block.meta?.layout,
+            grid_id: newGrid.id,
+            grid_position: { row: 0, column: index },
+            grid_rows: 1,
+            rowHeights: [100]
+          }
+        }
+      });
+    });
+    
+    console.log('Converted 1D grid to 2D:', { 
+      rowId, 
+      gridId: newGrid.id, 
+      blocks: blocks.length 
+    });
+    
+    return newGrid;
+  }, [onUpdateBlock]);
 
   return {
-    // State
-    grids: Array.from(grids.values()),
-    gridStats,
-    
-    // Grid operations
+    grids,
     createGrid,
-    getGrid,
-    getAllGrids,
-    deleteGrid,
-    updateGridLayout,
-    
-    // Row operations
     addRowToGridById,
     removeRowFromGridById,
-    
-    // Block operations
     placeBlockInGridById,
     removeBlockFromGridById,
-    
-    // Utilities
-    findBlockInGrid: (gridId: string, blockId: number) => {
-      const grid = grids.get(gridId);
-      return grid ? findBlockInGrid(grid, blockId) : null;
-    },
-    gridHasBlocks: (gridId: string) => {
-      const grid = grids.get(gridId);
-      return grid ? gridHasBlocks(grid) : false;
-    }
+    updateGridLayout,
+    getGridById,
+    validateAllGrids,
+    convertTo2DGrid,
+    extractGridsFromBlocks
   };
 };

@@ -1,6 +1,5 @@
-
-// ABOUTME: Refactored block editor with improved drop zones and 2D grid support
-// Main editor with enhanced drag-and-drop functionality and vertical grid capabilities
+// ABOUTME: Enhanced block editor with complete 2D grid support and dynamic layout
+// Main editor with full grid functionality and responsive design
 
 import React, { useState, useCallback, useRef } from 'react';
 import { ReviewBlock, BlockType } from '@/types/review';
@@ -9,6 +8,7 @@ import { ResizableGrid } from './layout/ResizableGrid';
 import { Grid2DContainer } from './layout/Grid2DContainer';
 import { useGridLayoutManager } from '@/hooks/useGridLayoutManager';
 import { useGrid2DManager } from '@/hooks/useGrid2DManager';
+import { useEditorLayout } from '@/hooks/useEditorLayout';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -62,6 +62,10 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
   const dragTimeoutRef = useRef<NodeJS.Timeout>();
   const processingDropRef = useRef(false);
 
+  // Layout management
+  const { getEditorStyles, isDividirMode } = useEditorLayout();
+
+  // 1D Grid management
   const {
     layoutState,
     updateColumnWidths,
@@ -73,7 +77,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     onDeleteBlock
   });
 
-  // Initialize 2D grid manager
+  // 2D Grid management
   const {
     grids,
     createGrid,
@@ -81,33 +85,19 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     removeRowFromGridById,
     placeBlockInGridById,
     removeBlockFromGridById,
-    updateGridLayout
+    updateGridLayout,
+    extractGridsFromBlocks
   } = useGrid2DManager({
     onUpdateBlock,
     onDeleteBlock,
     onAddBlock
   });
 
-  // Extract 2D grids from blocks
-  const twoDGrids = React.useMemo(() => {
-    const gridMap = new Map();
-    
-    blocks.forEach(block => {
-      const gridId = block.meta?.layout?.grid_id;
-      if (gridId) {
-        if (!gridMap.has(gridId)) {
-          gridMap.set(gridId, {
-            id: gridId,
-            blocks: [],
-            metadata: block.meta?.layout
-          });
-        }
-        gridMap.get(gridId).blocks.push(block);
-      }
-    });
-    
-    return Array.from(gridMap.values());
-  }, [blocks]);
+  // Extract 2D grids from current blocks
+  React.useEffect(() => {
+    const extracted2DGrids = extractGridsFromBlocks(blocks);
+    console.log('Extracted 2D grids from blocks:', extracted2DGrids.length);
+  }, [blocks, extractGridsFromBlocks]);
 
   const addBlockBetween = useCallback((position: number, type: BlockType = 'paragraph') => {
     onAddBlock(type, position);
@@ -172,6 +162,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     removeRowFromGridById(gridId, rowIndex);
   }, [removeRowFromGridById]);
 
+  // Handle drag start
   const handleDragStart = useCallback((e: React.DragEvent, blockId: number) => {
     if (processingDropRef.current) {
       e.preventDefault();
@@ -350,13 +341,9 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     </div>
   );
 
-  const render2DGrid = (gridData: any) => {
-    const grid = grids.find(g => g.id === gridData.id);
-    if (!grid) return null;
-
-    return (
+  const render2DGrid = (grid: any) => (
+    <div key={grid.id} className="mx-2 mb-8">
       <Grid2DContainer
-        key={grid.id}
         grid={grid}
         activeBlockId={activeBlockId}
         onActiveBlockChange={onActiveBlockChange}
@@ -372,13 +359,26 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop2D}
       />
-    );
-  };
+    </div>
+  );
 
   return (
-    <div className={cn("block-editor py-6", className)}>
+    <div 
+      className={cn("block-editor py-6", className)}
+      style={getEditorStyles()}
+    >
+      {/* Dynamic width indicator for Dividir mode */}
+      {isDividirMode && (
+        <div className="mb-4 text-center">
+          <div className="inline-flex items-center px-3 py-1 bg-blue-900/20 border border-blue-500/30 rounded-full text-blue-400 text-sm">
+            <span className="w-2 h-2 bg-blue-400 rounded-full mr-2 animate-pulse"></span>
+            Modo Dividir Ativo • Editor Expandido
+          </div>
+        </div>
+      )}
+
       {/* Render 2D Grids */}
-      {twoDGrids.map(gridData => render2DGrid(gridData))}
+      {grids.map(grid => render2DGrid(grid))}
       
       {/* Render existing 1D grids and single blocks */}
       {layoutState.rows.map((row, index) => {

@@ -1,11 +1,10 @@
 
-// ABOUTME: Enhanced view mode switcher for native reviews and PDFs
-// Supports switching between native content, PDF reviews, and original articles
+// ABOUTME: Enhanced view mode switcher with editor layout integration
+// Triggers dynamic editor width changes for optimal editing experience
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { FileText, Layers, BookOpen, Monitor } from 'lucide-react';
+import { FileText, Eye, Columns2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ViewModeSwitcherProps {
@@ -21,137 +20,114 @@ export const ViewModeSwitcher: React.FC<ViewModeSwitcherProps> = ({
   currentMode,
   onModeChange,
   hasOriginalPDF = false,
-  hasNativeContent = false,
+  hasNativeContent = true,
   hasPDFReview = false,
   className
 }) => {
+
+  // Trigger editor layout changes when switching to "dual" mode
+  useEffect(() => {
+    const triggerEditorLayoutChange = () => {
+      let layoutMode: 'single' | 'dividir' | 'preview';
+      
+      switch (currentMode) {
+        case 'dual':
+          layoutMode = 'dividir';
+          break;
+        case 'pdf':
+          layoutMode = 'preview';
+          break;
+        default:
+          layoutMode = 'single';
+      }
+
+      // Dispatch custom event for editor layout
+      const event = new CustomEvent('viewModeChange', {
+        detail: { mode: layoutMode }
+      });
+      window.dispatchEvent(event);
+      
+      console.log('View mode changed, triggering editor layout:', {
+        viewMode: currentMode,
+        editorLayout: layoutMode
+      });
+    };
+
+    triggerEditorLayoutChange();
+  }, [currentMode]);
+
+  const handleModeChange = (mode: string) => {
+    console.log('ViewModeSwitcher: Changing mode from', currentMode, 'to', mode);
+    onModeChange(mode);
+  };
+
   const modes = [
     {
       id: 'native',
       label: 'Revisão Nativa',
-      shortLabel: 'Nativa',
-      icon: Layers,
-      description: 'Conteúdo interativo e estruturado',
-      available: hasNativeContent,
-      color: 'blue'
+      icon: FileText,
+      enabled: hasNativeContent,
+      description: 'Conteúdo estruturado e interativo'
+    },
+    {
+      id: 'dual',
+      label: 'Dividir',
+      icon: Columns2,
+      enabled: hasOriginalPDF && hasNativeContent,
+      description: 'Revisão + Artigo lado a lado'
     },
     {
       id: 'pdf',
       label: 'Artigo Original',
-      shortLabel: 'Original',
-      icon: BookOpen,
-      description: 'PDF do artigo científico original',
-      available: hasOriginalPDF,
-      color: 'green'
-    },
-    {
-      id: 'dual',
-      label: 'Visualização Dupla',
-      shortLabel: 'Dupla',
-      icon: Monitor,
-      description: 'Revisão nativa e artigo original lado a lado',
-      available: hasNativeContent && hasOriginalPDF,
-      color: 'purple'
+      icon: Eye,
+      enabled: hasOriginalPDF,
+      description: 'PDF do artigo original'
     }
   ];
 
-  const availableModes = modes.filter(mode => mode.available);
+  const availableModes = modes.filter(mode => mode.enabled);
 
   if (availableModes.length <= 1) {
-    return null; // Don't show switcher if there's only one option
+    return null;
   }
-
-  const getButtonVariant = (modeId: string) => {
-    return currentMode === modeId ? 'default' : 'outline';
-  };
-
-  const getColorClasses = (color: string, isActive: boolean) => {
-    if (!isActive) return '';
-    
-    switch (color) {
-      case 'blue':
-        return 'bg-blue-50 border-blue-200 text-blue-700';
-      case 'green':
-        return 'bg-green-50 border-green-200 text-green-700';
-      case 'purple':
-        return 'bg-purple-50 border-purple-200 text-purple-700';
-      default:
-        return '';
-    }
-  };
 
   return (
     <div className={cn("view-mode-switcher", className)}>
-      {/* Desktop Version - Full Labels */}
-      <div className="hidden md:flex items-center gap-2 p-1 bg-gray-100 rounded-lg">
+      <div className="flex items-center gap-2 p-1 bg-gray-800 rounded-lg border border-gray-700">
         {availableModes.map((mode) => {
-          const IconComponent = mode.icon;
+          const Icon = mode.icon;
           const isActive = currentMode === mode.id;
           
           return (
             <Button
               key={mode.id}
-              variant={getButtonVariant(mode.id)}
+              onClick={() => handleModeChange(mode.id)}
+              variant={isActive ? "default" : "ghost"}
               size="sm"
-              onClick={() => onModeChange(mode.id)}
               className={cn(
-                "flex items-center gap-2 transition-all duration-200",
-                isActive && getColorClasses(mode.color, true)
+                "flex items-center gap-2 px-3 py-2 text-sm transition-all duration-200",
+                isActive 
+                  ? "bg-blue-600 text-white shadow-md" 
+                  : "text-gray-300 hover:text-white hover:bg-gray-700"
               )}
               title={mode.description}
             >
-              <IconComponent className="w-4 h-4" />
-              <span>{mode.label}</span>
-              {mode.id === 'native' && hasNativeContent && (
-                <Badge variant="secondary" className="ml-1 text-xs">
-                  Novo
-                </Badge>
-              )}
+              <Icon className="w-4 h-4" />
+              <span className="hidden sm:inline">{mode.label}</span>
             </Button>
           );
         })}
       </div>
-
-      {/* Mobile Version - Icons + Short Labels */}
-      <div className="md:hidden flex items-center gap-1 p-1 bg-gray-100 rounded-lg overflow-x-auto">
-        {availableModes.map((mode) => {
-          const IconComponent = mode.icon;
-          const isActive = currentMode === mode.id;
-          
-          return (
-            <Button
-              key={mode.id}
-              variant={getButtonVariant(mode.id)}
-              size="sm"
-              onClick={() => onModeChange(mode.id)}
-              className={cn(
-                "flex flex-col items-center gap-1 min-w-[70px] h-auto py-2 px-2 transition-all duration-200",
-                isActive && getColorClasses(mode.color, true)
-              )}
-              title={mode.description}
-            >
-              <IconComponent className="w-4 h-4" />
-              <span className="text-xs leading-none">{mode.shortLabel}</span>
-              {mode.id === 'native' && hasNativeContent && (
-                <div className="w-2 h-2 bg-blue-500 rounded-full" />
-              )}
-            </Button>
-          );
-        })}
-      </div>
-
-      {/* Mode Description - Desktop Only */}
-      <div className="hidden lg:block mt-2">
-        {availableModes.map((mode) => {
-          if (currentMode === mode.id) {
-            return (
-              <p key={mode.id} className="text-sm text-gray-600">
-                {mode.description}
-              </p>
-            );
-          }
-          return null;
-        })}
+      
+      {/* Mode Description */}
+      <div className="mt-2 text-xs text-gray-400 text-center">
+        {currentMode === 'dual' && (
+          <span className="text-blue-400">
+            ✨ Editor expandido para melhor visualização
+          </span>
+        )}
+        {currentMode === 'native' && "Visualização otimizada da revisão nativa"}
+        {currentMode === 'pdf' && "Visualização do documento original em PDF"}
       </div>
     </div>
   );
