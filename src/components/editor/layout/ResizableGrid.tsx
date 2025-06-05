@@ -1,11 +1,13 @@
 
-// ABOUTME: Enhanced resizable grid layout with proper synchronization and utilities
-// Uses shared grid utilities for consistent rendering and better column width management
+// ABOUTME: Enhanced resizable grid layout with advanced operations and improved synchronization
+// Uses shared grid utilities for consistent rendering and enhanced column management
 
 import React, { useCallback, useMemo } from 'react';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { ReviewBlock } from '@/types/review';
 import { BlockRenderer } from '@/components/review/BlockRenderer';
+import { GridControls } from './GridControls';
+import { useEnhancedGridOperations } from '@/hooks/useEnhancedGridOperations';
 import { Button } from '@/components/ui/button';
 import { Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -51,6 +53,25 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
     return columnWidthsToPanelSizes(columnWidths, columns);
   }, [columnWidths, columns]);
 
+  // Enhanced grid operations
+  const {
+    addColumnToGrid,
+    removeColumnFromGrid,
+    mergeGridBlocks,
+    convertGridToSingle,
+    reorderGridColumns
+  } = useEnhancedGridOperations({
+    blocks: blocks, // Pass all blocks for context
+    onUpdateBlock,
+    onDeleteBlock,
+    onAddBlock: (type, position, layoutInfo) => {
+      // This is a simplified adapter - in real implementation you'd need to handle this properly
+      if (layoutInfo && layoutInfo.rowId === rowId) {
+        onAddBlock(rowId, layoutInfo.gridPosition);
+      }
+    }
+  });
+
   console.log('ResizableGrid render:', { 
     rowId, 
     columns, 
@@ -78,6 +99,27 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
       }
     }
   }, [activeBlockId, onActiveBlockChange, readonly]);
+
+  // Enhanced grid operations handlers
+  const handleAddColumn = useCallback(() => {
+    addColumnToGrid(rowId);
+  }, [addColumnToGrid, rowId]);
+
+  const handleRemoveColumn = useCallback((columnIndex: number) => {
+    removeColumnFromGrid(rowId, columnIndex);
+  }, [removeColumnFromGrid, rowId]);
+
+  const handleMergeBlocks = useCallback((leftIndex: number, rightIndex: number) => {
+    mergeGridBlocks(rowId, leftIndex, rightIndex);
+  }, [mergeGridBlocks, rowId]);
+
+  const handleConvertToSingle = useCallback((mergeContent: boolean) => {
+    convertGridToSingle(rowId, mergeContent);
+  }, [convertGridToSingle, rowId]);
+
+  const handleReorderColumns = useCallback((fromIndex: number, toIndex: number) => {
+    reorderGridColumns(rowId, fromIndex, toIndex);
+  }, [reorderGridColumns, rowId]);
 
   // Render empty slot for adding blocks
   const renderEmptySlot = (position: number) => (
@@ -158,8 +200,25 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
     );
   };
 
+  const hasBlocks = blocks.length > 0;
+
   return (
     <div className={cn("resizable-grid my-6", className)}>
+      {/* Enhanced Grid Controls - Only show in edit mode */}
+      {!readonly && (
+        <GridControls
+          rowId={rowId}
+          columns={columns}
+          hasBlocks={hasBlocks}
+          onAddColumn={handleAddColumn}
+          onRemoveColumn={handleRemoveColumn}
+          onMergeBlocks={handleMergeBlocks}
+          onConvertToSingle={handleConvertToSingle}
+          onReorderColumns={handleReorderColumns}
+          className="mb-4"
+        />
+      )}
+
       <ResizablePanelGroup
         direction="horizontal"
         onLayout={handlePanelResize}

@@ -1,3 +1,4 @@
+
 // ABOUTME: Enhanced block editor with unified grid management and fixed drag and drop
 // Uses new grid layout manager for consistent operations and proper event handling
 
@@ -39,10 +40,10 @@ interface BlockEditorProps {
 
 interface DragState {
   draggedBlockId: number | null;
-  draggedFromRowId: string | null;
   dragOverRowId: string | null;
   dragOverPosition: number | null;
   isDragging: boolean;
+  draggedFromRowId: string | null;
 }
 
 export const BlockEditor: React.FC<BlockEditorProps> = ({
@@ -59,10 +60,10 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
 }) => {
   const [dragState, setDragState] = useState<DragState>({
     draggedBlockId: null,
-    draggedFromRowId: null,
     dragOverRowId: null,
     dragOverPosition: null,
-    isDragging: false
+    isDragging: false,
+    draggedFromRowId: null
   });
 
   const dragTimeoutRef = useRef<NodeJS.Timeout>();
@@ -159,7 +160,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     onAddBlock('paragraph', insertionIndex);
   }, [layoutState.rows, blocks, onAddBlock]);
 
-  // Fixed drag and drop implementation
+  // ENHANCED DRAG AND DROP IMPLEMENTATION
   const handleDragStart = useCallback((e: React.DragEvent, blockId: number) => {
     const sourceRow = getRowByBlockId(blockId);
     
@@ -173,70 +174,91 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       isDragging: true
     });
 
+    // Set drag data for proper HTML5 drag and drop
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', blockId.toString());
+    e.dataTransfer.setData('application/json', JSON.stringify({
+      blockId,
+      sourceRowId: sourceRow?.id || null
+    }));
+
+    // Add visual feedback class to body
+    document.body.classList.add('dragging-block');
   }, [getRowByBlockId]);
 
-  const handleDragOver = useCallback((e: React.DragEvent, rowId: string, position?: number) => {
+  const handleDragOver = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     
+    // Clear any existing timeout
     if (dragTimeoutRef.current) {
       clearTimeout(dragTimeoutRef.current);
     }
 
+    // Debounce the drag over state updates
     dragTimeoutRef.current = setTimeout(() => {
-      setDragState(prev => ({
-        ...prev,
-        dragOverRowId: rowId,
-        dragOverPosition: position ?? null
-      }));
+      if (dragState.isDragging) {
+        setDragState(prev => ({
+          ...prev,
+          dragOverRowId: targetRowId,
+          dragOverPosition: targetPosition ?? null
+        }));
+      }
     }, 50);
-  }, []);
+  }, [dragState.isDragging]);
 
-  const handleDragLeave = useCallback(() => {
-    if (dragTimeoutRef.current) {
-      clearTimeout(dragTimeoutRef.current);
-    }
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    // Only trigger if leaving the actual drop zone
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
     
-    dragTimeoutRef.current = setTimeout(() => {
-      setDragState(prev => ({
-        ...prev,
-        dragOverRowId: null,
-        dragOverPosition: null
-      }));
-    }, 100);
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      if (dragTimeoutRef.current) {
+        clearTimeout(dragTimeoutRef.current);
+      }
+      
+      dragTimeoutRef.current = setTimeout(() => {
+        setDragState(prev => ({
+          ...prev,
+          dragOverRowId: null,
+          dragOverPosition: null
+        }));
+      }, 100);
+    }
   }, []);
 
   const handleDrop = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number) => {
     e.preventDefault();
     
-    if (!dragState.draggedBlockId) return;
+    if (!dragState.draggedBlockId) {
+      console.warn('No dragged block found during drop');
+      return;
+    }
 
     const draggedBlock = blocks.find(b => b.id === dragState.draggedBlockId);
     const targetRow = layoutState.rows.find(r => r.id === targetRowId);
     
     if (!draggedBlock || !targetRow) {
-      console.error('Invalid drop operation:', { draggedBlock: !!draggedBlock, targetRow: !!targetRow });
-      setDragState({
-        draggedBlockId: null,
-        draggedFromRowId: null,
-        dragOverRowId: null,
-        dragOverPosition: null,
-        isDragging: false
+      console.error('Invalid drop operation:', { 
+        draggedBlock: !!draggedBlock, 
+        targetRow: !!targetRow,
+        targetRowId 
       });
       return;
     }
 
     const finalPosition = targetPosition ?? targetRow.blocks.length;
     
-    console.log('Drop operation:', { 
+    console.log('Executing drop operation:', { 
       blockId: dragState.draggedBlockId, 
       targetRowId, 
       finalPosition,
-      targetRowColumns: targetRow.columns 
+      targetRowColumns: targetRow.columns,
+      sourceRowId: dragState.draggedFromRowId
     });
 
+    // Update the block with new layout metadata
     onUpdateBlock(dragState.draggedBlockId, {
       meta: {
         ...draggedBlock.meta,
@@ -244,32 +266,36 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
           row_id: targetRowId,
           position: finalPosition,
           columns: targetRow.columns,
-          gap: targetRow.gap,
+          gap: targetRow.gap || 4,
           columnWidths: targetRow.columnWidths
         }
       }
     });
 
+    // Clear drag state
     setDragState({
       draggedBlockId: null,
-      draggedFromRowId: null,
       dragOverRowId: null,
       dragOverPosition: null,
-      isDragging: false
+      isDragging: false,
+      draggedFromRowId: null
     });
-  }, [dragState.draggedBlockId, blocks, layoutState.rows, onUpdateBlock]);
+  }, [dragState, blocks, layoutState.rows, onUpdateBlock]);
 
   const handleDragEnd = useCallback(() => {
     if (dragTimeoutRef.current) {
       clearTimeout(dragTimeoutRef.current);
     }
     
+    // Remove visual feedback class
+    document.body.classList.remove('dragging-block');
+    
     setDragState({
       draggedBlockId: null,
-      draggedFromRowId: null,
       dragOverRowId: null,
       dragOverPosition: null,
-      isDragging: false
+      isDragging: false,
+      draggedFromRowId: null
     });
   }, []);
 
@@ -281,11 +307,13 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
 
     return (
       <div key={block.id} className="relative">
+        {/* Drop zone indicator */}
         {isDropTarget && (
-          <div className="absolute -top-2 left-0 right-0 h-1 bg-blue-500 rounded z-20" />
+          <div className="absolute -top-2 left-0 right-0 h-1 bg-blue-500 rounded z-20 animate-pulse" />
         )}
         
         <div className="relative group">
+          {/* Add block button - appears on hover */}
           <div className="flex justify-center mb-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <Button
               variant="ghost"
@@ -304,24 +332,26 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
               "relative transition-all duration-200 cursor-pointer",
               isActive ? "ring-2 ring-blue-500 shadow-lg" : "hover:shadow-md",
               !block.visible && "opacity-50",
-              isDragging && "opacity-50 scale-95"
+              isDragging && "opacity-50 scale-95 rotate-2"
             )}
             style={{ 
               backgroundColor: '#1a1a1a',
               borderColor: isActive ? '#3b82f6' : '#2a2a2a'
             }}
             onClick={(e) => handleBlockClick(block.id, e)}
-            draggable={!isBlockInGrid(block.id)}
+            draggable={!isBlockInGrid(block.id) || row.columns === 1}
             onDragStart={(e) => handleDragStart(e, block.id)}
             onDragOver={(e) => handleDragOver(e, row.id, blockIndex)}
             onDragLeave={handleDragLeave}
             onDrop={(e) => handleDrop(e, row.id, blockIndex)}
             onDragEnd={handleDragEnd}
           >
+            {/* Block Controls */}
             <div className={cn(
               "absolute -top-2 -right-2 flex items-center gap-1 z-10 transition-opacity",
               isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
             )}>
+              {/* Grid conversion buttons - only for single blocks */}
               {row.columns === 1 && !isBlockInGrid(block.id) && (
                 <div className="flex items-center gap-1">
                   <Button
@@ -331,7 +361,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                       e.stopPropagation();
                       convertToLayout(block.id, 2);
                     }}
-                    className="h-6 w-6 p-0 bg-gray-800 border border-gray-600"
+                    className="h-6 w-6 p-0 bg-gray-800 border border-gray-600 hover:bg-gray-700"
                     title="2 colunas"
                   >
                     <Columns2 className="w-3 h-3" />
@@ -343,7 +373,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                       e.stopPropagation();
                       convertToLayout(block.id, 3);
                     }}
-                    className="h-6 w-6 p-0 bg-gray-800 border border-gray-600"
+                    className="h-6 w-6 p-0 bg-gray-800 border border-gray-600 hover:bg-gray-700"
                     title="3 colunas"
                   >
                     <Columns3 className="w-3 h-3" />
@@ -355,7 +385,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                       e.stopPropagation();
                       convertToLayout(block.id, 4);
                     }}
-                    className="h-6 w-6 p-0 bg-gray-800 border border-gray-600"
+                    className="h-6 w-6 p-0 bg-gray-800 border border-gray-600 hover:bg-gray-700"
                     title="4 colunas"
                   >
                     <Columns4 className="w-3 h-3" />
@@ -363,6 +393,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                 </div>
               )}
 
+              {/* Visibility toggle */}
               <Button
                 variant="ghost"
                 size="sm"
@@ -370,12 +401,13 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                   e.stopPropagation();
                   handleBlockVisibilityToggle(block.id);
                 }}
-                className="h-6 w-6 p-0 bg-gray-800 border border-gray-600"
+                className="h-6 w-6 p-0 bg-gray-800 border border-gray-600 hover:bg-gray-700"
                 title={block.visible ? "Ocultar bloco" : "Mostrar bloco"}
               >
                 {block.visible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
               </Button>
               
+              {/* Duplicate button */}
               <Button
                 variant="ghost"
                 size="sm"
@@ -383,12 +415,13 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                   e.stopPropagation();
                   onDuplicateBlock(block.id);
                 }}
-                className="h-6 w-6 p-0 bg-gray-800 border border-gray-600"
+                className="h-6 w-6 p-0 bg-gray-800 border border-gray-600 hover:bg-gray-700"
                 title="Duplicar bloco"
               >
                 <Copy className="w-3 h-3" />
               </Button>
               
+              {/* Delete button */}
               <Button
                 variant="ghost"
                 size="sm"
@@ -403,18 +436,22 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
               </Button>
             </div>
 
-            <div className={cn(
-              "absolute -left-2 top-1/2 transform -translate-y-1/2 transition-opacity",
-              isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-            )}>
-              <DragHandle 
-                onMoveUp={() => onMoveBlock(block.id, 'up')}
-                onMoveDown={() => onMoveBlock(block.id, 'down')}
-                canMoveUp={globalIndex > 0}
-                canMoveDown={globalIndex < blocks.length - 1}
-              />
-            </div>
+            {/* Drag handle for single blocks */}
+            {row.columns === 1 && (
+              <div className={cn(
+                "absolute -left-2 top-1/2 transform -translate-y-1/2 transition-opacity",
+                isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+              )}>
+                <DragHandle 
+                  onMoveUp={() => onMoveBlock(block.id, 'up')}
+                  onMoveDown={() => onMoveBlock(block.id, 'down')}
+                  canMoveUp={globalIndex > 0}
+                  canMoveDown={globalIndex < blocks.length - 1}
+                />
+              </div>
+            )}
 
+            {/* Block Content */}
             <div className="p-4">
               <BlockRenderer
                 block={block}
@@ -501,6 +538,16 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
           </div>
         )}
       </div>
+
+      {/* Drag and Drop Styles */}
+      <style jsx>{`
+        .dragging-block * {
+          pointer-events: none;
+        }
+        .dragging-block .drop-zone {
+          pointer-events: auto;
+        }
+      `}</style>
     </div>
   );
 };
