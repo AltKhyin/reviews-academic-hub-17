@@ -1,3 +1,4 @@
+
 // ABOUTME: Unified block editor with robust layout controls and cross-layout drag & drop
 // Fixed grid conversion, proper block management, and comprehensive drag & drop support
 
@@ -6,6 +7,7 @@ import { ReviewBlock, BlockType } from '@/types/review';
 import { BlockRenderer } from '@/components/review/BlockRenderer';
 import { DragHandle } from './DragHandle';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { 
   Plus, 
   Eye, 
