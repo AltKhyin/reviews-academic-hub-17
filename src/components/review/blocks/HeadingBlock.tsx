@@ -1,10 +1,13 @@
 
-// ABOUTME: Enhanced heading block with proper inline editing and level management
-// Supports multiple heading levels with inline text editing capabilities
+// ABOUTME: Enhanced heading block with inline editing, level management, and integrated color editing
+// Supports multiple heading levels with inline text editing and color customization
 
-import React from 'react';
+import React, { useState } from 'react';
 import { ReviewBlock } from '@/types/review';
 import { InlineTextEditor } from '@/components/editor/inline/InlineTextEditor';
+import { InlineColorPicker } from '@/components/editor/inline/InlineColorPicker';
+import { Settings } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface HeadingBlockProps {
@@ -18,6 +21,7 @@ export const HeadingBlock: React.FC<HeadingBlockProps> = ({
   readonly = false,
   onUpdate
 }) => {
+  const [showSettings, setShowSettings] = useState(false);
   const payload = block.payload;
   const text = payload.text || '';
   const level = payload.level || 1;
@@ -36,6 +40,17 @@ export const HeadingBlock: React.FC<HeadingBlockProps> = ({
           text: newText,
           // Auto-generate anchor from text if not manually set
           anchor: anchor || newText.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+        }
+      });
+    }
+  };
+
+  const handleColorChange = (colorType: string, value: string) => {
+    if (onUpdate) {
+      onUpdate({
+        payload: {
+          ...payload,
+          [`${colorType}_color`]: value
         }
       });
     }
@@ -77,6 +92,12 @@ export const HeadingBlock: React.FC<HeadingBlockProps> = ({
     unicodeBidi: 'normal'
   };
 
+  const colorOptions = [
+    { name: 'Texto', value: textColor, description: 'Cor do texto do cabeçalho' },
+    { name: 'Fundo', value: backgroundColor, description: 'Cor de fundo do cabeçalho' },
+    { name: 'Borda', value: borderColor, description: 'Cor da borda do cabeçalho' }
+  ];
+
   if (readonly) {
     return (
       <div className="heading-block my-6">
@@ -95,7 +116,34 @@ export const HeadingBlock: React.FC<HeadingBlockProps> = ({
   }
 
   return (
-    <div className="heading-block my-6">
+    <div className="heading-block my-6 group relative">
+      {/* Inline Settings Toggle */}
+      <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowSettings(!showSettings)}
+          className="h-6 w-6 p-0 hover:bg-gray-700 rounded-full"
+          style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}
+          title="Configurações do bloco"
+        >
+          <Settings className="w-3 h-3" style={{ color: '#9ca3af' }} />
+        </Button>
+      </div>
+
+      {/* Inline Color Picker */}
+      {showSettings && (
+        <div className="mb-3 p-2 rounded border animate-in slide-in-from-top-2"
+             style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
+          <InlineColorPicker
+            colors={colorOptions}
+            onChange={handleColorChange}
+            readonly={readonly}
+            compact={false}
+          />
+        </div>
+      )}
+
       <HeadingTag
         id={anchor}
         className={cn(
