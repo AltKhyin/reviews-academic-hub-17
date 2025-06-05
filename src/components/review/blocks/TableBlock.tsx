@@ -1,9 +1,11 @@
 
-// ABOUTME: Data table with sorting and formatting support
-// Responsive table with proper accessibility and mobile handling
+// ABOUTME: Data table block for displaying structured information
+// Supports sorting, filtering, and responsive design
 
 import React, { useEffect, useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { ReviewBlock, TablePayload } from '@/types/review';
 import { cn } from '@/lib/utils';
@@ -56,34 +58,37 @@ export const TableBlock: React.FC<TableBlockProps> = ({
   const handleSort = (columnIndex: number) => {
     if (!payload.sortable) return;
 
-    const newDirection = sortColumn === columnIndex && sortDirection === 'asc' ? 'desc' : 'asc';
+    let newDirection: 'asc' | 'desc' = 'asc';
+    
+    if (sortColumn === columnIndex) {
+      newDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+    }
+
     setSortColumn(columnIndex);
     setSortDirection(newDirection);
 
     const sorted = [...payload.rows].sort((a, b) => {
-      const aVal = a[columnIndex] || '';
-      const bVal = b[columnIndex] || '';
+      const aValue = a[columnIndex] || '';
+      const bValue = b[columnIndex] || '';
       
-      // Try to parse as numbers
-      const aNum = parseFloat(aVal);
-      const bNum = parseFloat(bVal);
+      // Try to parse as numbers first
+      const aNum = parseFloat(aValue);
+      const bNum = parseFloat(bValue);
       
       if (!isNaN(aNum) && !isNaN(bNum)) {
         return newDirection === 'asc' ? aNum - bNum : bNum - aNum;
       }
       
-      // String comparison
-      return newDirection === 'asc' 
-        ? aVal.localeCompare(bVal) 
-        : bVal.localeCompare(aVal);
+      // Fall back to string comparison
+      const comparison = aValue.localeCompare(bValue);
+      return newDirection === 'asc' ? comparison : -comparison;
     });
 
     setSortedRows(sorted);
 
     onInteraction?.(block.id, 'table_sorted', {
       column_index: columnIndex,
-      sort_direction: newDirection,
-      column_header: payload.headers[columnIndex],
+      direction: newDirection,
       timestamp: Date.now()
     });
   };
@@ -95,73 +100,62 @@ export const TableBlock: React.FC<TableBlockProps> = ({
       return <ArrowUpDown className="w-4 h-4 text-gray-400" />;
     }
     
-    return sortDirection === 'asc' 
-      ? <ArrowUp className="w-4 h-4 text-blue-600" />
-      : <ArrowDown className="w-4 h-4 text-blue-600" />;
+    return sortDirection === 'asc' ? 
+      <ArrowUp className="w-4 h-4 text-blue-600" /> : 
+      <ArrowDown className="w-4 h-4 text-blue-600" />;
   };
 
   return (
-    <div className="table-block my-8">
-      {/* Caption */}
+    <Card className="table-block my-6">
       {payload.caption && (
-        <div className="mb-4 text-center">
-          <p className="text-sm font-medium text-gray-700">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg font-semibold text-gray-900">
             {payload.table_number && (
-              <strong>Tabela {payload.table_number}: </strong>
+              <span className="text-blue-600 mr-2">
+                Tabela {payload.table_number}:
+              </span>
             )}
             {payload.caption}
-          </p>
-        </div>
+          </CardTitle>
+        </CardHeader>
       )}
-
-      {/* Table Container - Responsive */}
-      <div className="overflow-x-auto border border-gray-200 rounded-lg shadow-sm">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-gray-50">
-              {payload.headers.map((header, index) => (
-                <TableHead
-                  key={index}
-                  className={cn(
-                    "font-semibold text-gray-700",
-                    payload.sortable && "cursor-pointer hover:bg-gray-100 select-none"
-                  )}
-                  onClick={() => handleSort(index)}
-                >
-                  <div className="flex items-center gap-2">
-                    {header}
-                    {getSortIcon(index)}
-                  </div>
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedRows.map((row, rowIndex) => (
-              <TableRow key={rowIndex} className="hover:bg-gray-50">
-                {row.map((cell, cellIndex) => (
-                  <TableCell 
-                    key={cellIndex}
-                    className="text-sm text-gray-900"
+      
+      <CardContent className="p-0">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-gray-50">
+                {payload.headers.map((header, index) => (
+                  <TableHead 
+                    key={index} 
+                    className={cn(
+                      "font-semibold text-gray-900",
+                      payload.sortable && "cursor-pointer hover:bg-gray-100"
+                    )}
+                    onClick={() => handleSort(index)}
                   >
-                    {cell}
-                  </TableCell>
+                    <div className="flex items-center gap-2">
+                      <span>{header}</span>
+                      {getSortIcon(index)}
+                    </div>
+                  </TableHead>
                 ))}
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Table info */}
-      <div className="mt-2 text-xs text-gray-500 text-center">
-        {payload.rows.length} linha{payload.rows.length !== 1 ? 's' : ''}, {payload.headers.length} coluna{payload.headers.length !== 1 ? 's' : ''}
-        {payload.sortable && sortColumn !== null && (
-          <span className="ml-2">
-            • Ordenado por "{payload.headers[sortColumn]}" ({sortDirection === 'asc' ? 'crescente' : 'decrescente'})
-          </span>
-        )}
-      </div>
-    </div>
+            </TableHeader>
+            <TableBody>
+              {sortedRows.map((row, rowIndex) => (
+                <TableRow key={rowIndex} className="hover:bg-gray-50">
+                  {row.map((cell, cellIndex) => (
+                    <TableCell key={cellIndex} className="py-3">
+                      {cell}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
