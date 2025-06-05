@@ -111,95 +111,102 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     }
   ];
 
+  // CSS styles as a string for injection
+  const editorStyles = `
+    .rich-text-editor [contenteditable]:empty:before {
+      content: attr(data-placeholder);
+      color: #9ca3af;
+      font-style: italic;
+    }
+    
+    .rich-text-editor [contenteditable] p {
+      margin: 0 0 1em 0;
+    }
+    
+    .rich-text-editor [contenteditable] ul, 
+    .rich-text-editor [contenteditable] ol {
+      margin: 1em 0;
+      padding-left: 1.5em;
+    }
+    
+    .rich-text-editor [contenteditable] strong {
+      font-weight: bold;
+    }
+    
+    .rich-text-editor [contenteditable] em {
+      font-style: italic;
+    }
+    
+    .rich-text-editor [contenteditable] u {
+      text-decoration: underline;
+    }
+  `;
+
   return (
-    <div 
-      className={`rich-text-editor border rounded-lg overflow-hidden ${className}`}
-      style={{ 
-        backgroundColor: '#1a1a1a',
-        borderColor: '#2a2a2a'
-      }}
-    >
-      {/* Toolbar */}
+    <>
+      {/* Inject styles into head */}
+      <style dangerouslySetInnerHTML={{ __html: editorStyles }} />
+      
       <div 
-        className="flex items-center gap-1 p-2 border-b"
+        className={`rich-text-editor border rounded-lg overflow-hidden ${className}`}
         style={{ 
-          backgroundColor: '#212121',
+          backgroundColor: '#1a1a1a',
           borderColor: '#2a2a2a'
         }}
       >
-        {toolbarButtons.map((group, groupIndex) => (
-          <React.Fragment key={group.group}>
-            {group.buttons.map((button, buttonIndex) => {
-              const IconComponent = button.icon;
-              return (
-                <Button
-                  key={buttonIndex}
-                  variant={button.active ? "default" : "ghost"}
-                  size="sm"
-                  onClick={button.action}
-                  title={button.title}
-                  className="w-8 h-8 p-0"
-                  style={{
-                    backgroundColor: button.active ? '#3b82f6' : 'transparent',
-                    color: button.active ? '#ffffff' : '#d1d5db'
-                  }}
-                >
-                  <IconComponent className="w-4 h-4" />
-                </Button>
-              );
-            })}
-            {groupIndex < toolbarButtons.length - 1 && (
-              <Separator orientation="vertical" className="mx-1 h-4" />
-            )}
-          </React.Fragment>
-        ))}
+        {/* Toolbar */}
+        <div 
+          className="flex items-center gap-1 p-2 border-b"
+          style={{ 
+            backgroundColor: '#212121',
+            borderColor: '#2a2a2a'
+          }}
+        >
+          {toolbarButtons.map((group, groupIndex) => (
+            <React.Fragment key={group.group}>
+              {group.buttons.map((button, buttonIndex) => {
+                const IconComponent = button.icon;
+                return (
+                  <Button
+                    key={buttonIndex}
+                    variant={button.active ? "default" : "ghost"}
+                    size="sm"
+                    onClick={button.action}
+                    title={button.title}
+                    className="w-8 h-8 p-0"
+                    style={{
+                      backgroundColor: button.active ? '#3b82f6' : 'transparent',
+                      color: button.active ? '#ffffff' : '#d1d5db'
+                    }}
+                  >
+                    <IconComponent className="w-4 h-4" />
+                  </Button>
+                );
+              })}
+              {groupIndex < toolbarButtons.length - 1 && (
+                <Separator orientation="vertical" className="mx-1 h-4" />
+              )}
+            </React.Fragment>
+          ))}
+        </div>
+
+        {/* Editor */}
+        <div
+          ref={editorRef}
+          contentEditable
+          suppressContentEditableWarning
+          onInput={handleInput}
+          onKeyDown={handleKeyDown}
+          onMouseUp={updateFormatState}
+          onKeyUp={updateFormatState}
+          className="min-h-[200px] p-4 outline-none"
+          style={{ 
+            color: '#ffffff',
+            backgroundColor: '#1a1a1a'
+          }}
+          data-placeholder={placeholder}
+        />
       </div>
-
-      {/* Editor */}
-      <div
-        ref={editorRef}
-        contentEditable
-        suppressContentEditableWarning
-        onInput={handleInput}
-        onKeyDown={handleKeyDown}
-        onMouseUp={updateFormatState}
-        onKeyUp={updateFormatState}
-        className="min-h-[200px] p-4 outline-none"
-        style={{ 
-          color: '#ffffff',
-          backgroundColor: '#1a1a1a'
-        }}
-        data-placeholder={placeholder}
-      />
-
-      <style jsx>{`
-        [contenteditable]:empty:before {
-          content: attr(data-placeholder);
-          color: #9ca3af;
-          font-style: italic;
-        }
-        
-        [contenteditable] p {
-          margin: 0 0 1em 0;
-        }
-        
-        [contenteditable] ul, [contenteditable] ol {
-          margin: 1em 0;
-          padding-left: 1.5em;
-        }
-        
-        [contenteditable] strong {
-          font-weight: bold;
-        }
-        
-        [contenteditable] em {
-          font-style: italic;
-        }
-        
-        [contenteditable] u {
-          text-decoration: underline;
-        }
-      `}</style>
-    </div>
+    </>
   );
 };
