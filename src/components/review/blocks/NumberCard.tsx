@@ -29,7 +29,7 @@ export const NumberCard: React.FC<NumberCardProps> = ({
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            onInteraction?.(block.id, 'viewed', {
+            onInteraction?.(block.id.toString(), 'viewed', {
               block_type: 'number_card',
               number_value: payload.number,
               label: payload.label,

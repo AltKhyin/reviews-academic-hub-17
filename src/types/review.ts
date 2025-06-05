@@ -30,6 +30,7 @@ export interface ReviewBlock {
 }
 
 export interface BlockMeta {
+  [key: string]: any; // Make it compatible with Supabase Json type
   styles?: Record<string, any>;
   conditions?: Record<string, any>;
   analytics?: {

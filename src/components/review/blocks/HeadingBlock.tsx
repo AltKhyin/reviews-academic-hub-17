@@ -28,8 +28,8 @@ export const HeadingBlock: React.FC<HeadingBlockProps> = ({
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            onSectionView?.(block.id);
-            onInteraction?.(block.id, 'section_viewed', {
+            onSectionView?.(block.id.toString());
+            onInteraction?.(block.id.toString(), 'section_viewed', {
               block_type: 'heading',
               heading_level: payload.level,
               heading_text: payload.text,
@@ -83,7 +83,7 @@ export const HeadingBlock: React.FC<HeadingBlockProps> = ({
       window.history.pushState(null, '', `#${anchorId}`);
       
       // Track interaction
-      onInteraction?.(block.id, 'anchor_clicked', {
+      onInteraction?.(block.id.toString(), 'anchor_clicked', {
         anchor_id: anchorId,
         heading_text: payload.text
       });

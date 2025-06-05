@@ -29,7 +29,7 @@ export const CalloutBlock: React.FC<CalloutBlockProps> = ({
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            onInteraction?.(block.id, 'viewed', {
+            onInteraction?.(block.id.toString(), 'viewed', {
               block_type: 'callout',
               callout_type: payload.type,
               has_title: !!payload.title,

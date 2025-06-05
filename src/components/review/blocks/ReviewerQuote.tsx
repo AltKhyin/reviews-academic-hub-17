@@ -29,7 +29,7 @@ export const ReviewerQuote: React.FC<ReviewerQuoteProps> = ({
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            onInteraction?.(block.id, 'viewed', {
+            onInteraction?.(block.id.toString(), 'viewed', {
               block_type: 'reviewer_quote',
               author: payload.author,
               has_avatar: !!payload.avatar_url,

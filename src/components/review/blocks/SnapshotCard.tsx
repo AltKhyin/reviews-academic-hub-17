@@ -30,8 +30,8 @@ export const SnapshotCard: React.FC<SnapshotCardProps> = ({
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            onSectionView?.(block.id);
-            onInteraction?.(block.id, 'viewed', {
+            onSectionView?.(block.id.toString());
+            onInteraction?.(block.id.toString(), 'viewed', {
               block_type: 'snapshot_card',
               evidence_level: payload.evidence_level,
               timestamp: Date.now()

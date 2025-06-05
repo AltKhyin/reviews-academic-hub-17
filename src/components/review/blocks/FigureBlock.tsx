@@ -30,7 +30,7 @@ export const FigureBlock: React.FC<FigureBlockProps> = ({
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            onInteraction?.(block.id, 'viewed', {
+            onInteraction?.(block.id.toString(), 'viewed', {
               block_type: 'figure',
               figure_number: payload.figure_number,
               has_caption: !!payload.caption,
@@ -52,7 +52,7 @@ export const FigureBlock: React.FC<FigureBlockProps> = ({
 
   const handleImageClick = () => {
     setShowLightbox(true);
-    onInteraction?.(block.id, 'lightbox_opened', {
+    onInteraction?.(block.id.toString(), 'lightbox_opened', {
       figure_number: payload.figure_number,
       timestamp: Date.now()
     });

@@ -177,14 +177,14 @@ const IssueEditor = () => {
         .delete()
         .eq('issue_id', id);
 
-      // Insert new blocks - map to database format
+      // Insert new blocks - properly format for database
       if (updatedBlocks.length > 0) {
         const blocksToInsert = updatedBlocks.map(block => ({
           issue_id: id,
           sort_index: block.sort_index,
-          type: block.type,
-          payload: block.payload,
-          meta: block.meta,
+          type: block.type as string, // Ensure string type
+          payload: block.payload as any, // Cast to any for Json compatibility
+          meta: block.meta as any, // Cast to any for Json compatibility
           visible: block.visible
           // Don't include id, created_at, updated_at - let database handle them
         }));

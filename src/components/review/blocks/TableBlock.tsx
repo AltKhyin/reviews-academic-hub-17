@@ -1,4 +1,3 @@
-
 // ABOUTME: Data table block for displaying structured information
 // Supports sorting, filtering, and responsive design
 
@@ -34,7 +33,7 @@ export const TableBlock: React.FC<TableBlockProps> = ({
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            onInteraction?.(block.id, 'viewed', {
+            onInteraction?.(block.id.toString(), 'viewed', {
               block_type: 'table',
               table_number: payload.table_number,
               row_count: payload.rows.length,
@@ -86,7 +85,7 @@ export const TableBlock: React.FC<TableBlockProps> = ({
 
     setSortedRows(sorted);
 
-    onInteraction?.(block.id, 'table_sorted', {
+    onInteraction?.(block.id.toString(), 'table_sorted', {
       column_index: columnIndex,
       direction: newDirection,
       timestamp: Date.now()

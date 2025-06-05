@@ -27,7 +27,7 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            onInteraction?.(block.id, 'viewed', {
+            onInteraction?.(block.id.toString(), 'viewed', {
               block_type: 'paragraph',
               has_citations: !!(payload.citations && payload.citations.length > 0),
               timestamp: Date.now()
@@ -70,7 +70,7 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
     if (target.classList.contains('citation-link')) {
       const citation = target.getAttribute('data-citation');
       if (citation) {
-        onInteraction?.(block.id, 'citation_clicked', {
+        onInteraction?.(block.id.toString(), 'citation_clicked', {
           citation_key: citation,
           timestamp: Date.now()
         });
