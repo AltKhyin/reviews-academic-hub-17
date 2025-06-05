@@ -83,7 +83,19 @@ const IssueEditor = () => {
         .order('sort_index');
 
       if (error) throw error;
-      return data as ReviewBlock[];
+      
+      // Transform database blocks to ReviewBlock format
+      return (data || []).map(dbBlock => ({
+        id: dbBlock.id,
+        type: dbBlock.type as any,
+        content: dbBlock.payload, // Database stores as 'payload', but we use 'content'
+        sort_index: dbBlock.sort_index,
+        visible: dbBlock.visible,
+        meta: dbBlock.meta as any,
+        issue_id: dbBlock.issue_id,
+        created_at: dbBlock.created_at,
+        updated_at: dbBlock.updated_at
+      })) as ReviewBlock[];
     },
     enabled: !isNewIssue && !!id && contentType === 'native'
   });
@@ -173,7 +185,7 @@ const IssueEditor = () => {
           issue_id: id,
           sort_index: block.sort_index,
           type: block.type as string,
-          payload: block.payload as any,
+          payload: block.content as any, // Store as 'payload' in database
           meta: block.meta as any,
           visible: block.visible
         }));
@@ -202,7 +214,20 @@ const IssueEditor = () => {
         .order('sort_index');
 
       if (newBlocks) {
-        setNativeBlocks(newBlocks as ReviewBlock[]);
+        // Transform database blocks back to ReviewBlock format
+        const transformedBlocks = newBlocks.map(dbBlock => ({
+          id: dbBlock.id,
+          type: dbBlock.type as any,
+          content: dbBlock.payload, // Database stores as 'payload', but we use 'content'
+          sort_index: dbBlock.sort_index,
+          visible: dbBlock.visible,
+          meta: dbBlock.meta as any,
+          issue_id: dbBlock.issue_id,
+          created_at: dbBlock.created_at,
+          updated_at: dbBlock.updated_at
+        })) as ReviewBlock[];
+        
+        setNativeBlocks(transformedBlocks);
       }
       
       toast({

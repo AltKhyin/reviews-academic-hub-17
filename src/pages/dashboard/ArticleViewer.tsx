@@ -1,32 +1,28 @@
 
-// ABOUTME: Enhanced article viewer with native review support
-// Maintains backward compatibility while adding new native review capabilities
+// ABOUTME: Article viewer component for displaying issues in read-only mode
+// Handles both PDF and native review content types
 
-import React, { useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { NativeReviewViewer } from '@/components/review/NativeReviewViewer';
 import { PDFViewer } from '@/components/pdf/PDFViewer';
-import { ViewModeSwitcher } from '@/components/article/ViewModeSwitcher';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { FileText, ArrowLeft } from 'lucide-react';
-import { EnhancedIssue, ReviewBlock, TableOfContents } from '@/types/review';
-import { Link } from 'react-router-dom';
+import { EnhancedIssue, TableOfContents } from '@/types/review';
 
 const ArticleViewer: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { user, profile, isAdmin, isEditor } = useAuth();
-  const { toast } = useToast();
+  const navigate = useNavigate();
+  const [toc, setToc] = useState<TableOfContents | null>(null);
 
-  // Fetch issue with enhanced type support
+  // Fetch issue data
   const { data: issue, isLoading, error } = useQuery({
-    queryKey: ['issue', id],
+    queryKey: ['article-view', id],
     queryFn: async (): Promise<EnhancedIssue> => {
-      if (!id) throw new Error('Issue ID is required');
+      if (!id) throw new Error('No article ID provided');
 
       const { data, error } = await supabase
         .from('issues')
@@ -34,257 +30,139 @@ const ArticleViewer: React.FC = () => {
         .eq('id', id)
         .single();
 
-      if (error) throw error;
-      if (!data) throw new Error('Issue not found');
+      if (error) {
+        toast({
+          title: "Erro ao carregar artigo",
+          description: "Não foi possível carregar os dados do artigo.",
+          variant: "destructive",
+        });
+        throw error;
+      }
 
-      // Helper function to safely parse review_content
-      const parseReviewContent = (content: any): ReviewBlock[] | undefined => {
-        if (!content) return undefined;
-        if (Array.isArray(content)) {
-          // Validate that each item has the required ReviewBlock properties
-          const isValidReviewBlock = (item: any): item is ReviewBlock => {
-            return item && 
-                   typeof item === 'object' &&
-                   typeof item.id === 'string' &&
-                   typeof item.issue_id === 'string' &&
-                   typeof item.sort_index === 'number' &&
-                   typeof item.type === 'string' &&
-                   item.payload !== undefined;
-          };
-          
-          if (content.every(isValidReviewBlock)) {
-            return content as ReviewBlock[];
-          }
-        }
-        return undefined;
-      };
+      if (!data) {
+        throw new Error('Article not found');
+      }
 
-      // Helper function to safely parse toc_data
-      const parseTocData = (toc: any): TableOfContents | undefined => {
-        if (!toc) return undefined;
-        if (typeof toc === 'object' && toc !== null && 'sections' in toc) {
-          return toc as TableOfContents;
-        }
-        return undefined;
-      };
-
-      // Safely convert the raw data to EnhancedIssue type
-      const enhancedData: EnhancedIssue = {
+      return {
         id: data.id,
-        title: data.title,
-        specialty: data.specialty,
-        description: data.description,
-        pdf_url: data.pdf_url,
-        article_pdf_url: data.article_pdf_url,
-        cover_image_url: data.cover_image_url,
-        published: data.published,
-        published_at: data.published_at,
-        created_at: data.created_at,
-        updated_at: data.updated_at,
-        featured: data.featured,
-        score: data.score,
-        year: data.year,
-        design: data.design,
-        population: data.population,
-        authors: data.authors,
-        real_title: data.real_title,
-        real_title_ptbr: data.real_title_ptbr,
-        search_title: data.search_title,
-        search_description: data.search_description,
-        review_type: (data.review_type as 'pdf' | 'native' | 'hybrid') || 'pdf',
-        review_content: parseReviewContent(data.review_content),
-        toc_data: parseTocData(data.toc_data)
+        title: data.title || '',
+        description: data.description || '',
+        authors: data.authors || '',
+        specialty: data.specialty || '',
+        year: data.year ? parseInt(data.year) : undefined,
+        population: data.population || '',
+        review_type: data.review_type || 'pdf',
+        article_pdf_url: data.article_pdf_url || '',
+        pdf_url: data.pdf_url || ''
       };
-
-      return enhancedData;
     },
-    enabled: !!id
+    enabled: !!id,
+    retry: 1,
   });
 
-  // Determine rendering mode based on content type and availability
-  const renderingConfig = useMemo(() => {
-    if (!issue) return { mode: 'loading' };
+  useEffect(() => {
+    if (issue) {
+      // Generate TOC from issue data
+      const sections = [];
+      
+      if (issue.description) {
+        sections.push({
+          id: 'overview',
+          title: 'Visão Geral',
+          level: 1
+        });
+      }
+      
+      if (issue.review_type === 'native') {
+        sections.push({
+          id: 'content',
+          title: 'Conteúdo da Revisão',
+          level: 1
+        });
+      }
+      
+      if (issue.article_pdf_url) {
+        sections.push({
+          id: 'original',
+          title: 'Artigo Original',
+          level: 1
+        });
+      }
 
-    // Check access permissions
-    const hasAccess = issue.published || isAdmin || isEditor || profile?.role === 'admin' || profile?.role === 'editor';
-    
-    if (!hasAccess) {
-      return { mode: 'unauthorized' };
+      setToc({ sections });
     }
-
-    // Determine content availability
-    const hasNativeContent = issue.review_type === 'native' || issue.review_type === 'hybrid';
-    const hasPdfContent = !!issue.pdf_url;
-    const hasOriginalPdf = !!issue.article_pdf_url;
-
-    if (hasNativeContent) {
-      return {
-        mode: 'native',
-        hasOriginalPdf,
-        hasPdfContent
-      };
-    } else if (hasPdfContent) {
-      return {
-        mode: 'pdf',
-        hasOriginalPdf
-      };
-    } else {
-      return { mode: 'no_content' };
-    }
-  }, [issue, isAdmin, isEditor, profile?.role]);
+  }, [issue]);
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: '#121212' }}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Carregando artigo...</p>
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" style={{ color: '#3b82f6' }} />
+          <p style={{ color: '#ffffff' }}>Carregando artigo...</p>
         </div>
       </div>
     );
   }
 
-  if (error) {
+  if (error || !issue) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <Card className="p-8 max-w-md w-full text-center">
-          <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Erro ao Carregar</h2>
-          <p className="text-gray-600 mb-4">
-            {error instanceof Error ? error.message : 'Não foi possível carregar o artigo.'}
-          </p>
-          <Button asChild variant="outline">
-            <Link to="/dashboard">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Voltar ao Dashboard
-            </Link>
+      <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: '#121212' }}>
+        <div className="text-center">
+          <h2 className="text-xl font-bold text-red-400 mb-2">Erro ao carregar artigo</h2>
+          <p className="text-gray-300 mb-4">Não foi possível carregar os dados do artigo.</p>
+          <Button onClick={() => navigate('/dashboard')}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Voltar ao Dashboard
           </Button>
-        </Card>
+        </div>
       </div>
     );
   }
 
-  if (!issue) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <Card className="p-8 max-w-md w-full text-center">
-          <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Artigo Não Encontrado</h2>
-          <p className="text-gray-600 mb-4">
-            O artigo solicitado não foi encontrado ou foi removido.
-          </p>
-          <Button asChild variant="outline">
-            <Link to="/dashboard">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Voltar ao Dashboard
-            </Link>
-          </Button>
-        </Card>
-      </div>
-    );
+  // For native reviews, use NativeReviewViewer
+  if (issue.review_type === 'native' || issue.review_type === 'hybrid') {
+    return <NativeReviewViewer issue={issue} />;
   }
 
-  // Handle unauthorized access
-  if (renderingConfig.mode === 'unauthorized') {
+  // For PDF reviews, use PDFViewer
+  if (issue.pdf_url) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <Card className="p-8 max-w-md w-full text-center">
-          <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Acesso Restrito</h2>
-          <p className="text-gray-600 mb-4">
-            Este artigo ainda não foi publicado ou você não tem permissão para visualizá-lo.
-          </p>
-          <Button asChild variant="outline">
-            <Link to="/dashboard">
+      <div className="article-viewer" style={{ backgroundColor: '#121212', minHeight: '100vh' }}>
+        <div className="max-w-6xl mx-auto p-6">
+          <div className="mb-6">
+            <Button 
+              onClick={() => navigate('/dashboard')}
+              variant="ghost"
+              style={{ color: '#d1d5db' }}
+            >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Voltar ao Dashboard
-            </Link>
-          </Button>
-        </Card>
-      </div>
-    );
-  }
-
-  // Handle no content available
-  if (renderingConfig.mode === 'no_content') {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <Card className="p-8 max-w-md w-full text-center">
-          <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Conteúdo Indisponível</h2>
-          <p className="text-gray-600 mb-4">
-            O conteúdo deste artigo ainda não está disponível.
-          </p>
-          <div className="space-y-2">
-            <Button asChild variant="outline" className="w-full">
-              <Link to="/dashboard">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Voltar ao Dashboard
-              </Link>
             </Button>
-            {(isAdmin || isEditor) && (
-              <Button asChild className="w-full">
-                <Link to={`/edit/${issue.id}`}>
-                  Editar Artigo
-                </Link>
-              </Button>
-            )}
           </div>
-        </Card>
+          
+          <PDFViewer 
+            url={issue.pdf_url} 
+            title={issue.title}
+            className="min-h-[80vh]"
+          />
+        </div>
       </div>
     );
   }
 
-  // Render based on content type
-  switch (renderingConfig.mode) {
-    case 'native':
-      return <NativeReviewViewer issue={issue} />;
-    
-    case 'pdf':
-    default:
-      return (
-        <div className="min-h-screen bg-gray-100">
-          {/* Header with back navigation */}
-          <div className="bg-white border-b border-gray-200 py-4">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex items-center justify-between">
-                <Button asChild variant="ghost">
-                  <Link to="/dashboard">
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Voltar
-                  </Link>
-                </Button>
-                
-                {renderingConfig.hasOriginalPdf && (
-                  <ViewModeSwitcher
-                    currentMode="pdf"
-                    onModeChange={() => {}}
-                    hasOriginalPDF={true}
-                    hasNativeContent={false}
-                  />
-                )}
-              </div>
-              
-              <div className="mt-4">
-                <h1 className="text-2xl font-bold text-gray-900">{issue.title}</h1>
-                {issue.specialty && (
-                  <p className="text-gray-600 mt-1">{issue.specialty}</p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* PDF Content */}
-          <div className="p-4">
-            <PDFViewer 
-              url={issue.pdf_url} 
-              title={issue.title}
-              className="max-w-7xl mx-auto"
-            />
-          </div>
-        </div>
-      );
-  }
+  // Fallback for issues without content
+  return (
+    <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: '#121212' }}>
+      <div className="text-center">
+        <h2 className="text-xl font-bold mb-2" style={{ color: '#ffffff' }}>Conteúdo Indisponível</h2>
+        <p className="text-gray-300 mb-4">Este artigo ainda não possui conteúdo disponível.</p>
+        <Button onClick={() => navigate('/dashboard')}>
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Voltar ao Dashboard
+        </Button>
+      </div>
+    </div>
+  );
 };
 
 export default ArticleViewer;

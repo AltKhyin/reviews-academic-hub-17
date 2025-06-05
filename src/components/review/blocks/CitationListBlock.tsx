@@ -1,6 +1,6 @@
 
-// ABOUTME: Citation list block with full color customization and improved UX
-// Complete citation management with color themes and enhanced editing
+// ABOUTME: Citation list block with inline editing
+// Displays academic references with proper formatting
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,27 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ReviewBlock } from '@/types/review';
 import { InlineTextEditor } from '@/components/editor/inline/InlineTextEditor';
-import { InlineColorPicker } from '@/components/editor/inline/InlineColorPicker';
-import { 
-  BookOpen, 
-  Plus, 
-  Trash2, 
-  ExternalLink,
-  Palette
-} from 'lucide-react';
-
-interface Citation {
-  id: string;
-  authors: string;
-  title: string;
-  journal: string;
-  year: string;
-  volume?: string;
-  issue?: string;
-  pages?: string;
-  doi?: string;
-  url?: string;
-}
+import { InlineBlockSettings } from '@/components/editor/inline/InlineBlockSettings';
+import { BookOpen, Plus, Trash2 } from 'lucide-react';
 
 interface CitationListBlockProps {
   block: ReviewBlock;
@@ -45,17 +26,15 @@ export const CitationListBlock: React.FC<CitationListBlockProps> = ({
   const title = content.title || 'Referências';
   const citations = content.citations || [];
   const citationStyle = content.citation_style || 'apa';
-  const numbered = content.numbered !== undefined ? content.numbered : true;
-  
-  // Color configuration with defaults
-  const colors = {
-    backgroundColor: content.backgroundColor || '#1a1a1a',
-    borderColor: content.borderColor || '#2a2a2a',
-    titleColor: content.titleColor || '#ffffff',
-    textColor: content.textColor || '#d1d5db',
-    accentColor: content.accentColor || '#8b5cf6',
-    linkColor: content.linkColor || '#3b82f6'
-  };
+  const numbered = content.numbered ?? true;
+
+  // Color system integration
+  const backgroundColor = content.backgroundColor || '#1a1a1a';
+  const borderColor = content.borderColor || '#2a2a2a';
+  const titleColor = content.titleColor || '#ffffff';
+  const textColor = content.textColor || '#d1d5db';
+  const accentColor = content.accentColor || '#8b5cf6';
+  const linkColor = content.linkColor || '#3b82f6';
 
   const handleUpdate = (field: string, value: any) => {
     if (onUpdate) {
@@ -68,123 +47,107 @@ export const CitationListBlock: React.FC<CitationListBlockProps> = ({
     }
   };
 
-  const handleColorUpdate = (colorField: string, color: string) => {
-    handleUpdate(colorField, color);
+  const handleCitationUpdate = (index: number, field: string, value: string) => {
+    const updatedCitations = [...citations];
+    updatedCitations[index] = {
+      ...updatedCitations[index],
+      [field]: value
+    };
+    handleUpdate('citations', updatedCitations);
+  };
+
+  const handleUpdateColor = (field: string, value: string) => {
+    if (onUpdate) {
+      onUpdate({
+        content: {
+          ...content,
+          [field]: value
+        }
+      });
+    }
   };
 
   const addCitation = () => {
-    const newCitation: Citation = {
+    const newCitation = {
       id: Date.now().toString(),
       authors: '',
       title: '',
       journal: '',
       year: '',
       volume: '',
-      issue: '',
       pages: '',
       doi: '',
       url: ''
     };
-    
-    const newCitations = [...citations, newCitation];
-    handleUpdate('citations', newCitations);
+    handleUpdate('citations', [...citations, newCitation]);
   };
 
-  const removeCitation = (citationId: string) => {
-    const newCitations = citations.filter((citation: Citation) => citation.id !== citationId);
-    handleUpdate('citations', newCitations);
+  const removeCitation = (index: number) => {
+    const updatedCitations = citations.filter((_, i) => i !== index);
+    handleUpdate('citations', updatedCitations);
   };
 
-  const updateCitation = (citationId: string, field: string, value: string) => {
-    const newCitations = citations.map((citation: Citation) => 
-      citation.id === citationId 
-        ? { ...citation, [field]: value }
-        : citation
-    );
-    handleUpdate('citations', newCitations);
-  };
-
-  const formatCitation = (citation: Citation, index: number) => {
-    const { authors, title, journal, year, volume, issue, pages, doi } = citation;
-    
+  const formatCitation = (citation: any, index: number) => {
     switch (citationStyle) {
       case 'apa':
-        let formatted = `${authors} (${year}). ${title}. `;
-        if (journal) formatted += `*${journal}*`;
-        if (volume) formatted += `, ${volume}`;
-        if (issue) formatted += `(${issue})`;
-        if (pages) formatted += `, ${pages}`;
-        if (doi) formatted += `. https://doi.org/${doi}`;
-        return formatted;
-        
+        return `${citation.authors} (${citation.year}). ${citation.title}. ${citation.journal}, ${citation.volume}, ${citation.pages}.${citation.doi ? ` doi:${citation.doi}` : ''}`;
       case 'mla':
-        return `${authors}. "${title}" *${journal}*, vol. ${volume}, no. ${issue}, ${year}, pp. ${pages}.`;
-        
+        return `${citation.authors}. "${citation.title}." ${citation.journal} ${citation.volume} (${citation.year}): ${citation.pages}.`;
       case 'chicago':
-        return `${authors}. "${title}" *${journal}* ${volume}, no. ${issue} (${year}): ${pages}.`;
-        
-      case 'vancouver':
-        return `${authors}. ${title}. ${journal}. ${year};${volume}(${issue}):${pages}.`;
-        
+        return `${citation.authors}. "${citation.title}." ${citation.journal} ${citation.volume} (${citation.year}): ${citation.pages}.`;
       default:
-        return `${authors}. ${title}. ${journal}. ${year}.`;
+        return `${citation.authors}. ${citation.title}. ${citation.journal}. ${citation.year}.`;
     }
   };
 
-  const handleColorUpdate = (colorField: string, color: string) => {
-    handleUpdate(colorField, color);
+  const cardStyle: React.CSSProperties = {
+    backgroundColor: backgroundColor,
+    borderColor: borderColor,
+    color: textColor
   };
 
   if (readonly) {
     return (
-      <div className="citation-list-block my-6">
-        <Card 
-          className="border shadow-lg"
-          style={{ 
-            backgroundColor: colors.backgroundColor,
-            borderColor: colors.borderColor
-          }}
-        >
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2" style={{ color: colors.titleColor }}>
-              <BookOpen className="w-5 h-5" style={{ color: colors.accentColor }} />
+      <div className="citation-list-block my-8">
+        <Card className="border shadow-lg" style={cardStyle}>
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2" style={{ color: titleColor }}>
+              <BookOpen className="w-5 h-5" style={{ color: accentColor }} />
               {title}
             </CardTitle>
           </CardHeader>
-          
           <CardContent>
-            <div className="space-y-4">
-              {citations.length === 0 ? (
-                <p className="text-center italic" style={{ color: colors.textColor }}>
-                  Nenhuma citação adicionada
-                </p>
-              ) : (
-                <ol className={numbered ? "list-decimal list-inside space-y-3" : "space-y-3"}>
-                  {citations.map((citation: Citation, index: number) => (
-                    <li key={citation.id} className="text-sm leading-relaxed" style={{ color: colors.textColor }}>
-                      <div className="flex items-start gap-2">
-                        <div className="flex-1">
-                          <div dangerouslySetInnerHTML={{ 
-                            __html: formatCitation(citation, index).replace(/\*(.*?)\*/g, '<em>$1</em>') 
-                          }} />
-                        </div>
-                        {citation.url && (
-                          <a 
-                            href={citation.url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="flex-shrink-0 hover:opacity-80 transition-opacity"
-                            style={{ color: colors.linkColor }}
-                          >
-                            <ExternalLink className="w-4 h-4" />
-                          </a>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ol>
-              )}
-            </div>
+            {citations.length > 0 ? (
+              <ol className="space-y-4">
+                {citations.map((citation: any, index: number) => (
+                  <li key={citation.id || index} className="text-sm leading-relaxed">
+                    {numbered && (
+                      <span className="font-medium mr-2" style={{ color: accentColor }}>
+                        [{index + 1}]
+                      </span>
+                    )}
+                    <span style={{ color: textColor }}>
+                      {formatCitation(citation, index)}
+                    </span>
+                    {citation.url && (
+                      <a 
+                        href={citation.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-2 text-sm underline"
+                        style={{ color: linkColor }}
+                      >
+                        [Link]
+                      </a>
+                    )}
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="text-center py-8" style={{ color: textColor, opacity: 0.6 }}>
+                Nenhuma referência adicionada
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -192,230 +155,162 @@ export const CitationListBlock: React.FC<CitationListBlockProps> = ({
   }
 
   return (
-    <div className="citation-list-block my-6">
-      <Card 
-        className="border shadow-lg"
-        style={{ 
-          backgroundColor: colors.backgroundColor,
-          borderColor: colors.borderColor
-        }}
-      >
-        <CardHeader>
-          <div className="space-y-3">
+    <div className="citation-list-block my-8 group relative">
+      {/* Inline Settings */}
+      <div className="absolute -top-2 -right-2 z-10">
+        <InlineBlockSettings
+          block={block}
+          onUpdate={onUpdate}
+        />
+      </div>
+
+      <Card className="border shadow-lg" style={cardStyle}>
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <BookOpen className="w-5 h-5" style={{ color: colors.accentColor }} />
-              <span className="font-semibold" style={{ color: colors.titleColor }}>
-                Editor de Citações
-              </span>
+              <BookOpen className="w-5 h-5" style={{ color: accentColor }} />
+              <InlineTextEditor
+                value={title}
+                onChange={(value) => handleUpdate('title', value)}
+                placeholder="Título da seção"
+                className="text-xl font-semibold"
+                style={{ color: titleColor }}
+              />
             </div>
             
-            {/* Title Editor */}
-            <InlineTextEditor
-              value={title}
-              onChange={(value) => handleUpdate('title', value)}
-              placeholder="Título da seção de referências"
-              className="text-lg font-semibold"
-              style={{ color: colors.titleColor }}
-            />
-            
-            {/* Controls Row */}
-            <div className="flex items-center gap-4 flex-wrap">
-              {/* Citation Style Selector */}
-              <div className="flex items-center gap-2">
-                <label className="text-sm" style={{ color: colors.textColor }}>
-                  Estilo:
-                </label>
-                <Select 
-                  value={citationStyle} 
-                  onValueChange={(value) => handleUpdate('citation_style', value)}
-                >
-                  <SelectTrigger 
-                    className="w-32"
-                    style={{ backgroundColor: colors.backgroundColor, borderColor: colors.borderColor, color: colors.textColor }}
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent style={{ backgroundColor: colors.backgroundColor, borderColor: colors.borderColor }}>
-                    <SelectItem value="apa">APA</SelectItem>
-                    <SelectItem value="mla">MLA</SelectItem>
-                    <SelectItem value="chicago">Chicago</SelectItem>
-                    <SelectItem value="vancouver">Vancouver</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Numbered Toggle */}
-              <label className="flex items-center gap-2 text-sm" style={{ color: colors.textColor }}>
-                <input
-                  type="checkbox"
-                  checked={numbered}
-                  onChange={(e) => handleUpdate('numbered', e.target.checked)}
-                  className="rounded"
-                />
-                Numeradas
-              </label>
-            </div>
-
-            {/* Color Customization */}
-            <div className="flex items-center gap-4 flex-wrap">
-              <Palette className="w-4 h-4" style={{ color: colors.accentColor }} />
-              <span className="text-sm" style={{ color: colors.textColor }}>Cores:</span>
+            <div className="flex items-center gap-2">
+              <Select 
+                value={citationStyle} 
+                onValueChange={(value) => handleUpdate('citation_style', value)}
+              >
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="apa">APA</SelectItem>
+                  <SelectItem value="mla">MLA</SelectItem>
+                  <SelectItem value="chicago">Chicago</SelectItem>
+                </SelectContent>
+              </Select>
               
-              <InlineColorPicker
-                label="Fundo"
-                value={colors.backgroundColor}
-                onChange={(color) => handleColorUpdate('backgroundColor', color)}
-                readonly={false}
-                compact={true}
-              />
-              
-              <InlineColorPicker
-                label="Título"
-                value={colors.titleColor}
-                onChange={(color) => handleColorUpdate('titleColor', color)}
-                readonly={false}
-                compact={true}
-              />
-              
-              <InlineColorPicker
-                label="Texto"
-                value={colors.textColor}
-                onChange={(color) => handleColorUpdate('textColor', color)}
-                readonly={false}
-                compact={true}
-              />
-              
-              <InlineColorPicker
-                label="Destaque"
-                value={colors.accentColor}
-                onChange={(color) => handleColorUpdate('accentColor', color)}
-                readonly={false}
-                compact={true}
-              />
+              <Button onClick={addCitation} size="sm" variant="outline">
+                <Plus className="w-4 h-4 mr-1" />
+                Adicionar
+              </Button>
             </div>
           </div>
         </CardHeader>
         
-        <CardContent className="space-y-4">
-          {/* Citations List */}
-          <div className="space-y-4">
-            {citations.map((citation: Citation, index: number) => (
-              <Card 
-                key={citation.id}
-                className="p-4 border"
-                style={{ 
-                  backgroundColor: `${colors.backgroundColor}dd`,
-                  borderColor: colors.borderColor
-                }}
-              >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium" style={{ color: colors.titleColor }}>
-                      Citação {index + 1}
+        <CardContent>
+          {citations.length > 0 ? (
+            <div className="space-y-6">
+              {citations.map((citation: any, index: number) => (
+                <div key={citation.id || index} className="border rounded-lg p-4" style={{ borderColor: borderColor }}>
+                  <div className="flex items-start justify-between mb-4">
+                    <span className="font-medium" style={{ color: accentColor }}>
+                      Referência {index + 1}
                     </span>
                     <Button
+                      onClick={() => removeCitation(index)}
                       size="sm"
                       variant="ghost"
-                      onClick={() => removeCitation(citation.id)}
-                      className="text-red-400 hover:text-red-300"
+                      className="text-red-500 hover:text-red-700"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <InlineTextEditor
-                      value={citation.authors}
-                      onChange={(value) => updateCitation(citation.id, 'authors', value)}
+                      value={citation.authors || ''}
+                      onChange={(value) => handleCitationUpdate(index, 'authors', value)}
                       placeholder="Autores"
                       className="text-sm"
-                      style={{ color: colors.textColor }}
+                      style={{ color: textColor }}
                     />
+                    
                     <InlineTextEditor
-                      value={citation.year}
-                      onChange={(value) => updateCitation(citation.id, 'year', value)}
+                      value={citation.year || ''}
+                      onChange={(value) => handleCitationUpdate(index, 'year', value)}
                       placeholder="Ano"
                       className="text-sm"
-                      style={{ color: colors.textColor }}
+                      style={{ color: textColor }}
                     />
+                    
                     <InlineTextEditor
-                      value={citation.title}
-                      onChange={(value) => updateCitation(citation.id, 'title', value)}
-                      placeholder="Título do artigo"
+                      value={citation.title || ''}
+                      onChange={(value) => handleCitationUpdate(index, 'title', value)}
+                      placeholder="Título"
                       className="text-sm md:col-span-2"
-                      style={{ color: colors.textColor }}
+                      style={{ color: textColor }}
                     />
+                    
                     <InlineTextEditor
-                      value={citation.journal}
-                      onChange={(value) => updateCitation(citation.id, 'journal', value)}
-                      placeholder="Nome da revista"
+                      value={citation.journal || ''}
+                      onChange={(value) => handleCitationUpdate(index, 'journal', value)}
+                      placeholder="Revista/Journal"
                       className="text-sm"
-                      style={{ color: colors.textColor }}
+                      style={{ color: textColor }}
                     />
+                    
                     <InlineTextEditor
                       value={citation.volume || ''}
-                      onChange={(value) => updateCitation(citation.id, 'volume', value)}
+                      onChange={(value) => handleCitationUpdate(index, 'volume', value)}
                       placeholder="Volume"
                       className="text-sm"
-                      style={{ color: colors.textColor }}
+                      style={{ color: textColor }}
                     />
-                    <InlineTextEditor
-                      value={citation.issue || ''}
-                      onChange={(value) => updateCitation(citation.id, 'issue', value)}
-                      placeholder="Número"
-                      className="text-sm"
-                      style={{ color: colors.textColor }}
-                    />
+                    
                     <InlineTextEditor
                       value={citation.pages || ''}
-                      onChange={(value) => updateCitation(citation.id, 'pages', value)}
+                      onChange={(value) => handleCitationUpdate(index, 'pages', value)}
                       placeholder="Páginas"
                       className="text-sm"
-                      style={{ color: colors.textColor }}
+                      style={{ color: textColor }}
                     />
+                    
                     <InlineTextEditor
                       value={citation.doi || ''}
-                      onChange={(value) => updateCitation(citation.id, 'doi', value)}
+                      onChange={(value) => handleCitationUpdate(index, 'doi', value)}
                       placeholder="DOI"
                       className="text-sm"
-                      style={{ color: colors.textColor }}
+                      style={{ color: textColor }}
                     />
+                    
                     <InlineTextEditor
                       value={citation.url || ''}
-                      onChange={(value) => updateCitation(citation.id, 'url', value)}
-                      placeholder="URL (opcional)"
+                      onChange={(value) => handleCitationUpdate(index, 'url', value)}
+                      placeholder="URL"
                       className="text-sm md:col-span-2"
-                      style={{ color: colors.textColor }}
+                      style={{ color: textColor }}
                     />
                   </div>
-
-                  {/* Citation Preview */}
-                  <div className="mt-3 p-3 bg-black/20 rounded">
-                    <div className="text-xs font-medium mb-1" style={{ color: colors.accentColor }}>
-                      Prévia:
+                  
+                  {/* Preview */}
+                  <div className="mt-4 p-3 rounded border-l-4" style={{ backgroundColor: `${accentColor}0a`, borderColor: accentColor }}>
+                    <div className="text-xs font-medium mb-1" style={{ color: accentColor }}>
+                      Preview ({citationStyle.toUpperCase()})
                     </div>
-                    <div 
-                      className="text-sm"
-                      style={{ color: colors.textColor }}
-                      dangerouslySetInnerHTML={{ 
-                        __html: formatCitation(citation, index).replace(/\*(.*?)\*/g, '<em>$1</em>')
-                      }}
-                    />
+                    <div className="text-sm" style={{ color: textColor }}>
+                      {numbered && `[${index + 1}] `}
+                      {formatCitation(citation, index)}
+                    </div>
                   </div>
                 </div>
-              </Card>
-            ))}
-            
-            <Button
-              onClick={addCitation}
-              className="w-full"
-              variant="outline"
-              style={{ borderColor: colors.borderColor, color: colors.textColor }}
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Adicionar Nova Citação
-            </Button>
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <BookOpen className="w-12 h-12 mx-auto mb-4" style={{ color: accentColor, opacity: 0.5 }} />
+              <p style={{ color: textColor, opacity: 0.6 }}>
+                Nenhuma referência adicionada
+              </p>
+              <Button onClick={addCitation} className="mt-4" variant="outline">
+                <Plus className="w-4 h-4 mr-2" />
+                Adicionar primeira referência
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

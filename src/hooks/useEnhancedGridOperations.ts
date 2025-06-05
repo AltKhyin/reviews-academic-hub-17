@@ -150,20 +150,20 @@ export const useEnhancedGridOperations = ({
     console.log('Merging grid blocks:', { rowId, leftBlock: leftBlock.id, rightBlock: rightBlock.id });
 
     // Merge content based on block types
-    let mergedPayload;
+    let mergedContent;
     if (leftBlock.type === 'paragraph' && rightBlock.type === 'paragraph') {
-      mergedPayload = {
-        ...leftBlock.payload,
-        content: `${leftBlock.payload.content}<br><br>${rightBlock.payload.content}`
+      mergedContent = {
+        ...leftBlock.content,
+        content: `${leftBlock.content.content}<br><br>${rightBlock.content.content}`
       };
     } else {
       // For other types, keep the left block's content
-      mergedPayload = leftBlock.payload;
+      mergedContent = leftBlock.content;
     }
 
     // Update the left block with merged content
     onUpdateBlock(leftBlock.id, {
-      payload: mergedPayload
+      content: mergedContent
     });
 
     // Remove the right block
@@ -291,7 +291,7 @@ export const useEnhancedGridOperations = ({
 
     // Update the original block to be the left column
     onUpdateBlock(blockId, {
-      payload: splitContent.left,
+      content: splitContent.left,
       meta: {
         ...block.meta,
         layout: {
@@ -317,7 +317,7 @@ export const useEnhancedGridOperations = ({
       const rightBlock = newBlocks.find(b => (b.meta?.layout?.position ?? 0) === 1);
       if (rightBlock) {
         onUpdateBlock(rightBlock.id, {
-          payload: splitContent.right
+          content: splitContent.right
         });
       }
     }, 100);
@@ -340,11 +340,11 @@ export const useEnhancedGridOperations = ({
 
       if (firstBlock.type === 'paragraph') {
         const mergedContent = row.blocks
-          .map(b => b.payload.content || '')
+          .map(b => b.content.content || '')
           .join('<br><br>');
 
         onUpdateBlock(firstBlock.id, {
-          payload: { ...firstBlock.payload, content: mergedContent },
+          content: { ...firstBlock.content, content: mergedContent },
           meta: {
             ...firstBlock.meta,
             layout: undefined // Remove layout metadata

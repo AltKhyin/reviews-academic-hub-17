@@ -1,4 +1,3 @@
-
 // ABOUTME: Block default configurations and content templates
 // Provides consistent default values for all block types
 
@@ -178,6 +177,9 @@ export const getBlockDefaults = (type: BlockType): BlockContent => {
       };
   }
 };
+
+// Legacy function name for compatibility
+export const getDefaultPayload = getBlockDefaults;
 
 export const createBlockContent = (type: BlockType, customContent?: Partial<BlockContent>): BlockContent => {
   const defaults = getBlockDefaults(type);

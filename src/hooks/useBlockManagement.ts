@@ -1,9 +1,10 @@
+
 // ABOUTME: Enhanced block management with optimized merge operations
 // Fixed merge operations to avoid creating unnecessary empty blocks
 
 import { useCallback, useState, useEffect } from 'react';
 import { ReviewBlock, BlockType } from '@/types/review';
-import { getDefaultPayload } from '@/utils/blockDefaults';
+import { getBlockDefaults } from '@/utils/blockDefaults';
 import { useBlockHistory } from './useBlockHistory';
 import { useBlockOperations } from './useBlockOperations';
 import { useGridLayoutManager } from './useGridLayoutManager';
@@ -95,10 +96,9 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
       issue_id: issueId || '',
       sort_index: position ?? blocks.length,
       type,
-      payload: getDefaultPayload(type),
+      content: getBlockDefaults(type),
       meta: {
         styles: {},
-        conditions: {},
         analytics: {
           track_views: true,
           track_interactions: true
@@ -113,7 +113,6 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
         })
       },
       visible: true,
-      created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
 
@@ -336,9 +335,8 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
       ...blockToDuplicate,
       id: tempId,
       sort_index: blockIndex + 1,
-      created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      payload: JSON.parse(JSON.stringify(blockToDuplicate.payload)),
+      content: JSON.parse(JSON.stringify(blockToDuplicate.content)),
       meta: JSON.parse(JSON.stringify(blockToDuplicate.meta || {}))
     };
 

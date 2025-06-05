@@ -48,6 +48,13 @@ export interface ReviewBlockMeta {
     className?: string;
     inline?: React.CSSProperties;
   };
+  conditions?: {
+    [key: string]: any;
+  };
+  analytics?: {
+    track_views?: boolean;
+    track_interactions?: boolean;
+  };
 }
 
 export interface ReviewBlock {
@@ -57,6 +64,9 @@ export interface ReviewBlock {
   sort_index: number;
   visible: boolean;
   meta?: ReviewBlockMeta;
+  issue_id?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface ReviewBlockProps {
@@ -103,6 +113,7 @@ export interface SnapshotCardPayload extends SnapshotCardContent {}
 
 // Block content/payload type (deprecated, use content directly)
 export type BlockPayload = any;
+export type BlockContent = any;
 
 // Table of Contents type
 export interface TableOfContents {
@@ -136,7 +147,12 @@ export type AnalyticsEventType =
   | 'click'
   | 'download'
   | 'bookmark'
-  | 'share';
+  | 'share'
+  | 'review_opened'
+  | 'section_viewed'
+  | 'review_completed'
+  | 'view_mode_changed'
+  | 'poll_voted';
 
 // Review Poll types
 export interface ReviewPoll {
