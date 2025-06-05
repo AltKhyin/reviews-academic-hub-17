@@ -1,10 +1,9 @@
 
-// ABOUTME: Enhanced native editor with inline-only settings and improved UX
-// Complete elimination of properties panels in favor of contextual inline controls
+// ABOUTME: Simplified native editor with unified interface and improved UX
+// Single-view editor with integrated layout controls and better performance
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ReviewBlock, BlockType } from '@/types/review';
 import { BlockEditor } from './BlockEditor';
 import { BlockPalette } from './BlockPalette';
@@ -13,10 +12,9 @@ import { ImportExportManager } from './ImportExportManager';
 import { 
   Save, 
   Eye, 
-  Edit3, 
-  SplitSquareHorizontal, 
   Undo2, 
-  Redo2
+  Redo2,
+  SplitSquareHorizontal
 } from 'lucide-react';
 import { useEditorAutoSave } from '@/hooks/useEditorAutoSave';
 import { useBlockManagement } from '@/hooks/useBlockManagement';
@@ -39,7 +37,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
   mode: initialMode = 'split',
   className
 }) => {
-  const [currentMode, setCurrentMode] = useState(initialMode);
+  const [showPreview, setShowPreview] = useState(initialMode === 'preview' || initialMode === 'split');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const {
@@ -125,48 +123,6 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
     return () => document.removeEventListener('keydown', handleKeyboardShortcuts);
   }, [handleKeyboardShortcuts]);
 
-  const renderModeSelector = () => (
-    <div className="flex items-center border rounded-md" style={{ borderColor: '#2a2a2a' }}>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => setCurrentMode('edit')}
-        className={cn(
-          "h-8 px-3 rounded-r-none text-xs",
-          currentMode === 'edit' && "bg-blue-600 text-white"
-        )}
-      >
-        <Edit3 className="w-3 h-3 mr-1" />
-        Editar
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => setCurrentMode('split')}
-        className={cn(
-          "h-8 px-3 rounded-none border-x text-xs",
-          currentMode === 'split' && "bg-blue-600 text-white"
-        )}
-        style={{ borderColor: '#2a2a2a' }}
-      >
-        <SplitSquareHorizontal className="w-3 h-3 mr-1" />
-        Dividir
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => setCurrentMode('preview')}
-        className={cn(
-          "h-8 px-3 rounded-l-none text-xs",
-          currentMode === 'preview' && "bg-blue-600 text-white"
-        )}
-      >
-        <Eye className="w-3 h-3 mr-1" />
-        Preview
-      </Button>
-    </div>
-  );
-
   const renderToolbar = () => (
     <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: '#2a2a2a' }}>
       <div className="flex items-center gap-3">
@@ -217,8 +173,25 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
           <Redo2 className="w-4 h-4" />
         </Button>
 
-        {/* Mode Selector */}
-        {renderModeSelector()}
+        {/* Preview Toggle */}
+        <Button
+          variant={showPreview ? "default" : "ghost"}
+          size="sm"
+          onClick={() => setShowPreview(!showPreview)}
+          className="flex items-center gap-2"
+        >
+          {showPreview ? (
+            <>
+              <SplitSquareHorizontal className="w-4 h-4" />
+              Dividir
+            </>
+          ) : (
+            <>
+              <Eye className="w-4 h-4" />
+              Preview
+            </>
+          )}
+        </Button>
 
         {/* Save Button */}
         <Button
@@ -239,74 +212,39 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
       {renderToolbar()}
       
       <div className="flex-1 overflow-hidden">
-        {currentMode === 'edit' && (
-          <div className="h-full flex">
-            {/* Block Palette */}
-            <div 
-              className="w-80 border-r overflow-y-auto flex-shrink-0"
-              style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}
-            >
-              <BlockPalette onAddBlock={addBlock} />
-            </div>
-            
-            {/* Editor */}
-            <div className="flex-1">
-              <BlockEditor
-                blocks={blocks}
-                activeBlockId={activeBlockId}
-                onActiveBlockChange={setActiveBlockId}
-                onUpdateBlock={updateBlock}
-                onDeleteBlock={deleteBlock}
-                onMoveBlock={moveBlock}
-                onAddBlock={addBlock}
-                onDuplicateBlock={duplicateBlock}
-              />
-            </div>
+        <div className="h-full flex">
+          {/* Block Palette */}
+          <div 
+            className="w-64 border-r overflow-y-auto flex-shrink-0"
+            style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}
+          >
+            <BlockPalette onAddBlock={addBlock} />
           </div>
-        )}
-
-        {currentMode === 'preview' && (
-          <div className="h-full">
-            <ReviewPreview 
+          
+          {/* Editor */}
+          <div className={cn("flex-1", showPreview && "border-r")} style={{ borderColor: '#2a2a2a' }}>
+            <BlockEditor
               blocks={blocks}
-              className="h-full"
+              activeBlockId={activeBlockId}
+              onActiveBlockChange={setActiveBlockId}
+              onUpdateBlock={updateBlock}
+              onDeleteBlock={deleteBlock}
+              onMoveBlock={moveBlock}
+              onAddBlock={addBlock}
+              onDuplicateBlock={duplicateBlock}
             />
           </div>
-        )}
-
-        {currentMode === 'split' && (
-          <div className="h-full flex">
-            {/* Block Palette */}
-            <div 
-              className="w-64 border-r overflow-y-auto flex-shrink-0"
-              style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}
-            >
-              <BlockPalette onAddBlock={addBlock} />
-            </div>
-            
-            {/* Editor */}
-            <div className="flex-1 border-r" style={{ borderColor: '#2a2a2a' }}>
-              <BlockEditor
-                blocks={blocks}
-                activeBlockId={activeBlockId}
-                onActiveBlockChange={setActiveBlockId}
-                onUpdateBlock={updateBlock}
-                onDeleteBlock={deleteBlock}
-                onMoveBlock={moveBlock}
-                onAddBlock={addBlock}
-                onDuplicateBlock={duplicateBlock}
-              />
-            </div>
-            
-            {/* Preview */}
+          
+          {/* Preview */}
+          {showPreview && (
             <div className="flex-1">
               <ReviewPreview 
                 blocks={blocks}
                 className="h-full"
               />
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Status Bar */}
@@ -322,6 +260,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
         <div className="flex items-center gap-4">
           <span>Ctrl+S para salvar</span>
           <span>Ctrl+Z para desfazer</span>
+          <span>Arrastar para reordenar</span>
         </div>
       </div>
     </div>
