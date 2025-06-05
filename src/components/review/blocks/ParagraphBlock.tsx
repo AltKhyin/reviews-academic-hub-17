@@ -1,4 +1,3 @@
-
 // ABOUTME: Rich text paragraph block with citation support
 // Renders formatted content with inline citations and proper typography
 

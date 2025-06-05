@@ -15,7 +15,7 @@ import {
   Underline, 
   Link, 
   Text, 
-  Color,
+  Palette,
   TextCursor,
   TextQuote,
   TextSelect,
@@ -29,6 +29,7 @@ import { cn } from '@/lib/utils';
 interface RichTextEditorProps {
   value: string;
   onChange: (value: string) => void;
+  onBlur?: () => void;
   placeholder?: string;
   className?: string;
   autoFocus?: boolean;
@@ -47,6 +48,7 @@ interface FormatState {
 export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   value,
   onChange,
+  onBlur,
   placeholder = "Digite aqui...",
   className,
   autoFocus = false,
@@ -147,6 +149,12 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   const handleSelectionChange = useCallback(() => {
     updateFormatState();
   }, [updateFormatState]);
+
+  // Handle editor blur
+  const handleEditorBlur = useCallback(() => {
+    setIsEditing(false);
+    onBlur?.();
+  }, [onBlur]);
 
   // Initialize content
   useEffect(() => {
@@ -258,7 +266,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
                 className="h-8 w-8 p-0"
                 style={{ color: 'var(--editor-primary-text)' }}
               >
-                <Color className="w-4 h-4" />
+                <Palette className="w-4 h-4" />
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-64 p-4" style={{
@@ -380,7 +388,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         suppressContentEditableWarning
         onInput={handleInput}
         onFocus={() => setIsEditing(true)}
-        onBlur={() => setIsEditing(false)}
+        onBlur={handleEditorBlur}
         className={cn(
           "prose prose-sm max-w-none min-h-[100px] p-4 focus:outline-none",
           "prose-p:my-2 prose-headings:my-2",
