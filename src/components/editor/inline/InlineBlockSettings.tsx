@@ -45,6 +45,7 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
   const payload = block.payload;
 
   const handlePayloadUpdate = (field: string, value: any) => {
+    console.log('Updating payload:', { field, value }); // Debug log
     onUpdate({
       payload: {
         ...payload,
@@ -54,11 +55,23 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
   };
 
   const handleVisibilityToggle = (visible: boolean) => {
+    console.log('Toggling visibility:', { blockId: block.id, visible }); // Debug log
     onUpdate({ visible });
   };
 
   const handleColorChange = (colorType: string, value: string) => {
-    handlePayloadUpdate(`${colorType}_color`, value);
+    console.log('Color changed in settings:', { colorType, value }); // Debug log
+    // Map color type to the correct payload field
+    const colorFieldMapping: Record<string, string> = {
+      'text': 'text_color',
+      'background': 'background_color', 
+      'border': 'border_color',
+      'accent': 'accent_color',
+      'destaque': 'accent_color'
+    };
+    
+    const field = colorFieldMapping[colorType] || `${colorType}_color`;
+    handlePayloadUpdate(field, value);
   };
 
   const getColorOptions = () => {
@@ -69,7 +82,7 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
     ];
 
     // Add block-specific colors
-    if (block.type === 'snapshot_card') {
+    if (block.type === 'snapshot_card' || block.type === 'callout') {
       baseColors.push({
         name: 'Destaque',
         value: payload.accent_color || '#3b82f6',
@@ -184,36 +197,110 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
                 style={{ backgroundColor: '#212121', borderColor: '#2a2a2a', color: '#ffffff' }}
               />
             </div>
+            <div>
+              <Label className="text-xs" style={{ color: '#d1d5db' }}>Legenda</Label>
+              <Input
+                value={payload.caption || ''}
+                onChange={(e) => handlePayloadUpdate('caption', e.target.value)}
+                placeholder="Legenda da imagem"
+                className="h-8 text-xs"
+                style={{ backgroundColor: '#212121', borderColor: '#2a2a2a', color: '#ffffff' }}
+              />
+            </div>
           </div>
         );
 
       case 'callout':
         return (
-          <div>
-            <Label className="text-xs" style={{ color: '#d1d5db' }}>Tipo</Label>
-            <Select 
-              value={payload.type || 'info'} 
-              onValueChange={(value) => handlePayloadUpdate('type', value)}
-            >
-              <SelectTrigger className="h-8 text-xs" style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}>
-                <SelectItem value="info">Info</SelectItem>
-                <SelectItem value="warning">Atenção</SelectItem>
-                <SelectItem value="success">Sucesso</SelectItem>
-                <SelectItem value="error">Erro</SelectItem>
-                <SelectItem value="note">Nota</SelectItem>
-                <SelectItem value="tip">Dica</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs" style={{ color: '#d1d5db' }}>Tipo</Label>
+              <Select 
+                value={payload.type || 'info'} 
+                onValueChange={(value) => handlePayloadUpdate('type', value)}
+              >
+                <SelectTrigger className="h-8 text-xs" style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}>
+                  <SelectItem value="info">Info</SelectItem>
+                  <SelectItem value="warning">Atenção</SelectItem>
+                  <SelectItem value="success">Sucesso</SelectItem>
+                  <SelectItem value="error">Erro</SelectItem>
+                  <SelectItem value="note">Nota</SelectItem>
+                  <SelectItem value="tip">Dica</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs" style={{ color: '#d1d5db' }}>Título</Label>
+              <Input
+                value={payload.title || ''}
+                onChange={(e) => handlePayloadUpdate('title', e.target.value)}
+                placeholder="Título do callout"
+                className="h-8 text-xs"
+                style={{ backgroundColor: '#212121', borderColor: '#2a2a2a', color: '#ffffff' }}
+              />
+            </div>
+          </div>
+        );
+
+      case 'snapshot_card':
+        return (
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs" style={{ color: '#d1d5db' }}>Título</Label>
+              <Input
+                value={payload.title || ''}
+                onChange={(e) => handlePayloadUpdate('title', e.target.value)}
+                placeholder="Título do cartão"
+                className="h-8 text-xs"
+                style={{ backgroundColor: '#212121', borderColor: '#2a2a2a', color: '#ffffff' }}
+              />
+            </div>
+            <div>
+              <Label className="text-xs" style={{ color: '#d1d5db' }}>Subtítulo</Label>
+              <Input
+                value={payload.subtitle || ''}
+                onChange={(e) => handlePayloadUpdate('subtitle', e.target.value)}
+                placeholder="Subtítulo"
+                className="h-8 text-xs"
+                style={{ backgroundColor: '#212121', borderColor: '#2a2a2a', color: '#ffffff' }}
+              />
+            </div>
+          </div>
+        );
+
+      case 'number_card':
+        return (
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs" style={{ color: '#d1d5db' }}>Número</Label>
+              <Input
+                value={payload.number || ''}
+                onChange={(e) => handlePayloadUpdate('number', e.target.value)}
+                placeholder="123"
+                className="h-8 text-xs"
+                style={{ backgroundColor: '#212121', borderColor: '#2a2a2a', color: '#ffffff' }}
+              />
+            </div>
+            <div>
+              <Label className="text-xs" style={{ color: '#d1d5db' }}>Rótulo</Label>
+              <Input
+                value={payload.label || ''}
+                onChange={(e) => handlePayloadUpdate('label', e.target.value)}
+                placeholder="Descrição"
+                className="h-8 text-xs"
+                style={{ backgroundColor: '#212121', borderColor: '#2a2a2a', color: '#ffffff' }}
+              />
+            </div>
           </div>
         );
 
       default:
         return (
           <div className="text-xs text-center py-2" style={{ color: '#9ca3af' }}>
-            Nenhuma configuração disponível
+            Nenhuma configuração disponível para este tipo de bloco
           </div>
         );
     }

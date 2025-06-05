@@ -46,14 +46,33 @@ export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
 
   useEffect(() => {
     if (isEditing && editorRef.current) {
-      editorRef.current.focus();
-      // Fix cursor positioning - place at end of content
-      const range = document.createRange();
-      const selection = window.getSelection();
-      range.selectNodeContents(editorRef.current);
-      range.collapse(true); // Changed from false to true for proper LTR positioning
-      selection?.removeAllRanges();
-      selection?.addRange(range);
+      // Fix cursor positioning with proper timeout and range handling
+      setTimeout(() => {
+        if (!editorRef.current) return;
+        
+        editorRef.current.focus();
+        
+        // Create proper text range for cursor positioning
+        const range = document.createRange();
+        const selection = window.getSelection();
+        
+        if (editorRef.current.childNodes.length > 0) {
+          // Place cursor at end of existing content
+          const lastNode = editorRef.current.childNodes[editorRef.current.childNodes.length - 1];
+          if (lastNode.nodeType === Node.TEXT_NODE) {
+            range.setStart(lastNode, lastNode.textContent?.length || 0);
+          } else {
+            range.setStartAfter(lastNode);
+          }
+        } else {
+          // Place cursor at start of empty element
+          range.setStart(editorRef.current, 0);
+        }
+        
+        range.collapse(true);
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+      }, 50);
     }
   }, [isEditing]);
 
@@ -192,7 +211,7 @@ export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
             color: '#ffffff',
             direction: 'ltr',
             textAlign: 'left',
-            unicodeBidi: 'normal',
+            unicodeBidi: 'embed',
             ...style
           }}
           dir="ltr"
@@ -222,7 +241,7 @@ export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
         color: isEmpty ? '#9ca3af' : '#ffffff',
         direction: 'ltr',
         textAlign: 'left',
-        unicodeBidi: 'normal',
+        unicodeBidi: 'embed',
         ...style
       }}
       dir="ltr"
@@ -231,7 +250,7 @@ export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
         <Type className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: '#9ca3af' }} />
         <div 
           className="flex-1 min-w-0"
-          style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'normal' }}
+          style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
           dir="ltr"
         >
           {isEmpty ? (
@@ -239,7 +258,7 @@ export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
           ) : (
             <div 
               dangerouslySetInnerHTML={{ __html: value }}
-              style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'normal' }}
+              style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
               dir="ltr"
             />
           )}

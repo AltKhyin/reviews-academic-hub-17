@@ -40,13 +40,18 @@ export const InlineColorPicker: React.FC<InlineColorPickerProps> = ({
   ];
 
   const handleColorSelect = (colorType: string, value: string) => {
+    console.log('Color selected:', { colorType, value }); // Debug log
     onChange(colorType, value);
   };
 
   const handleCustomColorChange = (colorType: string, value: string) => {
-    // Validate hex color
+    // Enhanced validation for hex colors and CSS color names
     const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
-    if (hexRegex.test(value) || value === 'transparent') {
+    const cssColors = ['transparent', 'inherit', 'currentColor'];
+    const isValidColor = hexRegex.test(value) || cssColors.includes(value.toLowerCase());
+    
+    if (isValidColor) {
+      console.log('Custom color changed:', { colorType, value }); // Debug log
       onChange(colorType, value);
     }
   };
@@ -60,11 +65,15 @@ export const InlineColorPicker: React.FC<InlineColorPickerProps> = ({
     };
     
     const defaultValue = defaultValues[colorType.toLowerCase()] || 'transparent';
+    console.log('Color reset:', { colorType, defaultValue }); // Debug log
     onChange(colorType, defaultValue);
   };
 
   const getColorTypeKey = (name: string): string => {
-    return name.toLowerCase().replace(/[^a-z]/g, '');
+    // Improved key generation to handle various naming patterns
+    return name.toLowerCase()
+      .replace(/\s+/g, '_')
+      .replace(/[^a-z_]/g, '');
   };
 
   if (readonly) {

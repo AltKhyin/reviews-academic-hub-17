@@ -1,3 +1,4 @@
+
 // ABOUTME: Enhanced native editor with inline-only settings and improved UX
 // Complete elimination of properties panels in favor of contextual inline controls
 
@@ -9,6 +10,7 @@ import { ReviewBlock, BlockType } from '@/types/review';
 import { BlockEditor } from './BlockEditor';
 import { BlockPalette } from './BlockPalette';
 import { ReviewPreview } from './ReviewPreview';
+import { ImportExportManager } from './ImportExportManager';
 import { 
   Save, 
   Eye, 
@@ -80,6 +82,22 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
       setHasUnsavedChanges(false);
     }
   }, [blocks, onSave]);
+
+  const handleImport = useCallback((importedBlocks: ReviewBlock[]) => {
+    console.log('Importing blocks:', importedBlocks);
+    // Clear existing blocks and import new ones
+    importedBlocks.forEach((block, index) => {
+      if (index === 0) {
+        // Clear existing blocks first
+        addBlock(block.type, 0);
+        updateBlock(blocks[0]?.id || 0, block);
+      } else {
+        addBlock(block.type, index);
+        const newBlockId = -(Date.now() + Math.random() + index);
+        updateBlock(newBlockId, { ...block, id: newBlockId });
+      }
+    });
+  }, [addBlock, updateBlock, blocks]);
 
   const handleKeyboardShortcuts = useCallback((e: KeyboardEvent) => {
     if (e.ctrlKey || e.metaKey) {
@@ -174,6 +192,12 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
       </div>
 
       <div className="flex items-center gap-2">
+        {/* Import/Export */}
+        <ImportExportManager
+          blocks={blocks}
+          onImport={handleImport}
+        />
+
         {/* Undo/Redo */}
         <Button
           variant="ghost"
