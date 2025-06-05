@@ -5,38 +5,25 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { ColorPicker } from '@/components/ui/color-picker';
-import { 
-  X, 
-  Palette, 
-  Download, 
-  Upload, 
-  RotateCcw, 
-  Sun, 
-  Moon, 
-  Monitor,
-  Sparkles
-} from 'lucide-react';
+import { X, Palette } from 'lucide-react';
 import { useEditorTheme } from '@/contexts/EditorThemeContext';
 import { EditorTheme } from '@/types/theme';
-import { cn } from '@/lib/utils';
+import { ThemePresets } from './theme/ThemePresets';
+import { ColorSection } from './theme/ColorSection';
+import { ImportExportControls } from './theme/ImportExportControls';
 
 interface ThemeCustomizerProps {
   onClose: () => void;
 }
 
-interface ColorSection {
+interface ColorSectionConfig {
   key: string;
   label: string;
   colors: { key: string; label: string; description?: string }[];
 }
 
-const COLOR_SECTIONS: ColorSection[] = [
+const COLOR_SECTIONS: ColorSectionConfig[] = [
   {
     key: 'editor',
     label: 'Editor Principal',
@@ -75,16 +62,10 @@ const COLOR_SECTIONS: ColorSection[] = [
   }
 ];
 
-const THEME_PRESETS = [
-  { id: 'light', name: 'Claro', icon: Sun },
-  { id: 'dark', name: 'Escuro', icon: Moon }
-];
-
 export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({ onClose }) => {
   const { 
     currentTheme, 
     appliedTheme, 
-    availableThemes,
     customizations,
     setTheme, 
     customizeColor,
@@ -94,77 +75,20 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({ onClose }) => 
   } = useEditorTheme();
 
   const [activeSection, setActiveSection] = useState<string>('editor');
-  const [searchTerm, setSearchTerm] = useState('');
 
-  // Memoized filtered colors for performance
-  const filteredColors = useMemo(() => {
-    if (!searchTerm) return COLOR_SECTIONS;
-    
-    return COLOR_SECTIONS.map(section => ({
-      ...section,
-      colors: section.colors.filter(color => 
-        color.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        color.description?.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    })).filter(section => section.colors.length > 0);
-  }, [searchTerm]);
-
-  // Get current color value with fallback
   const getCurrentColorValue = useCallback((sectionKey: string, colorKey: string): string => {
-    const fullPath = `${sectionKey}.${colorKey}`;
     const sectionColors = appliedTheme[sectionKey as keyof EditorTheme] as any;
     return sectionColors?.[colorKey] || '#000000';
   }, [appliedTheme]);
 
-  // Handle color change with debouncing for performance
   const handleColorChange = useCallback((sectionKey: string, colorKey: string, value: string) => {
     const fullPath = `${sectionKey}.${colorKey}`;
     customizeColor(fullPath, value);
   }, [customizeColor]);
 
-  // Handle theme preset selection
   const handlePresetSelect = useCallback((themeId: string) => {
     setTheme(themeId);
   }, [setTheme]);
-
-  // Handle export
-  const handleExport = useCallback(() => {
-    try {
-      const exportData = exportTheme();
-      const blob = new Blob([exportData], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `theme-${currentTheme.name.toLowerCase()}-${Date.now()}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Failed to export theme:', error);
-    }
-  }, [exportTheme, currentTheme.name]);
-
-  // Handle import
-  const handleImport = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const content = e.target?.result as string;
-        importTheme(content);
-      } catch (error) {
-        console.error('Failed to import theme:', error);
-        alert('Erro ao importar tema. Verifique se o arquivo está correto.');
-      }
-    };
-    reader.readAsText(file);
-    
-    // Reset input
-    event.target.value = '';
-  }, [importTheme]);
 
   const hasCustomizations = Object.keys(customizations).length > 0;
 
@@ -192,57 +116,12 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({ onClose }) => 
       <ScrollArea className="flex-1">
         <div className="p-4 space-y-6">
           {/* Theme Presets */}
-          <Card style={{ backgroundColor: 'var(--editor-card-bg)', borderColor: 'var(--editor-primary-border)' }}>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm" style={{ color: 'var(--editor-primary-text)' }}>
-                Temas Predefinidos
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="grid grid-cols-2 gap-2">
-                {THEME_PRESETS.map((preset) => {
-                  const Icon = preset.icon;
-                  const isActive = currentTheme.id === preset.id;
-                  
-                  return (
-                    <Button
-                      key={preset.id}
-                      variant={isActive ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => handlePresetSelect(preset.id)}
-                      className={cn("flex items-center gap-2", isActive && "ring-2 ring-[var(--editor-focus-border)]")}
-                      style={{
-                        backgroundColor: isActive ? 'var(--editor-button-primary)' : 'var(--editor-card-bg)',
-                        borderColor: 'var(--editor-primary-border)',
-                        color: 'var(--editor-primary-text)'
-                      }}
-                    >
-                      <Icon className="w-4 h-4" />
-                      {preset.name}
-                    </Button>
-                  );
-                })}
-              </div>
-              
-              {hasCustomizations && (
-                <div className="flex items-center gap-2 pt-2">
-                  <Badge variant="outline" className="text-xs">
-                    <Sparkles className="w-3 h-3 mr-1" />
-                    Personalizado
-                  </Badge>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={resetCustomizations}
-                    className="text-xs"
-                  >
-                    <RotateCcw className="w-3 h-3 mr-1" />
-                    Resetar
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <ThemePresets
+            currentThemeId={currentTheme.id}
+            hasCustomizations={hasCustomizations}
+            onPresetSelect={handlePresetSelect}
+            onResetCustomizations={resetCustomizations}
+          />
 
           {/* Color Sections */}
           <Card style={{ backgroundColor: 'var(--editor-card-bg)', borderColor: 'var(--editor-primary-border)' }}>
@@ -274,96 +153,26 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({ onClose }) => 
               </div>
 
               {/* Color Controls */}
-              {filteredColors
+              {COLOR_SECTIONS
                 .filter(section => section.key === activeSection)
                 .map((section) => (
-                  <div key={section.key} className="space-y-3">
-                    {section.colors.map((color) => (
-                      <div key={color.key} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label 
-                            className="text-xs font-medium"
-                            style={{ color: 'var(--editor-primary-text)' }}
-                          >
-                            {color.label}
-                          </Label>
-                          <div
-                            className="w-6 h-6 rounded border"
-                            style={{
-                              backgroundColor: getCurrentColorValue(section.key, color.key),
-                              borderColor: 'var(--editor-primary-border)'
-                            }}
-                          />
-                        </div>
-                        {color.description && (
-                          <p className="text-xs" style={{ color: 'var(--editor-muted-text)' }}>
-                            {color.description}
-                          </p>
-                        )}
-                        <ColorPicker
-                          value={getCurrentColorValue(section.key, color.key)}
-                          onChange={(value) => handleColorChange(section.key, color.key, value)}
-                        />
-                      </div>
-                    ))}
-                  </div>
+                  <ColorSection
+                    key={section.key}
+                    colors={section.colors}
+                    sectionKey={section.key}
+                    getCurrentColorValue={getCurrentColorValue}
+                    onColorChange={handleColorChange}
+                  />
                 ))}
             </CardContent>
           </Card>
 
           {/* Import/Export */}
-          <Card style={{ backgroundColor: 'var(--editor-card-bg)', borderColor: 'var(--editor-primary-border)' }}>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm" style={{ color: 'var(--editor-primary-text)' }}>
-                Importar/Exportar
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleExport}
-                  className="flex items-center gap-2"
-                  style={{
-                    borderColor: 'var(--editor-primary-border)',
-                    color: 'var(--editor-primary-text)',
-                    backgroundColor: 'var(--editor-card-bg)'
-                  }}
-                >
-                  <Download className="w-4 h-4" />
-                  Exportar
-                </Button>
-                <label className="cursor-pointer">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center gap-2 w-full"
-                    style={{
-                      borderColor: 'var(--editor-primary-border)',
-                      color: 'var(--editor-primary-text)',
-                      backgroundColor: 'var(--editor-card-bg)'
-                    }}
-                    asChild
-                  >
-                    <span>
-                      <Upload className="w-4 h-4" />
-                      Importar
-                    </span>
-                  </Button>
-                  <input
-                    type="file"
-                    accept=".json"
-                    onChange={handleImport}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-              <p className="text-xs" style={{ color: 'var(--editor-muted-text)' }}>
-                Salve ou carregue suas personalizações de tema
-              </p>
-            </CardContent>
-          </Card>
+          <ImportExportControls
+            currentThemeName={currentTheme.name}
+            onExport={exportTheme}
+            onImport={importTheme}
+          />
         </div>
       </ScrollArea>
     </div>
