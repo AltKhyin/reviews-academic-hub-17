@@ -1,4 +1,3 @@
-
 // ABOUTME: Fixed resizable grid layout with proper event handling and block management
 // Resolved UI freezing, drag states, and grid operation issues
 
@@ -222,7 +221,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
     }
   }, [onDragLeave]);
 
-  // FIXED: Move this hook out of the render function
+  // FIXED: Move this hook out of the render function and remove position from deps
   const handleAddBlockToPosition = useCallback((position: number, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -242,7 +241,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
     } else {
       onAddBlock(rowId, position);
     }
-  }, [position, rowId, blocks, onAddBlock]);
+  }, [rowId, blocks, onAddBlock]);
 
   // FIXED: Enhanced empty slot rendering without hooks inside render
   const renderEmptySlot = (position: number) => {
