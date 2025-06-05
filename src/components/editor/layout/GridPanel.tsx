@@ -1,6 +1,6 @@
 
-// ABOUTME: Individual grid panel component for better modularity
-// Handles single panel rendering with proper drag and drop support
+// ABOUTME: Enhanced grid panel with improved drop zones covering entire block area
+// Better drag and drop experience with full-block drop targets
 
 import React, { useCallback } from 'react';
 import { ReviewBlock } from '@/types/review';
@@ -67,7 +67,6 @@ export const GridPanel: React.FC<GridPanelProps> = ({
     e.stopPropagation();
     
     if (onDrop && dragState?.isDragging) {
-      console.log('Panel drop:', { rowId, position, draggedBlock: dragState.draggedBlockId });
       onDrop(e, rowId, position, 'merge');
     }
   }, [onDrop, rowId, position, dragState]);
@@ -102,12 +101,9 @@ export const GridPanel: React.FC<GridPanelProps> = ({
   const handleAddBlock = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    console.log('Adding block to grid position:', { rowId, position });
     onAddBlock(rowId, position);
   }, [rowId, position, onAddBlock]);
 
-  // Create wrapper function for onUpdate
   const createBlockUpdateWrapper = useCallback((blockId: number) => {
     return (updates: Partial<ReviewBlock>) => {
       onUpdateBlock(blockId, updates);
@@ -119,12 +115,23 @@ export const GridPanel: React.FC<GridPanelProps> = ({
     const isDragging = dragState?.draggedBlockId === block.id;
 
     return (
-      <div className="relative group h-full" key={`block-${block.id}`}>
-        {/* Drop zone indicator for merge */}
+      <div 
+        className="relative group h-full" 
+        key={`block-${block.id}`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDragDrop}
+      >
+        {/* Full-coverage drop zone overlay */}
         {isDropTarget && (
-          <div className="absolute inset-0 border-2 border-green-500 rounded-lg z-10 animate-pulse bg-green-500/10">
-            <div className="absolute top-2 left-2 text-xs text-green-400 font-medium">
-              Mesclar aqui
+          <div className="absolute inset-0 border-2 border-green-500 rounded-lg z-20 animate-pulse bg-green-500/20 flex items-center justify-center">
+            <div className="text-center">
+              <div className="text-green-400 font-medium text-sm mb-2">
+                ↓ Soltar bloco aqui ↓
+              </div>
+              <div className="text-green-300 text-xs">
+                Será mesclado na posição {position + 1}
+              </div>
             </div>
           </div>
         )}
@@ -141,9 +148,6 @@ export const GridPanel: React.FC<GridPanelProps> = ({
             borderColor: isActive ? '#3b82f6' : 'transparent'
           }}
           onClick={(e) => handleBlockClick(block.id, e)}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDragDrop}
         >
           {/* Block Controls */}
           {!readonly && (
@@ -157,7 +161,6 @@ export const GridPanel: React.FC<GridPanelProps> = ({
                 onClick={(e) => {
                   e.stopPropagation();
                   e.preventDefault();
-                  console.log('Deleting block from grid:', { blockId: block.id, rowId });
                   onDeleteBlock(block.id);
                 }}
                 className="h-6 w-6 p-0 bg-red-800 border border-red-600 hover:bg-red-700"
@@ -181,13 +184,13 @@ export const GridPanel: React.FC<GridPanelProps> = ({
     );
   }
 
-  // Empty slot
+  // Empty slot with full-area drop zone
   return (
     <div
       className={cn(
         "min-h-[120px] border-2 border-dashed rounded-lg flex flex-col items-center justify-center transition-all relative group",
         "border-gray-600 hover:border-gray-500",
-        isDropTarget && "border-green-500 bg-green-500/10 animate-pulse"
+        isDropTarget && "border-green-500 bg-green-500/20 animate-pulse"
       )}
       style={{ borderColor: isDropTarget ? '#22c55e' : '#2a2a2a' }}
       onDragOver={handleDragOver}
@@ -195,7 +198,7 @@ export const GridPanel: React.FC<GridPanelProps> = ({
       onDrop={handleDragDrop}
     >
       {isDropTarget && (
-        <div className="absolute inset-0 flex items-center justify-center bg-green-500/20 rounded-lg">
+        <div className="absolute inset-0 flex items-center justify-center bg-green-500/30 rounded-lg z-10">
           <div className="text-center">
             <div className="text-green-400 font-medium text-sm mb-2">
               ↓ Soltar bloco aqui ↓

@@ -1,6 +1,6 @@
 
-// ABOUTME: Enhanced issue editor with native review support and fixed contrast
-// Supports both traditional PDF and native block-based content creation
+// ABOUTME: Refactored issue editor with improved layout and component separation
+// Main editor page with better organization and reduced margins
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -9,12 +9,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Issue } from '@/types/issue';
 import { ReviewBlock } from '@/types/review';
-import { IssueFormValues } from '@/schemas/issue-form-schema';
 import { IssueHeader } from './components/issue/IssueHeader';
 import { IssueActionButtons } from './components/issue/IssueActionButtons';
 import { IssueFormContainer } from './components/issue/IssueFormContainer';
@@ -22,7 +20,6 @@ import { NativeEditor } from '@/components/editor/NativeEditor';
 import { useIssueEditor } from './hooks/useIssueEditor';
 import { useQuery } from '@tanstack/react-query';
 import { FileText, Layers, Upload } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 const IssueEditor = () => {
   const { id } = useParams<{ id: string }>();
@@ -31,13 +28,11 @@ const IssueEditor = () => {
   
   const [contentType, setContentType] = useState<'pdf' | 'native'>('pdf');
   const [nativeBlocks, setNativeBlocks] = useState<ReviewBlock[]>([]);
-  const [editorMode, setEditorMode] = useState<'edit' | 'preview' | 'split'>('split');
   
   const { 
     formValues,
     setFormValues,
     isSubmitting, 
-    setIsSubmitting,
     onSubmit,
     handleDelete,
     togglePublish,
@@ -51,7 +46,6 @@ const IssueEditor = () => {
       if (!id || id === 'new') return null;
 
       try {
-        console.log('Fetching issue with id:', id);
         const { data, error } = await supabase
           .from('issues')
           .select('*')
@@ -59,7 +53,6 @@ const IssueEditor = () => {
           .single();
 
         if (error) {
-          console.error('Error fetching issue:', error);
           toast({
             title: "Error loading issue",
             description: "Could not load the issue data. Please try again.",
@@ -68,10 +61,8 @@ const IssueEditor = () => {
           throw error;
         }
         
-        console.log('Fetched issue data:', data);
         return data as Issue;
       } catch (err) {
-        console.error('Exception in fetchIssue:', err);
         throw err;
       }
     },
@@ -100,7 +91,6 @@ const IssueEditor = () => {
   // Update form values when issue data is loaded
   useEffect(() => {
     if (isNewIssue) {
-      console.log('Setting default values for new issue');
       setFormValues({
         id: '',
         title: '',
@@ -122,11 +112,9 @@ const IssueEditor = () => {
         population: ''
       });
     } else if (issue) {
-      console.log('Setting form values with:', issue);
       const formattedTags = issue.specialty ? 
         issue.specialty.split(', ').map(tag => `[tag:${tag}]`).join('') : '';
 
-      // Determine content type based on issue data
       const issueContentType = issue.review_type === 'native' || issue.review_type === 'hybrid' 
         ? 'native' 
         : 'pdf';
@@ -179,16 +167,15 @@ const IssueEditor = () => {
         .delete()
         .eq('issue_id', id);
 
-      // Insert new blocks - properly format for database
+      // Insert new blocks
       if (updatedBlocks.length > 0) {
         const blocksToInsert = updatedBlocks.map(block => ({
           issue_id: id,
           sort_index: block.sort_index,
-          type: block.type as string, // Ensure string type
-          payload: block.payload as any, // Cast to any for Json compatibility
-          meta: block.meta as any, // Cast to any for Json compatibility
+          type: block.type as string,
+          payload: block.payload as any,
+          meta: block.meta as any,
           visible: block.visible
-          // Don't include id, created_at, updated_at - let database handle them
         }));
 
         const { error } = await supabase
@@ -223,7 +210,6 @@ const IssueEditor = () => {
         description: "O conteúdo nativo foi salvo com sucesso.",
       });
     } catch (error: any) {
-      console.error('Error saving native blocks:', error);
       toast({
         title: "Erro ao Salvar",
         description: error.message || "Não foi possível salvar o conteúdo.",
@@ -256,7 +242,7 @@ const IssueEditor = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-6 space-y-6" style={{ backgroundColor: '#121212', minHeight: '100vh', color: '#ffffff' }}>
+    <div className="max-w-7xl mx-auto px-3 py-6 space-y-6" style={{ backgroundColor: '#121212', minHeight: '100vh', color: '#ffffff' }}>
       <div className="flex items-center justify-between">
         <IssueHeader />
         {!isNewIssue && (
@@ -271,7 +257,7 @@ const IssueEditor = () => {
         )}
       </div>
 
-      {/* Content Type Selection - Fixed Contrast */}
+      {/* Content Type Selection */}
       <Card 
         className="issue-editor-card"
         style={{ 
@@ -376,7 +362,7 @@ const IssueEditor = () => {
             }}
             className="data-[state=active]:bg-blue-600 data-[state=active]:text-white disabled:opacity-50"
           >
-            {contentType === 'native' ? 'Editor Nativo' : 'Upload PDF'}
+            {contentType === 'native' ? 'Editor de Conteúdo Nativo' : 'Upload PDF'}
           </TabsTrigger>
           <TabsTrigger 
             value="original"
@@ -446,26 +432,13 @@ const IssueEditor = () => {
                 color: '#ffffff'
               }}
             >
-              <CardHeader className="flex-shrink-0">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2" style={{ color: '#ffffff' }}>
-                      <Layers className="w-5 h-5" />
-                      Editor de Conteúdo Nativo
-                    </CardTitle>
-                    <CardDescription style={{ color: '#d1d5db' }}>
-                      Crie conteúdo interativo usando blocos com design otimizado
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
               <CardContent className="flex-1 p-0">
                 <NativeEditor
                   issueId={id}
                   initialBlocks={nativeBlocks}
                   onSave={handleSaveNativeBlocks}
                   onCancel={() => {}}
-                  mode={editorMode}
+                  mode="split"
                 />
               </CardContent>
             </Card>

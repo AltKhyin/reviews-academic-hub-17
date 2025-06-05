@@ -1,22 +1,14 @@
 
-// ABOUTME: Simplified native editor with unified interface and improved UX
-// Single-view editor with integrated layout controls and better performance
+// ABOUTME: Refactored native editor with improved component separation
+// Main editor container with better organization and UX
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
-import { ReviewBlock, BlockType } from '@/types/review';
+import { ReviewBlock } from '@/types/review';
 import { BlockEditor } from './BlockEditor';
 import { BlockPalette } from './BlockPalette';
 import { ReviewPreview } from './ReviewPreview';
-import { ImportExportManager } from './ImportExportManager';
-import { 
-  Save, 
-  Eye, 
-  Undo2, 
-  Redo2,
-  SplitSquareHorizontal,
-  Edit3
-} from 'lucide-react';
+import { EditorToolbar } from './EditorToolbar';
+import { EditorStatusBar } from './EditorStatusBar';
 import { useEditorAutoSave } from '@/hooks/useEditorAutoSave';
 import { useBlockManagement } from '@/hooks/useBlockManagement';
 import { cn } from '@/lib/utils';
@@ -44,8 +36,6 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
   const {
     blocks,
     activeBlockId,
-    history,
-    historyIndex,
     setActiveBlockId,
     addBlock,
     updateBlock,
@@ -64,7 +54,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
   const { handleSave, isSaving, lastSaved } = useEditorAutoSave({
     data: blocks,
     onSave: onSave ? async (data) => { onSave(data); } : undefined,
-    interval: 30000, // 30 seconds
+    interval: 30000,
     enabled: !!issueId
   });
 
@@ -83,10 +73,8 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
 
   const handleImport = useCallback((importedBlocks: ReviewBlock[]) => {
     console.log('Importing blocks:', importedBlocks);
-    // Clear existing blocks and import new ones
     importedBlocks.forEach((block, index) => {
       if (index === 0) {
-        // Clear existing blocks first
         addBlock(block.type, 0);
         updateBlock(blocks[0]?.id || 0, block);
       } else {
@@ -126,107 +114,26 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
     return () => document.removeEventListener('keydown', handleKeyboardShortcuts);
   }, [handleKeyboardShortcuts]);
 
-  const renderToolbar = () => (
-    <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: '#2a2a2a' }}>
-      <div className="flex items-center gap-3">
-        {/* Save Status */}
-        <div className="flex items-center gap-2 text-xs" style={{ color: '#9ca3af' }}>
-          {hasUnsavedChanges && (
-            <span style={{ color: '#f59e0b' }}>● Não salvo</span>
-          )}
-          {isSaving && (
-            <span style={{ color: '#3b82f6' }}>Salvando...</span>
-          )}
-          {!isSaving && lastSaved && (
-            <span>Salvo {lastSaved.toLocaleTimeString()}</span>
-          )}
-        </div>
-      </div>
-
-      <div className="flex items-center gap-2">
-        {/* Import/Export */}
-        <ImportExportManager
-          blocks={blocks}
-          onImport={handleImport}
-        />
-
-        {/* Undo/Redo */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={undo}
-          disabled={!canUndo}
-          className="h-8 w-8 p-0"
-          title="Desfazer (Ctrl+Z)"
-        >
-          <Undo2 className="w-4 h-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={redo}
-          disabled={!canRedo}
-          className="h-8 w-8 p-0"
-          title="Refazer (Ctrl+Shift+Z)"
-        >
-          <Redo2 className="w-4 h-4" />
-        </Button>
-
-        {/* Mode Switcher - Working Controls */}
-        <div 
-          className="flex items-center rounded-lg p-1 mr-2"
-          style={{ backgroundColor: '#2a2a2a' }}
-        >
-          <Button
-            variant={editorMode === 'edit' ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setEditorMode('edit')}
-            className="flex items-center gap-2"
-          >
-            <Edit3 className="w-4 h-4" />
-            Editar
-          </Button>
-          <Button
-            variant={editorMode === 'split' ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setEditorMode('split')}
-            className="flex items-center gap-2"
-          >
-            <SplitSquareHorizontal className="w-4 h-4" />
-            Dividir
-          </Button>
-          <Button
-            variant={editorMode === 'preview' ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setEditorMode('preview')}
-            className="flex items-center gap-2"
-          >
-            <Eye className="w-4 h-4" />
-            Preview
-          </Button>
-        </div>
-
-        {/* Save Button */}
-        <Button
-          onClick={handleManualSave}
-          disabled={!hasUnsavedChanges}
-          className="flex items-center gap-2"
-          size="sm"
-        >
-          <Save className="w-4 h-4" />
-          Salvar
-        </Button>
-      </div>
-    </div>
-  );
-
   return (
     <div className={cn("native-editor h-full flex flex-col", className)}>
-      {renderToolbar()}
+      <EditorToolbar
+        editorMode={editorMode}
+        onModeChange={setEditorMode}
+        hasUnsavedChanges={hasUnsavedChanges}
+        isSaving={isSaving}
+        lastSaved={lastSaved}
+        canUndo={canUndo}
+        canRedo={canRedo}
+        onUndo={undo}
+        onRedo={redo}
+        onSave={handleManualSave}
+        blocks={blocks}
+        onImport={handleImport}
+      />
       
       <div className="flex-1 overflow-hidden">
         <div className="h-full flex">
-          {/* Block Palette - Only show in edit mode */}
+          {/* Block Palette */}
           {(editorMode === 'edit' || editorMode === 'split') && (
             <div 
               className="w-64 border-r overflow-y-auto flex-shrink-0"
@@ -236,11 +143,11 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
             </div>
           )}
           
-          {/* Editor - Only show in edit and split modes */}
+          {/* Editor */}
           {(editorMode === 'edit' || editorMode === 'split') && (
             <div 
               className={cn(
-                "flex-1 px-6",
+                "flex-1 px-2",
                 editorMode === 'split' && "border-r"
               )} 
               style={{ borderColor: '#2a2a2a' }}
@@ -260,9 +167,9 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
             </div>
           )}
           
-          {/* Preview - Show in preview and split modes */}
+          {/* Preview */}
           {(editorMode === 'preview' || editorMode === 'split') && (
-            <div className="flex-1 px-6">
+            <div className="flex-1 px-2">
               <ReviewPreview 
                 blocks={blocks}
                 className="h-full"
@@ -272,22 +179,10 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
         </div>
       </div>
 
-      {/* Status Bar */}
-      <div 
-        className="px-4 py-2 border-t flex items-center justify-between text-xs"
-        style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a', color: '#9ca3af' }}
-      >
-        <div className="flex items-center gap-4">
-          <span>{blocks.length} blocos</span>
-          <span>Bloco ativo: {activeBlockId ? `#${activeBlockId}` : 'Nenhum'}</span>
-        </div>
-        
-        <div className="flex items-center gap-4">
-          <span>Ctrl+S para salvar</span>
-          <span>Ctrl+Z para desfazer</span>
-          <span>Arrastar para reordenar</span>
-        </div>
-      </div>
+      <EditorStatusBar
+        blockCount={blocks.length}
+        activeBlockId={activeBlockId}
+      />
     </div>
   );
 };

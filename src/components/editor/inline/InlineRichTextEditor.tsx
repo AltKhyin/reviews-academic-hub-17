@@ -79,8 +79,7 @@ export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
     const walker = document.createTreeWalker(
       editorRef.current,
       NodeFilter.SHOW_TEXT,
-      null,
-      false
+      null
     );
 
     let charCount = 0;
