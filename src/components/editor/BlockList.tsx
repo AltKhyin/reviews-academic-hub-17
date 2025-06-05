@@ -1,3 +1,4 @@
+
 // ABOUTME: Enhanced block list with proper click handling and inline editing
 // Prevents unwanted block creation and provides intuitive interaction patterns
 
@@ -96,23 +97,23 @@ const getBlockColor = (type: string) => {
 const getBlockTitle = (block: ReviewBlock) => {
   switch (block.type) {
     case 'heading':
-      return block.payload.text || 'Título sem texto';
+      return block.content.text || 'Título sem texto';
     case 'paragraph':
-      const content = block.payload.content || '';
+      const content = block.content.content || '';
       const textContent = content.replace(/<[^>]*>/g, ''); // Strip HTML
       return textContent.length > 50 ? `${textContent.substring(0, 50)}...` : textContent || 'Parágrafo vazio';
     case 'figure':
-      return block.payload.caption || block.payload.alt || 'Figura sem título';
+      return block.content.caption || block.content.alt || 'Figura sem título';
     case 'callout':
-      return block.payload.title || `Callout (${block.payload.type || 'info'})`;
+      return block.content.title || `Callout (${block.content.type || 'info'})`;
     case 'table':
-      return block.payload.title || 'Tabela';
+      return block.content.title || 'Tabela';
     case 'number_card':
-      return `${block.payload.number || '0'} - ${block.payload.label || 'Métrica'}`;
+      return `${block.content.number || '0'} - ${block.content.label || 'Métrica'}`;
     case 'reviewer_quote':
-      return `"${(block.payload.quote || '').substring(0, 30)}..." - ${block.payload.author || 'Autor'}`;
+      return `"${(block.content.quote || '').substring(0, 30)}..." - ${block.content.author || 'Autor'}`;
     case 'poll':
-      return block.payload.question || 'Enquete';
+      return block.content.question || 'Enquete';
     default:
       return `Bloco ${block.type}`;
   }

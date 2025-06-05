@@ -23,13 +23,13 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
   block,
   onUpdate
 }) => {
-  const payload = block.payload;
+  const content = block.content;
   const meta = block.meta || {};
 
-  const handlePayloadUpdate = (field: string, value: any) => {
+  const handleContentUpdate = (field: string, value: any) => {
     onUpdate({
-      payload: {
-        ...payload,
+      content: {
+        ...content,
         [field]: value
       }
     });
@@ -78,8 +78,8 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
       <div className="space-y-2">
         <Label style={{ color: '#d1d5db' }}>Nível do Cabeçalho</Label>
         <Select 
-          value={String(payload.level || 1)} 
-          onValueChange={(value) => handlePayloadUpdate('level', parseInt(value))}
+          value={String(content.level || 1)} 
+          onValueChange={(value) => handleContentUpdate('level', parseInt(value))}
         >
           <SelectTrigger style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}>
             <SelectValue />
@@ -99,8 +99,8 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
         <Label htmlFor="heading-anchor" style={{ color: '#d1d5db' }}>Âncora (ID)</Label>
         <Input
           id="heading-anchor"
-          value={payload.anchor || ''}
-          onChange={(e) => handlePayloadUpdate('anchor', e.target.value)}
+          value={content.anchor || ''}
+          onChange={(e) => handleContentUpdate('anchor', e.target.value)}
           placeholder="ancora-do-titulo"
           style={{ backgroundColor: '#212121', borderColor: '#2a2a2a', color: '#ffffff' }}
         />
@@ -115,8 +115,8 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
       <div className="space-y-2">
         <Label style={{ color: '#d1d5db' }}>Alinhamento</Label>
         <Select 
-          value={payload.alignment || 'left'} 
-          onValueChange={(value) => handlePayloadUpdate('alignment', value)}
+          value={content.alignment || 'left'} 
+          onValueChange={(value) => handleContentUpdate('alignment', value)}
         >
           <SelectTrigger style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}>
             <SelectValue />
@@ -133,8 +133,8 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
       <div className="space-y-2">
         <Label style={{ color: '#d1d5db' }}>Ênfase</Label>
         <Select 
-          value={payload.emphasis || 'normal'} 
-          onValueChange={(value) => handlePayloadUpdate('emphasis', value)}
+          value={content.emphasis || 'normal'} 
+          onValueChange={(value) => handleContentUpdate('emphasis', value)}
         >
           <SelectTrigger style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}>
             <SelectValue />
@@ -158,8 +158,8 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
         <Label htmlFor="figure-src" style={{ color: '#d1d5db' }}>URL da Imagem</Label>
         <Input
           id="figure-src"
-          value={payload.src || ''}
-          onChange={(e) => handlePayloadUpdate('src', e.target.value)}
+          value={content.src || ''}
+          onChange={(e) => handleContentUpdate('src', e.target.value)}
           placeholder="https://exemplo.com/imagem.jpg"
           style={{ backgroundColor: '#212121', borderColor: '#2a2a2a', color: '#ffffff' }}
         />
@@ -169,8 +169,8 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
         <Label htmlFor="figure-alt" style={{ color: '#d1d5db' }}>Texto Alternativo</Label>
         <Input
           id="figure-alt"
-          value={payload.alt || ''}
-          onChange={(e) => handlePayloadUpdate('alt', e.target.value)}
+          value={content.alt || ''}
+          onChange={(e) => handleContentUpdate('alt', e.target.value)}
           placeholder="Descrição da imagem"
           style={{ backgroundColor: '#212121', borderColor: '#2a2a2a', color: '#ffffff' }}
         />
@@ -179,8 +179,8 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
       <div className="space-y-2">
         <Label style={{ color: '#d1d5db' }}>Alinhamento</Label>
         <Select 
-          value={payload.alignment || 'center'} 
-          onValueChange={(value) => handlePayloadUpdate('alignment', value)}
+          value={content.alignment || 'center'} 
+          onValueChange={(value) => handleContentUpdate('alignment', value)}
         >
           <SelectTrigger style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}>
             <SelectValue />
@@ -197,8 +197,8 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
         <Label htmlFor="figure-width" style={{ color: '#d1d5db' }}>Largura</Label>
         <Input
           id="figure-width"
-          value={payload.width || 'auto'}
-          onChange={(e) => handlePayloadUpdate('width', e.target.value)}
+          value={content.width || 'auto'}
+          onChange={(e) => handleContentUpdate('width', e.target.value)}
           placeholder="auto, 100%, 500px"
           style={{ backgroundColor: '#212121', borderColor: '#2a2a2a', color: '#ffffff' }}
         />
@@ -214,8 +214,8 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
         <Label style={{ color: '#d1d5db' }}>Estilo da Tabela</Label>
         <div className="flex items-center gap-2">
           <Switch
-            checked={payload.compact || false}
-            onCheckedChange={(checked) => handlePayloadUpdate('compact', checked)}
+            checked={content.compact || false}
+            onCheckedChange={(checked) => handleContentUpdate('compact', checked)}
           />
           <Label style={{ color: '#d1d5db' }}>Compacta</Label>
         </div>
@@ -226,15 +226,15 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Switch
-              checked={payload.sortable || false}
-              onCheckedChange={(checked) => handlePayloadUpdate('sortable', checked)}
+              checked={content.sortable || false}
+              onCheckedChange={(checked) => handleContentUpdate('sortable', checked)}
             />
             <Label style={{ color: '#d1d5db' }}>Ordenável</Label>
           </div>
           <div className="flex items-center gap-2">
             <Switch
-              checked={payload.searchable || false}
-              onCheckedChange={(checked) => handlePayloadUpdate('searchable', checked)}
+              checked={content.searchable || false}
+              onCheckedChange={(checked) => handleContentUpdate('searchable', checked)}
             />
             <Label style={{ color: '#d1d5db' }}>Pesquisável</Label>
           </div>
@@ -250,8 +250,8 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
       <div className="space-y-2">
         <Label style={{ color: '#d1d5db' }}>Tipo de Destaque</Label>
         <Select 
-          value={payload.type || 'info'} 
-          onValueChange={(value) => handlePayloadUpdate('type', value)}
+          value={content.type || 'info'} 
+          onValueChange={(value) => handleContentUpdate('type', value)}
         >
           <SelectTrigger style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}>
             <SelectValue />
@@ -276,8 +276,8 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
       <div className="space-y-2">
         <Label style={{ color: '#d1d5db' }}>Tendência</Label>
         <Select 
-          value={payload.trend || 'neutral'} 
-          onValueChange={(value) => handlePayloadUpdate('trend', value)}
+          value={content.trend || 'neutral'} 
+          onValueChange={(value) => handleContentUpdate('trend', value)}
         >
           <SelectTrigger style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}>
             <SelectValue />
@@ -290,14 +290,14 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
         </Select>
       </div>
 
-      {payload.trend !== 'neutral' && (
+      {content.trend !== 'neutral' && (
         <div className="space-y-2">
           <Label htmlFor="percentage" style={{ color: '#d1d5db' }}>Porcentagem (%)</Label>
           <Input
             id="percentage"
             type="number"
-            value={payload.percentage || 0}
-            onChange={(e) => handlePayloadUpdate('percentage', Number(e.target.value))}
+            value={content.percentage || 0}
+            onChange={(e) => handleContentUpdate('percentage', Number(e.target.value))}
             style={{ backgroundColor: '#212121', borderColor: '#2a2a2a', color: '#ffffff' }}
           />
         </div>
@@ -312,8 +312,8 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
       <div className="space-y-2">
         <Label style={{ color: '#d1d5db' }}>Tipo de Enquete</Label>
         <Select 
-          value={payload.poll_type || 'single_choice'} 
-          onValueChange={(value) => handlePayloadUpdate('poll_type', value)}
+          value={content.poll_type || 'single_choice'} 
+          onValueChange={(value) => handleContentUpdate('poll_type', value)}
         >
           <SelectTrigger style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}>
             <SelectValue />
@@ -331,15 +331,15 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Switch
-              checked={payload.allow_add_options || false}
-              onCheckedChange={(checked) => handlePayloadUpdate('allow_add_options', checked)}
+              checked={content.allow_add_options || false}
+              onCheckedChange={(checked) => handleContentUpdate('allow_add_options', checked)}
             />
             <Label style={{ color: '#d1d5db' }}>Permitir adicionar opções</Label>
           </div>
           <div className="flex items-center gap-2">
             <Switch
-              checked={payload.show_results || true}
-              onCheckedChange={(checked) => handlePayloadUpdate('show_results', checked)}
+              checked={content.show_results || true}
+              onCheckedChange={(checked) => handleContentUpdate('show_results', checked)}
             />
             <Label style={{ color: '#d1d5db' }}>Mostrar resultados</Label>
           </div>
@@ -355,8 +355,8 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
       <div className="space-y-2">
         <Label style={{ color: '#d1d5db' }}>Estilo de Citação</Label>
         <Select 
-          value={payload.citation_style || 'apa'} 
-          onValueChange={(value) => handlePayloadUpdate('citation_style', value)}
+          value={content.citation_style || 'apa'} 
+          onValueChange={(value) => handleContentUpdate('citation_style', value)}
         >
           <SelectTrigger style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}>
             <SelectValue />
@@ -372,8 +372,8 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
 
       <div className="flex items-center gap-2">
         <Switch
-          checked={payload.numbered || true}
-          onCheckedChange={(checked) => handlePayloadUpdate('numbered', checked)}
+          checked={content.numbered || true}
+          onCheckedChange={(checked) => handleContentUpdate('numbered', checked)}
         />
         <Label style={{ color: '#d1d5db' }}>Numeradas</Label>
       </div>
@@ -387,8 +387,8 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
       <div className="space-y-2">
         <Label style={{ color: '#d1d5db' }}>Nível de Evidência</Label>
         <Select 
-          value={payload.evidence_level || 'moderate'} 
-          onValueChange={(value) => handlePayloadUpdate('evidence_level', value)}
+          value={content.evidence_level || 'moderate'} 
+          onValueChange={(value) => handleContentUpdate('evidence_level', value)}
         >
           <SelectTrigger style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}>
             <SelectValue />
@@ -405,8 +405,8 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
       <div className="space-y-2">
         <Label style={{ color: '#d1d5db' }}>Força da Recomendação</Label>
         <Select 
-          value={payload.recommendation_strength || 'conditional'} 
-          onValueChange={(value) => handlePayloadUpdate('recommendation_strength', value)}
+          value={content.recommendation_strength || 'conditional'} 
+          onValueChange={(value) => handleContentUpdate('recommendation_strength', value)}
         >
           <SelectTrigger style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}>
             <SelectValue />
@@ -418,6 +418,24 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
           </SelectContent>
         </Select>
       </div>
+    </div>
+  );
+
+  const renderReviewerQuoteProperties = () => (
+    <div className="space-y-4">
+      {renderCommonProperties()}
+      <p style={{ color: '#9ca3af' }} className="text-sm">
+        Use a edição inline para modificar a citação, autor e informações institucionais.
+      </p>
+    </div>
+  );
+
+  const renderDividerProperties = () => (
+    <div className="space-y-4">
+      {renderCommonProperties()}
+      <p style={{ color: '#9ca3af' }} className="text-sm">
+        Divisor simples sem propriedades adicionais.
+      </p>
     </div>
   );
 
@@ -442,23 +460,9 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
       case 'snapshot_card':
         return renderSnapshotCardProperties();
       case 'reviewer_quote':
-        return (
-          <div className="space-y-4">
-            {renderCommonProperties()}
-            <p style={{ color: '#9ca3af' }} className="text-sm">
-              Use a edição inline para modificar a citação, autor e informações institucionais.
-            </p>
-          </div>
-        );
+        return renderReviewerQuoteProperties();
       case 'divider':
-        return (
-          <div className="space-y-4">
-            {renderCommonProperties()}
-            <p style={{ color: '#9ca3af' }} className="text-sm">
-              Divisor simples sem propriedades adicionais.
-            </p>
-          </div>
-        );
+        return renderDividerProperties();
       default:
         return (
           <div className="space-y-4">
