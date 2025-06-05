@@ -222,33 +222,33 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
     }
   }, [onDragLeave]);
 
-  // FIXED: Enhanced empty slot rendering with proper add block functionality
+  // FIXED: Move this hook out of the render function
+  const handleAddBlockToPosition = useCallback((position: number, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log('Adding block to grid position:', { rowId, position });
+    
+    // Find the correct global insertion index based on grid position
+    const row = blocks.find(b => b.meta?.layout?.row_id === rowId);
+    if (row) {
+      const rowBlocks = blocks.filter(b => b.meta?.layout?.row_id === rowId);
+      const lastBlockInRow = rowBlocks[rowBlocks.length - 1];
+      const insertionIndex = lastBlockInRow ? 
+        blocks.findIndex(b => b.id === lastBlockInRow.id) + 1 : 
+        blocks.length;
+      
+      onAddBlock(rowId, insertionIndex);
+    } else {
+      onAddBlock(rowId, position);
+    }
+  }, [position, rowId, blocks, onAddBlock]);
+
+  // FIXED: Enhanced empty slot rendering without hooks inside render
   const renderEmptySlot = (position: number) => {
     const isDropTarget = dragState?.dragOverRowId === rowId && 
                         dragState?.dragOverPosition === position && 
                         dragState?.dropTargetType === 'merge';
-
-    // FIXED: Proper add block handler that calculates correct insertion position
-    const handleAddBlockToPosition = useCallback((e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      console.log('Adding block to grid position:', { rowId, position });
-      
-      // Find the correct global insertion index based on grid position
-      const row = blocks.find(b => b.meta?.layout?.row_id === rowId);
-      if (row) {
-        const rowBlocks = blocks.filter(b => b.meta?.layout?.row_id === rowId);
-        const lastBlockInRow = rowBlocks[rowBlocks.length - 1];
-        const insertionIndex = lastBlockInRow ? 
-          blocks.findIndex(b => b.id === lastBlockInRow.id) + 1 : 
-          blocks.length;
-        
-        onAddBlock(rowId, insertionIndex);
-      } else {
-        onAddBlock(rowId, position);
-      }
-    }, [position]);
 
     return (
       <div
@@ -281,7 +281,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleAddBlockToPosition}
+              onClick={(e) => handleAddBlockToPosition(position, e)}
               className="text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500"
             >
               <Plus className="w-4 h-4 mr-2" />
