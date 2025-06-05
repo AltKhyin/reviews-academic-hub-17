@@ -23,6 +23,7 @@ interface InlineRichTextEditorProps {
   className?: string;
   disabled?: boolean;
   showToolbar?: boolean;
+  style?: React.CSSProperties;
 }
 
 export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
@@ -31,7 +32,8 @@ export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
   placeholder = 'Digite seu conteúdo...',
   className = '',
   disabled = false,
-  showToolbar = true
+  showToolbar = true,
+  style = {}
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [tempValue, setTempValue] = useState(value);
@@ -119,7 +121,7 @@ export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
 
   if (isEditing) {
     return (
-      <div className={cn("inline-rich-editor-container", className)}>
+      <div className={cn("inline-rich-editor-container", className)} style={style}>
         {showToolbar && (
           <div 
             className="flex items-center gap-1 p-2 border-b mb-2"
@@ -186,7 +188,8 @@ export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
           style={{ 
             backgroundColor: '#1a1a1a',
             borderColor: '#3b82f6',
-            color: '#ffffff'
+            color: '#ffffff',
+            ...style
           }}
           dangerouslySetInnerHTML={{ __html: tempValue }}
         />
@@ -211,7 +214,8 @@ export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
       )}
       onClick={handleStartEdit}
       style={{
-        color: isEmpty ? '#9ca3af' : '#ffffff'
+        color: isEmpty ? '#9ca3af' : '#ffffff',
+        ...style
       }}
     >
       <div className="flex items-start gap-2">
