@@ -131,6 +131,14 @@ export const CitationListBlock: React.FC<CitationListBlockProps> = ({
     }
   };
 
+  // Prepare color options for InlineColorPicker
+  const colorOptions = [
+    { name: 'Fundo', value: colors.backgroundColor },
+    { name: 'Título', value: colors.titleColor },
+    { name: 'Texto', value: colors.textColor },
+    { name: 'Destaque', value: colors.accentColor }
+  ];
+
   if (readonly) {
     return (
       <div className="citation-list-block my-6">
@@ -250,36 +258,19 @@ export const CitationListBlock: React.FC<CitationListBlockProps> = ({
                 />
                 Numeradas
               </label>
+            </div>
 
-              {/* Color Customization */}
-              <div className="flex items-center gap-2">
-                <Palette className="w-4 h-4" style={{ color: colors.accentColor }} />
-                <span className="text-sm" style={{ color: colors.textColor }}>Cores:</span>
-                
-                <InlineColorPicker
-                  color={colors.backgroundColor}
-                  onChange={(color) => handleColorUpdate('backgroundColor', color)}
-                  label="Fundo"
-                />
-                
-                <InlineColorPicker
-                  color={colors.titleColor}
-                  onChange={(color) => handleColorUpdate('titleColor', color)}
-                  label="Título"
-                />
-                
-                <InlineColorPicker
-                  color={colors.textColor}
-                  onChange={(color) => handleColorUpdate('textColor', color)}
-                  label="Texto"
-                />
-                
-                <InlineColorPicker
-                  color={colors.accentColor}
-                  onChange={(color) => handleColorUpdate('accentColor', color)}
-                  label="Destaque"
-                />
-              </div>
+            {/* Color Customization */}
+            <div className="flex items-center gap-2">
+              <Palette className="w-4 h-4" style={{ color: colors.accentColor }} />
+              <span className="text-sm" style={{ color: colors.textColor }}>Cores:</span>
+              
+              <InlineColorPicker
+                colors={colorOptions}
+                onChange={(colorType, color) => handleColorUpdate(colorType, color)}
+                readonly={false}
+                compact={true}
+              />
             </div>
           </div>
         </CardHeader>
