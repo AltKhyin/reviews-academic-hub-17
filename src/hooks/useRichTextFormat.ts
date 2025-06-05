@@ -14,6 +14,8 @@ interface FormatActions {
   bold: () => void;
   italic: () => void;
   underline: () => void;
+  undo: () => void;
+  redo: () => void;
 }
 
 export const useRichTextFormat = (
@@ -56,7 +58,9 @@ export const useRichTextFormat = (
   const formatActions: FormatActions = {
     bold: () => executeCommand('bold'),
     italic: () => executeCommand('italic'),
-    underline: () => executeCommand('underline')
+    underline: () => executeCommand('underline'),
+    undo: () => executeCommand('undo'),
+    redo: () => executeCommand('redo')
   };
 
   return {
