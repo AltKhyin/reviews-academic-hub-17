@@ -1,6 +1,6 @@
 
-// ABOUTME: Block management logic with CRUD operations and utilities
-// Provides comprehensive block manipulation functionality
+// ABOUTME: Block management logic with CRUD operations, history, and undo/redo utilities
+// Provides comprehensive block manipulation functionality with state management
 
 import { useCallback, useState } from 'react';
 import { ReviewBlock, BlockType } from '@/types/review';
@@ -11,9 +11,68 @@ interface UseBlockManagementOptions {
   issueId?: string;
 }
 
+interface BlockHistoryState {
+  blocks: ReviewBlock[];
+  activeBlockId: number | null;
+}
+
 export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagementOptions) => {
   const [blocks, setBlocks] = useState<ReviewBlock[]>(initialBlocks);
   const [activeBlockId, setActiveBlockId] = useState<number | null>(null);
+  
+  // History management for undo/redo
+  const [history, setHistory] = useState<BlockHistoryState[]>([
+    { blocks: initialBlocks, activeBlockId: null }
+  ]);
+  const [historyIndex, setHistoryIndex] = useState(0);
+
+  const canUndo = historyIndex > 0;
+  const canRedo = historyIndex < history.length - 1;
+
+  // Save current state to history
+  const saveToHistory = useCallback((newBlocks: ReviewBlock[], newActiveBlockId: number | null) => {
+    const newState: BlockHistoryState = {
+      blocks: JSON.parse(JSON.stringify(newBlocks)), // Deep clone
+      activeBlockId: newActiveBlockId
+    };
+
+    // Remove any future history if we're in the middle
+    const newHistory = history.slice(0, historyIndex + 1);
+    newHistory.push(newState);
+    
+    // Limit history to last 50 states
+    if (newHistory.length > 50) {
+      newHistory.shift();
+    } else {
+      setHistoryIndex(historyIndex + 1);
+    }
+    
+    setHistory(newHistory);
+  }, [history, historyIndex]);
+
+  const setActiveBlock = useCallback((blockId: number | null) => {
+    setActiveBlockId(blockId);
+  }, []);
+
+  const undo = useCallback(() => {
+    if (canUndo) {
+      const newIndex = historyIndex - 1;
+      const state = history[newIndex];
+      setBlocks(state.blocks);
+      setActiveBlockId(state.activeBlockId);
+      setHistoryIndex(newIndex);
+    }
+  }, [canUndo, historyIndex, history]);
+
+  const redo = useCallback(() => {
+    if (canRedo) {
+      const newIndex = historyIndex + 1;
+      const state = history[newIndex];
+      setBlocks(state.blocks);
+      setActiveBlockId(state.activeBlockId);
+      setHistoryIndex(newIndex);
+    }
+  }, [canRedo, historyIndex, history]);
 
   const addBlock = useCallback((type: BlockType, position?: number) => {
     const tempId = -(Date.now() + Math.random());
@@ -49,7 +108,8 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
 
     setBlocks(updatedBlocks);
     setActiveBlockId(newBlock.id);
-  }, [blocks, issueId]);
+    saveToHistory(updatedBlocks, newBlock.id);
+  }, [blocks, issueId, saveToHistory]);
 
   const duplicateBlock = useCallback((blockId: number) => {
     const blockToDuplicate = blocks.find(block => block.id === blockId);
@@ -77,55 +137,66 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
 
     setBlocks(updatedBlocks);
     setActiveBlockId(duplicatedBlock.id);
-  }, [blocks]);
+    saveToHistory(updatedBlocks, duplicatedBlock.id);
+  }, [blocks, saveToHistory]);
 
   const updateBlock = useCallback((blockId: number, updates: Partial<ReviewBlock>) => {
-    setBlocks(prev => prev.map(block => 
+    const updatedBlocks = blocks.map(block => 
       block.id === blockId 
         ? { ...block, ...updates, updated_at: new Date().toISOString() }
         : block
-    ));
-  }, []);
+    );
+    setBlocks(updatedBlocks);
+    saveToHistory(updatedBlocks, activeBlockId);
+  }, [blocks, activeBlockId, saveToHistory]);
 
   const deleteBlock = useCallback((blockId: number) => {
-    setBlocks(prev => {
-      const filtered = prev.filter(block => block.id !== blockId);
-      return filtered.map((block, index) => ({
-        ...block,
-        sort_index: index
-      }));
-    });
+    const updatedBlocks = blocks.filter(block => block.id !== blockId);
+    const reindexedBlocks = updatedBlocks.map((block, index) => ({
+      ...block,
+      sort_index: index
+    }));
+    
+    setBlocks(reindexedBlocks);
     if (activeBlockId === blockId) {
       setActiveBlockId(null);
     }
-  }, [activeBlockId]);
+    saveToHistory(reindexedBlocks, activeBlockId === blockId ? null : activeBlockId);
+  }, [blocks, activeBlockId, saveToHistory]);
 
   const moveBlock = useCallback((blockId: number, direction: 'up' | 'down') => {
-    setBlocks(prev => {
-      const currentIndex = prev.findIndex(block => block.id === blockId);
-      if (currentIndex === -1) return prev;
+    const currentIndex = blocks.findIndex(block => block.id === blockId);
+    if (currentIndex === -1) return;
 
-      const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-      if (newIndex < 0 || newIndex >= prev.length) return prev;
+    const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex < 0 || newIndex >= blocks.length) return;
 
-      const newBlocks = [...prev];
-      [newBlocks[currentIndex], newBlocks[newIndex]] = [newBlocks[newIndex], newBlocks[currentIndex]];
-      
-      return newBlocks.map((block, index) => ({
-        ...block,
-        sort_index: index
-      }));
-    });
-  }, []);
+    const newBlocks = [...blocks];
+    [newBlocks[currentIndex], newBlocks[newIndex]] = [newBlocks[newIndex], newBlocks[currentIndex]];
+    
+    const reindexedBlocks = newBlocks.map((block, index) => ({
+      ...block,
+      sort_index: index
+    }));
+
+    setBlocks(reindexedBlocks);
+    saveToHistory(reindexedBlocks, activeBlockId);
+  }, [blocks, activeBlockId, saveToHistory]);
 
   return {
     blocks,
     activeBlockId,
-    setActiveBlockId,
+    history,
+    historyIndex,
+    setActiveBlockId: setActiveBlock,
     addBlock,
     duplicateBlock,
     updateBlock,
     deleteBlock,
-    moveBlock
+    moveBlock,
+    undo,
+    redo,
+    canUndo,
+    canRedo
   };
 };

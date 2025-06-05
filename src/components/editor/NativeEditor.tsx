@@ -10,7 +10,6 @@ import { ReviewBlock, BlockType } from '@/types/review';
 import { BlockEditor } from './BlockEditor';
 import { BlockPalette } from './BlockPalette';
 import { ReviewPreview } from './ReviewPreview';
-import { ResizableLayout } from './ResizableLayout';
 import { 
   Save, 
   Eye, 
@@ -50,7 +49,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
     activeBlockId,
     history,
     historyIndex,
-    setActiveBlock,
+    setActiveBlockId,
     addBlock,
     updateBlock,
     deleteBlock,
@@ -60,12 +59,12 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
     redo,
     canUndo,
     canRedo
-  } = useBlockManagement(initialBlocks);
+  } = useBlockManagement({ initialBlocks, issueId });
 
   // Auto-save functionality
-  const { saveStatus, lastSaved } = useEditorAutoSave({
+  const { handleSave, isSaving, lastSaved } = useEditorAutoSave({
     data: blocks,
-    onSave: onSave ? (data) => onSave(data) : undefined,
+    onSave: onSave ? async (data) => { onSave(data); } : undefined,
     interval: 30000, // 30 seconds
     enabled: !!issueId
   });
@@ -76,7 +75,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
     setHasUnsavedChanges(hasChanges);
   }, [blocks, initialBlocks]);
 
-  const handleSave = useCallback(() => {
+  const handleManualSave = useCallback(() => {
     if (onSave) {
       onSave(blocks);
       setHasUnsavedChanges(false);
@@ -88,7 +87,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
       switch (e.key) {
         case 's':
           e.preventDefault();
-          handleSave();
+          handleManualSave();
           break;
         case 'z':
           if (e.shiftKey) {
@@ -105,7 +104,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
           break;
       }
     }
-  }, [handleSave, undo, redo]);
+  }, [handleManualSave, undo, redo]);
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyboardShortcuts);
@@ -166,10 +165,10 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
           {hasUnsavedChanges && (
             <span style={{ color: '#f59e0b' }}>● Não salvo</span>
           )}
-          {saveStatus === 'saving' && (
+          {isSaving && (
             <span style={{ color: '#3b82f6' }}>Salvando...</span>
           )}
-          {saveStatus === 'saved' && lastSaved && (
+          {!isSaving && lastSaved && (
             <span>Salvo {lastSaved.toLocaleTimeString()}</span>
           )}
         </div>
@@ -203,7 +202,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
 
         {/* Save Button */}
         <Button
-          onClick={handleSave}
+          onClick={handleManualSave}
           disabled={!hasUnsavedChanges}
           className="flex items-center gap-2"
           size="sm"
@@ -235,7 +234,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
               <BlockEditor
                 blocks={blocks}
                 activeBlockId={activeBlockId}
-                onActiveBlockChange={setActiveBlock}
+                onActiveBlockChange={setActiveBlockId}
                 onUpdateBlock={updateBlock}
                 onDeleteBlock={deleteBlock}
                 onMoveBlock={moveBlock}
@@ -256,40 +255,37 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
         )}
 
         {currentMode === 'split' && (
-          <ResizableLayout>
-            <div className="h-full flex">
-              {/* Block Palette */}
-              <div 
-                className="w-64 border-r overflow-y-auto flex-shrink-0"
-                style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}
-              >
-                <BlockPalette onAddBlock={addBlock} compact />
-              </div>
-              
-              {/* Editor */}
-              <div className="flex-1 border-r" style={{ borderColor: '#2a2a2a' }}>
-                <BlockEditor
-                  blocks={blocks}
-                  activeBlockId={activeBlockId}
-                  onActiveBlockChange={setActiveBlock}
-                  onUpdateBlock={updateBlock}
-                  onDeleteBlock={deleteBlock}
-                  onMoveBlock={moveBlock}
-                  onAddBlock={addBlock}
-                  onDuplicateBlock={duplicateBlock}
-                  compact
-                />
-              </div>
-              
-              {/* Preview */}
-              <div className="flex-1">
-                <ReviewPreview 
-                  blocks={blocks}
-                  className="h-full"
-                />
-              </div>
+          <div className="h-full flex">
+            {/* Block Palette */}
+            <div 
+              className="w-64 border-r overflow-y-auto flex-shrink-0"
+              style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}
+            >
+              <BlockPalette onAddBlock={addBlock} />
             </div>
-          </ResizableLayout>
+            
+            {/* Editor */}
+            <div className="flex-1 border-r" style={{ borderColor: '#2a2a2a' }}>
+              <BlockEditor
+                blocks={blocks}
+                activeBlockId={activeBlockId}
+                onActiveBlockChange={setActiveBlockId}
+                onUpdateBlock={updateBlock}
+                onDeleteBlock={deleteBlock}
+                onMoveBlock={moveBlock}
+                onAddBlock={addBlock}
+                onDuplicateBlock={duplicateBlock}
+              />
+            </div>
+            
+            {/* Preview */}
+            <div className="flex-1">
+              <ReviewPreview 
+                blocks={blocks}
+                className="h-full"
+              />
+            </div>
+          </div>
         )}
       </div>
 
