@@ -236,7 +236,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
               className="w-64 border-r overflow-y-auto flex-shrink-0"
               style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}
             >
-              <BlockPalette onAddBlock={addBlock} />
+              <BlockPalette onBlockAdd={addBlock} />
             </div>
           )}
           
