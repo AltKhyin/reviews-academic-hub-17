@@ -107,10 +107,9 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
 
       <div
         className={cn(
-          "leading-relaxed p-3 rounded",
+          "leading-relaxed rounded",
           getAlignmentClass(alignment),
-          getEmphasisClass(emphasis),
-          "prose prose-invert max-w-none"
+          getEmphasisClass(emphasis)
         )}
         style={blockStyle}
         dir="ltr"

@@ -59,7 +59,6 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
   onMergeBlockIntoGrid,
   className
 }) => {
-  // FIXED: All hooks must be called at the top level in the same order every time
   const [dragState, setDragState] = useState<DragState>({
     draggedBlockId: null,
     dragOverRowId: null,
@@ -313,7 +312,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     const isDropTarget = dragState.dragOverRowId === rowId && dragState.dropTargetType === 'merge';
 
     return (
-      <div key={block.id} className="relative group">
+      <div key={block.id} className="relative group mb-6 mx-4">
         {isDropTarget && (
           <div className="absolute inset-0 border-2 border-green-500 rounded-lg z-10 animate-pulse bg-green-500/10">
             <div className="absolute top-2 left-2 text-xs text-green-400 font-medium">
@@ -343,13 +342,15 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
           )}
           style={{ 
             backgroundColor: isActive ? 'rgba(59, 130, 246, 0.1)' : '#1a1a1a',
-            borderColor: isActive ? '#3b82f6' : '#2a2a2a'
+            borderColor: isActive ? '#3b82f6' : '#2a2a2a',
+            marginLeft: '2rem' // Add left margin for drag handle space
           }}
           onClick={(e) => handleBlockClick(block.id, e)}
           onDragOver={(e) => handleDragOver(e, rowId, 0, 'merge')}
           onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e, rowId, 0, 'merge')}
         >
+          {/* Drag Handle - positioned in the left margin */}
           <div className="absolute -left-8 top-4 opacity-0 group-hover:opacity-100 transition-opacity">
             <div
               className="drag-handle cursor-grab active:cursor-grabbing transition-all duration-200 flex items-center justify-center rounded border bg-gray-800 border-gray-600 hover:bg-gray-700 hover:border-gray-500"
@@ -363,6 +364,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
             </div>
           </div>
 
+          {/* Block Actions - top right */}
           <div className={cn(
             "absolute top-2 right-2 flex items-center gap-1 transition-opacity z-10",
             isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
@@ -434,28 +436,29 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
 
   // Render grid row
   const renderGridRow = (row: { id: string; blocks: ReviewBlock[]; columns: number; gap: number; columnWidths?: number[] }) => (
-    <ResizableGrid
-      key={row.id}
-      rowId={row.id}
-      blocks={row.blocks}
-      columns={row.columns}
-      gap={row.gap}
-      columnWidths={row.columnWidths}
-      onUpdateLayout={updateColumnWidths}
-      onAddBlock={addBlockToGrid}
-      onUpdateBlock={onUpdateBlock}
-      onDeleteBlock={onDeleteBlock}
-      activeBlockId={activeBlockId}
-      onActiveBlockChange={onActiveBlockChange}
-      dragState={dragState}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-    />
+    <div key={row.id} className="mx-4 mb-6">
+      <ResizableGrid
+        rowId={row.id}
+        blocks={row.blocks}
+        columns={row.columns}
+        gap={row.gap}
+        columnWidths={row.columnWidths}
+        onUpdateLayout={updateColumnWidths}
+        onAddBlock={addBlockToGrid}
+        onUpdateBlock={onUpdateBlock}
+        onDeleteBlock={onDeleteBlock}
+        activeBlockId={activeBlockId}
+        onActiveBlockChange={onActiveBlockChange}
+        dragState={dragState}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      />
+    </div>
   );
 
   return (
-    <div className={cn("block-editor space-y-6", className)}>
+    <div className={cn("block-editor py-6", className)}>
       {layoutState.rows.map((row, index) => {
         if (row.columns > 1) {
           return renderGridRow(row);

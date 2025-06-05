@@ -129,10 +129,6 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
   const renderToolbar = () => (
     <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: '#2a2a2a' }}>
       <div className="flex items-center gap-3">
-        <h1 className="text-lg font-semibold" style={{ color: '#ffffff' }}>
-          Editor Nativo
-        </h1>
-        
         {/* Save Status */}
         <div className="flex items-center gap-2 text-xs" style={{ color: '#9ca3af' }}>
           {hasUnsavedChanges && (
@@ -242,7 +238,13 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
           
           {/* Editor - Only show in edit and split modes */}
           {(editorMode === 'edit' || editorMode === 'split') && (
-            <div className={cn("flex-1", editorMode === 'split' && "border-r")} style={{ borderColor: '#2a2a2a' }}>
+            <div 
+              className={cn(
+                "flex-1 px-6",
+                editorMode === 'split' && "border-r"
+              )} 
+              style={{ borderColor: '#2a2a2a' }}
+            >
               <BlockEditor
                 blocks={blocks}
                 activeBlockId={activeBlockId}
@@ -260,7 +262,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
           
           {/* Preview - Show in preview and split modes */}
           {(editorMode === 'preview' || editorMode === 'split') && (
-            <div className="flex-1">
+            <div className="flex-1 px-6">
               <ReviewPreview 
                 blocks={blocks}
                 className="h-full"
