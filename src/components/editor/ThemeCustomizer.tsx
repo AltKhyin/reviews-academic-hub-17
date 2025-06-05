@@ -1,25 +1,24 @@
-// ABOUTME: Theme customization panel for the native editor
-// Provides granular control over all color aspects of the editor
+
+// ABOUTME: Simplified theme customizer focusing on essential editor colors
+// Provides intuitive color customization with curated presets and better UX
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ColorPicker } from '@/components/ui/color-picker';
 import { 
   Palette, 
-  Download, 
-  Upload, 
   RotateCcw, 
   Sun, 
   Moon, 
   Monitor,
   Copy,
-  Check
+  Check,
+  Upload
 } from 'lucide-react';
 import { useEditorTheme } from '@/contexts/EditorThemeContext';
 import { cn } from '@/lib/utils';
@@ -28,6 +27,128 @@ interface ThemeCustomizerProps {
   onClose?: () => void;
   className?: string;
 }
+
+// Curated theme presets for different use cases
+const THEME_PRESETS = {
+  'Light Themes': [
+    {
+      name: 'Clean Light',
+      description: 'Minimal and clean',
+      colors: {
+        primaryBg: '#ffffff',
+        secondaryBg: '#f8f9fa',
+        cardBg: '#ffffff',
+        primaryText: '#1a1a1a',
+        secondaryText: '#6b7280',
+        primaryBorder: '#e5e7eb',
+        buttonPrimary: '#3b82f6',
+        buttonSecondary: '#f3f4f6'
+      }
+    },
+    {
+      name: 'Warm Light',
+      description: 'Warm and welcoming',
+      colors: {
+        primaryBg: '#fffef9',
+        secondaryBg: '#fef3e2',
+        cardBg: '#ffffff',
+        primaryText: '#292524',
+        secondaryText: '#78716c',
+        primaryBorder: '#e7e5e4',
+        buttonPrimary: '#ea580c',
+        buttonSecondary: '#fed7aa'
+      }
+    },
+    {
+      name: 'Cool Light',
+      description: 'Cool and professional',
+      colors: {
+        primaryBg: '#f8fafc',
+        secondaryBg: '#f1f5f9',
+        cardBg: '#ffffff',
+        primaryText: '#0f172a',
+        secondaryText: '#64748b',
+        primaryBorder: '#e2e8f0',
+        buttonPrimary: '#0ea5e9',
+        buttonSecondary: '#e0f2fe'
+      }
+    }
+  ],
+  'Dark Themes': [
+    {
+      name: 'Pure Dark',
+      description: 'Deep and focused',
+      colors: {
+        primaryBg: '#0a0a0a',
+        secondaryBg: '#1a1a1a',
+        cardBg: '#262626',
+        primaryText: '#fafafa',
+        secondaryText: '#a3a3a3',
+        primaryBorder: '#404040',
+        buttonPrimary: '#ffffff',
+        buttonSecondary: '#404040'
+      }
+    },
+    {
+      name: 'Slate Dark',
+      description: 'Balanced and modern',
+      colors: {
+        primaryBg: '#0f0f23',
+        secondaryBg: '#1e1e3a',
+        cardBg: '#2a2a4a',
+        primaryText: '#e2e8f0',
+        secondaryText: '#94a3b8',
+        primaryBorder: '#475569',
+        buttonPrimary: '#60a5fa',
+        buttonSecondary: '#334155'
+      }
+    },
+    {
+      name: 'Emerald Dark',
+      description: 'Calm and nature-inspired',
+      colors: {
+        primaryBg: '#022c22',
+        secondaryBg: '#064e3b',
+        cardBg: '#065f46',
+        primaryText: '#ecfdf5',
+        secondaryText: '#a7f3d0',
+        primaryBorder: '#047857',
+        buttonPrimary: '#10b981',
+        buttonSecondary: '#134e4a'
+      }
+    }
+  ],
+  'High Contrast': [
+    {
+      name: 'High Contrast Light',
+      description: 'Maximum readability',
+      colors: {
+        primaryBg: '#ffffff',
+        secondaryBg: '#f5f5f5',
+        cardBg: '#ffffff',
+        primaryText: '#000000',
+        secondaryText: '#333333',
+        primaryBorder: '#000000',
+        buttonPrimary: '#000000',
+        buttonSecondary: '#e5e5e5'
+      }
+    },
+    {
+      name: 'High Contrast Dark',
+      description: 'Bold and accessible',
+      colors: {
+        primaryBg: '#000000',
+        secondaryBg: '#1a1a1a',
+        cardBg: '#2a2a2a',
+        primaryText: '#ffffff',
+        secondaryText: '#cccccc',
+        primaryBorder: '#666666',
+        buttonPrimary: '#ffffff',
+        buttonSecondary: '#444444'
+      }
+    }
+  ]
+};
 
 export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({ onClose, className }) => {
   const {
@@ -48,7 +169,7 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({ onClose, class
   const [copied, setCopied] = useState(false);
 
   const handleColorChange = (path: string, value: string) => {
-    customizeColor(path, value);
+    customizeColor(`editor.${path}`, value);
   };
 
   const handleExport = async () => {
@@ -67,18 +188,24 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({ onClose, class
     }
   };
 
+  const applyPreset = (preset: any) => {
+    Object.entries(preset.colors).forEach(([key, value]) => {
+      customizeColor(`editor.${key}`, value as string);
+    });
+  };
+
   const getButtonStyle = (isActive: boolean) => ({
     backgroundColor: isActive 
       ? 'var(--editor-button-primary)' 
       : 'var(--editor-button-secondary)',
     borderColor: 'var(--editor-primary-border)',
     color: isActive 
-      ? 'var(--editor-card-bg)' // Ensures good contrast by using card background as text color
+      ? 'var(--editor-card-bg)' 
       : 'var(--editor-primary-text)'
   });
 
   return (
-    <Card className={cn("theme-customizer", className)} style={{
+    <Card className={cn("theme-customizer h-full", className)} style={{
       backgroundColor: 'var(--editor-card-bg)',
       borderColor: 'var(--editor-primary-border)'
     }}>
@@ -105,8 +232,8 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({ onClose, class
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-6">
-        {/* Theme Selection */}
+      <CardContent className="space-y-6 overflow-y-auto">
+        {/* Base Theme Selection */}
         <div>
           <Label className="text-sm font-medium text-[var(--editor-primary-text)] mb-3 block">
             Base Theme
@@ -154,237 +281,117 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({ onClose, class
 
         <Separator style={{ borderColor: 'var(--editor-primary-border)' }} />
 
-        {/* Color Customization */}
-        <Tabs defaultValue="editor" className="space-y-4">
-          <TabsList 
-            className="grid grid-cols-4 w-full"
-            style={{
-              backgroundColor: 'var(--editor-secondary-bg)',
-              borderColor: 'var(--editor-primary-border)'
-            }}
-          >
-            <TabsTrigger 
-              value="editor"
-              className="data-[state=active]:bg-[var(--editor-selected-bg)] data-[state=active]:text-[var(--editor-primary-text)]"
-              style={{ color: 'var(--editor-secondary-text)' }}
-            >
-              Editor
-            </TabsTrigger>
-            <TabsTrigger 
-              value="blocks"
-              className="data-[state=active]:bg-[var(--editor-selected-bg)] data-[state=active]:text-[var(--editor-primary-text)]"
-              style={{ color: 'var(--editor-secondary-text)' }}
-            >
-              Blocks
-            </TabsTrigger>
-            <TabsTrigger 
-              value="preview"
-              className="data-[state=active]:bg-[var(--editor-selected-bg)] data-[state=active]:text-[var(--editor-primary-text)]"
-              style={{ color: 'var(--editor-secondary-text)' }}
-            >
-              Preview
-            </TabsTrigger>
-            <TabsTrigger 
-              value="palette"
-              className="data-[state=active]:bg-[var(--editor-selected-bg)] data-[state=active]:text-[var(--editor-primary-text)]"
-              style={{ color: 'var(--editor-secondary-text)' }}
-            >
-              Palette
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="editor" className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 max-h-96 overflow-y-auto">
-              <ColorPicker 
-                label="Primary Background" 
-                value={appliedTheme.editor.primaryBg}
-                onChange={(value) => handleColorChange('editor.primaryBg', value)}
-                description="Main editor background color"
-              />
-              <ColorPicker 
-                label="Secondary Background" 
-                value={appliedTheme.editor.secondaryBg}
-                onChange={(value) => handleColorChange('editor.secondaryBg', value)}
-                description="Sidebar and secondary surfaces"
-              />
-              <ColorPicker 
-                label="Card Background" 
-                value={appliedTheme.editor.cardBg}
-                onChange={(value) => handleColorChange('editor.cardBg', value)}
-                description="Individual card backgrounds"
-              />
-              <ColorPicker 
-                label="Hover Background" 
-                value={appliedTheme.editor.hoverBg}
-                onChange={(value) => handleColorChange('editor.hoverBg', value)}
-                description="Background on hover states"
-              />
-              <ColorPicker 
-                label="Primary Border" 
-                value={appliedTheme.editor.primaryBorder}
-                onChange={(value) => handleColorChange('editor.primaryBorder', value)}
-                description="Main border color"
-              />
-              <ColorPicker 
-                label="Primary Text" 
-                value={appliedTheme.editor.primaryText}
-                onChange={(value) => handleColorChange('editor.primaryText', value)}
-                description="Main text color"
-              />
-              <ColorPicker 
-                label="Secondary Text" 
-                value={appliedTheme.editor.secondaryText}
-                onChange={(value) => handleColorChange('editor.secondaryText', value)}
-                description="Secondary text and labels"
-              />
-              <ColorPicker 
-                label="Muted Text" 
-                value={appliedTheme.editor.mutedText}
-                onChange={(value) => handleColorChange('editor.mutedText', value)}
-                description="Descriptions and muted content"
-              />
-              <ColorPicker 
-                label="Button Primary" 
-                value={appliedTheme.editor.buttonPrimary}
-                onChange={(value) => handleColorChange('editor.buttonPrimary', value)}
-                description="Primary button background"
-              />
-              <ColorPicker 
-                label="Button Secondary" 
-                value={appliedTheme.editor.buttonSecondary}
-                onChange={(value) => handleColorChange('editor.buttonSecondary', value)}
-                description="Secondary button background"
-              />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="blocks" className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 max-h-96 overflow-y-auto">
-              <ColorPicker 
-                label="Block Background" 
-                value={appliedTheme.blocks.blockBackground}
-                onChange={(value) => handleColorChange('blocks.blockBackground', value)}
-                description="Individual block backgrounds"
-              />
-              <ColorPicker 
-                label="Block Hover" 
-                value={appliedTheme.blocks.blockHover}
-                onChange={(value) => handleColorChange('blocks.blockHover', value)}
-                description="Block hover state"
-              />
-              <ColorPicker 
-                label="Block Selected" 
-                value={appliedTheme.blocks.blockSelected}
-                onChange={(value) => handleColorChange('blocks.blockSelected', value)}
-                description="Selected block highlight"
-              />
-              <ColorPicker 
-                label="Snapshot Card Accent" 
-                value={appliedTheme.blocks.snapshotCardAccent}
-                onChange={(value) => handleColorChange('blocks.snapshotCardAccent', value)}
-                description="Snapshot card accent color"
-              />
-              <ColorPicker 
-                label="Heading Accent" 
-                value={appliedTheme.blocks.headingAccent}
-                onChange={(value) => handleColorChange('blocks.headingAccent', value)}
-                description="Heading block accent"
-              />
-              <ColorPicker 
-                label="Figure Accent" 
-                value={appliedTheme.blocks.figureAccent}
-                onChange={(value) => handleColorChange('blocks.figureAccent', value)}
-                description="Figure block accent"
-              />
-              <ColorPicker 
-                label="Table Accent" 
-                value={appliedTheme.blocks.tableAccent}
-                onChange={(value) => handleColorChange('blocks.tableAccent', value)}
-                description="Table block accent"
-              />
-              <ColorPicker 
-                label="Callout Accent" 
-                value={appliedTheme.blocks.calloutAccent}
-                onChange={(value) => handleColorChange('blocks.calloutAccent', value)}
-                description="Callout block accent"
-              />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="preview" className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 max-h-96 overflow-y-auto">
-              <ColorPicker 
-                label="Preview Background" 
-                value={appliedTheme.preview.previewBg}
-                onChange={(value) => handleColorChange('preview.previewBg', value)}
-                description="Main preview area background"
-              />
-              <ColorPicker 
-                label="Preview Card Background" 
-                value={appliedTheme.preview.previewCardBg}
-                onChange={(value) => handleColorChange('preview.previewCardBg', value)}
-                description="Preview content cards"
-              />
-              <ColorPicker 
-                label="Preview Header" 
-                value={appliedTheme.preview.previewHeaderBg}
-                onChange={(value) => handleColorChange('preview.previewHeaderBg', value)}
-                description="Preview header background"
-              />
-              <ColorPicker 
-                label="Preview Border" 
-                value={appliedTheme.preview.previewBorder}
-                onChange={(value) => handleColorChange('preview.previewBorder', value)}
-                description="Preview area borders"
-              />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="palette" className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 max-h-96 overflow-y-auto">
-              <ColorPicker 
-                label="Palette Background" 
-                value={appliedTheme.palette.paletteBg}
-                onChange={(value) => handleColorChange('palette.paletteBg', value)}
-                description="Block palette background"
-              />
-              <ColorPicker 
-                label="Palette Card Background" 
-                value={appliedTheme.palette.paletteCardBg}
-                onChange={(value) => handleColorChange('palette.paletteCardBg', value)}
-                description="Individual palette cards"
-              />
-              <ColorPicker 
-                label="Palette Card Hover" 
-                value={appliedTheme.palette.paletteCardHover}
-                onChange={(value) => handleColorChange('palette.paletteCardHover', value)}
-                description="Palette card hover state"
-              />
-              <ColorPicker 
-                label="Category Text" 
-                value={appliedTheme.palette.categoryText}
-                onChange={(value) => handleColorChange('palette.categoryText', value)}
-                description="Category header text"
-              />
-              <ColorPicker 
-                label="Block Title Text" 
-                value={appliedTheme.palette.blockTitleText}
-                onChange={(value) => handleColorChange('palette.blockTitleText', value)}
-                description="Block title color"
-              />
-              <ColorPicker 
-                label="Block Description Text" 
-                value={appliedTheme.palette.blockDescText}
-                onChange={(value) => handleColorChange('palette.blockDescText', value)}
-                description="Block description color"
-              />
-            </div>
-          </TabsContent>
-        </Tabs>
+        {/* Theme Presets */}
+        <div>
+          <Label className="text-sm font-medium text-[var(--editor-primary-text)] mb-3 block">
+            Color Presets
+          </Label>
+          <div className="space-y-4">
+            {Object.entries(THEME_PRESETS).map(([category, presets]) => (
+              <div key={category} className="space-y-2">
+                <div className="text-xs font-medium text-[var(--editor-muted-text)] uppercase tracking-wider">
+                  {category}
+                </div>
+                <div className="grid gap-2">
+                  {presets.map((preset) => (
+                    <Button
+                      key={preset.name}
+                      variant="outline"
+                      className="p-3 h-auto text-left hover:scale-102 transition-transform"
+                      onClick={() => applyPreset(preset)}
+                      style={{
+                        backgroundColor: 'var(--editor-surface-bg)',
+                        borderColor: 'var(--editor-primary-border)',
+                        color: 'var(--editor-primary-text)'
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex gap-1">
+                          <div 
+                            className="w-4 h-4 rounded border"
+                            style={{ 
+                              backgroundColor: preset.colors.primaryBg,
+                              borderColor: 'var(--editor-primary-border)'
+                            }}
+                          />
+                          <div 
+                            className="w-4 h-4 rounded border"
+                            style={{ 
+                              backgroundColor: preset.colors.cardBg,
+                              borderColor: 'var(--editor-primary-border)'
+                            }}
+                          />
+                          <div 
+                            className="w-4 h-4 rounded border"
+                            style={{ 
+                              backgroundColor: preset.colors.buttonPrimary,
+                              borderColor: 'var(--editor-primary-border)'
+                            }}
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-medium text-sm">{preset.name}</div>
+                          <div className="text-xs text-[var(--editor-muted-text)]">{preset.description}</div>
+                        </div>
+                      </div>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
 
         <Separator style={{ borderColor: 'var(--editor-primary-border)' }} />
 
-        {/* Actions */}
+        {/* Custom Colors */}
+        <div>
+          <Label className="text-sm font-medium text-[var(--editor-primary-text)] mb-3 block">
+            Custom Colors
+          </Label>
+          <div className="grid gap-4">
+            <ColorPicker 
+              label="Background" 
+              value={appliedTheme.editor.primaryBg}
+              onChange={(value) => handleColorChange('primaryBg', value)}
+              description="Main editor background"
+            />
+            <ColorPicker 
+              label="Surface" 
+              value={appliedTheme.editor.cardBg}
+              onChange={(value) => handleColorChange('cardBg', value)}
+              description="Cards and panels"
+            />
+            <ColorPicker 
+              label="Primary Text" 
+              value={appliedTheme.editor.primaryText}
+              onChange={(value) => handleColorChange('primaryText', value)}
+              description="Main text color"
+            />
+            <ColorPicker 
+              label="Secondary Text" 
+              value={appliedTheme.editor.secondaryText}
+              onChange={(value) => handleColorChange('secondaryText', value)}
+              description="Labels and descriptions"
+            />
+            <ColorPicker 
+              label="Border" 
+              value={appliedTheme.editor.primaryBorder}
+              onChange={(value) => handleColorChange('primaryBorder', value)}
+              description="Borders and dividers"
+            />
+            <ColorPicker 
+              label="Primary Button" 
+              value={appliedTheme.editor.buttonPrimary}
+              onChange={(value) => handleColorChange('buttonPrimary', value)}
+              description="Action buttons"
+            />
+          </div>
+        </div>
+
+        <Separator style={{ borderColor: 'var(--editor-primary-border)' }} />
+
+        {/* Import/Export & Actions */}
         <div className="space-y-4">
           <div className="flex gap-2">
             <Button 

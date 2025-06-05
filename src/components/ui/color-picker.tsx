@@ -1,6 +1,6 @@
 
-// ABOUTME: Advanced color picker component with hex input, alpha support, and proper UX
-// Provides comprehensive color selection with draggable interface and transparency control
+// ABOUTME: Advanced color picker component with fixed canvas rendering and intuitive UX
+// Provides comprehensive color selection with working visual interface and transparency control
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
@@ -31,21 +31,30 @@ interface RGB {
   b: number; // 0-255
 }
 
-// Color presets for quick selection
-const COLOR_PRESETS = [
-  { name: 'Pure Black', value: '#000000' },
-  { name: 'Dark Gray', value: '#1a1a1a' },
-  { name: 'Medium Gray', value: '#404040' },
-  { name: 'Light Gray', value: '#a3a3a3' },
-  { name: 'Pure White', value: '#ffffff' },
-  { name: 'Blue', value: '#3b82f6' },
-  { name: 'Green', value: '#22c55e' },
-  { name: 'Red', value: '#ef4444' },
-  { name: 'Yellow', value: '#eab308' },
-  { name: 'Purple', value: '#8b5cf6' },
-  { name: 'Orange', value: '#f97316' },
-  { name: 'Pink', value: '#ec4899' },
-];
+// Curated color presets organized by category
+const COLOR_PRESETS = {
+  'Grayscale': [
+    { name: 'Pure Black', value: '#000000' },
+    { name: 'Dark Gray', value: '#1a1a1a' },
+    { name: 'Medium Gray', value: '#404040' },
+    { name: 'Light Gray', value: '#a3a3a3' },
+    { name: 'Pure White', value: '#ffffff' }
+  ],
+  'Brand Colors': [
+    { name: 'Primary Blue', value: '#3b82f6' },
+    { name: 'Success Green', value: '#22c55e' },
+    { name: 'Warning Orange', value: '#f97316' },
+    { name: 'Error Red', value: '#ef4444' },
+    { name: 'Info Cyan', value: '#06b6d4' }
+  ],
+  'Accent Colors': [
+    { name: 'Purple', value: '#8b5cf6' },
+    { name: 'Pink', value: '#ec4899' },
+    { name: 'Yellow', value: '#eab308' },
+    { name: 'Emerald', value: '#10b981' },
+    { name: 'Indigo', value: '#6366f1' }
+  ]
+};
 
 export const ColorPicker: React.FC<ColorPickerProps> = ({
   value,
@@ -60,12 +69,12 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [alpha, setAlpha] = useState(100);
   const [currentHue, setCurrentHue] = useState(0);
-  const [currentHsv, setCurrentHsv] = useState<HSV>({ h: 0, s: 0, v: 0 });
+  const [currentHsv, setCurrentHsv] = useState<HSV>({ h: 0, s: 50, v: 50 });
   
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const pickerRef = useRef<HTMLDivElement>(null);
   const hueRef = useRef<HTMLCanvasElement>(null);
   const cursorRef = useRef<HTMLDivElement>(null);
+  const hueIndicatorRef = useRef<HTMLDivElement>(null);
 
   // Color conversion utilities
   const hexToRgb = useCallback((hex: string): RGB | null => {
@@ -163,7 +172,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
     }
   }, [value, hexToRgb, rgbToHsv]);
 
-  // Draw color picker canvas
+  // Draw color picker canvas with proper initialization
   const drawColorPicker = useCallback((hue: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -174,31 +183,30 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
     const width = canvas.width;
     const height = canvas.height;
     
-    // Clear canvas
+    // Clear canvas completely
     ctx.clearRect(0, 0, width, height);
     
-    // Create saturation-value gradient
-    const imageData = ctx.createImageData(width, height);
-    const data = imageData.data;
+    // Create base hue color
+    const baseRgb = hsvToRgb(hue, 100, 100);
     
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        const s = (x / width) * 100;
-        const v = ((height - y) / height) * 100;
-        const rgb = hsvToRgb(hue, s, v);
-        
-        const index = (y * width + x) * 4;
-        data[index] = rgb.r;     // Red
-        data[index + 1] = rgb.g; // Green
-        data[index + 2] = rgb.b; // Blue
-        data[index + 3] = 255;   // Alpha
-      }
-    }
+    // Create white to color gradient (horizontal - saturation)
+    const saturationGradient = ctx.createLinearGradient(0, 0, width, 0);
+    saturationGradient.addColorStop(0, '#ffffff');
+    saturationGradient.addColorStop(1, `rgb(${baseRgb.r}, ${baseRgb.g}, ${baseRgb.b})`);
     
-    ctx.putImageData(imageData, 0, 0);
+    ctx.fillStyle = saturationGradient;
+    ctx.fillRect(0, 0, width, height);
+    
+    // Create transparent to black gradient (vertical - value/brightness)
+    const valueGradient = ctx.createLinearGradient(0, 0, 0, height);
+    valueGradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    valueGradient.addColorStop(1, 'rgba(0, 0, 0, 1)');
+    
+    ctx.fillStyle = valueGradient;
+    ctx.fillRect(0, 0, width, height);
   }, [hsvToRgb]);
 
-  // Draw hue slider
+  // Draw hue slider with proper rainbow gradient
   const drawHueSlider = useCallback(() => {
     const canvas = hueRef.current;
     if (!canvas) return;
@@ -224,32 +232,59 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
     ctx.fillRect(0, 0, width, height);
   }, []);
 
-  // Initialize canvases
+  // Initialize canvases when component mounts or opens
   useEffect(() => {
-    drawHueSlider();
-    drawColorPicker(currentHue);
-  }, [drawHueSlider, drawColorPicker, currentHue]);
+    if (isOpen) {
+      // Small delay to ensure canvas is rendered
+      setTimeout(() => {
+        drawHueSlider();
+        drawColorPicker(currentHue);
+        updateCursorPosition();
+        updateHueIndicator();
+      }, 50);
+    }
+  }, [isOpen, drawHueSlider, drawColorPicker, currentHue]);
 
-  // Update cursor position
+  // Redraw when hue changes
+  useEffect(() => {
+    if (isOpen) {
+      drawColorPicker(currentHue);
+      updateHueIndicator();
+    }
+  }, [currentHue, drawColorPicker, isOpen]);
+
+  // Update cursor position in color picker
   const updateCursorPosition = useCallback(() => {
-    if (!cursorRef.current || !canvasRef.current) return;
+    if (!cursorRef.current || !canvasRef.current || !isOpen) return;
     
     const canvas = canvasRef.current;
     const x = (currentHsv.s / 100) * canvas.width;
     const y = ((100 - currentHsv.v) / 100) * canvas.height;
     
-    cursorRef.current.style.left = `${x - 6}px`;
-    cursorRef.current.style.top = `${y - 6}px`;
-  }, [currentHsv]);
+    cursorRef.current.style.left = `${x - 8}px`;
+    cursorRef.current.style.top = `${y - 8}px`;
+  }, [currentHsv, isOpen]);
+
+  // Update hue indicator position
+  const updateHueIndicator = useCallback(() => {
+    if (!hueIndicatorRef.current || !hueRef.current || !isOpen) return;
+    
+    const canvas = hueRef.current;
+    const x = (currentHue / 360) * canvas.width;
+    
+    hueIndicatorRef.current.style.left = `${x - 8}px`;
+  }, [currentHue, isOpen]);
 
   useEffect(() => {
     updateCursorPosition();
   }, [updateCursorPosition]);
 
-  // Handle color picker mouse events
-  const handleColorPickerClick = useCallback((e: React.MouseEvent) => {
+  // Handle color picker mouse events with proper coordinate calculation
+  const handleColorPickerMouseDown = useCallback((e: React.MouseEvent) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    
+    setIsDragging(true);
     
     const rect = canvas.getBoundingClientRect();
     const x = Math.max(0, Math.min(canvas.width, ((e.clientX - rect.left) / rect.width) * canvas.width));
@@ -270,6 +305,47 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
       newHex
     );
   }, [currentHue, hsvToRgb, rgbToHex, onChange, showAlpha, alpha]);
+
+  // Handle mouse move for dragging
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging || !canvasRef.current) return;
+      
+      const canvas = canvasRef.current;
+      const rect = canvas.getBoundingClientRect();
+      const x = Math.max(0, Math.min(canvas.width, ((e.clientX - rect.left) / rect.width) * canvas.width));
+      const y = Math.max(0, Math.min(canvas.height, ((e.clientY - rect.top) / rect.height) * canvas.height));
+      
+      const s = (x / canvas.width) * 100;
+      const v = ((canvas.height - y) / canvas.height) * 100;
+      
+      const newHsv = { h: currentHue, s, v };
+      setCurrentHsv(newHsv);
+      
+      const newRgb = hsvToRgb(newHsv.h, newHsv.s, newHsv.v);
+      const newHex = rgbToHex(newRgb.r, newRgb.g, newRgb.b);
+      
+      setHexInput(newHex);
+      onChange(showAlpha && alpha < 100 ? 
+        newHex + Math.round((alpha / 100) * 255).toString(16).padStart(2, '0') : 
+        newHex
+      );
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, currentHue, hsvToRgb, rgbToHex, onChange, showAlpha, alpha]);
 
   // Handle hue slider click
   const handleHueClick = useCallback((e: React.MouseEvent) => {
@@ -294,7 +370,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
     );
   }, [currentHsv, hsvToRgb, rgbToHex, onChange, showAlpha, alpha]);
 
-  // Handle hex input change
+  // Handle hex input change with validation
   const handleHexChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newHex = e.target.value;
     setHexInput(newHex);
@@ -351,7 +427,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                className="w-8 h-8 p-0 border-2 cursor-pointer hover:scale-105 transition-transform"
+                className="w-10 h-6 p-0 border-2 cursor-pointer hover:scale-105 transition-transform rounded"
                 style={{
                   backgroundColor: value,
                   borderColor: 'var(--editor-primary-border)'
@@ -366,43 +442,80 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
               }}
             >
               <div className="space-y-4">
-                {/* Color Picker Canvas */}
-                <div className="relative">
-                  <canvas
-                    ref={canvasRef}
-                    width={240}
-                    height={150}
-                    className="border rounded cursor-crosshair block"
-                    style={{ borderColor: 'var(--editor-primary-border)' }}
-                    onClick={handleColorPickerClick}
-                  />
-                  <div
-                    ref={cursorRef}
-                    className="absolute w-3 h-3 border-2 border-white rounded-full pointer-events-none"
-                    style={{
-                      boxShadow: '0 0 0 1px rgba(0,0,0,0.3)',
-                      transform: 'translate(-50%, -50%)'
+                {/* Current Color Display */}
+                <div className="flex items-center gap-3 p-3 rounded-lg border" 
+                     style={{ borderColor: 'var(--editor-primary-border)', backgroundColor: 'var(--editor-surface-bg)' }}>
+                  <div 
+                    className="w-8 h-8 rounded border-2 flex-shrink-0"
+                    style={{ 
+                      backgroundColor: value,
+                      borderColor: 'var(--editor-primary-border)'
                     }}
                   />
+                  <div className="flex-1">
+                    <div className="text-sm font-medium text-[var(--editor-primary-text)]">
+                      Current Color
+                    </div>
+                    <div className="text-xs font-mono text-[var(--editor-muted-text)]">
+                      {value.toUpperCase()}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Color Picker Canvas */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium text-[var(--editor-primary-text)]">
+                    Color Selection
+                  </Label>
+                  <div className="relative">
+                    <canvas
+                      ref={canvasRef}
+                      width={280}
+                      height={160}
+                      className="border rounded cursor-crosshair block w-full"
+                      style={{ borderColor: 'var(--editor-primary-border)' }}
+                      onMouseDown={handleColorPickerMouseDown}
+                    />
+                    <div
+                      ref={cursorRef}
+                      className="absolute w-4 h-4 border-2 border-white rounded-full pointer-events-none shadow-lg"
+                      style={{
+                        boxShadow: '0 0 0 1px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2)',
+                        transform: 'translate(-50%, -50%)'
+                      }}
+                    />
+                  </div>
                 </div>
                 
                 {/* Hue Slider */}
                 <div className="space-y-2">
-                  <Label className="text-xs text-[var(--editor-muted-text)]">Hue</Label>
-                  <canvas
-                    ref={hueRef}
-                    width={240}
-                    height={20}
-                    className="border rounded cursor-pointer block"
-                    style={{ borderColor: 'var(--editor-primary-border)' }}
-                    onClick={handleHueClick}
-                  />
+                  <Label className="text-sm font-medium text-[var(--editor-primary-text)]">
+                    Hue
+                  </Label>
+                  <div className="relative">
+                    <canvas
+                      ref={hueRef}
+                      width={280}
+                      height={20}
+                      className="border rounded cursor-pointer block w-full"
+                      style={{ borderColor: 'var(--editor-primary-border)' }}
+                      onClick={handleHueClick}
+                    />
+                    <div
+                      ref={hueIndicatorRef}
+                      className="absolute top-0 w-4 h-5 border-2 border-white rounded pointer-events-none shadow-lg"
+                      style={{
+                        boxShadow: '0 0 0 1px rgba(0,0,0,0.3)',
+                        transform: 'translate(-50%, -1px)'
+                      }}
+                    />
+                  </div>
                 </div>
                 
                 {/* Alpha Slider */}
                 {showAlpha && (
                   <div className="space-y-2">
-                    <Label className="text-xs text-[var(--editor-muted-text)]">
+                    <Label className="text-sm font-medium text-[var(--editor-primary-text)]">
                       Transparency: {alpha}%
                     </Label>
                     <Slider
@@ -416,28 +529,9 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
                   </div>
                 )}
                 
-                {/* Color Presets */}
-                <div className="space-y-2">
-                  <Label className="text-xs text-[var(--editor-muted-text)]">Presets</Label>
-                  <div className="grid grid-cols-6 gap-1">
-                    {COLOR_PRESETS.map((preset) => (
-                      <button
-                        key={preset.value}
-                        className="w-8 h-8 rounded border-2 hover:scale-110 transition-transform"
-                        style={{
-                          backgroundColor: preset.value,
-                          borderColor: preset.value === value ? 'var(--editor-focus-border)' : 'var(--editor-primary-border)'
-                        }}
-                        onClick={() => handlePresetSelect(preset.value)}
-                        title={preset.name}
-                      />
-                    ))}
-                  </div>
-                </div>
-                
                 {/* Hex Input */}
                 <div className="space-y-2">
-                  <Label htmlFor="hex-input" className="text-xs text-[var(--editor-muted-text)]">
+                  <Label htmlFor="hex-input" className="text-sm font-medium text-[var(--editor-primary-text)]">
                     Hex Code
                   </Label>
                   <Input
@@ -454,18 +548,32 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
                   />
                 </div>
                 
-                {/* Preview */}
-                <div className="flex items-center gap-2 pt-2">
-                  <div 
-                    className="w-6 h-6 rounded border-2"
-                    style={{ 
-                      backgroundColor: value,
-                      borderColor: 'var(--editor-primary-border)'
-                    }}
-                  />
-                  <span className="text-xs font-mono text-[var(--editor-muted-text)]">
-                    {value}
-                  </span>
+                {/* Color Presets */}
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium text-[var(--editor-primary-text)]">
+                    Color Presets
+                  </Label>
+                  {Object.entries(COLOR_PRESETS).map(([category, colors]) => (
+                    <div key={category} className="space-y-2">
+                      <div className="text-xs font-medium text-[var(--editor-muted-text)]">
+                        {category}
+                      </div>
+                      <div className="grid grid-cols-5 gap-2">
+                        {colors.map((preset) => (
+                          <button
+                            key={preset.value}
+                            className="w-10 h-8 rounded border-2 hover:scale-110 transition-transform"
+                            style={{
+                              backgroundColor: preset.value,
+                              borderColor: preset.value === value ? 'var(--editor-focus-border)' : 'var(--editor-primary-border)'
+                            }}
+                            onClick={() => handlePresetSelect(preset.value)}
+                            title={preset.name}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </PopoverContent>
@@ -475,15 +583,6 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
       
       {description && (
         <p className="text-xs text-[var(--editor-muted-text)]">{description}</p>
-      )}
-      
-      {!label && (
-        <Input
-          value={hexInput}
-          onChange={handleHexChange}
-          placeholder="#000000"
-          className="font-mono"
-        />
       )}
     </div>
   );
