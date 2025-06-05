@@ -1,3 +1,4 @@
+
 // ABOUTME: Native review editor with block-based content creation
 // Provides drag-and-drop interface and real-time preview
 
@@ -6,11 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Plus, Eye, Code, Save, Settings, Layers } from 'lucide-react';
+import { Plus, Eye, Code, Save, Settings, Layers, Palette } from 'lucide-react';
 import { ReviewBlock, BlockType } from '@/types/review';
 import { BlockPalette } from './BlockPalette';
 import { BlockEditor } from './BlockEditor';
 import { ReviewPreview } from './ReviewPreview';
+import { ThemeCustomizer } from './ThemeCustomizer';
+import { EditorThemeProvider } from '@/contexts/EditorThemeContext';
 import { cn } from '@/lib/utils';
 
 interface NativeEditorProps {
@@ -31,6 +34,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
   const [blocks, setBlocks] = useState<ReviewBlock[]>(initialBlocks);
   const [activeBlockId, setActiveBlockId] = useState<number | null>(null);
   const [editorMode, setEditorMode] = useState<'edit' | 'preview' | 'split'>('edit');
+  const [showThemeCustomizer, setShowThemeCustomizer] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const addBlock = useCallback((type: BlockType, position?: number) => {
@@ -207,128 +211,210 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
   };
 
   return (
-    <div className={cn("native-editor editor-layout", className)}>
-      {/* Editor Header */}
-      <div className="editor-header">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+    <EditorThemeProvider>
+      <div className={cn("native-editor editor-layout", className)}>
+        {/* Editor Header */}
+        <div className="editor-header">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Layers className="w-5 h-5" style={{ color: 'var(--editor-accent-text)' }} />
+                <h2 className="text-xl font-semibold" style={{ color: 'var(--editor-primary-text)' }}>
+                  Editor de Revisão Nativa
+                </h2>
+              </div>
+              <Badge 
+                variant="outline" 
+                style={{
+                  backgroundColor: 'var(--editor-card-bg)',
+                  color: 'var(--editor-primary-text)',
+                  borderColor: 'var(--editor-primary-border)'
+                }}
+              >
+                {blocks.length} {blocks.length === 1 ? 'bloco' : 'blocos'}
+              </Badge>
+            </div>
+            
             <div className="flex items-center gap-2">
-              <Layers className="w-5 h-5 text-[hsl(var(--accent-primary))]" />
-              <h2 className="text-xl font-semibold text-[hsl(var(--foreground))]">Editor de Revisão Nativa</h2>
+              {/* Mode Switcher */}
+              <div 
+                className="flex border rounded-lg overflow-hidden"
+                style={{
+                  borderColor: 'var(--editor-primary-border)',
+                  backgroundColor: 'var(--editor-card-bg)'
+                }}
+              >
+                <Button
+                  variant={editorMode === 'edit' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setEditorMode('edit')}
+                  className="rounded-none border-0"
+                  style={{
+                    backgroundColor: editorMode === 'edit' 
+                      ? 'var(--editor-button-primary)' 
+                      : 'var(--editor-card-bg)',
+                    color: editorMode === 'edit'
+                      ? 'var(--editor-button-primary)'
+                      : 'var(--editor-primary-text)'
+                  }}
+                >
+                  <Code className="w-4 h-4 mr-1" />
+                  Editar
+                </Button>
+                <Button
+                  variant={editorMode === 'preview' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setEditorMode('preview')}
+                  className="rounded-none border-0"
+                  style={{
+                    backgroundColor: editorMode === 'preview' 
+                      ? 'var(--editor-button-primary)' 
+                      : 'var(--editor-card-bg)',
+                    color: editorMode === 'preview'
+                      ? 'var(--editor-button-primary)'
+                      : 'var(--editor-primary-text)'
+                  }}
+                >
+                  <Eye className="w-4 h-4 mr-1" />
+                  Visualizar
+                </Button>
+                <Button
+                  variant={editorMode === 'split' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setEditorMode('split')}
+                  className="rounded-none border-0"
+                  style={{
+                    backgroundColor: editorMode === 'split' 
+                      ? 'var(--editor-button-primary)' 
+                      : 'var(--editor-card-bg)',
+                    color: editorMode === 'split'
+                      ? 'var(--editor-button-primary)'
+                      : 'var(--editor-primary-text)'
+                  }}
+                >
+                  <Settings className="w-4 h-4 mr-1" />
+                  Dividido
+                </Button>
+              </div>
+              
+              <Separator 
+                orientation="vertical" 
+                className="h-6" 
+                style={{ borderColor: 'var(--editor-primary-border)' }}
+              />
+              
+              {/* Theme Customizer Toggle */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowThemeCustomizer(!showThemeCustomizer)}
+                style={{
+                  borderColor: 'var(--editor-primary-border)',
+                  backgroundColor: showThemeCustomizer 
+                    ? 'var(--editor-active-bg)' 
+                    : 'var(--editor-card-bg)',
+                  color: 'var(--editor-primary-text)'
+                }}
+              >
+                <Palette className="w-4 h-4 mr-1" />
+                Tema
+              </Button>
+              
+              {/* Action Buttons */}
+              <Button 
+                variant="outline" 
+                onClick={onCancel}
+                style={{
+                  borderColor: 'var(--editor-primary-border)',
+                  color: 'var(--editor-primary-text)',
+                  backgroundColor: 'var(--editor-card-bg)'
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleSave} 
+                disabled={isSaving}
+                style={{
+                  backgroundColor: 'var(--editor-button-primary)',
+                  color: 'var(--editor-primary-text)'
+                }}
+              >
+                <Save className="w-4 h-4 mr-2" />
+                {isSaving ? 'Salvando...' : 'Salvar'}
+              </Button>
             </div>
-            <Badge variant="outline" className="bg-[hsl(var(--editor-card-bg))] text-[hsl(var(--foreground))] border-[hsl(var(--editor-border))]">
-              {blocks.length} {blocks.length === 1 ? 'bloco' : 'blocos'}
-            </Badge>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            {/* Mode Switcher */}
-            <div className="flex border rounded-lg overflow-hidden border-[hsl(var(--editor-border))] bg-[hsl(var(--editor-card-bg))]">
-              <Button
-                variant={editorMode === 'edit' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setEditorMode('edit')}
-                className="rounded-none border-0 text-[hsl(var(--foreground))] bg-[hsl(var(--editor-card-bg))] hover:bg-[hsl(var(--editor-hover))]"
-              >
-                <Code className="w-4 h-4 mr-1" />
-                Editar
-              </Button>
-              <Button
-                variant={editorMode === 'preview' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setEditorMode('preview')}
-                className="rounded-none border-0 text-[hsl(var(--foreground))] bg-[hsl(var(--editor-card-bg))] hover:bg-[hsl(var(--editor-hover))]"
-              >
-                <Eye className="w-4 h-4 mr-1" />
-                Visualizar
-              </Button>
-              <Button
-                variant={editorMode === 'split' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setEditorMode('split')}
-                className="rounded-none border-0 text-[hsl(var(--foreground))] bg-[hsl(var(--editor-card-bg))] hover:bg-[hsl(var(--editor-hover))]"
-              >
-                <Settings className="w-4 h-4 mr-1" />
-                Dividido
-              </Button>
-            </div>
-            
-            <Separator orientation="vertical" className="h-6 border-[hsl(var(--editor-border))]" />
-            
-            {/* Action Buttons */}
-            <Button 
-              variant="outline" 
-              onClick={onCancel} 
-              className="border-[hsl(var(--editor-border))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--editor-hover))] bg-[hsl(var(--editor-card-bg))]"
-            >
-              Cancelar
-            </Button>
-            <Button 
-              onClick={handleSave} 
-              disabled={isSaving} 
-              className="bg-[hsl(var(--accent-primary))] hover:bg-[hsl(var(--accent-primary))]/90 text-[hsl(var(--primary-foreground))]"
-            >
-              <Save className="w-4 h-4 mr-2" />
-              {isSaving ? 'Salvando...' : 'Salvar'}
-            </Button>
           </div>
         </div>
-      </div>
 
-      {/* Editor Content */}
-      <div className="editor-content">
-        {/* Block Palette - Left Sidebar */}
-        {(editorMode === 'edit' || editorMode === 'split') && (
-          <div className="w-80 editor-sidebar overflow-y-auto">
-            <BlockPalette onAddBlock={addBlock} />
+        {/* Editor Content */}
+        <div className="editor-content">
+          {/* Block Palette - Left Sidebar */}
+          {(editorMode === 'edit' || editorMode === 'split') && (
+            <div className="w-80 editor-sidebar overflow-y-auto">
+              <BlockPalette onAddBlock={addBlock} />
+            </div>
+          )}
+
+          {/* Main Content Area */}
+          <div className="editor-main">
+            {editorMode === 'edit' && (
+              <BlockEditor
+                blocks={blocks}
+                activeBlockId={activeBlockId}
+                onActiveBlockChange={setActiveBlockId}
+                onUpdateBlock={updateBlock}
+                onDeleteBlock={deleteBlock}
+                onMoveBlock={moveBlock}
+                onAddBlock={addBlock}
+              />
+            )}
+
+            {editorMode === 'preview' && (
+              <ReviewPreview
+                blocks={blocks}
+                className="p-6"
+              />
+            )}
+
+            {editorMode === 'split' && (
+              <div className="grid grid-cols-2 h-full">
+                <div style={{ borderRight: `1px solid var(--editor-primary-border)` }}>
+                  <BlockEditor
+                    blocks={blocks}
+                    activeBlockId={activeBlockId}
+                    onActiveBlockChange={setActiveBlockId}
+                    onUpdateBlock={updateBlock}
+                    onDeleteBlock={deleteBlock}
+                    onMoveBlock={moveBlock}
+                    onAddBlock={addBlock}
+                    compact
+                  />
+                </div>
+                <div className="overflow-y-auto">
+                  <ReviewPreview
+                    blocks={blocks}
+                    className="p-6"
+                  />
+                </div>
+              </div>
+            )}
           </div>
-        )}
 
-        {/* Main Content Area */}
-        <div className="editor-main">
-          {editorMode === 'edit' && (
-            <BlockEditor
-              blocks={blocks}
-              activeBlockId={activeBlockId}
-              onActiveBlockChange={setActiveBlockId}
-              onUpdateBlock={updateBlock}
-              onDeleteBlock={deleteBlock}
-              onMoveBlock={moveBlock}
-              onAddBlock={addBlock}
-            />
-          )}
-
-          {editorMode === 'preview' && (
-            <ReviewPreview
-              blocks={blocks}
-              className="p-6"
-            />
-          )}
-
-          {editorMode === 'split' && (
-            <div className="grid grid-cols-2 h-full">
-              <div className="border-r border-[hsl(var(--editor-border))]">
-                <BlockEditor
-                  blocks={blocks}
-                  activeBlockId={activeBlockId}
-                  onActiveBlockChange={setActiveBlockId}
-                  onUpdateBlock={updateBlock}
-                  onDeleteBlock={deleteBlock}
-                  onMoveBlock={moveBlock}
-                  onAddBlock={addBlock}
-                  compact
-                />
-              </div>
-              <div className="overflow-y-auto">
-                <ReviewPreview
-                  blocks={blocks}
-                  className="p-6"
-                />
-              </div>
+          {/* Theme Customizer Panel */}
+          {showThemeCustomizer && (
+            <div 
+              className="w-96 border-l overflow-y-auto"
+              style={{ 
+                backgroundColor: 'var(--editor-secondary-bg)',
+                borderColor: 'var(--editor-primary-border)'
+              }}
+            >
+              <ThemeCustomizer onClose={() => setShowThemeCustomizer(false)} />
             </div>
           )}
         </div>
       </div>
-    </div>
+    </EditorThemeProvider>
   );
 };

@@ -19,6 +19,7 @@ import { IssueHeader } from './components/issue/IssueHeader';
 import { IssueActionButtons } from './components/issue/IssueActionButtons';
 import { IssueFormContainer } from './components/issue/IssueFormContainer';
 import { NativeEditor } from '@/components/editor/NativeEditor';
+import { EditorThemeProvider } from '@/contexts/EditorThemeContext';
 import { useIssueEditor } from './hooks/useIssueEditor';
 import { useQuery } from '@tanstack/react-query';
 import { FileText, Layers, Upload } from 'lucide-react';
@@ -369,16 +370,18 @@ const IssueEditor = () => {
                   Editor de Conteúdo Nativo
                 </CardTitle>
                 <CardDescription>
-                  Crie conteúdo interativo usando blocos
+                  Crie conteúdo interativo usando blocos com tema customizável
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-1 p-0">
-                <NativeEditor
-                  issueId={id}
-                  initialBlocks={nativeBlocks}
-                  onSave={handleSaveNativeBlocks}
-                  onCancel={() => {}}
-                />
+                <EditorThemeProvider>
+                  <NativeEditor
+                    issueId={id}
+                    initialBlocks={nativeBlocks}
+                    onSave={handleSaveNativeBlocks}
+                    onCancel={() => {}}
+                  />
+                </EditorThemeProvider>
               </CardContent>
             </Card>
           ) : (
