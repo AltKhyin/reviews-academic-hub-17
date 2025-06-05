@@ -1,7 +1,7 @@
-// ABOUTME: Editor theme context for managing customizable colors and themes
-// Provides comprehensive theming system with runtime customization
+// ABOUTME: Editor theme context with real-time updates and optimized performance
+// Provides comprehensive theming system with debounced updates
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { EditorTheme, ThemeContextType, ThemeMode } from '@/types/theme';
 import { DEFAULT_THEMES, DEFAULT_THEME_ID, LIGHT_THEME, DARK_THEME } from '@/constants/themes';
 
@@ -16,7 +16,7 @@ const STORAGE_KEY = 'editor-theme-config';
 export const EditorThemeProvider: React.FC<EditorThemeProviderProps> = ({ children }) => {
   // Initialize with DARK_THEME as default
   const [currentTheme, setCurrentTheme] = useState<EditorTheme>(DARK_THEME);
-  const [themeMode, setThemeMode] = useState<ThemeMode>('dark'); // Changed from 'light' to 'dark'
+  const [themeMode, setThemeMode] = useState<ThemeMode>('dark');
   const [customizations, setCustomizations] = useState<Partial<EditorTheme>>({});
   const [availableThemes] = useState<EditorTheme[]>(DEFAULT_THEMES);
 
@@ -62,51 +62,64 @@ export const EditorThemeProvider: React.FC<EditorThemeProviderProps> = ({ childr
     return baseTheme;
   }, [currentTheme, themeMode, customizations]);
 
-  const appliedTheme = getEffectiveTheme();
+  // Memoize the applied theme for performance
+  const appliedTheme = useMemo(() => getEffectiveTheme(), [getEffectiveTheme]);
 
-  // Apply CSS custom properties
+  // Apply CSS custom properties with optimized updates
   useEffect(() => {
-    const root = document.documentElement;
-    const theme = appliedTheme;
+    const updateCSSVariables = () => {
+      const root = document.documentElement;
+      const theme = appliedTheme;
 
-    // Apply editor colors
-    Object.entries(theme.editor).forEach(([key, value]) => {
-      root.style.setProperty(`--editor-${camelToKebab(key)}`, value);
-    });
+      // Batch DOM updates
+      requestAnimationFrame(() => {
+        // Apply editor colors
+        Object.entries(theme.editor).forEach(([key, value]) => {
+          root.style.setProperty(`--editor-${camelToKebab(key)}`, value);
+        });
 
-    // Apply block colors
-    Object.entries(theme.blocks).forEach(([key, value]) => {
-      root.style.setProperty(`--block-${camelToKebab(key)}`, value);
-    });
+        // Apply block colors
+        Object.entries(theme.blocks).forEach(([key, value]) => {
+          root.style.setProperty(`--block-${camelToKebab(key)}`, value);
+        });
 
-    // Apply preview colors
-    Object.entries(theme.preview).forEach(([key, value]) => {
-      root.style.setProperty(`--preview-${camelToKebab(key)}`, value);
-    });
+        // Apply preview colors
+        Object.entries(theme.preview).forEach(([key, value]) => {
+          root.style.setProperty(`--preview-${camelToKebab(key)}`, value);
+        });
 
-    // Apply palette colors
-    Object.entries(theme.palette).forEach(([key, value]) => {
-      root.style.setProperty(`--palette-${camelToKebab(key)}`, value);
-    });
+        // Apply palette colors
+        Object.entries(theme.palette).forEach(([key, value]) => {
+          root.style.setProperty(`--palette-${camelToKebab(key)}`, value);
+        });
+      });
+    };
+
+    updateCSSVariables();
   }, [appliedTheme]);
 
-  // Save configuration to localStorage
+  // Debounced save configuration to localStorage
   const saveConfiguration = useCallback(() => {
-    try {
-      const config = {
-        themeId: currentTheme.id,
-        themeMode,
-        customizations,
-        timestamp: Date.now()
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-    } catch (error) {
-      console.warn('Failed to save theme configuration:', error);
-    }
+    const timeoutId = setTimeout(() => {
+      try {
+        const config = {
+          themeId: currentTheme.id,
+          themeMode,
+          customizations,
+          timestamp: Date.now()
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+      } catch (error) {
+        console.warn('Failed to save theme configuration:', error);
+      }
+    }, 500); // Debounce by 500ms
+
+    return () => clearTimeout(timeoutId);
   }, [currentTheme.id, themeMode, customizations]);
 
   useEffect(() => {
-    saveConfiguration();
+    const cleanup = saveConfiguration();
+    return cleanup;
   }, [saveConfiguration]);
 
   // Theme actions
@@ -138,7 +151,8 @@ export const EditorThemeProvider: React.FC<EditorThemeProviderProps> = ({ childr
       theme: currentTheme,
       customizations,
       themeMode,
-      exportedAt: new Date().toISOString()
+      exportedAt: new Date().toISOString(),
+      version: '1.0.0'
     };
     return JSON.stringify(exportData, null, 2);
   }, [currentTheme, customizations, themeMode]);
@@ -146,12 +160,23 @@ export const EditorThemeProvider: React.FC<EditorThemeProviderProps> = ({ childr
   const importTheme = useCallback((themeData: string) => {
     try {
       const imported = JSON.parse(themeData);
-      if (imported.theme) {
-        setCurrentTheme(imported.theme);
+      
+      // Validate import structure
+      if (!imported.theme && !imported.customizations) {
+        throw new Error('Invalid theme data structure');
       }
+      
+      if (imported.theme) {
+        // Validate theme structure
+        if (imported.theme.editor && imported.theme.blocks) {
+          setCurrentTheme(imported.theme);
+        }
+      }
+      
       if (imported.customizations) {
         setCustomizations(imported.customizations);
       }
+      
       if (imported.themeMode) {
         setThemeMode(imported.themeMode);
       }

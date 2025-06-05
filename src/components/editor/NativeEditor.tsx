@@ -1,8 +1,7 @@
+// ABOUTME: Native review editor with block-based content creation and real-time theme updates
+// Provides drag-and-drop interface, block duplication, and enhanced user experience
 
-// ABOUTME: Native review editor with block-based content creation
-// Provides drag-and-drop interface and real-time preview
-
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,6 +35,18 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
   const [editorMode, setEditorMode] = useState<'edit' | 'preview' | 'split'>('edit');
   const [showThemeCustomizer, setShowThemeCustomizer] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+
+  // Auto-save functionality
+  useEffect(() => {
+    const autoSaveInterval = setInterval(() => {
+      if (blocks.length > 0 && !isSaving) {
+        handleSave(true); // Silent save
+      }
+    }, 30000); // Auto-save every 30 seconds
+
+    return () => clearInterval(autoSaveInterval);
+  }, [blocks, isSaving]);
 
   const addBlock = useCallback((type: BlockType, position?: number) => {
     // Generate a temporary negative ID for new blocks (will be replaced by database)
@@ -74,6 +85,36 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
     setBlocks(updatedBlocks);
     setActiveBlockId(newBlock.id);
   }, [blocks, issueId]);
+
+  const duplicateBlock = useCallback((blockId: number) => {
+    const blockToDuplicate = blocks.find(block => block.id === blockId);
+    if (!blockToDuplicate) return;
+
+    const blockIndex = blocks.findIndex(block => block.id === blockId);
+    const tempId = -(Date.now() + Math.random());
+    
+    const duplicatedBlock: ReviewBlock = {
+      ...blockToDuplicate,
+      id: tempId,
+      sort_index: blockIndex + 1,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      // Deep clone payload to avoid reference issues
+      payload: JSON.parse(JSON.stringify(blockToDuplicate.payload)),
+      meta: JSON.parse(JSON.stringify(blockToDuplicate.meta || {}))
+    };
+
+    const updatedBlocks = [...blocks];
+    updatedBlocks.splice(blockIndex + 1, 0, duplicatedBlock);
+    
+    // Update sort indices for blocks after insertion point
+    updatedBlocks.forEach((block, index) => {
+      block.sort_index = index;
+    });
+
+    setBlocks(updatedBlocks);
+    setActiveBlockId(duplicatedBlock.id);
+  }, [blocks]);
 
   const updateBlock = useCallback((blockId: number, updates: Partial<ReviewBlock>) => {
     setBlocks(prev => prev.map(block => 
@@ -116,10 +157,18 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
     });
   }, []);
 
-  const handleSave = async () => {
+  const handleSave = async (silent = false) => {
     setIsSaving(true);
     try {
       await onSave(blocks);
+      setLastSaved(new Date());
+      if (!silent) {
+        // Show success toast or notification
+        console.log('Blocks saved successfully');
+      }
+    } catch (error) {
+      console.error('Error saving blocks:', error);
+      // Show error toast
     } finally {
       setIsSaving(false);
     }
@@ -233,6 +282,11 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
               >
                 {blocks.length} {blocks.length === 1 ? 'bloco' : 'blocos'}
               </Badge>
+              {lastSaved && (
+                <span className="text-xs" style={{ color: 'var(--editor-muted-text)' }}>
+                  Salvo às {lastSaved.toLocaleTimeString()}
+                </span>
+              )}
             </div>
             
             <div className="flex items-center gap-2">
@@ -253,9 +307,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
                     backgroundColor: editorMode === 'edit' 
                       ? 'var(--editor-button-primary)' 
                       : 'var(--editor-card-bg)',
-                    color: editorMode === 'edit'
-                      ? 'var(--editor-button-primary)'
-                      : 'var(--editor-primary-text)'
+                    color: 'var(--editor-primary-text)'
                   }}
                 >
                   <Code className="w-4 h-4 mr-1" />
@@ -270,9 +322,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
                     backgroundColor: editorMode === 'preview' 
                       ? 'var(--editor-button-primary)' 
                       : 'var(--editor-card-bg)',
-                    color: editorMode === 'preview'
-                      ? 'var(--editor-button-primary)'
-                      : 'var(--editor-primary-text)'
+                    color: 'var(--editor-primary-text)'
                   }}
                 >
                   <Eye className="w-4 h-4 mr-1" />
@@ -287,9 +337,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
                     backgroundColor: editorMode === 'split' 
                       ? 'var(--editor-button-primary)' 
                       : 'var(--editor-card-bg)',
-                    color: editorMode === 'split'
-                      ? 'var(--editor-button-primary)'
-                      : 'var(--editor-primary-text)'
+                    color: 'var(--editor-primary-text)'
                   }}
                 >
                   <Settings className="w-4 h-4 mr-1" />
@@ -333,7 +381,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
                 Cancelar
               </Button>
               <Button 
-                onClick={handleSave} 
+                onClick={() => handleSave(false)} 
                 disabled={isSaving}
                 style={{
                   backgroundColor: 'var(--editor-button-primary)',
@@ -367,6 +415,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
                 onDeleteBlock={deleteBlock}
                 onMoveBlock={moveBlock}
                 onAddBlock={addBlock}
+                onDuplicateBlock={duplicateBlock}
               />
             )}
 
@@ -388,6 +437,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
                     onDeleteBlock={deleteBlock}
                     onMoveBlock={moveBlock}
                     onAddBlock={addBlock}
+                    onDuplicateBlock={duplicateBlock}
                     compact
                   />
                 </div>
