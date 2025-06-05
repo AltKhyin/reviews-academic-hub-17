@@ -1,6 +1,6 @@
 
 // ABOUTME: Default theme definitions and presets for the native editor
-// Provides light and dark theme variants with comprehensive color coverage - Updated to use grey baseline
+// Provides light and dark theme variants with comprehensive color coverage - Updated to use dark as default
 
 import { EditorTheme } from '@/types/theme';
 
@@ -92,84 +92,84 @@ export const DARK_THEME: EditorTheme = {
   id: 'dark',
   editor: {
     // Background Colors - Consistent dark grey palette
-    primaryBg: '#212529',
-    secondaryBg: '#343a40',
-    tertiaryBg: '#495057',
-    surfaceBg: '#212529',
-    cardBg: '#343a40',
-    hoverBg: '#495057',
-    activeBg: '#6c757d',
-    selectedBg: '#495057',
+    primaryBg: '#1a1a1a',
+    secondaryBg: '#2d2d2d',
+    tertiaryBg: '#404040',
+    surfaceBg: '#1a1a1a',
+    cardBg: '#2d2d2d',
+    hoverBg: '#404040',
+    activeBg: '#525252',
+    selectedBg: '#404040',
     
     // Border Colors - Dark grey variations
-    primaryBorder: '#495057',
-    secondaryBorder: '#6c757d',
-    focusBorder: '#adb5bd',
-    activeBorder: '#ced4da',
+    primaryBorder: '#404040',
+    secondaryBorder: '#525252',
+    focusBorder: '#737373',
+    activeBorder: '#a3a3a3',
     
     // Text Colors - Light on dark
-    primaryText: '#f8f9fa',
-    secondaryText: '#e9ecef',
-    mutedText: '#adb5bd',
-    accentText: '#ced4da',
-    linkText: '#dee2e6',
+    primaryText: '#f5f5f5',
+    secondaryText: '#d4d4d4',
+    mutedText: '#a3a3a3',
+    accentText: '#d4d4d4',
+    linkText: '#e5e5e5',
     
     // Status Colors - Adjusted for dark theme
-    successColor: '#198754',
-    warningColor: '#fd7e14',
-    errorColor: '#dc3545',
-    infoColor: '#0dcaf0',
+    successColor: '#22c55e',
+    warningColor: '#f59e0b',
+    errorColor: '#ef4444',
+    infoColor: '#06b6d4',
     
     // Interactive Colors - Dark theme appropriate
-    buttonPrimary: '#f8f9fa',
-    buttonPrimaryHover: '#e9ecef',
-    buttonSecondary: '#495057',
-    buttonSecondaryHover: '#6c757d',
+    buttonPrimary: '#f5f5f5',
+    buttonPrimaryHover: '#d4d4d4',
+    buttonSecondary: '#404040',
+    buttonSecondaryHover: '#525252',
     buttonGhost: 'transparent',
-    buttonGhostHover: '#495057'
+    buttonGhostHover: '#404040'
   },
   blocks: {
     // Block-specific colors - Dark theme
-    blockBackground: '#343a40',
-    blockBorder: '#495057',
-    blockHover: '#495057',
-    blockSelected: '#6c757d',
-    blockActive: '#495057',
+    blockBackground: '#2d2d2d',
+    blockBorder: '#404040',
+    blockHover: '#404040',
+    blockSelected: '#525252',
+    blockActive: '#404040',
     
     // Block type indicators - Dark theme variations
-    snapshotCardAccent: '#adb5bd',
-    headingAccent: '#ced4da',
-    paragraphAccent: '#f8f9fa',
-    figureAccent: '#198754',
-    tableAccent: '#fd7e14',
-    calloutAccent: '#dc3545',
-    quoteAccent: '#6f42c1',
-    pollAccent: '#20c997',
-    citationAccent: '#adb5bd',
-    numberCardAccent: '#0dcaf0',
-    dividerAccent: '#6c757d'
+    snapshotCardAccent: '#a3a3a3',
+    headingAccent: '#d4d4d4',
+    paragraphAccent: '#f5f5f5',
+    figureAccent: '#22c55e',
+    tableAccent: '#f59e0b',
+    calloutAccent: '#ef4444',
+    quoteAccent: '#8b5cf6',
+    pollAccent: '#10b981',
+    citationAccent: '#a3a3a3',
+    numberCardAccent: '#06b6d4',
+    dividerAccent: '#525252'
   },
   preview: {
-    previewBg: '#212529',
-    previewCardBg: '#343a40',
-    previewBorder: '#495057',
-    previewHeaderBg: '#343a40',
-    previewFooterBg: '#343a40',
-    previewScrollbar: '#495057',
-    previewScrollbarHover: '#6c757d'
+    previewBg: '#1a1a1a',
+    previewCardBg: '#2d2d2d',
+    previewBorder: '#404040',
+    previewHeaderBg: '#2d2d2d',
+    previewFooterBg: '#2d2d2d',
+    previewScrollbar: '#404040',
+    previewScrollbarHover: '#525252'
   },
   palette: {
-    paletteBg: '#343a40',
-    paletteCardBg: '#495057',
-    paletteCardHover: '#6c757d',
-    paletteBorder: '#495057',
-    paletteHeaderBg: '#343a40',
-    categoryText: '#adb5bd',
-    blockTitleText: '#f8f9fa',
-    blockDescText: '#ced4da'
+    paletteBg: '#2d2d2d',
+    paletteCardBg: '#404040',
+    paletteCardHover: '#525252',
+    paletteBorder: '#404040',
+    paletteHeaderBg: '#2d2d2d',
+    categoryText: '#a3a3a3',
+    blockTitleText: '#f5f5f5',
+    blockDescText: '#d4d4d4'
   }
 };
 
 export const DEFAULT_THEMES: EditorTheme[] = [LIGHT_THEME, DARK_THEME];
 
-export const DEFAULT_THEME_ID = 'light';
+export const DEFAULT_THEME_ID = 'dark'; // Changed from 'light' to 'dark'

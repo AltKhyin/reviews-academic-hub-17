@@ -14,9 +14,9 @@ interface EditorThemeProviderProps {
 const STORAGE_KEY = 'editor-theme-config';
 
 export const EditorThemeProvider: React.FC<EditorThemeProviderProps> = ({ children }) => {
-  // Initialize with LIGHT_THEME as default instead of potentially undefined theme
-  const [currentTheme, setCurrentTheme] = useState<EditorTheme>(LIGHT_THEME);
-  const [themeMode, setThemeMode] = useState<ThemeMode>('light'); // Changed from 'auto' to 'light'
+  // Initialize with DARK_THEME as default
+  const [currentTheme, setCurrentTheme] = useState<EditorTheme>(DARK_THEME);
+  const [themeMode, setThemeMode] = useState<ThemeMode>('dark'); // Changed from 'light' to 'dark'
   const [customizations, setCustomizations] = useState<Partial<EditorTheme>>({});
   const [availableThemes] = useState<EditorTheme[]>(DEFAULT_THEMES);
 
@@ -27,7 +27,7 @@ export const EditorThemeProvider: React.FC<EditorThemeProviderProps> = ({ childr
       if (stored) {
         const config = JSON.parse(stored);
         if (config.themeId) {
-          const theme = availableThemes.find(t => t.id === config.themeId) || LIGHT_THEME;
+          const theme = availableThemes.find(t => t.id === config.themeId) || DARK_THEME;
           setCurrentTheme(theme);
         }
         if (config.themeMode) {
@@ -39,9 +39,9 @@ export const EditorThemeProvider: React.FC<EditorThemeProviderProps> = ({ childr
       }
     } catch (error) {
       console.warn('Failed to load theme configuration:', error);
-      // Fallback to light theme
-      setCurrentTheme(LIGHT_THEME);
-      setThemeMode('light');
+      // Fallback to dark theme
+      setCurrentTheme(DARK_THEME);
+      setThemeMode('dark');
     }
   }, [availableThemes]);
 

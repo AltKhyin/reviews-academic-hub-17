@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { ColorPicker } from '@/components/ui/color-picker';
 import { 
   Palette, 
   Download, 
@@ -66,35 +67,6 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({ onClose, class
       console.error('Import failed:', error);
     }
   };
-
-  const ColorInput: React.FC<{ 
-    label: string; 
-    path: string; 
-    value: string; 
-    description?: string;
-  }> = ({ label, path, value, description }) => (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <Label htmlFor={path} className="text-sm font-medium text-[var(--editor-primary-text)]">
-          {label}
-        </Label>
-        <div 
-          className="w-6 h-6 rounded border-2 border-[var(--editor-primary-border)]"
-          style={{ backgroundColor: value }}
-        />
-      </div>
-      {description && (
-        <p className="text-xs text-[var(--editor-muted-text)]">{description}</p>
-      )}
-      <Input
-        id={path}
-        type="color"
-        value={value}
-        onChange={(e) => handleColorChange(path, e.target.value)}
-        className="h-8 w-full"
-      />
-    </div>
-  );
 
   return (
     <Card className={cn("theme-customizer", className)} style={{
@@ -186,52 +158,52 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({ onClose, class
 
           <TabsContent value="editor" className="space-y-4">
             <div className="grid grid-cols-1 gap-4">
-              <ColorInput 
+              <ColorPicker 
                 label="Primary Background" 
-                path="editor.primaryBg" 
                 value={appliedTheme.editor.primaryBg}
+                onChange={(value) => handleColorChange('editor.primaryBg', value)}
                 description="Main editor background color"
               />
-              <ColorInput 
+              <ColorPicker 
                 label="Secondary Background" 
-                path="editor.secondaryBg" 
                 value={appliedTheme.editor.secondaryBg}
+                onChange={(value) => handleColorChange('editor.secondaryBg', value)}
                 description="Sidebar and secondary surfaces"
               />
-              <ColorInput 
+              <ColorPicker 
                 label="Card Background" 
-                path="editor.cardBg" 
                 value={appliedTheme.editor.cardBg}
+                onChange={(value) => handleColorChange('editor.cardBg', value)}
                 description="Individual card backgrounds"
               />
-              <ColorInput 
+              <ColorPicker 
                 label="Hover Background" 
-                path="editor.hoverBg" 
                 value={appliedTheme.editor.hoverBg}
+                onChange={(value) => handleColorChange('editor.hoverBg', value)}
                 description="Background on hover states"
               />
-              <ColorInput 
+              <ColorPicker 
                 label="Primary Border" 
-                path="editor.primaryBorder" 
                 value={appliedTheme.editor.primaryBorder}
+                onChange={(value) => handleColorChange('editor.primaryBorder', value)}
                 description="Main border color"
               />
-              <ColorInput 
+              <ColorPicker 
                 label="Primary Text" 
-                path="editor.primaryText" 
                 value={appliedTheme.editor.primaryText}
+                onChange={(value) => handleColorChange('editor.primaryText', value)}
                 description="Main text color"
               />
-              <ColorInput 
+              <ColorPicker 
                 label="Secondary Text" 
-                path="editor.secondaryText" 
                 value={appliedTheme.editor.secondaryText}
+                onChange={(value) => handleColorChange('editor.secondaryText', value)}
                 description="Secondary text and labels"
               />
-              <ColorInput 
+              <ColorPicker 
                 label="Muted Text" 
-                path="editor.mutedText" 
                 value={appliedTheme.editor.mutedText}
+                onChange={(value) => handleColorChange('editor.mutedText', value)}
                 description="Descriptions and muted content"
               />
             </div>
@@ -239,52 +211,52 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({ onClose, class
 
           <TabsContent value="blocks" className="space-y-4">
             <div className="grid grid-cols-1 gap-4">
-              <ColorInput 
+              <ColorPicker 
                 label="Block Background" 
-                path="blocks.blockBackground" 
                 value={appliedTheme.blocks.blockBackground}
+                onChange={(value) => handleColorChange('blocks.blockBackground', value)}
                 description="Individual block backgrounds"
               />
-              <ColorInput 
+              <ColorPicker 
                 label="Block Hover" 
-                path="blocks.blockHover" 
                 value={appliedTheme.blocks.blockHover}
+                onChange={(value) => handleColorChange('blocks.blockHover', value)}
                 description="Block hover state"
               />
-              <ColorInput 
+              <ColorPicker 
                 label="Block Selected" 
-                path="blocks.blockSelected" 
                 value={appliedTheme.blocks.blockSelected}
+                onChange={(value) => handleColorChange('blocks.blockSelected', value)}
                 description="Selected block highlight"
               />
-              <ColorInput 
+              <ColorPicker 
                 label="Snapshot Card Accent" 
-                path="blocks.snapshotCardAccent" 
                 value={appliedTheme.blocks.snapshotCardAccent}
+                onChange={(value) => handleColorChange('blocks.snapshotCardAccent', value)}
                 description="Snapshot card accent color"
               />
-              <ColorInput 
+              <ColorPicker 
                 label="Heading Accent" 
-                path="blocks.headingAccent" 
                 value={appliedTheme.blocks.headingAccent}
+                onChange={(value) => handleColorChange('blocks.headingAccent', value)}
                 description="Heading block accent"
               />
-              <ColorInput 
+              <ColorPicker 
                 label="Figure Accent" 
-                path="blocks.figureAccent" 
                 value={appliedTheme.blocks.figureAccent}
+                onChange={(value) => handleColorChange('blocks.figureAccent', value)}
                 description="Figure block accent"
               />
-              <ColorInput 
+              <ColorPicker 
                 label="Table Accent" 
-                path="blocks.tableAccent" 
                 value={appliedTheme.blocks.tableAccent}
+                onChange={(value) => handleColorChange('blocks.tableAccent', value)}
                 description="Table block accent"
               />
-              <ColorInput 
+              <ColorPicker 
                 label="Callout Accent" 
-                path="blocks.calloutAccent" 
                 value={appliedTheme.blocks.calloutAccent}
+                onChange={(value) => handleColorChange('blocks.calloutAccent', value)}
                 description="Callout block accent"
               />
             </div>
@@ -292,28 +264,28 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({ onClose, class
 
           <TabsContent value="preview" className="space-y-4">
             <div className="grid grid-cols-1 gap-4">
-              <ColorInput 
+              <ColorPicker 
                 label="Preview Background" 
-                path="preview.previewBg" 
                 value={appliedTheme.preview.previewBg}
+                onChange={(value) => handleColorChange('preview.previewBg', value)}
                 description="Main preview area background"
               />
-              <ColorInput 
+              <ColorPicker 
                 label="Preview Card Background" 
-                path="preview.previewCardBg" 
                 value={appliedTheme.preview.previewCardBg}
+                onChange={(value) => handleColorChange('preview.previewCardBg', value)}
                 description="Preview content cards"
               />
-              <ColorInput 
+              <ColorPicker 
                 label="Preview Header" 
-                path="preview.previewHeaderBg" 
                 value={appliedTheme.preview.previewHeaderBg}
+                onChange={(value) => handleColorChange('preview.previewHeaderBg', value)}
                 description="Preview header background"
               />
-              <ColorInput 
+              <ColorPicker 
                 label="Preview Border" 
-                path="preview.previewBorder" 
                 value={appliedTheme.preview.previewBorder}
+                onChange={(value) => handleColorChange('preview.previewBorder', value)}
                 description="Preview area borders"
               />
             </div>
@@ -321,40 +293,40 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({ onClose, class
 
           <TabsContent value="palette" className="space-y-4">
             <div className="grid grid-cols-1 gap-4">
-              <ColorInput 
+              <ColorPicker 
                 label="Palette Background" 
-                path="palette.paletteBg" 
                 value={appliedTheme.palette.paletteBg}
+                onChange={(value) => handleColorChange('palette.paletteBg', value)}
                 description="Block palette background"
               />
-              <ColorInput 
+              <ColorPicker 
                 label="Palette Card Background" 
-                path="palette.paletteCardBg" 
                 value={appliedTheme.palette.paletteCardBg}
+                onChange={(value) => handleColorChange('palette.paletteCardBg', value)}
                 description="Individual palette cards"
               />
-              <ColorInput 
+              <ColorPicker 
                 label="Palette Card Hover" 
-                path="palette.paletteCardHover" 
                 value={appliedTheme.palette.paletteCardHover}
+                onChange={(value) => handleColorChange('palette.paletteCardHover', value)}
                 description="Palette card hover state"
               />
-              <ColorInput 
+              <ColorPicker 
                 label="Category Text" 
-                path="palette.categoryText" 
                 value={appliedTheme.palette.categoryText}
+                onChange={(value) => handleColorChange('palette.categoryText', value)}
                 description="Category header text"
               />
-              <ColorInput 
+              <ColorPicker 
                 label="Block Title Text" 
-                path="palette.blockTitleText" 
                 value={appliedTheme.palette.blockTitleText}
+                onChange={(value) => handleColorChange('palette.blockTitleText', value)}
                 description="Block title color"
               />
-              <ColorInput 
+              <ColorPicker 
                 label="Block Description Text" 
-                path="palette.blockDescText" 
                 value={appliedTheme.palette.blockDescText}
+                onChange={(value) => handleColorChange('palette.blockDescText', value)}
                 description="Block description color"
               />
             </div>
