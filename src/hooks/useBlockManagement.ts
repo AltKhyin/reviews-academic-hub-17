@@ -1,6 +1,6 @@
 
-// ABOUTME: Block management logic with CRUD operations, history, and undo/redo utilities
-// Provides comprehensive block manipulation functionality with state management
+// ABOUTME: Enhanced block management with robust layout support and grid operations
+// Comprehensive block manipulation with proper layout metadata handling
 
 import { useCallback, useState } from 'react';
 import { ReviewBlock, BlockType } from '@/types/review';
@@ -96,12 +96,15 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
       updated_at: new Date().toISOString()
     };
 
-    const updatedBlocks = [...blocks];
+    let updatedBlocks = [...blocks];
+    
     if (position !== undefined) {
       updatedBlocks.splice(position, 0, newBlock);
-      updatedBlocks.forEach((block, index) => {
-        block.sort_index = index;
-      });
+      // Reindex all blocks after insertion
+      updatedBlocks = updatedBlocks.map((block, index) => ({
+        ...block,
+        sort_index: index
+      }));
     } else {
       updatedBlocks.push(newBlock);
     }
@@ -109,6 +112,8 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
     setBlocks(updatedBlocks);
     setActiveBlockId(newBlock.id);
     saveToHistory(updatedBlocks, newBlock.id);
+    
+    return newBlock;
   }, [blocks, issueId, saveToHistory]);
 
   const duplicateBlock = useCallback((blockId: number) => {
@@ -128,22 +133,35 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
       meta: JSON.parse(JSON.stringify(blockToDuplicate.meta || {}))
     };
 
+    // Clear layout metadata for duplicated block to avoid conflicts
+    if (duplicatedBlock.meta?.layout) {
+      delete duplicatedBlock.meta.layout;
+    }
+
     const updatedBlocks = [...blocks];
     updatedBlocks.splice(blockIndex + 1, 0, duplicatedBlock);
     
-    updatedBlocks.forEach((block, index) => {
-      block.sort_index = index;
-    });
+    // Reindex blocks
+    const reindexedBlocks = updatedBlocks.map((block, index) => ({
+      ...block,
+      sort_index: index
+    }));
 
-    setBlocks(updatedBlocks);
+    setBlocks(reindexedBlocks);
     setActiveBlockId(duplicatedBlock.id);
-    saveToHistory(updatedBlocks, duplicatedBlock.id);
+    saveToHistory(reindexedBlocks, duplicatedBlock.id);
   }, [blocks, saveToHistory]);
 
   const updateBlock = useCallback((blockId: number, updates: Partial<ReviewBlock>) => {
     const updatedBlocks = blocks.map(block => 
       block.id === blockId 
-        ? { ...block, ...updates, updated_at: new Date().toISOString() }
+        ? { 
+            ...block, 
+            ...updates, 
+            updated_at: new Date().toISOString(),
+            // Properly merge meta object to preserve existing metadata
+            meta: updates.meta ? { ...block.meta, ...updates.meta } : block.meta
+          }
         : block
     );
     setBlocks(updatedBlocks);
@@ -174,6 +192,7 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
     const newBlocks = [...blocks];
     [newBlocks[currentIndex], newBlocks[newIndex]] = [newBlocks[newIndex], newBlocks[currentIndex]];
     
+    // Reindex blocks to maintain consistency
     const reindexedBlocks = newBlocks.map((block, index) => ({
       ...block,
       sort_index: index
@@ -182,6 +201,26 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
     setBlocks(reindexedBlocks);
     saveToHistory(reindexedBlocks, activeBlockId);
   }, [blocks, activeBlockId, saveToHistory]);
+
+  // New method for updating layout metadata specifically
+  const updateBlockLayout = useCallback((blockId: number, layoutMeta: any) => {
+    updateBlock(blockId, {
+      meta: {
+        layout: layoutMeta
+      }
+    });
+  }, [updateBlock]);
+
+  // Method to remove block from layout (convert to single block)
+  const removeFromLayout = useCallback((blockId: number) => {
+    const block = blocks.find(b => b.id === blockId);
+    if (!block || !block.meta?.layout) return;
+
+    const updatedMeta = { ...block.meta };
+    delete updatedMeta.layout;
+
+    updateBlock(blockId, { meta: updatedMeta });
+  }, [blocks, updateBlock]);
 
   return {
     blocks,
@@ -192,6 +231,8 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
     addBlock,
     duplicateBlock,
     updateBlock,
+    updateBlockLayout,
+    removeFromLayout,
     deleteBlock,
     moveBlock,
     undo,
