@@ -1,3 +1,4 @@
+
 // ABOUTME: Enhanced native editor with integrated inline editing and improved UX
 // Provides comprehensive block-based content creation with seamless editing experience
 
@@ -9,8 +10,10 @@ import { ReviewBlock, BlockType } from '@/types/review';
 import { BlockEditor } from './BlockEditor';
 import { BlockPalette } from './BlockPalette';
 import { ReviewPreview } from './ReviewPreview';
+import { ResizableLayout } from './ResizableLayout';
+import { LivePreview } from './LivePreview';
 import { InlineEditingProvider } from './inline/InlineEditingProvider';
-import { Save, Eye, RotateCcw, Settings, Layout, Palette } from 'lucide-react';
+import { Save, Eye, RotateCcw, Settings, Layout, Palette, SplitSquareHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface NativeEditorProps {
@@ -18,7 +21,7 @@ interface NativeEditorProps {
   initialBlocks: ReviewBlock[];
   onSave: (blocks: ReviewBlock[]) => Promise<void>;
   onCancel: () => void;
-  mode?: 'edit' | 'preview';
+  mode?: 'edit' | 'preview' | 'split';
 }
 
 export const NativeEditor: React.FC<NativeEditorProps> = ({
@@ -32,7 +35,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
   const [activeBlockId, setActiveBlockId] = useState<number | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [viewMode, setViewMode] = useState<'edit' | 'preview'>(mode);
+  const [viewMode, setViewMode] = useState<'edit' | 'preview' | 'split'>(mode);
   const [showPalette, setShowPalette] = useState(true);
 
   // Update blocks when initialBlocks change
@@ -208,6 +211,48 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
     });
   }, [handleUpdateBlock]);
 
+  // Create editor content
+  const editorContent = (
+    <div className="h-full flex">
+      {/* Left Sidebar - Block Palette */}
+      {showPalette && (
+        <div 
+          className="w-80 border-r flex-shrink-0 overflow-hidden"
+          style={{ 
+            backgroundColor: '#1a1a1a',
+            borderColor: '#2a2a2a'
+          }}
+        >
+          <BlockPalette onAddBlock={handleAddBlock} />
+        </div>
+      )}
+
+      {/* Main Editor Area */}
+      <div className="flex-1 overflow-hidden">
+        <BlockEditor
+          blocks={blocks}
+          activeBlockId={activeBlockId}
+          onActiveBlockChange={setActiveBlockId}
+          onUpdateBlock={handleUpdateBlock}
+          onDeleteBlock={handleDeleteBlock}
+          onMoveBlock={handleMoveBlock}
+          onAddBlock={handleAddBlock}
+          onDuplicateBlock={handleDuplicateBlock}
+          compact={!showPalette}
+        />
+      </div>
+    </div>
+  );
+
+  // Create preview content
+  const previewContent = (
+    <LivePreview
+      blocks={blocks}
+      activeBlockId={activeBlockId}
+      onBlockUpdate={handleUpdateBlock}
+    />
+  );
+
   return (
     <InlineEditingProvider onSave={handleInlineChanges}>
       <div className="native-editor h-full flex flex-col" style={{ backgroundColor: '#121212' }}>
@@ -241,15 +286,45 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
               {showPalette ? 'Ocultar' : 'Mostrar'} Paleta
             </Button>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setViewMode(viewMode === 'edit' ? 'preview' : 'edit')}
-              className="flex items-center gap-2"
-            >
-              {viewMode === 'edit' ? <Eye className="w-4 h-4" /> : <Settings className="w-4 h-4" />}
-              {viewMode === 'edit' ? 'Visualizar' : 'Editar'}
-            </Button>
+            <div className="flex items-center border rounded-md" style={{ borderColor: '#2a2a2a' }}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setViewMode('edit')}
+                className={cn(
+                  "h-8 px-3 rounded-r-none text-xs",
+                  viewMode === 'edit' && "bg-blue-600 text-white"
+                )}
+              >
+                <Settings className="w-3 h-3 mr-1" />
+                Editar
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setViewMode('split')}
+                className={cn(
+                  "h-8 px-3 rounded-none border-x text-xs",
+                  viewMode === 'split' && "bg-blue-600 text-white"
+                )}
+                style={{ borderColor: '#2a2a2a' }}
+              >
+                <SplitSquareHorizontal className="w-3 h-3 mr-1" />
+                Dividir
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setViewMode('preview')}
+                className={cn(
+                  "h-8 px-3 rounded-l-none text-xs",
+                  viewMode === 'preview' && "bg-blue-600 text-white"
+                )}
+              >
+                <Eye className="w-3 h-3 mr-1" />
+                Preview
+              </Button>
+            </div>
 
             {hasUnsavedChanges && (
               <Button
@@ -275,38 +350,20 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-hidden flex">
-          {/* Left Sidebar - Block Palette */}
-          {showPalette && viewMode === 'edit' && (
-            <div 
-              className="w-80 border-r flex-shrink-0 overflow-hidden"
-              style={{ 
-                backgroundColor: '#1a1a1a',
-                borderColor: '#2a2a2a'
-              }}
-            >
-              <BlockPalette onAddBlock={handleAddBlock} />
-            </div>
+        <div className="flex-1 overflow-hidden">
+          {viewMode === 'edit' && editorContent}
+          {viewMode === 'preview' && previewContent}
+          {viewMode === 'split' && (
+            <ResizableLayout
+              leftPanel={editorContent}
+              rightPanel={previewContent}
+              leftTitle="Editor"
+              rightTitle="Preview ao Vivo"
+              defaultLayout={[60, 40]}
+              minLeftSize={25}
+              minRightSize={25}
+            />
           )}
-
-          {/* Main Content Area */}
-          <div className="flex-1 overflow-hidden">
-            {viewMode === 'edit' ? (
-              <BlockEditor
-                blocks={blocks}
-                activeBlockId={activeBlockId}
-                onActiveBlockChange={setActiveBlockId}
-                onUpdateBlock={handleUpdateBlock}
-                onDeleteBlock={handleDeleteBlock}
-                onMoveBlock={handleMoveBlock}
-                onAddBlock={handleAddBlock}
-                onDuplicateBlock={handleDuplicateBlock}
-                compact={!showPalette}
-              />
-            ) : (
-              <ReviewPreview blocks={blocks} />
-            )}
-          </div>
         </div>
       </div>
     </InlineEditingProvider>
