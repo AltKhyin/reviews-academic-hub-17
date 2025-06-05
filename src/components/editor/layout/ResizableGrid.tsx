@@ -139,18 +139,24 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
     reorderGridColumns(rowId, fromIndex, toIndex);
   }, [reorderGridColumns, rowId]);
 
-  // Enhanced drag handlers for grid
-  const handleGridDragOver = useCallback((e: React.DragEvent, position?: number) => {
+  // Enhanced drag handlers for grid - Fixed typing
+  const handleGridDragOver = useCallback((e: React.DragEvent<HTMLDivElement>, position?: number) => {
     if (onDragOver && dragState?.isDragging) {
       onDragOver(e, rowId, position, 'merge');
     }
   }, [onDragOver, rowId, dragState]);
 
-  const handleGridDrop = useCallback((e: React.DragEvent, position?: number) => {
+  const handleGridDrop = useCallback((e: React.DragEvent<HTMLDivElement>, position?: number) => {
     if (onDrop && dragState?.isDragging) {
       onDrop(e, rowId, position, 'merge');
     }
   }, [onDrop, rowId, dragState]);
+
+  const handleGridDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    if (onDragLeave) {
+      onDragLeave(e);
+    }
+  }, [onDragLeave]);
 
   // Render empty slot for adding blocks
   const renderEmptySlot = (position: number) => {
@@ -167,7 +173,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
         )}
         style={{ borderColor: isDropTarget ? '#22c55e' : '#2a2a2a' }}
         onDragOver={(e) => handleGridDragOver(e, position)}
-        onDragLeave={onDragLeave}
+        onDragLeave={handleGridDragLeave}
         onDrop={(e) => handleGridDrop(e, position)}
       >
         {isDropTarget && (
@@ -226,7 +232,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
           }}
           onClick={(e) => handleBlockClick(block.id, e)}
           onDragOver={(e) => handleGridDragOver(e, position)}
-          onDragLeave={onDragLeave}
+          onDragLeave={handleGridDragLeave}
           onDrop={(e) => handleGridDrop(e, position)}
         >
           {/* Block Controls */}
@@ -296,9 +302,6 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
           borderColor: isGridDropTarget ? '#22c55e' : '#2a2a2a',
           minHeight: '200px'
         }}
-        onDragOver={(e) => handleGridDragOver(e)}
-        onDragLeave={onDragLeave}
-        onDrop={(e) => handleGridDrop(e)}
       >
         {Array.from({ length: columns }).map((_, index) => {
           const block = blocks.find(b => (b.meta?.layout?.position ?? 0) === index);
