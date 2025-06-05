@@ -3,12 +3,30 @@
 // Provides debouncing, memoization, and efficient update patterns
 
 import { useCallback, useRef, useMemo } from 'react';
-import { debounce } from '@/lib/utils';
 
 interface UseInlineEditingOptimizationProps {
   onUpdate?: (updates: any) => void;
   debounceMs?: number;
   enableMemoization?: boolean;
+}
+
+// Utility function for debouncing
+function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  delay: number
+): T & { cancel: () => void } {
+  let timeoutId: NodeJS.Timeout;
+  
+  const debounced = ((...args: Parameters<T>) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func(...args), delay);
+  }) as T & { cancel: () => void };
+  
+  debounced.cancel = () => {
+    clearTimeout(timeoutId);
+  };
+  
+  return debounced;
 }
 
 export const useInlineEditingOptimization = ({
@@ -76,22 +94,3 @@ export const useInlineEditingOptimization = ({
     hasChanged
   };
 };
-
-// Utility function for debouncing (if not available in utils)
-function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  delay: number
-): T & { cancel: () => void } {
-  let timeoutId: NodeJS.Timeout;
-  
-  const debounced = ((...args: Parameters<T>) => {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => func(...args), delay);
-  }) as T & { cancel: () => void };
-  
-  debounced.cancel = () => {
-    clearTimeout(timeoutId);
-  };
-  
-  return debounced;
-}

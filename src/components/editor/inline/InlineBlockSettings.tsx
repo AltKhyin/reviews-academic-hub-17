@@ -1,4 +1,3 @@
-
 // ABOUTME: Enhanced inline block settings component with contextual controls
 // Replaces the properties panel with integrated block-level configuration
 
@@ -48,7 +47,7 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
     debounceMs: 300
   });
 
-  // Accessibility enhancement
+  // Accessibility enhancement - fix the ref type
   const { elementRef, ariaAttributes, announceToScreenReader } = useAccessibilityEnhancement({
     onEscape: () => setShowSettings(false),
     ariaLabel: 'Configurações do bloco',
@@ -520,7 +519,7 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
   }, [block.type, payload, handlePayloadUpdate]);
 
   return (
-    <div className={cn("inline-block-settings", className)} ref={elementRef}>
+    <div className={cn("inline-block-settings", className)} ref={elementRef as React.RefObject<HTMLDivElement>}>
       {/* Settings Toggle Button */}
       <Button
         variant="ghost"
