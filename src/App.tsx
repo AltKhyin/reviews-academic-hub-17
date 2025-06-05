@@ -35,9 +35,20 @@ const queryClient = new QueryClient({
 });
 
 const App = () => {
-  // Move React hooks inside the component function
+  // Enable dark mode by default and optimize for native editor experience
   React.useEffect(() => {
     document.documentElement.classList.add('dark');
+    
+    // Add editor-optimized class for better native editing experience
+    const currentPath = window.location.pathname;
+    if (currentPath.includes('/edit/issue/')) {
+      document.body.classList.add('editor-optimized');
+    }
+    
+    // Clean up on route changes
+    return () => {
+      document.body.classList.remove('editor-optimized');
+    };
   }, []);
 
   return (

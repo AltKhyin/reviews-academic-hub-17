@@ -50,6 +50,12 @@
     --scrollbar-track: 0 0% 96%;
     --scrollbar-thumb: 0 0% 80%;
     --scrollbar-thumb-hover: 0 0% 70%;
+    
+    /* Editor specific colors */
+    --editor-bg: 0 0% 100%;
+    --editor-sidebar-bg: 0 0% 98%;
+    --editor-border: 0 0% 89%;
+    --editor-hover: 0 0% 96%;
   }
 
   .dark {
@@ -94,6 +100,12 @@
     --scrollbar-track: 0 0% 9%;
     --scrollbar-thumb: 0 0% 25%;
     --scrollbar-thumb-hover: 0 0% 35%;
+    
+    /* Editor specific colors for dark mode */
+    --editor-bg: 0 0% 7%;
+    --editor-sidebar-bg: 0 0% 9%;
+    --editor-border: 0 0% 15%;
+    --editor-hover: 0 0% 13%;
   }
   
   html, body, #root {
@@ -214,11 +226,73 @@
   .community-scroll:hover::-webkit-scrollbar-thumb {
     opacity: 1;
   }
+  
+  /* Native Editor Dark Mode Styles */
+  .native-editor {
+    @apply bg-[hsl(var(--editor-bg))];
+  }
+  
+  .native-editor .block-palette,
+  .native-editor .block-editor {
+    @apply bg-[hsl(var(--editor-sidebar-bg))] border-[hsl(var(--editor-border))];
+  }
+  
+  .native-editor .block-palette .block-type-button:hover {
+    @apply bg-[hsl(var(--editor-hover))];
+  }
+  
+  /* Block-specific dark mode styles */
+  .snapshot-card.dark {
+    background: linear-gradient(135deg, rgba(30, 58, 138, 0.1) 0%, rgba(67, 56, 202, 0.1) 100%);
+  }
+  
+  .reviewer-quote.dark {
+    background: linear-gradient(135deg, rgba(88, 28, 135, 0.1) 0%, rgba(67, 56, 202, 0.1) 100%);
+  }
+  
+  .number-card.dark {
+    background: linear-gradient(135deg, rgba(67, 56, 202, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+  }
+  
+  /* Citation links dark mode */
+  .citation-link.dark {
+    @apply text-blue-400 hover:text-blue-300;
+  }
+  
+  /* Table hover effects dark mode */
+  .table-block table tbody tr:hover.dark {
+    @apply bg-gray-800;
+  }
+  
+  .table-block table thead th:hover.dark {
+    @apply bg-gray-700;
+  }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  
+  /* Editor utilities */
+  .editor-layout {
+    @apply h-full flex flex-col bg-[hsl(var(--editor-bg))];
+  }
+  
+  .editor-header {
+    @apply border-b border-[hsl(var(--editor-border))] bg-[hsl(var(--editor-bg))] px-4 py-3;
+  }
+  
+  .editor-content {
+    @apply flex-1 flex overflow-hidden;
+  }
+  
+  .editor-sidebar {
+    @apply bg-[hsl(var(--editor-sidebar-bg))] border-r border-[hsl(var(--editor-border))];
+  }
+  
+  .editor-main {
+    @apply flex-1 overflow-hidden bg-[hsl(var(--editor-bg))];
   }
 }
 
@@ -231,5 +305,21 @@
   }
   100% {
     transform: translate(0, 0) scale(1.1);
+  }
+}
+
+/* Dark mode specific animations */
+@media (prefers-color-scheme: dark) {
+  .animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.3;
+    }
   }
 }

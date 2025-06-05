@@ -1,13 +1,23 @@
 
-// ABOUTME: Evidence snapshot card for displaying key study information
-// Shows PICOD framework (Population, Intervention, Comparison, Outcome, Design)
+// ABOUTME: Evidence summary card with PICOD framework
+// Displays structured clinical evidence with visual indicators
 
 import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { 
+  Users, 
+  Activity, 
+  GitCompare, 
+  Target, 
+  FlaskConical,
+  TrendingUp,
+  CheckCircle2,
+  AlertTriangle
+} from 'lucide-react';
 import { ReviewBlock, SnapshotCardPayload } from '@/types/review';
 import { cn } from '@/lib/utils';
-import { Users, Target, Scale, TrendingUp, FlaskConical, CheckCircle } from 'lucide-react';
 
 interface SnapshotCardProps {
   block: ReviewBlock;
@@ -30,10 +40,10 @@ export const SnapshotCard: React.FC<SnapshotCardProps> = ({
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            onSectionView?.(block.id.toString());
             onInteraction?.(block.id.toString(), 'viewed', {
               block_type: 'snapshot_card',
               evidence_level: payload.evidence_level,
+              recommendation_strength: payload.recommendation_strength,
               timestamp: Date.now()
             });
           }
@@ -48,39 +58,44 @@ export const SnapshotCard: React.FC<SnapshotCardProps> = ({
     }
 
     return () => observer.disconnect();
-  }, [block.id, onSectionView, onInteraction, payload.evidence_level]);
+  }, [block.id, onInteraction, payload.evidence_level, payload.recommendation_strength]);
 
   const getEvidenceLevelConfig = () => {
     switch (payload.evidence_level) {
       case 'high':
         return {
-          color: 'bg-green-100 text-green-800 border-green-200',
-          label: 'Evidência Alta',
-          icon: CheckCircle
+          color: 'bg-green-500',
+          text: 'Alta Qualidade',
+          icon: CheckCircle2,
+          description: 'Evidência robusta e confiável'
         };
       case 'moderate':
         return {
-          color: 'bg-blue-100 text-blue-800 border-blue-200',
-          label: 'Evidência Moderada',
-          icon: Target
+          color: 'bg-yellow-500',
+          text: 'Qualidade Moderada',
+          icon: AlertTriangle,
+          description: 'Evidência com algumas limitações'
         };
       case 'low':
         return {
-          color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-          label: 'Evidência Baixa',
-          icon: Scale
+          color: 'bg-orange-500',
+          text: 'Baixa Qualidade',
+          icon: AlertTriangle,
+          description: 'Evidência com limitações importantes'
         };
       case 'very_low':
         return {
-          color: 'bg-red-100 text-red-800 border-red-200',
-          label: 'Evidência Muito Baixa',
-          icon: TrendingUp
+          color: 'bg-red-500',
+          text: 'Muito Baixa Qualidade',
+          icon: AlertTriangle,
+          description: 'Evidência muito limitada'
         };
       default:
         return {
-          color: 'bg-gray-100 text-gray-800 border-gray-200',
-          label: 'Não Especificado',
-          icon: FlaskConical
+          color: 'bg-gray-500',
+          text: 'Não Avaliada',
+          icon: AlertTriangle,
+          description: 'Qualidade da evidência não determinada'
         };
     }
   };
@@ -89,23 +104,27 @@ export const SnapshotCard: React.FC<SnapshotCardProps> = ({
     switch (payload.recommendation_strength) {
       case 'strong':
         return {
-          color: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-          label: 'Recomendação Forte'
+          color: 'text-green-700 bg-green-100 border-green-200',
+          text: 'Recomendação Forte',
+          description: 'Benefícios claramente superam os riscos'
         };
       case 'conditional':
         return {
-          color: 'bg-amber-100 text-amber-800 border-amber-200',
-          label: 'Recomendação Condicional'
+          color: 'text-yellow-700 bg-yellow-100 border-yellow-200',
+          text: 'Recomendação Condicional',
+          description: 'Benefícios provavelmente superam os riscos'
         };
       case 'expert_opinion':
         return {
-          color: 'bg-purple-100 text-purple-800 border-purple-200',
-          label: 'Opinião de Especialista'
+          color: 'text-purple-700 bg-purple-100 border-purple-200',
+          text: 'Opinião de Especialista',
+          description: 'Baseado na experiência clínica'
         };
       default:
         return {
-          color: 'bg-gray-100 text-gray-800 border-gray-200',
-          label: 'Não Especificado'
+          color: 'text-gray-700 bg-gray-100 border-gray-200',
+          text: 'Não Classificada',
+          description: 'Força da recomendação não determinada'
         };
     }
   };
@@ -115,21 +134,17 @@ export const SnapshotCard: React.FC<SnapshotCardProps> = ({
   const EvidenceIcon = evidenceConfig.icon;
 
   return (
-    <Card className="snapshot-card bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200 my-8">
+    <Card className="snapshot-card bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800 shadow-lg my-8">
       <CardHeader className="pb-4">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-xl font-bold text-blue-900 flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
             <FlaskConical className="w-6 h-6" />
-            Resumo da Evidência
+            Cartão de Evidência Científica
           </CardTitle>
-          <div className="flex gap-2">
-            <Badge className={cn("border", evidenceConfig.color)}>
-              <EvidenceIcon className="w-3 h-3 mr-1" />
-              {evidenceConfig.label}
-            </Badge>
-            <Badge className={cn("border", recommendationConfig.color)}>
-              {recommendationConfig.label}
-            </Badge>
+          
+          <div className="flex items-center gap-2">
+            <div className={cn("w-3 h-3 rounded-full", evidenceConfig.color)}></div>
+            <EvidenceIcon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
           </div>
         </div>
       </CardHeader>
@@ -137,68 +152,103 @@ export const SnapshotCard: React.FC<SnapshotCardProps> = ({
       <CardContent className="space-y-6">
         {/* PICOD Framework */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-4">
-            <div className="flex items-start gap-3">
-              <Users className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-1">População</h4>
-                <p className="text-gray-700 text-sm">{payload.population}</p>
-              </div>
+          {/* Population */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <h4 className="font-semibold text-gray-900 dark:text-gray-100">População</h4>
             </div>
-            
-            <div className="flex items-start gap-3">
-              <Target className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-1">Intervenção</h4>
-                <p className="text-gray-700 text-sm">{payload.intervention}</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start gap-3">
-              <Scale className="w-5 h-5 text-purple-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-1">Comparação</h4>
-                <p className="text-gray-700 text-sm">{payload.comparison}</p>
-              </div>
-            </div>
+            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+              {payload.population || 'Não especificada'}
+            </p>
           </div>
-          
-          <div className="space-y-4">
-            <div className="flex items-start gap-3">
-              <TrendingUp className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-1">Desfecho</h4>
-                <p className="text-gray-700 text-sm">{payload.outcome}</p>
-              </div>
+
+          {/* Intervention */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Activity className="w-4 h-4 text-green-600 dark:text-green-400" />
+              <h4 className="font-semibold text-gray-900 dark:text-gray-100">Intervenção</h4>
             </div>
-            
-            <div className="flex items-start gap-3">
-              <FlaskConical className="w-5 h-5 text-indigo-600 mt-0.5 flex-shrink-0" />
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-1">Desenho do Estudo</h4>
-                <p className="text-gray-700 text-sm">{payload.design}</p>
-              </div>
+            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+              {payload.intervention || 'Não especificada'}
+            </p>
+          </div>
+
+          {/* Comparison */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <GitCompare className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              <h4 className="font-semibold text-gray-900 dark:text-gray-100">Comparação</h4>
             </div>
+            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+              {payload.comparison || 'Não especificada'}
+            </p>
+          </div>
+
+          {/* Outcome */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Target className="w-4 h-4 text-red-600 dark:text-red-400" />
+              <h4 className="font-semibold text-gray-900 dark:text-gray-100">Desfecho</h4>
+            </div>
+            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+              {payload.outcome || 'Não especificado'}
+            </p>
           </div>
         </div>
-        
+
+        <Separator className="dark:border-gray-700" />
+
+        {/* Study Design */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <FlaskConical className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            <h4 className="font-semibold text-gray-900 dark:text-gray-100">Desenho do Estudo</h4>
+          </div>
+          <Badge variant="outline" className="dark:border-gray-600 dark:text-gray-300">
+            {payload.design || 'Não especificado'}
+          </Badge>
+        </div>
+
         {/* Key Findings */}
         {payload.key_findings && payload.key_findings.length > 0 && (
-          <div className="mt-6">
-            <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-              <CheckCircle className="w-5 h-5 text-green-600" />
-              Principais Achados
-            </h4>
-            <ul className="space-y-2">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <h4 className="font-semibold text-gray-900 dark:text-gray-100">Principais Achados</h4>
+            </div>
+            <ul className="space-y-1">
               {payload.key_findings.map((finding, index) => (
-                <li key={index} className="flex items-start gap-2">
-                  <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0" />
-                  <span className="text-gray-700 text-sm">{finding}</span>
+                <li key={index} className="text-sm text-gray-700 dark:text-gray-300 flex items-start gap-2">
+                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mt-2 flex-shrink-0"></span>
+                  {finding}
                 </li>
               ))}
             </ul>
           </div>
         )}
+
+        <Separator className="dark:border-gray-700" />
+
+        {/* Evidence Quality and Recommendation */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <h4 className="font-semibold text-gray-900 dark:text-gray-100">Qualidade da Evidência</h4>
+            <div className="flex items-center gap-2">
+              <div className={cn("w-3 h-3 rounded-full", evidenceConfig.color)}></div>
+              <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{evidenceConfig.text}</span>
+            </div>
+            <p className="text-xs text-gray-600 dark:text-gray-400">{evidenceConfig.description}</p>
+          </div>
+
+          <div className="space-y-2">
+            <h4 className="font-semibold text-gray-900 dark:text-gray-100">Força da Recomendação</h4>
+            <Badge className={recommendationConfig.color}>
+              {recommendationConfig.text}
+            </Badge>
+            <p className="text-xs text-gray-600 dark:text-gray-400">{recommendationConfig.description}</p>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
