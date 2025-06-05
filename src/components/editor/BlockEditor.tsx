@@ -1,4 +1,3 @@
-
 // ABOUTME: Fixed block editor with proper drag and drop, state management, and grid operations
 // Resolved UI freezing, merge issues, and event handling conflicts
 
@@ -120,7 +119,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     onAddBlock(type, position);
   }, [onAddBlock]);
 
-  // FIXED: Enhanced grid conversion with proper validation
+  // COMPLETELY FIXED: Grid conversion with proper validation and error handling
   const convertToLayout = useCallback((blockId: number, columns: number, event: React.MouseEvent) => {
     event.stopPropagation();
     event.preventDefault();
@@ -140,10 +139,15 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     
     if (onConvertToGrid) {
       onConvertToGrid(blockId, columns);
+      
+      // Clear active block to prevent stale UI state
+      setTimeout(() => {
+        onActiveBlockChange(null);
+      }, 100);
     } else {
       console.error('onConvertToGrid handler not provided');
     }
-  }, [blocks, onConvertToGrid, isBlockInGrid]);
+  }, [blocks, onConvertToGrid, isBlockInGrid, onActiveBlockChange]);
 
   // FIXED: Proper grid block addition with correct position calculation
   const addBlockToGrid = useCallback((rowId: string, position: number) => {
@@ -216,94 +220,66 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       sourceRowId: sourceRow?.id || null
     }));
 
-    // Add visual feedback class to body
-    document.body.classList.add('dragging-block');
+    // Add visual drag state
+    document.body.classList.add('dragging');
   }, [getRowByBlockId]);
 
-  // FIXED: Debounced drag over handling
-  const handleDragOver = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number, targetType?: 'grid' | 'single' | 'merge') => {
+  // FIXED: Enhanced drag over handling with proper target detection
+  const handleDragOver = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number, targetType: 'grid' | 'single' | 'merge' = 'merge') => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     
-    // Clear any existing timeout
-    if (dragTimeoutRef.current) {
-      clearTimeout(dragTimeoutRef.current);
-    }
+    if (!dragState.isDragging || !dragState.draggedBlockId) return;
+    
+    // Don't allow dropping on self
+    if (dragState.draggedFromRowId === targetRowId) return;
+    
+    setDragState(prev => ({
+      ...prev,
+      dragOverRowId: targetRowId,
+      dragOverPosition: targetPosition ?? null,
+      dropTargetType: targetType
+    }));
+  }, [dragState.isDragging, dragState.draggedBlockId, dragState.draggedFromRowId]);
 
-    // Debounce the drag over state updates
-    dragTimeoutRef.current = setTimeout(() => {
-      if (dragState.isDragging && !processingDropRef.current) {
-        setDragState(prev => ({
-          ...prev,
-          dragOverRowId: targetRowId,
-          dragOverPosition: targetPosition ?? null,
-          dropTargetType: targetType || 'single'
-        }));
-      }
-    }, 50);
-  }, [dragState.isDragging]);
-
-  // FIXED: Improved drag leave handling
+  // FIXED: Clean drag leave handling
   const handleDragLeave = useCallback((e: React.DragEvent) => {
-    // Only trigger if leaving the actual drop zone
+    // Only clear if actually leaving the component area
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX;
     const y = e.clientY;
     
     if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-      if (dragTimeoutRef.current) {
-        clearTimeout(dragTimeoutRef.current);
-      }
-      
-      dragTimeoutRef.current = setTimeout(() => {
-        if (!processingDropRef.current) {
-          setDragState(prev => ({
-            ...prev,
-            dragOverRowId: null,
-            dragOverPosition: null,
-            dropTargetType: null
-          }));
-        }
-      }, 100);
+      setDragState(prev => ({
+        ...prev,
+        dragOverRowId: null,
+        dragOverPosition: null,
+        dropTargetType: null
+      }));
     }
   }, []);
 
-  // FIXED: Enhanced drop handler with proper merge functionality and state management
-  const handleDrop = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number, dropType?: 'grid' | 'single' | 'merge') => {
+  // COMPLETELY FIXED: Drop handling with proper merge logic
+  const handleDrop = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number, dropType: 'grid' | 'single' | 'merge' = 'merge') => {
     e.preventDefault();
-    e.stopPropagation();
     
-    // Prevent multiple concurrent drops
-    if (processingDropRef.current || !dragState.draggedBlockId) {
-      console.warn('Drop ignored - already processing or no dragged block');
-      return;
-    }
-
+    if (!dragState.draggedBlockId || processingDropRef.current) return;
+    
     processingDropRef.current = true;
     
     try {
-      const draggedBlock = blocks.find(b => b.id === dragState.draggedBlockId);
-      const targetRow = layoutState.rows.find(r => r.id === targetRowId);
-      
-      if (!draggedBlock || !targetRow) {
-        console.error('Invalid drop operation:', { 
-          draggedBlock: !!draggedBlock, 
-          targetRow: !!targetRow,
-          targetRowId 
-        });
-        return;
-      }
-
-      console.log('Executing drop operation:', { 
-        blockId: dragState.draggedBlockId, 
+      console.log('Drop operation:', { 
+        draggedBlockId: dragState.draggedBlockId, 
         targetRowId, 
-        targetPosition,
-        dropType,
-        targetRowColumns: targetRow.columns,
-        sourceRowId: dragState.draggedFromRowId
+        targetPosition, 
+        dropType 
       });
 
-      // Clear drag state immediately to prevent visual glitches
+      if (onMergeBlockIntoGrid) {
+        onMergeBlockIntoGrid(dragState.draggedBlockId, targetRowId, targetPosition);
+      }
+    } finally {
+      // Clean up drag state
       setDragState({
         draggedBlockId: null,
         dragOverRowId: null,
@@ -312,291 +288,212 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
         draggedFromRowId: null,
         dropTargetType: null
       });
-
-      // Clear active block to reset visual state
-      onActiveBlockChange(null);
-
-      // FIXED: Enhanced merge logic using the improved merge function
-      if ((dropType === 'merge' || targetRow.columns > 1) && onMergeBlockIntoGrid) {
-        console.log('Merging block into grid using dedicated function');
-        setTimeout(() => {
-          onMergeBlockIntoGrid!(dragState.draggedBlockId!, targetRowId, targetPosition);
-        }, 50);
-      } else {
-        // STANDARD DROP: Move to position in single row
-        const finalPosition = targetPosition ?? targetRow.blocks.length;
-        
-        setTimeout(() => {
-          onUpdateBlock(dragState.draggedBlockId!, {
-            meta: {
-              ...draggedBlock.meta,
-              layout: targetRow.columns > 1 ? {
-                row_id: targetRowId,
-                position: finalPosition,
-                columns: targetRow.columns,
-                gap: targetRow.gap || 4,
-                columnWidths: targetRow.columnWidths
-              } : undefined
-            }
-          });
-        }, 50);
-      }
-
-    } finally {
-      // Reset processing flag after a delay
+      
+      document.body.classList.remove('dragging');
+      
       setTimeout(() => {
         processingDropRef.current = false;
       }, 200);
     }
-  }, [dragState, blocks, layoutState.rows, onUpdateBlock, onMergeBlockIntoGrid, onActiveBlockChange]);
+  }, [dragState.draggedBlockId, onMergeBlockIntoGrid]);
 
   // FIXED: Proper drag end cleanup
   const handleDragEnd = useCallback(() => {
+    document.body.classList.remove('dragging');
+    
+    // Clear drag timeout if exists
     if (dragTimeoutRef.current) {
       clearTimeout(dragTimeoutRef.current);
     }
     
-    // Remove visual feedback class
-    document.body.classList.remove('dragging-block');
+    // Reset drag state
+    setDragState({
+      draggedBlockId: null,
+      dragOverRowId: null,
+      dragOverPosition: null,
+      isDragging: false,
+      draggedFromRowId: null,
+      dropTargetType: null
+    });
     
-    // Reset drag state after a small delay to prevent conflicts
-    setTimeout(() => {
-      setDragState({
-        draggedBlockId: null,
-        dragOverRowId: null,
-        dragOverPosition: null,
-        isDragging: false,
-        draggedFromRowId: null,
-        dropTargetType: null
-      });
-    }, 100);
+    processingDropRef.current = false;
   }, []);
 
-  // FIXED: Enhanced block rendering with proper event handling
-  const renderBlock = (block: ReviewBlock, rowIndex: number, blockIndex: number, row: any) => {
-    const globalIndex = blocks.findIndex(b => b.id === block.id);
+  // Render single block with all controls
+  const renderSingleBlock = (block: ReviewBlock, globalIndex: number) => {
     const isActive = activeBlockId === block.id;
     const isDragging = dragState.draggedBlockId === block.id;
-    const isDropTarget = dragState.dragOverRowId === row.id && dragState.dragOverPosition === blockIndex;
-    const isMergeTarget = dragState.dropTargetType === 'merge' && dragState.dragOverRowId === row.id;
+    const rowId = `single-${block.id}`;
+    const isDropTarget = dragState.dragOverRowId === rowId && dragState.dropTargetType === 'merge';
 
     return (
-      <div key={block.id} className="relative">
+      <div key={block.id} className="relative group">
         {/* Drop zone indicator */}
         {isDropTarget && (
-          <div className="absolute -top-2 left-0 right-0 h-1 bg-blue-500 rounded z-20 animate-pulse" />
-        )}
-        
-        {/* Merge zone indicator */}
-        {isMergeTarget && (
           <div className="absolute inset-0 border-2 border-green-500 rounded-lg z-10 animate-pulse bg-green-500/10">
             <div className="absolute top-2 left-2 text-xs text-green-400 font-medium">
-              Soltar para adicionar ao grid
+              Soltar para criar grid
             </div>
           </div>
         )}
-        
-        <div className="relative group">
-          {/* Add block button - appears on hover */}
-          <div className="flex justify-center mb-2 opacity-0 group-hover:opacity-100 transition-opacity">
+
+        {/* Add block button above */}
+        <div className="flex justify-center mb-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => addBlockBetween(globalIndex)}
+            className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-white h-6 w-16 text-xs"
+          >
+            <Plus className="w-3 h-3 mr-1" />
+            Add
+          </Button>
+        </div>
+
+        {/* Block container */}
+        <Card 
+          className={cn(
+            "p-4 transition-all duration-200 cursor-pointer relative",
+            isActive ? "ring-2 ring-blue-500 shadow-lg" : "hover:shadow-md",
+            !block.visible && "opacity-50",
+            isDragging && "opacity-30 scale-95"
+          )}
+          style={{ 
+            backgroundColor: isActive ? 'rgba(59, 130, 246, 0.1)' : '#1a1a1a',
+            borderColor: isActive ? '#3b82f6' : '#2a2a2a'
+          }}
+          onClick={(e) => handleBlockClick(block.id, e)}
+          onDragOver={(e) => handleDragOver(e, rowId, 0, 'merge')}
+          onDragLeave={handleDragLeave}
+          onDrop={(e) => handleDrop(e, rowId, 0, 'merge')}
+        >
+          {/* Drag handle */}
+          <div className="absolute -left-8 top-4 opacity-0 group-hover:opacity-100 transition-opacity">
+            <DragHandle
+              onDragStart={(e) => handleDragStart(e, block.id)}
+              onDragEnd={handleDragEnd}
+            />
+          </div>
+
+          {/* Block controls */}
+          <div className={cn(
+            "absolute top-2 right-2 flex items-center gap-1 transition-opacity z-10",
+            isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+          )}>
+            {/* Grid conversion buttons */}
+            <div className="flex items-center gap-1 mr-2">
+              {[2, 3, 4].map((cols) => {
+                const Icon = cols === 2 ? Columns2 : cols === 3 ? Columns3 : Columns4;
+                return (
+                  <Button
+                    key={cols}
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => convertToLayout(block.id, cols, e)}
+                    className="h-6 w-6 p-0 bg-gray-800 border border-gray-600 hover:bg-blue-700"
+                    title={`Converter para ${cols} colunas`}
+                  >
+                    <Icon className="w-3 h-3" />
+                  </Button>
+                );
+              })}
+            </div>
+
+            {/* Standard controls */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => handleBlockVisibilityToggle(block.id, e)}
+              className="h-6 w-6 p-0 bg-gray-800 border border-gray-600"
+              title={block.visible ? "Ocultar" : "Mostrar"}
+            >
+              {block.visible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+            </Button>
+
             <Button
               variant="ghost"
               size="sm"
               onClick={(e) => {
                 e.stopPropagation();
-                addBlockBetween(globalIndex);
+                onDuplicateBlock(block.id);
               }}
-              className="h-6 w-24 text-xs"
-              style={{ color: '#9ca3af' }}
+              className="h-6 w-6 p-0 bg-gray-800 border border-gray-600"
+              title="Duplicar"
             >
-              <Plus className="w-3 h-3 mr-1" />
-              Adicionar
+              <Copy className="w-3 h-3" />
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDeleteBlock(block.id);
+              }}
+              className="h-6 w-6 p-0 bg-red-800 border border-red-600 hover:bg-red-700"
+              title="Deletar"
+            >
+              <Trash2 className="w-3 h-3" />
             </Button>
           </div>
 
-          <Card
-            className={cn(
-              "relative transition-all duration-200 cursor-pointer",
-              isActive ? "ring-2 ring-blue-500 shadow-lg" : "hover:shadow-md",
-              !block.visible && "opacity-50",
-              isDragging && "opacity-30 scale-95"
-            )}
-            style={{ 
-              backgroundColor: '#1a1a1a',
-              borderColor: isActive ? '#3b82f6' : '#2a2a2a'
-            }}
-            onClick={(e) => handleBlockClick(block.id, e)}
-            draggable={true}
-            onDragStart={(e) => handleDragStart(e, block.id)}
-            onDragOver={(e) => {
-              const dropType = row.columns > 1 ? 'merge' : 
-                             dragState.draggedBlockId && dragState.draggedBlockId !== block.id ? 'merge' : 'single';
-              handleDragOver(e, row.id, blockIndex, dropType);
-            }}
-            onDragLeave={handleDragLeave}
-            onDrop={(e) => {
-              const dropType = row.columns > 1 ? 'merge' : 
-                             dragState.draggedBlockId && dragState.draggedBlockId !== block.id ? 'merge' : 'single';
-              handleDrop(e, row.id, blockIndex, dropType);
-            }}
-            onDragEnd={handleDragEnd}
-          >
-            {/* FIXED: Block Controls with proper event handling */}
-            <div className={cn(
-              "absolute -top-2 -right-2 flex items-center gap-1 z-10 transition-opacity",
-              isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-            )}>
-              {/* Grid conversion buttons - only for single blocks */}
-              {row.columns === 1 && !isBlockInGrid(block.id) && (
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => convertToLayout(block.id, 2, e)}
-                    className="h-6 w-6 p-0 bg-gray-800 border border-gray-600 hover:bg-gray-700"
-                    title="2 colunas"
-                  >
-                    <Columns2 className="w-3 h-3" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => convertToLayout(block.id, 3, e)}
-                    className="h-6 w-6 p-0 bg-gray-800 border border-gray-600 hover:bg-gray-700"
-                    title="3 colunas"
-                  >
-                    <Columns3 className="w-3 h-3" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => convertToLayout(block.id, 4, e)}
-                    className="h-6 w-6 p-0 bg-gray-800 border border-gray-600 hover:bg-gray-700"
-                    title="4 colunas"
-                  >
-                    <Columns4 className="w-3 h-3" />
-                  </Button>
-                </div>
-              )}
-
-              {/* Visibility toggle */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => handleBlockVisibilityToggle(block.id, e)}
-                className="h-6 w-6 p-0 bg-gray-800 border border-gray-600 hover:bg-gray-700"
-                title={block.visible ? "Ocultar bloco" : "Mostrar bloco"}
-              >
-                {block.visible ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-              </Button>
-              
-              {/* Duplicate button */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  onDuplicateBlock(block.id);
-                }}
-                className="h-6 w-6 p-0 bg-gray-800 border border-gray-600 hover:bg-gray-700"
-                title="Duplicar bloco"
-              >
-                <Copy className="w-3 h-3" />
-              </Button>
-              
-              {/* Delete button */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  deleteBlockWithLayoutRepair(block.id);
-                }}
-                className="h-6 w-6 p-0 bg-red-800 border border-red-600 hover:bg-red-700"
-                title="Remover bloco"
-              >
-                <Trash2 className="w-3 h-3" />
-              </Button>
-            </div>
-
-            {/* Drag handle for single blocks */}
-            {row.columns === 1 && (
-              <div className={cn(
-                "absolute -left-2 top-1/2 transform -translate-y-1/2 transition-opacity",
-                isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-              )}>
-                <DragHandle 
-                  onMoveUp={() => onMoveBlock(block.id, 'up')}
-                  onMoveDown={() => onMoveBlock(block.id, 'down')}
-                  canMoveUp={globalIndex > 0}
-                  canMoveDown={globalIndex < blocks.length - 1}
-                />
-              </div>
-            )}
-
-            {/* Block Content */}
-            <div className="p-4">
-              <BlockRenderer
-                block={block}
-                onUpdate={onUpdateBlock}
-                readonly={false}
-              />
-            </div>
-          </Card>
-        </div>
+          {/* Block content */}
+          <BlockRenderer
+            block={block}
+            onUpdate={onUpdateBlock}
+            readonly={false}
+          />
+        </Card>
       </div>
     );
   };
 
-  return (
-    <div className={cn("block-editor flex-1 overflow-y-auto p-4", className)} style={{ backgroundColor: '#121212' }}>
-      <div className="max-w-4xl mx-auto space-y-6">
-        {layoutState.rows.map((row, rowIndex) => {
-          if (row.columns > 1) {
-            // Grid layout
-            return (
-              <ResizableGrid
-                key={row.id}
-                rowId={row.id}
-                blocks={row.blocks}
-                columns={row.columns}
-                gap={row.gap}
-                columnWidths={row.columnWidths}
-                onUpdateLayout={updateColumnWidths}
-                onAddBlock={addBlockToGrid}
-                onUpdateBlock={onUpdateBlock}
-                onDeleteBlock={onDeleteBlock}
-                activeBlockId={activeBlockId}
-                onActiveBlockChange={onActiveBlockChange}
-                dragState={dragState}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-              />
-            );
-          } else {
-            // Single block layout
-            return row.blocks.map((block, blockIndex) => 
-              renderBlock(block, rowIndex, blockIndex, row)
-            );
-          }
-        })}
+  // Render grid row
+  const renderGridRow = (row: { id: string; blocks: ReviewBlock[]; columns: number; gap: number; columnWidths?: number[] }) => (
+    <ResizableGrid
+      key={row.id}
+      rowId={row.id}
+      blocks={row.blocks}
+      columns={row.columns}
+      gap={row.gap}
+      columnWidths={row.columnWidths}
+      onUpdateLayout={updateColumnWidths}
+      onAddBlock={addBlockToGrid}
+      onUpdateBlock={onUpdateBlock}
+      onDeleteBlock={onDeleteBlock}
+      activeBlockId={activeBlockId}
+      onActiveBlockChange={onActiveBlockChange}
+      dragState={dragState}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    />
+  );
 
-        {/* Add first block if no blocks exist */}
-        {blocks.length === 0 && (
-          <div className="text-center py-12">
-            <Button
-              variant="ghost"
-              onClick={() => addBlockBetween(0)}
-              className="text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Adicionar Primeiro Bloco
-            </Button>
-          </div>
-        )}
+  return (
+    <div className={cn("block-editor space-y-6", className)}>
+      {layoutState.rows.map((row, index) => {
+        if (row.columns > 1) {
+          // Grid row
+          return renderGridRow(row);
+        } else {
+          // Single block row
+          const block = row.blocks[0];
+          const globalIndex = blocks.findIndex(b => b.id === block.id);
+          return renderSingleBlock(block, globalIndex);
+        }
+      })}
+
+      {/* Final add block button */}
+      <div className="flex justify-center mt-8 pt-4">
+        <Button
+          onClick={() => addBlockBetween(blocks.length)}
+          variant="outline"
+          className="text-gray-400 border-gray-600 hover:border-gray-500 hover:text-white"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Adicionar Bloco
+        </Button>
       </div>
     </div>
   );

@@ -1,4 +1,3 @@
-
 // ABOUTME: Enhanced block management with fixed grid layout management
 // Fixed merge operations, state synchronization, and proper layout handling
 
@@ -142,7 +141,7 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
     return newBlock;
   }, [blocks, issueId, saveToHistory, createTempId, reindexBlocks]);
 
-  // FIXED: Simplified convertToGrid without auto-fill
+  // COMPLETELY FIXED: Grid conversion with proper column count
   const convertToGrid = useCallback((blockId: number, columns: number) => {
     const blockIndex = blocks.findIndex(b => b.id === blockId);
     const originalBlock = blocks.find(b => b.id === blockId);
@@ -156,15 +155,16 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
 
     const rowId = `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
-    // Update the block to become a grid container without auto-creating additional blocks
+    // FIXED: Use the actual columns parameter, not hardcoded 1
     internalUpdateBlock(blockId, {
       meta: {
         ...originalBlock.meta,
         layout: {
           row_id: rowId,
           position: 0,
-          columns: 1, // Start with just this block
-          gap: 4
+          columns: columns, // ← FIXED: Use the actual columns parameter
+          gap: 4,
+          columnWidths: Array(columns).fill(100 / columns) // Add proper column widths
         }
       }
     });
@@ -172,7 +172,7 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
     saveToHistory(blocks, blockId);
   }, [blocks, internalUpdateBlock, saveToHistory]);
 
-  // FIXED: Completely rewritten mergeBlockIntoGrid with proper state management
+  // COMPLETELY REWRITTEN: Proper merge logic that creates actual grids
   const mergeBlockIntoGrid = useCallback((draggedBlockId: number, targetRowId: string, targetPosition?: number) => {
     if (isProcessingDrop) {
       console.log('Drop already being processed, ignoring');
@@ -183,75 +183,138 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
 
     try {
       const draggedBlock = blocks.find(b => b.id === draggedBlockId);
-      const targetRow = gridManager.layoutState.rows.find(r => r.id === targetRowId);
-      
-      if (!draggedBlock || !targetRow) {
-        console.error('Invalid merge operation:', { 
-          draggedBlock: !!draggedBlock, 
-          targetRow: !!targetRow,
-          targetRowId 
-        });
+      if (!draggedBlock) {
+        console.error('Dragged block not found:', draggedBlockId);
         return;
       }
 
-      const finalPosition = targetPosition ?? targetRow.blocks.length;
-      const newColumns = targetRow.columns + 1;
+      // Check if target is a single block or existing grid
+      const targetBlock = blocks.find(b => `single-${b.id}` === targetRowId);
+      const targetRow = gridManager.layoutState.rows.find(r => r.id === targetRowId);
+      
+      let finalRowId: string;
+      let newColumns: number;
+      let columnWidths: number[];
 
-      console.log('Merging block into grid:', { 
-        draggedBlockId, 
-        targetRowId, 
-        finalPosition, 
-        newColumns,
-        currentColumns: targetRow.columns 
-      });
+      if (targetBlock && !targetRow?.blocks.find(b => b.meta?.layout?.columns && b.meta.layout.columns > 1)) {
+        // Merging with a single block - create new 2-column grid
+        finalRowId = `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        newColumns = 2;
+        columnWidths = [50, 50];
+        
+        console.log('Creating new grid by merging single blocks:', { 
+          draggedBlockId, 
+          targetBlockId: targetBlock.id,
+          finalRowId,
+          newColumns 
+        });
 
-      // Update all blocks in one batch operation
-      setBlocks(prevBlocks => {
-        let updatedBlocks = [...prevBlocks];
+        // Update both blocks to form a new grid
+        setBlocks(prevBlocks => {
+          let updatedBlocks = [...prevBlocks];
 
-        // Update the dragged block to join the target grid
-        const draggedIndex = updatedBlocks.findIndex(b => b.id === draggedBlockId);
-        if (draggedIndex !== -1) {
-          updatedBlocks[draggedIndex] = {
-            ...updatedBlocks[draggedIndex],
-            meta: {
-              ...updatedBlocks[draggedIndex].meta,
-              layout: {
-                row_id: targetRowId,
-                position: finalPosition,
-                columns: newColumns,
-                gap: targetRow.gap || 4,
-                columnWidths: Array(newColumns).fill(100 / newColumns)
-              }
-            }
-          };
-        }
-
-        // Update all existing blocks in the target row
-        targetRow.blocks.forEach((block) => {
-          const blockIndex = updatedBlocks.findIndex(b => b.id === block.id);
-          if (blockIndex !== -1 && block.id !== draggedBlockId) {
-            updatedBlocks[blockIndex] = {
-              ...updatedBlocks[blockIndex],
+          // Update target block to become position 0 in new grid
+          const targetIndex = updatedBlocks.findIndex(b => b.id === targetBlock.id);
+          if (targetIndex !== -1) {
+            updatedBlocks[targetIndex] = {
+              ...updatedBlocks[targetIndex],
               meta: {
-                ...updatedBlocks[blockIndex].meta,
+                ...updatedBlocks[targetIndex].meta,
                 layout: {
-                  ...updatedBlocks[blockIndex].meta?.layout,
+                  row_id: finalRowId,
+                  position: 0,
                   columns: newColumns,
-                  columnWidths: Array(newColumns).fill(100 / newColumns)
+                  gap: 4,
+                  columnWidths
                 }
               }
             };
           }
+
+          // Update dragged block to become position 1 in new grid
+          const draggedIndex = updatedBlocks.findIndex(b => b.id === draggedBlockId);
+          if (draggedIndex !== -1) {
+            updatedBlocks[draggedIndex] = {
+              ...updatedBlocks[draggedIndex],
+              meta: {
+                ...updatedBlocks[draggedIndex].meta,
+                layout: {
+                  row_id: finalRowId,
+                  position: 1,
+                  columns: newColumns,
+                  gap: 4,
+                  columnWidths
+                }
+              }
+            };
+          }
+
+          return reindexBlocks(updatedBlocks);
         });
 
-        return reindexBlocks(updatedBlocks);
-      });
+      } else if (targetRow && targetRow.blocks.length > 0) {
+        // Merging with existing grid - add as new column
+        finalRowId = targetRowId;
+        newColumns = targetRow.columns + 1;
+        columnWidths = Array(newColumns).fill(100 / newColumns);
+        const finalPosition = targetPosition ?? targetRow.blocks.length;
 
-      // Clear active block to reset visual state
+        console.log('Adding to existing grid:', { 
+          draggedBlockId, 
+          targetRowId, 
+          finalPosition, 
+          newColumns 
+        });
+
+        setBlocks(prevBlocks => {
+          let updatedBlocks = [...prevBlocks];
+
+          // Update dragged block to join target grid
+          const draggedIndex = updatedBlocks.findIndex(b => b.id === draggedBlockId);
+          if (draggedIndex !== -1) {
+            updatedBlocks[draggedIndex] = {
+              ...updatedBlocks[draggedIndex],
+              meta: {
+                ...updatedBlocks[draggedIndex].meta,
+                layout: {
+                  row_id: finalRowId,
+                  position: finalPosition,
+                  columns: newColumns,
+                  gap: targetRow.gap || 4,
+                  columnWidths
+                }
+              }
+            };
+          }
+
+          // Update all existing blocks in target row
+          targetRow.blocks.forEach((block) => {
+            const blockIndex = updatedBlocks.findIndex(b => b.id === block.id);
+            if (blockIndex !== -1 && block.id !== draggedBlockId) {
+              updatedBlocks[blockIndex] = {
+                ...updatedBlocks[blockIndex],
+                meta: {
+                  ...updatedBlocks[blockIndex].meta,
+                  layout: {
+                    ...updatedBlocks[blockIndex].meta?.layout,
+                    columns: newColumns,
+                    columnWidths
+                  }
+                }
+              };
+            }
+          });
+
+          return reindexBlocks(updatedBlocks);
+        });
+      } else {
+        console.error('Invalid merge target:', { targetRowId, targetBlock, targetRow });
+        return;
+      }
+
+      // Clear drag state and save to history
       setActiveBlockId(null);
       
-      // Save to history after state update
       setTimeout(() => {
         saveToHistory(blocks, draggedBlockId);
       }, 100);

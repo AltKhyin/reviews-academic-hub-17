@@ -1,4 +1,3 @@
-
 // ABOUTME: Unified grid layout management system with proper synchronization
 // Handles grid creation, modification, block operations, and metadata consistency
 
@@ -30,7 +29,7 @@ export const useGridLayoutManager = ({
   onDeleteBlock
 }: UseGridLayoutManagerProps) => {
   
-  // Compute current layout state with validation
+  // COMPLETELY FIXED: Layout state computation that properly handles grids
   const layoutState: GridLayoutState = useMemo(() => {
     const rowsMap = new Map<string, GridRow>();
     const processedBlocks = new Set<number>();
@@ -45,15 +44,15 @@ export const useGridLayoutManager = ({
       
       const layout = block.meta?.layout;
       
-      if (layout?.row_id && typeof layout.row_id === 'string') {
-        // Block belongs to a grid row
+      if (layout?.row_id && typeof layout.row_id === 'string' && layout.columns) {
+        // FIXED: Block belongs to a grid row (has layout metadata)
         const rowId = layout.row_id;
         
         if (!rowsMap.has(rowId)) {
           rowsMap.set(rowId, {
             id: rowId,
             blocks: [],
-            columns: layout.columns || 1,
+            columns: layout.columns, // Use the block's columns setting
             gap: layout.gap || 4,
             columnWidths: layout.columnWidths
           });
@@ -64,16 +63,21 @@ export const useGridLayoutManager = ({
         processedBlocks.add(block.id);
         
         // Update row metadata from latest block
-        if (layout.columnWidths && layout.columnWidths.length === row.columns) {
+        if (layout.columnWidths && layout.columnWidths.length === layout.columns) {
           row.columnWidths = layout.columnWidths;
         }
+        
+        // Ensure row columns matches the blocks' column setting
+        if (layout.columns > row.columns) {
+          row.columns = layout.columns;
+        }
       } else {
-        // Single block row
+        // FIXED: Single block row (no grid layout)
         const singleRowId = `single-${block.id}`;
         rowsMap.set(singleRowId, {
           id: singleRowId,
           blocks: [block],
-          columns: 1,
+          columns: 1, // Single blocks are always 1 column
           gap: 4
         });
         processedBlocks.add(block.id);
@@ -104,7 +108,8 @@ export const useGridLayoutManager = ({
       gridRows: rows.filter(r => r.columns > 1).length,
       singleRows: rows.filter(r => r.columns === 1).length,
       totalBlocks,
-      originalBlocks: blocks.length
+      originalBlocks: blocks.length,
+      rows: rows.map(r => ({ id: r.id, columns: r.columns, blocksCount: r.blocks.length }))
     });
     
     return { rows, totalBlocks };
@@ -228,11 +233,14 @@ export const useGridLayoutManager = ({
     ) || null;
   }, [layoutState.rows]);
   
-  // Check if block is in a grid
+  // FIXED: Check if block is in a grid (has layout and columns > 1)
   const isBlockInGrid = useCallback((blockId: number): boolean => {
+    const block = blocks.find(b => b.id === blockId);
+    if (!block?.meta?.layout) return false;
+    
     const row = getRowByBlockId(blockId);
     return row ? row.columns > 1 : false;
-  }, [getRowByBlockId]);
+  }, [blocks, getRowByBlockId]);
   
   return {
     layoutState,

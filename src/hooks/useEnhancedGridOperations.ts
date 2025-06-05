@@ -30,12 +30,17 @@ export const useEnhancedGridOperations = ({
     onDeleteBlock
   });
 
-  // FIXED: Proper column addition with correct position calculation
+  // COMPLETELY FIXED: Proper column addition with validation
   const addColumnToGrid = useCallback((rowId: string) => {
     const row = layoutState.rows.find(r => r.id === rowId);
     if (!row) {
       console.error('Row not found for column addition:', rowId);
-      return;
+      return { success: false, error: 'Row not found' };
+    }
+
+    if (row.columns >= 6) {
+      console.warn('Maximum columns reached:', row.columns);
+      return { success: false, error: 'Maximum columns reached' };
     }
 
     const newColumns = row.columns + 1;
@@ -43,10 +48,9 @@ export const useEnhancedGridOperations = ({
 
     console.log('Adding column to grid:', { rowId, oldColumns: row.columns, newColumns });
 
-    // Batch update all existing blocks in the row
-    const updates = row.blocks.map(block => ({
-      blockId: block.id,
-      updates: {
+    // Update all existing blocks in the row with new column count and widths
+    row.blocks.forEach(block => {
+      onUpdateBlock(block.id, {
         meta: {
           ...block.meta,
           layout: {
@@ -55,23 +59,38 @@ export const useEnhancedGridOperations = ({
             columnWidths: newColumnWidths
           }
         }
-      }
-    }));
-
-    // Apply all updates
-    updates.forEach(({ blockId, updates }) => {
-      onUpdateBlock(blockId, updates);
+      });
     });
 
-    return { success: true, newColumns };
-  }, [layoutState.rows, onUpdateBlock]);
+    // Add a new block to fill the new column position
+    if (onAddBlock) {
+      const lastBlockInRow = row.blocks[row.blocks.length - 1];
+      const insertionIndex = lastBlockInRow ? 
+        blocks.findIndex(b => b.id === lastBlockInRow.id) + 1 : 
+        blocks.length;
 
-  // FIXED: Safe column removal with proper cleanup
+      // Add the new block with proper grid layout
+      onAddBlock('paragraph', insertionIndex, {
+        rowId,
+        gridPosition: row.blocks.length,
+        columns: newColumns
+      });
+    }
+
+    return { success: true, newColumns };
+  }, [layoutState.rows, onUpdateBlock, onAddBlock, blocks]);
+
+  // FIXED: Safe column removal with proper cleanup and validation
   const removeColumnFromGrid = useCallback((rowId: string, columnIndex: number) => {
     const row = layoutState.rows.find(r => r.id === rowId);
-    if (!row || row.columns <= 1) {
-      console.error('Cannot remove column: row not found or only one column:', { rowId, columns: row?.columns });
-      return;
+    if (!row) {
+      console.error('Row not found for column removal:', rowId);
+      return { success: false, error: 'Row not found' };
+    }
+
+    if (row.columns <= 1) {
+      console.error('Cannot remove column: only one column remaining');
+      return { success: false, error: 'Cannot remove last column' };
     }
 
     const newColumns = row.columns - 1;
@@ -84,7 +103,7 @@ export const useEnhancedGridOperations = ({
       onDeleteBlock(blockToRemove.id);
     }
 
-    // Update remaining blocks with corrected positions
+    // Update remaining blocks with corrected positions and column count
     const remainingBlocks = row.blocks.filter(b => (b.meta?.layout?.position ?? 0) !== columnIndex);
     const newColumnWidths = Array(newColumns).fill(100 / newColumns);
 
