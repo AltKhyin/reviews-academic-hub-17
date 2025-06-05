@@ -70,6 +70,7 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
             getEmphasisClass(emphasis),
             "prose prose-invert max-w-none"
           )}
+          style={{ direction: 'ltr', textAlign: alignment === 'left' ? 'left' : alignment }}
           dangerouslySetInnerHTML={{ __html: content }}
         />
       </div>
@@ -85,6 +86,7 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
           getEmphasisClass(emphasis),
           "prose prose-invert max-w-none"
         )}
+        style={{ direction: 'ltr', textAlign: alignment === 'left' ? 'left' : alignment }}
       >
         <InlineRichTextEditor
           value={content}

@@ -1,12 +1,12 @@
 
-// ABOUTME: Inline table editor with cell-by-cell editing and dynamic rows/columns
-// Provides spreadsheet-like editing experience within table blocks
+// ABOUTME: Inline editable table component with spreadsheet-like functionality
+// Provides dynamic row/column management with inline text editing
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { InlineTextEditor } from './InlineTextEditor';
-import { Plus, Trash2, GripVertical } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Plus, Minus, GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface EditableTableProps {
@@ -15,7 +15,6 @@ interface EditableTableProps {
   rows: string[][];
   caption?: string;
   onUpdate: (data: { title: string; headers: string[]; rows: string[][]; caption?: string }) => void;
-  className?: string;
 }
 
 export const EditableTable: React.FC<EditableTableProps> = ({
@@ -23,192 +22,220 @@ export const EditableTable: React.FC<EditableTableProps> = ({
   headers,
   rows,
   caption = '',
-  onUpdate,
-  className = ''
+  onUpdate
 }) => {
-  const [localTitle, setLocalTitle] = useState(title);
-  const [localHeaders, setLocalHeaders] = useState(headers);
-  const [localRows, setLocalRows] = useState(rows);
-  const [localCaption, setLocalCaption] = useState(caption);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [isEditingCaption, setIsEditingCaption] = useState(false);
 
-  const updateData = (newData: Partial<{ title: string; headers: string[]; rows: string[][]; caption: string }>) => {
-    const updated = {
-      title: newData.title ?? localTitle,
-      headers: newData.headers ?? localHeaders,
-      rows: newData.rows ?? localRows,
-      caption: newData.caption ?? localCaption
-    };
-    
-    setLocalTitle(updated.title);
-    setLocalHeaders(updated.headers);
-    setLocalRows(updated.rows);
-    setLocalCaption(updated.caption);
-    
-    onUpdate(updated);
-  };
+  const handleTitleChange = useCallback((newTitle: string) => {
+    onUpdate({ title: newTitle, headers, rows, caption });
+  }, [headers, rows, caption, onUpdate]);
 
-  const addColumn = () => {
-    const newHeaders = [...localHeaders, `Coluna ${localHeaders.length + 1}`];
-    const newRows = localRows.map(row => [...row, '']);
-    updateData({ headers: newHeaders, rows: newRows });
-  };
+  const handleCaptionChange = useCallback((newCaption: string) => {
+    onUpdate({ title, headers, rows, caption: newCaption });
+  }, [title, headers, rows, onUpdate]);
 
-  const removeColumn = (index: number) => {
-    if (localHeaders.length <= 1) return;
-    const newHeaders = localHeaders.filter((_, i) => i !== index);
-    const newRows = localRows.map(row => row.filter((_, i) => i !== index));
-    updateData({ headers: newHeaders, rows: newRows });
-  };
-
-  const addRow = () => {
-    const newRow = new Array(localHeaders.length).fill('');
-    const newRows = [...localRows, newRow];
-    updateData({ rows: newRows });
-  };
-
-  const removeRow = (index: number) => {
-    if (localRows.length <= 1) return;
-    const newRows = localRows.filter((_, i) => i !== index);
-    updateData({ rows: newRows });
-  };
-
-  const updateHeader = (index: number, value: string) => {
-    const newHeaders = [...localHeaders];
+  const handleHeaderChange = useCallback((index: number, value: string) => {
+    const newHeaders = [...headers];
     newHeaders[index] = value;
-    updateData({ headers: newHeaders });
-  };
+    onUpdate({ title, headers: newHeaders, rows, caption });
+  }, [title, headers, rows, caption, onUpdate]);
 
-  const updateCell = (rowIndex: number, colIndex: number, value: string) => {
-    const newRows = [...localRows];
-    newRows[rowIndex][colIndex] = value;
-    updateData({ rows: newRows });
-  };
+  const handleCellChange = useCallback((rowIndex: number, colIndex: number, value: string) => {
+    const newRows = rows.map((row, rIdx) => 
+      rIdx === rowIndex 
+        ? row.map((cell, cIdx) => cIdx === colIndex ? value : cell)
+        : row
+    );
+    onUpdate({ title, headers, rows: newRows, caption });
+  }, [title, headers, rows, caption, onUpdate]);
+
+  const addColumn = useCallback(() => {
+    const newHeaders = [...headers, `Coluna ${headers.length + 1}`];
+    const newRows = rows.map(row => [...row, '']);
+    onUpdate({ title, headers: newHeaders, rows: newRows, caption });
+  }, [title, headers, rows, caption, onUpdate]);
+
+  const removeColumn = useCallback((index: number) => {
+    if (headers.length <= 1) return;
+    const newHeaders = headers.filter((_, i) => i !== index);
+    const newRows = rows.map(row => row.filter((_, i) => i !== index));
+    onUpdate({ title, headers: newHeaders, rows: newRows, caption });
+  }, [title, headers, rows, caption, onUpdate]);
+
+  const addRow = useCallback(() => {
+    const newRow = new Array(headers.length).fill('');
+    const newRows = [...rows, newRow];
+    onUpdate({ title, headers, rows: newRows, caption });
+  }, [title, headers, rows, caption, onUpdate]);
+
+  const removeRow = useCallback((index: number) => {
+    if (rows.length <= 1) return;
+    const newRows = rows.filter((_, i) => i !== index);
+    onUpdate({ title, headers, rows: newRows, caption });
+  }, [title, headers, rows, caption, onUpdate]);
 
   return (
-    <div className={cn("editable-table-container space-y-4", className)}>
-      {/* Table Title */}
-      <InlineTextEditor
-        value={localTitle}
-        onChange={(value) => updateData({ title: value })}
-        placeholder="Título da tabela"
-        className="text-lg font-semibold"
-      />
+    <div className="editable-table space-y-4" style={{ direction: 'ltr' }}>
+      {/* Title Editor */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium" style={{ color: '#ffffff' }}>
+          Título da Tabela
+        </label>
+        {isEditingTitle ? (
+          <Input
+            value={title}
+            onChange={(e) => handleTitleChange(e.target.value)}
+            onBlur={() => setIsEditingTitle(false)}
+            onKeyDown={(e) => e.key === 'Enter' && setIsEditingTitle(false)}
+            placeholder="Título da tabela"
+            autoFocus
+            style={{ 
+              backgroundColor: '#212121',
+              borderColor: '#2a2a2a',
+              color: '#ffffff'
+            }}
+          />
+        ) : (
+          <div
+            className="p-2 border rounded cursor-pointer hover:bg-gray-800"
+            onClick={() => setIsEditingTitle(true)}
+            style={{ 
+              backgroundColor: '#212121',
+              borderColor: '#2a2a2a',
+              color: '#ffffff'
+            }}
+          >
+            {title || 'Clique para adicionar título'}
+          </div>
+        )}
+      </div>
 
-      {/* Table */}
+      {/* Table Editor */}
       <div className="overflow-x-auto">
-        <table 
-          className="w-full border-collapse border"
-          style={{ borderColor: '#2a2a2a' }}
-        >
-          {/* Headers */}
-          <thead>
-            <tr style={{ backgroundColor: '#212121' }}>
-              <th className="w-8 border p-2" style={{ borderColor: '#2a2a2a' }}>
-                <GripVertical className="w-4 h-4" style={{ color: '#6b7280' }} />
-              </th>
-              {localHeaders.map((header, index) => (
-                <th 
-                  key={index} 
-                  className="border p-2 min-w-[150px]"
-                  style={{ borderColor: '#2a2a2a' }}
-                >
-                  <div className="flex items-center gap-2">
-                    <InlineTextEditor
-                      value={header}
-                      onChange={(value) => updateHeader(index, value)}
-                      placeholder={`Cabeçalho ${index + 1}`}
-                      className="flex-1 font-medium"
-                    />
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => removeColumn(index)}
-                      className="w-6 h-6 p-0 opacity-0 group-hover:opacity-100"
-                      disabled={localHeaders.length <= 1}
-                    >
-                      <Trash2 className="w-3 h-3" style={{ color: '#ef4444' }} />
-                    </Button>
-                  </div>
-                </th>
-              ))}
-              <th className="w-12 border p-2" style={{ borderColor: '#2a2a2a' }}>
+        <div className="min-w-full" style={{ display: 'table' }}>
+          {/* Headers Row */}
+          <div 
+            className="table-row"
+            style={{ backgroundColor: '#212121' }}
+          >
+            <div className="table-cell w-8 p-2 border text-center" style={{ borderColor: '#2a2a2a' }}>
+              <GripVertical className="w-4 h-4 mx-auto" style={{ color: '#9ca3af' }} />
+            </div>
+            {headers.map((header, index) => (
+              <div key={index} className="table-cell p-0 border" style={{ borderColor: '#2a2a2a' }}>
+                <div className="flex">
+                  <Input
+                    value={header}
+                    onChange={(e) => handleHeaderChange(index, e.target.value)}
+                    className="border-0 bg-transparent font-semibold"
+                    style={{ color: '#ffffff' }}
+                  />
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => removeColumn(index)}
+                    className="w-8 h-8 p-0 flex-shrink-0"
+                    disabled={headers.length <= 1}
+                  >
+                    <Minus className="w-3 h-3" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+            <div className="table-cell w-8 p-2 border text-center" style={{ borderColor: '#2a2a2a' }}>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={addColumn}
+                className="w-6 h-6 p-0"
+              >
+                <Plus className="w-3 h-3" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Data Rows */}
+          {rows.map((row, rowIndex) => (
+            <div key={rowIndex} className="table-row">
+              <div className="table-cell w-8 p-2 border text-center" style={{ borderColor: '#2a2a2a' }}>
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={addColumn}
+                  onClick={() => removeRow(rowIndex)}
                   className="w-6 h-6 p-0"
+                  disabled={rows.length <= 1}
                 >
-                  <Plus className="w-3 h-3" style={{ color: '#10b981' }} />
+                  <Minus className="w-3 h-3" />
                 </Button>
-              </th>
-            </tr>
-          </thead>
+              </div>
+              {row.map((cell, colIndex) => (
+                <div key={colIndex} className="table-cell p-0 border" style={{ borderColor: '#2a2a2a' }}>
+                  <Input
+                    value={cell}
+                    onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
+                    className="border-0 bg-transparent"
+                    style={{ color: '#d1d5db' }}
+                  />
+                </div>
+              ))}
+              <div className="table-cell w-8 p-2 border" style={{ borderColor: '#2a2a2a' }} />
+            </div>
+          ))}
 
-          {/* Body */}
-          <tbody>
-            {localRows.map((row, rowIndex) => (
-              <tr key={rowIndex} className="group">
-                <td 
-                  className="border p-2 text-center"
-                  style={{ borderColor: '#2a2a2a', backgroundColor: '#1a1a1a' }}
-                >
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs" style={{ color: '#9ca3af' }}>{rowIndex + 1}</span>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => removeRow(rowIndex)}
-                      className="w-4 h-4 p-0 opacity-0 group-hover:opacity-100"
-                      disabled={localRows.length <= 1}
-                    >
-                      <Trash2 className="w-2 h-2" style={{ color: '#ef4444' }} />
-                    </Button>
-                  </div>
-                </td>
-                {row.map((cell, colIndex) => (
-                  <td 
-                    key={colIndex} 
-                    className="border p-2"
-                    style={{ borderColor: '#2a2a2a' }}
-                  >
-                    <InlineTextEditor
-                      value={cell}
-                      onChange={(value) => updateCell(rowIndex, colIndex, value)}
-                      placeholder="Dados"
-                      className="w-full"
-                    />
-                  </td>
-                ))}
-                <td className="border p-2" style={{ borderColor: '#2a2a2a' }}>
-                  {/* Empty cell for column actions */}
-                </td>
-              </tr>
+          {/* Add Row */}
+          <div className="table-row">
+            <div className="table-cell w-8 p-2 border text-center" style={{ borderColor: '#2a2a2a' }}>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={addRow}
+                className="w-6 h-6 p-0"
+              >
+                <Plus className="w-3 h-3" />
+              </Button>
+            </div>
+            {headers.map((_, index) => (
+              <div key={index} className="table-cell p-2 border" style={{ borderColor: '#2a2a2a' }} />
             ))}
-          </tbody>
-        </table>
+            <div className="table-cell w-8 p-2 border" style={{ borderColor: '#2a2a2a' }} />
+          </div>
+        </div>
       </div>
 
-      {/* Table Actions */}
-      <div className="flex items-center gap-2">
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={addRow}
-          className="flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Adicionar Linha
-        </Button>
+      {/* Caption Editor */}
+      <div className="space-y-2">
+        <label className="text-sm font-medium" style={{ color: '#ffffff' }}>
+          Legenda da Tabela (Opcional)
+        </label>
+        {isEditingCaption ? (
+          <Textarea
+            value={caption}
+            onChange={(e) => handleCaptionChange(e.target.value)}
+            onBlur={() => setIsEditingCaption(false)}
+            placeholder="Adicione uma legenda para a tabela"
+            rows={2}
+            autoFocus
+            style={{ 
+              backgroundColor: '#212121',
+              borderColor: '#2a2a2a',
+              color: '#ffffff'
+            }}
+          />
+        ) : (
+          <div
+            className="p-2 border rounded cursor-pointer hover:bg-gray-800 min-h-[60px]"
+            onClick={() => setIsEditingCaption(true)}
+            style={{ 
+              backgroundColor: '#212121',
+              borderColor: '#2a2a2a',
+              color: '#ffffff'
+            }}
+          >
+            {caption || 'Clique para adicionar legenda'}
+          </div>
+        )}
       </div>
-
-      {/* Caption */}
-      <InlineTextEditor
-        value={localCaption}
-        onChange={(value) => updateData({ caption: value })}
-        placeholder="Legenda da tabela (opcional)"
-        className="text-sm"
-        multiline
-      />
     </div>
   );
 };

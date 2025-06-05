@@ -88,35 +88,44 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
       }}
       onClick={handleBlockClick}
     >
-      {/* Block Controls Toolbar */}
+      {/* Enhanced Block Controls Toolbar - Position on Middle Left */}
       <div 
         className={cn(
-          "block-controls absolute -left-12 top-0 z-10",
+          "block-controls absolute -left-16 top-1/2 transform -translate-y-1/2 z-10",
           "flex flex-col gap-1 opacity-0 group-hover:opacity-100",
           "transition-opacity duration-200",
           isActive && "opacity-100"
         )}
       >
-        {/* Drag Handle */}
-        <Button
-          size="sm"
-          variant="ghost"
-          className="w-8 h-8 p-0 cursor-grab active:cursor-grabbing"
+        {/* Six-Dot Drag Handle */}
+        <div
+          className="w-10 h-10 cursor-grab active:cursor-grabbing flex items-center justify-center rounded"
           draggable
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
           style={{ backgroundColor: '#2a2a2a' }}
         >
-          <GripVertical className="w-4 h-4" style={{ color: '#9ca3af' }} />
-        </Button>
+          <div className="grid grid-cols-2 gap-0.5">
+            {[...Array(6)].map((_, i) => (
+              <div 
+                key={i} 
+                className="w-1 h-1 rounded-full" 
+                style={{ backgroundColor: '#9ca3af' }}
+              />
+            ))}
+          </div>
+        </div>
 
         {/* Move Up */}
         {!isFirst && (
           <Button
             size="sm"
             variant="ghost"
-            onClick={() => onMove(block.id, 'up')}
-            className="w-8 h-8 p-0"
+            onClick={(e) => {
+              e.stopPropagation();
+              onMove(block.id, 'up');
+            }}
+            className="w-10 h-8 p-0"
             style={{ backgroundColor: '#2a2a2a' }}
           >
             <ArrowUp className="w-3 h-3" style={{ color: '#9ca3af' }} />
@@ -128,8 +137,11 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
           <Button
             size="sm"
             variant="ghost"
-            onClick={() => onMove(block.id, 'down')}
-            className="w-8 h-8 p-0"
+            onClick={(e) => {
+              e.stopPropagation();
+              onMove(block.id, 'down');
+            }}
+            className="w-10 h-8 p-0"
             style={{ backgroundColor: '#2a2a2a' }}
           >
             <ArrowDown className="w-3 h-3" style={{ color: '#9ca3af' }} />
@@ -160,7 +172,10 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
           <Button
             size="sm"
             variant="ghost"
-            onClick={() => setEditMode(!editMode)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setEditMode(!editMode);
+            }}
             className="w-8 h-8 p-0"
             style={{ backgroundColor: '#2a2a2a' }}
           >
@@ -175,7 +190,10 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
           <Button
             size="sm"
             variant="ghost"
-            onClick={handleToggleVisibility}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleToggleVisibility();
+            }}
             className="w-8 h-8 p-0"
             style={{ backgroundColor: '#2a2a2a' }}
           >
@@ -191,7 +209,10 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => onDuplicate(block.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDuplicate(block.id);
+              }}
               className="w-8 h-8 p-0"
               style={{ backgroundColor: '#2a2a2a' }}
             >
@@ -203,7 +224,10 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
           <Button
             size="sm"
             variant="ghost"
-            onClick={() => onDelete(block.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(block.id);
+            }}
             className="w-8 h-8 p-0"
             style={{ backgroundColor: '#2a2a2a' }}
           >
@@ -242,7 +266,7 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
           className="absolute bottom-2 right-2 text-xs px-2 py-1 rounded"
           style={{ backgroundColor: '#10b981', color: '#ffffff' }}
         >
-          Editing
+          Editando
         </div>
       )}
     </div>

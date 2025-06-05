@@ -4,9 +4,8 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Settings, Plus, Layout } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Settings, Layout, Plus } from 'lucide-react';
 import { ReviewBlock, BlockType } from '@/types/review';
 import { BlockPropertyEditor } from './BlockPropertyEditor';
 import { BlockContentEditor } from './BlockContentEditor';
@@ -24,18 +23,6 @@ interface BlockEditorProps {
   compact?: boolean;
 }
 
-const blockTypes: { value: BlockType; label: string; description: string }[] = [
-  { value: 'heading', label: 'Título', description: 'Títulos e subtítulos' },
-  { value: 'paragraph', label: 'Parágrafo', description: 'Texto corrido' },
-  { value: 'figure', label: 'Figura', description: 'Imagens com legenda' },
-  { value: 'table', label: 'Tabela', description: 'Dados tabulares' },
-  { value: 'callout', label: 'Destaque', description: 'Caixas de destaque' },
-  { value: 'number_card', label: 'Métrica', description: 'Números destacados' },
-  { value: 'reviewer_quote', label: 'Citação', description: 'Comentários de especialistas' },
-  { value: 'poll', label: 'Enquete', description: 'Pesquisas interativas' },
-  { value: 'divider', label: 'Divisor', description: 'Separador visual' }
-];
-
 export const BlockEditor: React.FC<BlockEditorProps> = ({
   blocks,
   activeBlockId,
@@ -48,16 +35,8 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
   compact = false
 }) => {
   const [showProperties, setShowProperties] = useState(true);
-  const [newBlockType, setNewBlockType] = useState<BlockType>('paragraph');
   
   const activeBlock = blocks.find(block => block.id === activeBlockId);
-
-  const handleAddBlock = () => {
-    const position = activeBlockId 
-      ? blocks.findIndex(b => b.id === activeBlockId) + 1 
-      : blocks.length;
-    onAddBlock(newBlockType, position);
-  };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -90,7 +69,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
             <div className="flex items-center gap-3">
               <Layout className="w-5 h-5" style={{ color: '#3b82f6' }} />
               <h2 className="text-xl font-semibold" style={{ color: '#ffffff' }}>
-                Editor de Blocos
+                Editor de Conteúdo
               </h2>
               <div 
                 className="text-sm px-2 py-1 rounded"
@@ -101,30 +80,14 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
             </div>
 
             <div className="flex items-center gap-2">
-              <Select value={newBlockType} onValueChange={(value: BlockType) => setNewBlockType(value)}>
-                <SelectTrigger 
-                  className="w-48"
-                  style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}>
-                  {blockTypes.map(type => (
-                    <SelectItem key={type.value} value={type.value}>
-                      <div>
-                        <div style={{ color: '#ffffff' }}>{type.label}</div>
-                        <div className="text-xs" style={{ color: '#9ca3af' }}>
-                          {type.description}
-                        </div>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              <Button onClick={handleAddBlock} className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onAddBlock('paragraph')}
+                className="flex items-center gap-2"
+              >
                 <Plus className="w-4 h-4" />
-                Adicionar Bloco
+                Adicionar Parágrafo
               </Button>
             </div>
           </div>
@@ -150,13 +113,9 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                         Nenhum bloco adicionado
                       </h3>
                       <p className="text-sm" style={{ color: '#9ca3af' }}>
-                        Comece adicionando um bloco usando o botão acima
+                        Use a paleta à esquerda para adicionar blocos ao seu conteúdo
                       </p>
                     </div>
-                    <Button onClick={handleAddBlock} variant="outline">
-                      <Plus className="w-4 h-4 mr-2" />
-                      Adicionar Primeiro Bloco
-                    </Button>
                   </div>
                 </CardContent>
               </Card>

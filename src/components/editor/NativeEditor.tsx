@@ -1,4 +1,3 @@
-
 // ABOUTME: Enhanced native editor with integrated inline editing and improved UX
 // Provides comprehensive block-based content creation with seamless editing experience
 
@@ -8,8 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/hooks/use-toast';
 import { ReviewBlock, BlockType } from '@/types/review';
 import { BlockEditor } from './BlockEditor';
+import { BlockPalette } from './BlockPalette';
+import { ReviewPreview } from './ReviewPreview';
 import { InlineEditingProvider } from './inline/InlineEditingProvider';
-import { Save, Eye, RotateCcw, Settings } from 'lucide-react';
+import { Save, Eye, RotateCcw, Settings, Layout, Palette } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface NativeEditorProps {
@@ -32,6 +33,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [viewMode, setViewMode] = useState<'edit' | 'preview'>(mode);
+  const [showPalette, setShowPalette] = useState(true);
 
   // Update blocks when initialBlocks change
   useEffect(() => {
@@ -232,6 +234,16 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
             <Button
               variant="outline"
               size="sm"
+              onClick={() => setShowPalette(!showPalette)}
+              className="flex items-center gap-2"
+            >
+              <Palette className="w-4 h-4" />
+              {showPalette ? 'Ocultar' : 'Mostrar'} Paleta
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => setViewMode(viewMode === 'edit' ? 'preview' : 'edit')}
               className="flex items-center gap-2"
             >
@@ -263,44 +275,38 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-hidden">
-          {viewMode === 'edit' ? (
-            <BlockEditor
-              blocks={blocks}
-              activeBlockId={activeBlockId}
-              onActiveBlockChange={setActiveBlockId}
-              onUpdateBlock={handleUpdateBlock}
-              onDeleteBlock={handleDeleteBlock}
-              onMoveBlock={handleMoveBlock}
-              onAddBlock={handleAddBlock}
-              onDuplicateBlock={handleDuplicateBlock}
-            />
-          ) : (
-            <div className="h-full overflow-y-auto p-6">
-              <Card style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
-                <CardHeader>
-                  <CardTitle style={{ color: '#ffffff' }}>
-                    Visualização
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {blocks.map(block => (
-                      <div key={block.id}>
-                        {/* Preview content would go here */}
-                        <div 
-                          className="p-4 border rounded"
-                          style={{ borderColor: '#2a2a2a', color: '#ffffff' }}
-                        >
-                          {block.type} - {JSON.stringify(block.payload).slice(0, 100)}...
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+        <div className="flex-1 overflow-hidden flex">
+          {/* Left Sidebar - Block Palette */}
+          {showPalette && viewMode === 'edit' && (
+            <div 
+              className="w-80 border-r flex-shrink-0 overflow-hidden"
+              style={{ 
+                backgroundColor: '#1a1a1a',
+                borderColor: '#2a2a2a'
+              }}
+            >
+              <BlockPalette onAddBlock={handleAddBlock} />
             </div>
           )}
+
+          {/* Main Content Area */}
+          <div className="flex-1 overflow-hidden">
+            {viewMode === 'edit' ? (
+              <BlockEditor
+                blocks={blocks}
+                activeBlockId={activeBlockId}
+                onActiveBlockChange={setActiveBlockId}
+                onUpdateBlock={handleUpdateBlock}
+                onDeleteBlock={handleDeleteBlock}
+                onMoveBlock={handleMoveBlock}
+                onAddBlock={handleAddBlock}
+                onDuplicateBlock={handleDuplicateBlock}
+                compact={!showPalette}
+              />
+            ) : (
+              <ReviewPreview blocks={blocks} />
+            )}
+          </div>
         </div>
       </div>
     </InlineEditingProvider>
