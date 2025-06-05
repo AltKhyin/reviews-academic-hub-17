@@ -72,7 +72,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
   const dragTimeoutRef = useRef<NodeJS.Timeout>();
   const processingDropRef = useRef(false);
 
-  // Grid layout manager - must be called after all useState hooks
+  // Grid layout manager - called unconditionally
   const {
     layoutState,
     updateColumnWidths,
@@ -92,11 +92,9 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     dragState 
   });
 
-  // FIXED: Improved block click handling with better event filtering
+  // FIXED: Simplified block click handling
   const handleBlockClick = useCallback((blockId: number, event: React.MouseEvent) => {
     const target = event.target as Element;
-    
-    // Enhanced interactive element detection
     const isInteractiveElement = target.closest(
       '.inline-editor-display, .inline-rich-editor-display, input, textarea, button, select, [contenteditable], .grid-controls, .resizable-handle'
     );
@@ -117,13 +115,11 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     }
   }, [blocks, onUpdateBlock]);
 
-  // FIXED: Proper addBlockBetween with correct position calculation
   const addBlockBetween = useCallback((position: number, type: BlockType = 'paragraph') => {
     console.log('Adding block between positions:', { position, type });
     onAddBlock(type, position);
   }, [onAddBlock]);
 
-  // COMPLETELY FIXED: Grid conversion with proper validation and error handling
   const convertToLayout = useCallback((blockId: number, columns: number, event: React.MouseEvent) => {
     event.stopPropagation();
     event.preventDefault();
@@ -143,8 +139,6 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     
     if (onConvertToGrid) {
       onConvertToGrid(blockId, columns);
-      
-      // Clear active block to prevent stale UI state
       setTimeout(() => {
         onActiveBlockChange(null);
       }, 100);
@@ -153,7 +147,6 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     }
   }, [blocks, onConvertToGrid, isBlockInGrid, onActiveBlockChange]);
 
-  // FIXED: Proper grid block addition with correct position calculation
   const addBlockToGrid = useCallback((rowId: string, position: number) => {
     const row = layoutState.rows.find(r => r.id === rowId);
     if (!row) {
@@ -161,11 +154,9 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       return;
     }
 
-    // Calculate the correct insertion index in the global blocks array
     let insertionIndex: number;
     
     if (position === 0 && row.blocks.length === 0) {
-      // Empty grid - find where this row should be in the document
       const allSingleRows = layoutState.rows.filter(r => r.id.startsWith('single-'));
       const rowBlocks = layoutState.rows
         .filter(r => !r.id.startsWith('single-'))
@@ -180,11 +171,9 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
         Math.max(...rowBlocks[targetRowIndex - 1].blocks.map(b => blocks.findIndex(bl => bl.id === b.id))) + 1 :
         0;
     } else if (position < row.blocks.length) {
-      // Insert before an existing block
       const blockAtPosition = row.blocks[position];
       insertionIndex = blocks.findIndex(b => b.id === blockAtPosition.id);
     } else {
-      // Insert at the end of the row
       const lastBlockInRow = row.blocks[row.blocks.length - 1];
       insertionIndex = lastBlockInRow ? 
         blocks.findIndex(b => b.id === lastBlockInRow.id) + 1 : 
@@ -195,9 +184,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     onAddBlock('paragraph', insertionIndex);
   }, [layoutState.rows, blocks, onAddBlock]);
 
-  // FIXED: Enhanced drag start with proper state initialization
   const handleDragStart = useCallback((e: React.DragEvent, blockId: number) => {
-    // Prevent dragging during active processing
     if (processingDropRef.current) {
       e.preventDefault();
       return;
@@ -216,7 +203,6 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       dropTargetType: null
     });
 
-    // Set drag data for proper HTML5 drag and drop
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', blockId.toString());
     e.dataTransfer.setData('application/json', JSON.stringify({
@@ -224,18 +210,14 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       sourceRowId: sourceRow?.id || null
     }));
 
-    // Add visual drag state
     document.body.classList.add('dragging');
   }, [getRowByBlockId]);
 
-  // FIXED: Enhanced drag over handling with proper target detection
   const handleDragOver = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number, targetType: 'grid' | 'single' | 'merge' = 'merge') => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     
     if (!dragState.isDragging || !dragState.draggedBlockId) return;
-    
-    // Don't allow dropping on self
     if (dragState.draggedFromRowId === targetRowId) return;
     
     setDragState(prev => ({
@@ -246,9 +228,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     }));
   }, [dragState.isDragging, dragState.draggedBlockId, dragState.draggedFromRowId]);
 
-  // FIXED: Clean drag leave handling
   const handleDragLeave = useCallback((e: React.DragEvent) => {
-    // Only clear if actually leaving the component area
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX;
     const y = e.clientY;
@@ -263,7 +243,6 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     }
   }, []);
 
-  // COMPLETELY FIXED: Drop handling with proper merge logic
   const handleDrop = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number, dropType: 'grid' | 'single' | 'merge' = 'merge') => {
     e.preventDefault();
     
@@ -283,7 +262,6 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
         onMergeBlockIntoGrid(dragState.draggedBlockId, targetRowId, targetPosition);
       }
     } finally {
-      // Clean up drag state
       setDragState({
         draggedBlockId: null,
         dragOverRowId: null,
@@ -301,16 +279,13 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     }
   }, [dragState.draggedBlockId, onMergeBlockIntoGrid]);
 
-  // FIXED: Proper drag end cleanup
   const handleDragEnd = useCallback(() => {
     document.body.classList.remove('dragging');
     
-    // Clear drag timeout if exists
     if (dragTimeoutRef.current) {
       clearTimeout(dragTimeoutRef.current);
     }
     
-    // Reset drag state
     setDragState({
       draggedBlockId: null,
       dragOverRowId: null,
@@ -323,8 +298,8 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     processingDropRef.current = false;
   }, []);
 
-  // Render single block with all controls
-  const renderSingleBlock = useCallback((block: ReviewBlock, globalIndex: number) => {
+  // Render single block
+  const renderSingleBlock = (block: ReviewBlock, globalIndex: number) => {
     const isActive = activeBlockId === block.id;
     const isDragging = dragState.draggedBlockId === block.id;
     const rowId = `single-${block.id}`;
@@ -332,7 +307,6 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
 
     return (
       <div key={block.id} className="relative group">
-        {/* Drop zone indicator */}
         {isDropTarget && (
           <div className="absolute inset-0 border-2 border-green-500 rounded-lg z-10 animate-pulse bg-green-500/10">
             <div className="absolute top-2 left-2 text-xs text-green-400 font-medium">
@@ -341,7 +315,6 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
           </div>
         )}
 
-        {/* Add block button above */}
         <div className="flex justify-center mb-2">
           <Button
             variant="ghost"
@@ -354,7 +327,6 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
           </Button>
         </div>
 
-        {/* Block container */}
         <Card 
           className={cn(
             "p-4 transition-all duration-200 cursor-pointer relative",
@@ -371,7 +343,6 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
           onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e, rowId, 0, 'merge')}
         >
-          {/* FIXED: Drag handle with proper drag events */}
           <div className="absolute -left-8 top-4 opacity-0 group-hover:opacity-100 transition-opacity">
             <div
               className="drag-handle cursor-grab active:cursor-grabbing transition-all duration-200 flex items-center justify-center rounded border bg-gray-800 border-gray-600 hover:bg-gray-700 hover:border-gray-500"
@@ -385,12 +356,10 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
             </div>
           </div>
 
-          {/* Block controls */}
           <div className={cn(
             "absolute top-2 right-2 flex items-center gap-1 transition-opacity z-10",
             isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
           )}>
-            {/* Grid conversion buttons */}
             <div className="flex items-center gap-1 mr-2">
               {[2, 3, 4].map((cols) => {
                 const Icon = cols === 2 ? Columns2 : cols === 3 ? Columns3 : Columns4;
@@ -409,7 +378,6 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
               })}
             </div>
 
-            {/* Standard controls */}
             <Button
               variant="ghost"
               size="sm"
@@ -447,7 +415,6 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
             </Button>
           </div>
 
-          {/* Block content */}
           <BlockRenderer
             block={block}
             onUpdate={onUpdateBlock}
@@ -456,10 +423,10 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
         </Card>
       </div>
     );
-  }, [activeBlockId, dragState, handleBlockClick, handleBlockVisibilityToggle, addBlockBetween, convertToLayout, onDuplicateBlock, onDeleteBlock, onUpdateBlock, handleDragOver, handleDragLeave, handleDrop, handleDragStart, handleDragEnd]);
+  };
 
   // Render grid row
-  const renderGridRow = useCallback((row: { id: string; blocks: ReviewBlock[]; columns: number; gap: number; columnWidths?: number[] }) => (
+  const renderGridRow = (row: { id: string; blocks: ReviewBlock[]; columns: number; gap: number; columnWidths?: number[] }) => (
     <ResizableGrid
       key={row.id}
       rowId={row.id}
@@ -478,23 +445,20 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     />
-  ), [updateColumnWidths, addBlockToGrid, onUpdateBlock, onDeleteBlock, activeBlockId, onActiveBlockChange, dragState, handleDragOver, handleDragLeave, handleDrop]);
+  );
 
   return (
     <div className={cn("block-editor space-y-6", className)}>
       {layoutState.rows.map((row, index) => {
         if (row.columns > 1) {
-          // Grid row
           return renderGridRow(row);
         } else {
-          // Single block row
           const block = row.blocks[0];
           const globalIndex = blocks.findIndex(b => b.id === block.id);
           return renderSingleBlock(block, globalIndex);
         }
       })}
 
-      {/* Final add block button */}
       <div className="flex justify-center mt-8 pt-4">
         <Button
           onClick={() => addBlockBetween(blocks.length)}
