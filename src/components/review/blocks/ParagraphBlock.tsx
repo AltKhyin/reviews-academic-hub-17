@@ -8,7 +8,7 @@ import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import { Button } from '@/components/ui/button';
 import { ColorPicker } from '@/components/ui/color-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Edit3, Palette, Type } from 'lucide-react';
+import { Edit3, Palette, Type, Bold, Italic, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ParagraphBlockProps {
@@ -155,11 +155,8 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
           {showStyleControls && (
             <>
               <ColorPicker
-                label=""
                 value={customStyles.color || '#000000'}
                 onChange={(value) => handleStyleUpdate('color', value)}
-                showLabel={false}
-                compact
               />
               
               <Select 
@@ -190,6 +187,22 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
                   <SelectItem value="right">Right</SelectItem>
                 </SelectContent>
               </Select>
+
+              <Button
+                variant={customStyles.fontWeight === 'bold' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleStyleUpdate('fontWeight', customStyles.fontWeight === 'bold' ? 'normal' : 'bold')}
+              >
+                <Bold className="w-4 h-4" />
+              </Button>
+
+              <Button
+                variant={customStyles.fontStyle === 'italic' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleStyleUpdate('fontStyle', customStyles.fontStyle === 'italic' ? 'normal' : 'italic')}
+              >
+                <Italic className="w-4 h-4" />
+              </Button>
             </>
           )}
         </div>
@@ -215,7 +228,9 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
       'xl': '20px'
     }[customStyles.fontSize] : '16px',
     textAlign: customStyles.textAlign as any || 'left',
-    lineHeight: customStyles.lineHeight || '1.6'
+    lineHeight: customStyles.lineHeight || '1.6',
+    fontWeight: customStyles.fontWeight || 'normal',
+    fontStyle: customStyles.fontStyle || 'normal'
   };
 
   return (
