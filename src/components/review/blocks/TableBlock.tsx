@@ -1,4 +1,3 @@
-
 // ABOUTME: Enhanced table block with comprehensive inline settings and color integration
 // Handles tabular data display with sorting, editing, and customizable styling
 
@@ -20,18 +19,18 @@ export const TableBlock: React.FC<TableBlockProps> = ({
   readonly = false,
   onUpdate
 }) => {
-  const payload = block.payload;
-  const headers = payload.headers || [];
-  const rows = payload.rows || [];
-  const sortable = payload.sortable || false;
-  const compact = payload.compact || false;
+  const content = block.content;
+  const headers = content.headers || [];
+  const rows = content.rows || [];
+  const sortable = content.sortable || false;
+  const compact = content.compact || false;
   
   // Color system integration
-  const textColor = payload.text_color || '#d1d5db';
-  const backgroundColor = payload.background_color || 'transparent';
-  const borderColor = payload.border_color || '#2a2a2a';
-  const headerBgColor = payload.header_bg_color || '#1a1a1a';
-  const cellBgColor = payload.cell_bg_color || 'transparent';
+  const textColor = content.text_color || '#d1d5db';
+  const backgroundColor = content.background_color || 'transparent';
+  const borderColor = content.border_color || '#2a2a2a';
+  const headerBgColor = content.header_bg_color || '#1a1a1a';
+  const cellBgColor = content.cell_bg_color || 'transparent';
 
   const [editingCell, setEditingCell] = useState<{row: number, col: number} | null>(null);
   const [sortColumn, setSortColumn] = useState<number | null>(null);
@@ -45,8 +44,8 @@ export const TableBlock: React.FC<TableBlockProps> = ({
     newRows[rowIndex][colIndex] = value;
     
     onUpdate({
-      payload: {
-        ...payload,
+      content: {
+        ...content,
         rows: newRows
       }
     });
@@ -59,8 +58,8 @@ export const TableBlock: React.FC<TableBlockProps> = ({
     newHeaders[index] = value;
     
     onUpdate({
-      payload: {
-        ...payload,
+      content: {
+        ...content,
         headers: newHeaders
       }
     });
@@ -73,8 +72,8 @@ export const TableBlock: React.FC<TableBlockProps> = ({
     const newRows = rows.map(row => [...row, '']);
     
     onUpdate({
-      payload: {
-        ...payload,
+      content: {
+        ...content,
         headers: newHeaders,
         rows: newRows
       }
@@ -88,8 +87,8 @@ export const TableBlock: React.FC<TableBlockProps> = ({
     const newRows = [...rows, newRow];
     
     onUpdate({
-      payload: {
-        ...payload,
+      content: {
+        ...content,
         rows: newRows
       }
     });
@@ -102,8 +101,8 @@ export const TableBlock: React.FC<TableBlockProps> = ({
     const newRows = rows.map(row => row.filter((_, i) => i !== index));
     
     onUpdate({
-      payload: {
-        ...payload,
+      content: {
+        ...content,
         headers: newHeaders,
         rows: newRows
       }
@@ -116,8 +115,8 @@ export const TableBlock: React.FC<TableBlockProps> = ({
     const newRows = rows.filter((_, i) => i !== index);
     
     onUpdate({
-      payload: {
-        ...payload,
+      content: {
+        ...content,
         rows: newRows
       }
     });
@@ -142,8 +141,8 @@ export const TableBlock: React.FC<TableBlockProps> = ({
     });
     
     onUpdate({
-      payload: {
-        ...payload,
+      content: {
+        ...content,
         rows: sortedRows
       }
     });

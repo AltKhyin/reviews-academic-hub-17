@@ -45,6 +45,8 @@ export interface ReviewBlockMeta {
     borderWidth?: number;
     borderStyle?: 'solid' | 'dashed' | 'dotted';
     borderRadius?: number;
+    className?: string;
+    inline?: React.CSSProperties;
   };
 }
 
@@ -75,6 +77,7 @@ export interface EnhancedIssue {
   review_type: string;
   article_pdf_url?: string;
   pdf_url?: string;
+  published?: boolean;
 }
 
 // Enhanced Snapshot card content type
@@ -97,3 +100,55 @@ export interface SnapshotCardContent {
 
 // Legacy payload type for compatibility - DEPRECATED
 export interface SnapshotCardPayload extends SnapshotCardContent {}
+
+// Block content/payload type (deprecated, use content directly)
+export type BlockPayload = any;
+
+// Table of Contents type
+export interface TableOfContents {
+  sections: Array<{
+    id: string;
+    title: string;
+    level: number;
+    children?: TableOfContents['sections'];
+  }>;
+}
+
+// Review Analytics types
+export interface ReviewAnalytics {
+  id: string;
+  issue_id?: string;
+  user_id?: string;
+  event_type: AnalyticsEventType;
+  event_data?: any;
+  scroll_depth?: number;
+  time_spent?: number;
+  session_id?: string;
+  referrer?: string;
+  device_type?: string;
+  created_at?: string;
+}
+
+export type AnalyticsEventType = 
+  | 'page_view'
+  | 'block_interaction' 
+  | 'scroll'
+  | 'click'
+  | 'download'
+  | 'bookmark'
+  | 'share';
+
+// Review Poll types
+export interface ReviewPoll {
+  id: string;
+  issue_id?: string;
+  block_id?: number;
+  question: string;
+  options: string[] | Array<{id: string; text: string; votes: number}>;
+  poll_type?: 'single_choice' | 'multiple_choice';
+  votes?: number[];
+  total_votes?: number;
+  opens_at?: string;
+  closes_at?: string;
+  created_at?: string;
+}

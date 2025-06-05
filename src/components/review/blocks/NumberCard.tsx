@@ -1,4 +1,3 @@
-
 // ABOUTME: Number card block with inline editing for statistics and metrics
 // Displays prominent numbers with trends and direct editing capabilities
 
@@ -22,24 +21,24 @@ export const NumberCard: React.FC<NumberCardProps> = ({
   readonly = false,
   onUpdate
 }) => {
-  const payload = block.payload;
-  const number = payload.number || '0';
-  const label = payload.label || 'Métrica';
-  const description = payload.description || '';
-  const trend = payload.trend || 'neutral';
-  const percentage = payload.percentage || 0;
+  const content = block.content;
+  const number = content.number || '0';
+  const label = content.label || 'Métrica';
+  const description = content.description || '';
+  const trend = content.trend || 'neutral';
+  const percentage = content.percentage || 0;
 
   // Color system integration
-  const textColor = payload.text_color || '#ffffff';
-  const backgroundColor = payload.background_color || '#1a1a1a';
-  const borderColor = payload.border_color || '#2a2a2a';
-  const accentColor = payload.accent_color || '#3b82f6';
+  const textColor = content.text_color || '#ffffff';
+  const backgroundColor = content.background_color || '#1a1a1a';
+  const borderColor = content.border_color || '#2a2a2a';
+  const accentColor = content.accent_color || '#3b82f6';
 
   const handleUpdate = (field: string, value: any) => {
     if (onUpdate) {
       onUpdate({
-        payload: {
-          ...payload,
+        content: {
+          ...content,
           [field]: value
         }
       });

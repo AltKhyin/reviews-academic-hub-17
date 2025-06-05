@@ -1,4 +1,3 @@
-
 // ABOUTME: Enhanced snapshot card block with full editability and integrated inline color editing
 // Displays and allows editing of evidence summary with inline editors and color customization
 
@@ -21,7 +20,7 @@ export const SnapshotCardBlock: React.FC<SnapshotCardBlockProps> = ({
   readonly = false,
   onUpdate
 }) => {
-  const payload = block.payload;
+  const content = block.content;
 
   const evidenceLevels = {
     high: { label: 'Alta', color: '#10b981', bg: '#065f46' },
@@ -36,14 +35,14 @@ export const SnapshotCardBlock: React.FC<SnapshotCardBlockProps> = ({
     against: { label: 'Contra', color: '#ef4444' }
   };
 
-  const evidenceLevel = evidenceLevels[payload.evidence_level as keyof typeof evidenceLevels] || evidenceLevels.moderate;
-  const recommendationStrength = recommendationStrengths[payload.recommendation_strength as keyof typeof recommendationStrengths] || recommendationStrengths.conditional;
+  const evidenceLevel = evidenceLevels[content.evidence_level as keyof typeof evidenceLevels] || evidenceLevels.moderate;
+  const recommendationStrength = recommendationStrengths[content.recommendation_strength as keyof typeof recommendationStrengths] || recommendationStrengths.conditional;
 
   const handleFieldUpdate = (field: string, value: any) => {
     if (onUpdate) {
       onUpdate({
-        payload: {
-          ...payload,
+        content: {
+          ...content,
           [field]: value
         }
       });
@@ -51,27 +50,27 @@ export const SnapshotCardBlock: React.FC<SnapshotCardBlockProps> = ({
   };
 
   const handleKeyFindingsUpdate = (index: number, value: string) => {
-    const newFindings = [...(payload.key_findings || [])];
+    const newFindings = [...(content.key_findings || [])];
     newFindings[index] = value;
     handleFieldUpdate('key_findings', newFindings);
   };
 
   const addKeyFinding = () => {
-    const newFindings = [...(payload.key_findings || []), ''];
+    const newFindings = [...(content.key_findings || []), ''];
     handleFieldUpdate('key_findings', newFindings);
   };
 
   const removeKeyFinding = (index: number) => {
-    const newFindings = [...(payload.key_findings || [])];
+    const newFindings = [...(content.key_findings || [])];
     newFindings.splice(index, 1);
     handleFieldUpdate('key_findings', newFindings);
   };
 
   // Color system integration
-  const cardBg = payload.background_color || '#1a1a1a';
-  const borderColor = payload.border_color || '#2a2a2a';
-  const accentColor = payload.accent_color || '#3b82f6';
-  const textColor = payload.text_color || '#ffffff';
+  const cardBg = content.background_color || '#1a1a1a';
+  const borderColor = content.border_color || '#2a2a2a';
+  const accentColor = content.accent_color || '#3b82f6';
+  const textColor = content.text_color || '#ffffff';
 
   return (
     <div className="snapshot-card-container group relative">
@@ -112,7 +111,7 @@ export const SnapshotCardBlock: React.FC<SnapshotCardBlockProps> = ({
               <div className="flex-1">
                 <h4 className="font-semibold text-sm text-blue-400 mb-1">População</h4>
                 <InlineTextEditor
-                  value={payload.population || ''}
+                  value={content.population || ''}
                   onChange={(value) => handleFieldUpdate('population', value)}
                   placeholder="Descreva a população do estudo..."
                   readonly={readonly}
@@ -127,7 +126,7 @@ export const SnapshotCardBlock: React.FC<SnapshotCardBlockProps> = ({
               <div className="flex-1">
                 <h4 className="font-semibold text-sm text-green-400 mb-1">Intervenção</h4>
                 <InlineTextEditor
-                  value={payload.intervention || ''}
+                  value={content.intervention || ''}
                   onChange={(value) => handleFieldUpdate('intervention', value)}
                   placeholder="Descreva a intervenção..."
                   readonly={readonly}
@@ -142,7 +141,7 @@ export const SnapshotCardBlock: React.FC<SnapshotCardBlockProps> = ({
               <div className="flex-1">
                 <h4 className="font-semibold text-sm text-yellow-400 mb-1">Comparação</h4>
                 <InlineTextEditor
-                  value={payload.comparison || ''}
+                  value={content.comparison || ''}
                   onChange={(value) => handleFieldUpdate('comparison', value)}
                   placeholder="Descreva o que foi comparado..."
                   readonly={readonly}
@@ -157,7 +156,7 @@ export const SnapshotCardBlock: React.FC<SnapshotCardBlockProps> = ({
               <div className="flex-1">
                 <h4 className="font-semibold text-sm text-purple-400 mb-1">Desfecho</h4>
                 <InlineTextEditor
-                  value={payload.outcome || ''}
+                  value={content.outcome || ''}
                   onChange={(value) => handleFieldUpdate('outcome', value)}
                   placeholder="Descreva os desfechos medidos..."
                   readonly={readonly}
@@ -172,7 +171,7 @@ export const SnapshotCardBlock: React.FC<SnapshotCardBlockProps> = ({
               <div className="flex-1">
                 <h4 className="font-semibold text-sm text-orange-400 mb-1">Desenho</h4>
                 <InlineTextEditor
-                  value={payload.design || ''}
+                  value={content.design || ''}
                   onChange={(value) => handleFieldUpdate('design', value)}
                   placeholder="Descreva o desenho do estudo..."
                   readonly={readonly}
@@ -199,7 +198,7 @@ export const SnapshotCardBlock: React.FC<SnapshotCardBlockProps> = ({
               )}
             </div>
             <ul className="space-y-2">
-              {(payload.key_findings || []).map((finding: string, index: number) => (
+              {(content.key_findings || []).map((finding: string, index: number) => (
                 <li key={index} className="flex items-start gap-2">
                   <div className="w-2 h-2 rounded-full bg-blue-400 mt-2 flex-shrink-0"></div>
                   <div className="flex-1">
@@ -221,7 +220,7 @@ export const SnapshotCardBlock: React.FC<SnapshotCardBlockProps> = ({
                   )}
                 </li>
               ))}
-              {(!payload.key_findings || payload.key_findings.length === 0) && readonly && (
+              {(!content.key_findings || content.key_findings.length === 0) && readonly && (
                 <li className="text-sm text-gray-500 italic">
                   Nenhum achado principal especificado
                 </li>
@@ -237,7 +236,7 @@ export const SnapshotCardBlock: React.FC<SnapshotCardBlockProps> = ({
                   Nível de Evidência
                 </label>
                 <select
-                  value={payload.evidence_level || 'moderate'}
+                  value={content.evidence_level || 'moderate'}
                   onChange={(e) => handleFieldUpdate('evidence_level', e.target.value)}
                   className="w-full p-2 rounded border text-sm"
                   style={{ 
@@ -258,7 +257,7 @@ export const SnapshotCardBlock: React.FC<SnapshotCardBlockProps> = ({
                   Força da Recomendação
                 </label>
                 <select
-                  value={payload.recommendation_strength || 'conditional'}
+                  value={content.recommendation_strength || 'conditional'}
                   onChange={(e) => handleFieldUpdate('recommendation_strength', e.target.value)}
                   className="w-full p-2 rounded border text-sm"
                   style={{ 

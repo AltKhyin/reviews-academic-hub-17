@@ -16,7 +16,7 @@ import {
   CheckCircle2,
   AlertTriangle
 } from 'lucide-react';
-import { ReviewBlock, SnapshotCardPayload } from '@/types/review';
+import { ReviewBlock, SnapshotCardContent } from '@/types/review';
 import { cn } from '@/lib/utils';
 
 interface SnapshotCardProps {
@@ -32,7 +32,7 @@ export const SnapshotCard: React.FC<SnapshotCardProps> = ({
   onSectionView,
   readonly
 }) => {
-  const payload = block.payload as SnapshotCardPayload;
+  const content = block.content as SnapshotCardContent;
 
   useEffect(() => {
     // Track when this block comes into view
@@ -42,8 +42,8 @@ export const SnapshotCard: React.FC<SnapshotCardProps> = ({
           if (entry.isIntersecting) {
             onInteraction?.(block.id.toString(), 'viewed', {
               block_type: 'snapshot_card',
-              evidence_level: payload.evidence_level,
-              recommendation_strength: payload.recommendation_strength,
+              evidence_level: content.evidence_level,
+              recommendation_strength: content.recommendation_strength,
               timestamp: Date.now()
             });
           }
@@ -58,10 +58,10 @@ export const SnapshotCard: React.FC<SnapshotCardProps> = ({
     }
 
     return () => observer.disconnect();
-  }, [block.id, onInteraction, payload.evidence_level, payload.recommendation_strength]);
+  }, [block.id, onInteraction, content.evidence_level, content.recommendation_strength]);
 
   const getEvidenceLevelConfig = () => {
-    switch (payload.evidence_level) {
+    switch (content.evidence_level) {
       case 'high':
         return {
           color: 'bg-green-500',
@@ -101,7 +101,7 @@ export const SnapshotCard: React.FC<SnapshotCardProps> = ({
   };
 
   const getRecommendationConfig = () => {
-    switch (payload.recommendation_strength) {
+    switch (content.recommendation_strength) {
       case 'strong':
         return {
           color: 'text-green-700 bg-green-100 border-green-200',
@@ -159,7 +159,7 @@ export const SnapshotCard: React.FC<SnapshotCardProps> = ({
               <h4 className="font-semibold text-gray-900 dark:text-gray-100">População</h4>
             </div>
             <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-              {payload.population || 'Não especificada'}
+              {content.population || 'Não especificada'}
             </p>
           </div>
 
@@ -170,7 +170,7 @@ export const SnapshotCard: React.FC<SnapshotCardProps> = ({
               <h4 className="font-semibold text-gray-900 dark:text-gray-100">Intervenção</h4>
             </div>
             <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-              {payload.intervention || 'Não especificada'}
+              {content.intervention || 'Não especificada'}
             </p>
           </div>
 
@@ -181,7 +181,7 @@ export const SnapshotCard: React.FC<SnapshotCardProps> = ({
               <h4 className="font-semibold text-gray-900 dark:text-gray-100">Comparação</h4>
             </div>
             <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-              {payload.comparison || 'Não especificada'}
+              {content.comparison || 'Não especificada'}
             </p>
           </div>
 
@@ -192,7 +192,7 @@ export const SnapshotCard: React.FC<SnapshotCardProps> = ({
               <h4 className="font-semibold text-gray-900 dark:text-gray-100">Desfecho</h4>
             </div>
             <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-              {payload.outcome || 'Não especificado'}
+              {content.outcome || 'Não especificado'}
             </p>
           </div>
         </div>
@@ -206,19 +206,19 @@ export const SnapshotCard: React.FC<SnapshotCardProps> = ({
             <h4 className="font-semibold text-gray-900 dark:text-gray-100">Desenho do Estudo</h4>
           </div>
           <Badge variant="outline" className="dark:border-gray-600 dark:text-gray-300">
-            {payload.design || 'Não especificado'}
+            {content.design || 'Não especificado'}
           </Badge>
         </div>
 
         {/* Key Findings */}
-        {payload.key_findings && payload.key_findings.length > 0 && (
+        {content.key_findings && content.key_findings.length > 0 && (
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <h4 className="font-semibold text-gray-900 dark:text-gray-100">Principais Achados</h4>
             </div>
             <ul className="space-y-1">
-              {payload.key_findings.map((finding, index) => (
+              {content.key_findings.map((finding, index) => (
                 <li key={index} className="text-sm text-gray-700 dark:text-gray-300 flex items-start gap-2">
                   <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mt-2 flex-shrink-0"></span>
                   {finding}

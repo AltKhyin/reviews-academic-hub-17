@@ -41,27 +41,27 @@ export const CitationListBlock: React.FC<CitationListBlockProps> = ({
   readonly = false,
   onUpdate
 }) => {
-  const payload = block.payload;
-  const title = payload.title || 'Referências';
-  const citations = payload.citations || [];
-  const citationStyle = payload.citation_style || 'apa';
-  const numbered = payload.numbered !== undefined ? payload.numbered : true;
+  const content = block.content;
+  const title = content.title || 'Referências';
+  const citations = content.citations || [];
+  const citationStyle = content.citation_style || 'apa';
+  const numbered = content.numbered !== undefined ? content.numbered : true;
   
   // Color configuration with defaults
   const colors = {
-    backgroundColor: payload.backgroundColor || '#1a1a1a',
-    borderColor: payload.borderColor || '#2a2a2a',
-    titleColor: payload.titleColor || '#ffffff',
-    textColor: payload.textColor || '#d1d5db',
-    accentColor: payload.accentColor || '#8b5cf6',
-    linkColor: payload.linkColor || '#3b82f6'
+    backgroundColor: content.backgroundColor || '#1a1a1a',
+    borderColor: content.borderColor || '#2a2a2a',
+    titleColor: content.titleColor || '#ffffff',
+    textColor: content.textColor || '#d1d5db',
+    accentColor: content.accentColor || '#8b5cf6',
+    linkColor: content.linkColor || '#3b82f6'
   };
 
   const handleUpdate = (field: string, value: any) => {
     if (onUpdate) {
       onUpdate({
-        payload: {
-          ...payload,
+        content: {
+          ...content,
           [field]: value
         }
       });
@@ -129,6 +129,10 @@ export const CitationListBlock: React.FC<CitationListBlockProps> = ({
       default:
         return `${authors}. ${title}. ${journal}. ${year}.`;
     }
+  };
+
+  const handleColorUpdate = (colorField: string, color: string) => {
+    handleUpdate(colorField, color);
   };
 
   if (readonly) {
@@ -379,22 +383,24 @@ export const CitationListBlock: React.FC<CitationListBlockProps> = ({
                     <InlineTextEditor
                       value={citation.url || ''}
                       onChange={(value) => updateCitation(citation.id, 'url', value)}
-                      placeholder="URL"
-                      className="text-sm"
+                      placeholder="URL (opcional)"
+                      className="text-sm md:col-span-2"
                       style={{ color: colors.textColor }}
                     />
                   </div>
-                  
-                  {/* Preview */}
-                  <div 
-                    className="text-xs p-2 rounded border-t"
-                    style={{ 
-                      backgroundColor: `${colors.backgroundColor}aa`,
-                      borderColor: colors.borderColor,
-                      color: `${colors.textColor}cc`
-                    }}
-                  >
-                    <strong>Preview:</strong> {formatCitation(citation, index)}
+
+                  {/* Citation Preview */}
+                  <div className="mt-3 p-3 bg-black/20 rounded">
+                    <div className="text-xs font-medium mb-1" style={{ color: colors.accentColor }}>
+                      Prévia:
+                    </div>
+                    <div 
+                      className="text-sm"
+                      style={{ color: colors.textColor }}
+                      dangerouslySetInnerHTML={{ 
+                        __html: formatCitation(citation, index).replace(/\*(.*?)\*/g, '<em>$1</em>')
+                      }}
+                    />
                   </div>
                 </div>
               </Card>
@@ -402,16 +408,12 @@ export const CitationListBlock: React.FC<CitationListBlockProps> = ({
             
             <Button
               onClick={addCitation}
-              variant="outline"
               className="w-full"
-              style={{ 
-                borderColor: colors.borderColor,
-                backgroundColor: colors.backgroundColor,
-                color: colors.textColor
-              }}
+              variant="outline"
+              style={{ borderColor: colors.borderColor, color: colors.textColor }}
             >
               <Plus className="w-4 h-4 mr-2" />
-              Adicionar Citação
+              Adicionar Nova Citação
             </Button>
           </div>
         </CardContent>

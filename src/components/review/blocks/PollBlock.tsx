@@ -1,4 +1,3 @@
-
 // ABOUTME: Interactive poll block with real-time voting and inline editing
 // Provides comprehensive poll creation and management with live results
 
@@ -39,11 +38,11 @@ export const PollBlock: React.FC<PollBlockProps> = ({
   onUpdate,
   onInteraction
 }) => {
-  const payload = block.payload;
-  const question = payload.question || '';
+  const content = block.content;
+  const question = content.question || '';
   
   // Handle both string[] and object[] formats for options
-  const rawOptions = payload.options || ['Opção 1', 'Opção 2'];
+  const rawOptions = content.options || ['Opção 1', 'Opção 2'];
   const options: PollOption[] = rawOptions.map((option: any, index: number) => {
     if (typeof option === 'string') {
       return {
@@ -66,16 +65,16 @@ export const PollBlock: React.FC<PollBlockProps> = ({
     }
   });
   
-  const pollType = payload.poll_type || 'single_choice';
-  const votes = payload.votes || new Array(options.length).fill(0);
-  const totalVotes = payload.total_votes || 0;
-  const allowAddOptions = payload.allow_add_options || false;
+  const pollType = content.poll_type || 'single_choice';
+  const votes = content.votes || new Array(options.length).fill(0);
+  const totalVotes = content.total_votes || 0;
+  const allowAddOptions = content.allow_add_options || false;
   
   // Color system integration
-  const textColor = payload.text_color || '#ffffff';
-  const backgroundColor = payload.background_color || '#1a1a1a';
-  const borderColor = payload.border_color || '#2a2a2a';
-  const accentColor = payload.accent_color || '#3b82f6';
+  const textColor = content.text_color || '#ffffff';
+  const backgroundColor = content.background_color || '#1a1a1a';
+  const borderColor = content.border_color || '#2a2a2a';
+  const accentColor = content.accent_color || '#3b82f6';
   
   const [selectedOptions, setSelectedOptions] = useState<number[]>([]);
   const [hasVoted, setHasVoted] = useState(false);
@@ -83,8 +82,8 @@ export const PollBlock: React.FC<PollBlockProps> = ({
   const handleUpdate = (field: string, value: any) => {
     if (onUpdate) {
       onUpdate({
-        payload: {
-          ...payload,
+        content: {
+          ...content,
           [field]: value
         }
       });

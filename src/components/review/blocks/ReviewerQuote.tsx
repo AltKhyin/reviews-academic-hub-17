@@ -1,4 +1,3 @@
-
 // ABOUTME: Reviewer quote block with inline editing for expert commentary
 // Direct editing of quotes, author info, and institution details
 
@@ -23,24 +22,24 @@ export const ReviewerQuote: React.FC<ReviewerQuoteProps> = ({
   readonly = false,
   onUpdate
 }) => {
-  const payload = block.payload;
-  const quote = payload.quote || '';
-  const author = payload.author || '';
-  const title = payload.title || '';
-  const institution = payload.institution || '';
-  const avatarUrl = payload.avatar_url || '';
+  const content = block.content;
+  const quote = content.quote || '';
+  const author = content.author || '';
+  const title = content.title || '';
+  const institution = content.institution || '';
+  const avatarUrl = content.avatar_url || '';
 
   // Color system integration
-  const textColor = payload.text_color || '#ffffff';
-  const backgroundColor = payload.background_color || '#1a1a1a';
-  const borderColor = payload.border_color || '#2a2a2a';
-  const accentColor = payload.accent_color || '#a855f7';
+  const textColor = content.text_color || '#ffffff';
+  const backgroundColor = content.background_color || '#1a1a1a';
+  const borderColor = content.border_color || '#2a2a2a';
+  const accentColor = content.accent_color || '#a855f7';
 
   const handleUpdate = (field: string, value: string) => {
     if (onUpdate) {
       onUpdate({
-        payload: {
-          ...payload,
+        content: {
+          ...content,
           [field]: value
         }
       });
