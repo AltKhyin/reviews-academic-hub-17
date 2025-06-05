@@ -73,19 +73,19 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
   // Six-dot drag handle component
   const SixDotHandle = () => (
     <div
-      className="six-dot-handle w-6 h-6 cursor-grab active:cursor-grabbing flex items-center justify-center rounded hover:bg-gray-700 transition-colors"
+      className="six-dot-handle w-8 h-8 cursor-grab active:cursor-grabbing flex items-center justify-center rounded hover:bg-gray-600 transition-colors shadow-lg"
       draggable
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      style={{ backgroundColor: '#2a2a2a' }}
+      style={{ backgroundColor: '#374151' }}
       title="Arrastar para reordenar"
     >
       <div className="grid grid-cols-2 gap-0.5">
         {[...Array(6)].map((_, i) => (
           <div 
             key={i} 
-            className="w-1 h-1 rounded-full" 
-            style={{ backgroundColor: '#9ca3af' }}
+            className="w-1.5 h-1.5 rounded-full" 
+            style={{ backgroundColor: '#d1d5db' }}
           />
         ))}
       </div>
@@ -110,11 +110,12 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
       {/* Left-side Controls - Always visible when active or on hover */}
       <div 
         className={cn(
-          "block-controls absolute -left-20 top-4 z-20",
+          "block-controls absolute z-20",
           "flex flex-col gap-2",
-          "opacity-0 group-hover:opacity-100 transition-opacity duration-200",
-          isActive && "opacity-100"
+          "transition-all duration-200",
+          isActive ? "opacity-100 -left-16" : "opacity-0 group-hover:opacity-100 -left-16 group-hover:-left-16"
         )}
+        style={{ top: '16px' }}
       >
         {/* Six-dot drag handle */}
         <SixDotHandle />
@@ -129,11 +130,11 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
                 e.stopPropagation();
                 onMove(block.id, 'up');
               }}
-              className="w-6 h-6 p-0 hover:bg-gray-700"
-              style={{ backgroundColor: '#2a2a2a' }}
+              className="w-8 h-8 p-0 hover:bg-gray-600 shadow-lg"
+              style={{ backgroundColor: '#374151' }}
               title="Mover para cima"
             >
-              <ArrowUp className="w-3 h-3" style={{ color: '#9ca3af' }} />
+              <ArrowUp className="w-4 h-4" style={{ color: '#d1d5db' }} />
             </Button>
           )}
 
@@ -145,11 +146,11 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
                 e.stopPropagation();
                 onMove(block.id, 'down');
               }}
-              className="w-6 h-6 p-0 hover:bg-gray-700"
-              style={{ backgroundColor: '#2a2a2a' }}
+              className="w-8 h-8 p-0 hover:bg-gray-600 shadow-lg"
+              style={{ backgroundColor: '#374151' }}
               title="Mover para baixo"
             >
-              <ArrowDown className="w-3 h-3" style={{ color: '#9ca3af' }} />
+              <ArrowDown className="w-4 h-4" style={{ color: '#d1d5db' }} />
             </Button>
           )}
         </div>
@@ -158,10 +159,10 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
       {/* Top Controls Bar */}
       <div 
         className={cn(
-          "absolute -top-12 left-0 right-0 z-20",
+          "absolute z-20",
           "flex items-center justify-between px-3 py-2 rounded-t-lg",
-          "opacity-0 group-hover:opacity-100 transition-opacity duration-200",
-          isActive && "opacity-100"
+          "transition-all duration-200",
+          isActive ? "opacity-100 -top-12 left-0 right-0" : "opacity-0 group-hover:opacity-100 -top-12 group-hover:left-0 group-hover:right-0"
         )}
         style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}
       >

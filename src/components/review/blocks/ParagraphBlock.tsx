@@ -1,5 +1,5 @@
 
-// ABOUTME: Enhanced paragraph block with color system integration and proper text direction
+// ABOUTME: Enhanced paragraph block with proper text direction and color system integration
 // Handles formatted text content with comprehensive color customization
 
 import React from 'react';
@@ -72,7 +72,8 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
     borderWidth: borderColor !== 'transparent' ? '1px' : undefined,
     borderStyle: borderColor !== 'transparent' ? 'solid' : undefined,
     direction: 'ltr' as const,
-    textAlign: alignment as any
+    textAlign: alignment as any,
+    unicodeBidi: 'normal'
   };
 
   if (readonly) {
@@ -112,7 +113,8 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
             color: textColor,
             direction: 'ltr',
             textAlign: alignment,
-            width: '100%'
+            width: '100%',
+            unicodeBidi: 'normal'
           }}
         />
       </div>

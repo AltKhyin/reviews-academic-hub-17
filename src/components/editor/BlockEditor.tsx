@@ -1,8 +1,8 @@
 
-// ABOUTME: Enhanced block editor with integrated content editing and drag-and-drop
-// Provides unified editing experience with inline content manipulation
+// ABOUTME: Enhanced block editor with improved state management and drag-and-drop
+// Provides unified editing experience with proper null state handling
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Settings, Layout, Plus } from 'lucide-react';
@@ -38,6 +38,36 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
   
   const activeBlock = blocks.find(block => block.id === activeBlockId);
 
+  // Fix: Reset active block if it was deleted
+  useEffect(() => {
+    if (activeBlockId && !blocks.find(block => block.id === activeBlockId)) {
+      // If the active block was deleted, select the first available block or null
+      const newActiveId = blocks.length > 0 ? blocks[0].id : null;
+      onActiveBlockChange(newActiveId);
+    }
+  }, [blocks, activeBlockId, onActiveBlockChange]);
+
+  const handleBlockDelete = (blockId: number) => {
+    // If we're deleting the active block, proactively select another block
+    if (blockId === activeBlockId) {
+      const blockIndex = blocks.findIndex(b => b.id === blockId);
+      let newActiveId = null;
+      
+      if (blocks.length > 1) {
+        // Select the next block, or previous if deleting the last block
+        if (blockIndex < blocks.length - 1) {
+          newActiveId = blocks[blockIndex + 1].id;
+        } else if (blockIndex > 0) {
+          newActiveId = blocks[blockIndex - 1].id;
+        }
+      }
+      
+      onActiveBlockChange(newActiveId);
+    }
+    
+    onDeleteBlock(blockId);
+  };
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const draggedBlockId = parseInt(e.dataTransfer.getData('text/plain'));
@@ -50,7 +80,6 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     const currentPosition = blocks.findIndex(b => b.id === draggedBlockId);
     const newPosition = dropPosition > currentPosition ? dropPosition - 1 : dropPosition;
     
-    // Move block logic would go here
     console.log(`Moving block ${draggedBlockId} to position ${newPosition}`);
   };
 
@@ -93,7 +122,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
           </div>
 
           {/* Block List */}
-          <div className="space-y-4">
+          <div className="space-y-4" style={{ marginLeft: '80px' }}>
             {blocks.length === 0 ? (
               <Card 
                 className="border-2 border-dashed text-center py-12"
@@ -124,7 +153,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                 <div key={block.id} className="relative">
                   {/* Drop Zone Above */}
                   <div
-                    className="h-2 -mb-2 opacity-0 hover:opacity-100 transition-opacity"
+                    className="h-2 -mb-2 opacity-0 hover:opacity-100 transition-opacity rounded"
                     data-position={index}
                     onDrop={handleDrop}
                     onDragOver={handleDragOver}
@@ -138,7 +167,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                     isLast={index === blocks.length - 1}
                     onSelect={onActiveBlockChange}
                     onUpdate={onUpdateBlock}
-                    onDelete={onDeleteBlock}
+                    onDelete={handleBlockDelete}
                     onDuplicate={onDuplicateBlock}
                     onMove={onMoveBlock}
                     onAddBlock={onAddBlock}
@@ -147,7 +176,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                   {/* Drop Zone Below */}
                   {index === blocks.length - 1 && (
                     <div
-                      className="h-2 -mt-2 opacity-0 hover:opacity-100 transition-opacity"
+                      className="h-2 -mt-2 opacity-0 hover:opacity-100 transition-opacity rounded"
                       data-position={blocks.length}
                       onDrop={handleDrop}
                       onDragOver={handleDragOver}
@@ -210,6 +239,23 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
           >
             <Settings className="w-4 h-4" />
           </Button>
+        </div>
+      )}
+
+      {/* Empty State Message */}
+      {!compact && !showProperties && !activeBlock && blocks.length > 0 && (
+        <div 
+          className="w-80 border-l flex items-center justify-center p-4 flex-shrink-0"
+          style={{ 
+            backgroundColor: '#1a1a1a',
+            borderColor: '#2a2a2a'
+          }}
+        >
+          <div className="text-center">
+            <p className="text-sm" style={{ color: '#9ca3af' }}>
+              Selecione um bloco para ver suas propriedades
+            </p>
+          </div>
         </div>
       )}
     </div>

@@ -1,183 +1,157 @@
 
-// ABOUTME: Enhanced inline text editor with improved UX and visual feedback
-// Provides seamless click-to-edit functionality with clear edit state indicators
+// ABOUTME: Simple inline text editor for single-line text editing
+// Provides clean interface for basic text input with visual feedback
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { Check, X, Edit3 } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Edit3, Check, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface InlineTextEditorProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
-  multiline?: boolean;
   className?: string;
-  editClassName?: string;
-  disabled?: boolean;
-  maxLength?: number;
-  autoFocus?: boolean;
-  showEditHint?: boolean;
+  readonly?: boolean;
+  multiline?: boolean;
+  style?: React.CSSProperties;
 }
 
 export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
   value,
   onChange,
   placeholder = 'Digite aqui...',
-  multiline = false,
   className = '',
-  editClassName = '',
-  disabled = false,
-  maxLength,
-  autoFocus = false,
-  showEditHint = true
+  readonly = false,
+  multiline = false,
+  style = {}
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [tempValue, setTempValue] = useState(value);
-  const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (isEditing && inputRef.current) {
       inputRef.current.focus();
-      if (autoFocus) {
-        inputRef.current.select();
-      }
+      inputRef.current.select();
     }
-  }, [isEditing, autoFocus]);
+  }, [isEditing]);
 
   useEffect(() => {
     setTempValue(value);
   }, [value]);
 
-  const handleStartEdit = useCallback((e: React.MouseEvent) => {
+  const handleStartEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (disabled) return;
+    if (readonly) return;
     setIsEditing(true);
     setTempValue(value);
-  }, [disabled, value]);
+  };
 
-  const handleSave = useCallback(() => {
+  const handleSave = () => {
     onChange(tempValue);
     setIsEditing(false);
-  }, [onChange, tempValue]);
+  };
 
-  const handleCancel = useCallback(() => {
+  const handleCancel = () => {
     setTempValue(value);
     setIsEditing(false);
-  }, [value]);
+  };
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    e.stopPropagation(); // Prevent block-level shortcuts
-    
-    if (e.key === 'Enter' && !multiline) {
-      e.preventDefault();
-      handleSave();
-    } else if (e.key === 'Escape') {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
       e.preventDefault();
       handleCancel();
-    } else if (e.key === 'Enter' && e.ctrlKey && multiline) {
-      e.preventDefault();
-      handleSave();
-    }
-  }, [multiline, handleSave, handleCancel]);
-
-  const handleBlur = useCallback(() => {
-    setIsFocused(false);
-    // Small delay to allow button clicks
-    setTimeout(() => {
-      if (!isFocused) {
+    } else if (e.key === 'Enter') {
+      if (!multiline || e.ctrlKey) {
+        e.preventDefault();
         handleSave();
       }
-    }, 150);
-  }, [isFocused, handleSave]);
-
-  const handleFocus = useCallback(() => {
-    setIsFocused(true);
-  }, []);
-
-  const displayValue = value || placeholder;
-  const isEmpty = !value;
+    }
+  };
 
   if (isEditing) {
-    const InputComponent = multiline ? Textarea : Input;
+    const InputComponent = multiline ? 'textarea' : 'input';
+    
     return (
-      <div className={cn("inline-editor-container relative", editClassName)}>
-        <div className="flex items-start gap-2">
-          <InputComponent
-            ref={inputRef as any}
-            value={tempValue}
-            onChange={(e) => setTempValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            onBlur={handleBlur}
-            onFocus={handleFocus}
-            maxLength={maxLength}
-            className={cn(
-              "inline-editor-input min-w-0 flex-1 bg-gray-900 border-blue-500 text-white",
-              multiline && "min-h-[100px] resize-none"
-            )}
-            style={{
-              backgroundColor: '#212121',
-              borderColor: '#3b82f6',
-              color: '#ffffff'
+      <div className={cn("inline-text-editor-container flex items-center gap-2", className)} style={style}>
+        <InputComponent
+          ref={inputRef as any}
+          type={multiline ? undefined : "text"}
+          value={tempValue}
+          onChange={(e) => setTempValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onBlur={handleSave}
+          className={cn(
+            "flex-1 px-2 py-1 text-sm border rounded outline-none",
+            multiline && "min-h-[60px] resize-y"
+          )}
+          style={{
+            backgroundColor: '#2a2a2a',
+            borderColor: '#3b82f6',
+            color: '#ffffff'
+          }}
+          placeholder={placeholder}
+          rows={multiline ? 3 : undefined}
+        />
+        
+        <div className="flex gap-1">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSave();
             }}
-          />
-          <div className="flex items-center gap-1 flex-shrink-0">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handleSave}
-              className="w-6 h-6 p-0 hover:bg-green-600/20"
-              onMouseDown={(e) => e.preventDefault()} // Prevent blur
-            >
-              <Check className="w-3 h-3" style={{ color: '#10b981' }} />
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handleCancel}
-              className="w-6 h-6 p-0 hover:bg-red-600/20"
-              onMouseDown={(e) => e.preventDefault()} // Prevent blur
-            >
-              <X className="w-3 h-3" style={{ color: '#ef4444' }} />
-            </Button>
-          </div>
+            className="p-1 rounded hover:bg-gray-700"
+            style={{ color: '#10b981' }}
+            title="Salvar"
+          >
+            <Check className="w-3 h-3" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCancel();
+            }}
+            className="p-1 rounded hover:bg-gray-700"
+            style={{ color: '#ef4444' }}
+            title="Cancelar"
+          >
+            <X className="w-3 h-3" />
+          </button>
         </div>
-        {multiline && (
-          <div className="text-xs mt-1" style={{ color: '#9ca3af' }}>
-            Ctrl+Enter para salvar, Esc para cancelar
-          </div>
-        )}
       </div>
     );
   }
 
+  const displayValue = value || placeholder;
+  const isEmpty = !value;
+
   return (
     <div
       className={cn(
-        "inline-editor-display group cursor-pointer transition-all duration-200",
-        "hover:bg-gray-800/30 rounded px-2 py-1 -mx-2 -my-1 relative",
+        "inline-text-editor-display group cursor-pointer transition-all duration-200",
+        "hover:bg-gray-800/30 rounded px-2 py-1 -mx-2 -my-1",
         isEmpty && "italic",
         className
       )}
       onClick={handleStartEdit}
       style={{
-        color: isEmpty ? '#9ca3af' : '#ffffff'
+        color: isEmpty ? '#9ca3af' : 'inherit',
+        ...style
       }}
     >
       <div className="flex items-center gap-2">
-        <span className="flex-1 min-w-0 break-words">
-          {displayValue}
+        <span className="flex-1">
+          {isEmpty ? (
+            <span className="italic">{placeholder}</span>
+          ) : (
+            value
+          )}
         </span>
-        {!disabled && showEditHint && (
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-50 transition-opacity flex-shrink-0">
-            <Edit3 className="w-3 h-3" style={{ color: '#9ca3af' }} />
-            <span className="text-xs" style={{ color: '#9ca3af' }}>
-              Clique para editar
-            </span>
-          </div>
+        {!readonly && (
+          <Edit3 
+            className="w-3 h-3 opacity-0 group-hover:opacity-50 transition-opacity flex-shrink-0" 
+            style={{ color: '#9ca3af' }}
+          />
         )}
       </div>
     </div>
