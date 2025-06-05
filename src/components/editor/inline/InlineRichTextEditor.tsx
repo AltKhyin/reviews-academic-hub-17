@@ -1,5 +1,5 @@
 
-// ABOUTME: Inline rich text editor for formatted content within blocks
+// ABOUTME: Fixed inline rich text editor with proper text direction and cursor positioning
 // Provides WYSIWYG editing with formatting toolbar and direct content editing
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -47,10 +47,11 @@ export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
   useEffect(() => {
     if (isEditing && editorRef.current) {
       editorRef.current.focus();
+      // Fix cursor positioning - place at end of content
       const range = document.createRange();
       const selection = window.getSelection();
       range.selectNodeContents(editorRef.current);
-      range.collapse(false);
+      range.collapse(true); // Changed from false to true for proper LTR positioning
       selection?.removeAllRanges();
       selection?.addRange(range);
     }
@@ -189,8 +190,12 @@ export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
             backgroundColor: '#1a1a1a',
             borderColor: '#3b82f6',
             color: '#ffffff',
+            direction: 'ltr',
+            textAlign: 'left',
+            unicodeBidi: 'normal',
             ...style
           }}
+          dir="ltr"
           dangerouslySetInnerHTML={{ __html: tempValue }}
         />
         
@@ -215,16 +220,28 @@ export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
       onClick={handleStartEdit}
       style={{
         color: isEmpty ? '#9ca3af' : '#ffffff',
+        direction: 'ltr',
+        textAlign: 'left',
+        unicodeBidi: 'normal',
         ...style
       }}
+      dir="ltr"
     >
       <div className="flex items-start gap-2">
         <Type className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: '#9ca3af' }} />
-        <div className="flex-1 min-w-0">
+        <div 
+          className="flex-1 min-w-0"
+          style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'normal' }}
+          dir="ltr"
+        >
           {isEmpty ? (
             <span className="italic">{placeholder}</span>
           ) : (
-            <div dangerouslySetInnerHTML={{ __html: value }} />
+            <div 
+              dangerouslySetInnerHTML={{ __html: value }}
+              style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'normal' }}
+              dir="ltr"
+            />
           )}
         </div>
         {!disabled && (

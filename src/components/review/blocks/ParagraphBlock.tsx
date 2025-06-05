@@ -1,13 +1,11 @@
 
-// ABOUTME: Enhanced paragraph block with proper text direction and integrated inline color editing
-// Handles formatted text content with comprehensive color customization directly in the block
+// ABOUTME: Enhanced paragraph block with integrated inline settings and fixed text direction
+// Handles formatted text content with comprehensive inline configuration
 
-import React, { useState } from 'react';
+import React from 'react';
 import { ReviewBlock } from '@/types/review';
 import { InlineRichTextEditor } from '@/components/editor/inline/InlineRichTextEditor';
-import { InlineColorPicker } from '@/components/editor/inline/InlineColorPicker';
-import { Settings } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { InlineBlockSettings } from '@/components/editor/inline/InlineBlockSettings';
 import { cn } from '@/lib/utils';
 
 interface ParagraphBlockProps {
@@ -21,7 +19,6 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
   readonly = false,
   onUpdate
 }) => {
-  const [showSettings, setShowSettings] = useState(false);
   const payload = block.payload;
   const content = payload.content || '';
   const alignment = payload.alignment || 'left';
@@ -38,17 +35,6 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
         payload: {
           ...payload,
           content: newContent
-        }
-      });
-    }
-  };
-
-  const handleColorChange = (colorType: string, value: string) => {
-    if (onUpdate) {
-      onUpdate({
-        payload: {
-          ...payload,
-          [`${colorType}_color`]: value
         }
       });
     }
@@ -91,12 +77,6 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
     unicodeBidi: 'normal'
   };
 
-  const colorOptions = [
-    { name: 'Texto', value: textColor, description: 'Cor principal do texto' },
-    { name: 'Fundo', value: backgroundColor, description: 'Cor de fundo do parágrafo' },
-    { name: 'Borda', value: borderColor, description: 'Cor da borda do parágrafo' }
-  ];
-
   if (readonly) {
     return (
       <div className="paragraph-block my-4">
@@ -108,6 +88,7 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
             "prose prose-invert max-w-none"
           )}
           style={blockStyle}
+          dir="ltr"
           dangerouslySetInnerHTML={{ __html: content }}
         />
       </div>
@@ -116,32 +97,13 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
 
   return (
     <div className="paragraph-block my-4 group relative">
-      {/* Inline Settings Toggle */}
-      <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowSettings(!showSettings)}
-          className="h-6 w-6 p-0 hover:bg-gray-700 rounded-full"
-          style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}
-          title="Configurações do bloco"
-        >
-          <Settings className="w-3 h-3" style={{ color: '#9ca3af' }} />
-        </Button>
+      {/* Inline Settings */}
+      <div className="absolute -top-2 -right-2 z-10">
+        <InlineBlockSettings
+          block={block}
+          onUpdate={onUpdate}
+        />
       </div>
-
-      {/* Inline Color Picker */}
-      {showSettings && (
-        <div className="mb-3 p-2 rounded border animate-in slide-in-from-top-2"
-             style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
-          <InlineColorPicker
-            colors={colorOptions}
-            onChange={handleColorChange}
-            readonly={readonly}
-            compact={false}
-          />
-        </div>
-      )}
 
       <div
         className={cn(
@@ -151,6 +113,7 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
           "prose prose-invert max-w-none"
         )}
         style={blockStyle}
+        dir="ltr"
       >
         <InlineRichTextEditor
           value={content}
