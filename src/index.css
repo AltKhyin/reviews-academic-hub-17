@@ -1,3 +1,4 @@
+
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
 
 @tailwind base;
@@ -6,246 +7,133 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 13%;
+    --background: 210 12% 8%;
+    --foreground: 210 12% 98%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 13%;
+    --card: 210 12% 10%;
+    --card-foreground: 210 12% 98%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 13%;
+    --popover: 210 12% 10%;
+    --popover-foreground: 210 12% 98%;
 
-    --primary: 0 0% 13%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 210 12% 98%;
+    --primary-foreground: 210 12% 8%;
 
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 13%;
+    --secondary: 210 12% 13%;
+    --secondary-foreground: 210 12% 98%;
 
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
+    --muted: 210 12% 13%;
+    --muted-foreground: 210 12% 65%;
 
-    --accent: 0 0% 96%;
-    --accent-foreground: 0 0% 13%;
-
-    --destructive: 0 70% 50%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 0 0% 89%;
-    --input: 0 0% 89%;
-    --ring: 0 0% 13%;
-
-    --radius: 4px;
-
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 0 0% 13%;
-    --sidebar-primary: 0 0% 13%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 96%;
-    --sidebar-accent-foreground: 0 0% 13%;
-    --sidebar-border: 0 0% 89%;
-    --sidebar-ring: 0 0% 13%;
-    
-    /* Scrollbar variables for light theme */
-    --scrollbar-track: 0 0% 96%;
-    --scrollbar-thumb: 0 0% 80%;
-    --scrollbar-thumb-hover: 0 0% 70%;
-    
-    /* Dynamic Editor Theme Variables - Default Light Theme */
-    /* These will be overridden by the theme system */
-    
-    /* Editor Colors */
-    --editor-primary-bg: #ffffff;
-    --editor-secondary-bg: #f8f9fa;
-    --editor-tertiary-bg: #f1f3f4;
-    --editor-surface-bg: #ffffff;
-    --editor-card-bg: #ffffff;
-    --editor-hover-bg: #f5f6f7;
-    --editor-active-bg: #e8eaed;
-    --editor-selected-bg: #e8f0fe;
-    
-    --editor-primary-border: #e1e4e8;
-    --editor-secondary-border: #d0d7de;
-    --editor-focus-border: #0969da;
-    --editor-active-border: #fd7e14;
-    
-    --editor-primary-text: #24292f;
-    --editor-secondary-text: #57606a;
-    --editor-muted-text: #8b949e;
-    --editor-accent-text: #0969da;
-    --editor-link-text: #0969da;
-    
-    --editor-success-color: #1a7f37;
-    --editor-warning-color: #d1242f;
-    --editor-error-color: #cf222e;
-    --editor-info-color: #0969da;
-    
-    --editor-button-primary: #24292f;
-    --editor-button-primary-hover: #1c2128;
-    --editor-button-secondary: #f6f8fa;
-    --editor-button-secondary-hover: #f3f4f6;
-    --editor-button-ghost: transparent;
-    --editor-button-ghost-hover: #f5f6f7;
-    
-    /* Block Colors */
-    --block-block-background: #ffffff;
-    --block-block-border: #e1e4e8;
-    --block-block-hover: #f5f6f7;
-    --block-block-selected: #e8f0fe;
-    --block-block-active: #dbeafe;
-    
-    --block-snapshot-card-accent: #0969da;
-    --block-heading-accent: #6f42c1;
-    --block-paragraph-accent: #24292f;
-    --block-figure-accent: #1a7f37;
-    --block-table-accent: #bf8700;
-    --block-callout-accent: #d1242f;
-    --block-quote-accent: #8250df;
-    --block-poll-accent: #1f883d;
-    --block-citation-accent: #656d76;
-    --block-number-card-accent: #0969da;
-    --block-divider-accent: #d0d7de;
-    
-    /* Preview Colors */
-    --preview-preview-bg: #ffffff;
-    --preview-preview-card-bg: #ffffff;
-    --preview-preview-border: #e1e4e8;
-    --preview-preview-header-bg: #f6f8fa;
-    --preview-preview-footer-bg: #f6f8fa;
-    --preview-preview-scrollbar: #d0d7de;
-    --preview-preview-scrollbar-hover: #8b949e;
-    
-    /* Palette Colors */
-    --palette-palette-bg: #f6f8fa;
-    --palette-palette-card-bg: #ffffff;
-    --palette-palette-card-hover: #f5f6f7;
-    --palette-palette-border: #e1e4e8;
-    --palette-palette-header-bg: #f6f8fa;
-    --palette-category-text: #656d76;
-    --palette-block-title-text: #24292f;
-    --palette-block-desc-text: #8b949e;
-  }
-
-  .dark {
-    --background: 0 0% 7%;
-    --foreground: 0 0% 100%;
-
-    --card: 0 0% 9%;
-    --card-foreground: 0 0% 100%;
-
-    --popover: 0 0% 9%;
-    --popover-foreground: 0 0% 100%;
-
-    --primary: 0 0% 100%;
-    --primary-foreground: 0 0% 9%;
-
-    --secondary: 0 0% 13%;
-    --secondary-foreground: 0 0% 100%;
-
-    --muted: 0 0% 13%;
-    --muted-foreground: 0 0% 65%;
-
-    --accent: 0 0% 13%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 210 12% 13%;
+    --accent-foreground: 210 12% 98%;
 
     --destructive: 0 70% 40%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 15%;
-    --input: 0 0% 15%;
-    --ring: 0 0% 83%;
+    --border: 210 12% 15%;
+    --input: 210 12% 15%;
+    --ring: 210 12% 83%;
 
-    --sidebar-background: 0 0% 9%;
-    --sidebar-foreground: 0 0% 100%;
-    --sidebar-primary: 0 0% 100%;
-    --sidebar-primary-foreground: 0 0% 9%;
-    --sidebar-accent: 0 0% 13%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 0 0% 15%;
-    --sidebar-ring: 0 0% 83%;
+    --radius: 6px;
+
+    --sidebar-background: 210 12% 10%;
+    --sidebar-foreground: 210 12% 98%;
+    --sidebar-primary: 210 12% 98%;
+    --sidebar-primary-foreground: 210 12% 8%;
+    --sidebar-accent: 210 12% 13%;
+    --sidebar-accent-foreground: 210 12% 98%;
+    --sidebar-border: 210 12% 15%;
+    --sidebar-ring: 210 12% 83%;
     
-    /* Scrollbar variables for dark theme */
-    --scrollbar-track: 0 0% 9%;
-    --scrollbar-thumb: 0 0% 25%;
-    --scrollbar-thumb-hover: 0 0% 35%;
+    /* Scrollbar variables */
+    --scrollbar-track: 210 12% 10%;
+    --scrollbar-thumb: 210 12% 25%;
+    --scrollbar-thumb-hover: 210 12% 35%;
     
-    /* Dynamic Editor Theme Variables - Default Dark Theme */
-    /* These will be overridden by the theme system */
+    /* Fixed Editor Theme Variables - Dark Palette */
+    /* Primary colors - darkest */
+    --editor-primary-bg: #121212;
+    --editor-secondary-bg: #1a1a1a;
+    --editor-tertiary-bg: #212121;
+    --editor-surface-bg: #121212;
+    --editor-card-bg: #1a1a1a;
+    --editor-hover-bg: #212121;
+    --editor-active-bg: #2a2a2a;
+    --editor-selected-bg: #1e3a8a;
     
-    /* Editor Colors */
-    --editor-primary-bg: #0d1117;
-    --editor-secondary-bg: #161b22;
-    --editor-tertiary-bg: #21262d;
-    --editor-surface-bg: #0d1117;
-    --editor-card-bg: #161b22;
-    --editor-hover-bg: #21262d;
-    --editor-active-bg: #30363d;
-    --editor-selected-bg: #1f2937;
+    /* Border colors */
+    --editor-primary-border: #2a2a2a;
+    --editor-secondary-border: #333333;
+    --editor-focus-border: #3b82f6;
+    --editor-active-border: #f59e0b;
     
-    --editor-primary-border: #30363d;
-    --editor-secondary-border: #21262d;
-    --editor-focus-border: #2f81f7;
-    --editor-active-border: #fd7e14;
+    /* Text colors - high contrast */
+    --editor-primary-text: #ffffff;
+    --editor-secondary-text: #d1d5db;
+    --editor-muted-text: #9ca3af;
+    --editor-accent-text: #3b82f6;
+    --editor-link-text: #60a5fa;
     
-    --editor-primary-text: #f0f6fc;
-    --editor-secondary-text: #8b949e;
-    --editor-muted-text: #6e7681;
-    --editor-accent-text: #2f81f7;
-    --editor-link-text: #58a6ff;
+    /* Status colors */
+    --editor-success-color: #10b981;
+    --editor-warning-color: #f59e0b;
+    --editor-error-color: #ef4444;
+    --editor-info-color: #3b82f6;
     
-    --editor-success-color: #3fb950;
-    --editor-warning-color: #d29922;
-    --editor-error-color: #f85149;
-    --editor-info-color: #2f81f7;
-    
-    --editor-button-primary: #f0f6fc;
-    --editor-button-primary-hover: #e6edf3;
-    --editor-button-secondary: #21262d;
-    --editor-button-secondary-hover: #30363d;
+    /* Interactive colors - improved contrast */
+    --editor-button-primary: #3b82f6;
+    --editor-button-primary-hover: #2563eb;
+    --editor-button-secondary: #212121;
+    --editor-button-secondary-hover: #2a2a2a;
     --editor-button-ghost: transparent;
-    --editor-button-ghost-hover: #21262d;
+    --editor-button-ghost-hover: #212121;
     
-    /* Block Colors */
-    --block-block-background: #161b22;
-    --block-block-border: #30363d;
-    --block-block-hover: #21262d;
-    --block-block-selected: #1f2937;
-    --block-block-active: #1e293b;
+    /* Block colors with distinct icons */
+    --block-block-background: #1a1a1a;
+    --block-block-border: #2a2a2a;
+    --block-block-hover: #212121;
+    --block-block-selected: #1e3a8a;
+    --block-block-active: #1e40af;
     
-    --block-snapshot-card-accent: #2f81f7;
-    --block-heading-accent: #a5a5f0;
-    --block-paragraph-accent: #f0f6fc;
-    --block-figure-accent: #3fb950;
-    --block-table-accent: #d29922;
-    --block-callout-accent: #f85149;
-    --block-quote-accent: #a5a5f0;
-    --block-poll-accent: #3fb950;
-    --block-citation-accent: #8b949e;
-    --block-number-card-accent: #2f81f7;
-    --block-divider-accent: #30363d;
+    /* Block type accent colors for icons */
+    --block-snapshot-card-accent: #3b82f6;
+    --block-heading-accent: #8b5cf6;
+    --block-paragraph-accent: #ffffff;
+    --block-figure-accent: #10b981;
+    --block-table-accent: #f59e0b;
+    --block-callout-accent: #ef4444;
+    --block-quote-accent: #a855f7;
+    --block-poll-accent: #06b6d4;
+    --block-citation-accent: #9ca3af;
+    --block-number-card-accent: #3b82f6;
+    --block-divider-accent: #6b7280;
     
-    /* Preview Colors */
-    --preview-preview-bg: #0d1117;
-    --preview-preview-card-bg: #161b22;
-    --preview-preview-border: #30363d;
-    --preview-preview-header-bg: #161b22;
-    --preview-preview-footer-bg: #161b22;
-    --preview-preview-scrollbar: #30363d;
-    --preview-preview-scrollbar-hover: #484f58;
+    /* Preview colors */
+    --preview-preview-bg: #121212;
+    --preview-preview-card-bg: #1a1a1a;
+    --preview-preview-border: #2a2a2a;
+    --preview-preview-header-bg: #1a1a1a;
+    --preview-preview-footer-bg: #1a1a1a;
+    --preview-preview-scrollbar: #2a2a2a;
+    --preview-preview-scrollbar-hover: #333333;
     
-    /* Palette Colors */
-    --palette-palette-bg: #161b22;
-    --palette-palette-card-bg: #21262d;
-    --palette-palette-card-hover: #30363d;
-    --palette-palette-border: #30363d;
-    --palette-palette-header-bg: #161b22;
-    --palette-category-text: #8b949e;
-    --palette-block-title-text: #f0f6fc;
-    --palette-block-desc-text: #6e7681;
+    /* Palette colors */
+    --palette-palette-bg: #1a1a1a;
+    --palette-palette-card-bg: #212121;
+    --palette-palette-card-hover: #2a2a2a;
+    --palette-palette-border: #2a2a2a;
+    --palette-palette-header-bg: #1a1a1a;
+    --palette-category-text: #9ca3af;
+    --palette-block-title-text: #ffffff;
+    --palette-block-desc-text: #d1d5db;
   }
-  
+
   html, body, #root {
     height: 100%;
     overflow: hidden;
+    background-color: #121212;
+    color: #ffffff;
   }
 }
 
@@ -257,6 +145,8 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    background-color: #121212;
+    color: #ffffff;
   }
   
   /* Custom scrollbar styling for Webkit browsers */
@@ -304,7 +194,7 @@
 
 @layer components {
   .auth-gradient {
-    background: linear-gradient(90deg, #FFFFFF 0%, #F8F8F8 100%);
+    background: linear-gradient(90deg, #1a1a1a 0%, #212121 100%);
   }
   
   .hover-effect {
@@ -312,15 +202,15 @@
   }
   
   .card-elevation {
-    @apply shadow-[0_2px_4px_rgba(0,0,0,0.05)];
+    @apply shadow-[0_2px_4px_rgba(0,0,0,0.3)];
   }
   
   .logo-text {
-    @apply font-serif font-medium tracking-tight;
+    @apply font-serif font-medium tracking-tight text-white;
   }
 
   .subtitle-text {
-    @apply font-sans text-sm font-normal tracking-wide opacity-80;
+    @apply font-sans text-sm font-normal tracking-wide opacity-80 text-gray-300;
   }
   
   /* Enhanced scrollbar utilities */
@@ -362,7 +252,7 @@
     opacity: 1;
   }
   
-  /* Native Editor Design System Classes - Using Dynamic Variables */
+  /* Native Editor Design System Classes - Using Fixed Dark Theme */
   .native-editor {
     background-color: var(--editor-primary-bg);
   }
@@ -428,6 +318,28 @@
     background-color: color-mix(in srgb, var(--editor-info-color) 10%, transparent);
     border-color: color-mix(in srgb, var(--editor-info-color) 20%, transparent);
   }
+  
+  /* Issue Editor specific fixes */
+  .issue-editor-card {
+    background-color: #1a1a1a !important;
+    border-color: #2a2a2a !important;
+    color: #ffffff !important;
+  }
+  
+  .radio-group-item {
+    background-color: #212121 !important;
+    border-color: #2a2a2a !important;
+    color: #ffffff !important;
+  }
+  
+  .radio-group-item:hover {
+    background-color: #2a2a2a !important;
+  }
+  
+  .radio-group-item[data-state="checked"] {
+    background-color: #3b82f6 !important;
+    border-color: #3b82f6 !important;
+  }
 }
 
 @layer utilities {
@@ -435,7 +347,7 @@
     text-wrap: balance;
   }
   
-  /* Editor utilities using dynamic variables */
+  /* Editor utilities using fixed dark theme */
   .editor-layout {
     @apply h-full flex flex-col;
     background-color: var(--editor-primary-bg);
@@ -475,18 +387,16 @@
   }
 }
 
-/* Dark mode specific animations */
-@media (prefers-color-scheme: dark) {
-  .animate-pulse {
-    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+/* Enhanced animations for dark theme */
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
   }
-  
-  @keyframes pulse {
-    0%, 100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.3;
-    }
+  50% {
+    opacity: 0.3;
   }
 }

@@ -1,6 +1,6 @@
 
-// ABOUTME: Block palette for native review editor
-// Provides draggable block types for content creation
+// ABOUTME: Block palette for native review editor with colored icons
+// Provides categorized block types with visual distinctions
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
@@ -35,28 +35,28 @@ export const BlockPalette: React.FC<BlockPaletteProps> = ({ onAddBlock }) => {
           title: 'Cartão de Evidência',
           description: 'Resumo executivo com framework PICOD',
           icon: FlaskConical,
-          color: 'text-[hsl(var(--accent-primary))]'
+          iconColor: 'var(--block-snapshot-card-accent)'
         },
         {
           type: 'heading' as BlockType,
           title: 'Título',
           description: 'Cabeçalho de seção com âncora',
           icon: Heading,
-          color: 'text-[hsl(var(--accent-secondary))]'
+          iconColor: 'var(--block-heading-accent)'
         },
         {
           type: 'paragraph' as BlockType,
           title: 'Parágrafo',
           description: 'Texto rico com citações',
           icon: Type,
-          color: 'text-[hsl(var(--accent-secondary))]'
+          iconColor: 'var(--block-paragraph-accent)'
         },
         {
           type: 'divider' as BlockType,
           title: 'Divisor',
           description: 'Separação visual entre seções',
           icon: Minus,
-          color: 'text-[hsl(var(--accent-tertiary))]'
+          iconColor: 'var(--block-divider-accent)'
         }
       ]
     },
@@ -68,21 +68,21 @@ export const BlockPalette: React.FC<BlockPaletteProps> = ({ onAddBlock }) => {
           title: 'Figura',
           description: 'Imagem com legenda e lightbox',
           icon: Image,
-          color: 'text-[hsl(var(--success))]'
+          iconColor: 'var(--block-figure-accent)'
         },
         {
           type: 'table' as BlockType,
           title: 'Tabela',
           description: 'Dados estruturados com ordenação',
           icon: Table,
-          color: 'text-[hsl(var(--accent-primary))]'
+          iconColor: 'var(--block-table-accent)'
         },
         {
           type: 'number_card' as BlockType,
           title: 'Cartão Numérico',
           description: 'Destaque de estatísticas importantes',
           icon: BarChart3,
-          color: 'text-[hsl(var(--info))]'
+          iconColor: 'var(--block-number-card-accent)'
         }
       ]
     },
@@ -94,21 +94,21 @@ export const BlockPalette: React.FC<BlockPaletteProps> = ({ onAddBlock }) => {
           title: 'Destaque',
           description: 'Caixa de alerta ou informação',
           icon: AlertCircle,
-          color: 'text-[hsl(var(--warning))]'
+          iconColor: 'var(--block-callout-accent)'
         },
         {
           type: 'reviewer_quote' as BlockType,
           title: 'Citação de Revisor',
           description: 'Comentário de especialista',
           icon: Quote,
-          color: 'text-[hsl(var(--accent-primary))]'
+          iconColor: 'var(--block-quote-accent)'
         },
         {
           type: 'poll' as BlockType,
           title: 'Enquete',
           description: 'Votação interativa para leitores',
           icon: Target,
-          color: 'text-[hsl(var(--accent-secondary))]'
+          iconColor: 'var(--block-poll-accent)'
         }
       ]
     },
@@ -120,7 +120,7 @@ export const BlockPalette: React.FC<BlockPaletteProps> = ({ onAddBlock }) => {
           title: 'Lista de Citações',
           description: 'Bibliografia formatada automaticamente',
           icon: FileText,
-          color: 'text-[hsl(var(--accent-secondary))]'
+          iconColor: 'var(--block-citation-accent)'
         }
       ]
     }
@@ -130,17 +130,22 @@ export const BlockPalette: React.FC<BlockPaletteProps> = ({ onAddBlock }) => {
     <div className="block-palette p-4 space-y-6 h-full overflow-y-auto">
       <div>
         <div className="flex items-center gap-2 mb-2">
-          <Sparkles className="w-5 h-5 text-[hsl(var(--accent-primary))]" />
-          <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">Blocos Disponíveis</h3>
+          <Sparkles className="w-5 h-5" style={{ color: 'var(--editor-accent-text)' }} />
+          <h3 className="text-lg font-semibold" style={{ color: 'var(--palette-block-title-text)' }}>
+            Blocos Disponíveis
+          </h3>
         </div>
-        <p className="text-sm text-[hsl(var(--muted-foreground))]">
+        <p className="text-sm" style={{ color: 'var(--palette-block-desc-text)' }}>
           Clique em um bloco para adicioná-lo ao final do documento
         </p>
       </div>
 
       {blockTypes.map((category, categoryIndex) => (
         <div key={categoryIndex}>
-          <h4 className="text-sm font-medium text-[hsl(var(--accent-secondary))] mb-3 uppercase tracking-wide">
+          <h4 
+            className="text-sm font-medium mb-3 uppercase tracking-wide"
+            style={{ color: 'var(--palette-category-text)' }}
+          >
             {category.category}
           </h4>
           
@@ -153,14 +158,28 @@ export const BlockPalette: React.FC<BlockPaletteProps> = ({ onAddBlock }) => {
                   variant="ghost"
                   className="w-full justify-start h-auto p-3 block-type-button transition-all duration-200"
                   onClick={() => onAddBlock(block.type)}
+                  style={{
+                    backgroundColor: 'var(--palette-palette-card-bg)',
+                    borderColor: 'var(--palette-palette-border)',
+                    color: 'var(--palette-block-title-text)'
+                  }}
                 >
                   <div className="flex items-start gap-3 w-full">
-                    <IconComponent className={`w-5 h-5 mt-0.5 flex-shrink-0 ${block.color}`} />
+                    <IconComponent 
+                      className="w-5 h-5 mt-0.5 flex-shrink-0" 
+                      style={{ color: block.iconColor }}
+                    />
                     <div className="text-left flex-1">
-                      <div className="font-medium text-[hsl(var(--foreground))] text-sm">
+                      <div 
+                        className="font-medium text-sm"
+                        style={{ color: 'var(--palette-block-title-text)' }}
+                      >
                         {block.title}
                       </div>
-                      <div className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
+                      <div 
+                        className="text-xs mt-0.5"
+                        style={{ color: 'var(--palette-block-desc-text)' }}
+                      >
                         {block.description}
                       </div>
                     </div>
@@ -171,16 +190,28 @@ export const BlockPalette: React.FC<BlockPaletteProps> = ({ onAddBlock }) => {
           </div>
           
           {categoryIndex < blockTypes.length - 1 && (
-            <Separator className="mt-4 border-[hsl(var(--editor-border))]" />
+            <Separator className="mt-4" style={{ borderColor: 'var(--editor-primary-border)' }} />
           )}
         </div>
       ))}
       
       {/* Status Indicator */}
-      <div className="mt-6 p-3 rounded-lg status-success">
+      <div 
+        className="mt-6 p-3 rounded-lg"
+        style={{ 
+          backgroundColor: 'color-mix(in srgb, var(--editor-success-color) 10%, transparent)',
+          borderColor: 'color-mix(in srgb, var(--editor-success-color) 20%, transparent)',
+          border: '1px solid'
+        }}
+      >
         <div className="flex items-center gap-2 text-xs">
-          <div className="w-2 h-2 bg-[hsl(var(--success))] rounded-full"></div>
-          <span>Todos os componentes implementados</span>
+          <div 
+            className="w-2 h-2 rounded-full"
+            style={{ backgroundColor: 'var(--editor-success-color)' }}
+          ></div>
+          <span style={{ color: 'var(--editor-success-color)' }}>
+            Todos os componentes implementados
+          </span>
         </div>
       </div>
     </div>
