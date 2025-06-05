@@ -1,145 +1,110 @@
 
-// ABOUTME: Statistical highlight card for key numbers and metrics
-// Displays important statistics with optional trend indicators and custom styling
+// ABOUTME: Number card block for highlighting key statistics and metrics
+// Displays prominent numbers with trends and contextual information
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
+import { ReviewBlock } from '@/types/review';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { ReviewBlock, NumberCardPayload } from '@/types/review';
-import { cn } from '@/lib/utils';
 
 interface NumberCardProps {
   block: ReviewBlock;
-  onInteraction?: (blockId: string, interactionType: string, data?: any) => void;
-  onSectionView?: (blockId: string) => void;
   readonly?: boolean;
 }
 
-export const NumberCard: React.FC<NumberCardProps> = ({
-  block,
-  onInteraction,
-  onSectionView,
-  readonly
+export const NumberCard: React.FC<NumberCardProps> = ({ 
+  block, 
+  readonly = false 
 }) => {
-  const payload = block.payload as NumberCardPayload;
-  const customStyles = block.meta?.styles || {};
+  const payload = block.payload;
+  const number = payload.number || '0';
+  const label = payload.label || 'Métrica';
+  const description = payload.description || '';
+  const trend = payload.trend || 'neutral';
+  const percentage = payload.percentage || 0;
 
-  useEffect(() => {
-    // Track when this block comes into view
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            onInteraction?.(block.id.toString(), 'viewed', {
-              block_type: 'number_card',
-              number_value: payload.number,
-              label: payload.label,
-              timestamp: Date.now()
-            });
-          }
-        });
-      },
-      { threshold: 0.5 }
-    );
-
-    const element = document.querySelector(`[data-block-id="${block.id}"]`);
-    if (element) {
-      observer.observe(element);
-    }
-
-    return () => observer.disconnect();
-  }, [block.id, onInteraction, payload.number, payload.label]);
-
-  const getTrendIcon = () => {
-    switch (payload.trend) {
+  const getTrendIcon = (trend: string) => {
+    switch (trend) {
       case 'up':
-        return <TrendingUp className="w-5 h-5 text-green-600" />;
+        return TrendingUp;
       case 'down':
-        return <TrendingDown className="w-5 h-5 text-red-600" />;
-      case 'neutral':
-        return <Minus className="w-5 h-5 text-gray-400" />;
+        return TrendingDown;
       default:
-        return null;
+        return Minus;
     }
   };
 
-  const getTrendColor = () => {
-    switch (payload.trend) {
+  const getTrendColor = (trend: string) => {
+    switch (trend) {
       case 'up':
-        return 'text-green-600';
+        return '#10b981';
       case 'down':
-        return 'text-red-600';
-      case 'neutral':
-        return 'text-gray-500';
+        return '#ef4444';
       default:
-        return '';
+        return '#6b7280';
     }
   };
 
-  const cardStyle = {
-    backgroundColor: customStyles.backgroundColor || '#f0f9ff',
-    borderColor: customStyles.borderColor || '#bfdbfe'
-  };
-
-  const numberStyle = {
-    color: customStyles.numberColor || '#1e40af'
-  };
-
-  const labelStyle = {
-    color: customStyles.labelColor || '#374151'
-  };
+  const TrendIcon = getTrendIcon(trend);
+  const trendColor = getTrendColor(trend);
 
   return (
-    <div 
-      className="number-card my-6"
-      data-block-id={block.id}
-    >
+    <div className="number-card-block my-6">
       <Card 
-        className="hover:shadow-md transition-shadow duration-200 border-2"
-        style={cardStyle}
+        className="text-center border shadow-lg transition-all duration-200 hover:shadow-xl"
+        style={{ 
+          backgroundColor: '#1a1a1a',
+          borderColor: '#2a2a2a'
+        }}
       >
-        <CardContent className="p-6 text-center">
-          {/* Main Number */}
-          <div className="mb-2">
-            <span 
-              className="text-4xl md:text-5xl font-bold"
-              style={numberStyle}
-            >
-              {payload.number}
-            </span>
-            {payload.percentage !== undefined && (
-              <span className={cn("text-lg font-semibold ml-2", getTrendColor())}>
-                {payload.percentage > 0 ? '+' : ''}{payload.percentage}%
-              </span>
-            )}
-          </div>
-
-          {/* Label */}
-          <h3 
-            className="text-lg font-semibold mb-1"
-            style={labelStyle}
-          >
-            {payload.label}
-          </h3>
-
-          {/* Description */}
-          {payload.description && (
-            <p className="text-sm text-gray-600 mb-3">
-              {payload.description}
-            </p>
-          )}
-
-          {/* Trend Indicator */}
-          {payload.trend && (
-            <div className="flex items-center justify-center gap-1">
-              {getTrendIcon()}
-              <span className={cn("text-sm font-medium", getTrendColor())}>
-                {payload.trend === 'up' && 'Aumentou'}
-                {payload.trend === 'down' && 'Diminuiu'}
-                {payload.trend === 'neutral' && 'Estável'}
-              </span>
+        <CardContent className="p-8">
+          <div className="space-y-4">
+            {/* Main Number */}
+            <div className="space-y-2">
+              <div 
+                className="text-4xl md:text-5xl font-bold tracking-tight"
+                style={{ color: '#ffffff' }}
+              >
+                {number}
+              </div>
+              
+              {/* Trend Indicator */}
+              {trend !== 'neutral' && percentage !== 0 && (
+                <div className="flex items-center justify-center gap-1">
+                  <TrendIcon 
+                    className="w-4 h-4" 
+                    style={{ color: trendColor }}
+                  />
+                  <span 
+                    className="text-sm font-medium"
+                    style={{ color: trendColor }}
+                  >
+                    {Math.abs(percentage)}%
+                  </span>
+                </div>
+              )}
             </div>
-          )}
+
+            {/* Label */}
+            <div>
+              <h3 
+                className="text-lg font-semibold"
+                style={{ color: '#ffffff' }}
+              >
+                {label}
+              </h3>
+              
+              {/* Description */}
+              {description && (
+                <p 
+                  className="text-sm mt-2"
+                  style={{ color: '#d1d5db' }}
+                >
+                  {description}
+                </p>
+              )}
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

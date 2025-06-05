@@ -1,10 +1,10 @@
 
-// ABOUTME: Default payload configurations for different block types
-// Provides initial data structures for new blocks
+// ABOUTME: Default payload configurations for all block types
+// Provides standardized starting configurations for new blocks
 
-import { BlockType } from '@/types/review';
+import { BlockType, BlockPayload } from '@/types/review';
 
-export const getDefaultPayload = (type: BlockType): Record<string, any> => {
+export const getDefaultPayload = (type: BlockType): BlockPayload => {
   switch (type) {
     case 'snapshot_card':
       return {
@@ -17,73 +17,93 @@ export const getDefaultPayload = (type: BlockType): Record<string, any> => {
         evidence_level: 'moderate',
         recommendation_strength: 'conditional'
       };
+
     case 'heading':
       return {
-        text: 'Nova Seção',
+        text: 'Novo Título',
         level: 2,
-        slug: '',
-        anchor_id: ''
+        anchor: ''
       };
+
     case 'paragraph':
       return {
-        content: '<p>Digite o conteúdo aqui...</p>',
-        citations: []
+        content: '<p>Digite seu conteúdo aqui...</p>',
+        alignment: 'left',
+        emphasis: 'normal'
       };
+
     case 'figure':
       return {
-        image_url: '',
+        src: '',
+        alt: '',
         caption: '',
-        alt_text: '',
-        figure_number: null
+        width: 'auto',
+        alignment: 'center'
       };
+
     case 'table':
       return {
+        title: '',
         headers: ['Coluna 1', 'Coluna 2'],
-        rows: [['Dado 1', 'Dado 2']],
+        rows: [['Dados 1', 'Dados 2']],
         caption: '',
-        sortable: true
+        compact: false
       };
+
     case 'callout':
       return {
         type: 'info',
-        title: '',
-        content: 'Conteúdo do destaque...',
+        title: 'Informação Importante',
+        content: 'Digite o conteúdo do destaque aqui...',
         icon: ''
       };
+
     case 'number_card':
       return {
         number: '0',
         label: 'Métrica',
-        description: '',
-        trend: 'neutral'
+        description: 'Descrição da métrica',
+        trend: 'neutral',
+        percentage: 0
       };
+
     case 'reviewer_quote':
       return {
-        quote: '',
-        author: '',
-        title: '',
-        institution: '',
+        quote: 'Digite a citação aqui...',
+        author: 'Nome do Autor',
+        title: 'Título/Cargo',
+        institution: 'Instituição',
         avatar_url: ''
       };
+
     case 'poll':
       return {
-        question: 'Nova pergunta de enquete',
+        question: 'Qual é sua opinião?',
         options: [
           { id: '1', text: 'Opção 1', votes: 0 },
           { id: '2', text: 'Opção 2', votes: 0 }
         ],
         poll_type: 'single_choice',
         total_votes: 0,
-        is_open: true
+        opens_at: new Date().toISOString(),
+        closes_at: null
       };
+
     case 'citation_list':
       return {
-        title: 'Referências Bibliográficas',
         citations: [],
         style: 'apa',
-        show_numbers: true,
-        show_links: true
+        numbered: true,
+        title: 'Referências'
       };
+
+    case 'divider':
+      return {
+        style: 'solid',
+        color: '#2a2a2a',
+        thickness: 1
+      };
+
     default:
       return {};
   }

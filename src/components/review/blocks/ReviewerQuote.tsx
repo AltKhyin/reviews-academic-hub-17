@@ -1,109 +1,127 @@
 
-// ABOUTME: Expert commentary and reviewer quotes with attribution
-// Displays professional opinions with author credentials
+// ABOUTME: Reviewer quote block for expert commentary and testimonials
+// Displays attributed quotes with author information and avatars
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Quote } from 'lucide-react';
-import { ReviewBlock, ReviewerQuotePayload } from '@/types/review';
+import { ReviewBlock } from '@/types/review';
+import { Quote, User } from 'lucide-react';
 
 interface ReviewerQuoteProps {
   block: ReviewBlock;
-  onInteraction?: (blockId: string, interactionType: string, data?: any) => void;
-  onSectionView?: (blockId: string) => void;
   readonly?: boolean;
 }
 
-export const ReviewerQuote: React.FC<ReviewerQuoteProps> = ({
-  block,
-  onInteraction,
-  onSectionView,
-  readonly
+export const ReviewerQuote: React.FC<ReviewerQuoteProps> = ({ 
+  block, 
+  readonly = false 
 }) => {
-  const payload = block.payload as ReviewerQuotePayload;
-
-  useEffect(() => {
-    // Track when this block comes into view
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            onInteraction?.(block.id.toString(), 'viewed', {
-              block_type: 'reviewer_quote',
-              author: payload.author,
-              has_avatar: !!payload.avatar_url,
-              timestamp: Date.now()
-            });
-          }
-        });
-      },
-      { threshold: 0.5 }
-    );
-
-    const element = document.querySelector(`[data-block-id="${block.id}"]`);
-    if (element) {
-      observer.observe(element);
-    }
-
-    return () => observer.disconnect();
-  }, [block.id, onInteraction, payload.author, payload.avatar_url]);
+  const payload = block.payload;
+  const quote = payload.quote || '';
+  const author = payload.author || '';
+  const title = payload.title || '';
+  const institution = payload.institution || '';
+  const avatarUrl = payload.avatar_url || '';
 
   const getInitials = (name: string) => {
     return name
       .split(' ')
-      .map(part => part[0])
+      .map(word => word.charAt(0))
       .join('')
       .toUpperCase()
       .slice(0, 2);
   };
 
   return (
-    <Card className="reviewer-quote bg-gradient-to-br from-purple-50 to-indigo-50 border-purple-200 my-8">
-      <CardContent className="p-6">
-        <div className="flex items-start gap-4">
-          {/* Quote Icon */}
-          <Quote className="w-8 h-8 text-purple-600 flex-shrink-0 mt-1" />
-          
-          <div className="flex-1">
-            {/* Quote Text */}
-            <blockquote className="text-lg text-gray-800 leading-relaxed mb-4 italic">
-              "{payload.quote}"
-            </blockquote>
-            
-            {/* Author Attribution */}
-            <div className="flex items-center gap-3">
-              <Avatar className="w-12 h-12">
-                {payload.avatar_url && (
-                  <AvatarImage 
-                    src={payload.avatar_url} 
-                    alt={payload.author}
-                  />
-                )}
-                <AvatarFallback className="bg-purple-100 text-purple-700 font-semibold">
-                  {getInitials(payload.author)}
-                </AvatarFallback>
-              </Avatar>
-              
-              <div>
-                <div className="font-semibold text-gray-900">
-                  {payload.author}
+    <div className="reviewer-quote-block my-8">
+      <Card 
+        className="border-l-4 shadow-lg"
+        style={{ 
+          backgroundColor: '#1a1a1a',
+          borderColor: '#2a2a2a',
+          borderLeftColor: '#a855f7'
+        }}
+      >
+        <CardContent className="p-6">
+          <div className="flex gap-4">
+            {/* Quote Icon */}
+            <div className="flex-shrink-0">
+              <div 
+                className="w-8 h-8 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: 'rgba(168, 85, 247, 0.1)' }}
+              >
+                <Quote 
+                  className="w-4 h-4" 
+                  style={{ color: '#a855f7' }}
+                />
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 space-y-4">
+              {/* Quote Text */}
+              <blockquote>
+                <p 
+                  className="text-lg italic leading-relaxed"
+                  style={{ color: '#ffffff' }}
+                >
+                  "{quote}"
+                </p>
+              </blockquote>
+
+              {/* Author Information */}
+              <div className="flex items-center gap-3 pt-4 border-t" 
+                   style={{ borderColor: '#2a2a2a' }}>
+                
+                {/* Avatar */}
+                <Avatar className="w-10 h-10">
+                  {avatarUrl ? (
+                    <AvatarImage src={avatarUrl} alt={author} />
+                  ) : (
+                    <AvatarFallback 
+                      style={{ 
+                        backgroundColor: '#a855f7',
+                        color: '#ffffff'
+                      }}
+                    >
+                      {author ? getInitials(author) : <User className="w-5 h-5" />}
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+
+                {/* Author Details */}
+                <div className="flex-1">
+                  <div 
+                    className="font-semibold"
+                    style={{ color: '#ffffff' }}
+                  >
+                    {author}
+                  </div>
+                  
+                  {title && (
+                    <div 
+                      className="text-sm"
+                      style={{ color: '#d1d5db' }}
+                    >
+                      {title}
+                    </div>
+                  )}
+                  
+                  {institution && (
+                    <div 
+                      className="text-sm"
+                      style={{ color: '#9ca3af' }}
+                    >
+                      {institution}
+                    </div>
+                  )}
                 </div>
-                {payload.title && (
-                  <div className="text-sm text-gray-600">
-                    {payload.title}
-                  </div>
-                )}
-                {payload.institution && (
-                  <div className="text-sm text-gray-500">
-                    {payload.institution}
-                  </div>
-                )}
               </div>
             </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 };

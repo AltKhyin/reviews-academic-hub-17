@@ -1,80 +1,52 @@
 
-// ABOUTME: Interactive poll block for native reviews
-// Allows readers to vote and see results in real-time
+// ABOUTME: Interactive poll block for reader engagement and data collection
+// Supports single/multiple choice voting with real-time results
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { BarChart3, Users, Clock, CheckCircle } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 import { ReviewBlock } from '@/types/review';
-import { cn } from '@/lib/utils';
-
-interface PollPayload {
-  question: string;
-  options: Array<{
-    id: string;
-    text: string;
-    votes: number;
-  }>;
-  poll_type: 'single_choice' | 'multiple_choice' | 'rating';
-  total_votes: number;
-  closes_at?: string;
-  is_open: boolean;
-}
+import { BarChart3, Vote, Clock, CheckCircle } from 'lucide-react';
 
 interface PollBlockProps {
   block: ReviewBlock;
-  onInteraction?: (blockId: string, interactionType: string, data?: any) => void;
-  onSectionView?: (blockId: string) => void;
   readonly?: boolean;
+  onInteraction?: (blockId: string, interactionType: string, data?: any) => void;
 }
 
-export const PollBlock: React.FC<PollBlockProps> = ({
-  block,
-  onInteraction,
-  onSectionView,
-  readonly
+export const PollBlock: React.FC<PollBlockProps> = ({ 
+  block, 
+  readonly = false,
+  onInteraction
 }) => {
-  const payload = block.payload as PollPayload;
+  const payload = block.payload;
+  const question = payload.question || '';
+  const options = payload.options || [];
+  const pollType = payload.poll_type || 'single_choice';
+  const totalVotes = payload.total_votes || 0;
+  const opensAt = payload.opens_at;
+  const closesAt = payload.closes_at;
+
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [hasVoted, setHasVoted] = useState(false);
-  const [showResults, setShowResults] = useState(false);
+  const [showResults, setShowResults] = useState(readonly || totalVotes > 0);
 
-  useEffect(() => {
-    // Track when this block comes into view
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            onSectionView?.(block.id.toString());
-            onInteraction?.(block.id.toString(), 'viewed', {
-              block_type: 'poll',
-              poll_type: payload.poll_type,
-              total_votes: payload.total_votes,
-              timestamp: Date.now()
-            });
-          }
-        });
-      },
-      { threshold: 0.3 }
-    );
-
-    const element = document.querySelector(`[data-block-id="${block.id}"]`);
-    if (element) {
-      observer.observe(element);
-    }
-
-    return () => observer.disconnect();
-  }, [block.id, onInteraction, onSectionView, payload.poll_type, payload.total_votes]);
+  const isActive = () => {
+    const now = new Date();
+    const openTime = opensAt ? new Date(opensAt) : new Date(0);
+    const closeTime = closesAt ? new Date(closesAt) : null;
+    
+    return now >= openTime && (!closeTime || now <= closeTime);
+  };
 
   const handleOptionSelect = (optionId: string) => {
-    if (readonly || hasVoted || !payload.is_open) return;
+    if (hasVoted || !isActive() || readonly) return;
 
-    if (payload.poll_type === 'single_choice') {
+    if (pollType === 'single_choice') {
       setSelectedOptions([optionId]);
-    } else if (payload.poll_type === 'multiple_choice') {
+    } else {
       setSelectedOptions(prev => 
         prev.includes(optionId) 
           ? prev.filter(id => id !== optionId)
@@ -84,120 +56,124 @@ export const PollBlock: React.FC<PollBlockProps> = ({
   };
 
   const handleVote = () => {
-    if (selectedOptions.length === 0) return;
+    if (selectedOptions.length === 0 || hasVoted) return;
 
     setHasVoted(true);
     setShowResults(true);
 
-    onInteraction?.(block.id.toString(), 'poll_voted', {
-      selected_options: selectedOptions,
-      poll_type: payload.poll_type,
-      timestamp: Date.now()
-    });
+    if (onInteraction) {
+      onInteraction(String(block.id), 'poll_vote', {
+        selectedOptions,
+        pollType
+      });
+    }
   };
 
-  const getOptionPercentage = (optionVotes: number): number => {
-    if (payload.total_votes === 0) return 0;
-    return Math.round((optionVotes / payload.total_votes) * 100);
+  const getPercentage = (votes: number) => {
+    return totalVotes > 0 ? Math.round((votes / totalVotes) * 100) : 0;
   };
 
-  const isPollClosed = payload.closes_at && new Date(payload.closes_at) < new Date();
-  const canVote = !readonly && !hasVoted && payload.is_open && !isPollClosed;
-  const shouldShowResults = showResults || hasVoted || isPollClosed || !payload.is_open;
+  const pollStatus = !isActive() ? 'closed' : hasVoted ? 'voted' : 'active';
 
   return (
     <div className="poll-block my-6">
-      <Card className="overflow-hidden border-blue-200 dark:border-blue-800 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
-        <CardHeader className="pb-4">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-2 mb-2">
-              <BarChart3 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              <Badge variant="outline" className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 border-blue-300 dark:border-blue-700">
-                Enquete {payload.poll_type === 'multiple_choice' ? '(Múltipla Escolha)' : '(Escolha Única)'}
-              </Badge>
-            </div>
+      <Card 
+        className="border shadow-lg"
+        style={{ 
+          backgroundColor: '#1a1a1a',
+          borderColor: '#2a2a2a'
+        }}
+      >
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2" style={{ color: '#ffffff' }}>
+            <BarChart3 className="w-5 h-5" style={{ color: '#06b6d4' }} />
+            Enquete Interativa
             
-            <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-              <div className="flex items-center gap-1">
-                <Users className="w-4 h-4" />
-                <span>{payload.total_votes} {payload.total_votes === 1 ? 'voto' : 'votos'}</span>
-              </div>
-              {payload.closes_at && (
-                <div className="flex items-center gap-1">
-                  <Clock className="w-4 h-4" />
-                  <span>{isPollClosed ? 'Encerrada' : 'Aberta'}</span>
-                </div>
+            <div className="flex gap-2 ml-auto">
+              {pollStatus === 'voted' && (
+                <Badge 
+                  variant="outline"
+                  style={{ 
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderColor: '#10b981',
+                    color: '#10b981'
+                  }}
+                >
+                  <CheckCircle className="w-3 h-3 mr-1" />
+                  Votado
+                </Badge>
+              )}
+              
+              {pollStatus === 'closed' && (
+                <Badge 
+                  variant="outline"
+                  style={{ 
+                    backgroundColor: 'rgba(107, 114, 128, 0.1)',
+                    borderColor: '#6b7280',
+                    color: '#6b7280'
+                  }}
+                >
+                  <Clock className="w-3 h-3 mr-1" />
+                  Encerrada
+                </Badge>
               )}
             </div>
-          </div>
-          
-          <CardTitle className="text-xl text-gray-900 dark:text-white leading-tight">
-            {payload.question}
           </CardTitle>
         </CardHeader>
+        
+        <CardContent className="space-y-6">
+          {/* Question */}
+          <div>
+            <h3 
+              className="text-lg font-medium mb-2"
+              style={{ color: '#ffffff' }}
+            >
+              {question}
+            </h3>
+            
+            <div className="flex items-center gap-4 text-sm" style={{ color: '#9ca3af' }}>
+              <span>Total de votos: {totalVotes}</span>
+              <span>Tipo: {pollType === 'single_choice' ? 'Escolha única' : 'Múltipla escolha'}</span>
+            </div>
+          </div>
 
-        <CardContent className="pt-0">
+          {/* Options */}
           <div className="space-y-3">
-            {payload.options.map((option) => {
-              const percentage = getOptionPercentage(option.votes);
+            {options.map((option: any) => {
               const isSelected = selectedOptions.includes(option.id);
+              const percentage = getPercentage(option.votes);
               
               return (
-                <div key={option.id} className="relative">
-                  {shouldShowResults ? (
-                    // Results View
-                    <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium text-gray-900 dark:text-white">
-                          {option.text}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          {isSelected && (
-                            <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
-                          )}
-                          <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                            {percentage}%
-                          </span>
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <Progress 
-                          value={percentage} 
-                          className="h-2"
-                        />
-                        <div className="text-xs text-gray-500 dark:text-gray-400">
-                          {option.votes} {option.votes === 1 ? 'voto' : 'votos'}
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    // Voting View
-                    <Button
-                      variant={isSelected ? "default" : "outline"}
-                      className={cn(
-                        "w-full p-4 h-auto text-left justify-start",
-                        isSelected && "ring-2 ring-blue-500",
-                        !canVote && "opacity-50 cursor-not-allowed"
+                <div key={option.id} className="space-y-2">
+                  <Button
+                    variant={isSelected ? "default" : "outline"}
+                    className="w-full justify-start text-left h-auto p-4"
+                    onClick={() => handleOptionSelect(option.id)}
+                    disabled={hasVoted || !isActive() || readonly}
+                    style={{
+                      backgroundColor: isSelected ? '#06b6d4' : 'transparent',
+                      borderColor: isSelected ? '#06b6d4' : '#2a2a2a',
+                      color: isSelected ? '#ffffff' : '#ffffff'
+                    }}
+                  >
+                    <div className="flex items-center gap-2 w-full">
+                      <Vote className="w-4 h-4" />
+                      <span className="flex-1">{option.text}</span>
+                      {showResults && (
+                        <Badge variant="secondary" style={{ color: '#ffffff' }}>
+                          {option.votes} ({percentage}%)
+                        </Badge>
                       )}
-                      onClick={() => handleOptionSelect(option.id)}
-                      disabled={!canVote}
-                    >
-                      <div className="flex items-center gap-3 w-full">
-                        <div className={cn(
-                          "w-4 h-4 rounded-full border-2 flex-shrink-0",
-                          isSelected 
-                            ? "bg-blue-600 border-blue-600" 
-                            : "border-gray-300 dark:border-gray-600"
-                        )}>
-                          {isSelected && (
-                            <div className="w-2 h-2 bg-white rounded-full mx-auto mt-0.5" />
-                          )}
-                        </div>
-                        <span className="flex-1 font-medium">
-                          {option.text}
-                        </span>
-                      </div>
-                    </Button>
+                    </div>
+                  </Button>
+                  
+                  {/* Results Bar */}
+                  {showResults && (
+                    <Progress 
+                      value={percentage} 
+                      className="h-2"
+                      style={{ backgroundColor: '#2a2a2a' }}
+                    />
                   )}
                 </div>
               );
@@ -205,32 +181,31 @@ export const PollBlock: React.FC<PollBlockProps> = ({
           </div>
 
           {/* Vote Button */}
-          {canVote && selectedOptions.length > 0 && !shouldShowResults && (
-            <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-              <Button 
-                onClick={handleVote}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                Votar ({selectedOptions.length} {selectedOptions.length === 1 ? 'opção selecionada' : 'opções selecionadas'})
-              </Button>
-            </div>
+          {!hasVoted && !readonly && isActive() && selectedOptions.length > 0 && (
+            <Button 
+              onClick={handleVote}
+              className="w-full"
+              style={{ 
+                backgroundColor: '#06b6d4',
+                color: '#ffffff'
+              }}
+            >
+              <Vote className="w-4 h-4 mr-2" />
+              Confirmar Voto
+            </Button>
           )}
 
-          {/* Poll Status */}
-          {isPollClosed && (
-            <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
-              <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
-                Esta enquete foi encerrada em {new Date(payload.closes_at!).toLocaleDateString('pt-BR')}
-              </p>
-            </div>
-          )}
-          
-          {!payload.is_open && !isPollClosed && (
-            <div className="mt-4 p-3 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg">
-              <p className="text-sm text-yellow-800 dark:text-yellow-200 text-center">
-                Esta enquete está temporariamente fechada
-              </p>
-            </div>
+          {/* Results Toggle */}
+          {!readonly && (hasVoted || totalVotes > 0) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowResults(!showResults)}
+              className="w-full"
+              style={{ color: '#9ca3af' }}
+            >
+              {showResults ? 'Ocultar Resultados' : 'Ver Resultados'}
+            </Button>
           )}
         </CardContent>
       </Card>
