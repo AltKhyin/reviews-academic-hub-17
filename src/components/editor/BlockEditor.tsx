@@ -206,21 +206,19 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     }));
   }, [dragState.isDragging, dragState.draggedBlockId, dragState.draggedFromRowId]);
 
-  // Handle drag over for 2D grids (GridPosition)
-  const handleDragOver2D = useCallback((e: React.DragEvent, targetId: string, position?: GridPosition, targetType?: string) => {
+  // Handle drag over for 2D grids (number position for compatibility)
+  const handleDragOver2D = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number, targetType?: 'grid' | 'single' | 'merge') => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     
     if (!dragState.isDragging || !dragState.draggedBlockId) return;
-    if (dragState.draggedFromRowId === targetId) return;
-    
-    const positionNumber = position ? position.row * 10 + position.column : null;
+    if (dragState.draggedFromRowId === targetRowId) return;
     
     setDragState(prev => ({
       ...prev,
-      dragOverRowId: targetId,
-      dragOverPosition: positionNumber,
-      dropTargetType: targetType as 'grid' | 'single' | 'merge' || 'merge'
+      dragOverRowId: targetRowId,
+      dragOverPosition: targetPosition || null,
+      dropTargetType: targetType || 'merge'
     }));
   }, [dragState.isDragging, dragState.draggedBlockId, dragState.draggedFromRowId]);
 
@@ -269,8 +267,8 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     }
   }, [dragState.draggedBlockId, onMergeBlockIntoGrid]);
 
-  // Handle drop for 2D grids
-  const handleDrop2D = useCallback((e: React.DragEvent, targetId: string, position?: GridPosition, dropType?: string) => {
+  // Handle drop for 2D grids (number position for compatibility)
+  const handleDrop2D = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number, dropType?: 'grid' | 'single' | 'merge') => {
     e.preventDefault();
     
     if (!dragState.draggedBlockId || processingDropRef.current) return;
@@ -279,8 +277,8 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     
     try {
       // Handle 2D grid drop logic here
-      if (position && onMergeBlockIntoGrid) {
-        onMergeBlockIntoGrid(dragState.draggedBlockId, targetId, position.column);
+      if (targetPosition !== undefined && onMergeBlockIntoGrid) {
+        onMergeBlockIntoGrid(dragState.draggedBlockId, targetRowId, targetPosition);
       }
     } finally {
       setDragState({
