@@ -1,4 +1,3 @@
-
 // ABOUTME: Template management system for native editor with predefined block collections
 // Enables rapid content creation using proven review structures and patterns
 
@@ -7,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
-  FileTemplate, 
+  FileText, 
   Plus, 
   Eye,
   Sparkles,
@@ -152,7 +151,7 @@ const REVIEW_TEMPLATES: Template[] = [
     name: 'Revisão Narrativa',
     description: 'Estrutura flexível para revisão narrativa',
     category: 'narrative',
-    icon: FileTemplate,
+    icon: FileText,
     tags: ['Narrativa', 'Discussão', 'Perspectiva'],
     blocks: [
       {
@@ -273,7 +272,7 @@ export const TemplateManager: React.FC<TemplateManagerProps> = ({
 
   const categories = [
     { id: 'systematic', label: 'Sistemática', icon: BookOpen },
-    { id: 'narrative', label: 'Narrativa', icon: FileTemplate },
+    { id: 'narrative', label: 'Narrativa', icon: FileText },
     { id: 'meta_analysis', label: 'Meta-análise', icon: TrendingUp },
     { id: 'case_study', label: 'Caso Clínico', icon: FlaskConical }
   ];
