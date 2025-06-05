@@ -1,6 +1,6 @@
 
-// ABOUTME: Enhanced heading block with inline editing and multiple levels
-// Provides structured content hierarchy with direct click-to-edit functionality
+// ABOUTME: Enhanced heading block with proper inline editing and level management
+// Supports multiple heading levels with inline text editing capabilities
 
 import React from 'react';
 import { ReviewBlock } from '@/types/review';
@@ -19,9 +19,14 @@ export const HeadingBlock: React.FC<HeadingBlockProps> = ({
   onUpdate
 }) => {
   const payload = block.payload;
-  const level = payload.level || 1;
   const text = payload.text || '';
+  const level = payload.level || 1;
   const anchor = payload.anchor || '';
+
+  // Color system integration
+  const textColor = payload.text_color || '#ffffff';
+  const backgroundColor = payload.background_color || 'transparent';
+  const borderColor = payload.border_color || 'transparent';
 
   const handleTextChange = (newText: string) => {
     if (onUpdate) {
@@ -29,91 +34,84 @@ export const HeadingBlock: React.FC<HeadingBlockProps> = ({
         payload: {
           ...payload,
           text: newText,
-          // Auto-generate anchor from text if not set
-          anchor: anchor || newText.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+          // Auto-generate anchor from text if not manually set
+          anchor: anchor || newText.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
         }
       });
     }
   };
 
-  const getHeadingStyles = (level: number) => {
-    const baseStyles = "font-semibold leading-tight tracking-tight";
-    
+  const getHeadingTag = () => {
     switch (level) {
-      case 1:
-        return `${baseStyles} text-3xl md:text-4xl text-white`;
-      case 2:
-        return `${baseStyles} text-2xl md:text-3xl text-white`;
-      case 3:
-        return `${baseStyles} text-xl md:text-2xl text-white`;
-      case 4:
-        return `${baseStyles} text-lg md:text-xl text-gray-100`;
-      case 5:
-        return `${baseStyles} text-base md:text-lg text-gray-200`;
-      case 6:
-        return `${baseStyles} text-sm md:text-base text-gray-300`;
-      default:
-        return `${baseStyles} text-xl text-white`;
+      case 1: return 'h1';
+      case 2: return 'h2';
+      case 3: return 'h3';
+      case 4: return 'h4';
+      case 5: return 'h5';
+      case 6: return 'h6';
+      default: return 'h1';
     }
   };
 
-  const HeadingComponent = `h${Math.min(Math.max(level, 1), 6)}` as keyof JSX.IntrinsicElements;
+  const getHeadingClass = () => {
+    switch (level) {
+      case 1: return 'text-4xl font-bold';
+      case 2: return 'text-3xl font-bold';
+      case 3: return 'text-2xl font-semibold';
+      case 4: return 'text-xl font-semibold';
+      case 5: return 'text-lg font-medium';
+      case 6: return 'text-base font-medium';
+      default: return 'text-4xl font-bold';
+    }
+  };
+
+  const HeadingTag = getHeadingTag() as keyof JSX.IntrinsicElements;
+
+  const headingStyle: React.CSSProperties = {
+    color: textColor,
+    backgroundColor: backgroundColor !== 'transparent' ? backgroundColor : undefined,
+    borderColor: borderColor !== 'transparent' ? borderColor : undefined,
+    borderWidth: borderColor !== 'transparent' ? '1px' : undefined,
+    borderStyle: borderColor !== 'transparent' ? 'solid' : undefined,
+    direction: 'ltr',
+    unicodeBidi: 'normal'
+  };
 
   if (readonly) {
     return (
       <div className="heading-block my-6">
-        <HeadingComponent
+        <HeadingTag
           id={anchor}
           className={cn(
-            getHeadingStyles(level),
-            "scroll-mt-20", // Account for fixed headers
-            anchor && "group relative"
+            getHeadingClass(),
+            "leading-tight"
           )}
+          style={headingStyle}
         >
           {text}
-          {anchor && (
-            <a
-              href={`#${anchor}`}
-              className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
-              style={{ color: '#6b7280' }}
-              aria-label="Link to this heading"
-            >
-              #
-            </a>
-          )}
-        </HeadingComponent>
+        </HeadingTag>
       </div>
     );
   }
 
   return (
     <div className="heading-block my-6">
-      <HeadingComponent
+      <HeadingTag
         id={anchor}
         className={cn(
-          getHeadingStyles(level),
-          "scroll-mt-20",
-          anchor && "group relative"
+          getHeadingClass(),
+          "leading-tight"
         )}
+        style={headingStyle}
       >
         <InlineTextEditor
           value={text}
           onChange={handleTextChange}
           placeholder={`Título nível ${level}`}
-          className={getHeadingStyles(level)}
-          disabled={readonly}
+          className="w-full"
+          readonly={readonly}
         />
-        {anchor && (
-          <a
-            href={`#${anchor}`}
-            className="ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
-            style={{ color: '#6b7280' }}
-            aria-label="Link to this heading"
-          >
-            #
-          </a>
-        )}
-      </HeadingComponent>
+      </HeadingTag>
     </div>
   );
 };

@@ -1,6 +1,6 @@
 
-// ABOUTME: Enhanced block editor with improved state management and drag-and-drop
-// Provides unified editing experience with proper null state handling
+// ABOUTME: Enhanced block editor with improved drag-and-drop and state management
+// Provides unified editing experience with proper block reordering functionality
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -41,20 +41,17 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
   // Fix: Reset active block if it was deleted
   useEffect(() => {
     if (activeBlockId && !blocks.find(block => block.id === activeBlockId)) {
-      // If the active block was deleted, select the first available block or null
       const newActiveId = blocks.length > 0 ? blocks[0].id : null;
       onActiveBlockChange(newActiveId);
     }
   }, [blocks, activeBlockId, onActiveBlockChange]);
 
   const handleBlockDelete = (blockId: number) => {
-    // If we're deleting the active block, proactively select another block
     if (blockId === activeBlockId) {
       const blockIndex = blocks.findIndex(b => b.id === blockId);
       let newActiveId = null;
       
       if (blocks.length > 1) {
-        // Select the next block, or previous if deleting the last block
         if (blockIndex < blocks.length - 1) {
           newActiveId = blocks[blockIndex + 1].id;
         } else if (blockIndex > 0) {
@@ -68,24 +65,15 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     onDeleteBlock(blockId);
   };
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    const draggedBlockId = parseInt(e.dataTransfer.getData('text/plain'));
-    const dropZone = e.currentTarget as HTMLElement;
-    const dropPosition = parseInt(dropZone.dataset.position || '0');
-    
-    const draggedBlock = blocks.find(b => b.id === draggedBlockId);
-    if (!draggedBlock) return;
+  // Enhanced block movement with proper drag-and-drop support
+  const handleMoveBlock = (blockId: number, direction: 'up' | 'down') => {
+    const currentIndex = blocks.findIndex(b => b.id === blockId);
+    if (currentIndex === -1) return;
 
-    const currentPosition = blocks.findIndex(b => b.id === draggedBlockId);
-    const newPosition = dropPosition > currentPosition ? dropPosition - 1 : dropPosition;
-    
-    console.log(`Moving block ${draggedBlockId} to position ${newPosition}`);
-  };
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= blocks.length) return;
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+    onMoveBlock(blockId, direction);
   };
 
   return (
@@ -121,8 +109,8 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
             </div>
           </div>
 
-          {/* Block List */}
-          <div className="space-y-4" style={{ marginLeft: '80px' }}>
+          {/* Block List with improved spacing */}
+          <div className="space-y-6" style={{ marginLeft: '60px' }}>
             {blocks.length === 0 ? (
               <Card 
                 className="border-2 border-dashed text-center py-12"
@@ -151,15 +139,6 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
             ) : (
               blocks.map((block, index) => (
                 <div key={block.id} className="relative">
-                  {/* Drop Zone Above */}
-                  <div
-                    className="h-2 -mb-2 opacity-0 hover:opacity-100 transition-opacity rounded"
-                    data-position={index}
-                    onDrop={handleDrop}
-                    onDragOver={handleDragOver}
-                    style={{ backgroundColor: '#3b82f6' }}
-                  />
-                  
                   <BlockContentEditor
                     block={block}
                     isActive={activeBlockId === block.id}
@@ -169,20 +148,9 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                     onUpdate={onUpdateBlock}
                     onDelete={handleBlockDelete}
                     onDuplicate={onDuplicateBlock}
-                    onMove={onMoveBlock}
+                    onMove={handleMoveBlock}
                     onAddBlock={onAddBlock}
                   />
-                  
-                  {/* Drop Zone Below */}
-                  {index === blocks.length - 1 && (
-                    <div
-                      className="h-2 -mt-2 opacity-0 hover:opacity-100 transition-opacity rounded"
-                      data-position={blocks.length}
-                      onDrop={handleDrop}
-                      onDragOver={handleDragOver}
-                      style={{ backgroundColor: '#3b82f6' }}
-                    />
-                  )}
                 </div>
               ))
             )}

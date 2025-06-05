@@ -1,6 +1,6 @@
 
-// ABOUTME: Simple inline text editor for single-line text editing
-// Provides clean interface for basic text input with visual feedback
+// ABOUTME: Enhanced inline text editor with proper TypeScript support and improved UX
+// Provides clean interface for basic text input with visual feedback and proper prop support
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Edit3, Check, X } from 'lucide-react';
@@ -12,6 +12,7 @@ interface InlineTextEditorProps {
   placeholder?: string;
   className?: string;
   readonly?: boolean;
+  disabled?: boolean;
   multiline?: boolean;
   style?: React.CSSProperties;
 }
@@ -22,6 +23,7 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
   placeholder = 'Digite aqui...',
   className = '',
   readonly = false,
+  disabled = false,
   multiline = false,
   style = {}
 }) => {
@@ -42,7 +44,7 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
 
   const handleStartEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (readonly) return;
+    if (readonly || disabled) return;
     setIsEditing(true);
     setTempValue(value);
   };
@@ -92,6 +94,7 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
           }}
           placeholder={placeholder}
           rows={multiline ? 3 : undefined}
+          disabled={disabled}
         />
         
         <div className="flex gap-1">
@@ -131,6 +134,7 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
         "inline-text-editor-display group cursor-pointer transition-all duration-200",
         "hover:bg-gray-800/30 rounded px-2 py-1 -mx-2 -my-1",
         isEmpty && "italic",
+        disabled && "opacity-50 cursor-not-allowed",
         className
       )}
       onClick={handleStartEdit}
@@ -147,7 +151,7 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
             value
           )}
         </span>
-        {!readonly && (
+        {!readonly && !disabled && (
           <Edit3 
             className="w-3 h-3 opacity-0 group-hover:opacity-50 transition-opacity flex-shrink-0" 
             style={{ color: '#9ca3af' }}

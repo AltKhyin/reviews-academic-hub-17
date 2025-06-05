@@ -65,15 +65,15 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
     }
   };
 
-  const blockStyle = {
+  const blockStyle: React.CSSProperties = {
     color: textColor,
     backgroundColor: backgroundColor !== 'transparent' ? backgroundColor : undefined,
     borderColor: borderColor !== 'transparent' ? borderColor : undefined,
     borderWidth: borderColor !== 'transparent' ? '1px' : undefined,
     borderStyle: borderColor !== 'transparent' ? 'solid' : undefined,
-    direction: 'ltr' as const,
+    direction: 'ltr',
     textAlign: alignment as any,
-    unicodeBidi: 'normal'
+    unicodeBidi: 'normal' as const
   };
 
   if (readonly) {
