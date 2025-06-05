@@ -55,9 +55,9 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
     }
   }, [block.id, onSelect]);
 
-  const handleBlockUpdate = useCallback((updates: Partial<ReviewBlock>) => {
-    onUpdate(block.id, updates);
-  }, [block.id, onUpdate]);
+  const handleBlockUpdate = useCallback((blockId: number, updates: Partial<ReviewBlock>) => {
+    onUpdate(blockId, updates);
+  }, [onUpdate]);
 
   const handleToggleVisibility = useCallback(() => {
     onUpdate(block.id, { visible: !block.visible });

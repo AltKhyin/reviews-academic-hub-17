@@ -94,17 +94,21 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
   const handleAddBlock = useCallback((type: BlockType, position?: number) => {
     const newBlockId = generateBlockId();
     const insertPosition = position ?? blocks.length;
+    const now = new Date().toISOString();
     
     const newBlock: ReviewBlock = {
       id: newBlockId,
+      issue_id: issueId || '',
       type,
       sort_index: insertPosition,
       visible: true,
       payload: getDefaultPayload(type),
       meta: {
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }
+        created_at: now,
+        updated_at: now
+      },
+      created_at: now,
+      updated_at: now
     };
 
     setBlocks(prevBlocks => {
@@ -121,7 +125,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
       title: "Bloco adicionado",
       description: `Novo bloco de ${type} foi adicionado.`,
     });
-  }, [blocks.length, generateBlockId]);
+  }, [blocks.length, generateBlockId, issueId]);
 
   const handleDuplicateBlock = useCallback((blockId: number) => {
     const blockToDuplicate = blocks.find(block => block.id === blockId);
@@ -129,6 +133,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
 
     const newBlockId = generateBlockId();
     const position = blocks.findIndex(block => block.id === blockId) + 1;
+    const now = new Date().toISOString();
     
     const duplicatedBlock: ReviewBlock = {
       ...blockToDuplicate,
@@ -136,9 +141,11 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
       sort_index: position,
       meta: {
         ...blockToDuplicate.meta,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      }
+        created_at: now,
+        updated_at: now
+      },
+      created_at: now,
+      updated_at: now
     };
 
     setBlocks(prevBlocks => {
