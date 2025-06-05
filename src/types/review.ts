@@ -20,9 +20,15 @@ export type BlockType =
   | 'snapshot_card'
   | 'number_card';
 
+// Enhanced alignment types with vertical support
+export interface BlockAlignment {
+  horizontal?: 'left' | 'center' | 'right';
+  vertical?: 'top' | 'center' | 'bottom';
+}
+
 export interface ReviewBlockMeta {
-  layout?: ExtendedLayoutMeta; // FIXED: Now uses the extended interface
-  alignment?: 'left' | 'center' | 'right';
+  layout?: ExtendedLayoutMeta;
+  alignment?: BlockAlignment;
   backgroundColor?: string;
   textColor?: string;
   borderColor?: string;
@@ -35,12 +41,17 @@ export interface ReviewBlockMeta {
     tablet?: boolean;
     mobile?: boolean;
   };
+  styles?: {
+    borderWidth?: number;
+    borderStyle?: 'solid' | 'dashed' | 'dotted';
+    borderRadius?: number;
+  };
 }
 
 export interface ReviewBlock {
   id: number;
   type: BlockType;
-  content: any;
+  content: any; // This is the correct property name, not 'payload'
   sort_index: number;
   visible: boolean;
   meta?: ReviewBlockMeta;
@@ -50,4 +61,28 @@ export interface ReviewBlockProps {
   block: ReviewBlock;
   onUpdate: (updates: Partial<ReviewBlock>) => void;
   readonly?: boolean;
+}
+
+// Enhanced Issue type for compatibility
+export interface EnhancedIssue {
+  id: string;
+  title: string;
+  description?: string;
+  authors?: string;
+  specialty: string;
+  year?: number;
+  population?: string;
+  review_type: string;
+  article_pdf_url?: string;
+  pdf_url?: string;
+}
+
+// Snapshot card payload type
+export interface SnapshotCardPayload {
+  title: string;
+  subtitle?: string;
+  value: string;
+  change?: string;
+  trend?: 'up' | 'down' | 'neutral';
+  icon?: string;
 }

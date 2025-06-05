@@ -1,15 +1,17 @@
-
-// ABOUTME: Refactored block editor with improved drop zones and component separation
-// Main editor with enhanced drag-and-drop functionality
+// ABOUTME: Refactored block editor with improved drop zones and 2D grid support
+// Main editor with enhanced drag-and-drop functionality and vertical grid capabilities
 
 import React, { useState, useCallback, useRef } from 'react';
 import { ReviewBlock, BlockType } from '@/types/review';
 import { SingleBlock } from './blocks/SingleBlock';
 import { ResizableGrid } from './layout/ResizableGrid';
+import { Grid2DContainer } from './layout/Grid2DContainer';
 import { useGridLayoutManager } from '@/hooks/useGridLayoutManager';
+import { useGrid2DManager } from '@/hooks/useGrid2DManager';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { GridPosition } from '@/types/grid';
 
 interface BlockEditorProps {
   blocks: ReviewBlock[];
@@ -70,6 +72,42 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     onDeleteBlock
   });
 
+  // Initialize 2D grid manager
+  const {
+    grids,
+    createGrid,
+    addRowToGridById,
+    removeRowFromGridById,
+    placeBlockInGridById,
+    removeBlockFromGridById,
+    updateGridLayout
+  } = useGrid2DManager({
+    onUpdateBlock,
+    onDeleteBlock,
+    onAddBlock
+  });
+
+  // Extract 2D grids from blocks
+  const twoDGrids = React.useMemo(() => {
+    const gridMap = new Map();
+    
+    blocks.forEach(block => {
+      const gridId = block.meta?.layout?.grid_id;
+      if (gridId) {
+        if (!gridMap.has(gridId)) {
+          gridMap.set(gridId, {
+            id: gridId,
+            blocks: [],
+            metadata: block.meta?.layout
+          });
+        }
+        gridMap.get(gridId).blocks.push(block);
+      }
+    });
+    
+    return Array.from(gridMap.values());
+  }, [blocks]);
+
   const addBlockBetween = useCallback((position: number, type: BlockType = 'paragraph') => {
     onAddBlock(type, position);
   }, [onAddBlock]);
@@ -107,6 +145,32 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     onAddBlock('paragraph', insertionIndex);
   }, [layoutState.rows, blocks, onAddBlock]);
 
+  // 2D Grid operations
+  const handleAddBlockTo2DGrid = useCallback((gridId: string, position: GridPosition) => {
+    const blockIndex = blocks.length;
+    onAddBlock('paragraph', blockIndex);
+    
+    // After block is created, place it in the grid
+    setTimeout(() => {
+      const newBlock = blocks[blockIndex];
+      if (newBlock) {
+        placeBlockInGridById(gridId, newBlock, position);
+      }
+    }, 100);
+  }, [blocks, onAddBlock, placeBlockInGridById]);
+
+  const handleAddRowAbove = useCallback((gridId: string, rowIndex: number) => {
+    addRowToGridById(gridId, 'above', rowIndex);
+  }, [addRowToGridById]);
+
+  const handleAddRowBelow = useCallback((gridId: string, rowIndex: number) => {
+    addRowToGridById(gridId, 'below', rowIndex);
+  }, [addRowToGridById]);
+
+  const handleRemoveRow = useCallback((gridId: string, rowIndex: number) => {
+    removeRowFromGridById(gridId, rowIndex);
+  }, [removeRowFromGridById]);
+
   const handleDragStart = useCallback((e: React.DragEvent, blockId: number) => {
     if (processingDropRef.current) {
       e.preventDefault();
@@ -134,7 +198,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     document.body.classList.add('dragging');
   }, [getRowByBlockId]);
 
-  const handleDragOver = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number, targetType: 'grid' | 'single' | 'merge' = 'merge') => {
+  const handleDragOver = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: GridPosition, targetType: 'grid' | 'single' | 'merge' = 'merge') => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     
@@ -144,7 +208,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     setDragState(prev => ({
       ...prev,
       dragOverRowId: targetRowId,
-      dragOverPosition: targetPosition ?? null,
+      dragOverPosition: targetPosition ? targetPosition.row * 10 + targetPosition.column : null,
       dropTargetType: targetType
     }));
   }, [dragState.isDragging, dragState.draggedBlockId, dragState.draggedFromRowId]);
@@ -164,7 +228,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     }
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number, dropType: 'grid' | 'single' | 'merge' = 'merge') => {
+  const handleDrop = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: GridPosition, dropType: 'grid' | 'single' | 'merge' = 'merge') => {
     e.preventDefault();
     
     if (!dragState.draggedBlockId || processingDropRef.current) return;
@@ -173,7 +237,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     
     try {
       if (onMergeBlockIntoGrid) {
-        onMergeBlockIntoGrid(dragState.draggedBlockId, targetRowId, targetPosition);
+        onMergeBlockIntoGrid(dragState.draggedBlockId, targetRowId, targetPosition?.column);
       }
     } finally {
       setDragState({
@@ -234,8 +298,37 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     </div>
   );
 
+  const render2DGrid = (gridData: any) => {
+    const grid = grids.find(g => g.id === gridData.id);
+    if (!grid) return null;
+
+    return (
+      <Grid2DContainer
+        key={grid.id}
+        grid={grid}
+        activeBlockId={activeBlockId}
+        onActiveBlockChange={onActiveBlockChange}
+        onUpdateBlock={onUpdateBlock}
+        onDeleteBlock={onDeleteBlock}
+        onAddBlock={handleAddBlockTo2DGrid}
+        onAddRowAbove={handleAddRowAbove}
+        onAddRowBelow={handleAddRowBelow}
+        onRemoveRow={handleRemoveRow}
+        onUpdateGridLayout={updateGridLayout}
+        dragState={dragState}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      />
+    );
+  };
+
   return (
     <div className={cn("block-editor py-6", className)}>
+      {/* Render 2D Grids */}
+      {twoDGrids.map(gridData => render2DGrid(gridData))}
+      
+      {/* Render existing 1D grids and single blocks */}
       {layoutState.rows.map((row, index) => {
         if (row.columns > 1) {
           return renderGridRow(row);
