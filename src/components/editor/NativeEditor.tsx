@@ -1,3 +1,4 @@
+
 // ABOUTME: Native review editor with block-based content creation
 // Provides drag-and-drop interface and real-time preview
 
@@ -181,6 +182,25 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
           title: '',
           institution: '',
           avatar_url: ''
+        };
+      case 'poll':
+        return {
+          question: 'Nova pergunta de enquete',
+          options: [
+            { id: '1', text: 'Opção 1', votes: 0 },
+            { id: '2', text: 'Opção 2', votes: 0 }
+          ],
+          poll_type: 'single_choice',
+          total_votes: 0,
+          is_open: true
+        };
+      case 'citation_list':
+        return {
+          title: 'Referências Bibliográficas',
+          citations: [],
+          style: 'apa',
+          show_numbers: true,
+          show_links: true
         };
       default:
         return {};

@@ -1,13 +1,12 @@
 
-// ABOUTME: Live preview component for native reviews
-// Shows how the review will look to readers in real-time
+// ABOUTME: Preview component for native review content
+// Shows real-time preview of how the review will look to readers
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Eye, Clock, Users } from 'lucide-react';
 import { ReviewBlock } from '@/types/review';
 import { BlockRenderer } from '../review/BlockRenderer';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Eye, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ReviewPreviewProps {
@@ -19,76 +18,65 @@ export const ReviewPreview: React.FC<ReviewPreviewProps> = ({
   blocks,
   className
 }) => {
-  const estimatedReadingTime = Math.max(1, Math.ceil(blocks.length * 0.5)); // Rough estimate
+  const visibleBlocks = blocks.filter(block => block.visible);
+
+  if (visibleBlocks.length === 0) {
+    return (
+      <div className={cn("review-preview bg-white dark:bg-gray-900", className)}>
+        <Card className="m-6 border-dashed border-gray-300 dark:border-gray-600">
+          <CardContent className="p-12 text-center">
+            <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+              Nenhum conteúdo para visualizar
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Adicione blocos ao editor para ver uma prévia do conteúdo aqui.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className={cn("review-preview", className)}>
+    <div className={cn("review-preview bg-white dark:bg-gray-900 overflow-y-auto", className)}>
       {/* Preview Header */}
-      <div className="border-b border-gray-200 pb-4 mb-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Eye className="w-5 h-5 text-blue-600" />
-            <h2 className="text-lg font-semibold text-gray-900">Visualização</h2>
-          </div>
-          
-          <div className="flex items-center gap-4 text-sm text-gray-500">
-            <div className="flex items-center gap-1">
-              <Clock className="w-4 h-4" />
-              <span>~{estimatedReadingTime} min</span>
-            </div>
-            <Badge variant="outline">
-              {blocks.length} {blocks.length === 1 ? 'bloco' : 'blocos'}
-            </Badge>
-          </div>
+      <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-6 py-4 z-10">
+        <div className="flex items-center gap-2">
+          <Eye className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Visualização
+          </h3>
+          <span className="text-sm text-gray-500 dark:text-gray-400">
+            ({visibleBlocks.length} {visibleBlocks.length === 1 ? 'bloco' : 'blocos'})
+          </span>
         </div>
       </div>
 
       {/* Preview Content */}
-      <div className="space-y-6">
-        {blocks.length === 0 ? (
-          <Card className="border-dashed border-2 border-gray-300">
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <div className="text-gray-400 mb-4">
-                <Eye className="w-12 h-12" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Nenhum Conteúdo para Visualizar
-              </h3>
-              <p className="text-gray-500 text-center max-w-md">
-                Adicione blocos usando a paleta à esquerda para ver a visualização do seu conteúdo aqui.
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          blocks.map((block) => (
-            <div key={block.id} className="relative group">
-              {/* Block Indicator */}
-              <div className="absolute -left-4 top-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              </div>
-              
-              {/* Block Content */}
-              <div className="transition-all duration-200 group-hover:bg-blue-50/30 group-hover:rounded-lg group-hover:p-2 group-hover:-m-2">
-                <BlockRenderer 
-                  block={block} 
-                  readonly={true}
-                  onInteraction={() => {}} // No interactions in preview
-                />
-              </div>
-            </div>
-          ))
-        )}
+      <div className="preview-content max-w-4xl mx-auto px-6 py-8">
+        {visibleBlocks.map((block) => (
+          <div 
+            key={block.id} 
+            className="preview-block mb-8"
+            data-block-type={block.type}
+            data-block-id={block.id}
+          >
+            <BlockRenderer
+              block={block}
+              readonly={true}
+              className="preview-block-content"
+            />
+          </div>
+        ))}
       </div>
 
       {/* Preview Footer */}
-      {blocks.length > 0 && (
-        <div className="border-t border-gray-200 pt-6 mt-8">
-          <div className="flex items-center justify-center text-sm text-gray-500">
-            <Users className="w-4 h-4 mr-2" />
-            <span>Esta é uma visualização de como os leitores verão o conteúdo</span>
-          </div>
+      <div className="border-t border-gray-200 dark:border-gray-700 px-6 py-4 bg-gray-50 dark:bg-gray-800">
+        <div className="text-center text-sm text-gray-600 dark:text-gray-400">
+          <p>Fim da visualização • {visibleBlocks.length} blocos renderizados</p>
         </div>
-      )}
+      </div>
     </div>
   );
 };

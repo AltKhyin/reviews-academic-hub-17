@@ -12,6 +12,8 @@ import { TableBlock } from './blocks/TableBlock';
 import { CalloutBlock } from './blocks/CalloutBlock';
 import { NumberCard } from './blocks/NumberCard';
 import { ReviewerQuote } from './blocks/ReviewerQuote';
+import { PollBlock } from './blocks/PollBlock';
+import { CitationListBlock } from './blocks/CitationListBlock';
 import { cn } from '@/lib/utils';
 
 interface BlockRendererProps {
@@ -57,26 +59,14 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
         return <NumberCard {...commonProps} />;
       case 'reviewer_quote':
         return <ReviewerQuote {...commonProps} />;
+      case 'poll':
+        return <PollBlock {...commonProps} />;
+      case 'citation_list':
+        return <CitationListBlock {...commonProps} />;
       case 'divider':
         return (
           <div className="divider-block my-8">
             <hr className="border-gray-200 dark:border-gray-700" />
-          </div>
-        );
-      case 'poll':
-        return (
-          <div className="poll-block my-6 p-4 border border-yellow-200 dark:border-yellow-800 rounded-lg bg-yellow-50 dark:bg-yellow-950/20">
-            <div className="text-center text-yellow-700 dark:text-yellow-300">
-              📊 Componente de Enquete será implementado em breve
-            </div>
-          </div>
-        );
-      case 'citation_list':
-        return (
-          <div className="citation-list-block my-6 p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-900">
-            <div className="text-center text-gray-600 dark:text-gray-400">
-              📚 Lista de Citações será implementada em breve
-            </div>
           </div>
         );
       default:

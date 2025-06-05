@@ -3,7 +3,6 @@
 // Provides draggable block types for content creation
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { 
@@ -119,7 +118,7 @@ export const BlockPalette: React.FC<BlockPaletteProps> = ({ onAddBlock }) => {
         {
           type: 'citation_list' as BlockType,
           title: 'Lista de Citações',
-          description: 'Bibliografia formatada',
+          description: 'Bibliografia formatada automaticamente',
           icon: FileText,
           color: 'text-gray-600 dark:text-gray-400'
         }
@@ -128,7 +127,7 @@ export const BlockPalette: React.FC<BlockPaletteProps> = ({ onAddBlock }) => {
   ];
 
   return (
-    <div className="block-palette p-4 space-y-6 bg-gray-50 dark:bg-gray-900">
+    <div className="block-palette p-4 space-y-6 bg-gray-50 dark:bg-gray-900 h-full overflow-y-auto">
       <div>
         <div className="flex items-center gap-2 mb-2">
           <Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -177,11 +176,11 @@ export const BlockPalette: React.FC<BlockPaletteProps> = ({ onAddBlock }) => {
         </div>
       ))}
       
-      {/* Dark Mode Indicator */}
-      <div className="mt-6 p-3 rounded-lg bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-        <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400">
+      {/* Status Indicator */}
+      <div className="mt-6 p-3 rounded-lg bg-green-100 dark:bg-green-950/20 border border-green-200 dark:border-green-800">
+        <div className="flex items-center gap-2 text-xs text-green-700 dark:text-green-300">
           <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-          <span>Editor otimizado para modo escuro</span>
+          <span>Todos os componentes implementados</span>
         </div>
       </div>
     </div>
