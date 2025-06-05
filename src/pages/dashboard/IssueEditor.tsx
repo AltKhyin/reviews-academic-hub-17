@@ -1,3 +1,4 @@
+
 // ABOUTME: Enhanced issue editor with native review support and fixed contrast
 // Supports both traditional PDF and native block-based content creation
 
@@ -20,8 +21,7 @@ import { IssueFormContainer } from './components/issue/IssueFormContainer';
 import { NativeEditor } from '@/components/editor/NativeEditor';
 import { useIssueEditor } from './hooks/useIssueEditor';
 import { useQuery } from '@tanstack/react-query';
-import { FileText, Layers, Upload, SplitSquareHorizontal } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { FileText, Layers, Upload } from 'lucide-react';
 
 const IssueEditor = () => {
   const { id } = useParams<{ id: string }>();
@@ -455,50 +455,6 @@ const IssueEditor = () => {
                     <CardDescription style={{ color: '#d1d5db' }}>
                       Crie conteúdo interativo usando blocos com design otimizado
                     </CardDescription>
-                  </div>
-                  
-                  {/* Editor Mode Selector */}
-                  <div className="flex items-center gap-2">
-                    <Label className="text-sm" style={{ color: '#ffffff' }}>
-                      Modo:
-                    </Label>
-                    <div className="flex items-center border rounded-md" style={{ borderColor: '#2a2a2a' }}>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setEditorMode('edit')}
-                        className={cn(
-                          "h-8 px-3 rounded-r-none text-xs",
-                          editorMode === 'edit' && "bg-blue-600 text-white"
-                        )}
-                      >
-                        Editar
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setEditorMode('split')}
-                        className={cn(
-                          "h-8 px-3 rounded-none border-x text-xs",
-                          editorMode === 'split' && "bg-blue-600 text-white"
-                        )}
-                        style={{ borderColor: '#2a2a2a' }}
-                      >
-                        <SplitSquareHorizontal className="w-3 h-3 mr-1" />
-                        Dividir
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setEditorMode('preview')}
-                        className={cn(
-                          "h-8 px-3 rounded-l-none text-xs",
-                          editorMode === 'preview' && "bg-blue-600 text-white"
-                        )}
-                      >
-                        Preview
-                      </Button>
-                    </div>
                   </div>
                 </div>
               </CardHeader>

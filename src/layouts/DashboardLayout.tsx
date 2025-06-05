@@ -1,6 +1,6 @@
 
-// ABOUTME: Main dashboard layout with simplified structure
-// Removes conditional sidebar mounting to prevent duplicates on community routes
+// ABOUTME: Main dashboard layout with simplified structure and responsive editor support
+// Removes conditional sidebar mounting to prevent duplicates and handles editor expansion
 
 import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
@@ -9,20 +9,21 @@ import { MobileSidebarToggle } from '@/components/sidebar/MobileSidebarToggle';
 
 export const DashboardLayout = () => {
   const location = useLocation();
+  const isEditorPage = location.pathname.includes('/edit/issue');
 
   return (
     <div className="flex h-screen bg-background">
-      {/* Left Navigation Sidebar */}
-      <Sidebar />
+      {/* Left Navigation Sidebar - hidden on editor pages when collapsed */}
+      {!isEditorPage && <Sidebar />}
       
-      {/* Main Content Area - with left margin to account for sidebar */}
-      <div className="flex-1 flex flex-col overflow-hidden ml-64">
+      {/* Main Content Area - responsive margin based on sidebar and page type */}
+      <div className={`flex-1 flex flex-col overflow-hidden ${!isEditorPage ? 'ml-64' : ''}`}>
         {/* Mobile Header with Sidebar Toggle */}
         <div className="lg:hidden flex items-center justify-between p-4 border-b">
           <MobileSidebarToggle />
         </div>
         
-        {/* Main Content Container - simplified single column layout */}
+        {/* Main Content Container - full width for editor, normal for others */}
         <main className="flex-1 overflow-auto">
           <div className="h-full">
             <Outlet />
