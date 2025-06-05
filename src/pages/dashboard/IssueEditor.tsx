@@ -1,4 +1,3 @@
-
 // ABOUTME: Enhanced issue editor with native review support and fixed contrast
 // Supports both traditional PDF and native block-based content creation
 
@@ -22,6 +21,7 @@ import { NativeEditor } from '@/components/editor/NativeEditor';
 import { useIssueEditor } from './hooks/useIssueEditor';
 import { useQuery } from '@tanstack/react-query';
 import { FileText, Layers, Upload, SplitSquareHorizontal } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const IssueEditor = () => {
   const { id } = useParams<{ id: string }>();
