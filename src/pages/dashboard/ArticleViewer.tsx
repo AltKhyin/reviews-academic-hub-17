@@ -14,7 +14,7 @@ import { ViewModeSwitcher } from '@/components/article/ViewModeSwitcher';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FileText, ArrowLeft } from 'lucide-react';
-import { EnhancedIssue, ReviewBlock } from '@/types/review';
+import { EnhancedIssue, ReviewBlock, TableOfContents } from '@/types/review';
 import { Link } from 'react-router-dom';
 
 const ArticleViewer: React.FC = () => {
@@ -36,6 +36,37 @@ const ArticleViewer: React.FC = () => {
 
       if (error) throw error;
       if (!data) throw new Error('Issue not found');
+
+      // Helper function to safely parse review_content
+      const parseReviewContent = (content: any): ReviewBlock[] | undefined => {
+        if (!content) return undefined;
+        if (Array.isArray(content)) {
+          // Validate that each item has the required ReviewBlock properties
+          const isValidReviewBlock = (item: any): item is ReviewBlock => {
+            return item && 
+                   typeof item === 'object' &&
+                   typeof item.id === 'string' &&
+                   typeof item.issue_id === 'string' &&
+                   typeof item.sort_index === 'number' &&
+                   typeof item.type === 'string' &&
+                   item.payload !== undefined;
+          };
+          
+          if (content.every(isValidReviewBlock)) {
+            return content as ReviewBlock[];
+          }
+        }
+        return undefined;
+      };
+
+      // Helper function to safely parse toc_data
+      const parseTocData = (toc: any): TableOfContents | undefined => {
+        if (!toc) return undefined;
+        if (typeof toc === 'object' && toc !== null && 'sections' in toc) {
+          return toc as TableOfContents;
+        }
+        return undefined;
+      };
 
       // Safely convert the raw data to EnhancedIssue type
       const enhancedData: EnhancedIssue = {
@@ -61,8 +92,8 @@ const ArticleViewer: React.FC = () => {
         search_title: data.search_title,
         search_description: data.search_description,
         review_type: (data.review_type as 'pdf' | 'native' | 'hybrid') || 'pdf',
-        review_content: data.review_content ? (data.review_content as ReviewBlock[]) : undefined,
-        toc_data: data.toc_data ? data.toc_data : undefined
+        review_content: parseReviewContent(data.review_content),
+        toc_data: parseTocData(data.toc_data)
       };
 
       return enhancedData;
