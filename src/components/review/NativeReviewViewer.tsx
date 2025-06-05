@@ -7,12 +7,13 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { FileText, Clock, Users, TrendingUp, Eye } from 'lucide-react';
+import { FileText, Clock, Users, TrendingUp, Eye, ArrowLeft } from 'lucide-react';
 import { EnhancedIssue } from '@/types/review';
 import { useNativeReview } from '@/hooks/useNativeReview';
 import { BlockRenderer } from './BlockRenderer';
 import { ViewModeSwitcher } from '../article/ViewModeSwitcher';
 import { PDFViewer } from '../pdf/PDFViewer';
+import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 interface NativeReviewViewerProps {
@@ -149,6 +150,16 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
       {/* Header Section */}
       <div className="bg-white border-b border-gray-200 py-6 mt-1">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Back Button */}
+          <div className="mb-4">
+            <Button asChild variant="ghost">
+              <Link to="/dashboard">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Voltar ao Dashboard
+              </Link>
+            </Button>
+          </div>
+
           {/* View Mode Switcher */}
           <div className="mb-6">
             <ViewModeSwitcher
@@ -156,6 +167,7 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
               onModeChange={handleViewModeChange}
               hasOriginalPDF={!!issue.article_pdf_url}
               hasNativeContent={true}
+              hasPDFReview={!!issue.pdf_url}
             />
           </div>
 
@@ -244,6 +256,7 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
             <PDFViewer 
               url={issue.article_pdf_url} 
               title="Artigo Original"
+              className="min-h-[80vh]"
             />
           </div>
         )}

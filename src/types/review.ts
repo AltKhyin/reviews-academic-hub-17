@@ -167,20 +167,24 @@ export interface EnhancedIssue {
   id: string;
   title: string;
   specialty: string;
-  description?: string;
+  description?: string | null;
   pdf_url: string;
-  article_pdf_url?: string;
-  cover_image_url?: string;
+  article_pdf_url?: string | null;
+  cover_image_url?: string | null;
   published: boolean;
-  published_at?: string;
+  published_at?: string | null;
   created_at: string;
   updated_at: string;
-  featured?: boolean;
-  score?: number;
-  year?: string;
-  design?: string;
-  population?: string;
-  authors?: string;
+  featured?: boolean | null;
+  score?: number | null;
+  year?: string | null;
+  design?: string | null;
+  population?: string | null;
+  authors?: string | null;
+  real_title?: string | null;
+  real_title_ptbr?: string | null;
+  search_title?: string | null;
+  search_description?: string | null;
   
   // New native review fields
   review_type: ReviewType;

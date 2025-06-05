@@ -37,15 +37,6 @@ export const ViewModeSwitcher: React.FC<ViewModeSwitcherProps> = ({
     },
     {
       id: 'pdf',
-      label: 'PDF da Revisão',
-      shortLabel: 'PDF',
-      icon: FileText,
-      description: 'Visualização em PDF tradicional',
-      available: hasPDFReview,
-      color: 'gray'
-    },
-    {
-      id: 'original',
       label: 'Artigo Original',
       shortLabel: 'Original',
       icon: BookOpen,
