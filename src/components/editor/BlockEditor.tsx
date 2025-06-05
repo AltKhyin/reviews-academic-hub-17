@@ -21,11 +21,11 @@ import { cn } from '@/lib/utils';
 
 interface BlockEditorProps {
   blocks: ReviewBlock[];
-  activeBlockId: string | null;
-  onActiveBlockChange: (blockId: string | null) => void;
-  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
-  onDeleteBlock: (blockId: string) => void;
-  onMoveBlock: (blockId: string, direction: 'up' | 'down') => void;
+  activeBlockId: number | null;
+  onActiveBlockChange: (blockId: number | null) => void;
+  onUpdateBlock: (blockId: number, updates: Partial<ReviewBlock>) => void;
+  onDeleteBlock: (blockId: number) => void;
+  onMoveBlock: (blockId: number, direction: 'up' | 'down') => void;
   onAddBlock: (type: BlockType, position?: number) => void;
   compact?: boolean;
 }

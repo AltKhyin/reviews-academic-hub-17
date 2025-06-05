@@ -177,14 +177,21 @@ const IssueEditor = () => {
         .delete()
         .eq('issue_id', id);
 
-      // Insert new blocks
+      // Insert new blocks - map to database format
       if (updatedBlocks.length > 0) {
+        const blocksToInsert = updatedBlocks.map(block => ({
+          issue_id: id,
+          sort_index: block.sort_index,
+          type: block.type,
+          payload: block.payload,
+          meta: block.meta,
+          visible: block.visible
+          // Don't include id, created_at, updated_at - let database handle them
+        }));
+
         const { error } = await supabase
           .from('review_blocks')
-          .insert(updatedBlocks.map(block => ({
-            ...block,
-            issue_id: id
-          })));
+          .insert(blocksToInsert);
 
         if (error) throw error;
       }
@@ -198,7 +205,16 @@ const IssueEditor = () => {
         })
         .eq('id', id);
 
-      setNativeBlocks(updatedBlocks);
+      // Refetch the blocks to get the proper database IDs
+      const { data: newBlocks } = await supabase
+        .from('review_blocks')
+        .select('*')
+        .eq('issue_id', id)
+        .order('sort_index');
+
+      if (newBlocks) {
+        setNativeBlocks(newBlocks as ReviewBlock[]);
+      }
       
       toast({
         title: "Conteúdo Salvo",

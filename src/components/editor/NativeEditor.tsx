@@ -30,13 +30,16 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
   className
 }) => {
   const [blocks, setBlocks] = useState<ReviewBlock[]>(initialBlocks);
-  const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
+  const [activeBlockId, setActiveBlockId] = useState<number | null>(null);
   const [editorMode, setEditorMode] = useState<'edit' | 'preview' | 'split'>('edit');
   const [isSaving, setIsSaving] = useState(false);
 
   const addBlock = useCallback((type: BlockType, position?: number) => {
+    // Generate a temporary negative ID for new blocks (will be replaced by database)
+    const tempId = -(Date.now() + Math.random());
+    
     const newBlock: ReviewBlock = {
-      id: crypto.randomUUID(),
+      id: tempId,
       issue_id: issueId || '',
       sort_index: position ?? blocks.length,
       type,
@@ -69,7 +72,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
     setActiveBlockId(newBlock.id);
   }, [blocks, issueId]);
 
-  const updateBlock = useCallback((blockId: string, updates: Partial<ReviewBlock>) => {
+  const updateBlock = useCallback((blockId: number, updates: Partial<ReviewBlock>) => {
     setBlocks(prev => prev.map(block => 
       block.id === blockId 
         ? { ...block, ...updates, updated_at: new Date().toISOString() }
@@ -77,7 +80,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
     ));
   }, []);
 
-  const deleteBlock = useCallback((blockId: string) => {
+  const deleteBlock = useCallback((blockId: number) => {
     setBlocks(prev => {
       const filtered = prev.filter(block => block.id !== blockId);
       // Update sort indices
@@ -91,7 +94,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
     }
   }, [activeBlockId]);
 
-  const moveBlock = useCallback((blockId: string, direction: 'up' | 'down') => {
+  const moveBlock = useCallback((blockId: number, direction: 'up' | 'down') => {
     setBlocks(prev => {
       const currentIndex = prev.findIndex(block => block.id === blockId);
       if (currentIndex === -1) return prev;

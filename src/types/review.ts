@@ -18,7 +18,7 @@ export type BlockType =
   | 'citation_list';
 
 export interface ReviewBlock {
-  id: string;
+  id: number; // Changed from string to number to match database bigint
   issue_id: string;
   sort_index: number;
   type: BlockType;
@@ -109,7 +109,7 @@ export interface ReviewerQuotePayload extends BlockPayload {
 export interface ReviewPoll {
   id: string;
   issue_id: string;
-  block_id: string;
+  block_id: number; // Changed from string to number
   question: string;
   options: PollOption[];
   poll_type: 'single_choice' | 'multiple_choice' | 'rating';
