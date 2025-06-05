@@ -1,10 +1,10 @@
 
 // ABOUTME: Main block renderer that routes to specific block components
-// Handles all block types and provides consistent interface
+// Handles all block types with enhanced dark theme styling
 
 import React from 'react';
 import { ReviewBlock } from '@/types/review';
-import { SnapshotCard } from './blocks/SnapshotCard';
+import { SnapshotCardBlock } from './blocks/SnapshotCardBlock';
 import { HeadingBlock } from './blocks/HeadingBlock';
 import { ParagraphBlock } from './blocks/ParagraphBlock';
 import { FigureBlock } from './blocks/FigureBlock';
@@ -44,7 +44,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   const renderBlock = () => {
     switch (block.type) {
       case 'snapshot_card':
-        return <SnapshotCard {...commonProps} />;
+        return <SnapshotCardBlock {...commonProps} />;
       case 'heading':
         return <HeadingBlock {...commonProps} />;
       case 'paragraph':
@@ -66,13 +66,20 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
       case 'divider':
         return (
           <div className="divider-block my-8">
-            <hr className="border-gray-200 dark:border-gray-700" />
+            <hr style={{ borderColor: '#2a2a2a' }} className="border-t" />
           </div>
         );
       default:
         return (
-          <div className="unknown-block my-4 p-4 border border-red-200 dark:border-red-800 rounded-lg bg-red-50 dark:bg-red-950/20">
-            <div className="text-center text-red-600 dark:text-red-400">
+          <div 
+            className="unknown-block my-4 p-4 border rounded-lg shadow-sm"
+            style={{
+              backgroundColor: '#991b1b',
+              borderColor: '#dc2626',
+              color: '#fecaca'
+            }}
+          >
+            <div className="text-center">
               ❌ Tipo de bloco desconhecido: {block.type}
             </div>
           </div>
@@ -83,7 +90,8 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   return (
     <div 
       data-block-id={block.id}
-      className={cn("block-renderer", className)}
+      className={cn("block-renderer transition-all duration-200", className)}
+      style={{ color: '#ffffff' }}
     >
       {renderBlock()}
     </div>

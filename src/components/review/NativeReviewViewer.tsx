@@ -1,5 +1,5 @@
 
-// ABOUTME: Main viewer component for native review content
+// ABOUTME: Main viewer component for native review content with enhanced dark theme
 // Orchestrates block rendering, analytics, and user interactions
 
 import React, { useState, useEffect } from 'react';
@@ -119,10 +119,14 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div 
+        className="flex items-center justify-center min-h-screen"
+        style={{ backgroundColor: '#121212', color: '#ffffff' }}
+      >
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando revisão...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 mx-auto mb-4" 
+               style={{ borderColor: '#3b82f6' }}></div>
+          <p style={{ color: '#d1d5db' }}>Carregando revisão...</p>
         </div>
       </div>
     );
@@ -130,9 +134,12 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
 
   if (!reviewData) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div 
+        className="flex items-center justify-center min-h-screen"
+        style={{ backgroundColor: '#121212', color: '#ffffff' }}
+      >
         <div className="text-center">
-          <p className="text-gray-600">Revisão não encontrada</p>
+          <p style={{ color: '#d1d5db' }}>Revisão não encontrada</p>
         </div>
       </div>
     );
@@ -141,18 +148,31 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
   const { blocks } = reviewData;
 
   return (
-    <div className={cn("native-review-viewer", className)}>
+    <div 
+      className={cn("native-review-viewer", className)}
+      style={{ backgroundColor: '#121212', color: '#ffffff', minHeight: '100vh' }}
+    >
       {/* Progress Bar - Fixed at top */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200">
-        <Progress value={readingProgress} className="h-1 rounded-none" />
+      <div 
+        className="fixed top-0 left-0 right-0 z-50 border-b"
+        style={{ backgroundColor: '#121212', borderColor: '#2a2a2a' }}
+      >
+        <Progress 
+          value={readingProgress} 
+          className="h-1 rounded-none"
+          style={{ backgroundColor: '#2a2a2a' }}
+        />
       </div>
 
       {/* Header Section */}
-      <div className="bg-white border-b border-gray-200 py-6 mt-1">
+      <div 
+        className="border-b py-6 mt-1"
+        style={{ backgroundColor: '#121212', borderColor: '#2a2a2a' }}
+      >
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Back Button */}
           <div className="mb-4">
-            <Button asChild variant="ghost">
+            <Button asChild variant="ghost" style={{ color: '#d1d5db' }}>
               <Link to="/dashboard">
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Voltar ao Dashboard
@@ -173,40 +193,48 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
 
           {/* Article Metadata */}
           <div className="space-y-4">
-            <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
-              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <Badge 
+                variant="outline" 
+                className="px-3 py-1"
+                style={{ 
+                  backgroundColor: '#1e3a8a',
+                  borderColor: '#3b82f6',
+                  color: '#93c5fd'
+                }}
+              >
                 {issue.specialty}
               </Badge>
               {issue.year && (
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-1" style={{ color: '#d1d5db' }}>
                   <Clock className="w-4 h-4" />
                   {issue.year}
                 </span>
               )}
               {issue.population && (
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-1" style={{ color: '#d1d5db' }}>
                   <Users className="w-4 h-4" />
                   {issue.population}
                 </span>
               )}
-              <span className="flex items-center gap-1">
+              <span className="flex items-center gap-1" style={{ color: '#d1d5db' }}>
                 <Eye className="w-4 h-4" />
                 Revisão Nativa
               </span>
             </div>
 
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 leading-tight">
+            <h1 className="text-2xl md:text-3xl font-bold leading-tight" style={{ color: '#ffffff' }}>
               {issue.title}
             </h1>
 
             {issue.description && (
-              <p className="text-lg text-gray-600 leading-relaxed">
+              <p className="text-lg leading-relaxed" style={{ color: '#d1d5db' }}>
                 {issue.description}
               </p>
             )}
 
             {issue.authors && (
-              <div className="text-sm text-gray-600">
+              <div className="text-sm" style={{ color: '#d1d5db' }}>
                 <strong>Autores do estudo original:</strong> {issue.authors}
               </div>
             )}
@@ -229,12 +257,18 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
             ))}
             
             {blocks.length === 0 && (
-              <Card className="p-8 text-center">
-                <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <Card 
+                className="p-8 text-center shadow-lg"
+                style={{ 
+                  backgroundColor: '#1a1a1a',
+                  borderColor: '#2a2a2a'
+                }}
+              >
+                <FileText className="w-12 h-12 mx-auto mb-4" style={{ color: '#6b7280' }} />
+                <h3 className="text-lg font-medium mb-2" style={{ color: '#ffffff' }}>
                   Conteúdo Nativo em Desenvolvimento
                 </h3>
-                <p className="text-gray-600 mb-4">
+                <p className="mb-4" style={{ color: '#d1d5db' }}>
                   O conteúdo nativo desta revisão ainda não foi criado. 
                   {issue.article_pdf_url && ' Você pode visualizar o artigo original enquanto isso.'}
                 </p>
@@ -242,6 +276,10 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
                   <Button 
                     onClick={() => handleViewModeChange('pdf')}
                     variant="outline"
+                    style={{ 
+                      borderColor: '#3b82f6',
+                      color: '#3b82f6'
+                    }}
                   >
                     Ver Artigo Original (PDF)
                   </Button>
@@ -264,8 +302,8 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
         {viewMode === 'dual' && (
           <div className="dual-content grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="native-panel">
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <TrendingUp className="w-5 h-5" />
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: '#ffffff' }}>
+                <TrendingUp className="w-5 h-5" style={{ color: '#10b981' }} />
                 Revisão Nativa
               </h3>
               <div className="space-y-4 max-h-[80vh] overflow-y-auto pr-4">
@@ -283,8 +321,8 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
             </div>
             
             <div className="pdf-panel">
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <FileText className="w-5 h-5" />
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: '#ffffff' }}>
+                <FileText className="w-5 h-5" style={{ color: '#f59e0b' }} />
                 Artigo Original
               </h3>
               {issue.article_pdf_url ? (
@@ -294,7 +332,14 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
                   className="max-h-[80vh]"
                 />
               ) : (
-                <Card className="p-6 text-center text-gray-500">
+                <Card 
+                  className="p-6 text-center"
+                  style={{ 
+                    backgroundColor: '#1a1a1a',
+                    borderColor: '#2a2a2a',
+                    color: '#9ca3af'
+                  }}
+                >
                   <p>PDF do artigo original não disponível</p>
                 </Card>
               )}
