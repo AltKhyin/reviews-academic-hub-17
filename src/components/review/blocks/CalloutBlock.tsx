@@ -169,7 +169,7 @@ export const CalloutBlock: React.FC<CalloutBlockProps> = ({
               onChange={(value) => handleFieldChange('title', value)}
               placeholder="Título do callout (opcional)"
               className="font-semibold"
-              readonly={readonly}
+              disabled={readonly}
               style={{
                 color: textColor,
                 fontSize: '1rem',
@@ -182,7 +182,7 @@ export const CalloutBlock: React.FC<CalloutBlockProps> = ({
               value={content}
               onChange={(value) => handleFieldChange('content', value)}
               placeholder="Conteúdo do callout..."
-              readonly={readonly}
+              disabled={readonly}
               className="prose prose-sm max-w-none"
               style={{
                 color: textColor,
