@@ -1,25 +1,22 @@
 
-// ABOUTME: Import/Export manager for native review content with JSON validation
-// Provides safe import/export functionality for review blocks and settings
+// ABOUTME: Enhanced import/export manager with layout and metadata support
+// Handles complete block structure including layout information and styling
 
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ReviewBlock } from '@/types/review';
-import { toast } from '@/hooks/use-toast';
 import { 
-  FileDown, 
-  FileUp, 
+  Download, 
   Upload, 
-  Download,
+  FileText, 
+  Copy, 
+  Check,
   AlertCircle,
-  CheckCircle,
-  Copy,
-  Clipboard
+  Info
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -29,89 +26,71 @@ interface ImportExportManagerProps {
   className?: string;
 }
 
-interface ExportData {
+interface ExportFormat {
   version: string;
-  timestamp: string;
-  blocks: ReviewBlock[];
   metadata: {
+    exportedAt: string;
     blockCount: number;
-    types: string[];
+    hasLayouts: boolean;
+    hasColors: boolean;
   };
+  blocks: ReviewBlock[];
 }
 
 export const ImportExportManager: React.FC<ImportExportManagerProps> = ({
   blocks,
   onImport,
-  className = ''
+  className
 }) => {
-  const [showImportDialog, setShowImportDialog] = useState(false);
-  const [showExportDialog, setShowExportDialog] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const [importData, setImportData] = useState('');
-  const [importFile, setImportFile] = useState<File | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [exportData, setExportData] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState('');
 
-  // Validate imported JSON data
-  const validateImportData = (data: any): { valid: boolean; error?: string; blocks?: ReviewBlock[] } => {
-    try {
-      // Check if data has required structure
-      if (!data || typeof data !== 'object') {
-        return { valid: false, error: 'Dados inválidos: formato JSON incorreto' };
-      }
+  // Generate comprehensive export data
+  const generateExportData = (): ExportFormat => {
+    const hasLayouts = blocks.some(block => block.meta?.layout);
+    const hasColors = blocks.some(block => 
+      block.payload.text_color || 
+      block.payload.background_color || 
+      block.payload.border_color
+    );
 
-      // Check for blocks array
-      if (!Array.isArray(data.blocks)) {
-        return { valid: false, error: 'Dados inválidos: propriedade "blocks" não encontrada ou não é um array' };
-      }
-
-      // Validate each block
-      for (let i = 0; i < data.blocks.length; i++) {
-        const block = data.blocks[i];
-        
-        if (!block.type || typeof block.type !== 'string') {
-          return { valid: false, error: `Bloco ${i + 1}: tipo inválido ou ausente` };
+    return {
+      version: '2.0.0',
+      metadata: {
+        exportedAt: new Date().toISOString(),
+        blockCount: blocks.length,
+        hasLayouts,
+        hasColors
+      },
+      blocks: blocks.map(block => ({
+        ...block,
+        // Ensure all metadata is preserved
+        meta: {
+          ...block.meta,
+          exported: true,
+          originalId: block.id
         }
-
-        if (!block.payload || typeof block.payload !== 'object') {
-          return { valid: false, error: `Bloco ${i + 1}: payload inválido ou ausente` };
-        }
-
-        // Ensure required properties exist with defaults
-        block.id = block.id || -(Date.now() + Math.random() + i);
-        block.sort_index = block.sort_index !== undefined ? block.sort_index : i;
-        block.visible = block.visible !== undefined ? block.visible : true;
-        block.created_at = block.created_at || new Date().toISOString();
-        block.updated_at = new Date().toISOString();
-        block.meta = block.meta || { styles: {}, conditions: {}, analytics: { track_views: true, track_interactions: true } };
-      }
-
-      return { valid: true, blocks: data.blocks };
-    } catch (error) {
-      return { valid: false, error: `Erro de validação: ${error instanceof Error ? error.message : 'Erro desconhecido'}` };
-    }
+      }))
+    };
   };
 
-  // Export blocks to JSON
+  // Handle export to JSON
   const handleExport = () => {
+    setIsExporting(true);
+    setError('');
+    
     try {
-      const exportData: ExportData = {
-        version: '1.0.0',
-        timestamp: new Date().toISOString(),
-        blocks: blocks.map(block => ({
-          ...block,
-          // Remove temporary IDs for cleaner export
-          id: block.id < 0 ? undefined : block.id
-        })) as ReviewBlock[],
-        metadata: {
-          blockCount: blocks.length,
-          types: [...new Set(blocks.map(b => b.type))]
-        }
-      };
-
-      const jsonData = JSON.stringify(exportData, null, 2);
-      const blob = new Blob([jsonData], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
+      const exportFormat = generateExportData();
+      const jsonString = JSON.stringify(exportFormat, null, 2);
+      setExportData(jsonString);
       
+      // Create downloadable file
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.download = `review-blocks-${new Date().toISOString().split('T')[0]}.json`;
@@ -119,281 +98,266 @@ export const ImportExportManager: React.FC<ImportExportManagerProps> = ({
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-
-      toast({
-        title: "Exportação Concluída",
-        description: `${blocks.length} blocos exportados com sucesso.`,
-      });
-
-      setShowExportDialog(false);
-    } catch (error) {
-      console.error('Export error:', error);
-      toast({
-        title: "Erro na Exportação",
-        description: "Não foi possível exportar os blocos.",
-        variant: "destructive",
-      });
+      
+      console.log('Export completed:', exportFormat.metadata);
+    } catch (err) {
+      setError('Erro ao exportar: ' + (err as Error).message);
+      console.error('Export error:', err);
+    } finally {
+      setIsExporting(false);
     }
   };
 
-  // Copy export data to clipboard
-  const handleCopyToClipboard = async () => {
+  // Handle copy to clipboard
+  const handleCopyExport = async () => {
     try {
-      const exportData: ExportData = {
-        version: '1.0.0',
-        timestamp: new Date().toISOString(),
-        blocks,
-        metadata: {
-          blockCount: blocks.length,
-          types: [...new Set(blocks.map(b => b.type))]
-        }
-      };
-
-      const jsonData = JSON.stringify(exportData, null, 2);
-      await navigator.clipboard.writeText(jsonData);
-
-      toast({
-        title: "Copiado!",
-        description: "Dados copiados para a área de transferência.",
-      });
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Não foi possível copiar para a área de transferência.",
-        variant: "destructive",
-      });
+      const exportFormat = generateExportData();
+      const jsonString = JSON.stringify(exportFormat, null, 2);
+      await navigator.clipboard.writeText(jsonString);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      setError('Erro ao copiar: ' + (err as Error).message);
     }
   };
 
-  // Import from JSON text
-  const handleImportFromText = () => {
-    if (!importData.trim()) {
-      toast({
-        title: "Erro",
-        description: "Por favor, cole os dados JSON para importar.",
-        variant: "destructive",
-      });
-      return;
+  // Validate import data
+  const validateImportData = (data: any): { valid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+    
+    if (!data) {
+      errors.push('Dados inválidos ou vazios');
+      return { valid: false, errors };
     }
 
-    setIsProcessing(true);
+    // Check if it's the new format
+    if (data.version && data.blocks) {
+      if (!Array.isArray(data.blocks)) {
+        errors.push('Formato inválido: blocks deve ser um array');
+      }
+      
+      data.blocks.forEach((block: any, index: number) => {
+        if (!block.id || !block.type) {
+          errors.push(`Bloco ${index + 1}: ID e tipo são obrigatórios`);
+        }
+        if (!block.payload) {
+          errors.push(`Bloco ${index + 1}: payload é obrigatório`);
+        }
+      });
+    } 
+    // Check if it's legacy format (direct array of blocks)
+    else if (Array.isArray(data)) {
+      data.forEach((block: any, index: number) => {
+        if (!block.id || !block.type) {
+          errors.push(`Bloco ${index + 1}: ID e tipo são obrigatórios`);
+        }
+      });
+    } else {
+      errors.push('Formato não reconhecido');
+    }
 
+    return { valid: errors.length === 0, errors };
+  };
+
+  // Handle import from JSON
+  const handleImport = () => {
+    setIsImporting(true);
+    setError('');
+    
     try {
       const parsedData = JSON.parse(importData);
       const validation = validateImportData(parsedData);
-
+      
       if (!validation.valid) {
-        toast({
-          title: "Dados Inválidos",
-          description: validation.error,
-          variant: "destructive",
-        });
+        setError('Dados inválidos:\n' + validation.errors.join('\n'));
+        setIsImporting(false);
         return;
       }
 
-      onImport(validation.blocks || []);
-      setImportData('');
-      setShowImportDialog(false);
+      // Extract blocks from either new or legacy format
+      let blocksToImport: ReviewBlock[];
+      
+      if (parsedData.version && parsedData.blocks) {
+        // New format
+        blocksToImport = parsedData.blocks.map((block: any, index: number) => ({
+          ...block,
+          id: -(Date.now() + index), // Generate new IDs to avoid conflicts
+          sort_index: index,
+          visible: block.visible !== false, // Default to visible
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }));
+        
+        console.log('Importing from v2.0 format:', parsedData.metadata);
+      } else {
+        // Legacy format (direct array)
+        blocksToImport = parsedData.map((block: any, index: number) => ({
+          ...block,
+          id: -(Date.now() + index),
+          sort_index: index,
+          visible: block.visible !== false,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          meta: {
+            ...block.meta,
+            imported: true,
+            legacyFormat: true
+          }
+        }));
+        
+        console.log('Importing from legacy format');
+      }
 
-      toast({
-        title: "Importação Concluída",
-        description: `${validation.blocks?.length || 0} blocos importados com sucesso.`,
-      });
-    } catch (error) {
-      console.error('Import error:', error);
-      toast({
-        title: "Erro na Importação",
-        description: "JSON inválido. Verifique o formato dos dados.",
-        variant: "destructive",
-      });
+      onImport(blocksToImport);
+      setImportData('');
+      console.log(`Successfully imported ${blocksToImport.length} blocks`);
+    } catch (err) {
+      setError('Erro ao importar: ' + (err as Error).message);
+      console.error('Import error:', err);
     } finally {
-      setIsProcessing(false);
+      setIsImporting(false);
     }
   };
 
-  // Import from file
-  const handleImportFromFile = () => {
-    if (!importFile) {
-      toast({
-        title: "Erro",
-        description: "Por favor, selecione um arquivo para importar.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsProcessing(true);
+  // Handle file upload
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
     const reader = new FileReader();
     reader.onload = (e) => {
-      try {
-        const content = e.target?.result as string;
-        const parsedData = JSON.parse(content);
-        const validation = validateImportData(parsedData);
-
-        if (!validation.valid) {
-          toast({
-            title: "Arquivo Inválido",
-            description: validation.error,
-            variant: "destructive",
-          });
-          return;
-        }
-
-        onImport(validation.blocks || []);
-        setImportFile(null);
-        setShowImportDialog(false);
-
-        toast({
-          title: "Importação Concluída",
-          description: `${validation.blocks?.length || 0} blocos importados do arquivo.`,
-        });
-      } catch (error) {
-        console.error('File import error:', error);
-        toast({
-          title: "Erro no Arquivo",
-          description: "Não foi possível ler o arquivo. Verifique se é um JSON válido.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsProcessing(false);
-      }
+      const content = e.target?.result as string;
+      setImportData(content);
     };
-
-    reader.readAsText(importFile);
-  };
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImportFile(file);
-    }
+    reader.readAsText(file);
   };
 
   return (
-    <div className={cn("import-export-manager flex gap-2", className)}>
-      {/* Export Dialog */}
-      <Dialog open={showExportDialog} onOpenChange={setShowExportDialog}>
-        <DialogTrigger asChild>
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
-            disabled={blocks.length === 0}
-          >
-            <FileDown className="w-4 h-4" />
-            Exportar
-          </Button>
-        </DialogTrigger>
-        <DialogContent style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
-          <DialogHeader>
-            <DialogTitle style={{ color: '#ffffff' }}>
+    <div className={cn("import-export-manager", className)}>
+      <Card style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2" style={{ color: '#ffffff' }}>
+            <FileText className="w-5 h-5" />
+            Importar / Exportar
+          </CardTitle>
+        </CardHeader>
+        
+        <CardContent className="space-y-6">
+          {/* Export Section */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium" style={{ color: '#d1d5db' }}>
               Exportar Blocos
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="text-sm" style={{ color: '#d1d5db' }}>
-              Exportar {blocks.length} blocos do editor nativo.
+            </Label>
+            
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={handleExport}
+                disabled={isExporting || blocks.length === 0}
+                className="flex items-center gap-2"
+                size="sm"
+              >
+                <Download className="w-4 h-4" />
+                {isExporting ? 'Exportando...' : 'Baixar JSON'}
+              </Button>
+              
+              <Button
+                onClick={handleCopyExport}
+                disabled={blocks.length === 0}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {copied ? 'Copiado!' : 'Copiar'}
+              </Button>
             </div>
             
-            <div className="flex gap-2">
-              <Button onClick={handleExport} className="flex items-center gap-2">
-                <Download className="w-4 h-4" />
-                Baixar Arquivo
-              </Button>
-              <Button variant="outline" onClick={handleCopyToClipboard} className="flex items-center gap-2">
-                <Copy className="w-4 h-4" />
-                Copiar JSON
-              </Button>
+            <div className="text-xs" style={{ color: '#9ca3af' }}>
+              <div className="flex items-center gap-1">
+                <Info className="w-3 h-3" />
+                {blocks.length} blocos • Inclui layouts e cores
+              </div>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
 
-      {/* Import Dialog */}
-      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
-        <DialogTrigger asChild>
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
-          >
-            <FileUp className="w-4 h-4" />
-            Importar
-          </Button>
-        </DialogTrigger>
-        <DialogContent style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
-          <DialogHeader>
-            <DialogTitle style={{ color: '#ffffff' }}>
+          {/* Import Section */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium" style={{ color: '#d1d5db' }}>
               Importar Blocos
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+            </Label>
+            
             {/* File Upload */}
             <div>
-              <Label className="text-sm" style={{ color: '#d1d5db' }}>
-                Selecionar Arquivo
+              <Label htmlFor="file-upload" className="text-xs" style={{ color: '#9ca3af' }}>
+                Arquivo JSON:
               </Label>
-              <div className="flex gap-2 mt-1">
-                <Input
-                  type="file"
-                  accept=".json"
-                  onChange={handleFileSelect}
-                  ref={fileInputRef}
-                  className="flex-1"
-                  style={{ backgroundColor: '#212121', borderColor: '#2a2a2a', color: '#ffffff' }}
-                />
-                <Button 
-                  onClick={handleImportFromFile}
-                  disabled={!importFile || isProcessing}
-                  className="flex items-center gap-2"
-                >
-                  <Upload className="w-4 h-4" />
-                  {isProcessing ? 'Processando...' : 'Importar'}
-                </Button>
-              </div>
+              <Input
+                id="file-upload"
+                type="file"
+                accept=".json"
+                onChange={handleFileUpload}
+                className="mt-1"
+                style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}
+              />
             </div>
-
-            <div className="flex items-center gap-2">
-              <div className="flex-1 h-px" style={{ backgroundColor: '#2a2a2a' }}></div>
-              <span className="text-xs" style={{ color: '#9ca3af' }}>ou</span>
-              <div className="flex-1 h-px" style={{ backgroundColor: '#2a2a2a' }}></div>
-            </div>
-
-            {/* JSON Text Input */}
+            
+            {/* Text Input */}
             <div>
-              <Label className="text-sm" style={{ color: '#d1d5db' }}>
-                Colar JSON
+              <Label htmlFor="import-data" className="text-xs" style={{ color: '#9ca3af' }}>
+                Ou cole o JSON:
               </Label>
               <Textarea
+                id="import-data"
                 value={importData}
                 onChange={(e) => setImportData(e.target.value)}
-                placeholder="Cole o JSON dos blocos aqui..."
-                className="mt-1 h-32 text-xs"
+                placeholder="Cole aqui o JSON dos blocos..."
+                className="mt-1 h-32 text-xs font-mono"
                 style={{ backgroundColor: '#212121', borderColor: '#2a2a2a', color: '#ffffff' }}
               />
-              <Button 
-                onClick={handleImportFromText}
-                disabled={!importData.trim() || isProcessing}
-                className="mt-2 w-full flex items-center gap-2"
-              >
-                <Clipboard className="w-4 h-4" />
-                {isProcessing ? 'Processando...' : 'Importar do Texto'}
-              </Button>
             </div>
-
-            <div 
-              className="flex items-start gap-2 p-3 rounded"
-              style={{ backgroundColor: '#1e40af', borderColor: '#3b82f6' }}
+            
+            <Button
+              onClick={handleImport}
+              disabled={isImporting || !importData.trim()}
+              className="flex items-center gap-2 w-full"
+              size="sm"
             >
-              <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: '#93c5fd' }} />
-              <div className="text-xs" style={{ color: '#dbeafe' }}>
-                Importar substituirá todos os blocos atuais. Esta ação não pode ser desfeita.
-              </div>
-            </div>
+              <Upload className="w-4 h-4" />
+              {isImporting ? 'Importando...' : 'Importar Blocos'}
+            </Button>
           </div>
-        </DialogContent>
-      </Dialog>
+
+          {/* Error Display */}
+          {error && (
+            <div 
+              className="p-3 rounded border flex items-start gap-2"
+              style={{ 
+                backgroundColor: '#991b1b', 
+                borderColor: '#dc2626',
+                color: '#fecaca'
+              }}
+            >
+              <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <pre className="text-xs whitespace-pre-wrap">{error}</pre>
+            </div>
+          )}
+          
+          {/* Export Data Display */}
+          {exportData && (
+            <div className="space-y-2">
+              <Label className="text-xs" style={{ color: '#9ca3af' }}>
+                Dados exportados:
+              </Label>
+              <Textarea
+                value={exportData}
+                readOnly
+                className="h-32 text-xs font-mono"
+                style={{ backgroundColor: '#212121', borderColor: '#2a2a2a', color: '#ffffff' }}
+              />
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

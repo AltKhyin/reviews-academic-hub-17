@@ -1,7 +1,8 @@
+
 // ABOUTME: Enhanced inline block settings component with contextual controls
 // Replaces the properties panel with integrated block-level configuration
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,15 +13,14 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { ReviewBlock } from '@/types/review';
 import { InlineColorPicker } from './InlineColorPicker';
+import { useInlineEditingOptimization } from '@/hooks/useInlineEditingOptimization';
+import { useAccessibilityEnhancement } from '@/hooks/useAccessibilityEnhancement';
 import { 
   Settings, 
   Eye, 
   EyeOff, 
-  ChevronDown, 
-  ChevronUp,
   Palette,
   Sliders,
-  Type,
   AlignLeft,
   AlignCenter,
   AlignRight,
@@ -42,27 +42,38 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
   const [showSettings, setShowSettings] = useState(false);
   const [activeTab, setActiveTab] = useState<'general' | 'colors'>('general');
   
+  // Performance optimization
+  const { updateField, batchUpdate } = useInlineEditingOptimization({
+    onUpdate: (updates) => onUpdate(updates),
+    debounceMs: 300
+  });
+
+  // Accessibility enhancement
+  const { elementRef, ariaAttributes, announceToScreenReader } = useAccessibilityEnhancement({
+    onEscape: () => setShowSettings(false),
+    ariaLabel: 'Configurações do bloco',
+    ariaDescription: 'Pressione Escape para fechar'
+  });
+  
   const payload = block.payload;
 
   const handlePayloadUpdate = (field: string, value: any) => {
-    console.log('Updating payload:', { blockId: block.id, field, value }); // Debug log
-    onUpdate({
-      payload: {
-        ...payload,
-        [field]: value
-      }
+    console.log('Updating payload:', { blockId: block.id, field, value });
+    updateField('payload', {
+      ...payload,
+      [field]: value
     });
   };
 
   const handleVisibilityToggle = (visible: boolean) => {
-    console.log('Toggling visibility:', { blockId: block.id, visible }); // Debug log
-    onUpdate({ visible });
+    console.log('Toggling visibility:', { blockId: block.id, visible });
+    updateField('visible', visible, true); // Immediate update for visibility
+    announceToScreenReader(`Bloco ${visible ? 'visível' : 'oculto'}`);
   };
 
   const handleColorChange = (colorName: string, value: string) => {
-    console.log('Color changed in settings:', { blockId: block.id, colorName, value }); // Debug log
+    console.log('Color changed in settings:', { blockId: block.id, colorName, value });
     
-    // Map color name to field name
     const fieldMap: Record<string, string> = {
       'Texto': 'text_color',
       'Fundo': 'background_color',
@@ -81,14 +92,14 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
     handlePayloadUpdate(field, value);
   };
 
-  const getColorOptions = () => {
+  // Memoized color options to prevent unnecessary recalculations
+  const colorOptions = useMemo(() => {
     const baseColors = [
       { name: 'Texto', value: payload.text_color || '#ffffff' },
       { name: 'Fundo', value: payload.background_color || 'transparent' },
       { name: 'Borda', value: payload.border_color || 'transparent' }
     ];
 
-    // Add block-specific colors
     switch (block.type) {
       case 'snapshot_card':
       case 'callout':
@@ -112,12 +123,19 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
           { name: 'Rótulo', value: payload.label_color || '#9ca3af' }
         );
         break;
+      case 'citation_list':
+        baseColors.push({
+          name: 'Destaque',
+          value: payload.accent_color || '#8b5cf6'
+        });
+        break;
     }
 
     return baseColors;
-  };
+  }, [block.type, payload]);
 
-  const renderGeneralSettings = () => {
+  // Memoized general settings component
+  const GeneralSettings = useMemo(() => {
     switch (block.type) {
       case 'heading':
         return (
@@ -132,12 +150,9 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}>
-                  <SelectItem value="1">H1</SelectItem>
-                  <SelectItem value="2">H2</SelectItem>
-                  <SelectItem value="3">H3</SelectItem>
-                  <SelectItem value="4">H4</SelectItem>
-                  <SelectItem value="5">H5</SelectItem>
-                  <SelectItem value="6">H6</SelectItem>
+                  {[1, 2, 3, 4, 5, 6].map(level => (
+                    <SelectItem key={level} value={String(level)}>H{level}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -172,6 +187,7 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
                     size="sm"
                     onClick={() => handlePayloadUpdate('alignment', value)}
                     className="h-8 w-8 p-0"
+                    aria-label={`Alinhar ${value}`}
                   >
                     <Icon className="w-3 h-3" />
                   </Button>
@@ -501,18 +517,22 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
           </div>
         );
     }
-  };
+  }, [block.type, payload, handlePayloadUpdate]);
 
   return (
-    <div className={cn("inline-block-settings", className)}>
+    <div className={cn("inline-block-settings", className)} ref={elementRef}>
       {/* Settings Toggle Button */}
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => setShowSettings(!showSettings)}
+        onClick={() => {
+          setShowSettings(!showSettings);
+          announceToScreenReader(showSettings ? 'Configurações fechadas' : 'Configurações abertas');
+        }}
         className="h-6 w-6 p-0 hover:bg-gray-700 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
         style={{ backgroundColor: showSettings ? '#3b82f6' : '#1a1a1a', border: '1px solid #2a2a2a' }}
         title="Configurações do bloco"
+        {...ariaAttributes}
       >
         <Settings className="w-3 h-3" style={{ color: showSettings ? '#ffffff' : '#9ca3af' }} />
       </Button>
@@ -540,13 +560,14 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
                 checked={block.visible}
                 onCheckedChange={handleVisibilityToggle}
                 className="scale-75"
+                aria-label="Alternar visibilidade do bloco"
               />
             </div>
 
             <Separator style={{ backgroundColor: '#2a2a2a' }} />
 
             {/* Settings Tabs */}
-            <div className="flex gap-1">
+            <div className="flex gap-1" role="tablist">
               {[
                 { key: 'general', label: 'Geral', icon: Sliders },
                 { key: 'colors', label: 'Cores', icon: Palette }
@@ -557,6 +578,9 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
                   size="sm"
                   onClick={() => setActiveTab(key as any)}
                   className="h-7 px-2 text-xs flex items-center gap-1"
+                  role="tab"
+                  aria-selected={activeTab === key}
+                  aria-label={`Aba ${label}`}
                 >
                   <Icon className="w-3 h-3" />
                   {label}
@@ -565,12 +589,12 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
             </div>
 
             {/* Tab Content */}
-            <div className="min-h-[80px]">
-              {activeTab === 'general' && renderGeneralSettings()}
+            <div className="min-h-[80px]" role="tabpanel">
+              {activeTab === 'general' && GeneralSettings}
               
               {activeTab === 'colors' && (
                 <InlineColorPicker
-                  colors={getColorOptions()}
+                  colors={colorOptions}
                   onChange={handleColorChange}
                   readonly={false}
                   compact={true}

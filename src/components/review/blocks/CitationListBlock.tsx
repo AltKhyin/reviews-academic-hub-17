@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ReviewBlock } from '@/types/review';
 import { InlineTextEditor } from '@/components/editor/inline/InlineTextEditor';
+import { InlineBlockSettings } from '@/components/editor/inline/InlineBlockSettings';
 import { 
   BookOpen, 
   Plus, 
@@ -16,6 +17,7 @@ import {
   FileText,
   Link
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface Citation {
   id: string;
@@ -46,6 +48,12 @@ export const CitationListBlock: React.FC<CitationListBlockProps> = ({
   const citations = payload.citations || [];
   const citationStyle = payload.citation_style || 'apa';
   const numbered = payload.numbered || true;
+
+  // Apply color styling from payload
+  const textColor = payload.text_color || '#ffffff';
+  const backgroundColor = payload.background_color || 'transparent';
+  const borderColor = payload.border_color || 'transparent';
+  const accentColor = payload.accent_color || '#8b5cf6';
 
   const handleUpdate = (field: string, value: any) => {
     if (onUpdate) {
@@ -123,13 +131,14 @@ export const CitationListBlock: React.FC<CitationListBlockProps> = ({
         <Card 
           className="border shadow-lg"
           style={{ 
-            backgroundColor: '#1a1a1a',
-            borderColor: '#2a2a2a'
+            backgroundColor: backgroundColor !== 'transparent' ? backgroundColor : '#1a1a1a',
+            borderColor: borderColor !== 'transparent' ? borderColor : '#2a2a2a',
+            color: textColor
           }}
         >
           <CardHeader>
-            <CardTitle className="flex items-center gap-2" style={{ color: '#ffffff' }}>
-              <BookOpen className="w-5 h-5" style={{ color: '#8b5cf6' }} />
+            <CardTitle className="flex items-center gap-2" style={{ color: textColor }}>
+              <BookOpen className="w-5 h-5" style={{ color: accentColor }} />
               {title}
             </CardTitle>
           </CardHeader>
@@ -143,7 +152,7 @@ export const CitationListBlock: React.FC<CitationListBlockProps> = ({
               ) : (
                 <ol className={numbered ? "list-decimal list-inside space-y-3" : "space-y-3"}>
                   {citations.map((citation: Citation, index: number) => (
-                    <li key={citation.id} className="text-sm leading-relaxed" style={{ color: '#d1d5db' }}>
+                    <li key={citation.id} className="text-sm leading-relaxed" style={{ color: textColor }}>
                       <div className="flex items-start gap-2">
                         <div className="flex-1">
                           <div dangerouslySetInnerHTML={{ 
@@ -155,7 +164,8 @@ export const CitationListBlock: React.FC<CitationListBlockProps> = ({
                             href={citation.url} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="flex-shrink-0 text-blue-400 hover:text-blue-300"
+                            className="flex-shrink-0 hover:opacity-75 transition-opacity"
+                            style={{ color: accentColor }}
                           >
                             <ExternalLink className="w-4 h-4" />
                           </a>
@@ -173,19 +183,28 @@ export const CitationListBlock: React.FC<CitationListBlockProps> = ({
   }
 
   return (
-    <div className="citation-list-block my-6">
+    <div className="citation-list-block my-6 group relative">
+      {/* Inline Settings */}
+      <div className="absolute top-2 right-2 z-10">
+        <InlineBlockSettings
+          block={block}
+          onUpdate={onUpdate}
+        />
+      </div>
+
       <Card 
         className="border shadow-lg"
         style={{ 
-          backgroundColor: '#1a1a1a',
-          borderColor: '#2a2a2a'
+          backgroundColor: backgroundColor !== 'transparent' ? backgroundColor : '#1a1a1a',
+          borderColor: borderColor !== 'transparent' ? borderColor : '#2a2a2a',
+          color: textColor
         }}
       >
         <CardHeader>
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <BookOpen className="w-5 h-5" style={{ color: '#8b5cf6' }} />
-              <span className="font-semibold" style={{ color: '#ffffff' }}>
+              <BookOpen className="w-5 h-5" style={{ color: accentColor }} />
+              <span className="font-semibold" style={{ color: textColor }}>
                 Editor de Citações
               </span>
             </div>
@@ -196,11 +215,12 @@ export const CitationListBlock: React.FC<CitationListBlockProps> = ({
               onChange={(value) => handleUpdate('title', value)}
               placeholder="Título da seção de referências"
               className="text-lg font-semibold"
+              style={{ color: textColor }}
             />
             
             {/* Citation Style Selector */}
             <div className="flex items-center gap-4">
-              <label className="text-sm" style={{ color: '#d1d5db' }}>
+              <label className="text-sm" style={{ color: textColor }}>
                 Estilo:
               </label>
               <Select 
@@ -209,7 +229,7 @@ export const CitationListBlock: React.FC<CitationListBlockProps> = ({
               >
                 <SelectTrigger 
                   className="w-32"
-                  style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}
+                  style={{ backgroundColor: '#212121', borderColor: '#2a2a2a', color: textColor }}
                 >
                   <SelectValue />
                 </SelectTrigger>
@@ -221,7 +241,7 @@ export const CitationListBlock: React.FC<CitationListBlockProps> = ({
                 </SelectContent>
               </Select>
               
-              <label className="flex items-center gap-2 text-sm" style={{ color: '#d1d5db' }}>
+              <label className="flex items-center gap-2 text-sm" style={{ color: textColor }}>
                 <input
                   type="checkbox"
                   checked={numbered}
@@ -248,7 +268,7 @@ export const CitationListBlock: React.FC<CitationListBlockProps> = ({
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium" style={{ color: '#ffffff' }}>
+                    <span className="text-sm font-medium" style={{ color: textColor }}>
                       Citação {index + 1}
                     </span>
                     <Button
@@ -267,54 +287,63 @@ export const CitationListBlock: React.FC<CitationListBlockProps> = ({
                       onChange={(value) => updateCitation(citation.id, 'authors', value)}
                       placeholder="Autores"
                       className="text-sm"
+                      style={{ color: textColor }}
                     />
                     <InlineTextEditor
                       value={citation.year}
                       onChange={(value) => updateCitation(citation.id, 'year', value)}
                       placeholder="Ano"
                       className="text-sm"
+                      style={{ color: textColor }}
                     />
                     <InlineTextEditor
                       value={citation.title}
                       onChange={(value) => updateCitation(citation.id, 'title', value)}
                       placeholder="Título do artigo"
                       className="text-sm md:col-span-2"
+                      style={{ color: textColor }}
                     />
                     <InlineTextEditor
                       value={citation.journal}
                       onChange={(value) => updateCitation(citation.id, 'journal', value)}
                       placeholder="Nome da revista"
                       className="text-sm"
+                      style={{ color: textColor }}
                     />
                     <InlineTextEditor
                       value={citation.volume || ''}
                       onChange={(value) => updateCitation(citation.id, 'volume', value)}
                       placeholder="Volume"
                       className="text-sm"
+                      style={{ color: textColor }}
                     />
                     <InlineTextEditor
                       value={citation.issue || ''}
                       onChange={(value) => updateCitation(citation.id, 'issue', value)}
                       placeholder="Número"
                       className="text-sm"
+                      style={{ color: textColor }}
                     />
                     <InlineTextEditor
                       value={citation.pages || ''}
                       onChange={(value) => updateCitation(citation.id, 'pages', value)}
                       placeholder="Páginas"
                       className="text-sm"
+                      style={{ color: textColor }}
                     />
                     <InlineTextEditor
                       value={citation.doi || ''}
                       onChange={(value) => updateCitation(citation.id, 'doi', value)}
                       placeholder="DOI"
                       className="text-sm"
+                      style={{ color: textColor }}
                     />
                     <InlineTextEditor
                       value={citation.url || ''}
                       onChange={(value) => updateCitation(citation.id, 'url', value)}
                       placeholder="URL"
                       className="text-sm"
+                      style={{ color: textColor }}
                     />
                   </div>
                   
@@ -337,7 +366,11 @@ export const CitationListBlock: React.FC<CitationListBlockProps> = ({
               onClick={addCitation}
               variant="outline"
               className="w-full"
-              style={{ borderColor: '#2a2a2a' }}
+              style={{ 
+                borderColor: borderColor !== 'transparent' ? borderColor : '#2a2a2a',
+                color: textColor,
+                backgroundColor: 'transparent'
+              }}
             >
               <Plus className="w-4 h-4 mr-2" />
               Adicionar Citação
