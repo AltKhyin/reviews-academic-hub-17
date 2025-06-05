@@ -52,6 +52,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
     deleteBlock,
     moveBlock,
     duplicateBlock,
+    convertToGrid,
     undo,
     redo,
     canUndo,
@@ -250,6 +251,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
                 onMoveBlock={moveBlock}
                 onAddBlock={addBlock}
                 onDuplicateBlock={duplicateBlock}
+                onConvertToGrid={convertToGrid}
               />
             </div>
           )}

@@ -83,6 +83,126 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
     return newBlock;
   }, [blocks, issueId, saveToHistory, createTempId, reindexBlocks]);
 
+  // NEW: Batch add blocks for grid conversion
+  const addBlocksBatch = useCallback((blocksToAdd: Omit<ReviewBlock, 'id' | 'created_at' | 'updated_at'>[], position?: number) => {
+    const newBlocks = blocksToAdd.map((blockData, index) => ({
+      ...blockData,
+      id: createTempId(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      sort_index: (position ?? blocks.length) + index
+    }));
+
+    let updatedBlocks = [...blocks];
+    
+    if (position !== undefined) {
+      updatedBlocks.splice(position, 0, ...newBlocks);
+      updatedBlocks = reindexBlocks(updatedBlocks);
+    } else {
+      updatedBlocks.push(...newBlocks);
+    }
+
+    console.log('Batch adding blocks:', { 
+      count: newBlocks.length,
+      position,
+      totalBlocks: updatedBlocks.length 
+    });
+
+    setBlocks(updatedBlocks);
+    setActiveBlockId(newBlocks[0]?.id || null);
+    saveToHistory(updatedBlocks, newBlocks[0]?.id || null);
+    
+    return newBlocks;
+  }, [blocks, saveToHistory, createTempId, reindexBlocks]);
+
+  // ENHANCED: Convert block to grid layout with batch operation
+  const convertToGrid = useCallback((blockId: number, columns: number) => {
+    const blockIndex = blocks.findIndex(b => b.id === blockId);
+    const originalBlock = blocks.find(b => b.id === blockId);
+    
+    if (!originalBlock || blockIndex === -1) {
+      console.error('Block not found for grid conversion:', blockId);
+      return;
+    }
+
+    console.log('Converting block to grid:', { blockId, columns, blockIndex });
+
+    const rowId = `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Create the updated original block with layout metadata
+    const updatedOriginalBlock = {
+      ...originalBlock,
+      meta: {
+        ...originalBlock.meta,
+        layout: {
+          row_id: rowId,
+          position: 0,
+          columns,
+          gap: 4
+        }
+      },
+      updated_at: new Date().toISOString()
+    };
+
+    // Create additional blocks for remaining columns
+    const additionalBlocks: Omit<ReviewBlock, 'id' | 'created_at' | 'updated_at'>[] = [];
+    for (let i = 1; i < columns; i++) {
+      additionalBlocks.push({
+        issue_id: issueId || '',
+        sort_index: blockIndex + i,
+        type: 'paragraph',
+        payload: getDefaultPayload('paragraph'),
+        meta: {
+          styles: {},
+          conditions: {},
+          analytics: {
+            track_views: true,
+            track_interactions: true
+          },
+          layout: {
+            row_id: rowId,
+            position: i,
+            columns,
+            gap: 4
+          }
+        },
+        visible: true
+      });
+    }
+
+    // Perform batch update
+    let updatedBlocks = [...blocks];
+    
+    // Update the original block
+    updatedBlocks[blockIndex] = updatedOriginalBlock;
+    
+    // Insert additional blocks
+    if (additionalBlocks.length > 0) {
+      const newBlocks = additionalBlocks.map((blockData, index) => ({
+        ...blockData,
+        id: createTempId(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        sort_index: blockIndex + 1 + index
+      }));
+      
+      updatedBlocks.splice(blockIndex + 1, 0, ...newBlocks);
+    }
+    
+    // Reindex all blocks
+    updatedBlocks = reindexBlocks(updatedBlocks);
+
+    console.log('Grid conversion completed:', { 
+      rowId, 
+      originalBlockId: blockId, 
+      additionalBlocksCount: additionalBlocks.length,
+      totalBlocks: updatedBlocks.length 
+    });
+
+    setBlocks(updatedBlocks);
+    saveToHistory(updatedBlocks, blockId);
+  }, [blocks, issueId, saveToHistory, createTempId, reindexBlocks]);
+
   const duplicateBlock = useCallback((blockId: number) => {
     const blockToDuplicate = blocks.find(block => block.id === blockId);
     if (!blockToDuplicate) return;
@@ -183,6 +303,8 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
     historyIndex,
     setActiveBlockId: setActiveBlock,
     addBlock,
+    addBlocksBatch,
+    convertToGrid,
     duplicateBlock,
     updateBlock,
     updateBlockLayout,
