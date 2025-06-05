@@ -59,6 +59,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
   onMergeBlockIntoGrid,
   className
 }) => {
+  // FIXED: All hooks must be called at the top level in the same order every time
   const [dragState, setDragState] = useState<DragState>({
     draggedBlockId: null,
     dragOverRowId: null,
@@ -71,6 +72,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
   const dragTimeoutRef = useRef<NodeJS.Timeout>();
   const processingDropRef = useRef(false);
 
+  // Grid layout manager - must be called after all useState hooks
   const {
     layoutState,
     updateColumnWidths,
@@ -322,7 +324,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
   }, []);
 
   // Render single block with all controls
-  const renderSingleBlock = (block: ReviewBlock, globalIndex: number) => {
+  const renderSingleBlock = useCallback((block: ReviewBlock, globalIndex: number) => {
     const isActive = activeBlockId === block.id;
     const isDragging = dragState.draggedBlockId === block.id;
     const rowId = `single-${block.id}`;
@@ -454,10 +456,10 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
         </Card>
       </div>
     );
-  };
+  }, [activeBlockId, dragState, handleBlockClick, handleBlockVisibilityToggle, addBlockBetween, convertToLayout, onDuplicateBlock, onDeleteBlock, onUpdateBlock, handleDragOver, handleDragLeave, handleDrop, handleDragStart, handleDragEnd]);
 
   // Render grid row
-  const renderGridRow = (row: { id: string; blocks: ReviewBlock[]; columns: number; gap: number; columnWidths?: number[] }) => (
+  const renderGridRow = useCallback((row: { id: string; blocks: ReviewBlock[]; columns: number; gap: number; columnWidths?: number[] }) => (
     <ResizableGrid
       key={row.id}
       rowId={row.id}
@@ -476,7 +478,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     />
-  );
+  ), [updateColumnWidths, addBlockToGrid, onUpdateBlock, onDeleteBlock, activeBlockId, onActiveBlockChange, dragState, handleDragOver, handleDragLeave, handleDrop]);
 
   return (
     <div className={cn("block-editor space-y-6", className)}>
