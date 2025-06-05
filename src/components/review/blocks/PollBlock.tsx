@@ -19,6 +19,12 @@ import {
   TrendingUp
 } from 'lucide-react';
 
+interface PollOption {
+  id: string;
+  text: string;
+  votes: number;
+}
+
 interface PollBlockProps {
   block: ReviewBlock;
   readonly?: boolean;
@@ -34,7 +40,31 @@ export const PollBlock: React.FC<PollBlockProps> = ({
 }) => {
   const payload = block.payload;
   const question = payload.question || '';
-  const options = payload.options || ['Opção 1', 'Opção 2'];
+  
+  // Handle both string[] and object[] formats for options
+  const rawOptions = payload.options || ['Opção 1', 'Opção 2'];
+  const options: PollOption[] = rawOptions.map((option: any, index: number) => {
+    if (typeof option === 'string') {
+      return {
+        id: `option-${index}`,
+        text: option,
+        votes: 0
+      };
+    } else if (typeof option === 'object' && option.text) {
+      return {
+        id: option.id || `option-${index}`,
+        text: option.text,
+        votes: option.votes || 0
+      };
+    } else {
+      return {
+        id: `option-${index}`,
+        text: `Opção ${index + 1}`,
+        votes: 0
+      };
+    }
+  });
+  
   const pollType = payload.poll_type || 'single_choice';
   const votes = payload.votes || new Array(options.length).fill(0);
   const totalVotes = payload.total_votes || 0;
@@ -56,12 +86,16 @@ export const PollBlock: React.FC<PollBlockProps> = ({
 
   const handleOptionChange = (index: number, value: string) => {
     const newOptions = [...options];
-    newOptions[index] = value;
+    newOptions[index] = { ...newOptions[index], text: value };
     handleUpdate('options', newOptions);
   };
 
   const addOption = () => {
-    const newOptions = [...options, `Opção ${options.length + 1}`];
+    const newOptions = [...options, {
+      id: `option-${options.length}`,
+      text: `Opção ${options.length + 1}`,
+      votes: 0
+    }];
     const newVotes = [...votes, 0];
     handleUpdate('options', newOptions);
     handleUpdate('votes', newVotes);
@@ -149,9 +183,9 @@ export const PollBlock: React.FC<PollBlockProps> = ({
               const percentage = getVotePercentage(optionVotes);
               
               return (
-                <div key={index} className="space-y-2">
+                <div key={option.id} className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span style={{ color: '#ffffff' }}>{option}</span>
+                    <span style={{ color: '#ffffff' }}>{option.text}</span>
                     <span style={{ color: '#9ca3af' }}>{percentage}%</span>
                   </div>
                   <Progress 
@@ -226,10 +260,10 @@ export const PollBlock: React.FC<PollBlockProps> = ({
             </label>
             
             {options.map((option, index) => (
-              <div key={index} className="flex items-center gap-2">
+              <div key={option.id} className="flex items-center gap-2">
                 <div className="flex-1">
                   <InlineTextEditor
-                    value={option}
+                    value={option.text}
                     onChange={(value) => handleOptionChange(index, value)}
                     placeholder={`Opção ${index + 1}`}
                     className="w-full"
@@ -276,9 +310,9 @@ export const PollBlock: React.FC<PollBlockProps> = ({
                 const percentage = getVotePercentage(optionVotes);
                 
                 return (
-                  <div key={index} className="space-y-1">
+                  <div key={option.id} className="space-y-1">
                     <div className="flex items-center justify-between text-sm">
-                      <span style={{ color: '#ffffff' }}>{option}</span>
+                      <span style={{ color: '#ffffff' }}>{option.text}</span>
                       <span style={{ color: '#9ca3af' }}>
                         {optionVotes} votos ({percentage}%)
                       </span>
