@@ -1,4 +1,3 @@
-
 // ABOUTME: Native review editor with block-based content creation
 // Provides drag-and-drop interface and real-time preview
 
@@ -208,28 +207,28 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
   };
 
   return (
-    <div className={cn("native-editor editor-layout", className)}>
+    <div className={cn("native-editor editor-layout bg-gray-900", className)}>
       {/* Editor Header */}
-      <div className="editor-header">
+      <div className="editor-header bg-gray-900 border-b border-gray-700">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <Moon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Editor de Revisão Nativa</h2>
+              <Moon className="w-5 h-5 text-blue-400" />
+              <h2 className="text-xl font-semibold text-white">Editor de Revisão Nativa</h2>
             </div>
-            <Badge variant="outline" className="bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800">
+            <Badge variant="outline" className="bg-gray-800 text-gray-200 border-gray-600">
               {blocks.length} {blocks.length === 1 ? 'bloco' : 'blocos'}
             </Badge>
           </div>
           
           <div className="flex items-center gap-2">
             {/* Mode Switcher */}
-            <div className="flex border rounded-lg overflow-hidden border-gray-200 dark:border-gray-700">
+            <div className="flex border rounded-lg overflow-hidden border-gray-600 bg-gray-800">
               <Button
                 variant={editorMode === 'edit' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setEditorMode('edit')}
-                className="rounded-none border-0 dark:text-gray-200"
+                className="rounded-none border-0 text-gray-200 bg-gray-800 hover:bg-gray-700"
               >
                 <Code className="w-4 h-4 mr-1" />
                 Editar
@@ -238,7 +237,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
                 variant={editorMode === 'preview' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setEditorMode('preview')}
-                className="rounded-none border-0 dark:text-gray-200"
+                className="rounded-none border-0 text-gray-200 bg-gray-800 hover:bg-gray-700"
               >
                 <Eye className="w-4 h-4 mr-1" />
                 Visualizar
@@ -247,20 +246,28 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
                 variant={editorMode === 'split' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setEditorMode('split')}
-                className="rounded-none border-0 dark:text-gray-200"
+                className="rounded-none border-0 text-gray-200 bg-gray-800 hover:bg-gray-700"
               >
                 <Settings className="w-4 h-4 mr-1" />
                 Dividido
               </Button>
             </div>
             
-            <Separator orientation="vertical" className="h-6 border-gray-200 dark:border-gray-700" />
+            <Separator orientation="vertical" className="h-6 border-gray-600" />
             
             {/* Action Buttons */}
-            <Button variant="outline" onClick={onCancel} className="dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800">
+            <Button 
+              variant="outline" 
+              onClick={onCancel} 
+              className="border-gray-600 text-gray-200 hover:bg-gray-800 bg-gray-900"
+            >
               Cancelar
             </Button>
-            <Button onClick={handleSave} disabled={isSaving} className="dark:bg-blue-600 dark:hover:bg-blue-700">
+            <Button 
+              onClick={handleSave} 
+              disabled={isSaving} 
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
               <Save className="w-4 h-4 mr-2" />
               {isSaving ? 'Salvando...' : 'Salvar'}
             </Button>
@@ -269,16 +276,16 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
       </div>
 
       {/* Editor Content */}
-      <div className="editor-content">
+      <div className="editor-content bg-gray-900">
         {/* Block Palette - Left Sidebar */}
         {(editorMode === 'edit' || editorMode === 'split') && (
-          <div className="w-80 editor-sidebar overflow-y-auto">
+          <div className="w-80 editor-sidebar overflow-y-auto bg-gray-900 border-r border-gray-700">
             <BlockPalette onAddBlock={addBlock} />
           </div>
         )}
 
         {/* Main Content Area */}
-        <div className="editor-main">
+        <div className="editor-main bg-gray-900">
           {editorMode === 'edit' && (
             <BlockEditor
               blocks={blocks}
@@ -294,13 +301,13 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
           {editorMode === 'preview' && (
             <ReviewPreview
               blocks={blocks}
-              className="p-6"
+              className="p-6 bg-gray-900"
             />
           )}
 
           {editorMode === 'split' && (
             <div className="grid grid-cols-2 h-full">
-              <div className="border-r border-gray-200 dark:border-gray-700">
+              <div className="border-r border-gray-700 bg-gray-900">
                 <BlockEditor
                   blocks={blocks}
                   activeBlockId={activeBlockId}
@@ -312,7 +319,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
                   compact
                 />
               </div>
-              <div className="overflow-y-auto bg-white dark:bg-gray-900">
+              <div className="overflow-y-auto bg-gray-900">
                 <ReviewPreview
                   blocks={blocks}
                   className="p-6"

@@ -101,11 +101,16 @@
     --scrollbar-thumb: 0 0% 25%;
     --scrollbar-thumb-hover: 0 0% 35%;
     
-    /* Editor specific colors for dark mode */
+    /* Editor specific colors for dark mode - Grey variations instead of blue */
     --editor-bg: 0 0% 7%;
-    --editor-sidebar-bg: 0 0% 9%;
+    --editor-sidebar-bg: 0 0% 10%;
     --editor-border: 0 0% 15%;
     --editor-hover: 0 0% 13%;
+    --editor-card-bg: 0 0% 12%;
+    --editor-card-hover: 0 0% 15%;
+    --editor-properties-bg: 0 0% 8%;
+    --editor-block-selected: 0 0% 18%;
+    --editor-block-hover: 0 0% 14%;
   }
   
   html, body, #root {
@@ -227,18 +232,43 @@
     opacity: 1;
   }
   
-  /* Native Editor Dark Mode Styles */
+  /* Native Editor Dark Mode Styles - Corrected Colors */
   .native-editor {
     @apply bg-[hsl(var(--editor-bg))];
   }
   
-  .native-editor .block-palette,
-  .native-editor .block-editor {
+  .native-editor .block-palette {
     @apply bg-[hsl(var(--editor-sidebar-bg))] border-[hsl(var(--editor-border))];
   }
   
+  .native-editor .block-editor {
+    @apply bg-[hsl(var(--editor-bg))] border-[hsl(var(--editor-border))];
+  }
+  
+  .native-editor .block-palette .block-type-button {
+    @apply bg-[hsl(var(--editor-card-bg))] border-[hsl(var(--editor-border))] text-gray-200;
+  }
+  
   .native-editor .block-palette .block-type-button:hover {
-    @apply bg-[hsl(var(--editor-hover))];
+    @apply bg-[hsl(var(--editor-card-hover))] border-gray-600;
+  }
+  
+  /* Block Editor specific styles */
+  .block-editor-card {
+    @apply bg-[hsl(var(--editor-card-bg))] border-[hsl(var(--editor-border))];
+  }
+  
+  .block-editor-card:hover {
+    @apply bg-[hsl(var(--editor-block-hover))] border-gray-600;
+  }
+  
+  .block-editor-card.active {
+    @apply bg-[hsl(var(--editor-block-selected))] border-blue-500;
+  }
+  
+  /* Properties panel */
+  .properties-panel {
+    @apply bg-[hsl(var(--editor-properties-bg))] border-[hsl(var(--editor-border))];
   }
   
   /* Block-specific dark mode styles */
@@ -274,7 +304,7 @@
     text-wrap: balance;
   }
   
-  /* Editor utilities */
+  /* Editor utilities - Corrected for dark theme */
   .editor-layout {
     @apply h-full flex flex-col bg-[hsl(var(--editor-bg))];
   }
@@ -284,7 +314,7 @@
   }
   
   .editor-content {
-    @apply flex-1 flex overflow-hidden;
+    @apply flex-1 flex overflow-hidden bg-[hsl(var(--editor-bg))];
   }
   
   .editor-sidebar {
