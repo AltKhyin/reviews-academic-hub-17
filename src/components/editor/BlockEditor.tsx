@@ -1,13 +1,12 @@
 
-// ABOUTME: Enhanced block editor with improved drag-and-drop and state management
-// Provides unified editing experience with proper block reordering functionality
+// ABOUTME: Enhanced block editor with properties panel completely removed
+// All block settings are now handled inline within each block component
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Settings, Layout, Plus } from 'lucide-react';
+import { Layout, Plus } from 'lucide-react';
 import { ReviewBlock, BlockType } from '@/types/review';
-import { BlockPropertyEditor } from './BlockPropertyEditor';
 import { BlockContentEditor } from './BlockContentEditor';
 import { cn } from '@/lib/utils';
 
@@ -34,10 +33,6 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
   onDuplicateBlock,
   compact = false
 }) => {
-  const [showProperties, setShowProperties] = useState(true);
-  
-  const activeBlock = blocks.find(block => block.id === activeBlockId);
-
   // Fix: Reset active block if it was deleted
   useEffect(() => {
     if (activeBlockId && !blocks.find(block => block.id === activeBlockId)) {
@@ -77,10 +72,10 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
   };
 
   return (
-    <div className={cn("block-editor flex h-full", compact && "text-sm")}>
-      {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="p-6 space-y-6">
+    <div className={cn("block-editor w-full h-full", compact && "text-sm")}>
+      {/* Single Full-Width Content Area */}
+      <div className="w-full h-full overflow-y-auto">
+        <div className="p-6 space-y-6 max-w-4xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -109,8 +104,8 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
             </div>
           </div>
 
-          {/* Block List with improved spacing */}
-          <div className="space-y-6" style={{ marginLeft: '60px' }}>
+          {/* Block List - Full Width */}
+          <div className="space-y-6">
             {blocks.length === 0 ? (
               <Card 
                 className="border-2 border-dashed text-center py-12"
@@ -130,7 +125,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                         Nenhum bloco adicionado
                       </h3>
                       <p className="text-sm" style={{ color: '#9ca3af' }}>
-                        Use a paleta à esquerda para adicionar blocos ao seu conteúdo
+                        Use o botão "Adicionar Parágrafo" acima ou a paleta à esquerda para adicionar blocos
                       </p>
                     </div>
                   </div>
@@ -157,75 +152,6 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Properties Panel */}
-      {!compact && showProperties && activeBlock && (
-        <div 
-          className="w-80 border-l properties-panel overflow-y-auto flex-shrink-0"
-          style={{ 
-            backgroundColor: '#1a1a1a',
-            borderColor: '#2a2a2a'
-          }}
-        >
-          <div className="p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold" style={{ color: '#ffffff' }}>
-                Propriedades
-              </h3>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setShowProperties(false)}
-                style={{ color: '#9ca3af' }}
-              >
-                <Settings className="w-4 h-4" />
-              </Button>
-            </div>
-            
-            <BlockPropertyEditor
-              block={activeBlock}
-              onUpdate={(updates) => onUpdateBlock(activeBlock.id, updates)}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Show Properties Button */}
-      {!compact && !showProperties && (
-        <div 
-          className="w-12 border-l flex items-start justify-center pt-4 flex-shrink-0"
-          style={{ 
-            backgroundColor: '#1a1a1a',
-            borderColor: '#2a2a2a'
-          }}
-        >
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setShowProperties(true)}
-            style={{ color: '#9ca3af' }}
-          >
-            <Settings className="w-4 h-4" />
-          </Button>
-        </div>
-      )}
-
-      {/* Empty State Message */}
-      {!compact && !showProperties && !activeBlock && blocks.length > 0 && (
-        <div 
-          className="w-80 border-l flex items-center justify-center p-4 flex-shrink-0"
-          style={{ 
-            backgroundColor: '#1a1a1a',
-            borderColor: '#2a2a2a'
-          }}
-        >
-          <div className="text-center">
-            <p className="text-sm" style={{ color: '#9ca3af' }}>
-              Selecione um bloco para ver suas propriedades
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -1,14 +1,14 @@
+
 // ABOUTME: Enhanced snapshot card block with full editability and integrated inline color editing
 // Displays and allows editing of evidence summary with inline editors and color customization
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { FlaskConical, Users, Target, BarChart3, Lightbulb, Settings } from 'lucide-react';
+import { FlaskConical, Users, Target, BarChart3, Lightbulb } from 'lucide-react';
 import { ReviewBlock } from '@/types/review';
 import { InlineTextEditor } from '@/components/editor/inline/InlineTextEditor';
-import { InlineColorPicker } from '@/components/editor/inline/InlineColorPicker';
-import { Button } from '@/components/ui/button';
+import { InlineBlockSettings } from '@/components/editor/inline/InlineBlockSettings';
 
 interface SnapshotCardBlockProps {
   block: ReviewBlock;
@@ -21,7 +21,6 @@ export const SnapshotCardBlock: React.FC<SnapshotCardBlockProps> = ({
   readonly = false,
   onUpdate
 }) => {
-  const [showSettings, setShowSettings] = useState(false);
   const payload = block.payload;
 
   const evidenceLevels = {
@@ -51,17 +50,6 @@ export const SnapshotCardBlock: React.FC<SnapshotCardBlockProps> = ({
     }
   };
 
-  const handleColorChange = (colorType: string, value: string) => {
-    if (onUpdate) {
-      onUpdate({
-        payload: {
-          ...payload,
-          [`${colorType}_color`]: value
-        }
-      });
-    }
-  };
-
   const handleKeyFindingsUpdate = (index: number, value: string) => {
     const newFindings = [...(payload.key_findings || [])];
     newFindings[index] = value;
@@ -85,40 +73,14 @@ export const SnapshotCardBlock: React.FC<SnapshotCardBlockProps> = ({
   const accentColor = payload.accent_color || '#3b82f6';
   const textColor = payload.text_color || '#ffffff';
 
-  const colorOptions = [
-    { name: 'Texto', value: textColor, description: 'Cor principal do texto' },
-    { name: 'Fundo', value: cardBg, description: 'Cor de fundo do cartão' },
-    { name: 'Borda', value: borderColor, description: 'Cor da borda do cartão' },
-    { name: 'Destaque', value: accentColor, description: 'Cor de destaque e ícones' }
-  ];
-
   return (
     <div className="snapshot-card-container group relative">
-      {/* Inline Settings Toggle */}
+      {/* Inline Settings */}
       {!readonly && (
-        <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowSettings(!showSettings)}
-            className="h-6 w-6 p-0 hover:bg-gray-700 rounded-full"
-            style={{ backgroundColor: '#1a1a1a', border: '1px solid #2a2a2a' }}
-            title="Configurações do bloco"
-          >
-            <Settings className="w-3 h-3" style={{ color: '#9ca3af' }} />
-          </Button>
-        </div>
-      )}
-
-      {/* Inline Color Picker */}
-      {showSettings && !readonly && (
-        <div className="mb-3 p-2 rounded border animate-in slide-in-from-top-2"
-             style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
-          <InlineColorPicker
-            colors={colorOptions}
-            onChange={handleColorChange}
-            readonly={readonly}
-            compact={false}
+        <div className="absolute -top-2 -right-2 z-10">
+          <InlineBlockSettings
+            block={block}
+            onUpdate={onUpdate}
           />
         </div>
       )}

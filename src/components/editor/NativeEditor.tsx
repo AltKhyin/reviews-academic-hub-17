@@ -1,409 +1,313 @@
 
-// ABOUTME: Enhanced native editor with integrated inline editing and improved UX
-// Provides comprehensive block-based content creation with seamless editing experience
+// ABOUTME: Enhanced native editor with inline-only settings and improved UX
+// Complete elimination of properties panels in favor of contextual inline controls
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { toast } from '@/hooks/use-toast';
+import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ReviewBlock, BlockType } from '@/types/review';
 import { BlockEditor } from './BlockEditor';
 import { BlockPalette } from './BlockPalette';
 import { ReviewPreview } from './ReviewPreview';
 import { ResizableLayout } from './ResizableLayout';
-import { LivePreview } from './LivePreview';
-import { InlineEditingProvider } from './inline/InlineEditingProvider';
-import { Save, Eye, RotateCcw, Settings, Layout, Palette, SplitSquareHorizontal } from 'lucide-react';
+import { 
+  Save, 
+  Eye, 
+  Edit3, 
+  SplitSquareHorizontal, 
+  Undo2, 
+  Redo2,
+  FileDown,
+  FileUp
+} from 'lucide-react';
+import { useEditorAutoSave } from '@/hooks/useEditorAutoSave';
+import { useBlockManagement } from '@/hooks/useBlockManagement';
 import { cn } from '@/lib/utils';
 
 interface NativeEditorProps {
   issueId?: string;
-  initialBlocks: ReviewBlock[];
-  onSave: (blocks: ReviewBlock[]) => Promise<void>;
-  onCancel: () => void;
+  initialBlocks?: ReviewBlock[];
+  onSave?: (blocks: ReviewBlock[]) => void;
+  onCancel?: () => void;
   mode?: 'edit' | 'preview' | 'split';
+  className?: string;
 }
 
 export const NativeEditor: React.FC<NativeEditorProps> = ({
   issueId,
-  initialBlocks,
+  initialBlocks = [],
   onSave,
   onCancel,
-  mode = 'edit'
+  mode: initialMode = 'split',
+  className
 }) => {
-  const [blocks, setBlocks] = useState<ReviewBlock[]>(initialBlocks);
-  const [activeBlockId, setActiveBlockId] = useState<number | null>(null);
+  const [currentMode, setCurrentMode] = useState(initialMode);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [viewMode, setViewMode] = useState<'edit' | 'preview' | 'split'>(mode);
-  const [showPalette, setShowPalette] = useState(true);
 
-  // Update blocks when initialBlocks change
-  useEffect(() => {
-    setBlocks(initialBlocks);
-  }, [initialBlocks]);
+  const {
+    blocks,
+    activeBlockId,
+    history,
+    historyIndex,
+    setActiveBlock,
+    addBlock,
+    updateBlock,
+    deleteBlock,
+    moveBlock,
+    duplicateBlock,
+    undo,
+    redo,
+    canUndo,
+    canRedo
+  } = useBlockManagement(initialBlocks);
 
-  // Track unsaved changes
+  // Auto-save functionality
+  const { saveStatus, lastSaved } = useEditorAutoSave({
+    data: blocks,
+    onSave: onSave ? (data) => onSave(data) : undefined,
+    interval: 30000, // 30 seconds
+    enabled: !!issueId
+  });
+
+  // Track changes
   useEffect(() => {
     const hasChanges = JSON.stringify(blocks) !== JSON.stringify(initialBlocks);
     setHasUnsavedChanges(hasChanges);
   }, [blocks, initialBlocks]);
 
-  const generateBlockId = useCallback(() => {
-    return Math.max(0, ...blocks.map(b => b.id)) + 1;
-  }, [blocks]);
-
-  const handleUpdateBlock = useCallback((blockId: number, updates: Partial<ReviewBlock>) => {
-    setBlocks(prevBlocks => 
-      prevBlocks.map(block => 
-        block.id === blockId 
-          ? { ...block, ...updates }
-          : block
-      )
-    );
-  }, []);
-
-  const handleDeleteBlock = useCallback((blockId: number) => {
-    setBlocks(prevBlocks => {
-      const newBlocks = prevBlocks.filter(block => block.id !== blockId);
-      // Update sort indices
-      return newBlocks.map((block, index) => ({ ...block, sort_index: index }));
-    });
-    
-    if (activeBlockId === blockId) {
-      setActiveBlockId(null);
-    }
-    
-    toast({
-      title: "Bloco removido",
-      description: "O bloco foi removido com sucesso.",
-    });
-  }, [activeBlockId]);
-
-  const handleMoveBlock = useCallback((blockId: number, direction: 'up' | 'down') => {
-    setBlocks(prevBlocks => {
-      const currentIndex = prevBlocks.findIndex(block => block.id === blockId);
-      if (currentIndex === -1) return prevBlocks;
-
-      const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-      if (newIndex < 0 || newIndex >= prevBlocks.length) return prevBlocks;
-
-      const newBlocks = [...prevBlocks];
-      [newBlocks[currentIndex], newBlocks[newIndex]] = [newBlocks[newIndex], newBlocks[currentIndex]];
-      
-      // Update sort indices
-      return newBlocks.map((block, index) => ({ ...block, sort_index: index }));
-    });
-  }, []);
-
-  const handleAddBlock = useCallback((type: BlockType, position?: number) => {
-    const newBlockId = generateBlockId();
-    const insertPosition = position ?? blocks.length;
-    const now = new Date().toISOString();
-    
-    const newBlock: ReviewBlock = {
-      id: newBlockId,
-      issue_id: issueId || '',
-      type,
-      sort_index: insertPosition,
-      visible: true,
-      payload: getDefaultPayload(type),
-      meta: {
-        created_at: now,
-        updated_at: now
-      },
-      created_at: now,
-      updated_at: now
-    };
-
-    setBlocks(prevBlocks => {
-      const newBlocks = [...prevBlocks];
-      newBlocks.splice(insertPosition, 0, newBlock);
-      
-      // Update sort indices for all blocks
-      return newBlocks.map((block, index) => ({ ...block, sort_index: index }));
-    });
-
-    setActiveBlockId(newBlockId);
-    
-    toast({
-      title: "Bloco adicionado",
-      description: `Novo bloco de ${type} foi adicionado.`,
-    });
-  }, [blocks.length, generateBlockId, issueId]);
-
-  const handleDuplicateBlock = useCallback((blockId: number) => {
-    const blockToDuplicate = blocks.find(block => block.id === blockId);
-    if (!blockToDuplicate) return;
-
-    const newBlockId = generateBlockId();
-    const position = blocks.findIndex(block => block.id === blockId) + 1;
-    const now = new Date().toISOString();
-    
-    const duplicatedBlock: ReviewBlock = {
-      ...blockToDuplicate,
-      id: newBlockId,
-      sort_index: position,
-      meta: {
-        ...blockToDuplicate.meta,
-        created_at: now,
-        updated_at: now
-      },
-      created_at: now,
-      updated_at: now
-    };
-
-    setBlocks(prevBlocks => {
-      const newBlocks = [...prevBlocks];
-      newBlocks.splice(position, 0, duplicatedBlock);
-      
-      // Update sort indices
-      return newBlocks.map((block, index) => ({ ...block, sort_index: index }));
-    });
-
-    setActiveBlockId(newBlockId);
-    
-    toast({
-      title: "Bloco duplicado",
-      description: "O bloco foi duplicado com sucesso.",
-    });
-  }, [blocks, generateBlockId]);
-
-  const handleSave = useCallback(async () => {
-    if (isSaving) return;
-    
-    setIsSaving(true);
-    try {
-      await onSave(blocks);
+  const handleSave = useCallback(() => {
+    if (onSave) {
+      onSave(blocks);
       setHasUnsavedChanges(false);
-      toast({
-        title: "Conteúdo salvo",
-        description: "Todas as alterações foram salvas com sucesso.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Erro ao salvar",
-        description: error.message || "Não foi possível salvar as alterações.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
     }
-  }, [blocks, onSave, isSaving]);
+  }, [blocks, onSave]);
 
-  const handleDiscard = useCallback(() => {
-    setBlocks(initialBlocks);
-    setActiveBlockId(null);
-    setHasUnsavedChanges(false);
-    toast({
-      title: "Alterações descartadas",
-      description: "Todas as alterações foram descartadas.",
-    });
-  }, [initialBlocks]);
-
-  const handleInlineChanges = useCallback((changes: Map<string, any>) => {
-    // Auto-save inline changes
-    changes.forEach((value, editorId) => {
-      const [blockId, field] = editorId.split('.');
-      if (blockId && field) {
-        handleUpdateBlock(parseInt(blockId), { [field]: value });
+  const handleKeyboardShortcuts = useCallback((e: KeyboardEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      switch (e.key) {
+        case 's':
+          e.preventDefault();
+          handleSave();
+          break;
+        case 'z':
+          if (e.shiftKey) {
+            e.preventDefault();
+            redo();
+          } else {
+            e.preventDefault();
+            undo();
+          }
+          break;
+        case 'y':
+          e.preventDefault();
+          redo();
+          break;
       }
-    });
-  }, [handleUpdateBlock]);
+    }
+  }, [handleSave, undo, redo]);
 
-  // Create editor content
-  const editorContent = (
-    <div className="h-full flex">
-      {/* Left Sidebar - Block Palette */}
-      {showPalette && (
-        <div 
-          className="w-80 border-r flex-shrink-0 overflow-hidden"
-          style={{ 
-            backgroundColor: '#1a1a1a',
-            borderColor: '#2a2a2a'
-          }}
-        >
-          <BlockPalette onAddBlock={handleAddBlock} />
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyboardShortcuts);
+    return () => document.removeEventListener('keydown', handleKeyboardShortcuts);
+  }, [handleKeyboardShortcuts]);
+
+  const renderModeSelector = () => (
+    <div className="flex items-center border rounded-md" style={{ borderColor: '#2a2a2a' }}>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setCurrentMode('edit')}
+        className={cn(
+          "h-8 px-3 rounded-r-none text-xs",
+          currentMode === 'edit' && "bg-blue-600 text-white"
+        )}
+      >
+        <Edit3 className="w-3 h-3 mr-1" />
+        Editar
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setCurrentMode('split')}
+        className={cn(
+          "h-8 px-3 rounded-none border-x text-xs",
+          currentMode === 'split' && "bg-blue-600 text-white"
+        )}
+        style={{ borderColor: '#2a2a2a' }}
+      >
+        <SplitSquareHorizontal className="w-3 h-3 mr-1" />
+        Dividir
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setCurrentMode('preview')}
+        className={cn(
+          "h-8 px-3 rounded-l-none text-xs",
+          currentMode === 'preview' && "bg-blue-600 text-white"
+        )}
+      >
+        <Eye className="w-3 h-3 mr-1" />
+        Preview
+      </Button>
+    </div>
+  );
+
+  const renderToolbar = () => (
+    <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: '#2a2a2a' }}>
+      <div className="flex items-center gap-3">
+        <h1 className="text-lg font-semibold" style={{ color: '#ffffff' }}>
+          Editor Nativo
+        </h1>
+        
+        {/* Save Status */}
+        <div className="flex items-center gap-2 text-xs" style={{ color: '#9ca3af' }}>
+          {hasUnsavedChanges && (
+            <span style={{ color: '#f59e0b' }}>● Não salvo</span>
+          )}
+          {saveStatus === 'saving' && (
+            <span style={{ color: '#3b82f6' }}>Salvando...</span>
+          )}
+          {saveStatus === 'saved' && lastSaved && (
+            <span>Salvo {lastSaved.toLocaleTimeString()}</span>
+          )}
         </div>
-      )}
+      </div>
 
-      {/* Main Editor Area */}
-      <div className="flex-1 overflow-hidden">
-        <BlockEditor
-          blocks={blocks}
-          activeBlockId={activeBlockId}
-          onActiveBlockChange={setActiveBlockId}
-          onUpdateBlock={handleUpdateBlock}
-          onDeleteBlock={handleDeleteBlock}
-          onMoveBlock={handleMoveBlock}
-          onAddBlock={handleAddBlock}
-          onDuplicateBlock={handleDuplicateBlock}
-          compact={!showPalette}
-        />
+      <div className="flex items-center gap-2">
+        {/* Undo/Redo */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={undo}
+          disabled={!canUndo}
+          className="h-8 w-8 p-0"
+          title="Desfazer (Ctrl+Z)"
+        >
+          <Undo2 className="w-4 h-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={redo}
+          disabled={!canRedo}
+          className="h-8 w-8 p-0"
+          title="Refazer (Ctrl+Shift+Z)"
+        >
+          <Redo2 className="w-4 h-4" />
+        </Button>
+
+        {/* Mode Selector */}
+        {renderModeSelector()}
+
+        {/* Save Button */}
+        <Button
+          onClick={handleSave}
+          disabled={!hasUnsavedChanges}
+          className="flex items-center gap-2"
+          size="sm"
+        >
+          <Save className="w-4 h-4" />
+          Salvar
+        </Button>
       </div>
     </div>
   );
 
-  // Create preview content
-  const previewContent = (
-    <LivePreview
-      blocks={blocks}
-      activeBlockId={activeBlockId}
-      onBlockUpdate={handleUpdateBlock}
-    />
-  );
-
   return (
-    <InlineEditingProvider onSave={handleInlineChanges}>
-      <div className="native-editor h-full flex flex-col" style={{ backgroundColor: '#121212' }}>
-        {/* Header */}
-        <div 
-          className="flex items-center justify-between p-4 border-b flex-shrink-0"
-          style={{ borderColor: '#2a2a2a' }}
-        >
-          <div className="flex items-center gap-4">
-            <h1 className="text-xl font-semibold" style={{ color: '#ffffff' }}>
-              Editor Nativo
-            </h1>
-            {hasUnsavedChanges && (
-              <div 
-                className="text-sm px-2 py-1 rounded"
-                style={{ backgroundColor: '#f59e0b', color: '#000000' }}
-              >
-                Alterações não salvas
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowPalette(!showPalette)}
-              className="flex items-center gap-2"
+    <div className={cn("native-editor h-full flex flex-col", className)}>
+      {renderToolbar()}
+      
+      <div className="flex-1 overflow-hidden">
+        {currentMode === 'edit' && (
+          <div className="h-full flex">
+            {/* Block Palette */}
+            <div 
+              className="w-80 border-r overflow-y-auto flex-shrink-0"
+              style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}
             >
-              <Palette className="w-4 h-4" />
-              {showPalette ? 'Ocultar' : 'Mostrar'} Paleta
-            </Button>
-
-            <div className="flex items-center border rounded-md" style={{ borderColor: '#2a2a2a' }}>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setViewMode('edit')}
-                className={cn(
-                  "h-8 px-3 rounded-r-none text-xs",
-                  viewMode === 'edit' && "bg-blue-600 text-white"
-                )}
-              >
-                <Settings className="w-3 h-3 mr-1" />
-                Editar
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setViewMode('split')}
-                className={cn(
-                  "h-8 px-3 rounded-none border-x text-xs",
-                  viewMode === 'split' && "bg-blue-600 text-white"
-                )}
-                style={{ borderColor: '#2a2a2a' }}
-              >
-                <SplitSquareHorizontal className="w-3 h-3 mr-1" />
-                Dividir
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setViewMode('preview')}
-                className={cn(
-                  "h-8 px-3 rounded-l-none text-xs",
-                  viewMode === 'preview' && "bg-blue-600 text-white"
-                )}
-              >
-                <Eye className="w-3 h-3 mr-1" />
-                Preview
-              </Button>
+              <BlockPalette onAddBlock={addBlock} />
             </div>
-
-            {hasUnsavedChanges && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDiscard}
-                className="flex items-center gap-2"
-              >
-                <RotateCcw className="w-4 h-4" />
-                Descartar
-              </Button>
-            )}
-
-            <Button
-              onClick={handleSave}
-              disabled={isSaving || !hasUnsavedChanges}
-              className="flex items-center gap-2"
-            >
-              <Save className="w-4 h-4" />
-              {isSaving ? 'Salvando...' : 'Salvar'}
-            </Button>
+            
+            {/* Editor */}
+            <div className="flex-1">
+              <BlockEditor
+                blocks={blocks}
+                activeBlockId={activeBlockId}
+                onActiveBlockChange={setActiveBlock}
+                onUpdateBlock={updateBlock}
+                onDeleteBlock={deleteBlock}
+                onMoveBlock={moveBlock}
+                onAddBlock={addBlock}
+                onDuplicateBlock={duplicateBlock}
+              />
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Content */}
-        <div className="flex-1 overflow-hidden">
-          {viewMode === 'edit' && editorContent}
-          {viewMode === 'preview' && previewContent}
-          {viewMode === 'split' && (
-            <ResizableLayout
-              leftPanel={editorContent}
-              rightPanel={previewContent}
-              leftTitle="Editor"
-              rightTitle="Preview ao Vivo"
-              defaultLayout={[60, 40]}
-              minLeftSize={25}
-              minRightSize={25}
+        {currentMode === 'preview' && (
+          <div className="h-full">
+            <ReviewPreview 
+              blocks={blocks}
+              className="h-full"
             />
-          )}
+          </div>
+        )}
+
+        {currentMode === 'split' && (
+          <ResizableLayout>
+            <div className="h-full flex">
+              {/* Block Palette */}
+              <div 
+                className="w-64 border-r overflow-y-auto flex-shrink-0"
+                style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}
+              >
+                <BlockPalette onAddBlock={addBlock} compact />
+              </div>
+              
+              {/* Editor */}
+              <div className="flex-1 border-r" style={{ borderColor: '#2a2a2a' }}>
+                <BlockEditor
+                  blocks={blocks}
+                  activeBlockId={activeBlockId}
+                  onActiveBlockChange={setActiveBlock}
+                  onUpdateBlock={updateBlock}
+                  onDeleteBlock={deleteBlock}
+                  onMoveBlock={moveBlock}
+                  onAddBlock={addBlock}
+                  onDuplicateBlock={duplicateBlock}
+                  compact
+                />
+              </div>
+              
+              {/* Preview */}
+              <div className="flex-1">
+                <ReviewPreview 
+                  blocks={blocks}
+                  className="h-full"
+                />
+              </div>
+            </div>
+          </ResizableLayout>
+        )}
+      </div>
+
+      {/* Status Bar */}
+      <div 
+        className="px-4 py-2 border-t flex items-center justify-between text-xs"
+        style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a', color: '#9ca3af' }}
+      >
+        <div className="flex items-center gap-4">
+          <span>{blocks.length} blocos</span>
+          <span>Bloco ativo: {activeBlockId ? `#${activeBlockId}` : 'Nenhum'}</span>
+        </div>
+        
+        <div className="flex items-center gap-4">
+          <span>Ctrl+S para salvar</span>
+          <span>Ctrl+Z para desfazer</span>
         </div>
       </div>
-    </InlineEditingProvider>
+    </div>
   );
 };
-
-// Helper function to generate default payload for different block types
-function getDefaultPayload(type: BlockType): any {
-  switch (type) {
-    case 'heading':
-      return { text: '', level: 1, anchor: '' };
-    case 'paragraph':
-      return { content: '', alignment: 'left', emphasis: 'normal' };
-    case 'figure':
-      return { src: '', alt: '', caption: '', width: 'auto', alignment: 'center' };
-    case 'table':
-      return { 
-        title: '', 
-        headers: ['Coluna 1', 'Coluna 2'], 
-        rows: [['Dados 1', 'Dados 2']], 
-        caption: '' 
-      };
-    case 'callout':
-      return { type: 'info', title: '', content: '' };
-    case 'number_card':
-      return { number: '0', label: 'Métrica', description: '', trend: 'neutral', percentage: 0 };
-    case 'reviewer_quote':
-      return { quote: '', author: '', title: '', institution: '', avatar_url: '' };
-    case 'poll':
-      return { 
-        question: '', 
-        options: ['Opção 1', 'Opção 2'], 
-        poll_type: 'single_choice',
-        votes: [0, 0],
-        total_votes: 0,
-        allow_add_options: false
-      };
-    case 'citation_list':
-      return { citations: [] };
-    default:
-      return {};
-  }
-}
