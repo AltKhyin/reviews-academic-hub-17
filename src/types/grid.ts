@@ -49,14 +49,14 @@ export interface GridBlockMeta {
   rowHeights?: number[];
 }
 
-// Extended layout metadata for blocks
+// Extended layout metadata for blocks - FIXED: Added missing properties
 export interface ExtendedLayoutMeta {
   row_id?: string;
   position?: number;
   columns?: number;
   gap?: number;
   columnWidths?: number[];
-  // New vertical properties
+  // New vertical properties - FIXED: Added these missing properties
   grid_id?: string;
   grid_position?: GridPosition;
   grid_rows?: number;
