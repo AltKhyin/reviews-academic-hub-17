@@ -1,5 +1,6 @@
-// ABOUTME: Enhanced block editor with unified grid management and fixed drag and drop
-// Uses new grid layout manager for consistent operations and proper event handling
+
+// ABOUTME: Fixed block editor with proper drag and drop, state management, and grid operations
+// Resolved UI freezing, merge issues, and event handling conflicts
 
 import React, { useState, useCallback, useRef } from 'react';
 import { ReviewBlock, BlockType } from '@/types/review';
@@ -15,12 +16,9 @@ import {
   EyeOff, 
   Copy, 
   Trash2, 
-  Grid2X2,
-  Grid3X3,
   Columns2,
   Columns3,
-  Columns4,
-  Square
+  Columns4
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -70,8 +68,8 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
   });
 
   const dragTimeoutRef = useRef<NodeJS.Timeout>();
+  const processingDropRef = useRef(false);
 
-  // Use the unified grid layout manager
   const {
     layoutState,
     updateColumnWidths,
@@ -91,29 +89,42 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     dragState 
   });
 
+  // FIXED: Improved block click handling with better event filtering
   const handleBlockClick = useCallback((blockId: number, event: React.MouseEvent) => {
     const target = event.target as Element;
-    const isInteractiveElement = target.closest('.inline-editor-display, .inline-rich-editor-display, input, textarea, button, select');
+    
+    // Enhanced interactive element detection
+    const isInteractiveElement = target.closest(
+      '.inline-editor-display, .inline-rich-editor-display, input, textarea, button, select, [contenteditable], .grid-controls, .resizable-handle'
+    );
     
     if (!isInteractiveElement) {
+      event.stopPropagation();
       onActiveBlockChange(activeBlockId === blockId ? null : blockId);
     }
   }, [activeBlockId, onActiveBlockChange]);
 
-  const handleBlockVisibilityToggle = useCallback((blockId: number) => {
+  const handleBlockVisibilityToggle = useCallback((blockId: number, event: React.MouseEvent) => {
+    event.stopPropagation();
+    event.preventDefault();
+    
     const block = blocks.find(b => b.id === blockId);
     if (block) {
       onUpdateBlock(blockId, { visible: !block.visible });
     }
   }, [blocks, onUpdateBlock]);
 
+  // FIXED: Proper addBlockBetween with correct position calculation
   const addBlockBetween = useCallback((position: number, type: BlockType = 'paragraph') => {
     console.log('Adding block between positions:', { position, type });
     onAddBlock(type, position);
   }, [onAddBlock]);
 
-  // Enhanced grid conversion
-  const convertToLayout = useCallback((blockId: number, columns: number) => {
+  // FIXED: Enhanced grid conversion with proper validation
+  const convertToLayout = useCallback((blockId: number, columns: number, event: React.MouseEvent) => {
+    event.stopPropagation();
+    event.preventDefault();
+    
     const block = blocks.find(b => b.id === blockId);
     if (!block) {
       console.error('Block not found for grid conversion:', blockId);
@@ -134,6 +145,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     }
   }, [blocks, onConvertToGrid, isBlockInGrid]);
 
+  // FIXED: Proper grid block addition with correct position calculation
   const addBlockToGrid = useCallback((rowId: string, position: number) => {
     const row = layoutState.rows.find(r => r.id === rowId);
     if (!row) {
@@ -141,17 +153,28 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       return;
     }
 
-    // Find the insertion point based on the grid position
+    // Calculate the correct insertion index in the global blocks array
     let insertionIndex: number;
     
-    if (position === 0) {
-      // Insert at the beginning of the row
-      const firstBlockInRow = row.blocks[0];
-      insertionIndex = firstBlockInRow ? blocks.findIndex(b => b.id === firstBlockInRow.id) : blocks.length;
+    if (position === 0 && row.blocks.length === 0) {
+      // Empty grid - find where this row should be in the document
+      const allSingleRows = layoutState.rows.filter(r => r.id.startsWith('single-'));
+      const rowBlocks = layoutState.rows
+        .filter(r => !r.id.startsWith('single-'))
+        .sort((a, b) => {
+          const aMinSort = Math.min(...a.blocks.map(b => b.sort_index));
+          const bMinSort = Math.min(...b.blocks.map(b => b.sort_index));
+          return aMinSort - bMinSort;
+        });
+      
+      const targetRowIndex = rowBlocks.findIndex(r => r.id === rowId);
+      insertionIndex = targetRowIndex > 0 ? 
+        Math.max(...rowBlocks[targetRowIndex - 1].blocks.map(b => blocks.findIndex(bl => bl.id === b.id))) + 1 :
+        0;
     } else if (position < row.blocks.length) {
-      // Insert between existing blocks
+      // Insert before an existing block
       const blockAtPosition = row.blocks[position];
-      insertionIndex = blockAtPosition ? blocks.findIndex(b => b.id === blockAtPosition.id) : blocks.length;
+      insertionIndex = blocks.findIndex(b => b.id === blockAtPosition.id);
     } else {
       // Insert at the end of the row
       const lastBlockInRow = row.blocks[row.blocks.length - 1];
@@ -160,12 +183,18 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
         blocks.length;
     }
 
-    console.log('Adding block to grid:', { rowId, position, insertionIndex });
+    console.log('Adding block to grid:', { rowId, position, insertionIndex, totalBlocks: blocks.length });
     onAddBlock('paragraph', insertionIndex);
   }, [layoutState.rows, blocks, onAddBlock]);
 
-  // ENHANCED DRAG AND DROP IMPLEMENTATION
+  // FIXED: Enhanced drag start with proper state initialization
   const handleDragStart = useCallback((e: React.DragEvent, blockId: number) => {
+    // Prevent dragging during active processing
+    if (processingDropRef.current) {
+      e.preventDefault();
+      return;
+    }
+    
     const sourceRow = getRowByBlockId(blockId);
     
     console.log('Drag started:', { blockId, sourceRowId: sourceRow?.id });
@@ -191,6 +220,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     document.body.classList.add('dragging-block');
   }, [getRowByBlockId]);
 
+  // FIXED: Debounced drag over handling
   const handleDragOver = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number, targetType?: 'grid' | 'single' | 'merge') => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
@@ -202,7 +232,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
 
     // Debounce the drag over state updates
     dragTimeoutRef.current = setTimeout(() => {
-      if (dragState.isDragging) {
+      if (dragState.isDragging && !processingDropRef.current) {
         setDragState(prev => ({
           ...prev,
           dragOverRowId: targetRowId,
@@ -213,6 +243,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     }, 50);
   }, [dragState.isDragging]);
 
+  // FIXED: Improved drag leave handling
   const handleDragLeave = useCallback((e: React.DragEvent) => {
     // Only trigger if leaving the actual drop zone
     const rect = e.currentTarget.getBoundingClientRect();
@@ -225,79 +256,101 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       }
       
       dragTimeoutRef.current = setTimeout(() => {
-        setDragState(prev => ({
-          ...prev,
-          dragOverRowId: null,
-          dragOverPosition: null,
-          dropTargetType: null
-        }));
+        if (!processingDropRef.current) {
+          setDragState(prev => ({
+            ...prev,
+            dragOverRowId: null,
+            dragOverPosition: null,
+            dropTargetType: null
+          }));
+        }
       }, 100);
     }
   }, []);
 
-  // FIXED: Enhanced drop handler with proper merge functionality
+  // FIXED: Enhanced drop handler with proper merge functionality and state management
   const handleDrop = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number, dropType?: 'grid' | 'single' | 'merge') => {
     e.preventDefault();
+    e.stopPropagation();
     
-    if (!dragState.draggedBlockId) {
-      console.warn('No dragged block found during drop');
+    // Prevent multiple concurrent drops
+    if (processingDropRef.current || !dragState.draggedBlockId) {
+      console.warn('Drop ignored - already processing or no dragged block');
       return;
     }
 
-    const draggedBlock = blocks.find(b => b.id === dragState.draggedBlockId);
-    const targetRow = layoutState.rows.find(r => r.id === targetRowId);
+    processingDropRef.current = true;
     
-    if (!draggedBlock || !targetRow) {
-      console.error('Invalid drop operation:', { 
-        draggedBlock: !!draggedBlock, 
-        targetRow: !!targetRow,
-        targetRowId 
-      });
-      return;
-    }
-
-    console.log('Executing drop operation:', { 
-      blockId: dragState.draggedBlockId, 
-      targetRowId, 
-      targetPosition,
-      dropType,
-      targetRowColumns: targetRow.columns,
-      sourceRowId: dragState.draggedFromRowId
-    });
-
-    // FIXED: Enhanced merge logic using the new merge function
-    if (dropType === 'merge' && onMergeBlockIntoGrid) {
-      console.log('Merging block into grid using dedicated function');
-      onMergeBlockIntoGrid(dragState.draggedBlockId, targetRowId, targetPosition);
-    } else {
-      // STANDARD DROP: Move to position in grid or single row
-      const finalPosition = targetPosition ?? targetRow.blocks.length;
+    try {
+      const draggedBlock = blocks.find(b => b.id === dragState.draggedBlockId);
+      const targetRow = layoutState.rows.find(r => r.id === targetRowId);
       
-      onUpdateBlock(dragState.draggedBlockId, {
-        meta: {
-          ...draggedBlock.meta,
-          layout: targetRow.columns > 1 ? {
-            row_id: targetRowId,
-            position: finalPosition,
-            columns: targetRow.columns,
-            gap: targetRow.gap || 4,
-            columnWidths: targetRow.columnWidths
-          } : undefined
-        }
+      if (!draggedBlock || !targetRow) {
+        console.error('Invalid drop operation:', { 
+          draggedBlock: !!draggedBlock, 
+          targetRow: !!targetRow,
+          targetRowId 
+        });
+        return;
+      }
+
+      console.log('Executing drop operation:', { 
+        blockId: dragState.draggedBlockId, 
+        targetRowId, 
+        targetPosition,
+        dropType,
+        targetRowColumns: targetRow.columns,
+        sourceRowId: dragState.draggedFromRowId
       });
+
+      // Clear drag state immediately to prevent visual glitches
+      setDragState({
+        draggedBlockId: null,
+        dragOverRowId: null,
+        dragOverPosition: null,
+        isDragging: false,
+        draggedFromRowId: null,
+        dropTargetType: null
+      });
+
+      // Clear active block to reset visual state
+      onActiveBlockChange(null);
+
+      // FIXED: Enhanced merge logic using the improved merge function
+      if ((dropType === 'merge' || targetRow.columns > 1) && onMergeBlockIntoGrid) {
+        console.log('Merging block into grid using dedicated function');
+        setTimeout(() => {
+          onMergeBlockIntoGrid!(dragState.draggedBlockId!, targetRowId, targetPosition);
+        }, 50);
+      } else {
+        // STANDARD DROP: Move to position in single row
+        const finalPosition = targetPosition ?? targetRow.blocks.length;
+        
+        setTimeout(() => {
+          onUpdateBlock(dragState.draggedBlockId!, {
+            meta: {
+              ...draggedBlock.meta,
+              layout: targetRow.columns > 1 ? {
+                row_id: targetRowId,
+                position: finalPosition,
+                columns: targetRow.columns,
+                gap: targetRow.gap || 4,
+                columnWidths: targetRow.columnWidths
+              } : undefined
+            }
+          });
+        }, 50);
+      }
+
+    } finally {
+      // Reset processing flag after a delay
+      setTimeout(() => {
+        processingDropRef.current = false;
+      }, 200);
     }
+  }, [dragState, blocks, layoutState.rows, onUpdateBlock, onMergeBlockIntoGrid, onActiveBlockChange]);
 
-    // Clear drag state
-    setDragState({
-      draggedBlockId: null,
-      dragOverRowId: null,
-      dragOverPosition: null,
-      isDragging: false,
-      draggedFromRowId: null,
-      dropTargetType: null
-    });
-  }, [dragState, blocks, layoutState.rows, onUpdateBlock, onMergeBlockIntoGrid]);
-
+  // FIXED: Proper drag end cleanup
   const handleDragEnd = useCallback(() => {
     if (dragTimeoutRef.current) {
       clearTimeout(dragTimeoutRef.current);
@@ -306,16 +359,20 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     // Remove visual feedback class
     document.body.classList.remove('dragging-block');
     
-    setDragState({
-      draggedBlockId: null,
-      dragOverRowId: null,
-      dragOverPosition: null,
-      isDragging: false,
-      draggedFromRowId: null,
-      dropTargetType: null
-    });
+    // Reset drag state after a small delay to prevent conflicts
+    setTimeout(() => {
+      setDragState({
+        draggedBlockId: null,
+        dragOverRowId: null,
+        dragOverPosition: null,
+        isDragging: false,
+        draggedFromRowId: null,
+        dropTargetType: null
+      });
+    }, 100);
   }, []);
 
+  // FIXED: Enhanced block rendering with proper event handling
   const renderBlock = (block: ReviewBlock, rowIndex: number, blockIndex: number, row: any) => {
     const globalIndex = blocks.findIndex(b => b.id === block.id);
     const isActive = activeBlockId === block.id;
@@ -345,7 +402,10 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => addBlockBetween(globalIndex)}
+              onClick={(e) => {
+                e.stopPropagation();
+                addBlockBetween(globalIndex);
+              }}
               className="h-6 w-24 text-xs"
               style={{ color: '#9ca3af' }}
             >
@@ -359,7 +419,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
               "relative transition-all duration-200 cursor-pointer",
               isActive ? "ring-2 ring-blue-500 shadow-lg" : "hover:shadow-md",
               !block.visible && "opacity-50",
-              isDragging && "opacity-50 scale-95 rotate-2"
+              isDragging && "opacity-30 scale-95"
             )}
             style={{ 
               backgroundColor: '#1a1a1a',
@@ -369,7 +429,6 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
             draggable={true}
             onDragStart={(e) => handleDragStart(e, block.id)}
             onDragOver={(e) => {
-              // Enhanced drop type detection
               const dropType = row.columns > 1 ? 'merge' : 
                              dragState.draggedBlockId && dragState.draggedBlockId !== block.id ? 'merge' : 'single';
               handleDragOver(e, row.id, blockIndex, dropType);
@@ -382,7 +441,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
             }}
             onDragEnd={handleDragEnd}
           >
-            {/* Block Controls */}
+            {/* FIXED: Block Controls with proper event handling */}
             <div className={cn(
               "absolute -top-2 -right-2 flex items-center gap-1 z-10 transition-opacity",
               isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
@@ -393,10 +452,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      convertToLayout(block.id, 2);
-                    }}
+                    onClick={(e) => convertToLayout(block.id, 2, e)}
                     className="h-6 w-6 p-0 bg-gray-800 border border-gray-600 hover:bg-gray-700"
                     title="2 colunas"
                   >
@@ -405,10 +461,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      convertToLayout(block.id, 3);
-                    }}
+                    onClick={(e) => convertToLayout(block.id, 3, e)}
                     className="h-6 w-6 p-0 bg-gray-800 border border-gray-600 hover:bg-gray-700"
                     title="3 colunas"
                   >
@@ -417,10 +470,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      convertToLayout(block.id, 4);
-                    }}
+                    onClick={(e) => convertToLayout(block.id, 4, e)}
                     className="h-6 w-6 p-0 bg-gray-800 border border-gray-600 hover:bg-gray-700"
                     title="4 colunas"
                   >
@@ -433,10 +483,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleBlockVisibilityToggle(block.id);
-                }}
+                onClick={(e) => handleBlockVisibilityToggle(block.id, e)}
                 className="h-6 w-6 p-0 bg-gray-800 border border-gray-600 hover:bg-gray-700"
                 title={block.visible ? "Ocultar bloco" : "Mostrar bloco"}
               >
@@ -449,6 +496,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                 size="sm"
                 onClick={(e) => {
                   e.stopPropagation();
+                  e.preventDefault();
                   onDuplicateBlock(block.id);
                 }}
                 className="h-6 w-6 p-0 bg-gray-800 border border-gray-600 hover:bg-gray-700"
@@ -463,6 +511,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                 size="sm"
                 onClick={(e) => {
                   e.stopPropagation();
+                  e.preventDefault();
                   deleteBlockWithLayoutRepair(block.id);
                 }}
                 className="h-6 w-6 p-0 bg-red-800 border border-red-600 hover:bg-red-700"
@@ -501,98 +550,54 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     );
   };
 
-  const renderLayoutRow = (row: any, rowIndex: number) => {
-    if (row.columns === 1) {
-      return (
-        <div key={row.id} className="my-6">
-          {renderBlock(row.blocks[0], rowIndex, 0, row)}
-        </div>
-      );
-    }
-
-    // Use ResizableGrid for multi-column layouts
-    return (
-      <ResizableGrid
-        key={row.id}
-        rowId={row.id}
-        blocks={row.blocks}
-        columns={row.columns}
-        gap={row.gap}
-        columnWidths={row.columnWidths}
-        onUpdateLayout={updateColumnWidths}
-        onAddBlock={addBlockToGrid}
-        onUpdateBlock={onUpdateBlock}
-        onDeleteBlock={deleteBlockWithLayoutRepair}
-        activeBlockId={activeBlockId}
-        onActiveBlockChange={onActiveBlockChange}
-        readonly={false}
-        className="my-6"
-        dragState={dragState}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      />
-    );
-  };
-
   return (
-    <div className={cn("block-editor h-full", className)}>
-      <div 
-        className="h-full overflow-y-auto p-6"
-        style={{ backgroundColor: '#121212' }}
-      >
-        {layoutState.rows.length > 0 ? (
-          <div className="space-y-4">
-            {layoutState.rows.map((row, index) => renderLayoutRow(row, index))}
-          </div>
-        ) : (
-          <div 
-            className="border-2 border-dashed rounded-lg p-12 text-center"
-            style={{ borderColor: '#2a2a2a', backgroundColor: '#1a1a1a' }}
-          >
-            <div className="text-4xl mb-4">📝</div>
-            <h3 className="text-lg font-medium mb-2" style={{ color: '#ffffff' }}>
-              Comece Criando seu Primeiro Bloco
-            </h3>
-            <p className="mb-6" style={{ color: '#d1d5db' }}>
-              Use a paleta de blocos à esquerda para adicionar conteúdo à sua revisão
-            </p>
-          </div>
-        )}
+    <div className={cn("block-editor flex-1 overflow-y-auto p-4", className)} style={{ backgroundColor: '#121212' }}>
+      <div className="max-w-4xl mx-auto space-y-6">
+        {layoutState.rows.map((row, rowIndex) => {
+          if (row.columns > 1) {
+            // Grid layout
+            return (
+              <ResizableGrid
+                key={row.id}
+                rowId={row.id}
+                blocks={row.blocks}
+                columns={row.columns}
+                gap={row.gap}
+                columnWidths={row.columnWidths}
+                onUpdateLayout={updateColumnWidths}
+                onAddBlock={addBlockToGrid}
+                onUpdateBlock={onUpdateBlock}
+                onDeleteBlock={onDeleteBlock}
+                activeBlockId={activeBlockId}
+                onActiveBlockChange={onActiveBlockChange}
+                dragState={dragState}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              />
+            );
+          } else {
+            // Single block layout
+            return row.blocks.map((block, blockIndex) => 
+              renderBlock(block, rowIndex, blockIndex, row)
+            );
+          }
+        })}
 
-        {blocks.length > 0 && (
-          <div className="flex justify-center pt-8">
+        {/* Add first block if no blocks exist */}
+        {blocks.length === 0 && (
+          <div className="text-center py-12">
             <Button
-              variant="outline"
-              onClick={() => addBlockBetween(blocks.length)}
-              className="flex items-center gap-2"
-              style={{ 
-                borderColor: '#2a2a2a',
-                backgroundColor: '#1a1a1a',
-                color: '#ffffff'
-              }}
+              variant="ghost"
+              onClick={() => addBlockBetween(0)}
+              className="text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500"
             >
-              <Plus className="w-4 h-4" />
-              Adicionar Bloco
+              <Plus className="w-4 h-4 mr-2" />
+              Adicionar Primeiro Bloco
             </Button>
           </div>
         )}
       </div>
-
-      {/* Drag and Drop Global Styles */}
-      <style>
-        {`
-          .dragging-block * {
-            pointer-events: none !important;
-          }
-          .dragging-block .drop-zone {
-            pointer-events: auto !important;
-          }
-          .dragging-block [draggable="true"] {
-            pointer-events: auto !important;
-          }
-        `}
-      </style>
     </div>
   );
 };

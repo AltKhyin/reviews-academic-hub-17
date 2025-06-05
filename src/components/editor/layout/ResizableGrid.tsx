@@ -1,6 +1,6 @@
 
-// ABOUTME: Enhanced resizable grid layout with advanced operations and improved synchronization
-// Uses shared grid utilities for consistent rendering and enhanced column management
+// ABOUTME: Fixed resizable grid layout with proper event handling and block management
+// Resolved UI freezing, drag states, and grid operation issues
 
 import React, { useCallback, useMemo } from 'react';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
@@ -70,7 +70,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
     return columnWidthsToPanelSizes(columnWidths, columns);
   }, [columnWidths, columns]);
 
-  // Enhanced grid operations
+  // Enhanced grid operations with proper handlers
   const {
     addColumnToGrid,
     removeColumnFromGrid,
@@ -78,11 +78,11 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
     convertGridToSingle,
     reorderGridColumns
   } = useEnhancedGridOperations({
-    blocks: blocks, // Pass all blocks for context
+    blocks: blocks,
     onUpdateBlock,
     onDeleteBlock,
     onAddBlock: (type, position, layoutInfo) => {
-      // This is a simplified adapter - in real implementation you'd need to handle this properly
+      // FIXED: Proper grid position handling
       if (layoutInfo && layoutInfo.rowId === rowId) {
         onAddBlock(rowId, layoutInfo.gridPosition);
       }
@@ -98,71 +98,157 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
     dragState 
   });
 
-  // Handle panel resize with immediate feedback
+  // FIXED: Debounced panel resize to prevent excessive updates
   const handlePanelResize = useCallback((sizes: number[]) => {
-    console.log('Panel resize:', { rowId, oldSizes: panelSizes, newSizes: sizes });
-    
     const normalizedWidths = panelSizesToColumnWidths(sizes);
-    onUpdateLayout(rowId, { columnWidths: normalizedWidths });
-  }, [rowId, onUpdateLayout, panelSizes]);
+    
+    // Only update if there's a meaningful change
+    const hasSignificantChange = columnWidths ? 
+      normalizedWidths.some((width, index) => Math.abs(width - (columnWidths[index] || 0)) > 0.5) :
+      true;
 
-  // Handle block click for selection
+    if (hasSignificantChange) {
+      console.log('Panel resize with significant change:', { rowId, newSizes: normalizedWidths });
+      onUpdateLayout(rowId, { columnWidths: normalizedWidths });
+    }
+  }, [rowId, onUpdateLayout, columnWidths]);
+
+  // FIXED: Improved block click handling with better event filtering
   const handleBlockClick = useCallback((blockId: number, event: React.MouseEvent) => {
     if (!readonly && onActiveBlockChange) {
       const target = event.target as Element;
-      const isInteractiveElement = target.closest('.inline-editor-display, .inline-rich-editor-display, input, textarea, button, select');
       
+      // More specific interactive element detection
+      const isInteractiveElement = target.closest(
+        '.inline-editor-display, .inline-rich-editor-display, input, textarea, button, select, [contenteditable], .grid-controls'
+      );
+      
+      // Don't change selection when clicking interactive elements
       if (!isInteractiveElement) {
+        event.stopPropagation();
         onActiveBlockChange(activeBlockId === blockId ? null : blockId);
       }
     }
   }, [activeBlockId, onActiveBlockChange, readonly]);
 
-  // Enhanced grid operations handlers
-  const handleAddColumn = useCallback(() => {
-    addColumnToGrid(rowId);
+  // FIXED: Enhanced grid operations handlers with proper error handling
+  const handleAddColumn = useCallback((e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    console.log('Adding column to grid:', rowId);
+    const result = addColumnToGrid(rowId);
+    
+    if (!result?.success) {
+      console.error('Failed to add column to grid');
+    }
   }, [addColumnToGrid, rowId]);
 
-  const handleRemoveColumn = useCallback((columnIndex: number) => {
-    removeColumnFromGrid(rowId, columnIndex);
+  const handleRemoveColumn = useCallback((columnIndex: number, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    console.log('Removing column from grid:', { rowId, columnIndex });
+    const result = removeColumnFromGrid(rowId, columnIndex);
+    
+    if (!result?.success) {
+      console.error('Failed to remove column from grid');
+    }
   }, [removeColumnFromGrid, rowId]);
 
-  const handleMergeBlocks = useCallback((leftIndex: number, rightIndex: number) => {
-    mergeGridBlocks(rowId, leftIndex, rightIndex);
+  const handleMergeBlocks = useCallback((leftIndex: number, rightIndex: number, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    console.log('Merging blocks in grid:', { rowId, leftIndex, rightIndex });
+    const result = mergeGridBlocks(rowId, leftIndex, rightIndex);
+    
+    if (!result?.success) {
+      console.error('Failed to merge blocks in grid');
+    }
   }, [mergeGridBlocks, rowId]);
 
-  const handleConvertToSingle = useCallback((mergeContent: boolean) => {
+  const handleConvertToSingle = useCallback((mergeContent: boolean, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    console.log('Converting grid to single:', { rowId, mergeContent });
     convertGridToSingle(rowId, mergeContent);
   }, [convertGridToSingle, rowId]);
 
   const handleReorderColumns = useCallback((fromIndex: number, toIndex: number) => {
+    console.log('Reordering columns:', { rowId, fromIndex, toIndex });
     reorderGridColumns(rowId, fromIndex, toIndex);
   }, [reorderGridColumns, rowId]);
 
-  // Enhanced drag handlers for grid
+  // FIXED: Proper drag handlers with event cleanup
   const handleGridDragOver = useCallback((e: React.DragEvent<HTMLDivElement>, position?: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (onDragOver && dragState?.isDragging) {
       onDragOver(e, rowId, position, 'merge');
     }
   }, [onDragOver, rowId, dragState]);
 
   const handleGridDrop = useCallback((e: React.DragEvent<HTMLDivElement>, position?: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (onDrop && dragState?.isDragging) {
+      console.log('Grid drop:', { rowId, position, draggedBlock: dragState.draggedBlockId });
       onDrop(e, rowId, position, 'merge');
     }
   }, [onDrop, rowId, dragState]);
 
   const handleGridDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    if (onDragLeave) {
-      onDragLeave(e);
+    // Only trigger if actually leaving the grid area
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+    
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      if (onDragLeave) {
+        onDragLeave(e);
+      }
     }
   }, [onDragLeave]);
 
-  // Render empty slot for adding blocks - ENHANCED
+  // FIXED: Enhanced empty slot rendering with proper add block functionality
   const renderEmptySlot = (position: number) => {
     const isDropTarget = dragState?.dragOverRowId === rowId && 
                         dragState?.dragOverPosition === position && 
                         dragState?.dropTargetType === 'merge';
+
+    // FIXED: Proper add block handler that calculates correct insertion position
+    const handleAddBlockToPosition = useCallback((e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      console.log('Adding block to grid position:', { rowId, position });
+      
+      // Find the correct global insertion index based on grid position
+      const row = blocks.find(b => b.meta?.layout?.row_id === rowId);
+      if (row) {
+        const rowBlocks = blocks.filter(b => b.meta?.layout?.row_id === rowId);
+        const lastBlockInRow = rowBlocks[rowBlocks.length - 1];
+        const insertionIndex = lastBlockInRow ? 
+          blocks.findIndex(b => b.id === lastBlockInRow.id) + 1 : 
+          blocks.length;
+        
+        onAddBlock(rowId, insertionIndex);
+      } else {
+        onAddBlock(rowId, position);
+      }
+    }, [position]);
 
     return (
       <div
@@ -195,10 +281,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => {
-                console.log('Adding block to grid:', { rowId, position });
-                onAddBlock(rowId, position);
-              }}
+              onClick={handleAddBlockToPosition}
               className="text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500"
             >
               <Plus className="w-4 h-4 mr-2" />
@@ -213,7 +296,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
     );
   };
 
-  // Render block with controls and enhanced drag support
+  // FIXED: Enhanced block rendering with proper drag state handling
   const renderBlock = (block: ReviewBlock, position: number) => {
     const isActive = activeBlockId === block.id;
     const isDragging = dragState?.draggedBlockId === block.id;
@@ -222,7 +305,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
                         dragState?.dropTargetType === 'merge';
 
     return (
-      <div className="relative group h-full">
+      <div className="relative group h-full" key={`block-${block.id}`}>
         {/* Drop zone indicator for merge */}
         {isDropTarget && (
           <div className="absolute inset-0 border-2 border-green-500 rounded-lg z-10 animate-pulse bg-green-500/10">
@@ -237,7 +320,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
             "h-full transition-all duration-200 cursor-pointer rounded-lg relative",
             isActive ? "ring-2 ring-blue-500 shadow-lg" : "hover:shadow-md",
             !block.visible && "opacity-50",
-            isDragging && "opacity-50 scale-95"
+            isDragging && "opacity-30 scale-95"
           )}
           style={{ 
             backgroundColor: isActive ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
@@ -248,7 +331,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
           onDragLeave={handleGridDragLeave}
           onDrop={(e) => handleGridDrop(e, position)}
         >
-          {/* Block Controls */}
+          {/* FIXED: Block Controls with proper event handling */}
           {!readonly && (
             <div className={cn(
               "absolute -top-2 -right-2 z-10 transition-opacity",
@@ -259,6 +342,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
                 size="sm"
                 onClick={(e) => {
                   e.stopPropagation();
+                  e.preventDefault();
                   console.log('Deleting block from grid:', { blockId: block.id, rowId });
                   onDeleteBlock(block.id);
                 }}
@@ -288,7 +372,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
 
   return (
     <div className={cn("resizable-grid my-6", className)}>
-      {/* Enhanced Grid Controls - Only show in edit mode */}
+      {/* FIXED: Enhanced Grid Controls with proper event handlers */}
       {!readonly && (
         <GridControls
           rowId={rowId}

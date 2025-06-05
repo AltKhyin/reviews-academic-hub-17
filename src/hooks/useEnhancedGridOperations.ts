@@ -1,6 +1,5 @@
-
-// ABOUTME: Enhanced grid operations for dynamic column management and advanced grid functionality
-// Provides grid resizing, merging, splitting, and cross-layout operations
+// ABOUTME: Enhanced grid operations with fixed column management and improved event handling
+// Provides stable grid resizing, merging, splitting, and cross-layout operations
 
 import { useCallback } from 'react';
 import { ReviewBlock } from '@/types/review';
@@ -31,7 +30,7 @@ export const useEnhancedGridOperations = ({
     onDeleteBlock
   });
 
-  // FIXED: Add column to existing grid - properly expand grid
+  // FIXED: Proper column addition with correct position calculation
   const addColumnToGrid = useCallback((rowId: string) => {
     const row = layoutState.rows.find(r => r.id === rowId);
     if (!row) {
@@ -44,9 +43,10 @@ export const useEnhancedGridOperations = ({
 
     console.log('Adding column to grid:', { rowId, oldColumns: row.columns, newColumns });
 
-    // Update all existing blocks in the row with new column count
-    row.blocks.forEach(block => {
-      onUpdateBlock(block.id, {
+    // Batch update all existing blocks in the row
+    const updates = row.blocks.map(block => ({
+      blockId: block.id,
+      updates: {
         meta: {
           ...block.meta,
           layout: {
@@ -55,13 +55,18 @@ export const useEnhancedGridOperations = ({
             columnWidths: newColumnWidths
           }
         }
-      });
+      }
+    }));
+
+    // Apply all updates
+    updates.forEach(({ blockId, updates }) => {
+      onUpdateBlock(blockId, updates);
     });
 
     return { success: true, newColumns };
   }, [layoutState.rows, onUpdateBlock]);
 
-  // Remove column from existing grid
+  // FIXED: Safe column removal with proper cleanup
   const removeColumnFromGrid = useCallback((rowId: string, columnIndex: number) => {
     const row = layoutState.rows.find(r => r.id === rowId);
     if (!row || row.columns <= 1) {
@@ -74,33 +79,36 @@ export const useEnhancedGridOperations = ({
 
     console.log('Removing column from grid:', { rowId, columnIndex, newColumns, blockToRemove: blockToRemove?.id });
 
-    // Remove the block at the specified column
+    // Remove the block at the specified column first
     if (blockToRemove) {
       onDeleteBlock(blockToRemove.id);
     }
 
-    // Update remaining blocks
+    // Update remaining blocks with corrected positions
     const remainingBlocks = row.blocks.filter(b => (b.meta?.layout?.position ?? 0) !== columnIndex);
+    const newColumnWidths = Array(newColumns).fill(100 / newColumns);
+
     remainingBlocks.forEach((block, index) => {
-      const newPosition = index;
+      const currentPosition = block.meta?.layout?.position ?? 0;
+      const newPosition = currentPosition > columnIndex ? currentPosition - 1 : currentPosition;
+      
       onUpdateBlock(block.id, {
         meta: {
           ...block.meta,
           layout: {
             ...block.meta?.layout,
             position: newPosition,
-            columns: newColumns
+            columns: newColumns,
+            columnWidths: newColumnWidths
           }
         }
       });
     });
 
-    // Recalculate column widths
-    const newColumnWidths = Array(newColumns).fill(100 / newColumns);
-    updateColumnWidths(rowId, { columnWidths: newColumnWidths });
-  }, [layoutState.rows, onDeleteBlock, onUpdateBlock, updateColumnWidths]);
+    return { success: true, newColumns };
+  }, [layoutState.rows, onDeleteBlock, onUpdateBlock]);
 
-  // Merge two adjacent blocks in a grid
+  // FIXED: Enhanced block merging with proper content handling
   const mergeGridBlocks = useCallback((rowId: string, leftIndex: number, rightIndex: number) => {
     const row = layoutState.rows.find(r => r.id === rowId);
     if (!row) {
@@ -138,7 +146,7 @@ export const useEnhancedGridOperations = ({
     // Remove the right block
     onDeleteBlock(rightBlock.id);
 
-    // This will trigger the grid layout manager to repair the layout
+    return { success: true };
   }, [layoutState.rows, onUpdateBlock, onDeleteBlock]);
 
   // Split a block into two columns

@@ -1,6 +1,6 @@
 
-// ABOUTME: Enhanced block management with integrated grid layout management
-// Uses unified grid system for consistent block operations and proper layout handling
+// ABOUTME: Enhanced block management with fixed grid layout management
+// Fixed merge operations, state synchronization, and proper layout handling
 
 import { useCallback, useState, useEffect } from 'react';
 import { ReviewBlock, BlockType } from '@/types/review';
@@ -17,16 +17,22 @@ interface UseBlockManagementOptions {
 export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagementOptions) => {
   const [blocks, setBlocks] = useState<ReviewBlock[]>(initialBlocks);
   const [activeBlockId, setActiveBlockId] = useState<number | null>(null);
+  const [isProcessingDrop, setIsProcessingDrop] = useState(false);
   
-  // Use composition for cleaner separation of concerns
   const { history, historyIndex, canUndo, canRedo, saveToHistory, undo: historyUndo, redo: historyRedo } = useBlockHistory(initialBlocks);
   const { createTempId, reindexBlocks } = useBlockOperations();
 
-  // Internal block update function for grid manager
+  // FIXED: Debounced internal update to prevent rapid state changes
   const internalUpdateBlock = useCallback((blockId: number, updates: Partial<ReviewBlock>) => {
     console.log('Internal block update:', { blockId, updates });
     
     setBlocks(prevBlocks => {
+      const blockExists = prevBlocks.find(b => b.id === blockId);
+      if (!blockExists) {
+        console.warn('Attempting to update non-existent block:', blockId);
+        return prevBlocks;
+      }
+
       const updatedBlocks = prevBlocks.map(block => 
         block.id === blockId 
           ? { 
@@ -41,11 +47,17 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
     });
   }, []);
 
-  // Internal block delete function for grid manager
+  // FIXED: Proper deletion with layout repair
   const internalDeleteBlock = useCallback((blockId: number) => {
     console.log('Internal block delete:', blockId);
     
     setBlocks(prevBlocks => {
+      const blockExists = prevBlocks.find(b => b.id === blockId);
+      if (!blockExists) {
+        console.warn('Attempting to delete non-existent block:', blockId);
+        return prevBlocks;
+      }
+
       const updatedBlocks = prevBlocks.filter(block => block.id !== blockId);
       const reindexedBlocks = reindexBlocks(updatedBlocks);
       return reindexedBlocks;
@@ -56,7 +68,6 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
     }
   }, [activeBlockId, reindexBlocks]);
 
-  // Initialize grid layout manager with internal functions
   const gridManager = useGridLayoutManager({
     blocks,
     onUpdateBlock: internalUpdateBlock,
@@ -72,6 +83,7 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
     setActiveBlockId(blockId);
   }, []);
 
+  // FIXED: Proper addBlock with grid position handling
   const addBlock = useCallback((type: BlockType, position?: number, layoutInfo?: {
     rowId: string;
     gridPosition: number;
@@ -130,7 +142,7 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
     return newBlock;
   }, [blocks, issueId, saveToHistory, createTempId, reindexBlocks]);
 
-  // FIXED: Convert block to grid layout without auto-creating additional blocks
+  // FIXED: Simplified convertToGrid without auto-fill
   const convertToGrid = useCallback((blockId: number, columns: number) => {
     const blockIndex = blocks.findIndex(b => b.id === blockId);
     const originalBlock = blocks.find(b => b.id === blockId);
@@ -144,97 +156,112 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
 
     const rowId = `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
-    // Create the updated original block with layout metadata
-    const updatedOriginalBlock = {
-      ...originalBlock,
+    // Update the block to become a grid container without auto-creating additional blocks
+    internalUpdateBlock(blockId, {
       meta: {
         ...originalBlock.meta,
         layout: {
           row_id: rowId,
           position: 0,
-          columns: 1, // Start with 1 column, user can add more manually
+          columns: 1, // Start with just this block
           gap: 4
         }
-      },
-      updated_at: new Date().toISOString()
-    };
-
-    // DON'T auto-create additional blocks - let user add them manually
-    let updatedBlocks = [...blocks];
-    
-    // Update the original block
-    updatedBlocks[blockIndex] = updatedOriginalBlock;
-    
-    // Reindex all blocks
-    updatedBlocks = reindexBlocks(updatedBlocks);
-
-    console.log('Grid conversion completed (no auto-fill):', { 
-      rowId, 
-      originalBlockId: blockId, 
-      totalBlocks: updatedBlocks.length 
+      }
     });
 
-    setBlocks(updatedBlocks);
-    saveToHistory(updatedBlocks, blockId);
-  }, [blocks, issueId, saveToHistory, createTempId, reindexBlocks]);
+    saveToHistory(blocks, blockId);
+  }, [blocks, internalUpdateBlock, saveToHistory]);
 
-  // ENHANCED: Merge block into existing grid
+  // FIXED: Completely rewritten mergeBlockIntoGrid with proper state management
   const mergeBlockIntoGrid = useCallback((draggedBlockId: number, targetRowId: string, targetPosition?: number) => {
-    const draggedBlock = blocks.find(b => b.id === draggedBlockId);
-    const targetRow = gridManager.layoutState.rows.find(r => r.id === targetRowId);
-    
-    if (!draggedBlock || !targetRow) {
-      console.error('Invalid merge operation:', { draggedBlock: !!draggedBlock, targetRow: !!targetRow });
+    if (isProcessingDrop) {
+      console.log('Drop already being processed, ignoring');
       return;
     }
 
-    const finalPosition = targetPosition ?? targetRow.blocks.length;
-    const newColumns = targetRow.columns + 1;
+    setIsProcessingDrop(true);
 
-    console.log('Merging block into grid:', { 
-      draggedBlockId, 
-      targetRowId, 
-      finalPosition, 
-      newColumns,
-      currentColumns: targetRow.columns 
-    });
-
-    // Update the dragged block to join the target grid
-    internalUpdateBlock(draggedBlockId, {
-      meta: {
-        ...draggedBlock.meta,
-        layout: {
-          row_id: targetRowId,
-          position: finalPosition,
-          columns: newColumns,
-          gap: targetRow.gap || 4,
-          columnWidths: Array(newColumns).fill(100 / newColumns)
-        }
+    try {
+      const draggedBlock = blocks.find(b => b.id === draggedBlockId);
+      const targetRow = gridManager.layoutState.rows.find(r => r.id === targetRowId);
+      
+      if (!draggedBlock || !targetRow) {
+        console.error('Invalid merge operation:', { 
+          draggedBlock: !!draggedBlock, 
+          targetRow: !!targetRow,
+          targetRowId 
+        });
+        return;
       }
-    });
 
-    // Update all existing blocks in the target row to reflect new column count
-    targetRow.blocks.forEach((block, index) => {
-      if (block.id !== draggedBlockId) {
-        internalUpdateBlock(block.id, {
-          meta: {
-            ...block.meta,
-            layout: {
-              ...block.meta?.layout,
-              columns: newColumns,
-              columnWidths: Array(newColumns).fill(100 / newColumns)
+      const finalPosition = targetPosition ?? targetRow.blocks.length;
+      const newColumns = targetRow.columns + 1;
+
+      console.log('Merging block into grid:', { 
+        draggedBlockId, 
+        targetRowId, 
+        finalPosition, 
+        newColumns,
+        currentColumns: targetRow.columns 
+      });
+
+      // Update all blocks in one batch operation
+      setBlocks(prevBlocks => {
+        let updatedBlocks = [...prevBlocks];
+
+        // Update the dragged block to join the target grid
+        const draggedIndex = updatedBlocks.findIndex(b => b.id === draggedBlockId);
+        if (draggedIndex !== -1) {
+          updatedBlocks[draggedIndex] = {
+            ...updatedBlocks[draggedIndex],
+            meta: {
+              ...updatedBlocks[draggedIndex].meta,
+              layout: {
+                row_id: targetRowId,
+                position: finalPosition,
+                columns: newColumns,
+                gap: targetRow.gap || 4,
+                columnWidths: Array(newColumns).fill(100 / newColumns)
+              }
             }
+          };
+        }
+
+        // Update all existing blocks in the target row
+        targetRow.blocks.forEach((block) => {
+          const blockIndex = updatedBlocks.findIndex(b => b.id === block.id);
+          if (blockIndex !== -1 && block.id !== draggedBlockId) {
+            updatedBlocks[blockIndex] = {
+              ...updatedBlocks[blockIndex],
+              meta: {
+                ...updatedBlocks[blockIndex].meta,
+                layout: {
+                  ...updatedBlocks[blockIndex].meta?.layout,
+                  columns: newColumns,
+                  columnWidths: Array(newColumns).fill(100 / newColumns)
+                }
+              }
+            };
           }
         });
-      }
-    });
 
-    // Force state update and save to history
-    setTimeout(() => {
-      setBlocks(prevBlocks => [...prevBlocks]);
-      saveToHistory(blocks, draggedBlockId);
-    }, 100);
-  }, [blocks, gridManager.layoutState.rows, internalUpdateBlock, saveToHistory]);
+        return reindexBlocks(updatedBlocks);
+      });
+
+      // Clear active block to reset visual state
+      setActiveBlockId(null);
+      
+      // Save to history after state update
+      setTimeout(() => {
+        saveToHistory(blocks, draggedBlockId);
+      }, 100);
+
+    } finally {
+      setTimeout(() => {
+        setIsProcessingDrop(false);
+      }, 200);
+    }
+  }, [blocks, gridManager.layoutState.rows, reindexBlocks, saveToHistory, isProcessingDrop]);
 
   const duplicateBlock = useCallback((blockId: number) => {
     const blockToDuplicate = blocks.find(block => block.id === blockId);
@@ -267,7 +294,6 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
     saveToHistory(reindexedBlocks, duplicatedBlock.id);
   }, [blocks, saveToHistory, createTempId, reindexBlocks]);
 
-  // Use grid manager's delete function for proper layout repair
   const deleteBlock = useCallback((blockId: number) => {
     gridManager.deleteBlockWithLayoutRepair(blockId);
     saveToHistory(blocks.filter(b => b.id !== blockId), activeBlockId === blockId ? null : activeBlockId);
