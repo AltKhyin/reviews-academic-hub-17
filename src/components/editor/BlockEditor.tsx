@@ -44,6 +44,7 @@ interface DragState {
   dragOverPosition: number | null;
   isDragging: boolean;
   draggedFromRowId: string | null;
+  dropTargetType: 'grid' | 'single' | 'merge' | null;
 }
 
 export const BlockEditor: React.FC<BlockEditorProps> = ({
@@ -63,7 +64,8 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     dragOverRowId: null,
     dragOverPosition: null,
     isDragging: false,
-    draggedFromRowId: null
+    draggedFromRowId: null,
+    dropTargetType: null
   });
 
   const dragTimeoutRef = useRef<NodeJS.Timeout>();
@@ -84,7 +86,8 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
   console.log('BlockEditor render:', { 
     blocksCount: blocks.length, 
     layoutRows: layoutState.rows.length,
-    activeBlockId 
+    activeBlockId,
+    dragState 
   });
 
   const handleBlockClick = useCallback((blockId: number, event: React.MouseEvent) => {
@@ -171,7 +174,8 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       draggedFromRowId: sourceRow?.id || null,
       dragOverRowId: null,
       dragOverPosition: null,
-      isDragging: true
+      isDragging: true,
+      dropTargetType: null
     });
 
     // Set drag data for proper HTML5 drag and drop
@@ -186,7 +190,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     document.body.classList.add('dragging-block');
   }, [getRowByBlockId]);
 
-  const handleDragOver = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number) => {
+  const handleDragOver = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number, targetType?: 'grid' | 'single' | 'merge') => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     
@@ -201,7 +205,8 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
         setDragState(prev => ({
           ...prev,
           dragOverRowId: targetRowId,
-          dragOverPosition: targetPosition ?? null
+          dragOverPosition: targetPosition ?? null,
+          dropTargetType: targetType || 'single'
         }));
       }
     }, 50);
@@ -222,13 +227,15 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
         setDragState(prev => ({
           ...prev,
           dragOverRowId: null,
-          dragOverPosition: null
+          dragOverPosition: null,
+          dropTargetType: null
         }));
       }, 100);
     }
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number) => {
+  // Enhanced drop handler with merge functionality
+  const handleDrop = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number, dropType?: 'grid' | 'single' | 'merge') => {
     e.preventDefault();
     
     if (!dragState.draggedBlockId) {
@@ -248,29 +255,68 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       return;
     }
 
-    const finalPosition = targetPosition ?? targetRow.blocks.length;
-    
     console.log('Executing drop operation:', { 
       blockId: dragState.draggedBlockId, 
       targetRowId, 
-      finalPosition,
+      targetPosition,
+      dropType,
       targetRowColumns: targetRow.columns,
       sourceRowId: dragState.draggedFromRowId
     });
 
-    // Update the block with new layout metadata
-    onUpdateBlock(dragState.draggedBlockId, {
-      meta: {
-        ...draggedBlock.meta,
-        layout: {
-          row_id: targetRowId,
-          position: finalPosition,
-          columns: targetRow.columns,
-          gap: targetRow.gap || 4,
-          columnWidths: targetRow.columnWidths
+    if (dropType === 'merge' && targetRow.columns > 1) {
+      // MERGE FUNCTIONALITY: Add block to existing grid
+      const finalPosition = targetPosition ?? targetRow.blocks.length;
+      
+      // Update the dragged block to join the target grid
+      onUpdateBlock(dragState.draggedBlockId, {
+        meta: {
+          ...draggedBlock.meta,
+          layout: {
+            row_id: targetRowId,
+            position: finalPosition,
+            columns: targetRow.columns,
+            gap: targetRow.gap || 4,
+            columnWidths: targetRow.columnWidths
+          }
         }
-      }
-    });
+      });
+
+      // Repair layout metadata for all blocks in the target row
+      setTimeout(() => {
+        const updatedTargetRow = layoutState.rows.find(r => r.id === targetRowId);
+        if (updatedTargetRow) {
+          updatedTargetRow.blocks.forEach((block, index) => {
+            onUpdateBlock(block.id, {
+              meta: {
+                ...block.meta,
+                layout: {
+                  ...block.meta?.layout,
+                  position: index,
+                  columns: updatedTargetRow.blocks.length
+                }
+              }
+            });
+          });
+        }
+      }, 100);
+    } else {
+      // STANDARD DROP: Move to position in grid or single row
+      const finalPosition = targetPosition ?? targetRow.blocks.length;
+      
+      onUpdateBlock(dragState.draggedBlockId, {
+        meta: {
+          ...draggedBlock.meta,
+          layout: targetRow.columns > 1 ? {
+            row_id: targetRowId,
+            position: finalPosition,
+            columns: targetRow.columns,
+            gap: targetRow.gap || 4,
+            columnWidths: targetRow.columnWidths
+          } : undefined
+        }
+      });
+    }
 
     // Clear drag state
     setDragState({
@@ -278,7 +324,8 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       dragOverRowId: null,
       dragOverPosition: null,
       isDragging: false,
-      draggedFromRowId: null
+      draggedFromRowId: null,
+      dropTargetType: null
     });
   }, [dragState, blocks, layoutState.rows, onUpdateBlock]);
 
@@ -295,7 +342,8 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       dragOverRowId: null,
       dragOverPosition: null,
       isDragging: false,
-      draggedFromRowId: null
+      draggedFromRowId: null,
+      dropTargetType: null
     });
   }, []);
 
@@ -304,12 +352,18 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     const isActive = activeBlockId === block.id;
     const isDragging = dragState.draggedBlockId === block.id;
     const isDropTarget = dragState.dragOverRowId === row.id && dragState.dragOverPosition === blockIndex;
+    const isMergeTarget = dragState.dropTargetType === 'merge' && dragState.dragOverRowId === row.id;
 
     return (
       <div key={block.id} className="relative">
         {/* Drop zone indicator */}
         {isDropTarget && (
           <div className="absolute -top-2 left-0 right-0 h-1 bg-blue-500 rounded z-20 animate-pulse" />
+        )}
+        
+        {/* Merge zone indicator */}
+        {isMergeTarget && (
+          <div className="absolute inset-0 border-2 border-green-500 rounded-lg z-10 animate-pulse bg-green-500/10" />
         )}
         
         <div className="relative group">
@@ -339,11 +393,17 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
               borderColor: isActive ? '#3b82f6' : '#2a2a2a'
             }}
             onClick={(e) => handleBlockClick(block.id, e)}
-            draggable={!isBlockInGrid(block.id) || row.columns === 1}
+            draggable={true}
             onDragStart={(e) => handleDragStart(e, block.id)}
-            onDragOver={(e) => handleDragOver(e, row.id, blockIndex)}
+            onDragOver={(e) => {
+              const dropType = row.columns > 1 ? 'merge' : 'single';
+              handleDragOver(e, row.id, blockIndex, dropType);
+            }}
             onDragLeave={handleDragLeave}
-            onDrop={(e) => handleDrop(e, row.id, blockIndex)}
+            onDrop={(e) => {
+              const dropType = row.columns > 1 ? 'merge' : 'single';
+              handleDrop(e, row.id, blockIndex, dropType);
+            }}
             onDragEnd={handleDragEnd}
           >
             {/* Block Controls */}
@@ -491,6 +551,10 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
         onActiveBlockChange={onActiveBlockChange}
         readonly={false}
         className="my-6"
+        dragState={dragState}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
       />
     );
   };
@@ -539,15 +603,20 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
         )}
       </div>
 
-      {/* Drag and Drop Styles */}
-      <style jsx>{`
-        .dragging-block * {
-          pointer-events: none;
-        }
-        .dragging-block .drop-zone {
-          pointer-events: auto;
-        }
-      `}</style>
+      {/* Drag and Drop Global Styles */}
+      <style>
+        {`
+          .dragging-block * {
+            pointer-events: none !important;
+          }
+          .dragging-block .drop-zone {
+            pointer-events: auto !important;
+          }
+          .dragging-block [draggable="true"] {
+            pointer-events: auto !important;
+          }
+        `}
+      </style>
     </div>
   );
 };

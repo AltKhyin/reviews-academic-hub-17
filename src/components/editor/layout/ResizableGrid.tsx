@@ -17,6 +17,15 @@ import {
   normalizeColumnWidths 
 } from '@/utils/gridLayoutUtils';
 
+interface DragState {
+  draggedBlockId: number | null;
+  dragOverRowId: string | null;
+  dragOverPosition: number | null;
+  isDragging: boolean;
+  draggedFromRowId: string | null;
+  dropTargetType: 'grid' | 'single' | 'merge' | null;
+}
+
 interface ResizableGridProps {
   rowId: string;
   blocks: ReviewBlock[];
@@ -31,6 +40,10 @@ interface ResizableGridProps {
   onActiveBlockChange?: (blockId: number | null) => void;
   readonly?: boolean;
   className?: string;
+  dragState?: DragState;
+  onDragOver?: (e: React.DragEvent, targetRowId: string, targetPosition?: number, targetType?: 'grid' | 'single' | 'merge') => void;
+  onDragLeave?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent, targetRowId: string, targetPosition?: number, dropType?: 'grid' | 'single' | 'merge') => void;
 }
 
 export const ResizableGrid: React.FC<ResizableGridProps> = ({
@@ -46,7 +59,11 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
   activeBlockId,
   onActiveBlockChange,
   readonly = false,
-  className
+  className,
+  dragState,
+  onDragOver,
+  onDragLeave,
+  onDrop
 }) => {
   // Convert column widths to panel sizes with proper normalization
   const panelSizes = useMemo(() => {
@@ -77,7 +94,8 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
     columns, 
     blocksCount: blocks.length, 
     columnWidths, 
-    panelSizes 
+    panelSizes,
+    dragState 
   });
 
   // Handle panel resize with immediate feedback
@@ -121,49 +139,95 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
     reorderGridColumns(rowId, fromIndex, toIndex);
   }, [reorderGridColumns, rowId]);
 
-  // Render empty slot for adding blocks
-  const renderEmptySlot = (position: number) => (
-    <div
-      className={cn(
-        "min-h-[120px] border-2 border-dashed rounded-lg flex items-center justify-center transition-all",
-        "border-gray-600 hover:border-gray-500"
-      )}
-      style={{ borderColor: '#2a2a2a' }}
-    >
-      {!readonly && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            console.log('Adding block to grid:', { rowId, position });
-            onAddBlock(rowId, position);
-          }}
-          className="text-gray-400 hover:text-white"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Adicionar Bloco
-        </Button>
-      )}
-    </div>
-  );
+  // Enhanced drag handlers for grid
+  const handleGridDragOver = useCallback((e: React.DragEvent, position?: number) => {
+    if (onDragOver && dragState?.isDragging) {
+      onDragOver(e, rowId, position, 'merge');
+    }
+  }, [onDragOver, rowId, dragState]);
 
-  // Render block with controls
+  const handleGridDrop = useCallback((e: React.DragEvent, position?: number) => {
+    if (onDrop && dragState?.isDragging) {
+      onDrop(e, rowId, position, 'merge');
+    }
+  }, [onDrop, rowId, dragState]);
+
+  // Render empty slot for adding blocks
+  const renderEmptySlot = (position: number) => {
+    const isDropTarget = dragState?.dragOverRowId === rowId && 
+                        dragState?.dragOverPosition === position && 
+                        dragState?.dropTargetType === 'merge';
+
+    return (
+      <div
+        className={cn(
+          "min-h-[120px] border-2 border-dashed rounded-lg flex items-center justify-center transition-all relative",
+          "border-gray-600 hover:border-gray-500",
+          isDropTarget && "border-green-500 bg-green-500/10 animate-pulse"
+        )}
+        style={{ borderColor: isDropTarget ? '#22c55e' : '#2a2a2a' }}
+        onDragOver={(e) => handleGridDragOver(e, position)}
+        onDragLeave={onDragLeave}
+        onDrop={(e) => handleGridDrop(e, position)}
+      >
+        {isDropTarget && (
+          <div className="absolute inset-0 flex items-center justify-center bg-green-500/20 rounded-lg">
+            <span className="text-green-400 font-medium">Soltar aqui para adicionar ao grid</span>
+          </div>
+        )}
+        
+        {!readonly && !isDropTarget && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              console.log('Adding block to grid:', { rowId, position });
+              onAddBlock(rowId, position);
+            }}
+            className="text-gray-400 hover:text-white"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Adicionar Bloco
+          </Button>
+        )}
+      </div>
+    );
+  };
+
+  // Render block with controls and enhanced drag support
   const renderBlock = (block: ReviewBlock, position: number) => {
     const isActive = activeBlockId === block.id;
+    const isDragging = dragState?.draggedBlockId === block.id;
+    const isDropTarget = dragState?.dragOverRowId === rowId && 
+                        dragState?.dragOverPosition === position && 
+                        dragState?.dropTargetType === 'merge';
 
     return (
       <div className="relative group h-full">
+        {/* Drop zone indicator for merge */}
+        {isDropTarget && (
+          <div className="absolute inset-0 border-2 border-green-500 rounded-lg z-10 animate-pulse bg-green-500/10">
+            <div className="absolute top-2 left-2 text-xs text-green-400 font-medium">
+              Mesclar aqui
+            </div>
+          </div>
+        )}
+
         <div
           className={cn(
-            "h-full transition-all duration-200 cursor-pointer rounded-lg",
+            "h-full transition-all duration-200 cursor-pointer rounded-lg relative",
             isActive ? "ring-2 ring-blue-500 shadow-lg" : "hover:shadow-md",
-            !block.visible && "opacity-50"
+            !block.visible && "opacity-50",
+            isDragging && "opacity-50 scale-95"
           )}
           style={{ 
             backgroundColor: isActive ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
             borderColor: isActive ? '#3b82f6' : 'transparent'
           }}
           onClick={(e) => handleBlockClick(block.id, e)}
+          onDragOver={(e) => handleGridDragOver(e, position)}
+          onDragLeave={onDragLeave}
+          onDrop={(e) => handleGridDrop(e, position)}
         >
           {/* Block Controls */}
           {!readonly && (
@@ -201,6 +265,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
   };
 
   const hasBlocks = blocks.length > 0;
+  const isGridDropTarget = dragState?.dragOverRowId === rowId && dragState?.dropTargetType === 'merge';
 
   return (
     <div className={cn("resizable-grid my-6", className)}>
@@ -222,12 +287,18 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
       <ResizablePanelGroup
         direction="horizontal"
         onLayout={handlePanelResize}
-        className="border rounded-lg"
+        className={cn(
+          "border rounded-lg transition-all",
+          isGridDropTarget && "border-green-500 shadow-lg"
+        )}
         style={{ 
           backgroundColor: '#1a1a1a',
-          borderColor: '#2a2a2a',
+          borderColor: isGridDropTarget ? '#22c55e' : '#2a2a2a',
           minHeight: '200px'
         }}
+        onDragOver={(e) => handleGridDragOver(e)}
+        onDragLeave={onDragLeave}
+        onDrop={(e) => handleGridDrop(e)}
       >
         {Array.from({ length: columns }).map((_, index) => {
           const block = blocks.find(b => (b.meta?.layout?.position ?? 0) === index);
@@ -254,6 +325,13 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
           );
         })}
       </ResizablePanelGroup>
+      
+      {/* Grid Merge Feedback */}
+      {isGridDropTarget && (
+        <div className="mt-2 text-center text-green-400 text-sm font-medium animate-pulse">
+          ↓ Solte o bloco para adicionar a este grid ↓
+        </div>
+      )}
       
       {/* Grid Info */}
       {!readonly && (
