@@ -10,8 +10,10 @@ export interface DragState {
   dragOverRowId: string | null;
   dragOverPosition: number | null;
   draggedFromRowId: string | null;
-  dropTargetType: 'block' | 'grid' | null;
+  dropTargetType: 'grid' | 'single' | 'merge' | null;
   isDragging: boolean;
+  draggedIndex: number | null;
+  draggedOver: number | null;
 }
 
 interface UseBlockDragDropProps {
@@ -27,7 +29,9 @@ export const useBlockDragDrop = ({ blocks, onMoveBlock, onMergeBlockIntoGrid }: 
     dragOverPosition: null,
     draggedFromRowId: null,
     dropTargetType: null,
-    isDragging: false
+    isDragging: false,
+    draggedIndex: null,
+    draggedOver: null
   });
   
   const dragItemRef = useRef<number | null>(null);
@@ -35,10 +39,13 @@ export const useBlockDragDrop = ({ blocks, onMoveBlock, onMergeBlockIntoGrid }: 
 
   const handleDragStart = useCallback((e: React.DragEvent, blockId: number) => {
     console.log('Drag start:', blockId);
-    dragItemRef.current = blockId;
+    const blockIndex = blocks.findIndex(b => b.id === blockId);
+    dragItemRef.current = blockIndex;
+    
     setDragState(prev => ({
       ...prev,
       draggedBlockId: blockId,
+      draggedIndex: blockIndex,
       isDragging: true
     }));
     
@@ -48,7 +55,7 @@ export const useBlockDragDrop = ({ blocks, onMoveBlock, onMergeBlockIntoGrid }: 
     if (e.currentTarget instanceof HTMLElement) {
       e.currentTarget.style.opacity = '0.5';
     }
-  }, []);
+  }, [blocks]);
 
   const handleDragEnd = useCallback((e: React.DragEvent) => {
     console.log('Drag end');
@@ -59,13 +66,7 @@ export const useBlockDragDrop = ({ blocks, onMoveBlock, onMergeBlockIntoGrid }: 
     // Perform the actual move operation if needed
     if (dragItemRef.current !== null && dragOverItemRef.current !== null && 
         dragItemRef.current !== dragOverItemRef.current) {
-      
-      const fromIndex = blocks.findIndex(b => b.id === dragItemRef.current);
-      const toIndex = blocks.findIndex(b => b.id === dragOverItemRef.current);
-      
-      if (fromIndex !== -1 && toIndex !== -1) {
-        onMoveBlock(fromIndex, toIndex);
-      }
+      onMoveBlock(dragItemRef.current, dragOverItemRef.current);
     }
     
     setDragState({
@@ -74,45 +75,53 @@ export const useBlockDragDrop = ({ blocks, onMoveBlock, onMergeBlockIntoGrid }: 
       dragOverPosition: null,
       draggedFromRowId: null,
       dropTargetType: null,
-      isDragging: false
+      isDragging: false,
+      draggedIndex: null,
+      draggedOver: null
     });
     dragItemRef.current = null;
     dragOverItemRef.current = null;
-  }, [blocks, onMoveBlock]);
+  }, [onMoveBlock]);
 
-  const handleDragOver = useCallback((e: React.DragEvent, blockId?: number) => {
+  const handleDragOver = useCallback((e: React.DragEvent, targetRowId?: string, targetPosition?: number, targetType?: 'grid' | 'single' | 'merge') => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     
-    if (blockId && blockId !== dragItemRef.current) {
-      dragOverItemRef.current = blockId;
+    setDragState(prev => ({
+      ...prev,
+      dragOverRowId: targetRowId || null,
+      dragOverPosition: targetPosition || null,
+      dropTargetType: targetType || 'single'
+    }));
+  }, []);
+
+  const handleDragEnter = useCallback((e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (index !== dragItemRef.current) {
+      dragOverItemRef.current = index;
       setDragState(prev => ({
         ...prev,
-        dragOverRowId: `single-${blockId}`,
-        dropTargetType: 'block'
+        draggedOver: index
       }));
     }
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent, targetBlockId?: number) => {
+  const handleDrop = useCallback((e: React.DragEvent, targetRowId?: string, targetPosition?: number, dropType?: 'grid' | 'single' | 'merge') => {
     e.preventDefault();
-    console.log('Drop:', { draggedBlockId: dragItemRef.current, targetBlockId });
+    console.log('Drop:', { draggedBlockId: dragState.draggedBlockId, targetRowId, targetPosition, dropType });
     
-    if (dragItemRef.current && targetBlockId && dragItemRef.current !== targetBlockId) {
-      const fromIndex = blocks.findIndex(b => b.id === dragItemRef.current);
-      const toIndex = blocks.findIndex(b => b.id === targetBlockId);
-      
-      if (fromIndex !== -1 && toIndex !== -1) {
-        onMoveBlock(fromIndex, toIndex);
-      }
+    if (dragItemRef.current !== null && dragOverItemRef.current !== null && 
+        dragItemRef.current !== dragOverItemRef.current) {
+      onMoveBlock(dragItemRef.current, dragOverItemRef.current);
     }
-  }, [blocks, onMoveBlock]);
+  }, [dragState.draggedBlockId, onMoveBlock]);
 
   return {
     dragState,
     handleDragStart,
     handleDragEnd,
     handleDragOver,
+    handleDragEnter,
     handleDrop
   };
 };

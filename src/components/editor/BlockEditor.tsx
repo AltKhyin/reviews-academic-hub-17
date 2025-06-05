@@ -195,7 +195,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                   <div 
                     key={block.id}
                     className={cn(
-                      "block-item relative group transition-all duration-200",
+                      "block-item relative group transition-all duration-200 mx-4",
                       isActive && "ring-2 ring-blue-500 ring-offset-2 ring-offset-gray-900",
                       isDragTarget && "border-t-4 border-blue-500",
                       isDragging && "opacity-50"
@@ -217,8 +217,8 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                         color: '#ffffff'
                       }}
                       onClick={() => handleBlockClick(block.id)}
-                      onDragOver={(e) => handleDragOver(e, block.id)}
-                      onDrop={(e) => handleDrop(e, block.id)}
+                      onDragOver={(e) => handleDragOver(e, `single-${block.id}`, undefined, 'single')}
+                      onDrop={(e) => handleDrop(e, `single-${block.id}`, undefined, 'single')}
                     >
                       {/* Drag Handle */}
                       {(isHovered || isActive) && (
@@ -228,7 +228,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                           onDragStart={(e) => handleDragStart(e, block.id)}
                           onDragEnd={handleDragEnd}
                           style={{
-                            marginLeft: '-20px',
+                            marginLeft: '-24px',
                             backgroundColor: '#3b82f6',
                             borderRadius: '4px',
                             padding: '4px'
@@ -278,7 +278,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
         ))}
         
         {/* Final Add Block Button */}
-        <div className="mt-8">
+        <div className="mt-8 mx-4">
           <Button
             variant="outline"
             onClick={() => onAddBlock('paragraph', blocks.length)}

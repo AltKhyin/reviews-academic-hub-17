@@ -1,3 +1,4 @@
+
 // ABOUTME: Enhanced block list with proper click handling and inline editing
 // Prevents unwanted block creation and provides intuitive interaction patterns
 
@@ -33,7 +34,7 @@ interface BlockListProps {
   activeBlockId: number | null;
   onActiveBlockChange: (blockId: number | null) => void;
   onDeleteBlock: (blockId: number) => void;
-  onMoveBlock: (blockId: number, direction: 'up' | 'down') => void;
+  onMoveBlock: (fromIndex: number, toIndex: number) => void;
   onAddBlock: (type: BlockType, position?: number) => void;
   onDuplicateBlock?: (blockId: number) => void;
   compact?: boolean;
@@ -129,7 +130,11 @@ export const BlockList: React.FC<BlockListProps> = ({
   compact = false
 }) => {
   const { dragState, handleDragStart, handleDragEnd, handleDragOver, handleDragEnter } = 
-    useBlockDragDrop(onMoveBlock);
+    useBlockDragDrop({
+      blocks,
+      onMoveBlock,
+      onMergeBlockIntoGrid: () => {} // Empty function for now
+    });
 
   // Handle block selection with proper event handling
   const handleBlockClick = (e: React.MouseEvent, blockId: number) => {
@@ -214,8 +219,8 @@ export const BlockList: React.FC<BlockListProps> = ({
                 borderColor: isActive ? '#3b82f6' : '#2a2a2a'
               }}
               draggable
-              onDragStart={(e) => handleDragStart(e, index)}
-              onDragEnd={(e) => handleDragEnd(e, blocks)}
+              onDragStart={(e) => handleDragStart(e, block.id)}
+              onDragEnd={handleDragEnd}
               onDragOver={handleDragOver}
               onDragEnter={(e) => handleDragEnter(e, index)}
               onClick={(e) => handleBlockClick(e, block.id)}
