@@ -1,11 +1,18 @@
 
-// ABOUTME: Shared grid layout calculation utilities
+// ABOUTME: Enhanced grid layout utilities with comprehensive alignment support
 // Provides consistent column width calculations and grid rendering logic
 
 export interface GridColumnConfig {
   widths: number[];
   totalColumns: number;
   gap: number;
+}
+
+export interface GridLayoutConfig {
+  columns: number;
+  gap: number;
+  columnWidths?: number[];
+  verticalAlignment?: 'top' | 'center' | 'bottom';
 }
 
 /**
@@ -74,18 +81,41 @@ export const columnWidthsToPanelSizes = (
 };
 
 /**
- * Generate CSS styles for grid container
+ * Generate CSS styles for grid container with alignment support
  */
 export const generateGridContainerStyles = (
   columns: number,
   gap: number,
-  columnWidths?: number[]
+  columnWidths?: number[],
+  verticalAlignment: 'top' | 'center' | 'bottom' = 'top'
 ): React.CSSProperties => {
+  const alignItems = verticalAlignment === 'center' ? 'center' :
+                    verticalAlignment === 'bottom' ? 'end' : 'start';
+
   return {
     display: 'grid',
     gridTemplateColumns: calculateGridTemplateColumns(columnWidths, columns),
     gap: calculateGridGap(gap),
-    alignItems: 'start'
+    alignItems,
+    width: '100%',
+    minHeight: 'fit-content'
+  };
+};
+
+/**
+ * Generate CSS styles for grid items with individual alignment
+ */
+export const generateGridItemStyles = (
+  verticalAlignment: 'top' | 'center' | 'bottom' = 'top'
+): React.CSSProperties => {
+  return {
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: verticalAlignment === 'center' ? 'center' :
+                   verticalAlignment === 'bottom' ? 'flex-end' : 'flex-start',
+    alignItems: 'stretch',
+    height: '100%',
+    minHeight: 'fit-content'
   };
 };
 
@@ -98,4 +128,51 @@ export const validateGridConfig = (config: Partial<GridColumnConfig>): boolean =
   if (config.gap && config.gap < 0) return false;
   
   return true;
+};
+
+/**
+ * Create layout configuration for grid blocks
+ */
+export const createGridLayoutConfig = (
+  columns: number,
+  gap: number = 4,
+  columnWidths?: number[]
+): GridLayoutConfig => {
+  return {
+    columns,
+    gap,
+    columnWidths: columnWidths ? normalizeColumnWidths(columnWidths) : undefined
+  };
+};
+
+/**
+ * Extract grid configuration from block metadata
+ */
+export const extractGridConfigFromBlock = (blockMeta: any): GridLayoutConfig | null => {
+  const layout = blockMeta?.layout;
+  if (!layout) return null;
+
+  return {
+    columns: layout.columns || 1,
+    gap: layout.gap || 4,
+    columnWidths: layout.columnWidths,
+    verticalAlignment: blockMeta?.alignment?.vertical || 'top'
+  };
+};
+
+/**
+ * Check if blocks belong to the same grid row
+ */
+export const blocksInSameRow = (block1: any, block2: any): boolean => {
+  const rowId1 = block1.meta?.layout?.row_id;
+  const rowId2 = block2.meta?.layout?.row_id;
+  
+  return rowId1 && rowId2 && rowId1 === rowId2;
+};
+
+/**
+ * Generate unique row ID for grid blocks
+ */
+export const generateRowId = (): string => {
+  return `row_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 };

@@ -8,6 +8,7 @@ import { BlockRenderer } from '../review/BlockRenderer';
 import { Card, CardContent } from '@/components/ui/card';
 import { Eye, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { generateGridContainerStyles } from '@/utils/gridLayoutUtils';
 
 interface ReviewPreviewProps {
   blocks: ReviewBlock[];
@@ -18,6 +19,11 @@ interface LayoutGroup {
   type: 'single' | 'grid';
   blocks: ReviewBlock[];
   rowId?: string;
+  gridConfig?: {
+    columns: number;
+    gap: number;
+    columnWidths?: number[];
+  };
 }
 
 export const ReviewPreview: React.FC<ReviewPreviewProps> = ({
@@ -49,10 +55,18 @@ export const ReviewPreview: React.FC<ReviewPreviewProps> = ({
         // Mark all blocks in this row as processed
         rowBlocks.forEach(b => processedBlockIds.add(b.id));
         
+        // Extract grid configuration from the first block's layout
+        const gridConfig = {
+          columns: layout.columns || rowBlocks.length,
+          gap: layout.gap || 4,
+          columnWidths: layout.columnWidths
+        };
+        
         groups.push({
           type: 'grid',
           blocks: rowBlocks,
-          rowId: layout.row_id
+          rowId: layout.row_id,
+          gridConfig
         });
       } else {
         // Single block
@@ -120,20 +134,40 @@ export const ReviewPreview: React.FC<ReviewPreviewProps> = ({
       <div className="preview-content max-w-4xl mx-auto px-6 py-8">
         {layoutGroups.map((group, groupIndex) => (
           <div key={`group-${groupIndex}`} className="layout-group mb-8">
-            {group.type === 'grid' ? (
-              <div className="grid-group">
+            {group.type === 'grid' && group.gridConfig ? (
+              <div 
+                className="grid-container"
+                style={generateGridContainerStyles(
+                  group.gridConfig.columns,
+                  group.gridConfig.gap,
+                  group.gridConfig.columnWidths
+                )}
+              >
                 {group.blocks.map((block) => (
-                  <BlockRenderer
-                    key={block.id}
-                    block={block}
-                    readonly={true}
-                    className="preview-grid-block"
-                  />
+                  <div 
+                    key={block.id} 
+                    className="grid-item"
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: block.meta?.alignment?.vertical === 'center' ? 'center' :
+                                 block.meta?.alignment?.vertical === 'bottom' ? 'flex-end' : 'flex-start',
+                      justifyContent: block.meta?.alignment?.vertical === 'center' ? 'center' :
+                                     block.meta?.alignment?.vertical === 'bottom' ? 'flex-end' : 'flex-start',
+                      height: '100%'
+                    }}
+                  >
+                    <BlockRenderer
+                      block={block}
+                      readonly={true}
+                      className="preview-grid-block w-full"
+                    />
+                  </div>
                 ))}
               </div>
             ) : (
               group.blocks.map((block) => (
-                <div key={block.id} className="preview-single-block">
+                <div key={block.id} className="preview-single-block mb-6">
                   <BlockRenderer
                     block={block}
                     readonly={true}
