@@ -2,8 +2,9 @@
 // ABOUTME: Rich text paragraph block with citation support
 // Renders formatted content with inline citations and proper typography
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ReviewBlock, ParagraphPayload } from '@/types/review';
+import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import { cn } from '@/lib/utils';
 
 interface ParagraphBlockProps {
@@ -11,15 +12,18 @@ interface ParagraphBlockProps {
   onInteraction?: (blockId: string, interactionType: string, data?: any) => void;
   onSectionView?: (blockId: string) => void;
   readonly?: boolean;
+  onUpdate?: (updates: Partial<ReviewBlock>) => void;
 }
 
 export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
   block,
   onInteraction,
   onSectionView,
-  readonly
+  readonly = false,
+  onUpdate
 }) => {
   const payload = block.payload as ParagraphPayload;
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     // Track when this block comes into view
@@ -84,17 +88,65 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
     }
   };
 
+  const handleContentChange = (newContent: string) => {
+    if (onUpdate) {
+      onUpdate({
+        payload: {
+          ...payload,
+          content: newContent
+        }
+      });
+    }
+  };
+
+  const handleDoubleClick = () => {
+    if (!readonly) {
+      setIsEditing(true);
+    }
+  };
+
+  const handleEditorBlur = () => {
+    setIsEditing(false);
+  };
+
+  if (!readonly && isEditing) {
+    return (
+      <div 
+        className="paragraph-block mb-6 border rounded-lg"
+        style={{
+          borderColor: 'var(--editor-focus-border)',
+          backgroundColor: 'var(--editor-card-bg)'
+        }}
+        data-block-id={block.id}
+      >
+        <RichTextEditor
+          value={payload.content}
+          onChange={handleContentChange}
+          onBlur={handleEditorBlur}
+          autoFocus
+          placeholder="Digite o conteúdo do parágrafo..."
+          className="min-h-[120px]"
+        />
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(
-        "prose prose-gray max-w-none",
+        "paragraph-block prose prose-gray max-w-none mb-6 cursor-text",
         "prose-p:text-gray-800 prose-p:leading-relaxed prose-p:text-base",
         "prose-strong:text-gray-900 prose-strong:font-semibold",
         "prose-em:text-gray-700",
         "prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline",
-        "mb-6"
+        !readonly && "hover:bg-[var(--editor-hover-bg)] rounded-lg p-2 transition-colors"
       )}
+      style={{
+        color: 'var(--editor-primary-text)'
+      }}
       onClick={handleCitationClick}
+      onDoubleClick={handleDoubleClick}
+      data-block-id={block.id}
     >
       <div
         dangerouslySetInnerHTML={{
@@ -104,8 +156,21 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
       
       {/* Citation indicators */}
       {payload.citations && payload.citations.length > 0 && (
-        <div className="mt-2 text-xs text-gray-500">
+        <div className="mt-2 text-xs" style={{ color: 'var(--editor-muted-text)' }}>
           <span>Referências: {payload.citations.length}</span>
+        </div>
+      )}
+      
+      {/* Edit hint for non-readonly mode */}
+      {!readonly && !payload.content && (
+        <div 
+          className="text-sm italic p-4 border-2 border-dashed rounded-lg text-center"
+          style={{
+            borderColor: 'var(--editor-primary-border)',
+            color: 'var(--editor-muted-text)'
+          }}
+        >
+          Clique duas vezes para editar este parágrafo
         </div>
       )}
     </div>

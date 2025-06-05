@@ -1,4 +1,3 @@
-
 // ABOUTME: Editor theme context for managing customizable colors and themes
 // Provides comprehensive theming system with runtime customization
 
@@ -15,8 +14,9 @@ interface EditorThemeProviderProps {
 const STORAGE_KEY = 'editor-theme-config';
 
 export const EditorThemeProvider: React.FC<EditorThemeProviderProps> = ({ children }) => {
+  // Initialize with LIGHT_THEME as default instead of potentially undefined theme
   const [currentTheme, setCurrentTheme] = useState<EditorTheme>(LIGHT_THEME);
-  const [themeMode, setThemeMode] = useState<ThemeMode>('auto');
+  const [themeMode, setThemeMode] = useState<ThemeMode>('light'); // Changed from 'auto' to 'light'
   const [customizations, setCustomizations] = useState<Partial<EditorTheme>>({});
   const [availableThemes] = useState<EditorTheme[]>(DEFAULT_THEMES);
 
@@ -39,6 +39,9 @@ export const EditorThemeProvider: React.FC<EditorThemeProviderProps> = ({ childr
       }
     } catch (error) {
       console.warn('Failed to load theme configuration:', error);
+      // Fallback to light theme
+      setCurrentTheme(LIGHT_THEME);
+      setThemeMode('light');
     }
   }, [availableThemes]);
 
