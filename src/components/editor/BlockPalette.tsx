@@ -1,219 +1,276 @@
 
-// ABOUTME: Block palette for native review editor with colored icons
-// Provides categorized block types with visual distinctions
+// ABOUTME: Enhanced block palette with templates and improved categorization
+// Provides comprehensive block creation tools with template system integration
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { 
-  FlaskConical, 
-  Heading, 
+  Plus, 
   Type, 
   Image, 
   Table, 
-  BarChart3, 
-  AlertCircle, 
   Quote, 
-  Minus,
-  Target,
   FileText,
-  Sparkles
+  Lightbulb,
+  BarChart3,
+  Sparkles,
+  Layers
 } from 'lucide-react';
 import { BlockType } from '@/types/review';
+import { TemplateManager } from './TemplateManager';
+import { ReviewBlock } from '@/types/review';
 
 interface BlockPaletteProps {
-  onAddBlock: (type: BlockType) => void;
+  onAddBlock: (type: BlockType, position?: number) => void;
+  onApplyTemplate?: (blocks: ReviewBlock[]) => void;
 }
 
-export const BlockPalette: React.FC<BlockPaletteProps> = ({ onAddBlock }) => {
-  const blockTypes = [
-    {
-      category: 'Estrutura',
-      blocks: [
-        {
-          type: 'snapshot_card' as BlockType,
-          title: 'Cartão de Evidência',
-          description: 'Resumo executivo com framework PICOD',
-          icon: FlaskConical,
-          iconColor: 'var(--block-snapshot-card-accent)'
-        },
-        {
-          type: 'heading' as BlockType,
-          title: 'Título',
-          description: 'Cabeçalho de seção com âncora',
-          icon: Heading,
-          iconColor: 'var(--block-heading-accent)'
-        },
-        {
-          type: 'paragraph' as BlockType,
-          title: 'Parágrafo',
-          description: 'Texto rico com citações',
-          icon: Type,
-          iconColor: 'var(--block-paragraph-accent)'
-        },
-        {
-          type: 'divider' as BlockType,
-          title: 'Divisor',
-          description: 'Separação visual entre seções',
-          icon: Minus,
-          iconColor: 'var(--block-divider-accent)'
-        }
-      ]
-    },
-    {
-      category: 'Dados & Mídia',
-      blocks: [
-        {
-          type: 'figure' as BlockType,
-          title: 'Figura',
-          description: 'Imagem com legenda e lightbox',
-          icon: Image,
-          iconColor: 'var(--block-figure-accent)'
-        },
-        {
-          type: 'table' as BlockType,
-          title: 'Tabela',
-          description: 'Dados estruturados com ordenação',
-          icon: Table,
-          iconColor: 'var(--block-table-accent)'
-        },
-        {
-          type: 'number_card' as BlockType,
-          title: 'Cartão Numérico',
-          description: 'Destaque de estatísticas importantes',
-          icon: BarChart3,
-          iconColor: 'var(--block-number-card-accent)'
-        }
-      ]
-    },
-    {
-      category: 'Interação',
-      blocks: [
-        {
-          type: 'callout' as BlockType,
-          title: 'Destaque',
-          description: 'Caixa de alerta ou informação',
-          icon: AlertCircle,
-          iconColor: 'var(--block-callout-accent)'
-        },
-        {
-          type: 'reviewer_quote' as BlockType,
-          title: 'Citação de Revisor',
-          description: 'Comentário de especialista',
-          icon: Quote,
-          iconColor: 'var(--block-quote-accent)'
-        },
-        {
-          type: 'poll' as BlockType,
-          title: 'Enquete',
-          description: 'Votação interativa para leitores',
-          icon: Target,
-          iconColor: 'var(--block-poll-accent)'
-        }
-      ]
-    },
-    {
-      category: 'Referências',
-      blocks: [
-        {
-          type: 'citation_list' as BlockType,
-          title: 'Lista de Citações',
-          description: 'Bibliografia formatada automaticamente',
-          icon: FileText,
-          iconColor: 'var(--block-citation-accent)'
-        }
-      ]
-    }
+interface BlockTypeInfo {
+  type: BlockType;
+  label: string;
+  description: string;
+  icon: React.ElementType;
+  category: 'text' | 'media' | 'data' | 'interactive';
+  tags: string[];
+}
+
+const BLOCK_TYPES: BlockTypeInfo[] = [
+  {
+    type: 'heading',
+    label: 'Título',
+    description: 'Títulos e subtítulos para organizar o conteúdo',
+    icon: Type,
+    category: 'text',
+    tags: ['estrutura', 'organização']
+  },
+  {
+    type: 'paragraph',
+    label: 'Parágrafo',
+    description: 'Texto rico com formatação básica',
+    icon: FileText,
+    category: 'text',
+    tags: ['texto', 'conteúdo']
+  },
+  {
+    type: 'callout',
+    label: 'Destaque',
+    description: 'Caixa de destaque para informações importantes',
+    icon: Lightbulb,
+    category: 'text',
+    tags: ['destaque', 'atenção']
+  },
+  {
+    type: 'reviewer_quote',
+    label: 'Citação',
+    description: 'Citação de autores com fonte',
+    icon: Quote,
+    category: 'text',
+    tags: ['citação', 'referência']
+  },
+  {
+    type: 'figure',
+    label: 'Figura',
+    description: 'Imagens com legendas e descrições',
+    icon: Image,
+    category: 'media',
+    tags: ['imagem', 'visual']
+  },
+  {
+    type: 'table',
+    label: 'Tabela',
+    description: 'Tabelas editáveis para dados estruturados',
+    icon: Table,
+    category: 'data',
+    tags: ['dados', 'estrutura']
+  },
+  {
+    type: 'number_card',
+    label: 'Card Numérico',
+    description: 'Destaque para números e estatísticas',
+    icon: BarChart3,
+    category: 'data',
+    tags: ['número', 'estatística']
+  },
+  {
+    type: 'snapshot_card',
+    label: 'Card de Evidência',
+    description: 'Framework PICOD para evidências científicas',
+    icon: Sparkles,
+    category: 'interactive',
+    tags: ['evidência', 'PICOD', 'ciência']
+  },
+  {
+    type: 'citation_list',
+    label: 'Lista de Citações',
+    description: 'Lista organizada de referências bibliográficas',
+    icon: FileText,
+    category: 'data',
+    tags: ['referência', 'bibliografia']
+  },
+  {
+    type: 'divider',
+    label: 'Divisor',
+    description: 'Linha divisória para separar seções',
+    icon: Layers,
+    category: 'text',
+    tags: ['separação', 'organização']
+  }
+];
+
+export const BlockPalette: React.FC<BlockPaletteProps> = ({ 
+  onAddBlock,
+  onApplyTemplate
+}) => {
+  const [activeTab, setActiveTab] = useState('blocks');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  const filteredBlocks = selectedCategory
+    ? BLOCK_TYPES.filter(block => block.category === selectedCategory)
+    : BLOCK_TYPES;
+
+  const categories = [
+    { id: 'text', label: 'Texto', icon: Type },
+    { id: 'media', label: 'Mídia', icon: Image },
+    { id: 'data', label: 'Dados', icon: Table },
+    { id: 'interactive', label: 'Interativo', icon: Sparkles }
   ];
 
-  return (
-    <div className="block-palette p-4 space-y-6 h-full overflow-y-auto">
-      <div>
-        <div className="flex items-center gap-2 mb-2">
-          <Sparkles className="w-5 h-5" style={{ color: 'var(--editor-accent-text)' }} />
-          <h3 className="text-lg font-semibold" style={{ color: 'var(--palette-block-title-text)' }}>
-            Blocos Disponíveis
-          </h3>
-        </div>
-        <p className="text-sm" style={{ color: 'var(--palette-block-desc-text)' }}>
-          Clique em um bloco para adicioná-lo ao final do documento
-        </p>
-      </div>
+  const handleApplyTemplate = (blocks: ReviewBlock[]) => {
+    if (onApplyTemplate) {
+      onApplyTemplate(blocks);
+    }
+  };
 
-      {blockTypes.map((category, categoryIndex) => (
-        <div key={categoryIndex}>
-          <h4 
-            className="text-sm font-medium mb-3 uppercase tracking-wide"
-            style={{ color: 'var(--palette-category-text)' }}
-          >
-            {category.category}
-          </h4>
-          
-          <div className="space-y-2">
-            {category.blocks.map((block) => {
-              const IconComponent = block.icon;
-              return (
-                <Button
-                  key={block.type}
-                  variant="ghost"
-                  className="w-full justify-start h-auto p-3 block-type-button transition-all duration-200"
-                  onClick={() => onAddBlock(block.type)}
-                  style={{
-                    backgroundColor: 'var(--palette-palette-card-bg)',
-                    borderColor: 'var(--palette-palette-border)',
-                    color: 'var(--palette-block-title-text)'
-                  }}
-                >
-                  <div className="flex items-start gap-3 w-full">
-                    <IconComponent 
-                      className="w-5 h-5 mt-0.5 flex-shrink-0" 
-                      style={{ color: block.iconColor }}
-                    />
-                    <div className="text-left flex-1">
-                      <div 
-                        className="font-medium text-sm"
-                        style={{ color: 'var(--palette-block-title-text)' }}
-                      >
-                        {block.title}
-                      </div>
-                      <div 
-                        className="text-xs mt-0.5"
-                        style={{ color: 'var(--palette-block-desc-text)' }}
-                      >
-                        {block.description}
-                      </div>
-                    </div>
-                  </div>
-                </Button>
-              );
-            })}
-          </div>
-          
-          {categoryIndex < blockTypes.length - 1 && (
-            <Separator className="mt-4" style={{ borderColor: 'var(--editor-primary-border)' }} />
-          )}
+  return (
+    <div className="block-palette h-full flex flex-col" style={{ backgroundColor: '#1a1a1a' }}>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+        <div className="px-4 pt-4">
+          <TabsList className="grid w-full grid-cols-2" style={{ backgroundColor: '#2a2a2a' }}>
+            <TabsTrigger 
+              value="blocks" 
+              className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+              style={{ color: '#ffffff' }}
+            >
+              <Plus className="w-4 h-4 mr-1" />
+              Blocos
+            </TabsTrigger>
+            <TabsTrigger 
+              value="templates"
+              className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+              style={{ color: '#ffffff' }}
+            >
+              <Sparkles className="w-4 h-4 mr-1" />
+              Templates
+            </TabsTrigger>
+          </TabsList>
         </div>
-      ))}
-      
-      {/* Status Indicator */}
-      <div 
-        className="mt-6 p-3 rounded-lg"
-        style={{ 
-          backgroundColor: 'color-mix(in srgb, var(--editor-success-color) 10%, transparent)',
-          borderColor: 'color-mix(in srgb, var(--editor-success-color) 20%, transparent)',
-          border: '1px solid'
-        }}
-      >
-        <div className="flex items-center gap-2 text-xs">
-          <div 
-            className="w-2 h-2 rounded-full"
-            style={{ backgroundColor: 'var(--editor-success-color)' }}
-          ></div>
-          <span style={{ color: 'var(--editor-success-color)' }}>
-            Todos os componentes implementados
-          </span>
+
+        <div className="flex-1 overflow-hidden">
+          <TabsContent value="blocks" className="h-full m-0 overflow-y-auto">
+            <div className="p-4 space-y-4">
+              {/* Header */}
+              <div>
+                <h2 className="text-lg font-semibold mb-2" style={{ color: '#ffffff' }}>
+                  Adicionar Blocos
+                </h2>
+                <p className="text-sm" style={{ color: '#9ca3af' }}>
+                  Clique para adicionar blocos ao seu conteúdo
+                </p>
+              </div>
+
+              {/* Category Filter */}
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium" style={{ color: '#d1d5db' }}>
+                  Categorias
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    variant={selectedCategory === null ? "default" : "outline"}
+                    onClick={() => setSelectedCategory(null)}
+                    className="text-xs"
+                  >
+                    Todos
+                  </Button>
+                  {categories.map(category => {
+                    const IconComponent = category.icon;
+                    return (
+                      <Button
+                        key={category.id}
+                        size="sm"
+                        variant={selectedCategory === category.id ? "default" : "outline"}
+                        onClick={() => setSelectedCategory(category.id)}
+                        className="text-xs flex items-center gap-1"
+                      >
+                        <IconComponent className="w-3 h-3" />
+                        {category.label}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Block List */}
+              <div className="space-y-2">
+                {filteredBlocks.map(block => {
+                  const IconComponent = block.icon;
+                  return (
+                    <Card
+                      key={block.type}
+                      className="cursor-pointer transition-colors hover:border-blue-500"
+                      style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}
+                      onClick={() => onAddBlock(block.type)}
+                    >
+                      <CardContent className="p-3">
+                        <div className="flex items-start gap-3">
+                          <div 
+                            className="w-8 h-8 rounded flex items-center justify-center flex-shrink-0"
+                            style={{ backgroundColor: '#3b82f6' }}
+                          >
+                            <IconComponent className="w-4 h-4" style={{ color: '#ffffff' }} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-medium text-sm mb-1" style={{ color: '#ffffff' }}>
+                              {block.label}
+                            </h4>
+                            <p className="text-xs mb-2" style={{ color: '#9ca3af' }}>
+                              {block.description}
+                            </p>
+                            <div className="flex flex-wrap gap-1">
+                              {block.tags.map(tag => (
+                                <Badge
+                                  key={tag}
+                                  variant="secondary"
+                                  className="text-xs"
+                                  style={{ backgroundColor: '#374151', color: '#d1d5db' }}
+                                >
+                                  {tag}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="templates" className="h-full m-0 overflow-y-auto">
+            <div className="p-4">
+              <TemplateManager
+                onApplyTemplate={handleApplyTemplate}
+                className="border-0 bg-transparent"
+              />
+            </div>
+          </TabsContent>
         </div>
-      </div>
+      </Tabs>
     </div>
   );
 };

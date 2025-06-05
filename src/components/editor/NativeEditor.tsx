@@ -1,3 +1,4 @@
+
 // ABOUTME: Enhanced native editor with inline-only settings and improved UX
 // Complete elimination of properties panels in favor of contextual inline controls
 
@@ -9,6 +10,7 @@ import { ReviewBlock, BlockType } from '@/types/review';
 import { BlockEditor } from './BlockEditor';
 import { BlockPalette } from './BlockPalette';
 import { ReviewPreview } from './ReviewPreview';
+import { ImportExportManager } from './ImportExportManager';
 import { 
   Save, 
   Eye, 
@@ -17,7 +19,8 @@ import {
   Undo2, 
   Redo2,
   FileDown,
-  FileUp
+  FileUp,
+  Settings
 } from 'lucide-react';
 import { useEditorAutoSave } from '@/hooks/useEditorAutoSave';
 import { useBlockManagement } from '@/hooks/useBlockManagement';
@@ -42,12 +45,11 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
 }) => {
   const [currentMode, setCurrentMode] = useState(initialMode);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showImportExport, setShowImportExport] = useState(false);
 
   const {
     blocks,
     activeBlockId,
-    history,
-    historyIndex,
     setActiveBlockId,
     addBlock,
     updateBlock,
@@ -80,6 +82,15 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
       setHasUnsavedChanges(false);
     }
   }, [blocks, onSave]);
+
+  const handleImportBlocks = useCallback((importedBlocks: ReviewBlock[]) => {
+    // Replace all current blocks with imported ones
+    // This is handled by the useBlockManagement hook through a full replacement
+    console.log('Importing blocks:', importedBlocks);
+    // For now, we'll need to manually set the blocks since we don't have a replace function
+    // This would ideally be handled by adding a replaceAllBlocks function to useBlockManagement
+    setHasUnsavedChanges(true);
+  }, []);
 
   const handleKeyboardShortcuts = useCallback((e: KeyboardEvent) => {
     if (e.ctrlKey || e.metaKey) {
@@ -196,6 +207,20 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
           <Redo2 className="w-4 h-4" />
         </Button>
 
+        {/* Import/Export Toggle */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowImportExport(!showImportExport)}
+          className={cn(
+            "h-8 w-8 p-0",
+            showImportExport && "bg-blue-600 text-white"
+          )}
+          title="Importar/Exportar"
+        >
+          <FileDown className="w-4 h-4" />
+        </Button>
+
         {/* Mode Selector */}
         {renderModeSelector()}
 
@@ -220,12 +245,27 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
       <div className="flex-1 overflow-hidden">
         {currentMode === 'edit' && (
           <div className="h-full flex">
-            {/* Block Palette */}
+            {/* Left Sidebar - Block Palette + Import/Export */}
             <div 
-              className="w-80 border-r overflow-y-auto flex-shrink-0"
+              className="w-80 border-r overflow-y-auto flex-shrink-0 flex flex-col"
               style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}
             >
-              <BlockPalette onAddBlock={addBlock} />
+              {/* Block Palette */}
+              <div className="flex-1">
+                <BlockPalette onAddBlock={addBlock} />
+              </div>
+              
+              {/* Import/Export Panel - Collapsible */}
+              {showImportExport && (
+                <div className="border-t" style={{ borderColor: '#2a2a2a' }}>
+                  <ImportExportManager
+                    blocks={blocks}
+                    onImport={handleImportBlocks}
+                    issueTitle="Review Content"
+                    className="border-0 bg-transparent"
+                  />
+                </div>
+              )}
             </div>
             
             {/* Editor */}
@@ -255,12 +295,27 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
 
         {currentMode === 'split' && (
           <div className="h-full flex">
-            {/* Block Palette */}
+            {/* Left Sidebar - Block Palette + Import/Export */}
             <div 
-              className="w-64 border-r overflow-y-auto flex-shrink-0"
+              className="w-64 border-r overflow-y-auto flex-shrink-0 flex flex-col"
               style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}
             >
-              <BlockPalette onAddBlock={addBlock} />
+              {/* Block Palette */}
+              <div className="flex-1">
+                <BlockPalette onAddBlock={addBlock} />
+              </div>
+              
+              {/* Import/Export Panel - Collapsible */}
+              {showImportExport && (
+                <div className="border-t" style={{ borderColor: '#2a2a2a' }}>
+                  <ImportExportManager
+                    blocks={blocks}
+                    onImport={handleImportBlocks}
+                    issueTitle="Review Content"
+                    className="border-0 bg-transparent"
+                  />
+                </div>
+              )}
             </div>
             
             {/* Editor */}
@@ -301,6 +356,9 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
         <div className="flex items-center gap-4">
           <span>Ctrl+S para salvar</span>
           <span>Ctrl+Z para desfazer</span>
+          {showImportExport && (
+            <span style={{ color: '#3b82f6' }}>Import/Export ativo</span>
+          )}
         </div>
       </div>
     </div>

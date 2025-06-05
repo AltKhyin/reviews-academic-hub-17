@@ -46,14 +46,30 @@ export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
 
   useEffect(() => {
     if (isEditing && editorRef.current) {
-      editorRef.current.focus();
-      // Fix cursor positioning - place at end of content
-      const range = document.createRange();
-      const selection = window.getSelection();
-      range.selectNodeContents(editorRef.current);
-      range.collapse(true); // Changed from false to true for proper LTR positioning
-      selection?.removeAllRanges();
-      selection?.addRange(range);
+      // Fix: Proper focus and cursor positioning
+      const editor = editorRef.current;
+      editor.focus();
+      
+      // Set cursor to end of content - fixed approach
+      setTimeout(() => {
+        const range = document.createRange();
+        const selection = window.getSelection();
+        
+        if (editor.childNodes.length > 0) {
+          const lastNode = editor.childNodes[editor.childNodes.length - 1];
+          if (lastNode.nodeType === Node.TEXT_NODE) {
+            range.setStart(lastNode, lastNode.textContent?.length || 0);
+          } else {
+            range.setStartAfter(lastNode);
+          }
+        } else {
+          range.setStart(editor, 0);
+        }
+        
+        range.collapse(true);
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+      }, 0);
     }
   }, [isEditing]);
 
@@ -190,12 +206,9 @@ export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
             backgroundColor: '#1a1a1a',
             borderColor: '#3b82f6',
             color: '#ffffff',
-            direction: 'ltr',
             textAlign: 'left',
-            unicodeBidi: 'normal',
             ...style
           }}
-          dir="ltr"
           dangerouslySetInnerHTML={{ __html: tempValue }}
         />
         
@@ -220,27 +233,19 @@ export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
       onClick={handleStartEdit}
       style={{
         color: isEmpty ? '#9ca3af' : '#ffffff',
-        direction: 'ltr',
         textAlign: 'left',
-        unicodeBidi: 'normal',
         ...style
       }}
-      dir="ltr"
     >
       <div className="flex items-start gap-2">
         <Type className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: '#9ca3af' }} />
-        <div 
-          className="flex-1 min-w-0"
-          style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'normal' }}
-          dir="ltr"
-        >
+        <div className="flex-1 min-w-0 text-left">
           {isEmpty ? (
             <span className="italic">{placeholder}</span>
           ) : (
             <div 
               dangerouslySetInnerHTML={{ __html: value }}
-              style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'normal' }}
-              dir="ltr"
+              style={{ textAlign: 'left' }}
             />
           )}
         </div>
