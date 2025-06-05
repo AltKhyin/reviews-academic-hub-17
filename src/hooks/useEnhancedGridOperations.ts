@@ -1,3 +1,4 @@
+
 // ABOUTME: Enhanced grid operations for dynamic column management and advanced grid functionality
 // Provides grid resizing, merging, splitting, and cross-layout operations
 
@@ -30,7 +31,7 @@ export const useEnhancedGridOperations = ({
     onDeleteBlock
   });
 
-  // Add column to existing grid - ENHANCED
+  // FIXED: Add column to existing grid - properly expand grid
   const addColumnToGrid = useCallback((rowId: string) => {
     const row = layoutState.rows.find(r => r.id === rowId);
     if (!row) {
@@ -43,7 +44,7 @@ export const useEnhancedGridOperations = ({
 
     console.log('Adding column to grid:', { rowId, oldColumns: row.columns, newColumns });
 
-    // Update all existing blocks in the row
+    // Update all existing blocks in the row with new column count
     row.blocks.forEach(block => {
       onUpdateBlock(block.id, {
         meta: {
@@ -57,8 +58,7 @@ export const useEnhancedGridOperations = ({
       });
     });
 
-    // NOTE: Don't auto-create a new block - let user add manually
-    console.log('Grid expanded, new empty column available for manual addition');
+    return { success: true, newColumns };
   }, [layoutState.rows, onUpdateBlock]);
 
   // Remove column from existing grid

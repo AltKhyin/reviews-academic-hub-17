@@ -1,4 +1,3 @@
-
 // ABOUTME: Enhanced block editor with unified grid management and fixed drag and drop
 // Uses new grid layout manager for consistent operations and proper event handling
 
@@ -35,6 +34,7 @@ interface BlockEditorProps {
   onAddBlock: (type: BlockType, position?: number) => void;
   onDuplicateBlock: (blockId: number) => void;
   onConvertToGrid?: (blockId: number, columns: number) => void;
+  onMergeBlockIntoGrid?: (draggedBlockId: number, targetRowId: string, targetPosition?: number) => void;
   className?: string;
 }
 
@@ -57,6 +57,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
   onAddBlock,
   onDuplicateBlock,
   onConvertToGrid,
+  onMergeBlockIntoGrid,
   className
 }) => {
   const [dragState, setDragState] = useState<DragState>({
@@ -111,7 +112,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     onAddBlock(type, position);
   }, [onAddBlock]);
 
-  // Enhanced grid conversion - FIXED to not auto-create blocks
+  // Enhanced grid conversion
   const convertToLayout = useCallback((blockId: number, columns: number) => {
     const block = blocks.find(b => b.id === blockId);
     if (!block) {
@@ -234,7 +235,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     }
   }, []);
 
-  // Enhanced drop handler with proper merge functionality
+  // FIXED: Enhanced drop handler with proper merge functionality
   const handleDrop = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number, dropType?: 'grid' | 'single' | 'merge') => {
     e.preventDefault();
     
@@ -264,42 +265,10 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       sourceRowId: dragState.draggedFromRowId
     });
 
-    // FIXED: Enhanced merge logic
-    if (dropType === 'merge' && targetRow.columns >= 1) {
-      // Add block to existing grid or create new grid position
-      const finalPosition = targetPosition ?? targetRow.blocks.length;
-      
-      console.log('Merging block into grid:', { blockId: dragState.draggedBlockId, targetRowId, finalPosition });
-      
-      // Update the dragged block to join the target grid
-      onUpdateBlock(dragState.draggedBlockId, {
-        meta: {
-          ...draggedBlock.meta,
-          layout: {
-            row_id: targetRowId,
-            position: finalPosition,
-            columns: targetRow.columns + 1, // Expand grid by one column
-            gap: targetRow.gap || 4,
-            columnWidths: undefined // Let it auto-distribute
-          }
-        }
-      });
-
-      // Update all existing blocks in the target row to reflect new column count
-      setTimeout(() => {
-        targetRow.blocks.forEach((block, index) => {
-          onUpdateBlock(block.id, {
-            meta: {
-              ...block.meta,
-              layout: {
-                ...block.meta?.layout,
-                columns: targetRow.blocks.length + 1,
-                columnWidths: undefined // Reset to auto-distribute
-              }
-            }
-          });
-        });
-      }, 100);
+    // FIXED: Enhanced merge logic using the new merge function
+    if (dropType === 'merge' && onMergeBlockIntoGrid) {
+      console.log('Merging block into grid using dedicated function');
+      onMergeBlockIntoGrid(dragState.draggedBlockId, targetRowId, targetPosition);
     } else {
       // STANDARD DROP: Move to position in grid or single row
       const finalPosition = targetPosition ?? targetRow.blocks.length;
@@ -327,7 +296,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       draggedFromRowId: null,
       dropTargetType: null
     });
-  }, [dragState, blocks, layoutState.rows, onUpdateBlock]);
+  }, [dragState, blocks, layoutState.rows, onUpdateBlock, onMergeBlockIntoGrid]);
 
   const handleDragEnd = useCallback(() => {
     if (dragTimeoutRef.current) {

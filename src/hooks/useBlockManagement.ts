@@ -178,6 +178,64 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
     saveToHistory(updatedBlocks, blockId);
   }, [blocks, issueId, saveToHistory, createTempId, reindexBlocks]);
 
+  // ENHANCED: Merge block into existing grid
+  const mergeBlockIntoGrid = useCallback((draggedBlockId: number, targetRowId: string, targetPosition?: number) => {
+    const draggedBlock = blocks.find(b => b.id === draggedBlockId);
+    const targetRow = gridManager.layoutState.rows.find(r => r.id === targetRowId);
+    
+    if (!draggedBlock || !targetRow) {
+      console.error('Invalid merge operation:', { draggedBlock: !!draggedBlock, targetRow: !!targetRow });
+      return;
+    }
+
+    const finalPosition = targetPosition ?? targetRow.blocks.length;
+    const newColumns = targetRow.columns + 1;
+
+    console.log('Merging block into grid:', { 
+      draggedBlockId, 
+      targetRowId, 
+      finalPosition, 
+      newColumns,
+      currentColumns: targetRow.columns 
+    });
+
+    // Update the dragged block to join the target grid
+    internalUpdateBlock(draggedBlockId, {
+      meta: {
+        ...draggedBlock.meta,
+        layout: {
+          row_id: targetRowId,
+          position: finalPosition,
+          columns: newColumns,
+          gap: targetRow.gap || 4,
+          columnWidths: Array(newColumns).fill(100 / newColumns)
+        }
+      }
+    });
+
+    // Update all existing blocks in the target row to reflect new column count
+    targetRow.blocks.forEach((block, index) => {
+      if (block.id !== draggedBlockId) {
+        internalUpdateBlock(block.id, {
+          meta: {
+            ...block.meta,
+            layout: {
+              ...block.meta?.layout,
+              columns: newColumns,
+              columnWidths: Array(newColumns).fill(100 / newColumns)
+            }
+          }
+        });
+      }
+    });
+
+    // Force state update and save to history
+    setTimeout(() => {
+      setBlocks(prevBlocks => [...prevBlocks]);
+      saveToHistory(blocks, draggedBlockId);
+    }, 100);
+  }, [blocks, gridManager.layoutState.rows, internalUpdateBlock, saveToHistory]);
+
   const duplicateBlock = useCallback((blockId: number) => {
     const blockToDuplicate = blocks.find(block => block.id === blockId);
     if (!blockToDuplicate) return;
@@ -261,6 +319,7 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
     setActiveBlockId: setActiveBlock,
     addBlock,
     convertToGrid,
+    mergeBlockIntoGrid,
     duplicateBlock,
     updateBlock,
     deleteBlock,
