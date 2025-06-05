@@ -111,7 +111,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     onAddBlock(type, position);
   }, [onAddBlock]);
 
-  // Enhanced grid conversion with proper validation and feedback
+  // Enhanced grid conversion - FIXED to not auto-create blocks
   const convertToLayout = useCallback((blockId: number, columns: number) => {
     const block = blocks.find(b => b.id === blockId);
     if (!block) {
@@ -234,7 +234,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     }
   }, []);
 
-  // Enhanced drop handler with merge functionality
+  // Enhanced drop handler with proper merge functionality
   const handleDrop = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number, dropType?: 'grid' | 'single' | 'merge') => {
     e.preventDefault();
     
@@ -264,9 +264,12 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       sourceRowId: dragState.draggedFromRowId
     });
 
-    if (dropType === 'merge' && targetRow.columns > 1) {
-      // MERGE FUNCTIONALITY: Add block to existing grid
+    // FIXED: Enhanced merge logic
+    if (dropType === 'merge' && targetRow.columns >= 1) {
+      // Add block to existing grid or create new grid position
       const finalPosition = targetPosition ?? targetRow.blocks.length;
+      
+      console.log('Merging block into grid:', { blockId: dragState.draggedBlockId, targetRowId, finalPosition });
       
       // Update the dragged block to join the target grid
       onUpdateBlock(dragState.draggedBlockId, {
@@ -275,30 +278,27 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
           layout: {
             row_id: targetRowId,
             position: finalPosition,
-            columns: targetRow.columns,
+            columns: targetRow.columns + 1, // Expand grid by one column
             gap: targetRow.gap || 4,
-            columnWidths: targetRow.columnWidths
+            columnWidths: undefined // Let it auto-distribute
           }
         }
       });
 
-      // Repair layout metadata for all blocks in the target row
+      // Update all existing blocks in the target row to reflect new column count
       setTimeout(() => {
-        const updatedTargetRow = layoutState.rows.find(r => r.id === targetRowId);
-        if (updatedTargetRow) {
-          updatedTargetRow.blocks.forEach((block, index) => {
-            onUpdateBlock(block.id, {
-              meta: {
-                ...block.meta,
-                layout: {
-                  ...block.meta?.layout,
-                  position: index,
-                  columns: updatedTargetRow.blocks.length
-                }
+        targetRow.blocks.forEach((block, index) => {
+          onUpdateBlock(block.id, {
+            meta: {
+              ...block.meta,
+              layout: {
+                ...block.meta?.layout,
+                columns: targetRow.blocks.length + 1,
+                columnWidths: undefined // Reset to auto-distribute
               }
-            });
+            }
           });
-        }
+        });
       }, 100);
     } else {
       // STANDARD DROP: Move to position in grid or single row
@@ -363,7 +363,11 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
         
         {/* Merge zone indicator */}
         {isMergeTarget && (
-          <div className="absolute inset-0 border-2 border-green-500 rounded-lg z-10 animate-pulse bg-green-500/10" />
+          <div className="absolute inset-0 border-2 border-green-500 rounded-lg z-10 animate-pulse bg-green-500/10">
+            <div className="absolute top-2 left-2 text-xs text-green-400 font-medium">
+              Soltar para adicionar ao grid
+            </div>
+          </div>
         )}
         
         <div className="relative group">
@@ -396,12 +400,15 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
             draggable={true}
             onDragStart={(e) => handleDragStart(e, block.id)}
             onDragOver={(e) => {
-              const dropType = row.columns > 1 ? 'merge' : 'single';
+              // Enhanced drop type detection
+              const dropType = row.columns > 1 ? 'merge' : 
+                             dragState.draggedBlockId && dragState.draggedBlockId !== block.id ? 'merge' : 'single';
               handleDragOver(e, row.id, blockIndex, dropType);
             }}
             onDragLeave={handleDragLeave}
             onDrop={(e) => {
-              const dropType = row.columns > 1 ? 'merge' : 'single';
+              const dropType = row.columns > 1 ? 'merge' : 
+                             dragState.draggedBlockId && dragState.draggedBlockId !== block.id ? 'merge' : 'single';
               handleDrop(e, row.id, blockIndex, dropType);
             }}
             onDragEnd={handleDragEnd}

@@ -139,7 +139,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
     reorderGridColumns(rowId, fromIndex, toIndex);
   }, [reorderGridColumns, rowId]);
 
-  // Enhanced drag handlers for grid - Fixed typing
+  // Enhanced drag handlers for grid
   const handleGridDragOver = useCallback((e: React.DragEvent<HTMLDivElement>, position?: number) => {
     if (onDragOver && dragState?.isDragging) {
       onDragOver(e, rowId, position, 'merge');
@@ -158,7 +158,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
     }
   }, [onDragLeave]);
 
-  // Render empty slot for adding blocks
+  // Render empty slot for adding blocks - ENHANCED
   const renderEmptySlot = (position: number) => {
     const isDropTarget = dragState?.dragOverRowId === rowId && 
                         dragState?.dragOverPosition === position && 
@@ -167,7 +167,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
     return (
       <div
         className={cn(
-          "min-h-[120px] border-2 border-dashed rounded-lg flex items-center justify-center transition-all relative",
+          "min-h-[120px] border-2 border-dashed rounded-lg flex flex-col items-center justify-center transition-all relative group",
           "border-gray-600 hover:border-gray-500",
           isDropTarget && "border-green-500 bg-green-500/10 animate-pulse"
         )}
@@ -178,23 +178,36 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
       >
         {isDropTarget && (
           <div className="absolute inset-0 flex items-center justify-center bg-green-500/20 rounded-lg">
-            <span className="text-green-400 font-medium">Soltar aqui para adicionar ao grid</span>
+            <div className="text-center">
+              <div className="text-green-400 font-medium text-sm mb-2">
+                ↓ Soltar bloco aqui ↓
+              </div>
+              <div className="text-green-300 text-xs">
+                Será adicionado à posição {position + 1}
+              </div>
+            </div>
           </div>
         )}
         
         {!readonly && !isDropTarget && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              console.log('Adding block to grid:', { rowId, position });
-              onAddBlock(rowId, position);
-            }}
-            className="text-gray-400 hover:text-white"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Adicionar Bloco
-          </Button>
+          <div className="text-center opacity-60 group-hover:opacity-100 transition-opacity">
+            <div className="text-gray-400 text-sm mb-3">Posição {position + 1}</div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                console.log('Adding block to grid:', { rowId, position });
+                onAddBlock(rowId, position);
+              }}
+              className="text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Adicionar Bloco
+            </Button>
+            <div className="text-xs text-gray-500 mt-2">
+              ou arraste um bloco existente
+            </div>
+          </div>
         )}
       </div>
     );
@@ -295,7 +308,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
         onLayout={handlePanelResize}
         className={cn(
           "border rounded-lg transition-all",
-          isGridDropTarget && "border-green-500 shadow-lg"
+          isGridDropTarget && "border-green-500 shadow-lg bg-green-500/5"
         )}
         style={{ 
           backgroundColor: '#1a1a1a',

@@ -30,7 +30,7 @@ export const useEnhancedGridOperations = ({
     onDeleteBlock
   });
 
-  // Add column to existing grid
+  // Add column to existing grid - ENHANCED
   const addColumnToGrid = useCallback((rowId: string) => {
     const row = layoutState.rows.find(r => r.id === rowId);
     if (!row) {
@@ -39,9 +39,7 @@ export const useEnhancedGridOperations = ({
     }
 
     const newColumns = row.columns + 1;
-    const newColumnWidths = row.columnWidths ? 
-      [...row.columnWidths, 100 / newColumns] : 
-      Array(newColumns).fill(100 / newColumns);
+    const newColumnWidths = Array(newColumns).fill(100 / newColumns);
 
     console.log('Adding column to grid:', { rowId, oldColumns: row.columns, newColumns });
 
@@ -59,18 +57,9 @@ export const useEnhancedGridOperations = ({
       });
     });
 
-    // Add a new block for the new column
-    const lastBlockInRow = row.blocks[row.blocks.length - 1];
-    const insertionIndex = lastBlockInRow ? 
-      blocks.findIndex(b => b.id === lastBlockInRow.id) + 1 : 
-      blocks.length;
-
-    onAddBlock('paragraph', insertionIndex, {
-      rowId,
-      gridPosition: newColumns - 1,
-      columns: newColumns
-    });
-  }, [layoutState.rows, blocks, onUpdateBlock, onAddBlock]);
+    // NOTE: Don't auto-create a new block - let user add manually
+    console.log('Grid expanded, new empty column available for manual addition');
+  }, [layoutState.rows, onUpdateBlock]);
 
   // Remove column from existing grid
   const removeColumnFromGrid = useCallback((rowId: string, columnIndex: number) => {

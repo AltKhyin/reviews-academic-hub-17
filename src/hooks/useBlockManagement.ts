@@ -130,7 +130,7 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
     return newBlock;
   }, [blocks, issueId, saveToHistory, createTempId, reindexBlocks]);
 
-  // ENHANCED: Convert block to grid layout using grid manager
+  // FIXED: Convert block to grid layout without auto-creating additional blocks
   const convertToGrid = useCallback((blockId: number, columns: number) => {
     const blockIndex = blocks.findIndex(b => b.id === blockId);
     const originalBlock = blocks.find(b => b.id === blockId);
@@ -152,61 +152,25 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
         layout: {
           row_id: rowId,
           position: 0,
-          columns,
+          columns: 1, // Start with 1 column, user can add more manually
           gap: 4
         }
       },
       updated_at: new Date().toISOString()
     };
 
-    // Create additional blocks for remaining columns
-    const additionalBlocks: ReviewBlock[] = [];
-    for (let i = 1; i < columns; i++) {
-      const tempId = createTempId();
-      additionalBlocks.push({
-        id: tempId,
-        issue_id: issueId || '',
-        sort_index: blockIndex + i,
-        type: 'paragraph',
-        payload: getDefaultPayload('paragraph'),
-        meta: {
-          styles: {},
-          conditions: {},
-          analytics: {
-            track_views: true,
-            track_interactions: true
-          },
-          layout: {
-            row_id: rowId,
-            position: i,
-            columns,
-            gap: 4
-          }
-        },
-        visible: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      });
-    }
-
-    // Perform batch update
+    // DON'T auto-create additional blocks - let user add them manually
     let updatedBlocks = [...blocks];
     
     // Update the original block
     updatedBlocks[blockIndex] = updatedOriginalBlock;
     
-    // Insert additional blocks
-    if (additionalBlocks.length > 0) {
-      updatedBlocks.splice(blockIndex + 1, 0, ...additionalBlocks);
-    }
-    
     // Reindex all blocks
     updatedBlocks = reindexBlocks(updatedBlocks);
 
-    console.log('Grid conversion completed:', { 
+    console.log('Grid conversion completed (no auto-fill):', { 
       rowId, 
       originalBlockId: blockId, 
-      additionalBlocksCount: additionalBlocks.length,
       totalBlocks: updatedBlocks.length 
     });
 
