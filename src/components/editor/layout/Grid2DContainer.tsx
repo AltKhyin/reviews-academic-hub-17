@@ -97,7 +97,7 @@ export const Grid2DContainer: React.FC<Grid2DContainerProps> = ({
   const isGridDropTarget = dragState?.dragOverRowId === grid.id && dragState?.dropTargetType === 'grid';
 
   return (
-    <div className={cn("grid-2d-container my-8", className)}>
+    <div className={cn("grid-2d-container my-8 relative", className)}>
       {/* Grid Header */}
       <div className="mb-4 text-center">
         <h3 className="text-sm font-medium text-gray-400">
@@ -105,39 +105,15 @@ export const Grid2DContainer: React.FC<Grid2DContainerProps> = ({
         </h3>
       </div>
 
-      {/* 2D Grid Structure */}
-      <div 
-        className={cn(
-          "border rounded-lg transition-all",
-          isGridDropTarget && "border-green-500 shadow-lg bg-green-500/5",
-          "bg-gray-900/50 border-gray-700"
-        )}
-        style={{ 
-          display: 'grid',
-          gridTemplateColumns: grid.columnWidths 
-            ? grid.columnWidths.map(w => `${w}%`).join(' ')
-            : `repeat(${grid.columns}, 1fr)`,
-          gridTemplateRows: grid.rowHeights
-            ? grid.rowHeights.map(h => `${h}%`).join(' ')
-            : `repeat(${grid.rows.length}, 1fr)`,
-          gap: `${grid.gap}px`,
-          minHeight: '400px',
-          padding: `${grid.gap}px`
-        }}
-        onDragOver={onDragLeave}
-        onDragLeave={onDragLeave}
-      >
-        {grid.rows.map((row, rowIndex) => (
-          <React.Fragment key={row.id}>
-            {/* Row Controls - Only show for first column */}
-            {!readonly && (
+      {/* Main Grid Container with Row Controls */}
+      <div className="relative">
+        {/* Row Controls Column */}
+        {!readonly && (
+          <div className="absolute -left-12 top-0 bottom-0 flex flex-col justify-start pt-4">
+            {grid.rows.map((row, rowIndex) => (
               <div 
-                className="absolute -left-8 flex flex-col items-center justify-center h-full"
-                style={{ 
-                  gridColumn: 1,
-                  gridRow: rowIndex + 1,
-                  position: 'relative'
-                }}
+                key={row.id}
+                className="flex-1 flex items-center justify-center min-h-[120px]"
               >
                 <GridRowControls
                   rowIndex={rowIndex}
@@ -148,10 +124,33 @@ export const Grid2DContainer: React.FC<Grid2DContainerProps> = ({
                   compact={true}
                 />
               </div>
-            )}
+            ))}
+          </div>
+        )}
 
-            {/* Grid Cells */}
-            {row.cells.map((cell, colIndex) => {
+        {/* 2D Grid Structure */}
+        <div 
+          className={cn(
+            "border rounded-lg transition-all pl-4",
+            isGridDropTarget && "border-green-500 shadow-lg bg-green-500/5",
+            "bg-gray-900/50 border-gray-700"
+          )}
+          style={{ 
+            display: 'grid',
+            gridTemplateColumns: grid.columnWidths 
+              ? grid.columnWidths.map(w => `${w}%`).join(' ')
+              : `repeat(${grid.columns}, 1fr)`,
+            gridTemplateRows: grid.rowHeights
+              ? grid.rowHeights.map(h => `${h}px`).join(' ')
+              : `repeat(${grid.rows.length}, minmax(120px, auto))`,
+            gap: `${grid.gap}px`,
+            padding: `${grid.gap}px`
+          }}
+          onDragOver={onDragLeave}
+          onDragLeave={onDragLeave}
+        >
+          {grid.rows.map((row, rowIndex) => (
+            row.cells.map((cell, colIndex) => {
               const position: GridPosition = { row: rowIndex, column: colIndex };
               const positionNumber = rowIndex * grid.columns + colIndex;
               const isDropTarget = dragState?.dragOverRowId === grid.id && 
@@ -204,9 +203,9 @@ export const Grid2DContainer: React.FC<Grid2DContainerProps> = ({
                   )}
                 </div>
               );
-            })}
-          </React.Fragment>
-        ))}
+            })
+          ))}
+        </div>
       </div>
 
       {/* Grid Drop Feedback */}
@@ -229,7 +228,7 @@ export const Grid2DContainer: React.FC<Grid2DContainerProps> = ({
           )}
           {grid.rowHeights && (
             <div>
-              Alturas: {grid.rowHeights.map(h => `${h.toFixed(1)}%`).join(' / ')}
+              Alturas: {grid.rowHeights.map(h => `${h.toFixed(1)}px`).join(' / ')}
             </div>
           )}
         </div>

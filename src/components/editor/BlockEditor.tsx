@@ -162,6 +162,25 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     removeRowFromGridById(gridId, rowIndex);
   }, [removeRowFromGridById]);
 
+  // Convert single block to 2D grid
+  const handleConvertTo2DGrid = useCallback((blockId: number, columns: number, rows: number) => {
+    console.log('Converting block to 2D grid:', { blockId, columns, rows });
+    
+    const block = blocks.find(b => b.id === blockId);
+    if (!block) {
+      console.error('Block not found for 2D grid conversion:', blockId);
+      return;
+    }
+
+    // Create new 2D grid
+    const newGrid = createGrid(columns, rows);
+    
+    // Place the original block in the first cell (0,0)
+    placeBlockInGridById(newGrid.id, block, { row: 0, column: 0 });
+    
+    console.log('Created 2D grid:', newGrid.id);
+  }, [blocks, createGrid, placeBlockInGridById]);
+
   // Handle drag start
   const handleDragStart = useCallback((e: React.DragEvent, blockId: number) => {
     if (processingDropRef.current) {
@@ -397,6 +416,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
               onDeleteBlock={onDeleteBlock}
               onDuplicateBlock={onDuplicateBlock}
               onConvertToGrid={onConvertToGrid!}
+              onConvertTo2DGrid={handleConvertTo2DGrid}
               onAddBlockBetween={addBlockBetween}
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
