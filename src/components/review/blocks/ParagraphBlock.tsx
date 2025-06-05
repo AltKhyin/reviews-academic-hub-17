@@ -1,9 +1,14 @@
-// ABOUTME: Rich text paragraph block with citation support
+
+// ABOUTME: Rich text paragraph block with citation support and inline editing
 // Renders formatted content with inline citations and proper typography
 
 import React, { useEffect, useState } from 'react';
 import { ReviewBlock, ParagraphPayload } from '@/types/review';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
+import { Button } from '@/components/ui/button';
+import { ColorPicker } from '@/components/ui/color-picker';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Edit3, Palette, Type } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ParagraphBlockProps {
@@ -23,6 +28,7 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
 }) => {
   const payload = block.payload as ParagraphPayload;
   const [isEditing, setIsEditing] = useState(false);
+  const [showStyleControls, setShowStyleControls] = useState(false);
 
   useEffect(() => {
     // Track when this block comes into view
@@ -98,6 +104,20 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
     }
   };
 
+  const handleStyleUpdate = (styleKey: string, value: string) => {
+    if (onUpdate) {
+      onUpdate({
+        meta: {
+          ...block.meta,
+          styles: {
+            ...block.meta?.styles,
+            [styleKey]: value
+          }
+        }
+      });
+    }
+  };
+
   const handleDoubleClick = () => {
     if (!readonly) {
       setIsEditing(true);
@@ -108,16 +128,72 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
     setIsEditing(false);
   };
 
+  const customStyles = block.meta?.styles || {};
+
   if (!readonly && isEditing) {
     return (
       <div 
-        className="paragraph-block mb-6 border rounded-lg"
+        className="paragraph-block mb-6 border rounded-lg group"
         style={{
           borderColor: 'var(--editor-focus-border)',
           backgroundColor: 'var(--editor-card-bg)'
         }}
         data-block-id={block.id}
       >
+        {/* Style Controls */}
+        <div className="flex items-center gap-2 p-2 border-b" style={{ borderColor: 'var(--editor-primary-border)' }}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowStyleControls(!showStyleControls)}
+            className="flex items-center gap-1"
+          >
+            <Palette className="w-4 h-4" />
+            Styling
+          </Button>
+          
+          {showStyleControls && (
+            <>
+              <ColorPicker
+                label=""
+                value={customStyles.color || '#000000'}
+                onChange={(value) => handleStyleUpdate('color', value)}
+                showLabel={false}
+                compact
+              />
+              
+              <Select 
+                value={customStyles.fontSize || 'base'} 
+                onValueChange={(value) => handleStyleUpdate('fontSize', value)}
+              >
+                <SelectTrigger className="w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="sm">Small</SelectItem>
+                  <SelectItem value="base">Regular</SelectItem>
+                  <SelectItem value="lg">Large</SelectItem>
+                  <SelectItem value="xl">Extra Large</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select 
+                value={customStyles.textAlign || 'left'} 
+                onValueChange={(value) => handleStyleUpdate('textAlign', value)}
+              >
+                <SelectTrigger className="w-20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="left">Left</SelectItem>
+                  <SelectItem value="center">Center</SelectItem>
+                  <SelectItem value="right">Right</SelectItem>
+                </SelectContent>
+              </Select>
+            </>
+          )}
+        </div>
+
         <RichTextEditor
           value={payload.content}
           onChange={handleContentChange}
@@ -130,24 +206,45 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
     );
   }
 
+  const paragraphStyle = {
+    color: customStyles.color || 'var(--editor-primary-text)',
+    fontSize: customStyles.fontSize ? {
+      'sm': '14px',
+      'base': '16px', 
+      'lg': '18px',
+      'xl': '20px'
+    }[customStyles.fontSize] : '16px',
+    textAlign: customStyles.textAlign as any || 'left',
+    lineHeight: customStyles.lineHeight || '1.6'
+  };
+
   return (
     <div
       className={cn(
-        "paragraph-block prose prose-gray max-w-none mb-6 cursor-text",
-        "prose-p:text-gray-800 prose-p:leading-relaxed prose-p:text-base",
-        "prose-strong:text-gray-900 prose-strong:font-semibold",
-        "prose-em:text-gray-700",
+        "paragraph-block prose prose-gray max-w-none mb-6 cursor-text group relative",
+        "prose-p:leading-relaxed",
+        "prose-strong:font-semibold",
         "prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline",
         !readonly && "hover:bg-[var(--editor-hover-bg)] rounded-lg p-2 transition-colors"
       )}
-      style={{
-        color: 'var(--editor-primary-text)'
-      }}
       onClick={handleCitationClick}
       onDoubleClick={handleDoubleClick}
       data-block-id={block.id}
     >
+      {/* Edit button for non-readonly mode */}
+      {!readonly && onUpdate && (
+        <button
+          onClick={() => setIsEditing(true)}
+          className="absolute -right-8 top-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 hover:bg-gray-100 rounded"
+          aria-label="Edit paragraph"
+          title="Double-click or click to edit"
+        >
+          <Edit3 className="w-4 h-4 text-gray-400 hover:text-gray-600" />
+        </button>
+      )}
+
       <div
+        style={paragraphStyle}
         dangerouslySetInnerHTML={{
           __html: processContent(payload.content)
         }}

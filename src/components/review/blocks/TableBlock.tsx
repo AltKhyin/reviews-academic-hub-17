@@ -1,6 +1,6 @@
 
-// ABOUTME: Data table with sorting and filtering capabilities
-// Displays structured data with interactive features
+// ABOUTME: Data table with sorting and filtering capabilities and custom styling
+// Displays structured data with interactive features and theming support
 
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -28,6 +28,7 @@ export const TableBlock: React.FC<TableBlockProps> = ({
   const [sortColumn, setSortColumn] = useState<number | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
   const [sortedRows, setSortedRows] = useState<string[][]>(payload.rows || []);
+  const customStyles = block.meta?.styles || {};
 
   useEffect(() => {
     // Track when this block comes into view
@@ -123,37 +124,66 @@ export const TableBlock: React.FC<TableBlockProps> = ({
 
   if (!payload.headers || !payload.rows) {
     return (
-      <Card className="table-block border-red-200 dark:border-red-800">
-        <CardContent className="p-4 text-center text-red-600 dark:text-red-400">
-          Dados da tabela inválidos ou ausentes
-        </CardContent>
-      </Card>
+      <div 
+        className="table-block my-6"
+        data-block-id={block.id}
+      >
+        <Card className="border-red-200 dark:border-red-800">
+          <CardContent className="p-4 text-center text-red-600 dark:text-red-400">
+            Table configuration incomplete. Please add headers and data rows.
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
+  const tableStyle = {
+    backgroundColor: customStyles.backgroundColor || 'transparent',
+    borderColor: customStyles.borderColor || 'var(--editor-primary-border)'
+  };
+
   return (
-    <div className="table-block my-6">
+    <div 
+      className="table-block my-6"
+      data-block-id={block.id}
+    >
       {payload.caption && (
         <div className="mb-3 text-center">
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded">
+          <span 
+            className="text-sm font-medium px-3 py-1 rounded"
+            style={{
+              color: customStyles.captionColor || 'var(--editor-primary-text)',
+              backgroundColor: customStyles.captionBg || 'var(--editor-secondary-bg)'
+            }}
+          >
             {payload.caption}
           </span>
         </div>
       )}
       
-      <Card className="overflow-hidden border-gray-200 dark:border-gray-700">
+      <Card 
+        className="overflow-hidden"
+        style={{
+          borderColor: tableStyle.borderColor,
+          backgroundColor: tableStyle.backgroundColor
+        }}
+      >
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-800">
+              <thead style={{ backgroundColor: customStyles.headerBg || 'var(--editor-secondary-bg)' }}>
                 <tr>
                   {payload.headers.map((header, index) => (
                     <th
                       key={index}
                       className={cn(
-                        "px-4 py-3 text-left text-xs font-medium text-gray-700 dark:text-gray-300 uppercase tracking-wider border-b border-gray-200 dark:border-gray-600",
-                        payload.sortable && !readonly && "cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        "px-4 py-3 text-left text-xs font-medium uppercase tracking-wider border-b",
+                        payload.sortable && !readonly && "cursor-pointer hover:bg-opacity-80 transition-colors"
                       )}
+                      style={{
+                        color: customStyles.headerColor || 'var(--editor-primary-text)',
+                        borderColor: tableStyle.borderColor
+                      }}
                       onClick={() => handleSort(index)}
                     >
                       <div className="flex items-center gap-2">
@@ -164,16 +194,27 @@ export const TableBlock: React.FC<TableBlockProps> = ({
                   ))}
                 </tr>
               </thead>
-              <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody className="divide-y" style={{ 
+                backgroundColor: customStyles.bodyBg || 'var(--editor-card-bg)',
+                borderColor: tableStyle.borderColor
+              }}>
                 {sortedRows.map((row, rowIndex) => (
                   <tr 
                     key={rowIndex}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    className="hover:bg-opacity-50 transition-colors"
+                    style={{
+                      backgroundColor: rowIndex % 2 === 0 
+                        ? customStyles.evenRowBg || 'transparent'
+                        : customStyles.oddRowBg || 'var(--editor-hover-bg)'
+                    }}
                   >
                     {row.map((cell, cellIndex) => (
                       <td
                         key={cellIndex}
-                        className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap"
+                        className="px-4 py-3 text-sm whitespace-nowrap"
+                        style={{
+                          color: customStyles.cellColor || 'var(--editor-primary-text)'
+                        }}
                       >
                         {cell}
                       </td>
@@ -185,8 +226,14 @@ export const TableBlock: React.FC<TableBlockProps> = ({
           </div>
           
           {/* Table Info */}
-          <div className="bg-gray-50 dark:bg-gray-800 px-4 py-2 border-t border-gray-200 dark:border-gray-600">
-            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+          <div 
+            className="px-4 py-2 border-t"
+            style={{
+              backgroundColor: customStyles.footerBg || 'var(--editor-secondary-bg)',
+              borderColor: tableStyle.borderColor
+            }}
+          >
+            <div className="flex items-center justify-between text-xs" style={{ color: 'var(--editor-muted-text)' }}>
               <span>
                 {sortedRows.length} {sortedRows.length === 1 ? 'linha' : 'linhas'} • {payload.headers.length} {payload.headers.length === 1 ? 'coluna' : 'colunas'}
               </span>
