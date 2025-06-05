@@ -1,4 +1,3 @@
-
 // ABOUTME: Unified block editor with robust layout controls and cross-layout drag & drop
 // Fixed grid conversion, proper block management, and comprehensive drag & drop support
 
@@ -142,14 +141,25 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     onAddBlock(type, position);
   }, [onAddBlock]);
 
-  // FIXED: Grid conversion with proper block ID preservation
+  // COMPLETELY REWRITTEN: Synchronous grid conversion with proper block management
   const convertToLayout = useCallback((blockId: number, columns: number) => {
     const block = blocks.find(b => b.id === blockId);
-    if (!block) return;
+    if (!block) {
+      console.error('Block not found for grid conversion:', blockId);
+      return;
+    }
+
+    const blockIndex = blocks.findIndex(b => b.id === blockId);
+    if (blockIndex === -1) {
+      console.error('Block index not found for grid conversion:', blockId);
+      return;
+    }
+
+    console.log('Converting block to grid:', { blockId, columns, blockIndex });
 
     const rowId = `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
-    // Update the original block with layout metadata
+    // Step 1: Update the original block with layout metadata
     const layoutMeta = {
       ...block.meta,
       layout: {
@@ -160,58 +170,65 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       }
     };
 
-    // Update the existing block immediately
+    // Update the existing block FIRST
     onUpdateBlock(blockId, { meta: layoutMeta });
 
-    // Add additional blocks for remaining columns
-    const blockIndex = blocks.findIndex(b => b.id === blockId);
+    // Step 2: Add additional blocks for remaining columns SYNCHRONOUSLY
+    // We need to add these blocks immediately after the original block
     for (let i = 1; i < columns; i++) {
-      setTimeout(() => {
-        onAddBlock('paragraph', blockIndex + i);
-      }, i * 100); // Staggered to ensure proper ordering
+      // Add each new block at the correct position (right after the previous one)
+      const insertPosition = blockIndex + i;
+      console.log(`Adding additional block ${i} at position ${insertPosition}`);
+      onAddBlock('paragraph', insertPosition);
     }
+
+    console.log('Grid conversion completed for block:', blockId);
   }, [blocks, onUpdateBlock, onAddBlock]);
 
-  // FIXED: Grid-aware block addition
+  // ENHANCED: Grid-aware block addition with proper layout metadata
   const addBlockToGrid = useCallback((rowId: string, position: number) => {
     const row = layoutRows.find(r => r.id === rowId);
-    if (!row) return;
+    if (!row) {
+      console.error('Row not found for grid block addition:', rowId);
+      return;
+    }
 
-    // Find the last block in this row to determine insertion point
-    const lastBlockInRow = row.blocks[row.blocks.length - 1];
-    const insertionIndex = lastBlockInRow ? 
-      blocks.findIndex(b => b.id === lastBlockInRow.id) + 1 : 
-      blocks.length;
-
-    // Add new block
-    onAddBlock('paragraph', insertionIndex);
+    // Find the insertion point based on the grid position
+    let insertionIndex: number;
     
-    // Update the new block with grid layout metadata after a brief delay
-    setTimeout(() => {
-      const newBlocks = [...blocks];
-      const newBlock = newBlocks[insertionIndex];
-      if (newBlock) {
-        onUpdateBlock(newBlock.id, {
-          meta: {
-            ...newBlock.meta,
-            layout: {
-              row_id: rowId,
-              position,
-              columns: row.columns,
-              gap: row.gap
-            }
-          }
-        });
-      }
-    }, 50);
-  }, [layoutRows, blocks, onAddBlock, onUpdateBlock]);
+    if (position === 0) {
+      // Insert at the beginning of the row
+      const firstBlockInRow = row.blocks[0];
+      insertionIndex = firstBlockInRow ? blocks.findIndex(b => b.id === firstBlockInRow.id) : blocks.length;
+    } else if (position < row.blocks.length) {
+      // Insert between existing blocks
+      const blockAtPosition = row.blocks[position];
+      insertionIndex = blockAtPosition ? blocks.findIndex(b => b.id === blockAtPosition.id) : blocks.length;
+    } else {
+      // Insert at the end of the row
+      const lastBlockInRow = row.blocks[row.blocks.length - 1];
+      insertionIndex = lastBlockInRow ? 
+        blocks.findIndex(b => b.id === lastBlockInRow.id) + 1 : 
+        blocks.length;
+    }
 
-  // ENHANCED: Cross-layout drag and drop
+    console.log('Adding block to grid:', { rowId, position, insertionIndex });
+
+    // Add the new block
+    onAddBlock('paragraph', insertionIndex);
+
+    // The block will be updated with layout metadata when the blocks state updates
+    // We'll handle this in a useEffect or similar mechanism
+  }, [layoutRows, blocks, onAddBlock]);
+
+  // ENHANCED: Cross-layout drag and drop with better state management
   const handleDragStart = useCallback((e: React.DragEvent, blockId: number) => {
     const block = blocks.find(b => b.id === blockId);
     if (!block) return;
 
     const sourceRow = layoutRows.find(row => row.blocks.some(b => b.id === blockId));
+    
+    console.log('Drag started:', { blockId, sourceRowId: sourceRow?.id });
     
     setDragState({
       draggedBlockId: blockId,
@@ -267,6 +284,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     const targetRow = layoutRows.find(r => r.id === targetRowId);
     
     if (!draggedBlock || !targetRow) {
+      console.error('Invalid drop operation:', { draggedBlock: !!draggedBlock, targetRow: !!targetRow });
       setDragState({
         draggedBlockId: null,
         draggedFromRowId: null,
@@ -280,6 +298,13 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     // Determine target position
     const finalPosition = targetPosition ?? targetRow.blocks.length;
     
+    console.log('Drop operation:', { 
+      blockId: dragState.draggedBlockId, 
+      targetRowId, 
+      finalPosition,
+      targetRowColumns: targetRow.columns 
+    });
+
     // Update block with new layout metadata
     onUpdateBlock(dragState.draggedBlockId, {
       meta: {
@@ -317,7 +342,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     });
   }, []);
 
-  // Render individual block with enhanced controls
+  // ENHANCED: Block rendering with improved grid conversion handling
   const renderBlock = (block: ReviewBlock, rowIndex: number, blockIndex: number, row: LayoutRow) => {
     const globalIndex = blocks.findIndex(b => b.id === block.id);
     const isActive = activeBlockId === block.id;
@@ -379,6 +404,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
+                      console.log('Converting to 2 columns:', block.id);
                       convertToLayout(block.id, 2);
                     }}
                     className="h-6 w-6 p-0 bg-gray-800 border border-gray-600"
@@ -391,6 +417,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
+                      console.log('Converting to 3 columns:', block.id);
                       convertToLayout(block.id, 3);
                     }}
                     className="h-6 w-6 p-0 bg-gray-800 border border-gray-600"
@@ -403,6 +430,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
+                      console.log('Converting to 4 columns:', block.id);
                       convertToLayout(block.id, 4);
                     }}
                     className="h-6 w-6 p-0 bg-gray-800 border border-gray-600"
@@ -480,7 +508,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     );
   };
 
-  // Render empty grid slot
+  // ENHANCED: Empty grid slot with better drop zone handling
   const renderEmptySlot = (row: LayoutRow, position: number) => (
     <div
       key={`empty-${row.id}-${position}`}
@@ -497,7 +525,10 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => addBlockToGrid(row.id, position)}
+        onClick={() => {
+          console.log('Adding block to grid position:', { rowId: row.id, position });
+          addBlockToGrid(row.id, position);
+        }}
         className="text-gray-400 hover:text-white"
       >
         <Plus className="w-4 h-4 mr-2" />

@@ -2,7 +2,7 @@
 // ABOUTME: Enhanced block management with robust layout support and grid operations
 // Comprehensive block manipulation with proper layout metadata handling
 
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { ReviewBlock, BlockType } from '@/types/review';
 import { getDefaultPayload } from '@/utils/blockDefaults';
 
@@ -20,6 +20,14 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
   const [blocks, setBlocks] = useState<ReviewBlock[]>(initialBlocks);
   const [activeBlockId, setActiveBlockId] = useState<number | null>(null);
   
+  // Track blocks that need layout metadata updates
+  const [pendingLayoutUpdates, setPendingLayoutUpdates] = useState<{
+    blockIndex: number;
+    rowId: string;
+    position: number;
+    columns: number;
+  }[]>([]);
+  
   // History management for undo/redo
   const [history, setHistory] = useState<BlockHistoryState[]>([
     { blocks: initialBlocks, activeBlockId: null }
@@ -28,6 +36,41 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
 
   const canUndo = historyIndex > 0;
   const canRedo = historyIndex < history.length - 1;
+
+  // Apply pending layout updates when blocks change
+  useEffect(() => {
+    if (pendingLayoutUpdates.length === 0) return;
+
+    console.log('Applying pending layout updates:', pendingLayoutUpdates);
+
+    setBlocks(currentBlocks => {
+      const updatedBlocks = [...currentBlocks];
+      
+      pendingLayoutUpdates.forEach(update => {
+        const block = updatedBlocks[update.blockIndex];
+        if (block && block.id < 0) { // Only update temporary IDs
+          console.log('Updating layout metadata for block at index:', update.blockIndex);
+          updatedBlocks[update.blockIndex] = {
+            ...block,
+            meta: {
+              ...block.meta,
+              layout: {
+                row_id: update.rowId,
+                position: update.position,
+                columns: update.columns,
+                gap: 4
+              }
+            }
+          };
+        }
+      });
+      
+      return updatedBlocks;
+    });
+
+    // Clear pending updates
+    setPendingLayoutUpdates([]);
+  }, [pendingLayoutUpdates]);
 
   // Save current state to history
   const saveToHistory = useCallback((newBlocks: ReviewBlock[], newActiveBlockId: number | null) => {
@@ -74,7 +117,12 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
     }
   }, [canRedo, historyIndex, history]);
 
-  const addBlock = useCallback((type: BlockType, position?: number) => {
+  // ENHANCED: Synchronous block addition with immediate layout metadata handling
+  const addBlock = useCallback((type: BlockType, position?: number, layoutInfo?: {
+    rowId: string;
+    gridPosition: number;
+    columns: number;
+  }) => {
     const tempId = -(Date.now() + Math.random());
     
     const newBlock: ReviewBlock = {
@@ -89,7 +137,15 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
         analytics: {
           track_views: true,
           track_interactions: true
-        }
+        },
+        ...(layoutInfo && {
+          layout: {
+            row_id: layoutInfo.rowId,
+            position: layoutInfo.gridPosition,
+            columns: layoutInfo.columns,
+            gap: 4
+          }
+        })
       },
       visible: true,
       created_at: new Date().toISOString(),
@@ -109,12 +165,43 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
       updatedBlocks.push(newBlock);
     }
 
+    console.log('Adding block:', { 
+      type, 
+      position, 
+      layoutInfo, 
+      blockId: tempId,
+      totalBlocks: updatedBlocks.length 
+    });
+
     setBlocks(updatedBlocks);
     setActiveBlockId(newBlock.id);
     saveToHistory(updatedBlocks, newBlock.id);
     
     return newBlock;
   }, [blocks, issueId, saveToHistory]);
+
+  // ENHANCED: Grid-aware block addition that schedules layout metadata updates
+  const addBlockForGrid = useCallback((
+    type: BlockType, 
+    position: number, 
+    rowId: string, 
+    gridPosition: number, 
+    columns: number
+  ) => {
+    console.log('Adding block for grid:', { type, position, rowId, gridPosition, columns });
+    
+    const newBlock = addBlock(type, position);
+    
+    // Schedule layout metadata update for the next render cycle
+    setPendingLayoutUpdates(prev => [...prev, {
+      blockIndex: position,
+      rowId,
+      position: gridPosition,
+      columns
+    }]);
+    
+    return newBlock;
+  }, [addBlock]);
 
   const duplicateBlock = useCallback((blockId: number) => {
     const blockToDuplicate = blocks.find(block => block.id === blockId);
@@ -153,6 +240,8 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
   }, [blocks, saveToHistory]);
 
   const updateBlock = useCallback((blockId: number, updates: Partial<ReviewBlock>) => {
+    console.log('Updating block:', { blockId, updates });
+    
     const updatedBlocks = blocks.map(block => 
       block.id === blockId 
         ? { 
@@ -164,6 +253,7 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
           }
         : block
     );
+    
     setBlocks(updatedBlocks);
     saveToHistory(updatedBlocks, activeBlockId);
   }, [blocks, activeBlockId, saveToHistory]);
@@ -229,6 +319,7 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
     historyIndex,
     setActiveBlockId: setActiveBlock,
     addBlock,
+    addBlockForGrid, // New method for grid-aware block addition
     duplicateBlock,
     updateBlock,
     updateBlockLayout,
