@@ -131,14 +131,6 @@ export const CitationListBlock: React.FC<CitationListBlockProps> = ({
     }
   };
 
-  // Prepare color options for InlineColorPicker
-  const colorOptions = [
-    { name: 'Fundo', value: colors.backgroundColor },
-    { name: 'Título', value: colors.titleColor },
-    { name: 'Texto', value: colors.textColor },
-    { name: 'Destaque', value: colors.accentColor }
-  ];
-
   if (readonly) {
     return (
       <div className="citation-list-block my-6">
@@ -261,13 +253,38 @@ export const CitationListBlock: React.FC<CitationListBlockProps> = ({
             </div>
 
             {/* Color Customization */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4 flex-wrap">
               <Palette className="w-4 h-4" style={{ color: colors.accentColor }} />
               <span className="text-sm" style={{ color: colors.textColor }}>Cores:</span>
               
               <InlineColorPicker
-                colors={colorOptions}
-                onChange={(colorType, color) => handleColorUpdate(colorType, color)}
+                label="Fundo"
+                value={colors.backgroundColor}
+                onChange={(color) => handleColorUpdate('backgroundColor', color)}
+                readonly={false}
+                compact={true}
+              />
+              
+              <InlineColorPicker
+                label="Título"
+                value={colors.titleColor}
+                onChange={(color) => handleColorUpdate('titleColor', color)}
+                readonly={false}
+                compact={true}
+              />
+              
+              <InlineColorPicker
+                label="Texto"
+                value={colors.textColor}
+                onChange={(color) => handleColorUpdate('textColor', color)}
+                readonly={false}
+                compact={true}
+              />
+              
+              <InlineColorPicker
+                label="Destaque"
+                value={colors.accentColor}
+                onChange={(color) => handleColorUpdate('accentColor', color)}
                 readonly={false}
                 compact={true}
               />
