@@ -1,39 +1,55 @@
 
 # EDITOR NATIVO — MANUAL TÉCNICO COMPLETO
-**Versão 1.0.0** • 2025-01-15
+**Versão 2.0.0** • 2025-06-05
 
 ## PROPÓSITO & FILOSOFIA
 
-O Editor Nativo é um sistema de criação de conteúdo baseado em blocos, desenvolvido especificamente para revisões científicas médicas. Substitui o modelo tradicional de PDF por uma experiência interativa, editável e semanticamente estruturada.
+O Editor Nativo é um sistema de criação de conteúdo baseado em blocos, desenvolvido especificamente para revisões científicas médicas. Substitui o modelo tradicional de PDF por uma experiência interativa, editável e semanticamente estruturada com edição inline completa.
 
 ### Princípios Fundamentais
 - **Atomicidade**: Cada bloco é uma unidade independente e completa
-- **Composabilidade**: Blocos se combinam para formar narrativas complexas
-- **Editabilidade Inline**: Modificação direta sem modais ou interfaces secundárias
+- **Composabilidade**: Blocos se combinam para formar narrativas complexas  
+- **Editabilidade Inline**: Modificação direta sem modais ou painéis laterais
+- **Layout Flexível**: Suporte a múltiplos blocos por linha com sistema de grid responsivo
 - **Preservação Semântica**: Manutenção do significado científico durante conversões
 - **Acessibilidade**: Suporte completo a tecnologias assistivas
 
 ---
 
-## ARQUITETURA DE BLOCOS
+## ARQUITETURA ATUAL
 
-### Hierarquia de Tipos
+### Sistema de Edição Inline
+- **Painéis de propriedades eliminados**: Toda configuração é feita inline
+- **Settings integrados**: Cada bloco possui botão de configurações (ícone engrenagem)
+- **Edição contextual**: Modificação direta do conteúdo sem modais
+- **Sistema de cores unificado**: Aplicação consistente através de todos os blocos
+
+### Layout Multi-Bloco
+- **Grid flexível**: Suporte a 1-4 blocos por linha
+- **Responsividade**: Adaptação automática em dispositivos móveis
+- **Drag & Drop**: Reorganização visual entre linhas e posições
+- **Breakpoints adaptativos**: Colapso inteligente baseado no tamanho da tela
+
+---
+
+## HIERARQUIA DE TIPOS DE BLOCO
+
 ```
 ReviewBlock
 ├── ContentBlocks (conteúdo textual)
-│   ├── heading (1-6 níveis)
-│   ├── paragraph (texto formatado)
-│   └── callout (destaque contextual)
+│   ├── heading (1-6 níveis) ✅ Inline settings completo
+│   ├── paragraph (texto formatado) ✅ Inline settings completo  
+│   └── callout (destaque contextual) ⚠️ Inline settings parcial
 ├── MediaBlocks (conteúdo visual)
-│   ├── figure (imagens com legendas)
-│   └── table (dados tabulares)
+│   ├── figure (imagens com legendas) ⚠️ Inline settings parcial
+│   └── table (dados tabulares) ⚠️ Inline settings parcial
 ├── InteractiveBlocks (elementos dinâmicos)
-│   ├── poll (enquetes/votações)
-│   ├── number_card (métricas destacadas)
-│   └── reviewer_quote (citações de especialistas)
+│   ├── poll (enquetes/votações) ❌ Inline settings não implementado
+│   ├── number_card (métricas destacadas) ❌ Inline settings não implementado
+│   └── reviewer_quote (citações) ❌ Inline settings não implementado
 └── StructuralBlocks (organização científica)
-    ├── snapshot_card (resumo PICOD)
-    └── citation_list (referências bibliográficas)
+    ├── snapshot_card (resumo PICOD) ✅ Inline settings completo
+    └── citation_list (referências) ❌ Inline settings não implementado
 ```
 
 ### Estrutura Universal de Bloco
@@ -44,10 +60,18 @@ interface ReviewBlock {
   type: BlockType;               // Tipo do bloco
   sort_index: number;            // Posição na sequência
   visible: boolean;              // Visibilidade no preview
-  payload: Record<string, any>;  // Dados específicos do tipo
-  meta: Record<string, any>;     // Metadados opcionais
-  created_at: string;            // Timestamp de criação
-  updated_at: string;            // Timestamp de modificação
+  payload: BlockPayload;         // Dados específicos do tipo
+  meta: BlockMeta;              // Metadados e layout
+  layout?: BlockLayout;         // Informações de layout multi-bloco
+  created_at: string;           // Timestamp de criação
+  updated_at: string;           // Timestamp de modificação
+}
+
+interface BlockLayout {
+  row_id: string;               // ID da linha no layout
+  position: number;             // Posição na linha (0-3)
+  width: number;                // Largura relativa (1-12)
+  breakpoint?: 'sm' | 'md' | 'lg'; // Breakpoint de colapso
 }
 ```
 
@@ -55,566 +79,348 @@ interface ReviewBlock {
 
 ## SISTEMA DE CORES INTEGRADO
 
-### Hierarquia de Cores
-Cada bloco suporta um sistema de cores padronizado:
+### Status Atual de Implementação
 
-1. **text_color**: Cor principal do texto (`#ffffff` padrão)
-2. **background_color**: Cor de fundo (`transparent` padrão)  
-3. **border_color**: Cor da borda (`transparent` padrão)
-4. **accent_color**: Cor de destaque (específico por tipo)
+**✅ Funcionais**:
+- `text_color`: Aplicado em heading, paragraph, snapshot_card
+- `background_color`: Aplicado em heading, paragraph, snapshot_card  
+- `border_color`: Aplicado em heading, paragraph, snapshot_card
 
-### Aplicação Consistente
+**⚠️ Parcialmente Funcionais**:
+- `accent_color`: Implementado apenas em snapshot_card e callout
+- Cores específicas de tabela: Definidas mas não aplicadas consistentemente
+
+**❌ Não Funcionais**:
+- Cores em figure, poll, number_card, reviewer_quote, citation_list
+- Pipeline de aplicação de cores quebrado em vários componentes
+
+### Hierarquia de Cores Padrão
 ```css
-/* Padrão aplicado em todos os blocos */
-.block-container {
-  color: var(--text-color);
-  background-color: var(--background-color);
-  border-color: var(--border-color);
-  direction: ltr;
-  text-align: left;
-  unicode-bidi: normal;
+:root {
+  --block-text-default: #ffffff;
+  --block-background-default: transparent;
+  --block-border-default: transparent;
+  --block-accent-default: #3b82f6;
 }
 ```
+
+---
+
+## COMPONENTES INLINE IMPLEMENTADOS
+
+### InlineRichTextEditor ✅
+- **Status**: Totalmente funcional
+- **Recursos**: Formatação rica, toolbar, direção de texto corrigida
+- **Usado em**: paragraph.content
+
+### InlineTextEditor ✅  
+- **Status**: Totalmente funcional
+- **Recursos**: Edição simples, placeholder, eventos de teclado
+- **Usado em**: heading.text, snapshot_card campos
+
+### InlineColorPicker ✅
+- **Status**: Funcional com limitações
+- **Recursos**: Paleta de cores, cores customizadas, reset
+- **Problemas**: Pipeline de aplicação inconsistente
+
+### InlineBlockSettings ⚠️
+- **Status**: Implementado mas incompleto
+- **Recursos**: Abas (Geral, Cores), visibilidade toggle
+- **Problemas**: Configurações específicas faltando em vários tipos de bloco
 
 ---
 
 ## TIPOS DE BLOCO DETALHADOS
 
-### 1. HEADING (Cabeçalhos)
-**Propósito**: Estruturação hierárquica do conteúdo
-
-**Payload Obrigatório**:
-```json
-{
-  "text": "Título do Cabeçalho",
-  "level": 1-6,
-  "anchor": "id-para-navegacao"
-}
-```
-
-**Campos Editáveis**:
-- `text`: Inline text editor
-- `level`: Seletor H1-H6
-- `anchor`: Auto-gerado, editável manualmente
+### 1. HEADING ✅ Completo
+**Configurações Inline**:
+- Nível (H1-H6): Select dropdown
+- Âncora: Input text auto-gerado
 - Cores: texto, fundo, borda
 
-**Regras de Conversão**:
-- Markdown: `# Título` → `level: 1`
-- HTML: `<h2>` → `level: 2`
-- Âncoras automáticas: "Metodologia Aplicada" → `metodologia-aplicada`
-
-### 2. PARAGRAPH (Parágrafos)
-**Propósito**: Conteúdo textual principal com formatação rica
-
-**Payload Obrigatório**:
-```json
-{
-  "content": "<p>Texto com <strong>formatação</strong></p>",
-  "alignment": "left|center|right|justify",
-  "emphasis": "normal|lead|small|caption"
-}
-```
-
-**Campos Editáveis**:
-- `content`: Rich text editor inline
-- `alignment`: Botões de alinhamento
-- `emphasis`: Seletor de estilo
+### 2. PARAGRAPH ✅ Completo  
+**Configurações Inline**:
+- Alinhamento: Botões left/center/right/justify
+- Ênfase: normal/lead/small/caption
 - Cores: texto, fundo, borda
 
-**Formatação Suportada**:
-- **Bold**: `<strong>` ou `<b>`
-- *Italic*: `<em>` ou `<i>`  
-- <u>Underline</u>: `<u>`
-- Links: `<a href="">`
+### 3. SNAPSHOT_CARD ✅ Completo
+**Configurações Inline**:
+- Todos os campos PICOD editáveis inline
+- Evidence level: Select dropdown  
+- Recommendation strength: Select dropdown
+- Cores: texto, fundo, borda, accent
 
-### 3. FIGURE (Imagens)
-**Propósito**: Conteúdo visual com metadados completos
+### 4. FIGURE ⚠️ Parcialmente Implementado
+**Configurações Inline Faltando**:
+- Width/height adjustment
+- Alignment controls  
+- Caption editing inline
+- Color system integration
 
-**Payload Obrigatório**:
-```json
-{
-  "src": "https://exemplo.com/imagem.jpg",
-  "alt": "Descrição da imagem",
-  "caption": "Legenda descritiva",
-  "width": "auto|100%|500px",
-  "alignment": "left|center|right"
+### 5. TABLE ⚠️ Parcialmente Implementado
+**Configurações Inline Faltando**:
+- Sortable toggle
+- Compact mode toggle
+- Table-specific colors (header_bg, cell_bg, etc.)
+- Add/remove rows/columns
+
+### 6. CALLOUT ⚠️ Parcialmente Implementado
+**Configurações Inline Faltando**:
+- Type selector (info/warning/success/error/note/tip)
+- Icon customization
+- Color system integration
+
+### 7. NUMBER_CARD ❌ Não Implementado
+**Configurações Inline Necessárias**:
+- Number input
+- Label input  
+- Description textarea
+- Trend selector (up/down/neutral)
+- Color system integration
+
+### 8. REVIEWER_QUOTE ❌ Não Implementado
+**Configurações Inline Necessárias**:
+- Quote textarea
+- Author input
+- Title input
+- Institution input
+- Avatar URL input
+- Color system integration
+
+### 9. POLL ❌ Não Implementado
+**Configurações Inline Necessárias**:
+- Question input
+- Options management (add/remove/edit)
+- Poll type selector
+- Results visibility toggle
+- Color system integration
+
+### 10. CITATION_LIST ❌ Não Implementado
+**Configurações Inline Necessárias**:
+- Citation style selector
+- Numbered toggle
+- Individual citation editing
+- Color system integration
+
+---
+
+## SISTEMA MULTI-BLOCO LAYOUT
+
+### Status: ❌ Não Implementado
+
+**Componentes Necessários**:
+- `LayoutRow`: Container para múltiplos blocos
+- `LayoutGrid`: Sistema de grid responsivo  
+- `LayoutControls`: Controles de adição/remoção de colunas
+- `useLayoutManagement`: Hook para gerenciar estado do layout
+
+**Funcionalidades Planejadas**:
+- Drag & drop entre posições na mesma linha
+- Drag & drop entre linhas diferentes
+- Redimensionamento de colunas
+- Breakpoints responsivos
+- Preview de layout em tempo real
+
+### Estrutura de Dados
+```typescript
+interface LayoutRow {
+  id: string;
+  blocks: ReviewBlock[];
+  columns: number; // 1-4
+  gap: number; // spacing between blocks
+  responsive: {
+    sm: number; // columns on small screens
+    md: number; // columns on medium screens  
+    lg: number; // columns on large screens
+  };
+}
+
+interface LayoutState {
+  rows: LayoutRow[];
+  activeRow?: string;
+  dragState: {
+    isDragging: boolean;
+    draggedBlock?: number;
+    targetPosition?: { rowId: string; position: number };
+  };
 }
 ```
 
-**Validações**:
-- `src`: URL válida ou base64
-- `alt`: Obrigatório para acessibilidade
-- `width`: CSS válido ou 'auto'
+---
 
-### 4. TABLE (Tabelas)
-**Propósito**: Dados estruturados com funcionalidades avançadas
+## IMPORT/EXPORT SYSTEM ✅
 
-**Payload Obrigatório**:
-```json
-{
-  "title": "Título da Tabela",
-  "headers": ["Coluna 1", "Coluna 2", "Coluna 3"],
-  "rows": [
-    ["Dado 1", "Dado 2", "Dado 3"],
-    ["Linha 2", "Dados", "Mais dados"]
-  ],
-  "caption": "Descrição da tabela",
-  "sortable": true,
-  "searchable": false,
-  "compact": false
-}
-```
+### Status: Implementado e Funcional
+
+**Componente**: `ImportExportManager`
+**Localização**: Toolbar do NativeEditor
+**Formatos Suportados**:
+- JSON: Backup/restore completo
+- Markdown: Conversão bidirecional
+- Plain text: Importação com detecção automática
 
 **Funcionalidades**:
-- Ordenação por coluna (`sortable: true`)
-- Busca integrada (`searchable: true`)
-- Modo compacto (`compact: true`)
+- Validação de dados na importação
+- Preview antes de aplicar mudanças
+- Error handling com toast notifications
+- Preservação de metadados
 
-### 5. CALLOUT (Destaques)
-**Propósito**: Informações contextuais importantes
+---
 
-**Payload Obrigatório**:
-```json
-{
-  "type": "info|warning|success|error|note|tip",
-  "title": "Título do Destaque",
-  "content": "Conteúdo do destaque"
-}
+## PROBLEMAS CRÍTICOS IDENTIFICADOS
+
+### 1. Pipeline de Cores Quebrado
+**Problema**: Cores definidas no InlineColorPicker não são aplicadas
+**Causa**: Falta de propagação entre handleColorChange e renderização
+**Componentes Afetados**: figure, table, callout, number_card, reviewer_quote, poll, citation_list
+
+### 2. Configurações Inline Incompletas  
+**Problema**: Muitos blocos não possuem configurações específicas
+**Causa**: InlineBlockSettings não implementa cases para todos os tipos
+**Blocos Afetados**: poll, number_card, reviewer_quote, citation_list
+
+### 3. Ausência de Layout Multi-Bloco
+**Problema**: Sistema atual suporta apenas um bloco por linha
+**Impacto**: Limitação severa na flexibilidade de design
+**Solução**: Implementar sistema completo de grid layout
+
+### 4. Inconsistência de Estado
+**Problema**: Updates de payload nem sempre disparam re-render
+**Causa**: Mutação direta vs immutable updates
+**Solução**: Padronizar uso de spread operators e useCallback
+
+---
+
+## PLANO DE IMPLEMENTAÇÃO PRIORITÁRIO
+
+### Fase 1: Correção do Sistema de Cores ⚡ CRÍTICO
+1. Fixar pipeline InlineColorPicker → BlockRenderer
+2. Implementar aplicação de cores em todos os blocos
+3. Validar propagação de mudanças
+
+### Fase 2: Completar Configurações Inline ⚡ CRÍTICO  
+1. Implementar settings para number_card, reviewer_quote, poll, citation_list
+2. Adicionar configurações específicas faltando em figure, table, callout
+3. Padronizar interface de todas as configurações
+
+### Fase 3: Sistema Multi-Bloco Layout 🎯 ALTA PRIORIDADE
+1. Criar componentes LayoutRow e LayoutGrid
+2. Implementar useLayoutManagement hook
+3. Adicionar drag & drop entre posições
+4. Implementar responsividade automática
+
+### Fase 4: Otimizações e Polimento 📈 MÉDIA PRIORIDADE
+1. Performance optimizations para grandes coleções
+2. Melhorias de acessibilidade  
+3. Testes de integração
+4. Documentação final
+
+---
+
+## ARQUIVOS PRINCIPAIS DO SISTEMA
+
 ```
+src/components/editor/
+├── NativeEditor.tsx ✅ (núcleo principal)
+├── BlockEditor.tsx ✅ (container de blocos)  
+├── BlockPalette.tsx ✅ (paleta de tipos)
+├── ImportExportManager.tsx ✅ (import/export)
+├── inline/
+│   ├── InlineRichTextEditor.tsx ✅
+│   ├── InlineTextEditor.tsx ✅
+│   ├── InlineColorPicker.tsx ✅ (com problemas)
+│   ├── InlineBlockSettings.tsx ⚠️ (incompleto)
+│   └── EditableTable.tsx ⚠️ (limitado)
+├── layout/ ❌ (não existe)
+│   ├── LayoutRow.tsx ❌
+│   ├── LayoutGrid.tsx ❌
+│   └── LayoutControls.tsx ❌
+└── hooks/
+    ├── useBlockManagement.ts ✅
+    ├── useEditorAutoSave.ts ✅
+    ├── useRichTextFormat.ts ✅
+    └── useLayoutManagement.ts ❌
 
-**Tipos Visuais**:
-- `info`: Azul (`#3b82f6`)
-- `warning`: Amarelo (`#f59e0b`)  
-- `success`: Verde (`#10b981`)
-- `error`: Vermelho (`#ef4444`)
-- `note`: Cinza (`#6b7280`)
-- `tip`: Roxo (`#8b5cf6`)
-
-### 6. SNAPSHOT_CARD (Cartão de Evidência)
-**Propósito**: Resumo PICOD estruturado para medicina baseada em evidências
-
-**Payload Obrigatório**:
-```json
-{
-  "population": "Descrição da população",
-  "intervention": "Intervenção aplicada", 
-  "comparison": "Grupo controle/comparação",
-  "outcome": "Desfechos medidos",
-  "design": "Desenho do estudo",
-  "key_findings": ["Achado 1", "Achado 2"],
-  "evidence_level": "high|moderate|low|very_low",
-  "recommendation_strength": "strong|conditional|against"
-}
-```
-
-**Framework PICOD**:
-- **P**opulation: Características demográficas
-- **I**ntervention: Tratamento/exposição
-- **C**omparison: Grupo controle
-- **O**utcome: Desfechos primários/secundários  
-- **D**esign: Metodologia do estudo
-
-### 7. NUMBER_CARD (Cartão de Métrica)
-**Propósito**: Destaque visual de números importantes
-
-**Payload Obrigatório**:
-```json
-{
-  "number": "85.4",
-  "label": "Eficácia (%)",
-  "description": "Taxa de sucesso do tratamento",
-  "trend": "neutral|up|down",
-  "percentage": 12.5
-}
-```
-
-### 8. REVIEWER_QUOTE (Citação de Especialista)
-**Propósito**: Opiniões e comentários de revisores
-
-**Payload Obrigatório**:
-```json
-{
-  "quote": "Texto da citação",
-  "author": "Dr. Nome Sobrenome",
-  "title": "Título/Especialidade",
-  "institution": "Instituição de origem",
-  "avatar_url": "https://exemplo.com/foto.jpg"
-}
-```
-
-### 9. POLL (Enquete)
-**Propósito**: Coleta de opinião da comunidade
-
-**Payload Obrigatório**:
-```json
-{
-  "question": "Qual sua opinião sobre...?",
-  "options": ["Opção 1", "Opção 2", "Opção 3"],
-  "poll_type": "single_choice|multiple_choice|rating",
-  "votes": [23, 45, 12],
-  "total_votes": 80,
-  "allow_add_options": false,
-  "show_results": true
-}
-```
-
-### 10. CITATION_LIST (Lista de Citações)
-**Propósito**: Referências bibliográficas padronizadas
-
-**Payload Obrigatório**:
-```json
-{
-  "citations": [
-    {
-      "id": "ref1",
-      "title": "Título do Artigo",
-      "authors": ["Autor 1", "Autor 2"],
-      "journal": "Nome da Revista",
-      "year": "2023",
-      "doi": "10.1000/182",
-      "pmid": "12345678"
-    }
-  ],
-  "citation_style": "apa|mla|chicago|vancouver",
-  "numbered": true
-}
+src/components/review/blocks/
+├── HeadingBlock.tsx ✅ (settings completo)
+├── ParagraphBlock.tsx ✅ (settings completo)
+├── SnapshotCardBlock.tsx ✅ (settings completo)
+├── FigureBlock.tsx ⚠️ (settings incompleto)
+├── TableBlock.tsx ⚠️ (settings incompleto)
+├── CalloutBlock.tsx ⚠️ (settings incompleto)
+├── NumberCard.tsx ❌ (settings não implementado)
+├── ReviewerQuote.tsx ❌ (settings não implementado)
+├── PollBlock.tsx ❌ (settings não implementado)
+└── CitationListBlock.tsx ❌ (settings não implementado)
 ```
 
 ---
 
-## SISTEMA DE IMPORT/EXPORT
+## MÉTRICAS DE QUALIDADE
 
-### Formatos Suportados
+### Cobertura de Funcionalidades
+- **Edição Inline**: 30% (3/10 blocos completos)
+- **Sistema de Cores**: 30% (3/10 blocos funcionais)
+- **Layout Multi-Bloco**: 0% (não implementado)
+- **Import/Export**: 100% (totalmente funcional)
 
-#### 1. IMPORT
-- **Markdown (.md)**: Conversão automática para blocos
-- **Plain Text (.txt)**: Análise inteligente de estrutura
-- **JSON (.json)**: Importação direta de blocos
-- **HTML**: Extração semântica de elementos
-
-#### 2. EXPORT  
-- **Markdown**: Compatível com GitHub/GitLab
-- **Plain Text**: Versão limpa para revisão
-- **JSON**: Backup completo com metadados
-- **HTML**: Para publicação web
-
-### Regras de Conversão Markdown → Blocos
-
-```markdown
-# Título Principal        → heading (level: 1)
-## Seção                  → heading (level: 2)  
-### Subseção             → heading (level: 3)
-
-Parágrafo normal         → paragraph (emphasis: normal)
-**Texto em negrito**     → paragraph (com <strong>)
-*Texto em itálico*       → paragraph (com <em>)
-
-![Alt text](url)         → figure (src: url, alt: Alt text)
-
-| Coluna 1 | Coluna 2 |   → table (headers + rows)
-|----------|----------|
-| Dado 1   | Dado 2   |
-
-> Citação ou destaque    → callout (type: note)
-
-1. Lista numerada        → paragraph (com <ol><li>)
-- Lista com bullets      → paragraph (com <ul><li>)
-
----                      → separator (visual)
-
-[Link](url)              → paragraph (com <a>)
-```
-
-### Regras de Conversão Plain Text → Blocos
-
-**Detecção Automática**:
-- Linhas em MAIÚSCULAS → `heading`
-- Parágrafos separados por linha em branco → `paragraph` 
-- Números seguidos de ponto → `table` ou lista
-- URLs detectadas → `figure` (se imagem) ou `paragraph` (se link)
-- Texto entre aspas → `reviewer_quote`
-- ATENÇÃO/IMPORTANTE/NOTA → `callout`
-
-### API de Conversão
-
-```typescript
-// Importação
-interface ImportRequest {
-  content: string;
-  format: 'markdown' | 'plaintext' | 'json' | 'html';
-  options?: {
-    autoDetectStructure?: boolean;
-    preserveFormatting?: boolean;
-    generateAnchors?: boolean;
-  };
-}
-
-interface ImportResponse {
-  blocks: ReviewBlock[];
-  warnings: string[];
-  metadata: {
-    originalLength: number;
-    blocksCreated: number;
-    conversionTime: number;
-  };
-}
-
-// Exportação  
-interface ExportRequest {
-  blocks: ReviewBlock[];
-  format: 'markdown' | 'plaintext' | 'json' | 'html';
-  options?: {
-    includeMetadata?: boolean;
-    preserveColors?: boolean;
-    generateTOC?: boolean;
-  };
-}
-```
+### Prioridades de Desenvolvimento
+1. 🔴 **CRÍTICO**: Fixar pipeline de cores (afeta todos os blocos)
+2. 🔴 **CRÍTICO**: Completar configurações inline (7 blocos pendentes)  
+3. 🟡 **ALTA**: Implementar sistema multi-bloco layout
+4. 🟢 **MÉDIA**: Otimizações de performance e acessibilidade
 
 ---
 
-## INTEGRAÇÃO COM IA EXTERNA
+## CHANGELOG
 
-### Preparação de Conteúdo para IA
+### v2.0.0 (2025-06-05) - Estado Atual Pós-Rollback
+- ✅ Painéis de propriedades completamente eliminados
+- ✅ Sistema inline implementado para heading, paragraph, snapshot_card
+- ✅ Import/Export totalmente funcional
+- ✅ Auto-save e undo/redo implementados
+- ❌ Sistema de cores com problemas críticos
+- ❌ Configurações inline incompletas para 7 tipos de bloco
+- ❌ Layout multi-bloco não implementado
 
-**Formato Ideal para Envio**:
-```
-EDITOR_CONTEXT:
-- Total de blocos: N
-- Tipos utilizados: [heading, paragraph, figure, ...]
-- Estrutura: Seção 1 > Subseção A > Conteúdo...
-
-CONTENT_STRUCTURE:
-[BLOCK:heading:1] Título Principal
-[BLOCK:paragraph] Parágrafo introdutório...
-[BLOCK:figure] Descrição da imagem: Figura mostrando...
-[BLOCK:snapshot_card] PICOD: População X, Intervenção Y...
-
-FORMATTING_RULES:
-- Headings com âncoras: titulo-principal
-- Cores preservadas: text:#ffffff, bg:#1a1a1a
-- Alinhamento: left/center/right/justify
-- Ênfase: normal/lead/small/caption
-```
-
-### Instruções para IA Externa
-
-**Para Conversão MD → Blocos**:
-1. Detectar hierarquia de títulos (`#` = level)
-2. Preservar formatação inline (`**bold**`, `*italic*`)
-3. Converter tabelas para formato `table` 
-4. Identificar imagens e criar `figure` blocks
-5. Detectar citações e criar `callout` ou `reviewer_quote`
-6. Manter estrutura semântica científica
-
-**Para Melhoramento de Conteúdo**:
-1. Sugerir divisão em blocos apropriados
-2. Identificar oportunidades para `snapshot_card`
-3. Propor `number_card` para estatísticas
-4. Recomendar `callout` para informações importantes
-5. Validar estrutura PICOD em contextos médicos
+### v1.0.0 (2025-01-15) - Baseline Original
+- Sistema básico de blocos
+- Painéis de propriedades lateral
+- Funcionalidades limitadas
 
 ---
 
-## SISTEMA DE VALIDAÇÃO
+**📋 CHECKLIST DE IMPLEMENTAÇÃO IMEDIATA**
 
-### Validações por Tipo de Bloco
+**Fase 1 - Cores (CRÍTICO)**:
+- [ ] Fixar InlineColorPicker.handleColorChange propagation
+- [ ] Implementar aplicação de cores em FigureBlock
+- [ ] Implementar aplicação de cores em TableBlock  
+- [ ] Implementar aplicação de cores em CalloutBlock
+- [ ] Implementar aplicação de cores em NumberCard
+- [ ] Implementar aplicação de cores em ReviewerQuote
+- [ ] Implementar aplicação de cores em PollBlock
+- [ ] Implementar aplicação de cores em CitationListBlock
 
-**Heading**:
-- `text`: não pode estar vazio
-- `level`: deve ser 1-6
-- `anchor`: deve ser URL-safe (a-z, 0-9, -)
+**Fase 2 - Settings Inline (CRÍTICO)**:
+- [ ] Completar InlineBlockSettings para FigureBlock
+- [ ] Completar InlineBlockSettings para TableBlock
+- [ ] Completar InlineBlockSettings para CalloutBlock
+- [ ] Implementar InlineBlockSettings para NumberCard
+- [ ] Implementar InlineBlockSettings para ReviewerQuote  
+- [ ] Implementar InlineBlockSettings para PollBlock
+- [ ] Implementar InlineBlockSettings para CitationListBlock
 
-**Paragraph**:
-- `content`: HTML válido apenas com tags permitidas
-- `alignment`: deve ser valor enum válido
-
-**Figure**:
-- `src`: URL válida ou base64 válido
-- `alt`: obrigatório para acessibilidade
-- `width`: CSS válido
-
-**Table**:
-- `headers`: array não vazio
-- `rows`: cada row deve ter mesmo número de colunas que headers
-
-**Snapshot_card**:
-- Todos os campos PICOD devem estar preenchidos
-- `evidence_level` e `recommendation_strength` devem ser enum válidos
-
-### Validações Universais
-
-```typescript
-interface ValidationResult {
-  isValid: boolean;
-  errors: ValidationError[];
-  warnings: ValidationWarning[];
-}
-
-interface ValidationError {
-  blockId: number;
-  field: string;
-  message: string;
-  severity: 'error' | 'warning';
-}
-
-// Exemplo de uso
-const validateBlock = (block: ReviewBlock): ValidationResult => {
-  const errors: ValidationError[] = [];
-  
-  // Validação universal
-  if (!block.visible && block.sort_index === 0) {
-    errors.push({
-      blockId: block.id,
-      field: 'visible',
-      message: 'Primeiro bloco não pode estar oculto',
-      severity: 'warning'
-    });
-  }
-  
-  // Validação específica por tipo
-  switch (block.type) {
-    case 'heading':
-      if (!block.payload.text?.trim()) {
-        errors.push({
-          blockId: block.id,
-          field: 'text',
-          message: 'Texto do cabeçalho é obrigatório',
-          severity: 'error'
-        });
-      }
-      break;
-    // ... outros tipos
-  }
-  
-  return {
-    isValid: errors.filter(e => e.severity === 'error').length === 0,
-    errors,
-    warnings: errors.filter(e => e.severity === 'warning')
-  };
-};
-```
+**Fase 3 - Layout Multi-Bloco (ALTA)**:
+- [ ] Criar LayoutRow component
+- [ ] Criar LayoutGrid component  
+- [ ] Criar useLayoutManagement hook
+- [ ] Implementar drag & drop entre posições
+- [ ] Adicionar responsividade automática
 
 ---
 
-## PERFORMANCE E OTIMIZAÇÃO
-
-### Estratégias de Rendering
-
-**Virtualização**: Blocos fora da viewport não são renderizados
-**Memoização**: Componentes de bloco são React.memo
-**Lazy Loading**: Imagens carregam apenas quando visíveis
-**Debounce**: Salvamento automático após 2s de inatividade
-
-### Limits Recomendados
-
-- **Máximo de blocos por revisão**: 500
-- **Máximo de caracteres por paragraph**: 10.000
-- **Máximo de linhas por table**: 1.000
-- **Tamanho máximo de imagem**: 5MB
-- **Timeout de auto-save**: 2 segundos
-
----
-
-## TROUBLESHOOTING COMUM
-
-### Problemas de Texto/Direção
-
-**Sintoma**: Texto aparece invertido ou cursor incorreto
-**Causa**: Falta de `dir="ltr"` ou CSS `direction`
-**Solução**: Adicionar atributos de direção em todos os elementos editáveis
-
-### Problemas de Drag & Drop
-
-**Sintoma**: Blocos não se movem ou aparecem tilted
-**Causa**: Estado de dragging não atualizado corretamente  
-**Solução**: Verificar `isDragging` state e aplicar `opacity: 0.5`
-
-### Problemas de Performance
-
-**Sintoma**: Editor lento com muitos blocos
-**Causa**: Re-render desnecessário de componentes
-**Solução**: Implementar React.memo e useCallback adequadamente
-
-### Problemas de Importação
-
-**Sintoma**: Blocos criados incorretamente
-**Causa**: Parsing inadequado do formato fonte
-**Solução**: Validar formato antes da conversão, usar fallbacks
-
----
-
-## VERSIONAMENTO E CHANGELOG
-
-### v1.0.0 (2025-01-15)
-- ✅ Sistema básico de blocos implementado
-- ✅ Editores inline funcionais  
-- ✅ Sistema de cores integrado
-- ✅ Drag & drop melhorado
-- ✅ Fundação de import/export
-- 🔄 Documentação completa criada
-
-### Próximas Versões
-- **v1.1.0**: Templates e auto-save
-- **v1.2.0**: Colaboração em tempo real
-- **v1.3.0**: IA integrada para sugestões
-- **v2.0.0**: Editor de equações matemáticas
-
----
-
-## ARQUIVO DE CONFIGURAÇÃO
-
-```json
-{
-  "editor": {
-    "version": "1.0.0",
-    "autoSave": {
-      "enabled": true,
-      "interval": 2000,
-      "maxVersions": 10
-    },
-    "validation": {
-      "strictMode": true,
-      "allowEmptyBlocks": false,
-      "maxBlocksPerIssue": 500
-    },
-    "ui": {
-      "theme": "dark",
-      "showLineNumbers": false,
-      "enableDragDrop": true,
-      "compactMode": false
-    },
-    "import": {
-      "supportedFormats": ["md", "txt", "json", "html"],
-      "autoDetectStructure": true,
-      "preserveFormatting": true
-    },
-    "export": {
-      "defaultFormat": "markdown",
-      "includeMetadata": true,
-      "generateTOC": true
-    }
-  }
-}
-```
-
----
-
-**📋 CHECKLIST DE IMPLEMENTAÇÃO PARA IA EXTERNA**
-
-Ao trabalhar com este editor, verifique:
-
-- [ ] Tipos de bloco estão corretos conforme enum `BlockType`
-- [ ] Payload contém todos os campos obrigatórios  
-- [ ] Cores seguem o padrão hex (#ffffff) ou 'transparent'
-- [ ] HTML em `paragraph.content` usa apenas tags permitidas
-- [ ] Âncoras em `heading` são URL-safe
-- [ ] Validações são executadas antes de salvar
-- [ ] `sort_index` é sequencial e único
-- [ ] Importação preserva semântica científica
-- [ ] Exportação mantém estrutura hierárquica
-- [ ] Performance é considerada para muitos blocos
-
-**🔄 ESTE DOCUMENTO É MANTIDO AUTOMATICAMENTE**
-Qualquer mudança no código do editor deve refletir aqui.
-Versão atual: 1.0.0 | Última atualização: 2025-01-15
+**🔄 ESTE DOCUMENTO REFLETE O ESTADO REAL**
+Versão atual: 2.0.0 | Última atualização: 2025-06-05
+Próxima revisão: Após conclusão das Fases 1-2
