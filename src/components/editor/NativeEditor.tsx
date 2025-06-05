@@ -1,4 +1,3 @@
-
 // ABOUTME: Enhanced native editor with inline-only settings and improved UX
 // Complete elimination of properties panels in favor of contextual inline controls
 

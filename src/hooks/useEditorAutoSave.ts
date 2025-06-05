@@ -6,19 +6,27 @@ import { useCallback, useEffect, useState } from 'react';
 import { ReviewBlock } from '@/types/review';
 
 interface UseEditorAutoSaveOptions {
-  blocks: ReviewBlock[];
-  onSave: (blocks: ReviewBlock[]) => Promise<void>;
+  data: ReviewBlock[];
+  onSave?: (blocks: ReviewBlock[]) => Promise<void>;
   interval?: number;
+  enabled?: boolean;
 }
 
-export const useEditorAutoSave = ({ blocks, onSave, interval = 30000 }: UseEditorAutoSaveOptions) => {
+export const useEditorAutoSave = ({ 
+  data, 
+  onSave, 
+  interval = 30000, 
+  enabled = true 
+}: UseEditorAutoSaveOptions) => {
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
   const handleSave = useCallback(async (silent = false) => {
+    if (!onSave || !enabled) return;
+    
     setIsSaving(true);
     try {
-      await onSave(blocks);
+      await onSave(data);
       setLastSaved(new Date());
       if (!silent) {
         console.log('Blocks saved successfully');
@@ -28,18 +36,20 @@ export const useEditorAutoSave = ({ blocks, onSave, interval = 30000 }: UseEdito
     } finally {
       setIsSaving(false);
     }
-  }, [blocks, onSave]);
+  }, [data, onSave, enabled]);
 
   // Auto-save functionality
   useEffect(() => {
+    if (!enabled || !onSave) return;
+    
     const autoSaveInterval = setInterval(() => {
-      if (blocks.length > 0 && !isSaving) {
+      if (data.length > 0 && !isSaving) {
         handleSave(true); // Silent save
       }
     }, interval);
 
     return () => clearInterval(autoSaveInterval);
-  }, [blocks, isSaving, handleSave, interval]);
+  }, [data, isSaving, handleSave, interval, enabled, onSave]);
 
   return {
     handleSave,
