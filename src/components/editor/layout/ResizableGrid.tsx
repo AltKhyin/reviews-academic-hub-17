@@ -1,14 +1,19 @@
 
-// ABOUTME: Resizable grid layout with draggable dividers for dynamic column proportions
-// Uses react-resizable-panels for smooth resizing experience
+// ABOUTME: Enhanced resizable grid layout with proper synchronization and utilities
+// Uses shared grid utilities for consistent rendering and better column width management
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { ReviewBlock } from '@/types/review';
 import { BlockRenderer } from '@/components/review/BlockRenderer';
 import { Button } from '@/components/ui/button';
 import { Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { 
+  columnWidthsToPanelSizes, 
+  panelSizesToColumnWidths,
+  normalizeColumnWidths 
+} from '@/utils/gridLayoutUtils';
 
 interface ResizableGridProps {
   rowId: string;
@@ -41,20 +46,28 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
   readonly = false,
   className
 }) => {
-  // Calculate default sizes if no custom widths provided
-  const defaultSizes = columnWidths || Array(columns).fill(100 / columns);
-  
-  // Ensure we have the right number of sizes
-  const panelSizes = defaultSizes.length === columns 
-    ? defaultSizes 
-    : Array(columns).fill(100 / columns);
+  // Convert column widths to panel sizes with proper normalization
+  const panelSizes = useMemo(() => {
+    return columnWidthsToPanelSizes(columnWidths, columns);
+  }, [columnWidths, columns]);
 
-  // Handle panel resize
+  console.log('ResizableGrid render:', { 
+    rowId, 
+    columns, 
+    blocksCount: blocks.length, 
+    columnWidths, 
+    panelSizes 
+  });
+
+  // Handle panel resize with immediate feedback
   const handlePanelResize = useCallback((sizes: number[]) => {
-    onUpdateLayout(rowId, { columnWidths: sizes });
-  }, [rowId, onUpdateLayout]);
+    console.log('Panel resize:', { rowId, oldSizes: panelSizes, newSizes: sizes });
+    
+    const normalizedWidths = panelSizesToColumnWidths(sizes);
+    onUpdateLayout(rowId, { columnWidths: normalizedWidths });
+  }, [rowId, onUpdateLayout, panelSizes]);
 
-  // Handle block click
+  // Handle block click for selection
   const handleBlockClick = useCallback((blockId: number, event: React.MouseEvent) => {
     if (!readonly && onActiveBlockChange) {
       const target = event.target as Element;
@@ -79,7 +92,10 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => onAddBlock(rowId, position)}
+          onClick={() => {
+            console.log('Adding block to grid:', { rowId, position });
+            onAddBlock(rowId, position);
+          }}
           className="text-gray-400 hover:text-white"
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -118,6 +134,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
                 size="sm"
                 onClick={(e) => {
                   e.stopPropagation();
+                  console.log('Deleting block from grid:', { blockId: block.id, rowId });
                   onDeleteBlock(block.id);
                 }}
                 className="h-6 w-6 p-0 bg-red-800 border border-red-600 hover:bg-red-700"
@@ -183,6 +200,11 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
       {!readonly && (
         <div className="mt-2 text-xs text-gray-400 text-center">
           {columns} colunas • Arraste os divisores para ajustar proporções
+          {columnWidths && (
+            <span className="ml-2">
+              Proporções: {columnWidths.map(w => `${w.toFixed(1)}%`).join(' / ')}
+            </span>
+          )}
         </div>
       )}
     </div>

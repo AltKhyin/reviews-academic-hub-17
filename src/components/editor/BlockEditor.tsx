@@ -1,11 +1,12 @@
-// ABOUTME: Unified block editor with resizable grid controls and enhanced layout management
-// Features draggable dividers for dynamic column proportions and improved preview rendering
+// ABOUTME: Enhanced block editor with unified grid management and fixed drag and drop
+// Uses new grid layout manager for consistent operations and proper event handling
 
 import React, { useState, useCallback, useRef } from 'react';
 import { ReviewBlock, BlockType } from '@/types/review';
 import { BlockRenderer } from '@/components/review/BlockRenderer';
 import { DragHandle } from './DragHandle';
 import { ResizableGrid } from './layout/ResizableGrid';
+import { useGridLayoutManager } from '@/hooks/useGridLayoutManager';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { 
@@ -14,6 +15,8 @@ import {
   EyeOff, 
   Copy, 
   Trash2, 
+  Grid2X2,
+  Grid3X3,
   Columns2,
   Columns3,
   Columns4,
@@ -32,14 +35,6 @@ interface BlockEditorProps {
   onDuplicateBlock: (blockId: number) => void;
   onConvertToGrid?: (blockId: number, columns: number) => void;
   className?: string;
-}
-
-interface LayoutRow {
-  id: string;
-  blocks: ReviewBlock[];
-  columns: number;
-  gap: number;
-  columnWidths?: number[];
 }
 
 interface DragState {
@@ -72,90 +67,24 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
 
   const dragTimeoutRef = useRef<NodeJS.Timeout>();
 
-  // Group blocks into layout rows with enhanced metadata
-  const layoutRows: LayoutRow[] = React.useMemo(() => {
-    const rows: Map<string, LayoutRow> = new Map();
-    const processedBlocks = new Set<number>();
+  // Use the unified grid layout manager
+  const {
+    layoutState,
+    updateColumnWidths,
+    deleteBlockWithLayoutRepair,
+    getRowByBlockId,
+    isBlockInGrid
+  } = useGridLayoutManager({
+    blocks,
+    onUpdateBlock,
+    onDeleteBlock
+  });
 
-    // Sort blocks by sort_index to maintain order
-    const sortedBlocks = [...blocks].sort((a, b) => a.sort_index - b.sort_index);
-
-    console.log('Computing layout rows from blocks:', sortedBlocks.length);
-
-    sortedBlocks.forEach((block) => {
-      if (processedBlocks.has(block.id)) return;
-
-      const blockLayout = block.meta?.layout;
-      
-      if (blockLayout?.row_id && typeof blockLayout.row_id === 'string') {
-        // Block belongs to a multi-column row
-        const rowId = blockLayout.row_id;
-        
-        if (!rows.has(rowId)) {
-          rows.set(rowId, {
-            id: rowId,
-            blocks: [],
-            columns: blockLayout.columns || 1,
-            gap: blockLayout.gap || 4,
-            columnWidths: blockLayout.columnWidths
-          });
-        }
-        
-        const row = rows.get(rowId)!;
-        row.blocks.push(block);
-        processedBlocks.add(block.id);
-        
-        // Update row metadata from latest block
-        if (blockLayout.columnWidths) {
-          row.columnWidths = blockLayout.columnWidths;
-        }
-        
-        console.log('Added block to grid row:', { 
-          blockId: block.id, 
-          rowId, 
-          position: blockLayout.position,
-          totalInRow: row.blocks.length 
-        });
-      } else {
-        // Single block row
-        const singleRowId = `single-${block.id}`;
-        rows.set(singleRowId, {
-          id: singleRowId,
-          blocks: [block],
-          columns: 1,
-          gap: 4
-        });
-        processedBlocks.add(block.id);
-        
-        console.log('Added single block row:', { blockId: block.id, rowId: singleRowId });
-      }
-    });
-
-    // Convert to array and sort by minimum sort_index
-    const result = Array.from(rows.values())
-      .filter(row => row.blocks.length > 0)
-      .map(row => ({
-        ...row,
-        blocks: row.blocks.sort((a, b) => {
-          const aPos = a.meta?.layout?.position ?? 0;
-          const bPos = b.meta?.layout?.position ?? 0;
-          return aPos - bPos;
-        })
-      }))
-      .sort((a, b) => {
-        const aMinSort = Math.min(...a.blocks.map(b => b.sort_index));
-        const bMinSort = Math.min(...b.blocks.map(b => b.sort_index));
-        return aMinSort - bMinSort;
-      });
-
-    console.log('Layout rows computed:', { 
-      totalRows: result.length,
-      gridRows: result.filter(r => r.columns > 1).length,
-      singleRows: result.filter(r => r.columns === 1).length
-    });
-    
-    return result;
-  }, [blocks]);
+  console.log('BlockEditor render:', { 
+    blocksCount: blocks.length, 
+    layoutRows: layoutState.rows.length,
+    activeBlockId 
+  });
 
   const handleBlockClick = useCallback((blockId: number, event: React.MouseEvent) => {
     const target = event.target as Element;
@@ -174,6 +103,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
   }, [blocks, onUpdateBlock]);
 
   const addBlockBetween = useCallback((position: number, type: BlockType = 'paragraph') => {
+    console.log('Adding block between positions:', { position, type });
     onAddBlock(type, position);
   }, [onAddBlock]);
 
@@ -185,7 +115,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       return;
     }
 
-    if (block.meta?.layout?.row_id) {
+    if (isBlockInGrid(blockId)) {
       console.warn('Block is already in a grid layout:', blockId);
       return;
     }
@@ -197,10 +127,10 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     } else {
       console.error('onConvertToGrid handler not provided');
     }
-  }, [blocks, onConvertToGrid]);
+  }, [blocks, onConvertToGrid, isBlockInGrid]);
 
   const addBlockToGrid = useCallback((rowId: string, position: number) => {
-    const row = layoutRows.find(r => r.id === rowId);
+    const row = layoutState.rows.find(r => r.id === rowId);
     if (!row) {
       console.error('Row not found for grid block addition:', rowId);
       return;
@@ -226,35 +156,12 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     }
 
     console.log('Adding block to grid:', { rowId, position, insertionIndex });
-
-    // Add the new block with layout metadata
     onAddBlock('paragraph', insertionIndex);
-  }, [layoutRows, blocks, onAddBlock]);
+  }, [layoutState.rows, blocks, onAddBlock]);
 
-  // Handle grid layout updates (column widths)
-  const handleLayoutUpdate = useCallback((rowId: string, updates: { columnWidths: number[] }) => {
-    const row = layoutRows.find(r => r.id === rowId);
-    if (!row) return;
-
-    // Update all blocks in the row with new column widths
-    row.blocks.forEach(block => {
-      onUpdateBlock(block.id, {
-        meta: {
-          ...block.meta,
-          layout: {
-            ...block.meta?.layout,
-            columnWidths: updates.columnWidths
-          }
-        }
-      });
-    });
-  }, [layoutRows, onUpdateBlock]);
-
+  // Fixed drag and drop implementation
   const handleDragStart = useCallback((e: React.DragEvent, blockId: number) => {
-    const block = blocks.find(b => b.id === blockId);
-    if (!block) return;
-
-    const sourceRow = layoutRows.find(row => row.blocks.some(b => b.id === blockId));
+    const sourceRow = getRowByBlockId(blockId);
     
     console.log('Drag started:', { blockId, sourceRowId: sourceRow?.id });
     
@@ -268,7 +175,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
 
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', blockId.toString());
-  }, [blocks, layoutRows]);
+  }, [getRowByBlockId]);
 
   const handleDragOver = useCallback((e: React.DragEvent, rowId: string, position?: number) => {
     e.preventDefault();
@@ -307,7 +214,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     if (!dragState.draggedBlockId) return;
 
     const draggedBlock = blocks.find(b => b.id === dragState.draggedBlockId);
-    const targetRow = layoutRows.find(r => r.id === targetRowId);
+    const targetRow = layoutState.rows.find(r => r.id === targetRowId);
     
     if (!draggedBlock || !targetRow) {
       console.error('Invalid drop operation:', { draggedBlock: !!draggedBlock, targetRow: !!targetRow });
@@ -337,7 +244,8 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
           row_id: targetRowId,
           position: finalPosition,
           columns: targetRow.columns,
-          gap: targetRow.gap
+          gap: targetRow.gap,
+          columnWidths: targetRow.columnWidths
         }
       }
     });
@@ -349,7 +257,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       dragOverPosition: null,
       isDragging: false
     });
-  }, [dragState.draggedBlockId, blocks, layoutRows, onUpdateBlock]);
+  }, [dragState.draggedBlockId, blocks, layoutState.rows, onUpdateBlock]);
 
   const handleDragEnd = useCallback(() => {
     if (dragTimeoutRef.current) {
@@ -365,7 +273,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     });
   }, []);
 
-  const renderBlock = (block: ReviewBlock, rowIndex: number, blockIndex: number, row: LayoutRow) => {
+  const renderBlock = (block: ReviewBlock, rowIndex: number, blockIndex: number, row: any) => {
     const globalIndex = blocks.findIndex(b => b.id === block.id);
     const isActive = activeBlockId === block.id;
     const isDragging = dragState.draggedBlockId === block.id;
@@ -403,19 +311,24 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
               borderColor: isActive ? '#3b82f6' : '#2a2a2a'
             }}
             onClick={(e) => handleBlockClick(block.id, e)}
+            draggable={!isBlockInGrid(block.id)}
+            onDragStart={(e) => handleDragStart(e, block.id)}
+            onDragOver={(e) => handleDragOver(e, row.id, blockIndex)}
+            onDragLeave={handleDragLeave}
+            onDrop={(e) => handleDrop(e, row.id, blockIndex)}
+            onDragEnd={handleDragEnd}
           >
             <div className={cn(
               "absolute -top-2 -right-2 flex items-center gap-1 z-10 transition-opacity",
               isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
             )}>
-              {row.columns === 1 && !block.meta?.layout?.row_id && (
+              {row.columns === 1 && !isBlockInGrid(block.id) && (
                 <div className="flex items-center gap-1">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
-                      console.log('Converting to 2 columns:', block.id);
                       convertToLayout(block.id, 2);
                     }}
                     className="h-6 w-6 p-0 bg-gray-800 border border-gray-600"
@@ -428,7 +341,6 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
-                      console.log('Converting to 3 columns:', block.id);
                       convertToLayout(block.id, 3);
                     }}
                     className="h-6 w-6 p-0 bg-gray-800 border border-gray-600"
@@ -441,7 +353,6 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
-                      console.log('Converting to 4 columns:', block.id);
                       convertToLayout(block.id, 4);
                     }}
                     className="h-6 w-6 p-0 bg-gray-800 border border-gray-600"
@@ -483,7 +394,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                 size="sm"
                 onClick={(e) => {
                   e.stopPropagation();
-                  onDeleteBlock(block.id);
+                  deleteBlockWithLayoutRepair(block.id);
                 }}
                 className="h-6 w-6 p-0 bg-red-800 border border-red-600 hover:bg-red-700"
                 title="Remover bloco"
@@ -517,7 +428,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     );
   };
 
-  const renderLayoutRow = (row: LayoutRow, rowIndex: number) => {
+  const renderLayoutRow = (row: any, rowIndex: number) => {
     if (row.columns === 1) {
       return (
         <div key={row.id} className="my-6">
@@ -535,10 +446,10 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
         columns={row.columns}
         gap={row.gap}
         columnWidths={row.columnWidths}
-        onUpdateLayout={handleLayoutUpdate}
+        onUpdateLayout={updateColumnWidths}
         onAddBlock={addBlockToGrid}
         onUpdateBlock={onUpdateBlock}
-        onDeleteBlock={onDeleteBlock}
+        onDeleteBlock={deleteBlockWithLayoutRepair}
         activeBlockId={activeBlockId}
         onActiveBlockChange={onActiveBlockChange}
         readonly={false}
@@ -553,9 +464,9 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
         className="h-full overflow-y-auto p-6"
         style={{ backgroundColor: '#121212' }}
       >
-        {layoutRows.length > 0 ? (
+        {layoutState.rows.length > 0 ? (
           <div className="space-y-4">
-            {layoutRows.map((row, index) => renderLayoutRow(row, index))}
+            {layoutState.rows.map((row, index) => renderLayoutRow(row, index))}
           </div>
         ) : (
           <div 

@@ -1,12 +1,13 @@
 
-// ABOUTME: Enhanced block management with robust layout support and grid operations
-// Comprehensive block manipulation with proper layout metadata handling
+// ABOUTME: Enhanced block management with integrated grid layout management
+// Uses unified grid system for consistent block operations and proper layout handling
 
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { ReviewBlock, BlockType } from '@/types/review';
 import { getDefaultPayload } from '@/utils/blockDefaults';
 import { useBlockHistory } from './useBlockHistory';
 import { useBlockOperations } from './useBlockOperations';
+import { useGridLayoutManager } from './useGridLayoutManager';
 
 interface UseBlockManagementOptions {
   initialBlocks: ReviewBlock[];
@@ -18,8 +19,54 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
   const [activeBlockId, setActiveBlockId] = useState<number | null>(null);
   
   // Use composition for cleaner separation of concerns
-  const { history, historyIndex, canUndo, canRedo, saveToHistory, undo, redo } = useBlockHistory(initialBlocks);
+  const { history, historyIndex, canUndo, canRedo, saveToHistory, undo: historyUndo, redo: historyRedo } = useBlockHistory(initialBlocks);
   const { createTempId, reindexBlocks } = useBlockOperations();
+
+  // Internal block update function for grid manager
+  const internalUpdateBlock = useCallback((blockId: number, updates: Partial<ReviewBlock>) => {
+    console.log('Internal block update:', { blockId, updates });
+    
+    setBlocks(prevBlocks => {
+      const updatedBlocks = prevBlocks.map(block => 
+        block.id === blockId 
+          ? { 
+              ...block, 
+              ...updates, 
+              updated_at: new Date().toISOString(),
+              meta: updates.meta ? { ...block.meta, ...updates.meta } : block.meta
+            }
+          : block
+      );
+      return updatedBlocks;
+    });
+  }, []);
+
+  // Internal block delete function for grid manager
+  const internalDeleteBlock = useCallback((blockId: number) => {
+    console.log('Internal block delete:', blockId);
+    
+    setBlocks(prevBlocks => {
+      const updatedBlocks = prevBlocks.filter(block => block.id !== blockId);
+      const reindexedBlocks = reindexBlocks(updatedBlocks);
+      return reindexedBlocks;
+    });
+    
+    if (activeBlockId === blockId) {
+      setActiveBlockId(null);
+    }
+  }, [activeBlockId, reindexBlocks]);
+
+  // Initialize grid layout manager with internal functions
+  const gridManager = useGridLayoutManager({
+    blocks,
+    onUpdateBlock: internalUpdateBlock,
+    onDeleteBlock: internalDeleteBlock
+  });
+
+  // Update blocks when they change
+  useEffect(() => {
+    setBlocks(initialBlocks);
+  }, [initialBlocks]);
 
   const setActiveBlock = useCallback((blockId: number | null) => {
     setActiveBlockId(blockId);
@@ -83,39 +130,7 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
     return newBlock;
   }, [blocks, issueId, saveToHistory, createTempId, reindexBlocks]);
 
-  // NEW: Batch add blocks for grid conversion
-  const addBlocksBatch = useCallback((blocksToAdd: Omit<ReviewBlock, 'id' | 'created_at' | 'updated_at'>[], position?: number) => {
-    const newBlocks = blocksToAdd.map((blockData, index) => ({
-      ...blockData,
-      id: createTempId(),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      sort_index: (position ?? blocks.length) + index
-    }));
-
-    let updatedBlocks = [...blocks];
-    
-    if (position !== undefined) {
-      updatedBlocks.splice(position, 0, ...newBlocks);
-      updatedBlocks = reindexBlocks(updatedBlocks);
-    } else {
-      updatedBlocks.push(...newBlocks);
-    }
-
-    console.log('Batch adding blocks:', { 
-      count: newBlocks.length,
-      position,
-      totalBlocks: updatedBlocks.length 
-    });
-
-    setBlocks(updatedBlocks);
-    setActiveBlockId(newBlocks[0]?.id || null);
-    saveToHistory(updatedBlocks, newBlocks[0]?.id || null);
-    
-    return newBlocks;
-  }, [blocks, saveToHistory, createTempId, reindexBlocks]);
-
-  // ENHANCED: Convert block to grid layout with batch operation
+  // ENHANCED: Convert block to grid layout using grid manager
   const convertToGrid = useCallback((blockId: number, columns: number) => {
     const blockIndex = blocks.findIndex(b => b.id === blockId);
     const originalBlock = blocks.find(b => b.id === blockId);
@@ -145,9 +160,11 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
     };
 
     // Create additional blocks for remaining columns
-    const additionalBlocks: Omit<ReviewBlock, 'id' | 'created_at' | 'updated_at'>[] = [];
+    const additionalBlocks: ReviewBlock[] = [];
     for (let i = 1; i < columns; i++) {
+      const tempId = createTempId();
       additionalBlocks.push({
+        id: tempId,
         issue_id: issueId || '',
         sort_index: blockIndex + i,
         type: 'paragraph',
@@ -166,7 +183,9 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
             gap: 4
           }
         },
-        visible: true
+        visible: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       });
     }
 
@@ -178,15 +197,7 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
     
     // Insert additional blocks
     if (additionalBlocks.length > 0) {
-      const newBlocks = additionalBlocks.map((blockData, index) => ({
-        ...blockData,
-        id: createTempId(),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        sort_index: blockIndex + 1 + index
-      }));
-      
-      updatedBlocks.splice(blockIndex + 1, 0, ...newBlocks);
+      updatedBlocks.splice(blockIndex + 1, 0, ...additionalBlocks);
     }
     
     // Reindex all blocks
@@ -234,34 +245,17 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
     saveToHistory(reindexedBlocks, duplicatedBlock.id);
   }, [blocks, saveToHistory, createTempId, reindexBlocks]);
 
-  const updateBlock = useCallback((blockId: number, updates: Partial<ReviewBlock>) => {
-    console.log('Updating block:', { blockId, updates });
-    
-    const updatedBlocks = blocks.map(block => 
-      block.id === blockId 
-        ? { 
-            ...block, 
-            ...updates, 
-            updated_at: new Date().toISOString(),
-            meta: updates.meta ? { ...block.meta, ...updates.meta } : block.meta
-          }
-        : block
-    );
-    
-    setBlocks(updatedBlocks);
-    saveToHistory(updatedBlocks, activeBlockId);
-  }, [blocks, activeBlockId, saveToHistory]);
-
+  // Use grid manager's delete function for proper layout repair
   const deleteBlock = useCallback((blockId: number) => {
-    const updatedBlocks = blocks.filter(block => block.id !== blockId);
-    const reindexedBlocks = reindexBlocks(updatedBlocks);
-    
-    setBlocks(reindexedBlocks);
-    if (activeBlockId === blockId) {
-      setActiveBlockId(null);
-    }
-    saveToHistory(reindexedBlocks, activeBlockId === blockId ? null : activeBlockId);
-  }, [blocks, activeBlockId, saveToHistory, reindexBlocks]);
+    gridManager.deleteBlockWithLayoutRepair(blockId);
+    saveToHistory(blocks.filter(b => b.id !== blockId), activeBlockId === blockId ? null : activeBlockId);
+  }, [gridManager, blocks, activeBlockId, saveToHistory]);
+
+  // Public update function that also saves to history
+  const updateBlock = useCallback((blockId: number, updates: Partial<ReviewBlock>) => {
+    internalUpdateBlock(blockId, updates);
+    saveToHistory(blocks, activeBlockId);
+  }, [internalUpdateBlock, blocks, activeBlockId, saveToHistory]);
 
   const moveBlock = useCallback((blockId: number, direction: 'up' | 'down') => {
     const currentIndex = blocks.findIndex(block => block.id === blockId);
@@ -278,23 +272,22 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
     saveToHistory(reindexedBlocks, activeBlockId);
   }, [blocks, activeBlockId, saveToHistory, reindexBlocks]);
 
-  const updateBlockLayout = useCallback((blockId: number, layoutMeta: any) => {
-    updateBlock(blockId, {
-      meta: {
-        layout: layoutMeta
-      }
-    });
-  }, [updateBlock]);
+  // Undo/redo with proper state restoration
+  const undo = useCallback(() => {
+    const previousState = historyUndo();
+    if (previousState) {
+      setBlocks(previousState.blocks);
+      setActiveBlockId(previousState.activeBlockId);
+    }
+  }, [historyUndo]);
 
-  const removeFromLayout = useCallback((blockId: number) => {
-    const block = blocks.find(b => b.id === blockId);
-    if (!block || !block.meta?.layout) return;
-
-    const updatedMeta = { ...block.meta };
-    delete updatedMeta.layout;
-
-    updateBlock(blockId, { meta: updatedMeta });
-  }, [blocks, updateBlock]);
+  const redo = useCallback(() => {
+    const nextState = historyRedo();
+    if (nextState) {
+      setBlocks(nextState.blocks);
+      setActiveBlockId(nextState.activeBlockId);
+    }
+  }, [historyRedo]);
 
   return {
     blocks,
@@ -303,17 +296,18 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
     historyIndex,
     setActiveBlockId: setActiveBlock,
     addBlock,
-    addBlocksBatch,
     convertToGrid,
     duplicateBlock,
     updateBlock,
-    updateBlockLayout,
-    removeFromLayout,
     deleteBlock,
     moveBlock,
     undo,
     redo,
     canUndo,
-    canRedo
+    canRedo,
+    // Expose grid manager utilities
+    layoutState: gridManager.layoutState,
+    isBlockInGrid: gridManager.isBlockInGrid,
+    getRowByBlockId: gridManager.getRowByBlockId
   };
 };

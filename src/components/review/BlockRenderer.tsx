@@ -1,6 +1,6 @@
 
-// ABOUTME: Enhanced block renderer with proper event handling for inline editing and grid layout support
-// Ensures clean separation between block selection and content editing, now with grid rendering
+// ABOUTME: Enhanced block renderer with proper grid layout support using shared utilities
+// Ensures consistent rendering between editor and preview using shared grid calculation logic
 
 import React from 'react';
 import { ReviewBlock } from '@/types/review';
@@ -14,6 +14,7 @@ import { NumberCard } from './blocks/NumberCard';
 import { ReviewerQuote } from './blocks/ReviewerQuote';
 import { PollBlock } from './blocks/PollBlock';
 import { CitationListBlock } from './blocks/CitationListBlock';
+import { generateGridContainerStyles } from '@/utils/gridLayoutUtils';
 import { cn } from '@/lib/utils';
 
 interface BlockRendererProps {
@@ -55,20 +56,24 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
       return null; // Other blocks in the row will be rendered by the first block
     }
 
-    // Calculate grid template columns based on stored widths or equal distribution
-    const gridTemplateColumns = layout.columnWidths 
-      ? layout.columnWidths.map(width => `${width}%`).join(' ')
-      : `repeat(${layout.columns}, 1fr)`;
+    console.log('Rendering grid container:', { 
+      rowId: layout.row_id, 
+      columns: layout.columns, 
+      blocksCount: sortedGridBlocks.length,
+      columnWidths: layout.columnWidths 
+    });
+
+    // Generate consistent grid styles using shared utilities
+    const gridStyles = generateGridContainerStyles(
+      layout.columns,
+      layout.gap || 4,
+      layout.columnWidths
+    );
 
     return (
       <div 
         className={cn("grid-layout-container my-6", className)}
-        style={{
-          display: 'grid',
-          gridTemplateColumns,
-          gap: `${layout.gap || 4 * 0.25}rem`,
-          alignItems: 'start'
-        }}
+        style={gridStyles}
         data-row-id={layout.row_id}
       >
         {sortedGridBlocks.map((gridBlock) => (
