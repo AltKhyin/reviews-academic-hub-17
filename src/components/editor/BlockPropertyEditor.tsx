@@ -1,3 +1,4 @@
+
 // ABOUTME: Property editor for individual blocks in native review editor
 // Provides form controls for editing block-specific properties
 
@@ -41,58 +42,58 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
     return (
       <div className="space-y-4">
         <div>
-          <Label htmlFor="population" className="text-gray-300">População</Label>
+          <Label htmlFor="population" className="text-[hsl(var(--foreground))]">População</Label>
           <Input
             id="population"
             value={payload.population || ''}
             onChange={(e) => updatePayload({ population: e.target.value })}
             placeholder="Ex: Adultos com diabetes tipo 2..."
-            className="bg-gray-800 border-gray-600 text-gray-200"
+            className="bg-[hsl(var(--editor-card-bg))] border-[hsl(var(--editor-border))] text-[hsl(var(--foreground))]"
           />
         </div>
         <div>
-          <Label htmlFor="intervention" className="text-gray-300">Intervenção</Label>
+          <Label htmlFor="intervention" className="text-[hsl(var(--foreground))]">Intervenção</Label>
           <Input
             id="intervention"
             value={payload.intervention || ''}
             onChange={(e) => updatePayload({ intervention: e.target.value })}
             placeholder="Ex: Metformina 1000mg..."
-            className="bg-gray-800 border-gray-600 text-gray-200"
+            className="bg-[hsl(var(--editor-card-bg))] border-[hsl(var(--editor-border))] text-[hsl(var(--foreground))]"
           />
         </div>
         <div>
-          <Label htmlFor="comparison" className="text-gray-300">Comparação</Label>
+          <Label htmlFor="comparison" className="text-[hsl(var(--foreground))]">Comparação</Label>
           <Input
             id="comparison"
             value={payload.comparison || ''}
             onChange={(e) => updatePayload({ comparison: e.target.value })}
             placeholder="Ex: Placebo ou controle..."
-            className="bg-gray-800 border-gray-600 text-gray-200"
+            className="bg-[hsl(var(--editor-card-bg))] border-[hsl(var(--editor-border))] text-[hsl(var(--foreground))]"
           />
         </div>
         <div>
-          <Label htmlFor="outcome" className="text-gray-300">Desfecho</Label>
+          <Label htmlFor="outcome" className="text-[hsl(var(--foreground))]">Desfecho</Label>
           <Input
             id="outcome"
             value={payload.outcome || ''}
             onChange={(e) => updatePayload({ outcome: e.target.value })}
             placeholder="Ex: Redução da HbA1c..."
-            className="bg-gray-800 border-gray-600 text-gray-200"
+            className="bg-[hsl(var(--editor-card-bg))] border-[hsl(var(--editor-border))] text-[hsl(var(--foreground))]"
           />
         </div>
         <div>
-          <Label htmlFor="design" className="text-gray-300">Desenho do Estudo</Label>
+          <Label htmlFor="design" className="text-[hsl(var(--foreground))]">Desenho do Estudo</Label>
           <Input
             id="design"
             value={payload.design || ''}
             onChange={(e) => updatePayload({ design: e.target.value })}
             placeholder="Ex: RCT duplo-cego..."
-            className="bg-gray-800 border-gray-600 text-gray-200"
+            className="bg-[hsl(var(--editor-card-bg))] border-[hsl(var(--editor-border))] text-[hsl(var(--foreground))]"
           />
         </div>
         
         <div>
-          <Label className="text-gray-300">Achados Principais</Label>
+          <Label className="text-[hsl(var(--foreground))]">Achados Principais</Label>
           <div className="space-y-2">
             {(payload.key_findings || []).map((finding, index) => (
               <div key={index} className="flex gap-2">
@@ -103,7 +104,7 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
                     newFindings[index] = e.target.value;
                     updatePayload({ key_findings: newFindings });
                   }}
-                  className="bg-gray-800 border-gray-600 text-gray-200"
+                  className="bg-[hsl(var(--editor-card-bg))] border-[hsl(var(--editor-border))] text-[hsl(var(--foreground))]"
                 />
                 <Button
                   size="sm"
@@ -112,7 +113,7 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
                     const newFindings = (payload.key_findings || []).filter((_, i) => i !== index);
                     updatePayload({ key_findings: newFindings });
                   }}
-                  className="bg-gray-800 border-gray-600 text-gray-200 hover:bg-gray-700"
+                  className="bg-[hsl(var(--editor-card-bg))] border-[hsl(var(--editor-border))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--editor-hover))]"
                 >
                   <X className="w-4 h-4" />
                 </Button>
@@ -125,7 +126,7 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
                 const newFindings = [...(payload.key_findings || []), ''];
                 updatePayload({ key_findings: newFindings });
               }}
-              className="bg-gray-800 border-gray-600 text-gray-200 hover:bg-gray-700"
+              className="bg-[hsl(var(--editor-card-bg))] border-[hsl(var(--editor-border))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--editor-hover))]"
             >
               <Plus className="w-4 h-4 mr-2" />
               Adicionar Achado
@@ -134,15 +135,15 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
         </div>
         
         <div>
-          <Label htmlFor="evidence-level" className="text-gray-300">Nível de Evidência</Label>
+          <Label htmlFor="evidence-level" className="text-[hsl(var(--foreground))]">Nível de Evidência</Label>
           <Select
             value={payload.evidence_level || 'moderate'}
             onValueChange={(value) => updatePayload({ evidence_level: value })}
           >
-            <SelectTrigger className="bg-gray-800 border-gray-600 text-gray-200">
+            <SelectTrigger className="bg-[hsl(var(--editor-card-bg))] border-[hsl(var(--editor-border))] text-[hsl(var(--foreground))]">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-gray-800 border-gray-600">
+            <SelectContent className="bg-[hsl(var(--editor-card-bg))] border-[hsl(var(--editor-border))]">
               <SelectItem value="high">Alto</SelectItem>
               <SelectItem value="moderate">Moderado</SelectItem>
               <SelectItem value="low">Baixo</SelectItem>
@@ -152,15 +153,15 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
         </div>
         
         <div>
-          <Label htmlFor="recommendation" className="text-gray-300">Força da Recomendação</Label>
+          <Label htmlFor="recommendation" className="text-[hsl(var(--foreground))]">Força da Recomendação</Label>
           <Select
             value={payload.recommendation_strength || 'conditional'}
             onValueChange={(value) => updatePayload({ recommendation_strength: value })}
           >
-            <SelectTrigger className="bg-gray-800 border-gray-600 text-gray-200">
+            <SelectTrigger className="bg-[hsl(var(--editor-card-bg))] border-[hsl(var(--editor-border))] text-[hsl(var(--foreground))]">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-gray-800 border-gray-600">
+            <SelectContent className="bg-[hsl(var(--editor-card-bg))] border-[hsl(var(--editor-border))]">
               <SelectItem value="strong">Forte</SelectItem>
               <SelectItem value="conditional">Condicional</SelectItem>
               <SelectItem value="expert_opinion">Opinião de Especialista</SelectItem>
@@ -176,25 +177,25 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
     return (
       <div className="space-y-4">
         <div>
-          <Label htmlFor="text" className="text-gray-300">Texto do Título</Label>
+          <Label htmlFor="text" className="text-[hsl(var(--foreground))]">Texto do Título</Label>
           <Input
             id="text"
             value={payload.text || ''}
             onChange={(e) => updatePayload({ text: e.target.value })}
             placeholder="Digite o título..."
-            className="bg-gray-800 border-gray-600 text-gray-200"
+            className="bg-[hsl(var(--editor-card-bg))] border-[hsl(var(--editor-border))] text-[hsl(var(--foreground))]"
           />
         </div>
         <div>
-          <Label htmlFor="level" className="text-gray-300">Nível do Título</Label>
+          <Label htmlFor="level" className="text-[hsl(var(--foreground))]">Nível do Título</Label>
           <Select
             value={payload.level?.toString() || '2'}
             onValueChange={(value) => updatePayload({ level: parseInt(value) })}
           >
-            <SelectTrigger className="bg-gray-800 border-gray-600 text-gray-200">
+            <SelectTrigger className="bg-[hsl(var(--editor-card-bg))] border-[hsl(var(--editor-border))] text-[hsl(var(--foreground))]">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-gray-800 border-gray-600">
+            <SelectContent className="bg-[hsl(var(--editor-card-bg))] border-[hsl(var(--editor-border))]">
               <SelectItem value="1">H1 - Título Principal</SelectItem>
               <SelectItem value="2">H2 - Seção</SelectItem>
               <SelectItem value="3">H3 - Subseção</SelectItem>
@@ -205,13 +206,13 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
           </Select>
         </div>
         <div>
-          <Label htmlFor="anchor" className="text-gray-300">ID da Âncora</Label>
+          <Label htmlFor="anchor" className="text-[hsl(var(--foreground))]">ID da Âncora</Label>
           <Input
             id="anchor"
             value={payload.anchor_id || ''}
             onChange={(e) => updatePayload({ anchor_id: e.target.value })}
             placeholder="ex: introducao (será usado na URL)"
-            className="bg-gray-800 border-gray-600 text-gray-200"
+            className="bg-[hsl(var(--editor-card-bg))] border-[hsl(var(--editor-border))] text-[hsl(var(--foreground))]"
           />
         </div>
       </div>
@@ -223,18 +224,18 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
     return (
       <div className="space-y-4">
         <div>
-          <Label htmlFor="content" className="text-gray-300">Conteúdo</Label>
+          <Label htmlFor="content" className="text-[hsl(var(--foreground))]">Conteúdo</Label>
           <Textarea
             id="content"
             value={payload.content || ''}
             onChange={(e) => updatePayload({ content: e.target.value })}
             placeholder="Digite o conteúdo do parágrafo..."
             rows={6}
-            className="bg-gray-800 border-gray-600 text-gray-200"
+            className="bg-[hsl(var(--editor-card-bg))] border-[hsl(var(--editor-border))] text-[hsl(var(--foreground))]"
           />
         </div>
         <div>
-          <Label className="text-gray-300">Citações</Label>
+          <Label className="text-[hsl(var(--foreground))]">Citações</Label>
           <div className="space-y-2">
             {(payload.citations || []).map((citation, index) => (
               <div key={index} className="flex gap-2">
@@ -246,7 +247,7 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
                     updatePayload({ citations: newCitations });
                   }}
                   placeholder="ID da referência"
-                  className="bg-gray-800 border-gray-600 text-gray-200"
+                  className="bg-[hsl(var(--editor-card-bg))] border-[hsl(var(--editor-border))] text-[hsl(var(--foreground))]"
                 />
                 <Button
                   size="sm"
@@ -255,7 +256,7 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
                     const newCitations = (payload.citations || []).filter((_, i) => i !== index);
                     updatePayload({ citations: newCitations });
                   }}
-                  className="bg-gray-800 border-gray-600 text-gray-200 hover:bg-gray-700"
+                  className="bg-[hsl(var(--editor-card-bg))] border-[hsl(var(--editor-border))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--editor-hover))]"
                 >
                   <X className="w-4 h-4" />
                 </Button>
@@ -268,7 +269,7 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
                 const newCitations = [...(payload.citations || []), ''];
                 updatePayload({ citations: newCitations });
               }}
-              className="bg-gray-800 border-gray-600 text-gray-200 hover:bg-gray-700"
+              className="bg-[hsl(var(--editor-card-bg))] border-[hsl(var(--editor-border))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--editor-hover))]"
             >
               <Plus className="w-4 h-4 mr-2" />
               Adicionar Citação
@@ -284,18 +285,18 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
     return (
       <div className="space-y-4">
         <div>
-          <Label htmlFor="caption" className="text-gray-300">Legenda da Tabela</Label>
+          <Label htmlFor="caption" className="text-[hsl(var(--foreground))]">Legenda da Tabela</Label>
           <Input
             id="caption"
             value={payload.caption || ''}
             onChange={(e) => updatePayload({ caption: e.target.value })}
             placeholder="Tabela 1: Descrição da tabela..."
-            className="bg-gray-800 border-gray-600 text-gray-200"
+            className="bg-[hsl(var(--editor-card-bg))] border-[hsl(var(--editor-border))] text-[hsl(var(--foreground))]"
           />
         </div>
         
         <div>
-          <Label className="text-gray-300">Cabeçalhos</Label>
+          <Label className="text-[hsl(var(--foreground))]">Cabeçalhos</Label>
           <div className="space-y-2">
             {(payload.headers || []).map((header, index) => (
               <div key={index} className="flex gap-2">
@@ -306,7 +307,7 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
                     newHeaders[index] = e.target.value;
                     updatePayload({ headers: newHeaders });
                   }}
-                  className="bg-gray-800 border-gray-600 text-gray-200"
+                  className="bg-[hsl(var(--editor-card-bg))] border-[hsl(var(--editor-border))] text-[hsl(var(--foreground))]"
                 />
                 <Button
                   size="sm"
@@ -316,7 +317,7 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
                     const newRows = (payload.rows || []).map(row => row.filter((_, i) => i !== index));
                     updatePayload({ headers: newHeaders, rows: newRows });
                   }}
-                  className="bg-gray-800 border-gray-600 text-gray-200 hover:bg-gray-700"
+                  className="bg-[hsl(var(--editor-card-bg))] border-[hsl(var(--editor-border))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--editor-hover))]"
                 >
                   <X className="w-4 h-4" />
                 </Button>
@@ -330,7 +331,7 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
                 const newRows = (payload.rows || []).map(row => [...row, '']);
                 updatePayload({ headers: newHeaders, rows: newRows });
               }}
-              className="bg-gray-800 border-gray-600 text-gray-200 hover:bg-gray-700"
+              className="bg-[hsl(var(--editor-card-bg))] border-[hsl(var(--editor-border))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--editor-hover))]"
             >
               <Plus className="w-4 h-4 mr-2" />
               Adicionar Coluna
@@ -344,7 +345,7 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
             checked={payload.sortable || false}
             onCheckedChange={(checked) => updatePayload({ sortable: checked })}
           />
-          <Label htmlFor="sortable" className="text-gray-300">Permitir ordenação</Label>
+          <Label htmlFor="sortable" className="text-[hsl(var(--foreground))]">Permitir ordenação</Label>
         </div>
       </div>
     );
@@ -353,11 +354,11 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
   const renderGenericEditor = () => {
     return (
       <div className="space-y-4">
-        <div className="text-sm text-gray-400">
+        <div className="text-sm text-[hsl(var(--muted-foreground))]">
           Editor específico para este tipo de bloco será implementado em breve.
         </div>
         <div>
-          <Label htmlFor="visible" className="text-gray-300">Visível</Label>
+          <Label htmlFor="visible" className="text-[hsl(var(--foreground))]">Visível</Label>
           <Switch
             id="visible"
             checked={block.visible}
@@ -384,11 +385,11 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
   };
 
   return (
-    <Card className="bg-gray-800 border-gray-700">
+    <Card className="bg-[hsl(var(--editor-card-bg))] border-[hsl(var(--editor-border))]">
       <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-medium text-white flex items-center justify-between">
+        <CardTitle className="text-sm font-medium text-[hsl(var(--foreground))] flex items-center justify-between">
           Propriedades do Bloco
-          <Badge variant="outline" className="ml-2 bg-gray-700 border-gray-600 text-gray-200">
+          <Badge variant="outline" className="ml-2 bg-[hsl(var(--editor-card-bg))] border-[hsl(var(--editor-border))] text-[hsl(var(--foreground))]">
             {block.type.replace('_', ' ')}
           </Badge>
         </CardTitle>
@@ -397,14 +398,14 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
         {getEditorContent()}
         
         {/* Block Visibility */}
-        <div className="pt-4 border-t border-gray-600">
+        <div className="pt-4 border-t border-[hsl(var(--editor-border))]">
           <div className="flex items-center space-x-2">
             <Switch
               id="block-visible"
               checked={block.visible}
               onCheckedChange={(checked) => onUpdate({ visible: checked })}
             />
-            <Label htmlFor="block-visible" className="text-sm text-gray-300">
+            <Label htmlFor="block-visible" className="text-sm text-[hsl(var(--foreground))]">
               Bloco visível
             </Label>
           </div>

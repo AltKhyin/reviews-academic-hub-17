@@ -1,4 +1,3 @@
-
 @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
 
 @tailwind base;
@@ -51,11 +50,24 @@
     --scrollbar-thumb: 0 0% 80%;
     --scrollbar-thumb-hover: 0 0% 70%;
     
-    /* Editor specific colors */
+    /* Editor specific colors - Light theme */
     --editor-bg: 0 0% 100%;
     --editor-sidebar-bg: 0 0% 98%;
     --editor-border: 0 0% 89%;
     --editor-hover: 0 0% 96%;
+    --editor-card-bg: 0 0% 100%;
+    --editor-card-hover: 0 0% 96%;
+    --editor-properties-bg: 0 0% 98%;
+    --editor-block-selected: 0 0% 93%;
+    --editor-block-hover: 0 0% 96%;
+    
+    /* Design tokens for consistent colors */
+    --accent-primary: 0 0% 20%;
+    --accent-secondary: 0 0% 40%;
+    --accent-tertiary: 0 0% 60%;
+    --success: 142 76% 36%;
+    --warning: 38 92% 50%;
+    --info: 0 0% 40%;
   }
 
   .dark {
@@ -101,7 +113,7 @@
     --scrollbar-thumb: 0 0% 25%;
     --scrollbar-thumb-hover: 0 0% 35%;
     
-    /* Editor specific colors for dark mode - Grey variations instead of blue */
+    /* Editor specific colors for dark mode - Consistent grey palette */
     --editor-bg: 0 0% 7%;
     --editor-sidebar-bg: 0 0% 10%;
     --editor-border: 0 0% 15%;
@@ -111,6 +123,14 @@
     --editor-properties-bg: 0 0% 8%;
     --editor-block-selected: 0 0% 18%;
     --editor-block-hover: 0 0% 14%;
+    
+    /* Design tokens for consistent colors - Dark theme */
+    --accent-primary: 0 0% 80%;
+    --accent-secondary: 0 0% 60%;
+    --accent-tertiary: 0 0% 40%;
+    --success: 142 76% 36%;
+    --warning: 38 92% 50%;
+    --info: 0 0% 60%;
   }
   
   html, body, #root {
@@ -232,25 +252,25 @@
     opacity: 1;
   }
   
-  /* Native Editor Dark Mode Styles - Corrected Colors */
+  /* Native Editor Design System Classes */
   .native-editor {
     @apply bg-[hsl(var(--editor-bg))];
   }
   
-  .native-editor .block-palette {
+  .block-palette {
     @apply bg-[hsl(var(--editor-sidebar-bg))] border-[hsl(var(--editor-border))];
   }
   
-  .native-editor .block-editor {
+  .block-editor {
     @apply bg-[hsl(var(--editor-bg))] border-[hsl(var(--editor-border))];
   }
   
-  .native-editor .block-palette .block-type-button {
-    @apply bg-[hsl(var(--editor-card-bg))] border-[hsl(var(--editor-border))] text-gray-200;
+  .block-palette .block-type-button {
+    @apply bg-[hsl(var(--editor-card-bg))] border-[hsl(var(--editor-border))] text-[hsl(var(--foreground))];
   }
   
-  .native-editor .block-palette .block-type-button:hover {
-    @apply bg-[hsl(var(--editor-card-hover))] border-gray-600;
+  .block-palette .block-type-button:hover {
+    @apply bg-[hsl(var(--editor-card-hover))] border-[hsl(var(--accent-secondary))];
   }
   
   /* Block Editor specific styles */
@@ -259,11 +279,11 @@
   }
   
   .block-editor-card:hover {
-    @apply bg-[hsl(var(--editor-block-hover))] border-gray-600;
+    @apply bg-[hsl(var(--editor-block-hover))] border-[hsl(var(--accent-secondary))];
   }
   
   .block-editor-card.active {
-    @apply bg-[hsl(var(--editor-block-selected))] border-blue-500;
+    @apply bg-[hsl(var(--editor-block-selected))] border-[hsl(var(--accent-primary))];
   }
   
   /* Properties panel */
@@ -271,31 +291,17 @@
     @apply bg-[hsl(var(--editor-properties-bg))] border-[hsl(var(--editor-border))];
   }
   
-  /* Block-specific dark mode styles */
-  .snapshot-card.dark {
-    background: linear-gradient(135deg, rgba(30, 58, 138, 0.1) 0%, rgba(67, 56, 202, 0.1) 100%);
+  /* Status indicators using design tokens */
+  .status-success {
+    @apply text-[hsl(var(--success))] bg-[hsl(var(--success))]/10 border-[hsl(var(--success))]/20;
   }
   
-  .reviewer-quote.dark {
-    background: linear-gradient(135deg, rgba(88, 28, 135, 0.1) 0%, rgba(67, 56, 202, 0.1) 100%);
+  .status-warning {
+    @apply text-[hsl(var(--warning))] bg-[hsl(var(--warning))]/10 border-[hsl(var(--warning))]/20;
   }
   
-  .number-card.dark {
-    background: linear-gradient(135deg, rgba(67, 56, 202, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
-  }
-  
-  /* Citation links dark mode */
-  .citation-link.dark {
-    @apply text-blue-400 hover:text-blue-300;
-  }
-  
-  /* Table hover effects dark mode */
-  .table-block table tbody tr:hover.dark {
-    @apply bg-gray-800;
-  }
-  
-  .table-block table thead th:hover.dark {
-    @apply bg-gray-700;
+  .status-info {
+    @apply text-[hsl(var(--info))] bg-[hsl(var(--info))]/10 border-[hsl(var(--info))]/20;
   }
 }
 
@@ -304,7 +310,7 @@
     text-wrap: balance;
   }
   
-  /* Editor utilities - Corrected for dark theme */
+  /* Editor utilities using design tokens */
   .editor-layout {
     @apply h-full flex flex-col bg-[hsl(var(--editor-bg))];
   }

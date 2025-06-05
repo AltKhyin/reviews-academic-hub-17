@@ -22,14 +22,14 @@ export const ReviewPreview: React.FC<ReviewPreviewProps> = ({
 
   if (visibleBlocks.length === 0) {
     return (
-      <div className={cn("review-preview bg-gray-900", className)}>
-        <Card className="m-6 border-dashed border-gray-600 bg-gray-800">
+      <div className={cn("review-preview", className)}>
+        <Card className="m-6 border-dashed border-[hsl(var(--editor-border))] bg-[hsl(var(--editor-card-bg))]">
           <CardContent className="p-12 text-center">
-            <FileText className="w-16 h-16 text-gray-500 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-white mb-2">
+            <FileText className="w-16 h-16 text-[hsl(var(--muted-foreground))] mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-[hsl(var(--foreground))] mb-2">
               Nenhum conteúdo para visualizar
             </h3>
-            <p className="text-gray-400">
+            <p className="text-[hsl(var(--muted-foreground))]">
               Adicione blocos ao editor para ver uma prévia do conteúdo aqui.
             </p>
           </CardContent>
@@ -39,15 +39,15 @@ export const ReviewPreview: React.FC<ReviewPreviewProps> = ({
   }
 
   return (
-    <div className={cn("review-preview bg-gray-900 overflow-y-auto", className)}>
+    <div className={cn("review-preview overflow-y-auto", className)}>
       {/* Preview Header */}
-      <div className="sticky top-0 bg-gray-900 border-b border-gray-700 px-6 py-4 z-10">
+      <div className="sticky top-0 bg-[hsl(var(--editor-bg))] border-b border-[hsl(var(--editor-border))] px-6 py-4 z-10">
         <div className="flex items-center gap-2">
-          <Eye className="w-5 h-5 text-blue-400" />
-          <h3 className="text-lg font-semibold text-white">
+          <Eye className="w-5 h-5 text-[hsl(var(--accent-primary))]" />
+          <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">
             Visualização
           </h3>
-          <span className="text-sm text-gray-400">
+          <span className="text-sm text-[hsl(var(--muted-foreground))]">
             ({visibleBlocks.length} {visibleBlocks.length === 1 ? 'bloco' : 'blocos'})
           </span>
         </div>
@@ -72,8 +72,8 @@ export const ReviewPreview: React.FC<ReviewPreviewProps> = ({
       </div>
 
       {/* Preview Footer */}
-      <div className="border-t border-gray-700 px-6 py-4 bg-gray-800">
-        <div className="text-center text-sm text-gray-400">
+      <div className="border-t border-[hsl(var(--editor-border))] px-6 py-4 bg-[hsl(var(--editor-card-bg))]">
+        <div className="text-center text-sm text-[hsl(var(--muted-foreground))]">
           <p>Fim da visualização • {visibleBlocks.length} blocos renderizados</p>
         </div>
       </div>

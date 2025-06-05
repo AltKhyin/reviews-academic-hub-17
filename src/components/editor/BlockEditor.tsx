@@ -62,23 +62,23 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
   const activeBlock = blocks.find(block => block.id === activeBlockId);
 
   return (
-    <div className={cn("block-editor flex h-full bg-gray-900", compact && "text-sm")}>
+    <div className={cn("block-editor flex h-full", compact && "text-sm")}>
       {/* Block List */}
-      <div className={cn("overflow-y-auto border-r border-gray-700 bg-gray-900", compact ? "flex-1" : "flex-1")}>
+      <div className={cn("overflow-y-auto border-r border-[hsl(var(--editor-border))]", compact ? "flex-1" : "flex-1")}>
         <div className="p-4 space-y-2">
           {blocks.length === 0 && (
             <div className="text-center py-12">
-              <div className="text-gray-500 mb-4">
+              <div className="text-[hsl(var(--muted-foreground))] mb-4">
                 <Plus className="w-12 h-12 mx-auto" />
               </div>
-              <p className="text-gray-400 mb-4">
+              <p className="text-[hsl(var(--muted-foreground))] mb-4">
                 Nenhum bloco adicionado ainda
               </p>
               <Button 
                 variant="outline" 
                 onClick={() => onAddBlock('paragraph')}
                 size={compact ? "sm" : "default"}
-                className="bg-gray-800 border-gray-600 text-gray-200 hover:bg-gray-700"
+                className="bg-[hsl(var(--editor-card-bg))] border-[hsl(var(--editor-border))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--editor-hover))]"
               >
                 Adicionar Primeiro Bloco
               </Button>
@@ -92,7 +92,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-6 w-6 p-0 bg-gray-800 border-gray-600 hover:bg-gray-700 text-gray-200"
+                  className="h-6 w-6 p-0 bg-[hsl(var(--editor-card-bg))] border-[hsl(var(--editor-border))] hover:bg-[hsl(var(--editor-hover))] text-[hsl(var(--foreground))]"
                   onClick={() => onAddBlock('paragraph', index)}
                 >
                   <Plus className="w-3 h-3" />
@@ -101,10 +101,10 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
 
               <Card 
                 className={cn(
-                  "cursor-pointer transition-all duration-200 hover:shadow-md bg-gray-800 border-gray-700",
+                  "cursor-pointer transition-all duration-200 hover:shadow-md block-editor-card",
                   activeBlockId === block.id 
-                    ? "ring-2 ring-blue-500 border-blue-400 bg-gray-750" 
-                    : "hover:border-gray-600 hover:bg-gray-750"
+                    ? "active" 
+                    : ""
                 )}
                 onClick={() => onActiveBlockChange(block.id)}
               >
@@ -112,11 +112,11 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                   {/* Block Header */}
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <GripVertical className="w-4 h-4 text-gray-500" />
-                      <Badge variant="outline" className={cn("text-xs bg-gray-700 border-gray-600 text-gray-200", compact && "text-xs")}>
+                      <GripVertical className="w-4 h-4 text-[hsl(var(--muted-foreground))]" />
+                      <Badge variant="outline" className={cn("text-xs bg-[hsl(var(--editor-card-bg))] text-[hsl(var(--foreground))] border-[hsl(var(--editor-border))]", compact && "text-xs")}>
                         {getBlockTypeLabel(block.type)}
                       </Badge>
-                      <span className="text-xs text-gray-500">#{index + 1}</span>
+                      <span className="text-xs text-[hsl(var(--muted-foreground))]">#{index + 1}</span>
                     </div>
                     
                     <div className="flex items-center gap-1">
@@ -124,7 +124,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-6 w-6 p-0 text-gray-400 hover:text-gray-200 hover:bg-gray-700"
+                        className="h-6 w-6 p-0 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--editor-hover))]"
                         onClick={(e) => {
                           e.stopPropagation();
                           onMoveBlock(block.id, 'up');
@@ -136,7 +136,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-6 w-6 p-0 text-gray-400 hover:text-gray-200 hover:bg-gray-700"
+                        className="h-6 w-6 p-0 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--editor-hover))]"
                         onClick={(e) => {
                           e.stopPropagation();
                           onMoveBlock(block.id, 'down');
@@ -150,7 +150,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-6 w-6 p-0 text-red-400 hover:text-red-300 hover:bg-red-950/30"
+                        className="h-6 w-6 p-0 text-[hsl(var(--destructive))] hover:text-[hsl(var(--destructive-foreground))] hover:bg-[hsl(var(--destructive))]/10"
                         onClick={(e) => {
                           e.stopPropagation();
                           onDeleteBlock(block.id);
@@ -178,7 +178,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-6 w-6 p-0 bg-gray-800 border-gray-600 hover:bg-gray-700 text-gray-200"
+                    className="h-6 w-6 p-0 bg-[hsl(var(--editor-card-bg))] border-[hsl(var(--editor-border))] hover:bg-[hsl(var(--editor-hover))] text-[hsl(var(--foreground))]"
                     onClick={() => onAddBlock('paragraph', index + 1)}
                   >
                     <Plus className="w-3 h-3" />
@@ -192,15 +192,15 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
 
       {/* Properties Panel */}
       {!compact && showProperties && activeBlock && (
-        <div className="w-80 border-r border-gray-700 bg-gray-850 overflow-y-auto">
+        <div className="w-80 border-r border-[hsl(var(--editor-border))] properties-panel overflow-y-auto">
           <div className="p-4">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-white">Propriedades</h3>
+              <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">Propriedades</h3>
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={() => setShowProperties(false)}
-                className="text-gray-400 hover:text-gray-200 hover:bg-gray-700"
+                className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--editor-hover))]"
               >
                 <Settings className="w-4 h-4" />
               </Button>
@@ -216,12 +216,12 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
 
       {/* Show Properties Button */}
       {!compact && !showProperties && (
-        <div className="w-12 border-r border-gray-700 bg-gray-850 flex items-start justify-center pt-4">
+        <div className="w-12 border-r border-[hsl(var(--editor-border))] properties-panel flex items-start justify-center pt-4">
           <Button
             size="sm"
             variant="ghost"
             onClick={() => setShowProperties(true)}
-            className="text-gray-400 hover:text-gray-200 hover:bg-gray-700"
+            className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--editor-hover))]"
           >
             <Settings className="w-4 h-4" />
           </Button>

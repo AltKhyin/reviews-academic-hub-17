@@ -35,28 +35,28 @@ export const BlockPalette: React.FC<BlockPaletteProps> = ({ onAddBlock }) => {
           title: 'Cartão de Evidência',
           description: 'Resumo executivo com framework PICOD',
           icon: FlaskConical,
-          color: 'text-blue-400'
+          color: 'text-[hsl(var(--accent-primary))]'
         },
         {
           type: 'heading' as BlockType,
           title: 'Título',
           description: 'Cabeçalho de seção com âncora',
           icon: Heading,
-          color: 'text-gray-400'
+          color: 'text-[hsl(var(--accent-secondary))]'
         },
         {
           type: 'paragraph' as BlockType,
           title: 'Parágrafo',
           description: 'Texto rico com citações',
           icon: Type,
-          color: 'text-gray-400'
+          color: 'text-[hsl(var(--accent-secondary))]'
         },
         {
           type: 'divider' as BlockType,
           title: 'Divisor',
           description: 'Separação visual entre seções',
           icon: Minus,
-          color: 'text-gray-500'
+          color: 'text-[hsl(var(--accent-tertiary))]'
         }
       ]
     },
@@ -68,21 +68,21 @@ export const BlockPalette: React.FC<BlockPaletteProps> = ({ onAddBlock }) => {
           title: 'Figura',
           description: 'Imagem com legenda e lightbox',
           icon: Image,
-          color: 'text-green-400'
+          color: 'text-[hsl(var(--success))]'
         },
         {
           type: 'table' as BlockType,
           title: 'Tabela',
           description: 'Dados estruturados com ordenação',
           icon: Table,
-          color: 'text-purple-400'
+          color: 'text-[hsl(var(--accent-primary))]'
         },
         {
           type: 'number_card' as BlockType,
           title: 'Cartão Numérico',
           description: 'Destaque de estatísticas importantes',
           icon: BarChart3,
-          color: 'text-indigo-400'
+          color: 'text-[hsl(var(--info))]'
         }
       ]
     },
@@ -94,21 +94,21 @@ export const BlockPalette: React.FC<BlockPaletteProps> = ({ onAddBlock }) => {
           title: 'Destaque',
           description: 'Caixa de alerta ou informação',
           icon: AlertCircle,
-          color: 'text-yellow-400'
+          color: 'text-[hsl(var(--warning))]'
         },
         {
           type: 'reviewer_quote' as BlockType,
           title: 'Citação de Revisor',
           description: 'Comentário de especialista',
           icon: Quote,
-          color: 'text-purple-400'
+          color: 'text-[hsl(var(--accent-primary))]'
         },
         {
           type: 'poll' as BlockType,
           title: 'Enquete',
           description: 'Votação interativa para leitores',
           icon: Target,
-          color: 'text-red-400'
+          color: 'text-[hsl(var(--accent-secondary))]'
         }
       ]
     },
@@ -120,27 +120,27 @@ export const BlockPalette: React.FC<BlockPaletteProps> = ({ onAddBlock }) => {
           title: 'Lista de Citações',
           description: 'Bibliografia formatada automaticamente',
           icon: FileText,
-          color: 'text-gray-400'
+          color: 'text-[hsl(var(--accent-secondary))]'
         }
       ]
     }
   ];
 
   return (
-    <div className="block-palette p-4 space-y-6 bg-gray-900 h-full overflow-y-auto">
+    <div className="block-palette p-4 space-y-6 h-full overflow-y-auto">
       <div>
         <div className="flex items-center gap-2 mb-2">
-          <Sparkles className="w-5 h-5 text-blue-400" />
-          <h3 className="text-lg font-semibold text-white">Blocos Disponíveis</h3>
+          <Sparkles className="w-5 h-5 text-[hsl(var(--accent-primary))]" />
+          <h3 className="text-lg font-semibold text-[hsl(var(--foreground))]">Blocos Disponíveis</h3>
         </div>
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-[hsl(var(--muted-foreground))]">
           Clique em um bloco para adicioná-lo ao final do documento
         </p>
       </div>
 
       {blockTypes.map((category, categoryIndex) => (
         <div key={categoryIndex}>
-          <h4 className="text-sm font-medium text-gray-300 mb-3 uppercase tracking-wide">
+          <h4 className="text-sm font-medium text-[hsl(var(--accent-secondary))] mb-3 uppercase tracking-wide">
             {category.category}
           </h4>
           
@@ -151,16 +151,16 @@ export const BlockPalette: React.FC<BlockPaletteProps> = ({ onAddBlock }) => {
                 <Button
                   key={block.type}
                   variant="ghost"
-                  className="w-full justify-start h-auto p-3 bg-gray-800 border border-gray-700 hover:bg-gray-700 hover:border-gray-600 text-left transition-all duration-200"
+                  className="w-full justify-start h-auto p-3 block-type-button transition-all duration-200"
                   onClick={() => onAddBlock(block.type)}
                 >
                   <div className="flex items-start gap-3 w-full">
                     <IconComponent className={`w-5 h-5 mt-0.5 flex-shrink-0 ${block.color}`} />
                     <div className="text-left flex-1">
-                      <div className="font-medium text-white text-sm">
+                      <div className="font-medium text-[hsl(var(--foreground))] text-sm">
                         {block.title}
                       </div>
-                      <div className="text-xs text-gray-400 mt-0.5">
+                      <div className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
                         {block.description}
                       </div>
                     </div>
@@ -171,15 +171,15 @@ export const BlockPalette: React.FC<BlockPaletteProps> = ({ onAddBlock }) => {
           </div>
           
           {categoryIndex < blockTypes.length - 1 && (
-            <Separator className="mt-4 border-gray-700" />
+            <Separator className="mt-4 border-[hsl(var(--editor-border))]" />
           )}
         </div>
       ))}
       
       {/* Status Indicator */}
-      <div className="mt-6 p-3 rounded-lg bg-green-950/30 border border-green-800">
-        <div className="flex items-center gap-2 text-xs text-green-300">
-          <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+      <div className="mt-6 p-3 rounded-lg status-success">
+        <div className="flex items-center gap-2 text-xs">
+          <div className="w-2 h-2 bg-[hsl(var(--success))] rounded-full"></div>
           <span>Todos os componentes implementados</span>
         </div>
       </div>
