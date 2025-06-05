@@ -1,6 +1,5 @@
-
-// ABOUTME: Comprehensive block property editor for all block types
-// Provides detailed configuration options for each block type
+// ABOUTME: Comprehensive block property editor for all block types with integrated color system
+// Provides detailed configuration options including comprehensive color editing
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,8 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ReviewBlock } from '@/types/review';
-import { Settings, Eye, EyeOff } from 'lucide-react';
+import { ColorSystem } from './color/ColorSystem';
+import { Settings, Eye, EyeOff, Palette } from 'lucide-react';
 
 interface BlockPropertyEditorProps {
   block: ReviewBlock;
@@ -485,7 +486,43 @@ export const BlockPropertyEditor: React.FC<BlockPropertyEditorProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {renderProperties()}
+        <Tabs defaultValue="properties" className="w-full">
+          <TabsList 
+            className="grid w-full grid-cols-2 mb-4"
+            style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}
+          >
+            <TabsTrigger 
+              value="properties"
+              style={{ 
+                color: '#ffffff',
+                backgroundColor: 'transparent'
+              }}
+              className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+            >
+              <Settings className="w-4 h-4 mr-1" />
+              Propriedades
+            </TabsTrigger>
+            <TabsTrigger 
+              value="colors"
+              style={{ 
+                color: '#ffffff',
+                backgroundColor: 'transparent'
+              }}
+              className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+            >
+              <Palette className="w-4 h-4 mr-1" />
+              Cores
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="properties" className="space-y-4">
+            {renderProperties()}
+          </TabsContent>
+
+          <TabsContent value="colors" className="space-y-4">
+            <ColorSystem block={block} onUpdate={onUpdate} />
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   );

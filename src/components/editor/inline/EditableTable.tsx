@@ -1,6 +1,6 @@
 
-// ABOUTME: Inline editable table component with spreadsheet-like functionality
-// Provides dynamic row/column management with inline text editing
+// ABOUTME: Enhanced editable table with color system integration and proper layout
+// Provides dynamic row/column management with comprehensive color customization
 
 import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,16 @@ interface EditableTableProps {
   headers: string[];
   rows: string[][];
   caption?: string;
+  colors?: {
+    table_header_bg?: string;
+    table_header_text?: string;
+    table_cell_bg?: string;
+    table_cell_text?: string;
+    table_border?: string;
+    text_color?: string;
+    background_color?: string;
+    border_color?: string;
+  };
   onUpdate: (data: { title: string; headers: string[]; rows: string[][]; caption?: string }) => void;
 }
 
@@ -22,10 +32,23 @@ export const EditableTable: React.FC<EditableTableProps> = ({
   headers,
   rows,
   caption = '',
+  colors = {},
   onUpdate
 }) => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [isEditingCaption, setIsEditingCaption] = useState(false);
+
+  // Apply color system with defaults
+  const tableColors = {
+    headerBg: colors.table_header_bg || '#212121',
+    headerText: colors.table_header_text || '#ffffff',
+    cellBg: colors.table_cell_bg || 'transparent',
+    cellText: colors.table_cell_text || '#d1d5db',
+    border: colors.table_border || '#2a2a2a',
+    text: colors.text_color || '#ffffff',
+    background: colors.background_color || 'transparent',
+    containerBorder: colors.border_color || '#2a2a2a'
+  };
 
   const handleTitleChange = useCallback((newTitle: string) => {
     onUpdate({ title: newTitle, headers, rows, caption });
@@ -76,10 +99,19 @@ export const EditableTable: React.FC<EditableTableProps> = ({
   }, [title, headers, rows, caption, onUpdate]);
 
   return (
-    <div className="editable-table space-y-4" style={{ direction: 'ltr' }}>
+    <div 
+      className="editable-table space-y-4 p-4 rounded-lg" 
+      style={{ 
+        direction: 'ltr',
+        backgroundColor: tableColors.background !== 'transparent' ? tableColors.background : undefined,
+        borderColor: tableColors.containerBorder,
+        borderWidth: tableColors.containerBorder !== 'transparent' ? '1px' : undefined,
+        borderStyle: tableColors.containerBorder !== 'transparent' ? 'solid' : undefined
+      }}
+    >
       {/* Title Editor */}
       <div className="space-y-2">
-        <label className="text-sm font-medium" style={{ color: '#ffffff' }}>
+        <label className="text-sm font-medium" style={{ color: tableColors.text }}>
           Título da Tabela
         </label>
         {isEditingTitle ? (
@@ -92,18 +124,18 @@ export const EditableTable: React.FC<EditableTableProps> = ({
             autoFocus
             style={{ 
               backgroundColor: '#212121',
-              borderColor: '#2a2a2a',
-              color: '#ffffff'
+              borderColor: tableColors.border,
+              color: tableColors.text
             }}
           />
         ) : (
           <div
-            className="p-2 border rounded cursor-pointer hover:bg-gray-800"
+            className="p-2 border rounded cursor-pointer hover:bg-gray-800 transition-colors"
             onClick={() => setIsEditingTitle(true)}
             style={{ 
               backgroundColor: '#212121',
-              borderColor: '#2a2a2a',
-              color: '#ffffff'
+              borderColor: tableColors.border,
+              color: tableColors.text
             }}
           >
             {title || 'Clique para adicionar título'}
@@ -111,101 +143,152 @@ export const EditableTable: React.FC<EditableTableProps> = ({
         )}
       </div>
 
-      {/* Table Editor */}
+      {/* Table Editor - Using CSS Grid for proper layout */}
       <div className="overflow-x-auto">
-        <div className="min-w-full" style={{ display: 'table' }}>
+        <div 
+          className="inline-grid gap-0 border rounded-lg"
+          style={{ 
+            gridTemplateColumns: `40px repeat(${headers.length}, minmax(150px, 1fr)) 40px`,
+            borderColor: tableColors.border
+          }}
+        >
           {/* Headers Row */}
           <div 
-            className="table-row"
-            style={{ backgroundColor: '#212121' }}
+            className="grid-cell p-2 border-r border-b text-center"
+            style={{ 
+              backgroundColor: tableColors.headerBg,
+              borderColor: tableColors.border 
+            }}
           >
-            <div className="table-cell w-8 p-2 border text-center" style={{ borderColor: '#2a2a2a' }}>
-              <GripVertical className="w-4 h-4 mx-auto" style={{ color: '#9ca3af' }} />
-            </div>
-            {headers.map((header, index) => (
-              <div key={index} className="table-cell p-0 border" style={{ borderColor: '#2a2a2a' }}>
-                <div className="flex">
-                  <Input
-                    value={header}
-                    onChange={(e) => handleHeaderChange(index, e.target.value)}
-                    className="border-0 bg-transparent font-semibold"
-                    style={{ color: '#ffffff' }}
-                  />
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => removeColumn(index)}
-                    className="w-8 h-8 p-0 flex-shrink-0"
-                    disabled={headers.length <= 1}
-                  >
-                    <Minus className="w-3 h-3" />
-                  </Button>
-                </div>
-              </div>
-            ))}
-            <div className="table-cell w-8 p-2 border text-center" style={{ borderColor: '#2a2a2a' }}>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={addColumn}
-                className="w-6 h-6 p-0"
-              >
-                <Plus className="w-3 h-3" />
-              </Button>
-            </div>
+            <GripVertical className="w-4 h-4 mx-auto" style={{ color: '#9ca3af' }} />
           </div>
-
-          {/* Data Rows */}
-          {rows.map((row, rowIndex) => (
-            <div key={rowIndex} className="table-row">
-              <div className="table-cell w-8 p-2 border text-center" style={{ borderColor: '#2a2a2a' }}>
+          
+          {headers.map((header, index) => (
+            <div 
+              key={index} 
+              className="grid-cell border-r border-b"
+              style={{ 
+                backgroundColor: tableColors.headerBg,
+                borderColor: tableColors.border 
+              }}
+            >
+              <div className="flex h-full">
+                <Input
+                  value={header}
+                  onChange={(e) => handleHeaderChange(index, e.target.value)}
+                  className="border-0 bg-transparent font-semibold flex-1"
+                  style={{ color: tableColors.headerText }}
+                />
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => removeRow(rowIndex)}
-                  className="w-6 h-6 p-0"
-                  disabled={rows.length <= 1}
+                  onClick={() => removeColumn(index)}
+                  className="w-8 h-8 p-0 flex-shrink-0 hover:bg-red-900"
+                  disabled={headers.length <= 1}
+                  title="Remover coluna"
                 >
                   <Minus className="w-3 h-3" />
                 </Button>
               </div>
+            </div>
+          ))}
+          
+          <div 
+            className="grid-cell p-2 border-b text-center"
+            style={{ 
+              backgroundColor: tableColors.headerBg,
+              borderColor: tableColors.border 
+            }}
+          >
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={addColumn}
+              className="w-6 h-6 p-0 hover:bg-green-900"
+              title="Adicionar coluna"
+            >
+              <Plus className="w-3 h-3" />
+            </Button>
+          </div>
+
+          {/* Data Rows */}
+          {rows.map((row, rowIndex) => (
+            <React.Fragment key={rowIndex}>
+              <div 
+                className="grid-cell p-2 border-r border-b text-center"
+                style={{ borderColor: tableColors.border }}
+              >
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => removeRow(rowIndex)}
+                  className="w-6 h-6 p-0 hover:bg-red-900"
+                  disabled={rows.length <= 1}
+                  title="Remover linha"
+                >
+                  <Minus className="w-3 h-3" />
+                </Button>
+              </div>
+              
               {row.map((cell, colIndex) => (
-                <div key={colIndex} className="table-cell p-0 border" style={{ borderColor: '#2a2a2a' }}>
+                <div 
+                  key={colIndex} 
+                  className="grid-cell border-r border-b"
+                  style={{ 
+                    backgroundColor: tableColors.cellBg !== 'transparent' ? tableColors.cellBg : undefined,
+                    borderColor: tableColors.border 
+                  }}
+                >
                   <Input
                     value={cell}
                     onChange={(e) => handleCellChange(rowIndex, colIndex, e.target.value)}
-                    className="border-0 bg-transparent"
-                    style={{ color: '#d1d5db' }}
+                    className="border-0 bg-transparent w-full h-full"
+                    style={{ color: tableColors.cellText }}
                   />
                 </div>
               ))}
-              <div className="table-cell w-8 p-2 border" style={{ borderColor: '#2a2a2a' }} />
-            </div>
+              
+              <div 
+                className="grid-cell p-2 border-b"
+                style={{ borderColor: tableColors.border }}
+              />
+            </React.Fragment>
           ))}
 
           {/* Add Row */}
-          <div className="table-row">
-            <div className="table-cell w-8 p-2 border text-center" style={{ borderColor: '#2a2a2a' }}>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={addRow}
-                className="w-6 h-6 p-0"
-              >
-                <Plus className="w-3 h-3" />
-              </Button>
-            </div>
-            {headers.map((_, index) => (
-              <div key={index} className="table-cell p-2 border" style={{ borderColor: '#2a2a2a' }} />
-            ))}
-            <div className="table-cell w-8 p-2 border" style={{ borderColor: '#2a2a2a' }} />
+          <div 
+            className="grid-cell p-2 border-r text-center"
+            style={{ borderColor: tableColors.border }}
+          >
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={addRow}
+              className="w-6 h-6 p-0 hover:bg-green-900"
+              title="Adicionar linha"
+            >
+              <Plus className="w-3 h-3" />
+            </Button>
           </div>
+          
+          {headers.map((_, index) => (
+            <div 
+              key={index} 
+              className="grid-cell p-2 border-r" 
+              style={{ borderColor: tableColors.border }}
+            />
+          ))}
+          
+          <div 
+            className="grid-cell p-2"
+            style={{ borderColor: tableColors.border }}
+          />
         </div>
       </div>
 
       {/* Caption Editor */}
       <div className="space-y-2">
-        <label className="text-sm font-medium" style={{ color: '#ffffff' }}>
+        <label className="text-sm font-medium" style={{ color: tableColors.text }}>
           Legenda da Tabela (Opcional)
         </label>
         {isEditingCaption ? (
@@ -218,18 +301,18 @@ export const EditableTable: React.FC<EditableTableProps> = ({
             autoFocus
             style={{ 
               backgroundColor: '#212121',
-              borderColor: '#2a2a2a',
-              color: '#ffffff'
+              borderColor: tableColors.border,
+              color: tableColors.text
             }}
           />
         ) : (
           <div
-            className="p-2 border rounded cursor-pointer hover:bg-gray-800 min-h-[60px]"
+            className="p-2 border rounded cursor-pointer hover:bg-gray-800 min-h-[60px] transition-colors"
             onClick={() => setIsEditingCaption(true)}
             style={{ 
               backgroundColor: '#212121',
-              borderColor: '#2a2a2a',
-              color: '#ffffff'
+              borderColor: tableColors.border,
+              color: tableColors.text
             }}
           >
             {caption || 'Clique para adicionar legenda'}

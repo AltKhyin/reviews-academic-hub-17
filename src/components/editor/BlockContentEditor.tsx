@@ -1,14 +1,12 @@
 
-// ABOUTME: Unified block content editor that combines rendering and editing
-// Provides seamless inline editing experience within the block editor interface
+// ABOUTME: Enhanced block content editor with improved drag handles and visual feedback
+// Provides seamless inline editing with proper six-dot drag handles and up/down controls
 
 import React, { useState, useCallback } from 'react';
 import { ReviewBlock, BlockType } from '@/types/review';
 import { BlockRenderer } from '@/components/review/BlockRenderer';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { 
-  GripVertical, 
   Copy, 
   Trash2, 
   ArrowUp, 
@@ -45,10 +43,9 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
   onAddBlock
 }) => {
   const [isDragging, setIsDragging] = useState(false);
-  const [editMode, setEditMode] = useState(true); // Start in edit mode for better UX
+  const [editMode, setEditMode] = useState(true);
 
   const handleBlockClick = useCallback((e: React.MouseEvent) => {
-    // Don't interfere with inline editing - only select if clicking the wrapper
     if (e.target === e.currentTarget || (e.target as Element).closest('.block-controls')) {
       e.stopPropagation();
       onSelect(block.id);
@@ -73,13 +70,35 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
     setIsDragging(false);
   }, []);
 
+  // Six-dot drag handle component
+  const SixDotHandle = () => (
+    <div
+      className="six-dot-handle w-6 h-6 cursor-grab active:cursor-grabbing flex items-center justify-center rounded hover:bg-gray-700 transition-colors"
+      draggable
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      style={{ backgroundColor: '#2a2a2a' }}
+      title="Arrastar para reordenar"
+    >
+      <div className="grid grid-cols-2 gap-0.5">
+        {[...Array(6)].map((_, i) => (
+          <div 
+            key={i} 
+            className="w-1 h-1 rounded-full" 
+            style={{ backgroundColor: '#9ca3af' }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+
   return (
     <div
       className={cn(
         "block-content-editor group relative",
         "border rounded-lg transition-all duration-200",
-        isActive && "ring-2 ring-blue-500 ring-opacity-50",
-        isDragging && "opacity-50",
+        isActive && "ring-2 ring-blue-500 ring-opacity-50 shadow-lg",
+        isDragging && "opacity-50 transform rotate-1",
         !block.visible && "opacity-60"
       )}
       style={{
@@ -88,82 +107,75 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
       }}
       onClick={handleBlockClick}
     >
-      {/* Enhanced Block Controls Toolbar - Position on Middle Left */}
+      {/* Left-side Controls - Always visible when active or on hover */}
       <div 
         className={cn(
-          "block-controls absolute -left-16 top-1/2 transform -translate-y-1/2 z-10",
-          "flex flex-col gap-1 opacity-0 group-hover:opacity-100",
-          "transition-opacity duration-200",
+          "block-controls absolute -left-20 top-4 z-20",
+          "flex flex-col gap-2",
+          "opacity-0 group-hover:opacity-100 transition-opacity duration-200",
           isActive && "opacity-100"
         )}
       >
-        {/* Six-Dot Drag Handle */}
-        <div
-          className="w-10 h-10 cursor-grab active:cursor-grabbing flex items-center justify-center rounded"
-          draggable
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-          style={{ backgroundColor: '#2a2a2a' }}
-        >
-          <div className="grid grid-cols-2 gap-0.5">
-            {[...Array(6)].map((_, i) => (
-              <div 
-                key={i} 
-                className="w-1 h-1 rounded-full" 
-                style={{ backgroundColor: '#9ca3af' }}
-              />
-            ))}
-          </div>
+        {/* Six-dot drag handle */}
+        <SixDotHandle />
+
+        {/* Up/Down movement buttons */}
+        <div className="flex flex-col gap-1">
+          {!isFirst && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation();
+                onMove(block.id, 'up');
+              }}
+              className="w-6 h-6 p-0 hover:bg-gray-700"
+              style={{ backgroundColor: '#2a2a2a' }}
+              title="Mover para cima"
+            >
+              <ArrowUp className="w-3 h-3" style={{ color: '#9ca3af' }} />
+            </Button>
+          )}
+
+          {!isLast && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation();
+                onMove(block.id, 'down');
+              }}
+              className="w-6 h-6 p-0 hover:bg-gray-700"
+              style={{ backgroundColor: '#2a2a2a' }}
+              title="Mover para baixo"
+            >
+              <ArrowDown className="w-3 h-3" style={{ color: '#9ca3af' }} />
+            </Button>
+          )}
         </div>
-
-        {/* Move Up */}
-        {!isFirst && (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={(e) => {
-              e.stopPropagation();
-              onMove(block.id, 'up');
-            }}
-            className="w-10 h-8 p-0"
-            style={{ backgroundColor: '#2a2a2a' }}
-          >
-            <ArrowUp className="w-3 h-3" style={{ color: '#9ca3af' }} />
-          </Button>
-        )}
-
-        {/* Move Down */}
-        {!isLast && (
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={(e) => {
-              e.stopPropagation();
-              onMove(block.id, 'down');
-            }}
-            className="w-10 h-8 p-0"
-            style={{ backgroundColor: '#2a2a2a' }}
-          >
-            <ArrowDown className="w-3 h-3" style={{ color: '#9ca3af' }} />
-          </Button>
-        )}
       </div>
 
       {/* Top Controls Bar */}
       <div 
         className={cn(
-          "absolute -top-10 left-0 right-0 z-20",
-          "flex items-center justify-between px-2",
+          "absolute -top-12 left-0 right-0 z-20",
+          "flex items-center justify-between px-3 py-2 rounded-t-lg",
           "opacity-0 group-hover:opacity-100 transition-opacity duration-200",
           isActive && "opacity-100"
         )}
+        style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}
       >
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           <div 
-            className="text-xs px-2 py-1 rounded"
+            className="text-xs px-2 py-1 rounded font-medium"
             style={{ backgroundColor: '#3b82f6', color: '#ffffff' }}
           >
             {block.type.replace('_', ' ').toUpperCase()}
+          </div>
+          
+          {/* Block ID for debugging */}
+          <div className="text-xs px-2 py-1 rounded" style={{ backgroundColor: '#374151', color: '#9ca3af' }}>
+            #{block.id}
           </div>
         </div>
 
@@ -176,8 +188,9 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
               e.stopPropagation();
               setEditMode(!editMode);
             }}
-            className="w-8 h-8 p-0"
+            className="w-8 h-8 p-0 hover:bg-gray-700"
             style={{ backgroundColor: '#2a2a2a' }}
+            title={editMode ? "Visualizar" : "Editar"}
           >
             {editMode ? (
               <Eye className="w-3 h-3" style={{ color: '#10b981' }} />
@@ -194,8 +207,9 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
               e.stopPropagation();
               handleToggleVisibility();
             }}
-            className="w-8 h-8 p-0"
+            className="w-8 h-8 p-0 hover:bg-gray-700"
             style={{ backgroundColor: '#2a2a2a' }}
+            title={block.visible ? "Ocultar bloco" : "Mostrar bloco"}
           >
             {block.visible ? (
               <Eye className="w-3 h-3" style={{ color: '#9ca3af' }} />
@@ -213,8 +227,9 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
                 e.stopPropagation();
                 onDuplicate(block.id);
               }}
-              className="w-8 h-8 p-0"
+              className="w-8 h-8 p-0 hover:bg-gray-700"
               style={{ backgroundColor: '#2a2a2a' }}
+              title="Duplicar bloco"
             >
               <Copy className="w-3 h-3" style={{ color: '#9ca3af' }} />
             </Button>
@@ -228,8 +243,9 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
               e.stopPropagation();
               onDelete(block.id);
             }}
-            className="w-8 h-8 p-0"
+            className="w-8 h-8 p-0 hover:bg-red-900 hover:text-red-400"
             style={{ backgroundColor: '#2a2a2a' }}
+            title="Deletar bloco"
           >
             <Trash2 className="w-3 h-3" style={{ color: '#ef4444' }} />
           </Button>
@@ -240,7 +256,7 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
       <div className="relative">
         {editMode ? (
           /* Edit Mode - Inline Editing Enabled */
-          <div className="p-4">
+          <div className="p-6">
             <BlockRenderer
               block={block}
               onUpdate={handleBlockUpdate}
@@ -250,7 +266,7 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
           </div>
         ) : (
           /* Preview Mode - Read Only */
-          <div className="p-4">
+          <div className="p-6">
             <BlockRenderer
               block={block}
               readonly={true}
@@ -260,15 +276,35 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
         )}
       </div>
 
-      {/* Edit Mode Indicator */}
-      {editMode && isActive && (
-        <div 
-          className="absolute bottom-2 right-2 text-xs px-2 py-1 rounded"
-          style={{ backgroundColor: '#10b981', color: '#ffffff' }}
-        >
-          Editando
-        </div>
-      )}
+      {/* Mode Indicators */}
+      <div className="absolute bottom-3 right-3 flex gap-2">
+        {editMode && isActive && (
+          <div 
+            className="text-xs px-2 py-1 rounded font-medium"
+            style={{ backgroundColor: '#10b981', color: '#ffffff' }}
+          >
+            EDITANDO
+          </div>
+        )}
+        
+        {!block.visible && (
+          <div 
+            className="text-xs px-2 py-1 rounded font-medium"
+            style={{ backgroundColor: '#ef4444', color: '#ffffff' }}
+          >
+            OCULTO
+          </div>
+        )}
+
+        {isDragging && (
+          <div 
+            className="text-xs px-2 py-1 rounded font-medium"
+            style={{ backgroundColor: '#f59e0b', color: '#ffffff' }}
+          >
+            MOVENDO
+          </div>
+        )}
+      </div>
     </div>
   );
 };

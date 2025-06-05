@@ -1,6 +1,6 @@
 
-// ABOUTME: Enhanced paragraph block with rich text support and inline editing
-// Handles formatted text content with direct click-to-edit functionality
+// ABOUTME: Enhanced paragraph block with color system integration and proper text direction
+// Handles formatted text content with comprehensive color customization
 
 import React from 'react';
 import { ReviewBlock } from '@/types/review';
@@ -22,6 +22,11 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
   const content = payload.content || '';
   const alignment = payload.alignment || 'left';
   const emphasis = payload.emphasis || 'normal';
+
+  // Color system integration
+  const textColor = payload.text_color || '#d1d5db';
+  const backgroundColor = payload.background_color || 'transparent';
+  const borderColor = payload.border_color || 'transparent';
 
   const handleContentChange = (newContent: string) => {
     if (onUpdate) {
@@ -50,14 +55,24 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
   const getEmphasisClass = (emphasis: string) => {
     switch (emphasis) {
       case 'lead':
-        return 'text-lg font-medium text-gray-100';
+        return 'text-lg font-medium';
       case 'small':
-        return 'text-sm text-gray-300';
+        return 'text-sm';
       case 'caption':
-        return 'text-xs text-gray-400 italic';
+        return 'text-xs italic';
       default:
-        return 'text-base text-gray-200';
+        return 'text-base';
     }
+  };
+
+  const blockStyle = {
+    color: textColor,
+    backgroundColor: backgroundColor !== 'transparent' ? backgroundColor : undefined,
+    borderColor: borderColor !== 'transparent' ? borderColor : undefined,
+    borderWidth: borderColor !== 'transparent' ? '1px' : undefined,
+    borderStyle: borderColor !== 'transparent' ? 'solid' : undefined,
+    direction: 'ltr' as const,
+    textAlign: alignment as any
   };
 
   if (readonly) {
@@ -65,12 +80,12 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
       <div className="paragraph-block my-4">
         <div
           className={cn(
-            "leading-relaxed",
+            "leading-relaxed p-3 rounded",
             getAlignmentClass(alignment),
             getEmphasisClass(emphasis),
             "prose prose-invert max-w-none"
           )}
-          style={{ direction: 'ltr', textAlign: alignment === 'left' ? 'left' : alignment }}
+          style={blockStyle}
           dangerouslySetInnerHTML={{ __html: content }}
         />
       </div>
@@ -81,18 +96,24 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
     <div className="paragraph-block my-4">
       <div
         className={cn(
-          "leading-relaxed",
+          "leading-relaxed p-3 rounded",
           getAlignmentClass(alignment),
           getEmphasisClass(emphasis),
           "prose prose-invert max-w-none"
         )}
-        style={{ direction: 'ltr', textAlign: alignment === 'left' ? 'left' : alignment }}
+        style={blockStyle}
       >
         <InlineRichTextEditor
           value={content}
           onChange={handleContentChange}
           placeholder="Digite seu conteúdo aqui..."
           disabled={readonly}
+          style={{
+            color: textColor,
+            direction: 'ltr',
+            textAlign: alignment,
+            width: '100%'
+          }}
         />
       </div>
     </div>
