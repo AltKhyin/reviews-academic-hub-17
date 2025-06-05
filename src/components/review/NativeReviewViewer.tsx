@@ -1,4 +1,3 @@
-
 // ABOUTME: Main viewer component for native review content with enhanced dark theme
 // Orchestrates block rendering, analytics, and user interactions
 
@@ -103,7 +102,7 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
 
   const handleBlockInteraction = (blockId: string, interactionType: string, data?: any) => {
     trackAnalytics({
-      eventType: 'block_interacted',
+      eventType: 'block_interaction',
       eventData: {
         block_id: blockId,
         interaction_type: interactionType,
