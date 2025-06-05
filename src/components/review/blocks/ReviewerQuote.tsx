@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { ReviewBlock } from '@/types/review';
 import { InlineTextEditor } from '@/components/editor/inline/InlineTextEditor';
+import { InlineBlockSettings } from '@/components/editor/inline/InlineBlockSettings';
 import { Input } from '@/components/ui/input';
 import { Quote, User, Upload } from 'lucide-react';
 
@@ -29,6 +30,12 @@ export const ReviewerQuote: React.FC<ReviewerQuoteProps> = ({
   const institution = payload.institution || '';
   const avatarUrl = payload.avatar_url || '';
 
+  // Color system integration
+  const textColor = payload.text_color || '#ffffff';
+  const backgroundColor = payload.background_color || '#1a1a1a';
+  const borderColor = payload.border_color || '#2a2a2a';
+  const accentColor = payload.accent_color || '#a855f7';
+
   const handleUpdate = (field: string, value: string) => {
     if (onUpdate) {
       onUpdate({
@@ -49,27 +56,30 @@ export const ReviewerQuote: React.FC<ReviewerQuoteProps> = ({
       .slice(0, 2);
   };
 
+  const cardStyle: React.CSSProperties = {
+    backgroundColor: backgroundColor,
+    borderColor: borderColor,
+    borderLeftColor: accentColor,
+    color: textColor
+  };
+
   if (readonly) {
     return (
       <div className="reviewer-quote-block my-8">
         <Card 
           className="border-l-4 shadow-lg"
-          style={{ 
-            backgroundColor: '#1a1a1a',
-            borderColor: '#2a2a2a',
-            borderLeftColor: '#a855f7'
-          }}
+          style={cardStyle}
         >
           <CardContent className="p-6">
             <div className="flex gap-4">
               <div className="flex-shrink-0">
                 <div 
                   className="w-8 h-8 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: 'rgba(168, 85, 247, 0.1)' }}
+                  style={{ backgroundColor: `${accentColor}1a` }}
                 >
                   <Quote 
                     className="w-4 h-4" 
-                    style={{ color: '#a855f7' }}
+                    style={{ color: accentColor }}
                   />
                 </div>
               </div>
@@ -78,14 +88,14 @@ export const ReviewerQuote: React.FC<ReviewerQuoteProps> = ({
                 <blockquote>
                   <p 
                     className="text-lg italic leading-relaxed"
-                    style={{ color: '#ffffff' }}
+                    style={{ color: textColor }}
                   >
                     "{quote}"
                   </p>
                 </blockquote>
 
                 <div className="flex items-center gap-3 pt-4 border-t" 
-                     style={{ borderColor: '#2a2a2a' }}>
+                     style={{ borderColor: borderColor }}>
                   
                   <Avatar className="w-10 h-10">
                     {avatarUrl ? (
@@ -93,7 +103,7 @@ export const ReviewerQuote: React.FC<ReviewerQuoteProps> = ({
                     ) : (
                       <AvatarFallback 
                         style={{ 
-                          backgroundColor: '#a855f7',
+                          backgroundColor: accentColor,
                           color: '#ffffff'
                         }}
                       >
@@ -105,7 +115,7 @@ export const ReviewerQuote: React.FC<ReviewerQuoteProps> = ({
                   <div className="flex-1">
                     <div 
                       className="font-semibold"
-                      style={{ color: '#ffffff' }}
+                      style={{ color: textColor }}
                     >
                       {author}
                     </div>
@@ -113,7 +123,7 @@ export const ReviewerQuote: React.FC<ReviewerQuoteProps> = ({
                     {title && (
                       <div 
                         className="text-sm"
-                        style={{ color: '#d1d5db' }}
+                        style={{ color: textColor, opacity: 0.8 }}
                       >
                         {title}
                       </div>
@@ -122,7 +132,7 @@ export const ReviewerQuote: React.FC<ReviewerQuoteProps> = ({
                     {institution && (
                       <div 
                         className="text-sm"
-                        style={{ color: '#9ca3af' }}
+                        style={{ color: textColor, opacity: 0.6 }}
                       >
                         {institution}
                       </div>
@@ -138,14 +148,18 @@ export const ReviewerQuote: React.FC<ReviewerQuoteProps> = ({
   }
 
   return (
-    <div className="reviewer-quote-block my-8">
+    <div className="reviewer-quote-block my-8 group relative">
+      {/* Inline Settings */}
+      <div className="absolute -top-2 -right-2 z-10">
+        <InlineBlockSettings
+          block={block}
+          onUpdate={onUpdate}
+        />
+      </div>
+
       <Card 
         className="border-l-4 shadow-lg"
-        style={{ 
-          backgroundColor: '#1a1a1a',
-          borderColor: '#2a2a2a',
-          borderLeftColor: '#a855f7'
-        }}
+        style={cardStyle}
       >
         <CardContent className="p-6">
           <div className="flex gap-4">
@@ -153,11 +167,11 @@ export const ReviewerQuote: React.FC<ReviewerQuoteProps> = ({
             <div className="flex-shrink-0">
               <div 
                 className="w-8 h-8 rounded-full flex items-center justify-center"
-                style={{ backgroundColor: 'rgba(168, 85, 247, 0.1)' }}
+                style={{ backgroundColor: `${accentColor}1a` }}
               >
                 <Quote 
                   className="w-4 h-4" 
-                  style={{ color: '#a855f7' }}
+                  style={{ color: accentColor }}
                 />
               </div>
             </div>
@@ -172,12 +186,13 @@ export const ReviewerQuote: React.FC<ReviewerQuoteProps> = ({
                   placeholder="Digite a citação aqui..."
                   multiline
                   className="text-lg italic leading-relaxed"
+                  style={{ color: textColor }}
                 />
               </blockquote>
 
               {/* Author Information */}
               <div className="flex items-start gap-3 pt-4 border-t" 
-                   style={{ borderColor: '#2a2a2a' }}>
+                   style={{ borderColor: borderColor }}>
                 
                 {/* Avatar Section */}
                 <div className="flex flex-col items-center gap-2">
@@ -187,7 +202,7 @@ export const ReviewerQuote: React.FC<ReviewerQuoteProps> = ({
                     ) : (
                       <AvatarFallback 
                         style={{ 
-                          backgroundColor: '#a855f7',
+                          backgroundColor: accentColor,
                           color: '#ffffff'
                         }}
                       >
@@ -216,6 +231,7 @@ export const ReviewerQuote: React.FC<ReviewerQuoteProps> = ({
                     onChange={(value) => handleUpdate('author', value)}
                     placeholder="Nome do autor"
                     className="font-semibold"
+                    style={{ color: textColor }}
                   />
                   
                   <InlineTextEditor
@@ -223,6 +239,7 @@ export const ReviewerQuote: React.FC<ReviewerQuoteProps> = ({
                     onChange={(value) => handleUpdate('title', value)}
                     placeholder="Título/Cargo (opcional)"
                     className="text-sm"
+                    style={{ color: textColor, opacity: 0.8 }}
                   />
                   
                   <InlineTextEditor
@@ -230,6 +247,7 @@ export const ReviewerQuote: React.FC<ReviewerQuoteProps> = ({
                     onChange={(value) => handleUpdate('institution', value)}
                     placeholder="Instituição (opcional)"
                     className="text-sm"
+                    style={{ color: textColor, opacity: 0.6 }}
                   />
 
                   {/* Avatar URL Input */}
@@ -241,8 +259,8 @@ export const ReviewerQuote: React.FC<ReviewerQuoteProps> = ({
                     className="text-xs mt-2"
                     style={{ 
                       backgroundColor: '#212121',
-                      borderColor: '#2a2a2a',
-                      color: '#ffffff'
+                      borderColor: borderColor,
+                      color: textColor
                     }}
                   />
                 </div>

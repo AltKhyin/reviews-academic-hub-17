@@ -4,7 +4,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ReviewBlock, BlockType } from '@/types/review';
 import { BlockEditor } from './BlockEditor';
@@ -17,9 +16,7 @@ import {
   Edit3, 
   SplitSquareHorizontal, 
   Undo2, 
-  Redo2,
-  FileDown,
-  FileUp
+  Redo2
 } from 'lucide-react';
 import { useEditorAutoSave } from '@/hooks/useEditorAutoSave';
 import { useBlockManagement } from '@/hooks/useBlockManagement';

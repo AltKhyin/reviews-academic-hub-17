@@ -6,6 +6,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { ReviewBlock } from '@/types/review';
 import { InlineTextEditor } from '@/components/editor/inline/InlineTextEditor';
+import { InlineBlockSettings } from '@/components/editor/inline/InlineBlockSettings';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
@@ -27,6 +28,12 @@ export const NumberCard: React.FC<NumberCardProps> = ({
   const description = payload.description || '';
   const trend = payload.trend || 'neutral';
   const percentage = payload.percentage || 0;
+
+  // Color system integration
+  const textColor = payload.text_color || '#ffffff';
+  const backgroundColor = payload.background_color || '#1a1a1a';
+  const borderColor = payload.border_color || '#2a2a2a';
+  const accentColor = payload.accent_color || '#3b82f6';
 
   const handleUpdate = (field: string, value: any) => {
     if (onUpdate) {
@@ -64,22 +71,25 @@ export const NumberCard: React.FC<NumberCardProps> = ({
   const TrendIcon = getTrendIcon(trend);
   const trendColor = getTrendColor(trend);
 
+  const cardStyle: React.CSSProperties = {
+    backgroundColor: backgroundColor,
+    borderColor: borderColor,
+    color: textColor
+  };
+
   if (readonly) {
     return (
       <div className="number-card-block my-6">
         <Card 
           className="text-center border shadow-lg transition-all duration-200 hover:shadow-xl"
-          style={{ 
-            backgroundColor: '#1a1a1a',
-            borderColor: '#2a2a2a'
-          }}
+          style={cardStyle}
         >
           <CardContent className="p-8">
             <div className="space-y-4">
               <div className="space-y-2">
                 <div 
                   className="text-4xl md:text-5xl font-bold tracking-tight"
-                  style={{ color: '#ffffff' }}
+                  style={{ color: textColor }}
                 >
                   {number}
                 </div>
@@ -103,7 +113,7 @@ export const NumberCard: React.FC<NumberCardProps> = ({
               <div>
                 <h3 
                   className="text-lg font-semibold"
-                  style={{ color: '#ffffff' }}
+                  style={{ color: textColor }}
                 >
                   {label}
                 </h3>
@@ -111,7 +121,7 @@ export const NumberCard: React.FC<NumberCardProps> = ({
                 {description && (
                   <p 
                     className="text-sm mt-2"
-                    style={{ color: '#d1d5db' }}
+                    style={{ color: textColor, opacity: 0.8 }}
                   >
                     {description}
                   </p>
@@ -125,13 +135,18 @@ export const NumberCard: React.FC<NumberCardProps> = ({
   }
 
   return (
-    <div className="number-card-block my-6">
+    <div className="number-card-block my-6 group relative">
+      {/* Inline Settings */}
+      <div className="absolute -top-2 -right-2 z-10">
+        <InlineBlockSettings
+          block={block}
+          onUpdate={onUpdate}
+        />
+      </div>
+
       <Card 
         className="text-center border shadow-lg transition-all duration-200 hover:shadow-xl"
-        style={{ 
-          backgroundColor: '#1a1a1a',
-          borderColor: '#2a2a2a'
-        }}
+        style={cardStyle}
       >
         <CardContent className="p-8">
           <div className="space-y-4">
@@ -142,6 +157,7 @@ export const NumberCard: React.FC<NumberCardProps> = ({
                 onChange={(value) => handleUpdate('number', value)}
                 placeholder="0"
                 className="text-4xl md:text-5xl font-bold tracking-tight text-center"
+                style={{ color: textColor }}
               />
               
               {/* Trend Controls */}
@@ -152,7 +168,7 @@ export const NumberCard: React.FC<NumberCardProps> = ({
                 >
                   <SelectTrigger 
                     className="w-32"
-                    style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}
+                    style={{ backgroundColor: '#212121', borderColor: borderColor, color: textColor }}
                   >
                     <SelectValue />
                   </SelectTrigger>
@@ -174,7 +190,7 @@ export const NumberCard: React.FC<NumberCardProps> = ({
                       value={percentage}
                       onChange={(e) => handleUpdate('percentage', Number(e.target.value))}
                       className="w-20"
-                      style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}
+                      style={{ backgroundColor: '#212121', borderColor: borderColor, color: textColor }}
                     />
                     <span style={{ color: trendColor }}>%</span>
                   </div>
@@ -189,6 +205,7 @@ export const NumberCard: React.FC<NumberCardProps> = ({
                 onChange={(value) => handleUpdate('label', value)}
                 placeholder="Nome da métrica"
                 className="text-lg font-semibold"
+                style={{ color: textColor }}
               />
               
               <InlineTextEditor
@@ -197,6 +214,7 @@ export const NumberCard: React.FC<NumberCardProps> = ({
                 placeholder="Descrição da métrica (opcional)"
                 multiline
                 className="text-sm"
+                style={{ color: textColor, opacity: 0.8 }}
               />
             </div>
           </div>

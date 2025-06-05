@@ -1,6 +1,6 @@
 
-// ABOUTME: Fixed inline rich text editor with proper text direction and cursor positioning
-// Provides WYSIWYG editing with formatting toolbar and direct content editing
+// ABOUTME: Inline rich text editor with WYSIWYG capabilities and color support
+// Provides contextual rich text editing with formatting controls
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -8,268 +8,183 @@ import {
   Bold, 
   Italic, 
   Underline, 
-  Check, 
-  X, 
-  Edit3,
-  Type
+  List, 
+  ListOrdered,
+  Link,
+  Quote
 } from 'lucide-react';
-import { useRichTextFormat } from '@/hooks/useRichTextFormat';
 import { cn } from '@/lib/utils';
 
 interface InlineRichTextEditorProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
-  className?: string;
   disabled?: boolean;
-  showToolbar?: boolean;
+  className?: string;
   style?: React.CSSProperties;
+  minHeight?: string;
 }
 
 export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
   value,
   onChange,
-  placeholder = 'Digite seu conteúdo...',
-  className = '',
+  placeholder = "Digite seu texto...",
   disabled = false,
-  showToolbar = true,
-  style = {}
+  className,
+  style,
+  minHeight = "100px"
 }) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [tempValue, setTempValue] = useState(value);
+  const [currentValue, setCurrentValue] = useState(value);
   const editorRef = useRef<HTMLDivElement>(null);
-  
-  const { formatState, formatActions, updateFormatState } = useRichTextFormat(
-    (newValue) => setTempValue(newValue), 
-    editorRef
-  );
 
   useEffect(() => {
-    if (isEditing && editorRef.current) {
-      // Fix cursor positioning with proper timeout and range handling
-      setTimeout(() => {
-        if (!editorRef.current) return;
-        
-        editorRef.current.focus();
-        
-        // Create proper text range for cursor positioning
-        const range = document.createRange();
-        const selection = window.getSelection();
-        
-        if (editorRef.current.childNodes.length > 0) {
-          // Place cursor at end of existing content
-          const lastNode = editorRef.current.childNodes[editorRef.current.childNodes.length - 1];
-          if (lastNode.nodeType === Node.TEXT_NODE) {
-            range.setStart(lastNode, lastNode.textContent?.length || 0);
-          } else {
-            range.setStartAfter(lastNode);
-          }
-        } else {
-          // Place cursor at start of empty element
-          range.setStart(editorRef.current, 0);
-        }
-        
-        range.collapse(true);
-        selection?.removeAllRanges();
-        selection?.addRange(range);
-      }, 50);
-    }
-  }, [isEditing]);
-
-  useEffect(() => {
-    setTempValue(value);
+    setCurrentValue(value);
   }, [value]);
 
-  const handleStartEdit = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (disabled) return;
-    setIsEditing(true);
-    setTempValue(value);
+  const handleClick = () => {
+    if (!disabled) {
+      setIsEditing(true);
+    }
   };
 
-  const handleSave = () => {
-    onChange(tempValue);
+  const handleBlur = () => {
     setIsEditing(false);
-  };
-
-  const handleCancel = () => {
-    setTempValue(value);
-    setIsEditing(false);
-  };
-
-  const handleInput = () => {
-    if (editorRef.current) {
-      const newContent = editorRef.current.innerHTML;
-      setTempValue(newContent);
-      updateFormatState();
+    if (currentValue !== value) {
+      onChange(currentValue);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
+    if (e.key === 'Enter' && e.shiftKey) {
       e.preventDefault();
-      handleCancel();
-    } else if (e.ctrlKey && e.key === 'Enter') {
-      e.preventDefault();
-      handleSave();
-    } else if (e.ctrlKey || e.metaKey) {
-      switch (e.key) {
-        case 'b':
-          e.preventDefault();
-          formatActions.bold();
-          break;
-        case 'i':
-          e.preventDefault();
-          formatActions.italic();
-          break;
-        case 'u':
-          e.preventDefault();
-          formatActions.underline();
-          break;
-      }
+      handleBlur();
     }
   };
 
-  // Clean display value for preview
-  const getDisplayValue = () => {
-    if (!value) return placeholder;
-    // Strip HTML tags for display
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = value;
-    return tempDiv.textContent || tempDiv.innerText || placeholder;
+  const executeCommand = (command: string, value?: string) => {
+    document.execCommand(command, false, value);
+    if (editorRef.current) {
+      const content = editorRef.current.innerHTML;
+      setCurrentValue(content);
+    }
   };
 
-  if (isEditing) {
+  const renderToolbar = () => (
+    <div className="flex items-center gap-1 p-2 border-b border-gray-600 bg-gray-800">
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => executeCommand('bold')}
+        className="h-6 w-6 p-0"
+      >
+        <Bold className="w-3 h-3" />
+      </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => executeCommand('italic')}
+        className="h-6 w-6 p-0"
+      >
+        <Italic className="w-3 h-3" />
+      </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => executeCommand('underline')}
+        className="h-6 w-6 p-0"
+      >
+        <Underline className="w-3 h-3" />
+      </Button>
+      <div className="w-px h-4 bg-gray-600 mx-1" />
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => executeCommand('insertUnorderedList')}
+        className="h-6 w-6 p-0"
+      >
+        <List className="w-3 h-3" />
+      </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => executeCommand('insertOrderedList')}
+        className="h-6 w-6 p-0"
+      >
+        <ListOrdered className="w-3 h-3" />
+      </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => executeCommand('formatBlock', 'blockquote')}
+        className="h-6 w-6 p-0"
+      >
+        <Quote className="w-3 h-3" />
+      </Button>
+    </div>
+  );
+
+  if (disabled) {
     return (
-      <div className={cn("inline-rich-editor-container", className)} style={style}>
-        {showToolbar && (
+      <div 
+        className={cn("prose prose-sm max-w-none", className)}
+        style={style}
+        dangerouslySetInnerHTML={{ __html: value || '' }}
+      />
+    );
+  }
+
+  if (!isEditing) {
+    return (
+      <div
+        onClick={handleClick}
+        className={cn(
+          "cursor-pointer min-h-[60px] p-2 rounded border border-transparent hover:border-gray-600 transition-colors",
+          className
+        )}
+        style={{ ...style, minHeight }}
+      >
+        {value ? (
           <div 
-            className="flex items-center gap-1 p-2 border-b mb-2"
-            style={{ 
-              backgroundColor: '#212121',
-              borderColor: '#2a2a2a'
-            }}
+            className="prose prose-sm max-w-none"
+            dangerouslySetInnerHTML={{ __html: value }}
+          />
+        ) : (
+          <div 
+            className="text-gray-500 italic"
+            style={{ color: '#9ca3af' }}
           >
-            <Button
-              size="sm"
-              variant={formatState.bold ? "default" : "ghost"}
-              onClick={formatActions.bold}
-              className="w-8 h-8 p-0"
-            >
-              <Bold className="w-4 h-4" />
-            </Button>
-            <Button
-              size="sm"
-              variant={formatState.italic ? "default" : "ghost"}
-              onClick={formatActions.italic}
-              className="w-8 h-8 p-0"
-            >
-              <Italic className="w-4 h-4" />
-            </Button>
-            <Button
-              size="sm"
-              variant={formatState.underline ? "default" : "ghost"}
-              onClick={formatActions.underline}
-              className="w-8 h-8 p-0"
-            >
-              <Underline className="w-4 h-4" />
-            </Button>
-            
-            <div className="flex-1" />
-            
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handleSave}
-              className="w-6 h-6 p-0"
-            >
-              <Check className="w-3 h-3" style={{ color: '#10b981' }} />
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={handleCancel}
-              className="w-6 h-6 p-0"
-            >
-              <X className="w-3 h-3" style={{ color: '#ef4444' }} />
-            </Button>
+            {placeholder}
           </div>
         )}
-        
-        <div
-          ref={editorRef}
-          contentEditable
-          suppressContentEditableWarning
-          onInput={handleInput}
-          onKeyDown={handleKeyDown}
-          onMouseUp={updateFormatState}
-          onKeyUp={updateFormatState}
-          className="min-h-[100px] p-3 outline-none border rounded"
-          style={{ 
-            backgroundColor: '#1a1a1a',
-            borderColor: '#3b82f6',
-            color: '#ffffff',
-            direction: 'ltr',
-            textAlign: 'left',
-            unicodeBidi: 'embed',
-            ...style
-          }}
-          dir="ltr"
-          dangerouslySetInnerHTML={{ __html: tempValue }}
-        />
-        
-        <div className="text-xs mt-1" style={{ color: '#9ca3af' }}>
-          Ctrl+Enter para salvar, Esc para cancelar
-        </div>
       </div>
     );
   }
 
-  const displayValue = getDisplayValue();
-  const isEmpty = !value;
-
   return (
-    <div
-      className={cn(
-        "inline-rich-editor-display group cursor-pointer transition-all duration-200",
-        "hover:bg-gray-800/30 rounded px-3 py-2 -mx-3 -my-2 min-h-[60px]",
-        isEmpty && "italic",
-        className
-      )}
-      onClick={handleStartEdit}
-      style={{
-        color: isEmpty ? '#9ca3af' : '#ffffff',
-        direction: 'ltr',
-        textAlign: 'left',
-        unicodeBidi: 'embed',
-        ...style
-      }}
-      dir="ltr"
+    <div 
+      className={cn("border border-gray-600 rounded-md overflow-hidden", className)}
+      style={style}
     >
-      <div className="flex items-start gap-2">
-        <Type className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: '#9ca3af' }} />
-        <div 
-          className="flex-1 min-w-0"
-          style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
-          dir="ltr"
-        >
-          {isEmpty ? (
-            <span className="italic">{placeholder}</span>
-          ) : (
-            <div 
-              dangerouslySetInnerHTML={{ __html: value }}
-              style={{ direction: 'ltr', textAlign: 'left', unicodeBidi: 'embed' }}
-              dir="ltr"
-            />
-          )}
-        </div>
-        {!disabled && (
-          <Edit3 
-            className="w-3 h-3 opacity-0 group-hover:opacity-50 transition-opacity flex-shrink-0 mt-0.5" 
-            style={{ color: '#9ca3af' }}
-          />
-        )}
-      </div>
+      {renderToolbar()}
+      <div
+        ref={editorRef}
+        contentEditable
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
+        onInput={(e) => {
+          const content = e.currentTarget.innerHTML;
+          setCurrentValue(content);
+        }}
+        className="p-3 outline-none prose prose-sm max-w-none"
+        style={{ 
+          minHeight,
+          backgroundColor: 'transparent',
+          color: 'inherit'
+        }}
+        dangerouslySetInnerHTML={{ __html: currentValue }}
+        suppressContentEditableWarning
+      />
     </div>
   );
 };

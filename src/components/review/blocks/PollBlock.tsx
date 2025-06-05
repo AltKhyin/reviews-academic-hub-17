@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress';
 import { ReviewBlock } from '@/types/review';
 import { InlineTextEditor } from '@/components/editor/inline/InlineTextEditor';
+import { InlineBlockSettings } from '@/components/editor/inline/InlineBlockSettings';
 import { 
   BarChart3, 
   Plus, 
@@ -69,6 +70,12 @@ export const PollBlock: React.FC<PollBlockProps> = ({
   const votes = payload.votes || new Array(options.length).fill(0);
   const totalVotes = payload.total_votes || 0;
   const allowAddOptions = payload.allow_add_options || false;
+  
+  // Color system integration
+  const textColor = payload.text_color || '#ffffff';
+  const backgroundColor = payload.background_color || '#1a1a1a';
+  const borderColor = payload.border_color || '#2a2a2a';
+  const accentColor = payload.accent_color || '#3b82f6';
   
   const [selectedOptions, setSelectedOptions] = useState<number[]>([]);
   const [hasVoted, setHasVoted] = useState(false);
@@ -150,22 +157,25 @@ export const PollBlock: React.FC<PollBlockProps> = ({
     return totalVotes > 0 ? Math.round((optionVotes / totalVotes) * 100) : 0;
   };
 
+  const cardStyle: React.CSSProperties = {
+    backgroundColor: backgroundColor,
+    borderColor: borderColor,
+    color: textColor
+  };
+
   if (readonly) {
     return (
       <div className="poll-block my-6">
         <Card 
           className="border shadow-lg"
-          style={{ 
-            backgroundColor: '#1a1a1a',
-            borderColor: '#2a2a2a'
-          }}
+          style={cardStyle}
         >
           <CardHeader>
-            <CardTitle className="flex items-center gap-2" style={{ color: '#ffffff' }}>
-              <BarChart3 className="w-5 h-5" style={{ color: '#3b82f6' }} />
+            <CardTitle className="flex items-center gap-2" style={{ color: textColor }}>
+              <BarChart3 className="w-5 h-5" style={{ color: accentColor }} />
               {question}
             </CardTitle>
-            <div className="flex items-center gap-4 text-sm" style={{ color: '#9ca3af' }}>
+            <div className="flex items-center gap-4 text-sm" style={{ color: textColor, opacity: 0.7 }}>
               <div className="flex items-center gap-1">
                 <Users className="w-4 h-4" />
                 {totalVotes} votos
@@ -185,13 +195,13 @@ export const PollBlock: React.FC<PollBlockProps> = ({
               return (
                 <div key={option.id} className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span style={{ color: '#ffffff' }}>{option.text}</span>
-                    <span style={{ color: '#9ca3af' }}>{percentage}%</span>
+                    <span style={{ color: textColor }}>{option.text}</span>
+                    <span style={{ color: textColor, opacity: 0.7 }}>{percentage}%</span>
                   </div>
                   <Progress 
                     value={percentage} 
                     className="h-2"
-                    style={{ backgroundColor: '#2a2a2a' }}
+                    style={{ backgroundColor: `${borderColor}` }}
                   />
                 </div>
               );
@@ -203,19 +213,24 @@ export const PollBlock: React.FC<PollBlockProps> = ({
   }
 
   return (
-    <div className="poll-block my-6">
+    <div className="poll-block my-6 group relative">
+      {/* Inline Settings */}
+      <div className="absolute -top-2 -right-2 z-10">
+        <InlineBlockSettings
+          block={block}
+          onUpdate={onUpdate}
+        />
+      </div>
+
       <Card 
         className="border shadow-lg"
-        style={{ 
-          backgroundColor: '#1a1a1a',
-          borderColor: '#2a2a2a'
-        }}
+        style={cardStyle}
       >
         <CardHeader>
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <BarChart3 className="w-5 h-5" style={{ color: '#3b82f6' }} />
-              <span className="font-semibold" style={{ color: '#ffffff' }}>
+              <BarChart3 className="w-5 h-5" style={{ color: accentColor }} />
+              <span className="font-semibold" style={{ color: textColor }}>
                 Editor de Enquete
               </span>
             </div>
@@ -226,11 +241,12 @@ export const PollBlock: React.FC<PollBlockProps> = ({
               onChange={(value) => handleUpdate('question', value)}
               placeholder="Digite a pergunta da enquete..."
               className="text-lg font-semibold"
+              style={{ color: textColor }}
             />
             
             {/* Poll Type Selector */}
             <div className="flex items-center gap-4">
-              <label className="text-sm" style={{ color: '#d1d5db' }}>
+              <label className="text-sm" style={{ color: textColor, opacity: 0.8 }}>
                 Tipo:
               </label>
               <Select 
@@ -239,7 +255,7 @@ export const PollBlock: React.FC<PollBlockProps> = ({
               >
                 <SelectTrigger 
                   className="w-48"
-                  style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}
+                  style={{ backgroundColor: '#212121', borderColor: borderColor, color: textColor }}
                 >
                   <SelectValue />
                 </SelectTrigger>
@@ -255,7 +271,7 @@ export const PollBlock: React.FC<PollBlockProps> = ({
         <CardContent className="space-y-4">
           {/* Options Editor */}
           <div className="space-y-3">
-            <label className="text-sm font-medium" style={{ color: '#d1d5db' }}>
+            <label className="text-sm font-medium" style={{ color: textColor, opacity: 0.8 }}>
               Opções de resposta:
             </label>
             
@@ -267,6 +283,7 @@ export const PollBlock: React.FC<PollBlockProps> = ({
                     onChange={(value) => handleOptionChange(index, value)}
                     placeholder={`Opção ${index + 1}`}
                     className="w-full"
+                    style={{ color: textColor }}
                   />
                 </div>
                 
@@ -288,7 +305,7 @@ export const PollBlock: React.FC<PollBlockProps> = ({
               variant="outline"
               onClick={addOption}
               className="w-full"
-              style={{ borderColor: '#2a2a2a' }}
+              style={{ borderColor: borderColor, color: textColor }}
             >
               <Plus className="w-4 h-4 mr-2" />
               Adicionar Opção
@@ -297,10 +314,10 @@ export const PollBlock: React.FC<PollBlockProps> = ({
           
           {/* Results Preview */}
           {totalVotes > 0 && (
-            <div className="space-y-3 pt-4 border-t" style={{ borderColor: '#2a2a2a' }}>
+            <div className="space-y-3 pt-4 border-t" style={{ borderColor: borderColor }}>
               <div className="flex items-center gap-2">
                 <TrendingUp className="w-4 h-4" style={{ color: '#10b981' }} />
-                <span className="text-sm font-medium" style={{ color: '#d1d5db' }}>
+                <span className="text-sm font-medium" style={{ color: textColor, opacity: 0.8 }}>
                   Resultados Atuais ({totalVotes} votos)
                 </span>
               </div>
@@ -312,15 +329,15 @@ export const PollBlock: React.FC<PollBlockProps> = ({
                 return (
                   <div key={option.id} className="space-y-1">
                     <div className="flex items-center justify-between text-sm">
-                      <span style={{ color: '#ffffff' }}>{option.text}</span>
-                      <span style={{ color: '#9ca3af' }}>
+                      <span style={{ color: textColor }}>{option.text}</span>
+                      <span style={{ color: textColor, opacity: 0.7 }}>
                         {optionVotes} votos ({percentage}%)
                       </span>
                     </div>
                     <Progress 
                       value={percentage} 
                       className="h-1"
-                      style={{ backgroundColor: '#2a2a2a' }}
+                      style={{ backgroundColor: borderColor }}
                     />
                   </div>
                 );
