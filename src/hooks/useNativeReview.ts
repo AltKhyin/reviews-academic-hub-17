@@ -89,7 +89,9 @@ export const useNativeReview = (issueId: string) => {
 
       if (!currentPoll) throw new Error('Poll not found');
 
-      const votes = Array.isArray(currentPoll.votes) ? [...currentPoll.votes] : [];
+      // Safely handle votes as Json type
+      const existingVotes = currentPoll.votes as number[] || [];
+      const votes = [...existingVotes];
       
       // Ensure votes array has enough elements
       while (votes.length <= params.optionIndex) {
@@ -98,11 +100,16 @@ export const useNativeReview = (issueId: string) => {
       
       votes[params.optionIndex] = (votes[params.optionIndex] || 0) + 1;
 
+      // Safely handle total_votes as number
+      const currentTotalVotes = typeof currentPoll.total_votes === 'number' 
+        ? currentPoll.total_votes 
+        : 0;
+
       const { data, error } = await supabase
         .from('review_polls')
         .update({
           votes,
-          total_votes: (currentPoll.total_votes || 0) + 1
+          total_votes: currentTotalVotes + 1
         })
         .eq('id', params.pollId);
 

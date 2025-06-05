@@ -14,7 +14,7 @@ import { ViewModeSwitcher } from '@/components/article/ViewModeSwitcher';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FileText, ArrowLeft } from 'lucide-react';
-import { EnhancedIssue } from '@/types/review';
+import { EnhancedIssue, ReviewBlock } from '@/types/review';
 import { Link } from 'react-router-dom';
 
 const ArticleViewer: React.FC = () => {
@@ -37,11 +37,33 @@ const ArticleViewer: React.FC = () => {
       if (error) throw error;
       if (!data) throw new Error('Issue not found');
 
-      // Ensure review_type is set (backward compatibility)
-      const enhancedData = {
-        ...data,
-        review_type: data.review_type || 'pdf'
-      } as EnhancedIssue;
+      // Safely convert the raw data to EnhancedIssue type
+      const enhancedData: EnhancedIssue = {
+        id: data.id,
+        title: data.title,
+        specialty: data.specialty,
+        description: data.description,
+        pdf_url: data.pdf_url,
+        article_pdf_url: data.article_pdf_url,
+        cover_image_url: data.cover_image_url,
+        published: data.published,
+        published_at: data.published_at,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        featured: data.featured,
+        score: data.score,
+        year: data.year,
+        design: data.design,
+        population: data.population,
+        authors: data.authors,
+        real_title: data.real_title,
+        real_title_ptbr: data.real_title_ptbr,
+        search_title: data.search_title,
+        search_description: data.search_description,
+        review_type: (data.review_type as 'pdf' | 'native' | 'hybrid') || 'pdf',
+        review_content: data.review_content ? (data.review_content as ReviewBlock[]) : undefined,
+        toc_data: data.toc_data ? data.toc_data : undefined
+      };
 
       return enhancedData;
     },

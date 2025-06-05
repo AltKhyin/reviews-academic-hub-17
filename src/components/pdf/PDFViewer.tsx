@@ -1,18 +1,24 @@
 
+// ABOUTME: Enhanced PDF viewer with native review integration
+// Supports className prop and maintains backward compatibility
+
 import React, { useState } from 'react';
 import { Maximize, BookOpen, FileText, SplitSquareVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface PDFViewerProps {
   url?: string;
   title: string;
   fallbackContent?: React.ReactNode;
+  className?: string;
 }
 
 export const PDFViewer: React.FC<PDFViewerProps> = ({ 
   url, 
   title,
-  fallbackContent
+  fallbackContent,
+  className
 }) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [isReadingMode, setIsReadingMode] = useState(false);
@@ -37,7 +43,11 @@ export const PDFViewer: React.FC<PDFViewerProps> = ({
   };
   
   return (
-    <div className={`bg-[#1a1a1a] rounded-lg p-6 shadow-lg card-elevation h-full flex flex-col overflow-visible ${isReadingMode ? 'fixed inset-0 z-50' : ''}`}>
+    <div className={cn(
+      `bg-[#1a1a1a] rounded-lg p-6 shadow-lg card-elevation h-full flex flex-col overflow-visible`,
+      isReadingMode ? 'fixed inset-0 z-50' : '',
+      className
+    )}>
       <div className="mb-4 flex justify-between items-center">
         <h2 className="font-serif text-xl font-medium">{title}</h2>
         {url && url !== 'placeholder.pdf' && (
