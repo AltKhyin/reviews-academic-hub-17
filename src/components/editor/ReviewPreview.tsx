@@ -1,8 +1,8 @@
 
-// ABOUTME: Preview component for native review content with enhanced dark theme
-// Shows real-time preview of how the review will look to readers
+// ABOUTME: Preview component for native review content with enhanced grid layout support
+// Shows real-time preview of how the review will look to readers with proper grid rendering
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ReviewBlock } from '@/types/review';
 import { BlockRenderer } from '../review/BlockRenderer';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,11 +14,58 @@ interface ReviewPreviewProps {
   className?: string;
 }
 
+interface LayoutGroup {
+  type: 'single' | 'grid';
+  blocks: ReviewBlock[];
+  rowId?: string;
+}
+
 export const ReviewPreview: React.FC<ReviewPreviewProps> = ({
   blocks,
   className
 }) => {
   const visibleBlocks = blocks.filter(block => block.visible);
+
+  // Group blocks by layout rows for proper grid rendering
+  const layoutGroups: LayoutGroup[] = useMemo(() => {
+    const groups: LayoutGroup[] = [];
+    const processedBlockIds = new Set<number>();
+    
+    // Sort blocks by sort_index to maintain order
+    const sortedBlocks = [...visibleBlocks].sort((a, b) => a.sort_index - b.sort_index);
+
+    sortedBlocks.forEach((block) => {
+      if (processedBlockIds.has(block.id)) return;
+
+      const layout = block.meta?.layout;
+      
+      if (layout?.row_id && typeof layout.row_id === 'string') {
+        // This block is part of a grid row
+        const rowBlocks = sortedBlocks.filter(b => 
+          b.meta?.layout?.row_id === layout.row_id && 
+          !processedBlockIds.has(b.id)
+        );
+        
+        // Mark all blocks in this row as processed
+        rowBlocks.forEach(b => processedBlockIds.add(b.id));
+        
+        groups.push({
+          type: 'grid',
+          blocks: rowBlocks,
+          rowId: layout.row_id
+        });
+      } else {
+        // Single block
+        processedBlockIds.add(block.id);
+        groups.push({
+          type: 'single',
+          blocks: [block]
+        });
+      }
+    });
+
+    return groups;
+  }, [visibleBlocks]);
 
   if (visibleBlocks.length === 0) {
     return (
@@ -71,18 +118,27 @@ export const ReviewPreview: React.FC<ReviewPreviewProps> = ({
 
       {/* Preview Content */}
       <div className="preview-content max-w-4xl mx-auto px-6 py-8">
-        {visibleBlocks.map((block) => (
-          <div 
-            key={block.id} 
-            className="preview-block mb-8 transition-all duration-200"
-            data-block-type={block.type}
-            data-block-id={block.id}
-          >
-            <BlockRenderer
-              block={block}
-              readonly={true}
-              className="preview-block-content"
-            />
+        {layoutGroups.map((group, groupIndex) => (
+          <div key={`group-${groupIndex}`} className="layout-group mb-8">
+            {group.type === 'grid' ? (
+              <BlockRenderer
+                block={group.blocks[0]}
+                readonly={true}
+                renderAsGrid={true}
+                gridBlocks={group.blocks}
+                className="preview-grid-block"
+              />
+            ) : (
+              group.blocks.map((block) => (
+                <div key={block.id} className="preview-single-block">
+                  <BlockRenderer
+                    block={block}
+                    readonly={true}
+                    className="preview-block-content"
+                  />
+                </div>
+              ))
+            )}
           </div>
         ))}
       </div>

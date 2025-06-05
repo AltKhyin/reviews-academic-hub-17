@@ -1,6 +1,6 @@
 
 // ABOUTME: Type definitions for the Native Review system
-// Extends existing Issue type with new review capabilities
+// Extends existing Issue type with new review capabilities and enhanced layout metadata
 
 export type ReviewType = 'pdf' | 'native' | 'hybrid';
 
@@ -36,6 +36,13 @@ export interface BlockMeta {
   analytics?: {
     track_views?: boolean;
     track_interactions?: boolean;
+  };
+  layout?: {
+    row_id: string;
+    position: number;
+    columns: number;
+    gap?: number;
+    columnWidths?: number[]; // Array of percentages for each column
   };
 }
 

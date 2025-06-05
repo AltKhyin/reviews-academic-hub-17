@@ -1,6 +1,6 @@
 
-// ABOUTME: Enhanced block renderer with proper event handling for inline editing
-// Ensures clean separation between block selection and content editing
+// ABOUTME: Enhanced block renderer with proper event handling for inline editing and grid layout support
+// Ensures clean separation between block selection and content editing, now with grid rendering
 
 import React from 'react';
 import { ReviewBlock } from '@/types/review';
@@ -23,6 +23,8 @@ interface BlockRendererProps {
   onSectionView?: (blockId: string) => void;
   readonly?: boolean;
   className?: string;
+  renderAsGrid?: boolean;
+  gridBlocks?: ReviewBlock[];
 }
 
 export const BlockRenderer: React.FC<BlockRendererProps> = ({
@@ -31,11 +33,88 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   onInteraction,
   onSectionView,
   readonly = false,
-  className
+  className,
+  renderAsGrid = false,
+  gridBlocks = []
 }) => {
   // Don't render invisible blocks
   if (!block.visible) return null;
 
+  // If this block has layout metadata and we're rendering as grid, handle it specially
+  if (renderAsGrid && block.meta?.layout?.row_id && gridBlocks.length > 1) {
+    const layout = block.meta.layout;
+    const sortedGridBlocks = gridBlocks.sort((a, b) => {
+      const aPos = a.meta?.layout?.position ?? 0;
+      const bPos = b.meta?.layout?.position ?? 0;
+      return aPos - bPos;
+    });
+
+    // Only render the grid container for the first block in the row
+    const isFirstInRow = sortedGridBlocks[0]?.id === block.id;
+    if (!isFirstInRow) {
+      return null; // Other blocks in the row will be rendered by the first block
+    }
+
+    // Calculate grid template columns based on stored widths or equal distribution
+    const gridTemplateColumns = layout.columnWidths 
+      ? layout.columnWidths.map(width => `${width}%`).join(' ')
+      : `repeat(${layout.columns}, 1fr)`;
+
+    return (
+      <div 
+        className={cn("grid-layout-container my-6", className)}
+        style={{
+          display: 'grid',
+          gridTemplateColumns,
+          gap: `${layout.gap || 4 * 0.25}rem`,
+          alignItems: 'start'
+        }}
+        data-row-id={layout.row_id}
+      >
+        {sortedGridBlocks.map((gridBlock) => (
+          <div key={gridBlock.id} className="grid-block-item">
+            <SingleBlockRenderer
+              block={gridBlock}
+              onUpdate={onUpdate}
+              onInteraction={onInteraction}
+              onSectionView={onSectionView}
+              readonly={readonly}
+            />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Render single block
+  return (
+    <SingleBlockRenderer
+      block={block}
+      onUpdate={onUpdate}
+      onInteraction={onInteraction}
+      onSectionView={onSectionView}
+      readonly={readonly}
+      className={className}
+    />
+  );
+};
+
+// Separate component for rendering individual blocks
+const SingleBlockRenderer: React.FC<{
+  block: ReviewBlock;
+  onUpdate?: (blockId: number, updates: Partial<ReviewBlock>) => void;
+  onInteraction?: (blockId: string, interactionType: string, data?: any) => void;
+  onSectionView?: (blockId: string) => void;
+  readonly?: boolean;
+  className?: string;
+}> = ({
+  block,
+  onUpdate,
+  onInteraction,
+  onSectionView,
+  readonly = false,
+  className
+}) => {
   // Create update handler for this specific block
   const handleBlockUpdate = (updates: Partial<ReviewBlock>) => {
     if (onUpdate) {
