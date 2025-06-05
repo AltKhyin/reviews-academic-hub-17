@@ -126,6 +126,32 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
     return () => document.removeEventListener('keydown', handleKeyboardShortcuts);
   }, [handleKeyboardShortcuts]);
 
+  // Create wrapper functions to match expected signatures
+  const handleMoveBlock = useCallback((fromIndex: number, toIndex: number) => {
+    if (fromIndex < toIndex) {
+      const blockId = blocks[fromIndex]?.id;
+      if (blockId) {
+        for (let i = fromIndex; i < toIndex; i++) {
+          moveBlock(blockId, 'down');
+        }
+      }
+    } else {
+      const blockId = blocks[fromIndex]?.id;
+      if (blockId) {
+        for (let i = fromIndex; i > toIndex; i--) {
+          moveBlock(blockId, 'up');
+        }
+      }
+    }
+  }, [blocks, moveBlock]);
+
+  const handleConvertToGrid = useCallback((blockIds: number[], columns: number) => {
+    // Convert the first block to grid, others will be merged
+    if (blockIds.length > 0) {
+      convertToGrid(blockIds[0], columns);
+    }
+  }, [convertToGrid]);
+
   const renderToolbar = () => (
     <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: '#2a2a2a' }}>
       <div className="flex items-center gap-3">        
@@ -245,10 +271,10 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
                 onActiveBlockChange={setActiveBlockId}
                 onUpdateBlock={updateBlock}
                 onDeleteBlock={deleteBlock}
-                onMoveBlock={moveBlock}
+                onMoveBlock={handleMoveBlock}
                 onAddBlock={addBlock}
                 onDuplicateBlock={duplicateBlock}
-                onConvertToGrid={convertToGrid}
+                onConvertToGrid={handleConvertToGrid}
                 onMergeBlockIntoGrid={mergeBlockIntoGrid}
               />
             </div>

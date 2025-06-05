@@ -7,7 +7,6 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ReviewBlock, BlockType } from '@/types/review';
 import { BlockRenderer } from '../review/BlockRenderer';
-import { DragHandle } from './DragHandle';
 import { ResizableGrid } from './layout/ResizableGrid';
 import { useBlockDragDrop } from '@/hooks/useBlockDragDrop';
 import { useGridLayoutManager } from '@/hooks/useGridLayoutManager';
@@ -162,11 +161,11 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
 
   return (
     <div className={cn("block-editor py-4", className)} style={{ backgroundColor: '#121212' }}>
-      <div className="space-y-4">
+      <div className="space-y-4 px-6">
         {layoutGroups.map((group, groupIndex) => (
           <div key={`group-${groupIndex}`} className="layout-group">
             {group.type === 'grid' && group.rowId && group.gridConfig ? (
-              <div className="mx-6">
+              <div>
                 <ResizableGrid
                   rowId={group.rowId}
                   blocks={group.blocks}
@@ -189,14 +188,14 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
               group.blocks.map((block) => {
                 const isActive = activeBlockId === block.id;
                 const isHovered = hoveredBlockId === block.id;
-                const isDragTarget = dragState.dragOverBlockId === block.id;
+                const isDragTarget = dragState.dragOverRowId === `single-${block.id}`;
                 const isDragging = dragState.draggedBlockId === block.id;
                 
                 return (
                   <div 
                     key={block.id}
                     className={cn(
-                      "block-item relative group transition-all duration-200 mx-6",
+                      "block-item relative group transition-all duration-200",
                       isActive && "ring-2 ring-blue-500 ring-offset-2 ring-offset-gray-900",
                       isDragTarget && "border-t-4 border-blue-500",
                       isDragging && "opacity-50"
@@ -224,26 +223,27 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                       {/* Drag Handle */}
                       {(isHovered || isActive) && (
                         <div 
-                          className="absolute left-2 top-1/2 transform -translate-y-1/2 z-10 opacity-70 hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
+                          className="absolute left-0 top-1/2 transform -translate-y-1/2 z-10 opacity-70 hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
                           draggable
                           onDragStart={(e) => handleDragStart(e, block.id)}
                           onDragEnd={handleDragEnd}
                           style={{
-                            marginLeft: '-12px'
+                            marginLeft: '-20px',
+                            backgroundColor: '#3b82f6',
+                            borderRadius: '4px',
+                            padding: '4px'
                           }}
                         >
-                          <GripVertical className="w-4 h-4" style={{ color: '#9ca3af' }} />
+                          <GripVertical className="w-4 h-4" style={{ color: '#ffffff' }} />
                         </div>
                       )}
                       
                       {/* Block Content */}
-                      <div className="block-content p-4 pl-8">
+                      <div className="block-content p-4">
                         <BlockRenderer
                           block={block}
                           readonly={false}
                           onUpdate={(updates) => onUpdateBlock(block.id, updates)}
-                          onDelete={() => onDeleteBlock(block.id)}
-                          onDuplicate={() => onDuplicateBlock(block.id)}
                           className="w-full"
                         />
                       </div>
@@ -278,7 +278,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
         ))}
         
         {/* Final Add Block Button */}
-        <div className="mx-6 mt-8">
+        <div className="mt-8">
           <Button
             variant="outline"
             onClick={() => onAddBlock('paragraph', blocks.length)}
