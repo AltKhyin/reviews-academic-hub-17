@@ -1,6 +1,6 @@
 
 // ABOUTME: Default theme definitions and presets for the native editor
-// Provides light and dark theme variants with comprehensive color coverage - Updated to use dark as default
+// Provides light and dark theme variants with comprehensive color coverage - Updated with better contrast
 
 import { EditorTheme } from '@/types/theme';
 
@@ -37,11 +37,11 @@ export const LIGHT_THEME: EditorTheme = {
     errorColor: '#dc3545',
     infoColor: '#0dcaf0',
     
-    // Interactive Colors - Grey-based
+    // Interactive Colors - Better contrast for readability
     buttonPrimary: '#495057',
     buttonPrimaryHover: '#343a40',
-    buttonSecondary: '#e9ecef',
-    buttonSecondaryHover: '#dee2e6',
+    buttonSecondary: '#f8f9fa',
+    buttonSecondaryHover: '#e9ecef',
     buttonGhost: 'transparent',
     buttonGhostHover: '#e9ecef'
   },
@@ -91,25 +91,25 @@ export const DARK_THEME: EditorTheme = {
   name: 'Dark Theme',
   id: 'dark',
   editor: {
-    // Background Colors - Consistent dark grey palette
-    primaryBg: '#1a1a1a',
-    secondaryBg: '#2d2d2d',
-    tertiaryBg: '#404040',
-    surfaceBg: '#1a1a1a',
-    cardBg: '#2d2d2d',
-    hoverBg: '#404040',
-    activeBg: '#525252',
-    selectedBg: '#404040',
+    // Background Colors - Darker and more consistent
+    primaryBg: '#0f0f0f',
+    secondaryBg: '#1a1a1a', 
+    tertiaryBg: '#262626',
+    surfaceBg: '#0f0f0f',
+    cardBg: '#1a1a1a',
+    hoverBg: '#262626',
+    activeBg: '#404040',
+    selectedBg: '#525252',
     
-    // Border Colors - Dark grey variations
+    // Border Colors - Better contrast
     primaryBorder: '#404040',
     secondaryBorder: '#525252',
     focusBorder: '#737373',
     activeBorder: '#a3a3a3',
     
-    // Text Colors - Light on dark
-    primaryText: '#f5f5f5',
-    secondaryText: '#d4d4d4',
+    // Text Colors - Better contrast ratios
+    primaryText: '#fafafa',
+    secondaryText: '#e5e5e5',
     mutedText: '#a3a3a3',
     accentText: '#d4d4d4',
     linkText: '#e5e5e5',
@@ -120,26 +120,26 @@ export const DARK_THEME: EditorTheme = {
     errorColor: '#ef4444',
     infoColor: '#06b6d4',
     
-    // Interactive Colors - Dark theme appropriate
-    buttonPrimary: '#f5f5f5',
-    buttonPrimaryHover: '#d4d4d4',
-    buttonSecondary: '#404040',
-    buttonSecondaryHover: '#525252',
+    // Interactive Colors - Fixed contrast issues
+    buttonPrimary: '#fafafa',
+    buttonPrimaryHover: '#e5e5e5',
+    buttonSecondary: '#262626',
+    buttonSecondaryHover: '#404040',
     buttonGhost: 'transparent',
-    buttonGhostHover: '#404040'
+    buttonGhostHover: '#262626'
   },
   blocks: {
-    // Block-specific colors - Dark theme
-    blockBackground: '#2d2d2d',
+    // Block-specific colors - Better contrast
+    blockBackground: '#1a1a1a',
     blockBorder: '#404040',
-    blockHover: '#404040',
-    blockSelected: '#525252',
-    blockActive: '#404040',
+    blockHover: '#262626',
+    blockSelected: '#404040',
+    blockActive: '#525252',
     
-    // Block type indicators - Dark theme variations
+    // Block type indicators - Higher contrast
     snapshotCardAccent: '#a3a3a3',
-    headingAccent: '#d4d4d4',
-    paragraphAccent: '#f5f5f5',
+    headingAccent: '#e5e5e5',
+    paragraphAccent: '#fafafa',
     figureAccent: '#22c55e',
     tableAccent: '#f59e0b',
     calloutAccent: '#ef4444',
@@ -150,26 +150,26 @@ export const DARK_THEME: EditorTheme = {
     dividerAccent: '#525252'
   },
   preview: {
-    previewBg: '#1a1a1a',
-    previewCardBg: '#2d2d2d',
+    previewBg: '#0f0f0f',
+    previewCardBg: '#1a1a1a',
     previewBorder: '#404040',
-    previewHeaderBg: '#2d2d2d',
-    previewFooterBg: '#2d2d2d',
+    previewHeaderBg: '#1a1a1a',
+    previewFooterBg: '#1a1a1a',
     previewScrollbar: '#404040',
     previewScrollbarHover: '#525252'
   },
   palette: {
-    paletteBg: '#2d2d2d',
-    paletteCardBg: '#404040',
-    paletteCardHover: '#525252',
+    paletteBg: '#1a1a1a',
+    paletteCardBg: '#262626',
+    paletteCardHover: '#404040',
     paletteBorder: '#404040',
-    paletteHeaderBg: '#2d2d2d',
+    paletteHeaderBg: '#1a1a1a',
     categoryText: '#a3a3a3',
-    blockTitleText: '#f5f5f5',
-    blockDescText: '#d4d4d4'
+    blockTitleText: '#fafafa',
+    blockDescText: '#e5e5e5'
   }
 };
 
 export const DEFAULT_THEMES: EditorTheme[] = [LIGHT_THEME, DARK_THEME];
 
-export const DEFAULT_THEME_ID = 'dark'; // Changed from 'light' to 'dark'
+export const DEFAULT_THEME_ID = 'dark';

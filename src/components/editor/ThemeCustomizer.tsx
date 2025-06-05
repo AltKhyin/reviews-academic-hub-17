@@ -1,4 +1,3 @@
-
 // ABOUTME: Theme customization panel for the native editor
 // Provides granular control over all color aspects of the editor
 
@@ -68,6 +67,16 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({ onClose, class
     }
   };
 
+  const getButtonStyle = (isActive: boolean) => ({
+    backgroundColor: isActive 
+      ? 'var(--editor-button-primary)' 
+      : 'var(--editor-button-secondary)',
+    borderColor: 'var(--editor-primary-border)',
+    color: isActive 
+      ? 'var(--editor-card-bg)' // Ensures good contrast by using card background as text color
+      : 'var(--editor-primary-text)'
+  });
+
   return (
     <Card className={cn("theme-customizer", className)} style={{
       backgroundColor: 'var(--editor-card-bg)',
@@ -80,7 +89,16 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({ onClose, class
             Theme Customizer
           </CardTitle>
           {onClose && (
-            <Button variant="ghost" size="sm" onClick={onClose}>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={onClose}
+              style={{
+                color: 'var(--editor-primary-text)',
+                backgroundColor: 'transparent'
+              }}
+              className="hover:bg-[var(--editor-hover-bg)]"
+            >
               ×
             </Button>
           )}
@@ -99,14 +117,8 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({ onClose, class
                 key={theme.id}
                 variant={currentTheme.id === theme.id ? "default" : "outline"}
                 onClick={() => setTheme(theme.id)}
-                className="justify-start"
-                style={{
-                  backgroundColor: currentTheme.id === theme.id 
-                    ? 'var(--editor-button-primary)' 
-                    : 'var(--editor-button-secondary)',
-                  borderColor: 'var(--editor-primary-border)',
-                  color: 'var(--editor-primary-text)'
-                }}
+                className="justify-start hover:scale-105 transition-transform"
+                style={getButtonStyle(currentTheme.id === theme.id)}
               >
                 {theme.name}
               </Button>
@@ -130,13 +142,8 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({ onClose, class
                 variant={themeMode === mode ? "default" : "outline"}
                 size="sm"
                 onClick={() => setThemeMode(mode as any)}
-                style={{
-                  backgroundColor: themeMode === mode 
-                    ? 'var(--editor-button-primary)' 
-                    : 'var(--editor-button-secondary)',
-                  borderColor: 'var(--editor-primary-border)',
-                  color: 'var(--editor-primary-text)'
-                }}
+                className="hover:scale-105 transition-transform"
+                style={getButtonStyle(themeMode === mode)}
               >
                 <Icon className="w-4 h-4 mr-1" />
                 {label}
@@ -149,15 +156,45 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({ onClose, class
 
         {/* Color Customization */}
         <Tabs defaultValue="editor" className="space-y-4">
-          <TabsList className="grid grid-cols-4 w-full">
-            <TabsTrigger value="editor">Editor</TabsTrigger>
-            <TabsTrigger value="blocks">Blocks</TabsTrigger>
-            <TabsTrigger value="preview">Preview</TabsTrigger>
-            <TabsTrigger value="palette">Palette</TabsTrigger>
+          <TabsList 
+            className="grid grid-cols-4 w-full"
+            style={{
+              backgroundColor: 'var(--editor-secondary-bg)',
+              borderColor: 'var(--editor-primary-border)'
+            }}
+          >
+            <TabsTrigger 
+              value="editor"
+              className="data-[state=active]:bg-[var(--editor-selected-bg)] data-[state=active]:text-[var(--editor-primary-text)]"
+              style={{ color: 'var(--editor-secondary-text)' }}
+            >
+              Editor
+            </TabsTrigger>
+            <TabsTrigger 
+              value="blocks"
+              className="data-[state=active]:bg-[var(--editor-selected-bg)] data-[state=active]:text-[var(--editor-primary-text)]"
+              style={{ color: 'var(--editor-secondary-text)' }}
+            >
+              Blocks
+            </TabsTrigger>
+            <TabsTrigger 
+              value="preview"
+              className="data-[state=active]:bg-[var(--editor-selected-bg)] data-[state=active]:text-[var(--editor-primary-text)]"
+              style={{ color: 'var(--editor-secondary-text)' }}
+            >
+              Preview
+            </TabsTrigger>
+            <TabsTrigger 
+              value="palette"
+              className="data-[state=active]:bg-[var(--editor-selected-bg)] data-[state=active]:text-[var(--editor-primary-text)]"
+              style={{ color: 'var(--editor-secondary-text)' }}
+            >
+              Palette
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="editor" className="space-y-4">
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 gap-4 max-h-96 overflow-y-auto">
               <ColorPicker 
                 label="Primary Background" 
                 value={appliedTheme.editor.primaryBg}
@@ -206,11 +243,23 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({ onClose, class
                 onChange={(value) => handleColorChange('editor.mutedText', value)}
                 description="Descriptions and muted content"
               />
+              <ColorPicker 
+                label="Button Primary" 
+                value={appliedTheme.editor.buttonPrimary}
+                onChange={(value) => handleColorChange('editor.buttonPrimary', value)}
+                description="Primary button background"
+              />
+              <ColorPicker 
+                label="Button Secondary" 
+                value={appliedTheme.editor.buttonSecondary}
+                onChange={(value) => handleColorChange('editor.buttonSecondary', value)}
+                description="Secondary button background"
+              />
             </div>
           </TabsContent>
 
           <TabsContent value="blocks" className="space-y-4">
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 gap-4 max-h-96 overflow-y-auto">
               <ColorPicker 
                 label="Block Background" 
                 value={appliedTheme.blocks.blockBackground}
@@ -263,7 +312,7 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({ onClose, class
           </TabsContent>
 
           <TabsContent value="preview" className="space-y-4">
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 gap-4 max-h-96 overflow-y-auto">
               <ColorPicker 
                 label="Preview Background" 
                 value={appliedTheme.preview.previewBg}
@@ -292,7 +341,7 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({ onClose, class
           </TabsContent>
 
           <TabsContent value="palette" className="space-y-4">
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 gap-4 max-h-96 overflow-y-auto">
               <ColorPicker 
                 label="Palette Background" 
                 value={appliedTheme.palette.paletteBg}
@@ -342,7 +391,12 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({ onClose, class
               variant="outline" 
               size="sm" 
               onClick={resetCustomizations}
-              className="flex-1"
+              className="flex-1 hover:scale-105 transition-transform"
+              style={{
+                backgroundColor: 'var(--editor-button-secondary)',
+                borderColor: 'var(--editor-primary-border)',
+                color: 'var(--editor-primary-text)'
+              }}
             >
               <RotateCcw className="w-4 h-4 mr-1" />
               Reset
@@ -351,7 +405,12 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({ onClose, class
               variant="outline" 
               size="sm" 
               onClick={handleExport}
-              className="flex-1"
+              className="flex-1 hover:scale-105 transition-transform"
+              style={{
+                backgroundColor: 'var(--editor-button-secondary)',
+                borderColor: 'var(--editor-primary-border)',
+                color: 'var(--editor-primary-text)'
+              }}
             >
               {copied ? <Check className="w-4 h-4 mr-1" /> : <Copy className="w-4 h-4 mr-1" />}
               {copied ? 'Copied!' : 'Export'}
@@ -369,12 +428,22 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({ onClose, class
                 value={importData}
                 onChange={(e) => setImportData(e.target.value)}
                 className="flex-1"
+                style={{
+                  backgroundColor: 'var(--editor-surface-bg)',
+                  borderColor: 'var(--editor-primary-border)',
+                  color: 'var(--editor-primary-text)'
+                }}
               />
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={handleImport}
                 disabled={!importData.trim()}
+                style={{
+                  backgroundColor: importData.trim() ? 'var(--editor-button-secondary)' : 'var(--editor-hover-bg)',
+                  borderColor: 'var(--editor-primary-border)',
+                  color: importData.trim() ? 'var(--editor-primary-text)' : 'var(--editor-muted-text)'
+                }}
               >
                 <Upload className="w-4 h-4" />
               </Button>
@@ -386,11 +455,14 @@ export const ThemeCustomizer: React.FC<ThemeCustomizerProps> = ({ onClose, class
         {Object.keys(customizations).length > 0 && (
           <div className="pt-4 border-t" style={{ borderColor: 'var(--editor-primary-border)' }}>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" style={{ 
-                backgroundColor: 'var(--editor-card-bg)',
-                borderColor: 'var(--editor-primary-border)',
-                color: 'var(--editor-primary-text)'
-              }}>
+              <Badge 
+                variant="outline" 
+                style={{ 
+                  backgroundColor: 'var(--editor-card-bg)',
+                  borderColor: 'var(--editor-primary-border)',
+                  color: 'var(--editor-primary-text)'
+                }}
+              >
                 {Object.keys(customizations).length} customization(s) applied
               </Badge>
             </div>
