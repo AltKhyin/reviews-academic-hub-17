@@ -1,130 +1,94 @@
 
-// ABOUTME: Image and figure display with caption and lightbox support
-// Handles responsive images with proper accessibility
+// ABOUTME: Enhanced figure block with caption support and responsive images
+// Displays images, charts, and other media with proper accessibility
 
-import React, { useEffect, useState } from 'react';
-import { ReviewBlock, FigurePayload } from '@/types/review';
-import { cn } from '@/lib/utils';
-import { ZoomIn } from 'lucide-react';
+import React from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { ReviewBlock } from '@/types/review';
+import { Image, FileText } from 'lucide-react';
 
 interface FigureBlockProps {
   block: ReviewBlock;
-  onInteraction?: (blockId: string, interactionType: string, data?: any) => void;
-  onSectionView?: (blockId: string) => void;
   readonly?: boolean;
 }
 
-export const FigureBlock: React.FC<FigureBlockProps> = ({
-  block,
-  onInteraction,
-  onSectionView,
-  readonly
+export const FigureBlock: React.FC<FigureBlockProps> = ({ 
+  block, 
+  readonly = false 
 }) => {
-  const payload = block.payload as FigurePayload;
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [showLightbox, setShowLightbox] = useState(false);
+  const payload = block.payload;
+  const src = payload.src || '';
+  const alt = payload.alt || '';
+  const caption = payload.caption || '';
+  const width = payload.width || 'auto';
+  const alignment = payload.alignment || 'center';
 
-  useEffect(() => {
-    // Track when this block comes into view
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            onInteraction?.(block.id.toString(), 'viewed', {
-              block_type: 'figure',
-              figure_number: payload.figure_number,
-              has_caption: !!payload.caption,
-              timestamp: Date.now()
-            });
-          }
-        });
-      },
-      { threshold: 0.3 }
-    );
-
-    const element = document.querySelector(`[data-block-id="${block.id}"]`);
-    if (element) {
-      observer.observe(element);
+  const getAlignmentClass = (alignment: string) => {
+    switch (alignment) {
+      case 'left':
+        return 'text-left';
+      case 'right':
+        return 'text-right';
+      default:
+        return 'text-center';
     }
-
-    return () => observer.disconnect();
-  }, [block.id, onInteraction, payload.figure_number, payload.caption]);
-
-  const handleImageClick = () => {
-    setShowLightbox(true);
-    onInteraction?.(block.id.toString(), 'lightbox_opened', {
-      figure_number: payload.figure_number,
-      timestamp: Date.now()
-    });
-  };
-
-  const handleImageLoad = () => {
-    setIsLoaded(true);
   };
 
   return (
-    <>
-      <figure className="figure-block my-8">
-        <div className="relative group cursor-pointer" onClick={handleImageClick}>
-          <img
-            src={payload.image_url}
-            alt={payload.alt_text}
-            className={cn(
-              "w-full h-auto rounded-lg shadow-md transition-opacity duration-300",
-              isLoaded ? "opacity-100" : "opacity-0"
-            )}
-            onLoad={handleImageLoad}
-            style={{
-              maxWidth: payload.width ? `${payload.width}px` : '100%',
-              height: payload.height ? `${payload.height}px` : 'auto'
-            }}
-          />
-          
-          {/* Loading placeholder */}
-          {!isLoaded && (
-            <div className="absolute inset-0 bg-gray-200 rounded-lg animate-pulse flex items-center justify-center">
-              <span className="text-gray-400">Carregando...</span>
+    <div className={`figure-block my-6 ${getAlignmentClass(alignment)}`}>
+      <Card 
+        className="border shadow-md overflow-hidden"
+        style={{ 
+          backgroundColor: '#1a1a1a',
+          borderColor: '#2a2a2a'
+        }}
+      >
+        <CardContent className="p-0">
+          {src ? (
+            <div className="relative">
+              <img
+                src={src}
+                alt={alt}
+                className="w-full h-auto object-cover"
+                style={{ maxWidth: width !== 'auto' ? width : '100%' }}
+                loading="lazy"
+              />
+              {!readonly && (
+                <div className="absolute top-2 left-2">
+                  <div 
+                    className="flex items-center gap-1 px-2 py-1 rounded text-xs"
+                    style={{ 
+                      backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                      color: '#ffffff'
+                    }}
+                  >
+                    <Image className="w-3 h-3" />
+                    Figura
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div 
+              className="flex flex-col items-center justify-center py-12 px-6"
+              style={{ backgroundColor: '#212121' }}
+            >
+              <FileText className="w-12 h-12 mb-4" style={{ color: '#6b7280' }} />
+              <p className="text-sm" style={{ color: '#9ca3af' }}>
+                Nenhuma imagem selecionada
+              </p>
             </div>
           )}
           
-          {/* Zoom overlay */}
-          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded-lg flex items-center justify-center">
-            <ZoomIn className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-          </div>
-        </div>
-        
-        {/* Caption */}
-        {payload.caption && (
-          <figcaption className="mt-3 text-sm text-gray-600 text-center italic">
-            {payload.figure_number && (
-              <strong>Figura {payload.figure_number}: </strong>
-            )}
-            {payload.caption}
-          </figcaption>
-        )}
-      </figure>
-
-      {/* Lightbox Modal */}
-      {showLightbox && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4"
-          onClick={() => setShowLightbox(false)}
-        >
-          <div className="relative max-w-7xl max-h-full">
-            <img
-              src={payload.image_url}
-              alt={payload.alt_text}
-              className="max-w-full max-h-full object-contain"
-            />
-            <button
-              className="absolute top-4 right-4 text-white text-2xl hover:text-gray-300"
-              onClick={() => setShowLightbox(false)}
-            >
-              ×
-            </button>
-          </div>
-        </div>
-      )}
-    </>
+          {caption && (
+            <div className="p-4 border-t" style={{ borderColor: '#2a2a2a' }}>
+              <p className="text-sm italic" style={{ color: '#d1d5db' }}>
+                {caption}
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };

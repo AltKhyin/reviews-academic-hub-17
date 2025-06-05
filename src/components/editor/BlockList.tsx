@@ -1,22 +1,32 @@
 
-// ABOUTME: Block list component with drag-and-drop support and block controls
-// Provides visual representation and interaction for editor blocks
+// ABOUTME: Enhanced block list with drag-and-drop, visual feedback, and improved UX
+// Handles block management, reordering, and selection with dark theme styling
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { ReviewBlock, BlockType } from '@/types/review';
+import { useBlockDragDrop } from '@/hooks/useBlockDragDrop';
 import { 
-  ChevronUp, 
-  ChevronDown, 
+  GripVertical, 
+  Eye, 
+  EyeOff, 
+  Copy, 
   Trash2, 
   Plus,
-  GripVertical,
-  Copy
+  FileText,
+  Heading,
+  Type,
+  Image,
+  Table,
+  AlertCircle,
+  Hash,
+  Quote,
+  BarChart3,
+  List,
+  FlaskConical
 } from 'lucide-react';
-import { ReviewBlock, BlockType } from '@/types/review';
-import { BlockRenderer } from '../review/BlockRenderer';
-import { useBlockDragDrop } from '@/hooks/useBlockDragDrop';
 import { cn } from '@/lib/utils';
 
 interface BlockListProps {
@@ -29,6 +39,78 @@ interface BlockListProps {
   onDuplicateBlock?: (blockId: number) => void;
   compact?: boolean;
 }
+
+const getBlockIcon = (type: string) => {
+  switch (type) {
+    case 'snapshot_card':
+      return FlaskConical;
+    case 'heading':
+      return Heading;
+    case 'paragraph':
+      return Type;
+    case 'figure':
+      return Image;
+    case 'table':
+      return Table;
+    case 'callout':
+      return AlertCircle;
+    case 'number_card':
+      return Hash;
+    case 'reviewer_quote':
+      return Quote;
+    case 'poll':
+      return BarChart3;
+    case 'citation_list':
+      return List;
+    default:
+      return FileText;
+  }
+};
+
+const getBlockColor = (type: string) => {
+  switch (type) {
+    case 'snapshot_card':
+      return '#3b82f6';
+    case 'heading':
+      return '#8b5cf6';
+    case 'paragraph':
+      return '#ffffff';
+    case 'figure':
+      return '#10b981';
+    case 'table':
+      return '#f59e0b';
+    case 'callout':
+      return '#ef4444';
+    case 'number_card':
+      return '#3b82f6';
+    case 'reviewer_quote':
+      return '#a855f7';
+    case 'poll':
+      return '#06b6d4';
+    case 'citation_list':
+      return '#9ca3af';
+    default:
+      return '#6b7280';
+  }
+};
+
+const getBlockTitle = (block: ReviewBlock) => {
+  switch (block.type) {
+    case 'heading':
+      return block.payload.text || 'Título sem texto';
+    case 'paragraph':
+      const content = block.payload.content || '';
+      return content.length > 50 ? `${content.substring(0, 50)}...` : content || 'Parágrafo vazio';
+    case 'figure':
+      return block.payload.caption || block.payload.alt || 'Figura sem título';
+    case 'callout':
+      return block.payload.title || `Callout (${block.payload.type || 'info'})`;
+    case 'table':
+      return block.payload.title || 'Tabela';
+    default:
+      return `Bloco ${block.type}`;
+  }
+};
 
 export const BlockList: React.FC<BlockListProps> = ({
   blocks,
@@ -43,55 +125,25 @@ export const BlockList: React.FC<BlockListProps> = ({
   const { dragState, handleDragStart, handleDragEnd, handleDragOver, handleDragEnter } = 
     useBlockDragDrop(onMoveBlock);
 
-  const getBlockTypeLabel = (type: BlockType): string => {
-    const labels: Record<BlockType, string> = {
-      snapshot_card: 'Cartão de Evidência',
-      heading: 'Título',
-      paragraph: 'Parágrafo',
-      figure: 'Figura',
-      table: 'Tabela',
-      poll: 'Enquete',
-      callout: 'Destaque',
-      reviewer_quote: 'Citação',
-      divider: 'Divisor',
-      number_card: 'Cartão Numérico',
-      citation_list: 'Lista de Citações'
-    };
-    return labels[type] || type;
-  };
-
-  const handleDuplicateBlock = (blockId: number) => {
-    if (onDuplicateBlock) {
-      onDuplicateBlock(blockId);
-    } else {
-      const blockToDuplicate = blocks.find(b => b.id === blockId);
-      if (blockToDuplicate) {
-        const blockIndex = blocks.findIndex(b => b.id === blockId);
-        onAddBlock(blockToDuplicate.type, blockIndex + 1);
-      }
-    }
-  };
-
   if (blocks.length === 0) {
     return (
-      <div className="text-center py-12">
-        <div style={{ color: 'var(--editor-muted-text)' }} className="mb-4">
-          <Plus className="w-12 h-12 mx-auto" />
-        </div>
-        <p style={{ color: 'var(--editor-muted-text)' }} className="mb-4">
-          Nenhum bloco adicionado ainda
+      <div className="block-list-empty text-center py-12">
+        <FileText className="w-12 h-12 mx-auto mb-4" style={{ color: '#6b7280' }} />
+        <h3 className="text-lg font-medium mb-2" style={{ color: '#ffffff' }}>
+          Nenhum bloco adicionado
+        </h3>
+        <p className="mb-6" style={{ color: '#9ca3af' }}>
+          Use a paleta à esquerda para adicionar blocos ao editor.
         </p>
-        <Button 
-          variant="outline" 
+        <Button
           onClick={() => onAddBlock('paragraph')}
-          size={compact ? "sm" : "default"}
-          style={{
-            backgroundColor: 'var(--editor-card-bg)',
-            borderColor: 'var(--editor-primary-border)',
-            color: 'var(--editor-primary-text)'
+          variant="outline"
+          style={{ 
+            borderColor: '#3b82f6',
+            color: '#3b82f6'
           }}
-          className="hover:bg-[var(--editor-hover-bg)]"
         >
+          <Plus className="w-4 h-4 mr-2" />
           Adicionar Primeiro Bloco
         </Button>
       </div>
@@ -99,161 +151,159 @@ export const BlockList: React.FC<BlockListProps> = ({
   }
 
   return (
-    <div className="space-y-2">
-      {blocks.map((block, index) => (
-        <div key={block.id} className="relative group">
-          {/* Insert Block Button */}
-          <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-6 w-6 p-0"
-              style={{
-                backgroundColor: 'var(--editor-card-bg)',
-                borderColor: 'var(--editor-primary-border)',
-                color: 'var(--editor-primary-text)'
-              }}
-              onClick={() => onAddBlock('paragraph', index)}
-            >
-              <Plus className="w-3 h-3" />
-            </Button>
-          </div>
+    <div className="block-list space-y-3">
+      {blocks.map((block, index) => {
+        const Icon = getBlockIcon(block.type);
+        const iconColor = getBlockColor(block.type);
+        const isActive = block.id === activeBlockId;
+        const isDraggedOver = dragState.draggedOver === index;
+        const isDragging = dragState.draggedIndex === index;
 
-          <Card 
+        return (
+          <Card
+            key={block.id}
             className={cn(
-              "cursor-pointer transition-all duration-200 hover:shadow-md block-editor-card",
-              activeBlockId === block.id && "ring-2 ring-[var(--editor-focus-border)]",
-              dragState.draggedIndex === index && "opacity-50",
-              dragState.draggedOver === index && dragState.isDragging && "border-t-4 border-t-[var(--editor-focus-border)]"
+              "block-list-item cursor-pointer transition-all duration-200",
+              isActive && "ring-2 ring-blue-500",
+              isDraggedOver && "border-blue-400",
+              isDragging && "opacity-50 scale-95"
             )}
             style={{
-              backgroundColor: activeBlockId === block.id ? 'var(--editor-selected-bg)' : 'var(--editor-card-bg)',
-              borderColor: 'var(--editor-primary-border)'
+              backgroundColor: isActive ? '#1e3a8a' : '#1a1a1a',
+              borderColor: isActive ? '#3b82f6' : '#2a2a2a'
             }}
-            onClick={() => onActiveBlockChange(block.id)}
             draggable
             onDragStart={(e) => handleDragStart(e, index)}
             onDragEnd={(e) => handleDragEnd(e, blocks)}
             onDragOver={handleDragOver}
             onDragEnter={(e) => handleDragEnter(e, index)}
+            onClick={() => onActiveBlockChange(block.id)}
           >
-            <CardContent className={cn("p-3", compact && "p-2")}>
-              {/* Block Header */}
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
+            <CardContent className={cn("p-4", compact && "p-3")}>
+              <div className="flex items-center gap-3">
+                {/* Drag Handle */}
+                <div className="drag-handle cursor-grab active:cursor-grabbing">
                   <GripVertical 
-                    className="w-4 h-4 cursor-grab active:cursor-grabbing" 
-                    style={{ color: 'var(--editor-muted-text)' }}
+                    className="w-4 h-4" 
+                    style={{ color: '#6b7280' }}
                   />
-                  <Badge 
-                    variant="outline" 
-                    className={cn("text-xs", compact && "text-xs")}
-                    style={{
-                      backgroundColor: 'var(--editor-card-bg)',
-                      color: 'var(--editor-primary-text)',
-                      borderColor: 'var(--editor-primary-border)'
-                    }}
-                  >
-                    {getBlockTypeLabel(block.type)}
-                  </Badge>
-                  <span className="text-xs" style={{ color: 'var(--editor-muted-text)' }}>
-                    #{index + 1}
-                  </span>
                 </div>
-                
+
+                {/* Block Icon */}
+                <div className="flex-shrink-0">
+                  <Icon 
+                    className="w-5 h-5" 
+                    style={{ color: iconColor }}
+                  />
+                </div>
+
+                {/* Block Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h4 
+                      className={cn(
+                        "font-medium truncate",
+                        compact ? "text-sm" : "text-base"
+                      )}
+                      style={{ color: isActive ? '#ffffff' : '#ffffff' }}
+                    >
+                      {getBlockTitle(block)}
+                    </h4>
+                    <Badge 
+                      variant="outline" 
+                      className="text-xs"
+                      style={{ 
+                        backgroundColor: 'transparent',
+                        borderColor: iconColor,
+                        color: iconColor
+                      }}
+                    >
+                      {block.type}
+                    </Badge>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <span 
+                      className="text-xs"
+                      style={{ color: isActive ? '#d1d5db' : '#9ca3af' }}
+                    >
+                      Posição {index + 1}
+                    </span>
+                    {!block.visible && (
+                      <EyeOff 
+                        className="w-3 h-3" 
+                        style={{ color: '#ef4444' }}
+                      />
+                    )}
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
                 <div className="flex items-center gap-1">
-                  {/* Duplicate Button */}
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{ color: 'var(--editor-muted-text)' }}
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleDuplicateBlock(block.id);
+                      // Toggle visibility
                     }}
-                    title="Duplicar bloco"
+                    className="w-8 h-8 p-0"
                   >
-                    <Copy className="w-3 h-3" />
+                    {block.visible ? (
+                      <Eye className="w-4 h-4" style={{ color: '#10b981' }} />
+                    ) : (
+                      <EyeOff className="w-4 h-4" style={{ color: '#ef4444' }} />
+                    )}
                   </Button>
-                  
-                  {/* Move Buttons */}
+
+                  {onDuplicateBlock && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDuplicateBlock(block.id);
+                      }}
+                      className="w-8 h-8 p-0"
+                    >
+                      <Copy className="w-4 h-4" style={{ color: '#6b7280' }} />
+                    </Button>
+                  )}
+
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{ color: 'var(--editor-muted-text)' }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onMoveBlock(block.id, 'up');
-                    }}
-                    disabled={index === 0}
-                    title="Mover para cima"
-                  >
-                    <ChevronUp className="w-3 h-3" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{ color: 'var(--editor-muted-text)' }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onMoveBlock(block.id, 'down');
-                    }}
-                    disabled={index === blocks.length - 1}
-                    title="Mover para baixo"
-                  >
-                    <ChevronDown className="w-3 h-3" />
-                  </Button>
-                  
-                  {/* Delete Button */}
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700"
                     onClick={(e) => {
                       e.stopPropagation();
                       onDeleteBlock(block.id);
                     }}
-                    title="Excluir bloco"
+                    className="w-8 h-8 p-0 hover:bg-red-900/20"
                   >
-                    <Trash2 className="w-3 h-3" />
+                    <Trash2 className="w-4 h-4" style={{ color: '#ef4444' }} />
                   </Button>
                 </div>
               </div>
 
-              {/* Block Preview */}
-              <div className={cn("pointer-events-none", compact && "text-xs")}>
-                <BlockRenderer 
-                  block={block} 
-                  readonly={true}
-                  className="scale-90 origin-top-left transform"
-                />
+              {/* Insert Point Indicator */}
+              <div className="flex justify-center mt-3">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onAddBlock('paragraph', index + 1);
+                  }}
+                  className="w-full h-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{ color: '#6b7280' }}
+                >
+                  <Plus className="w-3 h-3 mr-1" />
+                  Inserir bloco aqui
+                </Button>
               </div>
             </CardContent>
           </Card>
-
-          {/* Insert Block Button at Bottom */}
-          {index === blocks.length - 1 && (
-            <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-6 w-6 p-0"
-                style={{
-                  backgroundColor: 'var(--editor-card-bg)',
-                  borderColor: 'var(--editor-primary-border)',
-                  color: 'var(--editor-primary-text)'
-                }}
-                onClick={() => onAddBlock('paragraph', index + 1)}
-              >
-                <Plus className="w-3 h-3" />
-              </Button>
-            </div>
-          )}
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };
