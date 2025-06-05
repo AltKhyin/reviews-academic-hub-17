@@ -1,3 +1,4 @@
+
 // ABOUTME: Fixed block editor with proper drag and drop, state management, and grid operations
 // Resolved UI freezing, merge issues, and event handling conflicts
 
@@ -17,7 +18,8 @@ import {
   Trash2, 
   Columns2,
   Columns3,
-  Columns4
+  Columns4,
+  GripVertical
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -367,12 +369,18 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
           onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e, rowId, 0, 'merge')}
         >
-          {/* Drag handle */}
+          {/* FIXED: Drag handle with proper drag events */}
           <div className="absolute -left-8 top-4 opacity-0 group-hover:opacity-100 transition-opacity">
-            <DragHandle
+            <div
+              className="drag-handle cursor-grab active:cursor-grabbing transition-all duration-200 flex items-center justify-center rounded border bg-gray-800 border-gray-600 hover:bg-gray-700 hover:border-gray-500"
+              style={{ width: '20px', height: '20px' }}
+              draggable
               onDragStart={(e) => handleDragStart(e, block.id)}
               onDragEnd={handleDragEnd}
-            />
+              title="Arrastar bloco"
+            >
+              <GripVertical className="w-3 h-3 text-gray-400" />
+            </div>
           </div>
 
           {/* Block controls */}
