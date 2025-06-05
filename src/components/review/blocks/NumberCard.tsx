@@ -1,20 +1,25 @@
 
-// ABOUTME: Number card block for highlighting key statistics and metrics
-// Displays prominent numbers with trends and contextual information
+// ABOUTME: Number card block with inline editing for statistics and metrics
+// Displays prominent numbers with trends and direct editing capabilities
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { ReviewBlock } from '@/types/review';
+import { InlineTextEditor } from '@/components/editor/inline/InlineTextEditor';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 
 interface NumberCardProps {
   block: ReviewBlock;
   readonly?: boolean;
+  onUpdate?: (updates: Partial<ReviewBlock>) => void;
 }
 
 export const NumberCard: React.FC<NumberCardProps> = ({ 
   block, 
-  readonly = false 
+  readonly = false,
+  onUpdate
 }) => {
   const payload = block.payload;
   const number = payload.number || '0';
@@ -22,6 +27,17 @@ export const NumberCard: React.FC<NumberCardProps> = ({
   const description = payload.description || '';
   const trend = payload.trend || 'neutral';
   const percentage = payload.percentage || 0;
+
+  const handleUpdate = (field: string, value: any) => {
+    if (onUpdate) {
+      onUpdate({
+        payload: {
+          ...payload,
+          [field]: value
+        }
+      });
+    }
+  };
 
   const getTrendIcon = (trend: string) => {
     switch (trend) {
@@ -48,6 +64,66 @@ export const NumberCard: React.FC<NumberCardProps> = ({
   const TrendIcon = getTrendIcon(trend);
   const trendColor = getTrendColor(trend);
 
+  if (readonly) {
+    return (
+      <div className="number-card-block my-6">
+        <Card 
+          className="text-center border shadow-lg transition-all duration-200 hover:shadow-xl"
+          style={{ 
+            backgroundColor: '#1a1a1a',
+            borderColor: '#2a2a2a'
+          }}
+        >
+          <CardContent className="p-8">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <div 
+                  className="text-4xl md:text-5xl font-bold tracking-tight"
+                  style={{ color: '#ffffff' }}
+                >
+                  {number}
+                </div>
+                
+                {trend !== 'neutral' && percentage !== 0 && (
+                  <div className="flex items-center justify-center gap-1">
+                    <TrendIcon 
+                      className="w-4 h-4" 
+                      style={{ color: trendColor }}
+                    />
+                    <span 
+                      className="text-sm font-medium"
+                      style={{ color: trendColor }}
+                    >
+                      {Math.abs(percentage)}%
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <h3 
+                  className="text-lg font-semibold"
+                  style={{ color: '#ffffff' }}
+                >
+                  {label}
+                </h3>
+                
+                {description && (
+                  <p 
+                    className="text-sm mt-2"
+                    style={{ color: '#d1d5db' }}
+                  >
+                    {description}
+                  </p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="number-card-block my-6">
       <Card 
@@ -61,48 +137,67 @@ export const NumberCard: React.FC<NumberCardProps> = ({
           <div className="space-y-4">
             {/* Main Number */}
             <div className="space-y-2">
-              <div 
-                className="text-4xl md:text-5xl font-bold tracking-tight"
-                style={{ color: '#ffffff' }}
-              >
-                {number}
-              </div>
+              <InlineTextEditor
+                value={number}
+                onChange={(value) => handleUpdate('number', value)}
+                placeholder="0"
+                className="text-4xl md:text-5xl font-bold tracking-tight text-center"
+              />
               
-              {/* Trend Indicator */}
-              {trend !== 'neutral' && percentage !== 0 && (
-                <div className="flex items-center justify-center gap-1">
-                  <TrendIcon 
-                    className="w-4 h-4" 
-                    style={{ color: trendColor }}
-                  />
-                  <span 
-                    className="text-sm font-medium"
-                    style={{ color: trendColor }}
+              {/* Trend Controls */}
+              <div className="flex items-center justify-center gap-4">
+                <Select 
+                  value={trend} 
+                  onValueChange={(value) => handleUpdate('trend', value)}
+                >
+                  <SelectTrigger 
+                    className="w-32"
+                    style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}
                   >
-                    {Math.abs(percentage)}%
-                  </span>
-                </div>
-              )}
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}>
+                    <SelectItem value="neutral">Neutro</SelectItem>
+                    <SelectItem value="up">Subindo</SelectItem>
+                    <SelectItem value="down">Descendo</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                {trend !== 'neutral' && (
+                  <div className="flex items-center gap-2">
+                    <TrendIcon 
+                      className="w-4 h-4" 
+                      style={{ color: trendColor }}
+                    />
+                    <Input
+                      type="number"
+                      value={percentage}
+                      onChange={(e) => handleUpdate('percentage', Number(e.target.value))}
+                      className="w-20"
+                      style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}
+                    />
+                    <span style={{ color: trendColor }}>%</span>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Label */}
-            <div>
-              <h3 
+            {/* Label and Description */}
+            <div className="space-y-2">
+              <InlineTextEditor
+                value={label}
+                onChange={(value) => handleUpdate('label', value)}
+                placeholder="Nome da métrica"
                 className="text-lg font-semibold"
-                style={{ color: '#ffffff' }}
-              >
-                {label}
-              </h3>
+              />
               
-              {/* Description */}
-              {description && (
-                <p 
-                  className="text-sm mt-2"
-                  style={{ color: '#d1d5db' }}
-                >
-                  {description}
-                </p>
-              )}
+              <InlineTextEditor
+                value={description}
+                onChange={(value) => handleUpdate('description', value)}
+                placeholder="Descrição da métrica (opcional)"
+                multiline
+                className="text-sm"
+              />
             </div>
           </div>
         </CardContent>

@@ -1,113 +1,147 @@
 
-// ABOUTME: Enhanced table block with responsive design and improved readability
-// Displays structured data with proper formatting and accessibility
+// ABOUTME: Table block with comprehensive inline editing capabilities
+// Provides spreadsheet-like editing with dynamic row/column management
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ReviewBlock } from '@/types/review';
-import { BarChart3 } from 'lucide-react';
+import { EditableTable } from '@/components/editor/inline/EditableTable';
+import { Table2 } from 'lucide-react';
 
 interface TableBlockProps {
   block: ReviewBlock;
   readonly?: boolean;
+  onUpdate?: (updates: Partial<ReviewBlock>) => void;
 }
 
 export const TableBlock: React.FC<TableBlockProps> = ({ 
   block, 
-  readonly = false 
+  readonly = false,
+  onUpdate
 }) => {
   const payload = block.payload;
   const title = payload.title || '';
-  const headers = payload.headers || [];
-  const rows = payload.rows || [];
+  const headers = payload.headers || ['Coluna 1', 'Coluna 2'];
+  const rows = payload.rows || [['Dados 1', 'Dados 2']];
   const caption = payload.caption || '';
   const compact = payload.compact || false;
 
-  if (!headers.length && !rows.length) {
+  const handleTableUpdate = (data: { title: string; headers: string[]; rows: string[][]; caption?: string }) => {
+    if (onUpdate) {
+      onUpdate({
+        payload: {
+          ...payload,
+          title: data.title,
+          headers: data.headers,
+          rows: data.rows,
+          caption: data.caption || ''
+        }
+      });
+    }
+  };
+
+  if (readonly) {
     return (
+      <div className="table-block my-6">
+        <Card 
+          className="border shadow-lg"
+          style={{ 
+            backgroundColor: '#1a1a1a',
+            borderColor: '#2a2a2a'
+          }}
+        >
+          {title && (
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2" style={{ color: '#ffffff' }}>
+                <Table2 className="w-5 h-5" style={{ color: '#f59e0b' }} />
+                {title}
+              </CardTitle>
+            </CardHeader>
+          )}
+          
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table 
+                className="w-full border-collapse border"
+                style={{ borderColor: '#2a2a2a' }}
+              >
+                <thead>
+                  <tr style={{ backgroundColor: '#212121' }}>
+                    {headers.map((header, index) => (
+                      <th 
+                        key={index} 
+                        className="border p-3 text-left font-semibold"
+                        style={{ 
+                          borderColor: '#2a2a2a',
+                          color: '#ffffff'
+                        }}
+                      >
+                        {header}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row, rowIndex) => (
+                    <tr key={rowIndex}>
+                      {row.map((cell, colIndex) => (
+                        <td 
+                          key={colIndex} 
+                          className="border p-3"
+                          style={{ 
+                            borderColor: '#2a2a2a',
+                            color: '#d1d5db'
+                          }}
+                        >
+                          {cell}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            {caption && (
+              <div 
+                className="text-sm mt-3 text-center italic"
+                style={{ color: '#9ca3af' }}
+              >
+                {caption}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="table-block my-6">
       <Card 
-        className="table-block my-6 border shadow-md"
+        className="border shadow-lg"
         style={{ 
           backgroundColor: '#1a1a1a',
           borderColor: '#2a2a2a'
         }}
       >
-        <CardContent className="flex flex-col items-center justify-center py-12">
-          <BarChart3 className="w-12 h-12 mb-4" style={{ color: '#6b7280' }} />
-          <p className="text-sm" style={{ color: '#9ca3af' }}>
-            Nenhum dado da tabela configurado
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return (
-    <Card 
-      className="table-block my-6 border shadow-md"
-      style={{ 
-        backgroundColor: '#1a1a1a',
-        borderColor: '#2a2a2a'
-      }}
-    >
-      {title && (
-        <CardHeader className="pb-4">
+        <CardHeader>
           <CardTitle className="flex items-center gap-2" style={{ color: '#ffffff' }}>
-            <BarChart3 className="w-5 h-5" style={{ color: '#f59e0b' }} />
-            {title}
+            <Table2 className="w-5 h-5" style={{ color: '#f59e0b' }} />
+            Editor de Tabela
           </CardTitle>
         </CardHeader>
-      )}
-      
-      <CardContent className={compact ? "p-3" : "p-6"}>
-        <div className="overflow-x-auto">
-          <Table>
-            {headers.length > 0 && (
-              <TableHeader>
-                <TableRow style={{ borderColor: '#2a2a2a' }}>
-                  {headers.map((header: string, index: number) => (
-                    <TableHead 
-                      key={index}
-                      className="font-semibold"
-                      style={{ color: '#ffffff' }}
-                    >
-                      {header}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-            )}
-            
-            <TableBody>
-              {rows.map((row: string[], rowIndex: number) => (
-                <TableRow 
-                  key={rowIndex}
-                  style={{ borderColor: '#2a2a2a' }}
-                  className="hover:bg-gray-800 transition-colors"
-                >
-                  {row.map((cell: string, cellIndex: number) => (
-                    <TableCell 
-                      key={cellIndex}
-                      style={{ color: '#d1d5db' }}
-                    >
-                      {cell}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
         
-        {caption && (
-          <div className="mt-4 pt-4 border-t" style={{ borderColor: '#2a2a2a' }}>
-            <p className="text-sm italic" style={{ color: '#9ca3af' }}>
-              {caption}
-            </p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+        <CardContent>
+          <EditableTable
+            title={title}
+            headers={headers}
+            rows={rows}
+            caption={caption}
+            onUpdate={handleTableUpdate}
+          />
+        </CardContent>
+      </Card>
+    </div>
   );
 };

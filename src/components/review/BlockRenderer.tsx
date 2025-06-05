@@ -1,6 +1,6 @@
 
-// ABOUTME: Main block renderer that routes to specific block components
-// Handles all block types with enhanced dark theme styling
+// ABOUTME: Enhanced block renderer with update capabilities and proper event handling
+// Routes to specific block components with edit/view mode support
 
 import React from 'react';
 import { ReviewBlock } from '@/types/review';
@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 
 interface BlockRendererProps {
   block: ReviewBlock;
+  onUpdate?: (blockId: number, updates: Partial<ReviewBlock>) => void;
   onInteraction?: (blockId: string, interactionType: string, data?: any) => void;
   onSectionView?: (blockId: string) => void;
   readonly?: boolean;
@@ -26,6 +27,7 @@ interface BlockRendererProps {
 
 export const BlockRenderer: React.FC<BlockRendererProps> = ({
   block,
+  onUpdate,
   onInteraction,
   onSectionView,
   readonly = false,
@@ -34,11 +36,24 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   // Don't render invisible blocks
   if (!block.visible) return null;
 
+  // Create update handler for this specific block
+  const handleBlockUpdate = (updates: Partial<ReviewBlock>) => {
+    if (onUpdate) {
+      onUpdate(block.id, updates);
+    }
+  };
+
   const commonProps = {
     block,
+    onUpdate: handleBlockUpdate,
     onInteraction,
     onSectionView,
     readonly
+  };
+
+  const handleBlockClick = (e: React.MouseEvent) => {
+    // Prevent event bubbling that might trigger unwanted block creation
+    e.stopPropagation();
   };
 
   const renderBlock = () => {
@@ -92,6 +107,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
       data-block-id={block.id}
       className={cn("block-renderer transition-all duration-200", className)}
       style={{ color: '#ffffff' }}
+      onClick={handleBlockClick}
     >
       {renderBlock()}
     </div>

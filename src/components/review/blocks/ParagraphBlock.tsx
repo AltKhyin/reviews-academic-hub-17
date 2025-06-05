@@ -1,24 +1,38 @@
 
-// ABOUTME: Enhanced paragraph block with rich text support and better typography
-// Handles formatted text content with proper line spacing and readability
+// ABOUTME: Enhanced paragraph block with rich text support and inline editing
+// Handles formatted text content with direct click-to-edit functionality
 
 import React from 'react';
 import { ReviewBlock } from '@/types/review';
+import { InlineRichTextEditor } from '@/components/editor/inline/InlineRichTextEditor';
 import { cn } from '@/lib/utils';
 
 interface ParagraphBlockProps {
   block: ReviewBlock;
   readonly?: boolean;
+  onUpdate?: (updates: Partial<ReviewBlock>) => void;
 }
 
 export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({ 
   block, 
-  readonly = false 
+  readonly = false,
+  onUpdate
 }) => {
   const payload = block.payload;
   const content = payload.content || '';
   const alignment = payload.alignment || 'left';
   const emphasis = payload.emphasis || 'normal';
+
+  const handleContentChange = (newContent: string) => {
+    if (onUpdate) {
+      onUpdate({
+        payload: {
+          ...payload,
+          content: newContent
+        }
+      });
+    }
+  };
 
   const getAlignmentClass = (alignment: string) => {
     switch (alignment) {
@@ -46,6 +60,22 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
     }
   };
 
+  if (readonly) {
+    return (
+      <div className="paragraph-block my-4">
+        <div
+          className={cn(
+            "leading-relaxed",
+            getAlignmentClass(alignment),
+            getEmphasisClass(emphasis),
+            "prose prose-invert max-w-none"
+          )}
+          dangerouslySetInnerHTML={{ __html: content }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="paragraph-block my-4">
       <div
@@ -55,8 +85,14 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
           getEmphasisClass(emphasis),
           "prose prose-invert max-w-none"
         )}
-        dangerouslySetInnerHTML={{ __html: content }}
-      />
+      >
+        <InlineRichTextEditor
+          value={content}
+          onChange={handleContentChange}
+          placeholder="Digite seu conteúdo aqui..."
+          disabled={readonly}
+        />
+      </div>
     </div>
   );
 };

@@ -1,6 +1,5 @@
-
-// ABOUTME: Enhanced block list with drag-and-drop, visual feedback, and improved UX
-// Handles block management, reordering, and selection with dark theme styling
+// ABOUTME: Enhanced block list with proper click handling and inline editing
+// Prevents unwanted block creation and provides intuitive interaction patterns
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -100,13 +99,20 @@ const getBlockTitle = (block: ReviewBlock) => {
       return block.payload.text || 'Título sem texto';
     case 'paragraph':
       const content = block.payload.content || '';
-      return content.length > 50 ? `${content.substring(0, 50)}...` : content || 'Parágrafo vazio';
+      const textContent = content.replace(/<[^>]*>/g, ''); // Strip HTML
+      return textContent.length > 50 ? `${textContent.substring(0, 50)}...` : textContent || 'Parágrafo vazio';
     case 'figure':
       return block.payload.caption || block.payload.alt || 'Figura sem título';
     case 'callout':
       return block.payload.title || `Callout (${block.payload.type || 'info'})`;
     case 'table':
       return block.payload.title || 'Tabela';
+    case 'number_card':
+      return `${block.payload.number || '0'} - ${block.payload.label || 'Métrica'}`;
+    case 'reviewer_quote':
+      return `"${(block.payload.quote || '').substring(0, 30)}..." - ${block.payload.author || 'Autor'}`;
+    case 'poll':
+      return block.payload.question || 'Enquete';
     default:
       return `Bloco ${block.type}`;
   }
@@ -125,6 +131,25 @@ export const BlockList: React.FC<BlockListProps> = ({
   const { dragState, handleDragStart, handleDragEnd, handleDragOver, handleDragEnter } = 
     useBlockDragDrop(onMoveBlock);
 
+  // Handle block selection with proper event handling
+  const handleBlockClick = (e: React.MouseEvent, blockId: number) => {
+    // Prevent triggering on button clicks or other interactive elements
+    const target = e.target as HTMLElement;
+    if (target.closest('button') || target.closest('[role="button"]')) {
+      return;
+    }
+    
+    e.stopPropagation();
+    onActiveBlockChange(blockId);
+  };
+
+  // Handle add block with explicit positioning
+  const handleAddBlockClick = (e: React.MouseEvent, position: number, type: BlockType = 'paragraph') => {
+    e.stopPropagation();
+    e.preventDefault();
+    onAddBlock(type, position);
+  };
+
   if (blocks.length === 0) {
     return (
       <div className="block-list-empty text-center py-12">
@@ -136,7 +161,7 @@ export const BlockList: React.FC<BlockListProps> = ({
           Use a paleta à esquerda para adicionar blocos ao editor.
         </p>
         <Button
-          onClick={() => onAddBlock('paragraph')}
+          onClick={(e) => handleAddBlockClick(e, 0)}
           variant="outline"
           style={{ 
             borderColor: '#3b82f6',
@@ -160,148 +185,165 @@ export const BlockList: React.FC<BlockListProps> = ({
         const isDragging = dragState.draggedIndex === index;
 
         return (
-          <Card
-            key={block.id}
-            className={cn(
-              "block-list-item cursor-pointer transition-all duration-200",
-              isActive && "ring-2 ring-blue-500",
-              isDraggedOver && "border-blue-400",
-              isDragging && "opacity-50 scale-95"
-            )}
-            style={{
-              backgroundColor: isActive ? '#1e3a8a' : '#1a1a1a',
-              borderColor: isActive ? '#3b82f6' : '#2a2a2a'
-            }}
-            draggable
-            onDragStart={(e) => handleDragStart(e, index)}
-            onDragEnd={(e) => handleDragEnd(e, blocks)}
-            onDragOver={handleDragOver}
-            onDragEnter={(e) => handleDragEnter(e, index)}
-            onClick={() => onActiveBlockChange(block.id)}
-          >
-            <CardContent className={cn("p-4", compact && "p-3")}>
-              <div className="flex items-center gap-3">
-                {/* Drag Handle */}
-                <div className="drag-handle cursor-grab active:cursor-grabbing">
-                  <GripVertical 
-                    className="w-4 h-4" 
-                    style={{ color: '#6b7280' }}
-                  />
-                </div>
-
-                {/* Block Icon */}
-                <div className="flex-shrink-0">
-                  <Icon 
-                    className="w-5 h-5" 
-                    style={{ color: iconColor }}
-                  />
-                </div>
-
-                {/* Block Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 
-                      className={cn(
-                        "font-medium truncate",
-                        compact ? "text-sm" : "text-base"
-                      )}
-                      style={{ color: isActive ? '#ffffff' : '#ffffff' }}
-                    >
-                      {getBlockTitle(block)}
-                    </h4>
-                    <Badge 
-                      variant="outline" 
-                      className="text-xs"
-                      style={{ 
-                        backgroundColor: 'transparent',
-                        borderColor: iconColor,
-                        color: iconColor
-                      }}
-                    >
-                      {block.type}
-                    </Badge>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <span 
-                      className="text-xs"
-                      style={{ color: isActive ? '#d1d5db' : '#9ca3af' }}
-                    >
-                      Posição {index + 1}
-                    </span>
-                    {!block.visible && (
-                      <EyeOff 
-                        className="w-3 h-3" 
-                        style={{ color: '#ef4444' }}
-                      />
-                    )}
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex items-center gap-1">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      // Toggle visibility
-                    }}
-                    className="w-8 h-8 p-0"
-                  >
-                    {block.visible ? (
-                      <Eye className="w-4 h-4" style={{ color: '#10b981' }} />
-                    ) : (
-                      <EyeOff className="w-4 h-4" style={{ color: '#ef4444' }} />
-                    )}
-                  </Button>
-
-                  {onDuplicateBlock && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDuplicateBlock(block.id);
-                      }}
-                      className="w-8 h-8 p-0"
-                    >
-                      <Copy className="w-4 h-4" style={{ color: '#6b7280' }} />
-                    </Button>
-                  )}
-
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDeleteBlock(block.id);
-                    }}
-                    className="w-8 h-8 p-0 hover:bg-red-900/20"
-                  >
-                    <Trash2 className="w-4 h-4" style={{ color: '#ef4444' }} />
-                  </Button>
-                </div>
-              </div>
-
-              {/* Insert Point Indicator */}
-              <div className="flex justify-center mt-3">
+          <div key={block.id} className="space-y-2">
+            {/* Insert point at the top for first block */}
+            {index === 0 && (
+              <div className="insert-point group">
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onAddBlock('paragraph', index + 1);
-                  }}
-                  className="w-full h-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => handleAddBlockClick(e, 0)}
+                  className="w-full h-6 opacity-30 hover:opacity-100 transition-opacity text-xs"
                   style={{ color: '#6b7280' }}
                 >
                   <Plus className="w-3 h-3 mr-1" />
                   Inserir bloco aqui
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            )}
+
+            <Card
+              className={cn(
+                "block-list-item cursor-pointer transition-all duration-200 group",
+                isActive && "ring-2 ring-blue-500",
+                isDraggedOver && "border-blue-400",
+                isDragging && "opacity-50 scale-95"
+              )}
+              style={{
+                backgroundColor: isActive ? '#1e3a8a' : '#1a1a1a',
+                borderColor: isActive ? '#3b82f6' : '#2a2a2a'
+              }}
+              draggable
+              onDragStart={(e) => handleDragStart(e, index)}
+              onDragEnd={(e) => handleDragEnd(e, blocks)}
+              onDragOver={handleDragOver}
+              onDragEnter={(e) => handleDragEnter(e, index)}
+              onClick={(e) => handleBlockClick(e, block.id)}
+            >
+              <CardContent className={cn("p-4", compact && "p-3")}>
+                <div className="flex items-center gap-3">
+                  {/* Drag Handle */}
+                  <div 
+                    className="drag-handle cursor-grab active:cursor-grabbing"
+                    onMouseDown={(e) => e.stopPropagation()}
+                  >
+                    <GripVertical 
+                      className="w-4 h-4" 
+                      style={{ color: '#6b7280' }}
+                    />
+                  </div>
+
+                  {/* Block Icon */}
+                  <div className="flex-shrink-0">
+                    <Icon 
+                      className="w-5 h-5" 
+                      style={{ color: iconColor }}
+                    />
+                  </div>
+
+                  {/* Block Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 
+                        className={cn(
+                          "font-medium truncate",
+                          compact ? "text-sm" : "text-base"
+                        )}
+                        style={{ color: isActive ? '#ffffff' : '#ffffff' }}
+                      >
+                        {getBlockTitle(block)}
+                      </h4>
+                      <Badge 
+                        variant="outline" 
+                        className="text-xs"
+                        style={{ 
+                          backgroundColor: 'transparent',
+                          borderColor: iconColor,
+                          color: iconColor
+                        }}
+                      >
+                        {block.type}
+                      </Badge>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <span 
+                        className="text-xs"
+                        style={{ color: isActive ? '#d1d5db' : '#9ca3af' }}
+                      >
+                        Posição {index + 1}
+                      </span>
+                      {!block.visible && (
+                        <EyeOff 
+                          className="w-3 h-3" 
+                          style={{ color: '#ef4444' }}
+                        />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Toggle visibility logic here
+                      }}
+                      className="w-8 h-8 p-0"
+                    >
+                      {block.visible ? (
+                        <Eye className="w-4 h-4" style={{ color: '#10b981' }} />
+                      ) : (
+                        <EyeOff className="w-4 h-4" style={{ color: '#ef4444' }} />
+                      )}
+                    </Button>
+
+                    {onDuplicateBlock && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDuplicateBlock(block.id);
+                        }}
+                        className="w-8 h-8 p-0"
+                      >
+                        <Copy className="w-4 h-4" style={{ color: '#6b7280' }} />
+                      </Button>
+                    )}
+
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDeleteBlock(block.id);
+                      }}
+                      className="w-8 h-8 p-0 hover:bg-red-900/20"
+                    >
+                      <Trash2 className="w-4 h-4" style={{ color: '#ef4444' }} />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Insert Point After Each Block */}
+            <div className="insert-point group">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={(e) => handleAddBlockClick(e, index + 1)}
+                className="w-full h-6 opacity-0 group-hover:opacity-100 transition-opacity text-xs"
+                style={{ color: '#6b7280' }}
+              >
+                <Plus className="w-3 h-3 mr-1" />
+                Inserir bloco aqui
+              </Button>
+            </div>
+          </div>
         );
       })}
     </div>
