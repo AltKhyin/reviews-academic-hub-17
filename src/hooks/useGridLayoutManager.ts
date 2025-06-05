@@ -162,15 +162,15 @@ export const useGridLayoutManager = ({
     });
   }, [onUpdateBlock]);
   
-  // Update column widths for a specific row
-  const updateColumnWidths = useCallback((rowId: string, columnWidths: number[]) => {
+  // Update column widths for a specific row - FIXED SIGNATURE
+  const updateColumnWidths = useCallback((rowId: string, updates: { columnWidths: number[] }) => {
     const row = layoutState.rows.find(r => r.id === rowId);
     if (!row) {
       console.error('Row not found for column width update:', rowId);
       return;
     }
     
-    console.log('Updating column widths:', { rowId, columnWidths });
+    console.log('Updating column widths:', { rowId, columnWidths: updates.columnWidths });
     
     // Update all blocks in the row with new column widths
     row.blocks.forEach(block => {
@@ -179,7 +179,7 @@ export const useGridLayoutManager = ({
           ...block.meta,
           layout: {
             ...block.meta?.layout,
-            columnWidths
+            columnWidths: updates.columnWidths
           }
         }
       });
