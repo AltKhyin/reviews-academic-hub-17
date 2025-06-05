@@ -1,4 +1,4 @@
-// ABOUTME: Enhanced grid operations with fixed column management and improved event handling
+// ABOUTME: Enhanced grid operations with optimized merge behavior
 // Provides stable grid resizing, merging, splitting, and cross-layout operations
 
 import { useCallback } from 'react';
@@ -30,7 +30,7 @@ export const useEnhancedGridOperations = ({
     onDeleteBlock
   });
 
-  // COMPLETELY FIXED: Proper column addition with validation
+  // Enhanced column addition that only adds blocks when needed
   const addColumnToGrid = useCallback((rowId: string) => {
     const row = layoutState.rows.find(r => r.id === rowId);
     if (!row) {
@@ -62,17 +62,21 @@ export const useEnhancedGridOperations = ({
       });
     });
 
-    // Add a new block to fill the new column position
-    if (onAddBlock) {
+    // Only add a new block if there are gaps in the grid
+    const currentPositions = row.blocks.map(b => b.meta?.layout?.position ?? 0);
+    const missingPositions = Array.from({ length: newColumns }, (_, i) => i)
+      .filter(pos => !currentPositions.includes(pos));
+
+    if (missingPositions.length > 0) {
+      const targetPosition = missingPositions[0];
       const lastBlockInRow = row.blocks[row.blocks.length - 1];
       const insertionIndex = lastBlockInRow ? 
         blocks.findIndex(b => b.id === lastBlockInRow.id) + 1 : 
         blocks.length;
 
-      // Add the new block with proper grid layout
       onAddBlock('paragraph', insertionIndex, {
         rowId,
-        gridPosition: row.blocks.length,
+        gridPosition: targetPosition,
         columns: newColumns
       });
     }
@@ -80,7 +84,7 @@ export const useEnhancedGridOperations = ({
     return { success: true, newColumns };
   }, [layoutState.rows, onUpdateBlock, onAddBlock, blocks]);
 
-  // FIXED: Safe column removal with proper cleanup and validation
+  // Safe column removal with proper cleanup
   const removeColumnFromGrid = useCallback((rowId: string, columnIndex: number) => {
     const row = layoutState.rows.find(r => r.id === rowId);
     if (!row) {
@@ -127,7 +131,7 @@ export const useEnhancedGridOperations = ({
     return { success: true, newColumns };
   }, [layoutState.rows, onDeleteBlock, onUpdateBlock]);
 
-  // FIXED: Enhanced block merging with proper content handling
+  // Enhanced block merging with content handling
   const mergeGridBlocks = useCallback((rowId: string, leftIndex: number, rightIndex: number) => {
     const row = layoutState.rows.find(r => r.id === rowId);
     if (!row) {
@@ -167,6 +171,110 @@ export const useEnhancedGridOperations = ({
 
     return { success: true };
   }, [layoutState.rows, onUpdateBlock, onDeleteBlock]);
+
+  // Optimized merge into grid - no empty blocks created
+  const mergeIntoGrid = useCallback((draggedBlockId: number, targetRowId: string, targetPosition?: number) => {
+    const draggedBlock = blocks.find(b => b.id === draggedBlockId);
+    if (!draggedBlock) {
+      console.error('Dragged block not found:', draggedBlockId);
+      return { success: false };
+    }
+
+    // Check if target is a single block or existing grid
+    const targetBlock = blocks.find(b => `single-${b.id}` === targetRowId);
+    const targetRow = layoutState.rows.find(r => r.id === targetRowId);
+    
+    if (targetBlock && !targetRow?.blocks.find(b => b.meta?.layout?.columns && b.meta.layout.columns > 1)) {
+      // Merging with a single block - create new 2-column grid
+      const finalRowId = `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const newColumns = 2;
+      const columnWidths = [50, 50];
+      
+      console.log('Creating new grid by merging single blocks:', { 
+        draggedBlockId, 
+        targetBlockId: targetBlock.id,
+        finalRowId,
+        newColumns 
+      });
+
+      // Update target block to become position 0 in new grid
+      onUpdateBlock(targetBlock.id, {
+        meta: {
+          ...targetBlock.meta,
+          layout: {
+            row_id: finalRowId,
+            position: 0,
+            columns: newColumns,
+            gap: 4,
+            columnWidths
+          }
+        }
+      });
+
+      // Update dragged block to become position 1 in new grid
+      onUpdateBlock(draggedBlockId, {
+        meta: {
+          ...draggedBlock.meta,
+          layout: {
+            row_id: finalRowId,
+            position: 1,
+            columns: newColumns,
+            gap: 4,
+            columnWidths
+          }
+        }
+      });
+
+      return { success: true };
+
+    } else if (targetRow && targetRow.blocks.length > 0) {
+      // Merging with existing grid - add as new column
+      const newColumns = targetRow.columns + 1;
+      const columnWidths = Array(newColumns).fill(100 / newColumns);
+      const finalPosition = targetPosition ?? targetRow.blocks.length;
+
+      console.log('Adding to existing grid:', { 
+        draggedBlockId, 
+        targetRowId, 
+        finalPosition, 
+        newColumns 
+      });
+
+      // Update dragged block to join target grid
+      onUpdateBlock(draggedBlockId, {
+        meta: {
+          ...draggedBlock.meta,
+          layout: {
+            row_id: targetRowId,
+            position: finalPosition,
+            columns: newColumns,
+            gap: targetRow.gap || 4,
+            columnWidths
+          }
+        }
+      });
+
+      // Update all existing blocks in target row
+      targetRow.blocks.forEach((block) => {
+        if (block.id !== draggedBlockId) {
+          onUpdateBlock(block.id, {
+            meta: {
+              ...block.meta,
+              layout: {
+                ...block.meta?.layout,
+                columns: newColumns,
+                columnWidths
+              }
+            }
+          });
+        }
+      });
+
+      return { success: true };
+    }
+
+    return { success: false };
+  }, [blocks, layoutState.rows, onUpdateBlock]);
 
   // Split a block into two columns
   const splitBlockIntoGrid = useCallback((blockId: number, splitContent: { left: any; right: any }) => {
@@ -308,6 +416,7 @@ export const useEnhancedGridOperations = ({
     addColumnToGrid,
     removeColumnFromGrid,
     mergeGridBlocks,
+    mergeIntoGrid,
     splitBlockIntoGrid,
     convertGridToSingle,
     reorderGridColumns

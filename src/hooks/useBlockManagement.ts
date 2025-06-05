@@ -1,5 +1,5 @@
-// ABOUTME: Enhanced block management with fixed grid layout management
-// Fixed merge operations, state synchronization, and proper layout handling
+// ABOUTME: Enhanced block management with optimized merge operations
+// Fixed merge operations to avoid creating unnecessary empty blocks
 
 import { useCallback, useState, useEffect } from 'react';
 import { ReviewBlock, BlockType } from '@/types/review';
@@ -21,7 +21,7 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
   const { history, historyIndex, canUndo, canRedo, saveToHistory, undo: historyUndo, redo: historyRedo } = useBlockHistory(initialBlocks);
   const { createTempId, reindexBlocks } = useBlockOperations();
 
-  // FIXED: Debounced internal update to prevent rapid state changes
+  // Internal update function
   const internalUpdateBlock = useCallback((blockId: number, updates: Partial<ReviewBlock>) => {
     console.log('Internal block update:', { blockId, updates });
     
@@ -46,7 +46,7 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
     });
   }, []);
 
-  // FIXED: Proper deletion with layout repair
+  // Internal deletion function
   const internalDeleteBlock = useCallback((blockId: number) => {
     console.log('Internal block delete:', blockId);
     
@@ -82,7 +82,7 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
     setActiveBlockId(blockId);
   }, []);
 
-  // FIXED: Proper addBlock with grid position handling
+  // Add block function
   const addBlock = useCallback((type: BlockType, position?: number, layoutInfo?: {
     rowId: string;
     gridPosition: number;
@@ -141,7 +141,7 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
     return newBlock;
   }, [blocks, issueId, saveToHistory, createTempId, reindexBlocks]);
 
-  // COMPLETELY FIXED: Grid conversion with proper column count
+  // Convert to grid function
   const convertToGrid = useCallback((blockId: number, columns: number) => {
     const blockIndex = blocks.findIndex(b => b.id === blockId);
     const originalBlock = blocks.find(b => b.id === blockId);
@@ -155,16 +155,15 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
 
     const rowId = `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     
-    // FIXED: Use the actual columns parameter, not hardcoded 1
     internalUpdateBlock(blockId, {
       meta: {
         ...originalBlock.meta,
         layout: {
           row_id: rowId,
           position: 0,
-          columns: columns, // ← FIXED: Use the actual columns parameter
+          columns: columns,
           gap: 4,
-          columnWidths: Array(columns).fill(100 / columns) // Add proper column widths
+          columnWidths: Array(columns).fill(100 / columns)
         }
       }
     });
@@ -172,7 +171,7 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
     saveToHistory(blocks, blockId);
   }, [blocks, internalUpdateBlock, saveToHistory]);
 
-  // COMPLETELY REWRITTEN: Proper merge logic that creates actual grids
+  // OPTIMIZED: Merge function that doesn't create empty blocks
   const mergeBlockIntoGrid = useCallback((draggedBlockId: number, targetRowId: string, targetPosition?: number) => {
     if (isProcessingDrop) {
       console.log('Drop already being processed, ignoring');
@@ -209,7 +208,7 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
           newColumns 
         });
 
-        // Update both blocks to form a new grid
+        // Update both blocks to form a new grid - NO EMPTY BLOCKS CREATED
         setBlocks(prevBlocks => {
           let updatedBlocks = [...prevBlocks];
 
@@ -253,7 +252,7 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
         });
 
       } else if (targetRow && targetRow.blocks.length > 0) {
-        // Merging with existing grid - add as new column
+        // Merging with existing grid - add as new column, NO EMPTY BLOCKS
         finalRowId = targetRowId;
         newColumns = targetRow.columns + 1;
         columnWidths = Array(newColumns).fill(100 / newColumns);
@@ -287,7 +286,7 @@ export const useBlockManagement = ({ initialBlocks, issueId }: UseBlockManagemen
             };
           }
 
-          // Update all existing blocks in target row
+          // Update all existing blocks in target row with new column count
           targetRow.blocks.forEach((block) => {
             const blockIndex = updatedBlocks.findIndex(b => b.id === block.id);
             if (blockIndex !== -1 && block.id !== draggedBlockId) {
