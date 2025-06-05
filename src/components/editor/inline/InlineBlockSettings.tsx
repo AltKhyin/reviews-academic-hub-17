@@ -1,4 +1,3 @@
-
 // ABOUTME: Enhanced inline block settings component with contextual controls
 // Replaces the properties panel with integrated block-level configuration
 
@@ -60,11 +59,25 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
     onUpdate({ visible });
   };
 
-  const handleColorChange = (colorType: string, value: string) => {
-    console.log('Color changed in settings:', { blockId: block.id, colorType, value }); // Debug log
+  const handleColorChange = (colorName: string, value: string) => {
+    console.log('Color changed in settings:', { blockId: block.id, colorName, value }); // Debug log
     
-    // Direct payload field mapping - no transformation needed
-    const field = colorType.includes('_') ? colorType : `${colorType}_color`;
+    // Map color name to field name
+    const fieldMap: Record<string, string> = {
+      'Texto': 'text_color',
+      'Fundo': 'background_color',
+      'Borda': 'border_color',
+      'Destaque': 'accent_color',
+      'Cabeçalho Fundo': 'table_header_bg',
+      'Cabeçalho Texto': 'table_header_text',
+      'Célula Fundo': 'table_cell_bg',
+      'Célula Texto': 'table_cell_text',
+      'Borda Tabela': 'table_border',
+      'Número': 'number_color',
+      'Rótulo': 'label_color'
+    };
+
+    const field = fieldMap[colorName] || `${colorName.toLowerCase()}_color`;
     handlePayloadUpdate(field, value);
   };
 
