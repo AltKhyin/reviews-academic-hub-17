@@ -13,17 +13,17 @@ export const DashboardLayout = () => {
 
   return (
     <div className="flex h-screen bg-background">
-      {/* Left Navigation Sidebar - hidden on editor pages when collapsed */}
-      {!isEditorPage && <Sidebar />}
+      {/* Left Navigation Sidebar - always present but conditionally styled */}
+      <Sidebar />
       
-      {/* Main Content Area - responsive margin based on sidebar and page type */}
+      {/* Main Content Area - responsive margin based on page type */}
       <div className={`flex-1 flex flex-col overflow-hidden ${!isEditorPage ? 'ml-64' : ''}`}>
         {/* Mobile Header with Sidebar Toggle */}
         <div className="lg:hidden flex items-center justify-between p-4 border-b">
           <MobileSidebarToggle />
         </div>
         
-        {/* Main Content Container - full width for editor, normal for others */}
+        {/* Main Content Container */}
         <main className="flex-1 overflow-auto">
           <div className="h-full">
             <Outlet />

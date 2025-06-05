@@ -238,7 +238,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
           
           {/* Editor - Only show in edit and split modes */}
           {(editorMode === 'edit' || editorMode === 'split') && (
-            <div className={cn("flex-1 px-4", editorMode === 'split' && "border-r")} style={{ borderColor: '#2a2a2a' }}>
+            <div className={cn("flex-1", editorMode === 'split' && "border-r")} style={{ borderColor: '#2a2a2a' }}>
               <BlockEditor
                 blocks={blocks}
                 activeBlockId={activeBlockId}

@@ -58,18 +58,18 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     dragState,
     handleDragStart,
     handleDragOver,
-    handleDragLeave,
-    handleDrop,
-    handleDragEnd
+    handleDragEnd,
+    handleDrop
   } = useBlockDragDrop({
     blocks,
     onMoveBlock,
     onMergeBlockIntoGrid
   });
 
-  const { updateGridLayout } = useGridLayoutManager({
+  const { updateColumnWidths } = useGridLayoutManager({
     blocks,
-    onUpdateBlock
+    onUpdateBlock,
+    onDeleteBlock
   });
 
   // Group blocks by layout rows for proper grid rendering
@@ -164,26 +164,27 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     <div className={cn("block-editor py-4", className)} style={{ backgroundColor: '#121212' }}>
       <div className="space-y-4">
         {layoutGroups.map((group, groupIndex) => (
-          <div key={`group-${groupIndex}`} className="layout-group mx-4">
+          <div key={`group-${groupIndex}`} className="layout-group">
             {group.type === 'grid' && group.rowId && group.gridConfig ? (
-              <ResizableGrid
-                rowId={group.rowId}
-                blocks={group.blocks}
-                columns={group.gridConfig.columns}
-                gap={group.gridConfig.gap}
-                columnWidths={group.gridConfig.columnWidths}
-                onUpdateLayout={updateGridLayout}
-                onAddBlock={(rowId, position) => onAddBlock('paragraph', position)}
-                onUpdateBlock={onUpdateBlock}
-                onDeleteBlock={onDeleteBlock}
-                activeBlockId={activeBlockId}
-                onActiveBlockChange={onActiveBlockChange}
-                dragState={dragState}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                className="my-6"
-              />
+              <div className="mx-6">
+                <ResizableGrid
+                  rowId={group.rowId}
+                  blocks={group.blocks}
+                  columns={group.gridConfig.columns}
+                  gap={group.gridConfig.gap}
+                  columnWidths={group.gridConfig.columnWidths}
+                  onUpdateLayout={updateColumnWidths}
+                  onAddBlock={(rowId, position) => onAddBlock('paragraph', position)}
+                  onUpdateBlock={onUpdateBlock}
+                  onDeleteBlock={onDeleteBlock}
+                  activeBlockId={activeBlockId}
+                  onActiveBlockChange={onActiveBlockChange}
+                  dragState={dragState}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                  className="my-6"
+                />
+              </div>
             ) : (
               group.blocks.map((block) => {
                 const isActive = activeBlockId === block.id;
@@ -195,7 +196,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                   <div 
                     key={block.id}
                     className={cn(
-                      "block-item relative group transition-all duration-200 mx-2",
+                      "block-item relative group transition-all duration-200 mx-6",
                       isActive && "ring-2 ring-blue-500 ring-offset-2 ring-offset-gray-900",
                       isDragTarget && "border-t-4 border-blue-500",
                       isDragging && "opacity-50"
@@ -203,7 +204,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                     onMouseEnter={() => setHoveredBlockId(block.id)}
                     onMouseLeave={() => setHoveredBlockId(null)}
                     style={{
-                      margin: '8px 16px', // Proper spacing from edges
+                      marginBottom: '16px'
                     }}
                   >
                     <Card
@@ -217,19 +218,18 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                         color: '#ffffff'
                       }}
                       onClick={() => handleBlockClick(block.id)}
-                      onDragOver={(e) => handleDragOver(e, block.id, 'single')}
-                      onDragLeave={handleDragLeave}
-                      onDrop={(e) => handleDrop(e, block.id, undefined, 'single')}
+                      onDragOver={(e) => handleDragOver(e, block.id)}
+                      onDrop={(e) => handleDrop(e, block.id)}
                     >
                       {/* Drag Handle */}
                       {(isHovered || isActive) && (
                         <div 
                           className="absolute left-2 top-1/2 transform -translate-y-1/2 z-10 opacity-70 hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
                           draggable
-                          onDragStart={(e) => handleDragStart(e, block.id, 'single')}
+                          onDragStart={(e) => handleDragStart(e, block.id)}
                           onDragEnd={handleDragEnd}
                           style={{
-                            marginLeft: '-8px', // Ensure drag handle doesn't overflow
+                            marginLeft: '-12px'
                           }}
                         >
                           <GripVertical className="w-4 h-4" style={{ color: '#9ca3af' }} />
@@ -241,7 +241,6 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                         <BlockRenderer
                           block={block}
                           readonly={false}
-                          isActive={isActive}
                           onUpdate={(updates) => onUpdateBlock(block.id, updates)}
                           onDelete={() => onDeleteBlock(block.id)}
                           onDuplicate={() => onDuplicateBlock(block.id)}
