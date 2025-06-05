@@ -1,8 +1,8 @@
 export interface Issue {
   id: string;
   title: string;
-  description?: string | null;
   specialty: string;
+  description?: string | null;
   pdf_url: string;
   article_pdf_url?: string | null;
   cover_image_url?: string | null;
@@ -10,18 +10,25 @@ export interface Issue {
   published_at?: string | null;
   created_at: string;
   updated_at: string;
-  featured: boolean | null;
-  // New fields
-  authors?: string | null;
-  search_title?: string | null;
-  real_title?: string | null;
-  real_title_ptbr?: string | null;
-  search_description?: string | null;
+  featured?: boolean | null;
+  score?: number | null;
   year?: string | null;
   design?: string | null;
-  score?: number | null;
   population?: string | null;
+  authors?: string | null;
+  real_title?: string | null;
+  real_title_ptbr?: string | null;
+  search_title?: string | null;
+  search_description?: string | null;
+  
+  // New fields for native review support
+  review_type?: 'pdf' | 'native' | 'hybrid';
+  review_content?: any; // Will be parsed as ReviewBlock[]
+  toc_data?: any; // Will be parsed as TableOfContents
 }
+
+// Re-export enhanced type from review module for consistency
+export type { EnhancedIssue } from './review';
 
 export type FormIssueValues = {
   title: string;

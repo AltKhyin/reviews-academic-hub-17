@@ -500,11 +500,14 @@ export type Database = {
           published_at: string | null
           real_title: string | null
           real_title_ptbr: string | null
+          review_content: Json | null
+          review_type: string | null
           score: number | null
           search_description: string | null
           search_title: string | null
           specialty: string
           title: string
+          toc_data: Json | null
           updated_at: string
           year: string | null
         }
@@ -523,11 +526,14 @@ export type Database = {
           published_at?: string | null
           real_title?: string | null
           real_title_ptbr?: string | null
+          review_content?: Json | null
+          review_type?: string | null
           score?: number | null
           search_description?: string | null
           search_title?: string | null
           specialty: string
           title: string
+          toc_data?: Json | null
           updated_at?: string
           year?: string | null
         }
@@ -546,11 +552,14 @@ export type Database = {
           published_at?: string | null
           real_title?: string | null
           real_title_ptbr?: string | null
+          review_content?: Json | null
+          review_type?: string | null
           score?: number | null
           search_description?: string | null
           search_title?: string | null
           specialty?: string
           title?: string
+          toc_data?: Json | null
           updated_at?: string
           year?: string | null
         }
@@ -926,6 +935,171 @@ export type Database = {
         }
         Relationships: []
       }
+      review_analytics: {
+        Row: {
+          created_at: string | null
+          device_type: string | null
+          event_data: Json | null
+          event_type: string
+          id: string
+          issue_id: string | null
+          referrer: string | null
+          scroll_depth: number | null
+          session_id: string | null
+          time_spent: number | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          device_type?: string | null
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          issue_id?: string | null
+          referrer?: string | null
+          scroll_depth?: number | null
+          session_id?: string | null
+          time_spent?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          device_type?: string | null
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          issue_id?: string | null
+          referrer?: string | null
+          scroll_depth?: number | null
+          session_id?: string | null
+          time_spent?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_analytics_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "issues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_analytics_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "online_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_analytics_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      review_blocks: {
+        Row: {
+          created_at: string | null
+          id: number
+          issue_id: string | null
+          meta: Json | null
+          payload: Json
+          sort_index: number
+          type: string
+          updated_at: string | null
+          visible: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: number
+          issue_id?: string | null
+          meta?: Json | null
+          payload: Json
+          sort_index: number
+          type: string
+          updated_at?: string | null
+          visible?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: number
+          issue_id?: string | null
+          meta?: Json | null
+          payload?: Json
+          sort_index?: number
+          type?: string
+          updated_at?: string | null
+          visible?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_blocks_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "issues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      review_polls: {
+        Row: {
+          block_id: number | null
+          closes_at: string | null
+          created_at: string | null
+          id: string
+          issue_id: string | null
+          opens_at: string | null
+          options: Json
+          poll_type: string | null
+          question: string
+          total_votes: number | null
+          votes: Json | null
+        }
+        Insert: {
+          block_id?: number | null
+          closes_at?: string | null
+          created_at?: string | null
+          id?: string
+          issue_id?: string | null
+          opens_at?: string | null
+          options: Json
+          poll_type?: string | null
+          question: string
+          total_votes?: number | null
+          votes?: Json | null
+        }
+        Update: {
+          block_id?: number | null
+          closes_at?: string | null
+          created_at?: string | null
+          id?: string
+          issue_id?: string | null
+          opens_at?: string | null
+          options?: Json
+          poll_type?: string | null
+          question?: string
+          total_votes?: number | null
+          votes?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_polls_block_id_fkey"
+            columns: ["block_id"]
+            isOneToOne: false
+            referencedRelation: "review_blocks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_polls_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "issues"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reviewer_comments: {
         Row: {
           comment: string
@@ -1265,6 +1439,10 @@ export type Database = {
       get_online_users_count: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      get_review_with_blocks: {
+        Args: { review_id: string }
+        Returns: Json
       }
       get_top_threads: {
         Args: { min_comments?: number }
