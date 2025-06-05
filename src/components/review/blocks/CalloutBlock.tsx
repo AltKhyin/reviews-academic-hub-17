@@ -37,22 +37,22 @@ export const CalloutBlock: React.FC<CalloutBlockProps> = ({
   readonly = false,
   onUpdate
 }) => {
-  const payload = block.payload;
-  const type = payload.type || 'info';
-  const title = payload.title || '';
-  const content = payload.content || '';
+  const content = block.content;
+  const type = content.type || 'info';
+  const title = content.title || '';
+  const contentText = content.content || '';
   
   // Color system integration
-  const textColor = payload.text_color || '#ffffff';
-  const backgroundColor = payload.background_color || 'rgba(59, 130, 246, 0.1)';
-  const borderColor = payload.border_color || '#3b82f6';
-  const accentColor = payload.accent_color || calloutTypes[type]?.defaultColor || '#3b82f6';
+  const textColor = content.text_color || '#ffffff';
+  const backgroundColor = content.background_color || 'rgba(59, 130, 246, 0.1)';
+  const borderColor = content.border_color || '#3b82f6';
+  const accentColor = content.accent_color || calloutTypes[type]?.defaultColor || '#3b82f6';
 
   const handleFieldChange = (field: string, value: string) => {
     if (onUpdate) {
       onUpdate({
-        payload: {
-          ...payload,
+        content: {
+          ...content,
           [field]: value
         }
       });
@@ -63,8 +63,8 @@ export const CalloutBlock: React.FC<CalloutBlockProps> = ({
     if (onUpdate) {
       const defaultColor = calloutTypes[newType]?.defaultColor || '#3b82f6';
       onUpdate({
-        payload: {
-          ...payload,
+        content: {
+          ...content,
           type: newType,
           accent_color: defaultColor,
           border_color: defaultColor,
@@ -106,11 +106,11 @@ export const CalloutBlock: React.FC<CalloutBlockProps> = ({
                 {title}
               </div>
             )}
-            {content && (
+            {contentText && (
               <div 
                 className="prose prose-sm max-w-none"
                 style={{ color: textColor }}
-                dangerouslySetInnerHTML={{ __html: content }}
+                dangerouslySetInnerHTML={{ __html: contentText }}
               />
             )}
           </div>
@@ -179,7 +179,7 @@ export const CalloutBlock: React.FC<CalloutBlockProps> = ({
 
             {/* Content Editor */}
             <InlineRichTextEditor
-              value={content}
+              value={contentText}
               onChange={(value) => handleFieldChange('content', value)}
               placeholder="Conteúdo do callout..."
               disabled={readonly}

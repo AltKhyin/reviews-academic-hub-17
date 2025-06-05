@@ -19,22 +19,22 @@ export const FigureBlock: React.FC<FigureBlockProps> = ({
   readonly = false,
   onUpdate
 }) => {
-  const payload = block.payload;
-  const src = payload.src || '';
-  const alt = payload.alt || '';
-  const caption = payload.caption || '';
-  const width = payload.width || 'auto';
+  const content = block.content;
+  const src = content.src || '';
+  const alt = content.alt || '';
+  const caption = content.caption || '';
+  const width = content.width || 'auto';
 
   // Color system integration
-  const textColor = payload.text_color || '#d1d5db';
-  const backgroundColor = payload.background_color || 'transparent';
-  const borderColor = payload.border_color || 'transparent';
+  const textColor = content.text_color || '#d1d5db';
+  const backgroundColor = content.background_color || 'transparent';
+  const borderColor = content.border_color || 'transparent';
 
   const handleFieldChange = (field: string, value: string) => {
     if (onUpdate) {
       onUpdate({
-        payload: {
-          ...payload,
+        content: {
+          ...content,
           [field]: value
         }
       });

@@ -1,4 +1,3 @@
-
 // ABOUTME: Centralized color management system for all block types
 // Provides comprehensive color editing with current color preservation
 
@@ -32,20 +31,20 @@ const DEFAULT_COLORS = {
 };
 
 export const ColorSystem: React.FC<ColorSystemProps> = ({ block, onUpdate }) => {
-  const payload = block.payload || {};
+  const content = block.content || {};
   const meta = block.meta || {};
 
   const handleColorUpdate = (colorType: string, value: string) => {
     onUpdate({
-      payload: {
-        ...payload,
+      content: {
+        ...content,
         [`${colorType}_color`]: value
       }
     });
   };
 
   const getColorValue = (colorType: string, fallback: string) => {
-    return payload[`${colorType}_color`] || fallback;
+    return content[`${colorType}_color`] || fallback;
   };
 
   const renderCommonColors = () => (
@@ -96,7 +95,7 @@ export const ColorSystem: React.FC<ColorSystemProps> = ({ block, onUpdate }) => 
   );
 
   const renderCalloutColors = () => {
-    const calloutType = payload.type || 'info';
+    const calloutType = content.type || 'info';
     const defaults = DEFAULT_COLORS.callout[calloutType as keyof typeof DEFAULT_COLORS.callout] || DEFAULT_COLORS.callout.info;
     
     return (

@@ -19,21 +19,21 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
   readonly = false,
   onUpdate
 }) => {
-  const payload = block.payload;
-  const content = payload.content || '';
-  const alignment = payload.alignment || 'left';
-  const emphasis = payload.emphasis || 'normal';
+  const content = block.content;
+  const contentText = content.content || '';
+  const alignment = content.alignment || 'left';
+  const emphasis = content.emphasis || 'normal';
 
   // Color system integration
-  const textColor = payload.text_color || '#d1d5db';
-  const backgroundColor = payload.background_color || 'transparent';
-  const borderColor = payload.border_color || 'transparent';
+  const textColor = content.text_color || '#d1d5db';
+  const backgroundColor = content.background_color || 'transparent';
+  const borderColor = content.border_color || 'transparent';
 
   const handleContentChange = (newContent: string) => {
     if (onUpdate) {
       onUpdate({
-        payload: {
-          ...payload,
+        content: {
+          ...content,
           content: newContent
         }
       });
@@ -89,7 +89,7 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
           )}
           style={blockStyle}
           dir="ltr"
-          dangerouslySetInnerHTML={{ __html: content }}
+          dangerouslySetInnerHTML={{ __html: contentText }}
         />
       </div>
     );
@@ -115,7 +115,7 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
         dir="ltr"
       >
         <InlineRichTextEditor
-          value={content}
+          value={contentText}
           onChange={handleContentChange}
           placeholder="Digite seu conteúdo aqui..."
           disabled={readonly}

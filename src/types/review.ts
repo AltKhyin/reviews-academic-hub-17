@@ -77,12 +77,23 @@ export interface EnhancedIssue {
   pdf_url?: string;
 }
 
-// Snapshot card payload type
-export interface SnapshotCardPayload {
+// Enhanced Snapshot card content type
+export interface SnapshotCardContent {
   title: string;
   subtitle?: string;
   value: string;
   change?: string;
   trend?: 'up' | 'down' | 'neutral';
   icon?: string;
+  evidence_level?: 'high' | 'moderate' | 'low' | 'very_low';
+  recommendation_strength?: 'strong' | 'conditional' | 'expert_opinion';
+  population?: string;
+  intervention?: string;
+  comparison?: string;
+  outcome?: string;
+  design?: string;
+  key_findings?: string[];
 }
+
+// Legacy payload type for compatibility - DEPRECATED
+export interface SnapshotCardPayload extends SnapshotCardContent {}

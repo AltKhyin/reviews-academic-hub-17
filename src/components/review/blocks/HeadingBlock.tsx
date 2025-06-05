@@ -19,21 +19,21 @@ export const HeadingBlock: React.FC<HeadingBlockProps> = ({
   readonly = false,
   onUpdate
 }) => {
-  const payload = block.payload;
-  const text = payload.text || '';
-  const level = payload.level || 1;
-  const anchor = payload.anchor || '';
+  const content = block.content;
+  const text = content.text || '';
+  const level = content.level || 1;
+  const anchor = content.anchor || '';
 
   // Color system integration
-  const textColor = payload.text_color || '#ffffff';
-  const backgroundColor = payload.background_color || 'transparent';
-  const borderColor = payload.border_color || 'transparent';
+  const textColor = content.text_color || '#ffffff';
+  const backgroundColor = content.background_color || 'transparent';
+  const borderColor = content.border_color || 'transparent';
 
   const handleTextChange = (newText: string) => {
     if (onUpdate) {
       onUpdate({
-        payload: {
-          ...payload,
+        content: {
+          ...content,
           text: newText,
           // Auto-generate anchor from text if not manually set
           anchor: anchor || newText.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')

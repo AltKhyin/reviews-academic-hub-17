@@ -30,10 +30,10 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
 
   if (!onUpdate) return null;
 
-  const handlePayloadUpdate = (field: string, value: any) => {
+  const handleContentUpdate = (field: string, value: any) => {
     onUpdate({
-      payload: {
-        ...block.payload,
+      content: {
+        ...block.content,
         [field]: value
       }
     });
@@ -41,8 +41,8 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
 
   const handleColorChange = (colorType: string, color: string) => {
     onUpdate({
-      payload: {
-        ...block.payload,
+      content: {
+        ...block.content,
         [colorType]: color
       }
     });
@@ -73,8 +73,8 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
             <div className="space-y-2">
               <Label style={{ color: '#d1d5db' }}>Nível</Label>
               <Select 
-                value={String(block.payload.level || 1)} 
-                onValueChange={(value) => handlePayloadUpdate('level', parseInt(value))}
+                value={String(block.content.level || 1)} 
+                onValueChange={(value) => handleContentUpdate('level', parseInt(value))}
               >
                 <SelectTrigger 
                   className="h-8"
@@ -95,8 +95,8 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
             <div className="space-y-2">
               <Label style={{ color: '#d1d5db' }}>Âncora</Label>
               <Input
-                value={block.payload.anchor || ''}
-                onChange={(e) => handlePayloadUpdate('anchor', e.target.value)}
+                value={block.content.anchor || ''}
+                onChange={(e) => handleContentUpdate('anchor', e.target.value)}
                 placeholder="id-do-titulo"
                 className="h-8 text-xs"
                 style={{ backgroundColor: '#212121', borderColor: '#2a2a2a', color: '#ffffff' }}
@@ -111,8 +111,8 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
             <div className="space-y-2">
               <Label style={{ color: '#d1d5db' }}>Alinhamento</Label>
               <Select 
-                value={block.payload.alignment || 'left'} 
-                onValueChange={(value) => handlePayloadUpdate('alignment', value)}
+                value={block.content.alignment || 'left'} 
+                onValueChange={(value) => handleContentUpdate('alignment', value)}
               >
                 <SelectTrigger 
                   className="h-8"
@@ -131,8 +131,8 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
             <div className="space-y-2">
               <Label style={{ color: '#d1d5db' }}>Ênfase</Label>
               <Select 
-                value={block.payload.emphasis || 'normal'} 
-                onValueChange={(value) => handlePayloadUpdate('emphasis', value)}
+                value={block.content.emphasis || 'normal'} 
+                onValueChange={(value) => handleContentUpdate('emphasis', value)}
               >
                 <SelectTrigger 
                   className="h-8"
@@ -156,8 +156,8 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
             <div className="space-y-2">
               <Label style={{ color: '#d1d5db' }}>Largura</Label>
               <Input
-                value={block.payload.width || 'auto'}
-                onChange={(e) => handlePayloadUpdate('width', e.target.value)}
+                value={block.content.width || 'auto'}
+                onChange={(e) => handleContentUpdate('width', e.target.value)}
                 placeholder="auto, 100%, 500px"
                 className="h-8 text-xs"
                 style={{ backgroundColor: '#212121', borderColor: '#2a2a2a', color: '#ffffff' }}
@@ -166,8 +166,8 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
             <div className="space-y-2">
               <Label style={{ color: '#d1d5db' }}>Alinhamento</Label>
               <Select 
-                value={block.payload.alignment || 'center'} 
-                onValueChange={(value) => handlePayloadUpdate('alignment', value)}
+                value={block.content.alignment || 'center'} 
+                onValueChange={(value) => handleContentUpdate('alignment', value)}
               >
                 <SelectTrigger 
                   className="h-8"
@@ -191,8 +191,8 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
             <div className="space-y-2">
               <Label style={{ color: '#d1d5db' }}>Tipo</Label>
               <Select 
-                value={block.payload.type || 'info'} 
-                onValueChange={(value) => handlePayloadUpdate('type', value)}
+                value={block.content.type || 'info'} 
+                onValueChange={(value) => handleContentUpdate('type', value)}
               >
                 <SelectTrigger 
                   className="h-8"
@@ -218,8 +218,8 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
             <div className="space-y-2">
               <Label style={{ color: '#d1d5db' }}>Tendência</Label>
               <Select 
-                value={block.payload.trend || 'neutral'} 
-                onValueChange={(value) => handlePayloadUpdate('trend', value)}
+                value={block.content.trend || 'neutral'} 
+                onValueChange={(value) => handleContentUpdate('trend', value)}
               >
                 <SelectTrigger 
                   className="h-8"
@@ -234,13 +234,13 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
                 </SelectContent>
               </Select>
             </div>
-            {block.payload.trend !== 'neutral' && (
+            {block.content.trend !== 'neutral' && (
               <div className="space-y-2">
                 <Label style={{ color: '#d1d5db' }}>Porcentagem</Label>
                 <Input
                   type="number"
-                  value={block.payload.percentage || 0}
-                  onChange={(e) => handlePayloadUpdate('percentage', Number(e.target.value))}
+                  value={block.content.percentage || 0}
+                  onChange={(e) => handleContentUpdate('percentage', Number(e.target.value))}
                   className="h-8 text-xs"
                   style={{ backgroundColor: '#212121', borderColor: '#2a2a2a', color: '#ffffff' }}
                 />
@@ -254,15 +254,15 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Switch
-                checked={block.payload.compact || false}
-                onCheckedChange={(checked) => handlePayloadUpdate('compact', checked)}
+                checked={block.content.compact || false}
+                onCheckedChange={(checked) => handleContentUpdate('compact', checked)}
               />
               <Label style={{ color: '#d1d5db' }}>Compacta</Label>
             </div>
             <div className="flex items-center gap-2">
               <Switch
-                checked={block.payload.sortable || false}
-                onCheckedChange={(checked) => handlePayloadUpdate('sortable', checked)}
+                checked={block.content.sortable || false}
+                onCheckedChange={(checked) => handleContentUpdate('sortable', checked)}
               />
               <Label style={{ color: '#d1d5db' }}>Ordenável</Label>
             </div>
@@ -275,8 +275,8 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
             <div className="space-y-2">
               <Label style={{ color: '#d1d5db' }}>Tipo</Label>
               <Select 
-                value={block.payload.poll_type || 'single_choice'} 
-                onValueChange={(value) => handlePayloadUpdate('poll_type', value)}
+                value={block.content.poll_type || 'single_choice'} 
+                onValueChange={(value) => handleContentUpdate('poll_type', value)}
               >
                 <SelectTrigger 
                   className="h-8"
@@ -293,8 +293,8 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
             </div>
             <div className="flex items-center gap-2">
               <Switch
-                checked={block.payload.show_results || true}
-                onCheckedChange={(checked) => handlePayloadUpdate('show_results', checked)}
+                checked={block.content.show_results || true}
+                onCheckedChange={(checked) => handleContentUpdate('show_results', checked)}
               />
               <Label style={{ color: '#d1d5db' }}>Mostrar resultados</Label>
             </div>
@@ -414,21 +414,21 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
           <div className="space-y-2">
             <InlineColorPicker
               label="Texto"
-              value={block.payload.text_color || '#ffffff'}
+              value={block.content.text_color || '#ffffff'}
               onChange={(color) => handleColorChange('text_color', color)}
               readonly={false}
               compact={true}
             />
             <InlineColorPicker
               label="Fundo"
-              value={block.payload.background_color || 'transparent'}
+              value={block.content.background_color || 'transparent'}
               onChange={(color) => handleColorChange('background_color', color)}
               readonly={false}
               compact={true}
             />
             <InlineColorPicker
               label="Borda"
-              value={block.payload.border_color || 'transparent'}
+              value={block.content.border_color || 'transparent'}
               onChange={(color) => handleColorChange('border_color', color)}
               readonly={false}
               compact={true}
@@ -436,7 +436,7 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
             {(block.type === 'snapshot_card' || block.type === 'callout' || block.type === 'number_card') && (
               <InlineColorPicker
                 label="Destaque"
-                value={block.payload.accent_color || '#3b82f6'}
+                value={block.content.accent_color || '#3b82f6'}
                 onChange={(color) => handleColorChange('accent_color', color)}
                 readonly={false}
                 compact={true}
