@@ -1,6 +1,6 @@
 
-// ABOUTME: Enhanced block renderer with update capabilities and proper event handling
-// Routes to specific block components with edit/view mode support
+// ABOUTME: Enhanced block renderer with proper event handling for inline editing
+// Ensures clean separation between block selection and content editing
 
 import React from 'react';
 import { ReviewBlock } from '@/types/review';
@@ -51,9 +51,17 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
     readonly
   };
 
-  const handleBlockClick = (e: React.MouseEvent) => {
-    // Prevent event bubbling that might trigger unwanted block creation
-    e.stopPropagation();
+  // Don't interfere with inline editing by preventing event bubbling
+  const handleContentInteraction = (e: React.MouseEvent) => {
+    // Only stop propagation if we're in edit mode and clicking on interactive elements
+    if (!readonly) {
+      const target = e.target as Element;
+      const isInteractiveElement = target.closest('.inline-editor-display, .inline-rich-editor-display, input, textarea, button, select');
+      
+      if (isInteractiveElement) {
+        e.stopPropagation();
+      }
+    }
   };
 
   const renderBlock = () => {
@@ -107,7 +115,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
       data-block-id={block.id}
       className={cn("block-renderer transition-all duration-200", className)}
       style={{ color: '#ffffff' }}
-      onClick={handleBlockClick}
+      onClick={handleContentInteraction}
     >
       {renderBlock()}
     </div>

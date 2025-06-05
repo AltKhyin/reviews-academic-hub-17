@@ -1,8 +1,8 @@
 
-// ABOUTME: Inline text editor for direct content editing within blocks
-// Provides click-to-edit functionality with auto-save and validation
+// ABOUTME: Enhanced inline text editor with improved UX and visual feedback
+// Provides seamless click-to-edit functionality with clear edit state indicators
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,7 @@ interface InlineTextEditorProps {
   disabled?: boolean;
   maxLength?: number;
   autoFocus?: boolean;
+  showEditHint?: boolean;
 }
 
 export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
@@ -30,10 +31,12 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
   editClassName = '',
   disabled = false,
   maxLength,
-  autoFocus = false
+  autoFocus = false,
+  showEditHint = true
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [tempValue, setTempValue] = useState(value);
+  const [isFocused, setIsFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -49,24 +52,26 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
     setTempValue(value);
   }, [value]);
 
-  const handleStartEdit = (e: React.MouseEvent) => {
+  const handleStartEdit = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     if (disabled) return;
     setIsEditing(true);
     setTempValue(value);
-  };
+  }, [disabled, value]);
 
-  const handleSave = () => {
+  const handleSave = useCallback(() => {
     onChange(tempValue);
     setIsEditing(false);
-  };
+  }, [onChange, tempValue]);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     setTempValue(value);
     setIsEditing(false);
-  };
+  }, [value]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    e.stopPropagation(); // Prevent block-level shortcuts
+    
     if (e.key === 'Enter' && !multiline) {
       e.preventDefault();
       handleSave();
@@ -77,7 +82,21 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
       e.preventDefault();
       handleSave();
     }
-  };
+  }, [multiline, handleSave, handleCancel]);
+
+  const handleBlur = useCallback(() => {
+    setIsFocused(false);
+    // Small delay to allow button clicks
+    setTimeout(() => {
+      if (!isFocused) {
+        handleSave();
+      }
+    }, 150);
+  }, [isFocused, handleSave]);
+
+  const handleFocus = useCallback(() => {
+    setIsFocused(true);
+  }, []);
 
   const displayValue = value || placeholder;
   const isEmpty = !value;
@@ -85,17 +104,18 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
   if (isEditing) {
     const InputComponent = multiline ? Textarea : Input;
     return (
-      <div className={cn("inline-editor-container", editClassName)}>
+      <div className={cn("inline-editor-container relative", editClassName)}>
         <div className="flex items-start gap-2">
           <InputComponent
             ref={inputRef as any}
             value={tempValue}
             onChange={(e) => setTempValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            onBlur={handleSave}
+            onBlur={handleBlur}
+            onFocus={handleFocus}
             maxLength={maxLength}
             className={cn(
-              "inline-editor-input min-w-0 flex-1",
+              "inline-editor-input min-w-0 flex-1 bg-gray-900 border-blue-500 text-white",
               multiline && "min-h-[100px] resize-none"
             )}
             style={{
@@ -109,7 +129,8 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
               size="sm"
               variant="ghost"
               onClick={handleSave}
-              className="w-6 h-6 p-0"
+              className="w-6 h-6 p-0 hover:bg-green-600/20"
+              onMouseDown={(e) => e.preventDefault()} // Prevent blur
             >
               <Check className="w-3 h-3" style={{ color: '#10b981' }} />
             </Button>
@@ -117,7 +138,8 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
               size="sm"
               variant="ghost"
               onClick={handleCancel}
-              className="w-6 h-6 p-0"
+              className="w-6 h-6 p-0 hover:bg-red-600/20"
+              onMouseDown={(e) => e.preventDefault()} // Prevent blur
             >
               <X className="w-3 h-3" style={{ color: '#ef4444' }} />
             </Button>
@@ -136,7 +158,7 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
     <div
       className={cn(
         "inline-editor-display group cursor-pointer transition-all duration-200",
-        "hover:bg-gray-800/30 rounded px-2 py-1 -mx-2 -my-1",
+        "hover:bg-gray-800/30 rounded px-2 py-1 -mx-2 -my-1 relative",
         isEmpty && "italic",
         className
       )}
@@ -149,11 +171,13 @@ export const InlineTextEditor: React.FC<InlineTextEditorProps> = ({
         <span className="flex-1 min-w-0 break-words">
           {displayValue}
         </span>
-        {!disabled && (
-          <Edit3 
-            className="w-3 h-3 opacity-0 group-hover:opacity-50 transition-opacity flex-shrink-0" 
-            style={{ color: '#9ca3af' }}
-          />
+        {!disabled && showEditHint && (
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-50 transition-opacity flex-shrink-0">
+            <Edit3 className="w-3 h-3" style={{ color: '#9ca3af' }} />
+            <span className="text-xs" style={{ color: '#9ca3af' }}>
+              Clique para editar
+            </span>
+          </div>
         )}
       </div>
     </div>
