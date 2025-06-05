@@ -32,9 +32,9 @@ interface Grid2DContainerProps {
   readonly?: boolean;
   className?: string;
   dragState?: DragState;
-  onDragOver?: (e: React.DragEvent, targetId: string, position?: GridPosition, targetType?: string) => void;
+  onDragOver?: (e: React.DragEvent, targetRowId: string, targetPosition?: number, targetType?: 'grid' | 'single' | 'merge') => void;
   onDragLeave?: (e: React.DragEvent) => void;
-  onDrop?: (e: React.DragEvent, targetId: string, position?: GridPosition, dropType?: string) => void;
+  onDrop?: (e: React.DragEvent, targetRowId: string, targetPosition?: number, dropType?: 'grid' | 'single' | 'merge') => void;
 }
 
 export const Grid2DContainer: React.FC<Grid2DContainerProps> = ({
@@ -72,17 +72,27 @@ export const Grid2DContainer: React.FC<Grid2DContainerProps> = ({
     onRemoveRow(grid.id, rowIndex);
   }, [grid.id, onRemoveRow]);
 
+  // Convert GridPosition to number for GridPanel compatibility
   const handleCellDragOver = useCallback((e: React.DragEvent, position: GridPosition) => {
     if (onDragOver) {
-      onDragOver(e, grid.id, position, 'grid');
+      const positionNumber = position.row * grid.columns + position.column;
+      onDragOver(e, grid.id, positionNumber, 'grid');
     }
-  }, [grid.id, onDragOver]);
+  }, [grid.id, grid.columns, onDragOver]);
 
   const handleCellDrop = useCallback((e: React.DragEvent, position: GridPosition) => {
     if (onDrop) {
-      onDrop(e, grid.id, position, 'grid');
+      const positionNumber = position.row * grid.columns + position.column;
+      onDrop(e, grid.id, positionNumber, 'grid');
     }
-  }, [grid.id, onDrop]);
+  }, [grid.id, grid.columns, onDrop]);
+
+  const handleGridPanelAdd = useCallback((targetRowId: string, positionNumber: number) => {
+    // Convert position number back to GridPosition
+    const row = Math.floor(positionNumber / grid.columns);
+    const column = positionNumber % grid.columns;
+    handleAddBlock({ row, column });
+  }, [grid.columns, handleAddBlock]);
 
   const isGridDropTarget = dragState?.dragOverRowId === grid.id && dragState?.dropTargetType === 'grid';
 
@@ -143,8 +153,9 @@ export const Grid2DContainer: React.FC<Grid2DContainerProps> = ({
             {/* Grid Cells */}
             {row.cells.map((cell, colIndex) => {
               const position: GridPosition = { row: rowIndex, column: colIndex };
+              const positionNumber = rowIndex * grid.columns + colIndex;
               const isDropTarget = dragState?.dragOverRowId === grid.id && 
-                                 dragState?.dragOverPosition === (rowIndex * 10 + colIndex);
+                                 dragState?.dragOverPosition === positionNumber;
 
               return (
                 <div
@@ -166,7 +177,7 @@ export const Grid2DContainer: React.FC<Grid2DContainerProps> = ({
                   {cell.block ? (
                     <GridPanel
                       rowId={grid.id}
-                      position={rowIndex * grid.columns + colIndex}
+                      position={positionNumber}
                       block={cell.block}
                       readonly={readonly}
                       activeBlockId={activeBlockId}
@@ -174,7 +185,7 @@ export const Grid2DContainer: React.FC<Grid2DContainerProps> = ({
                       onActiveBlockChange={onActiveBlockChange}
                       onUpdateBlock={onUpdateBlock}
                       onDeleteBlock={onDeleteBlock}
-                      onAddBlock={(targetRowId, pos) => handleAddBlock(position)}
+                      onAddBlock={handleGridPanelAdd}
                       onDragOver={onDragOver}
                       onDragLeave={onDragLeave}
                       onDrop={onDrop}

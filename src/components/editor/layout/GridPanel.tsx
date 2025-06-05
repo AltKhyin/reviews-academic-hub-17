@@ -4,7 +4,7 @@
 
 import React, { useCallback } from 'react';
 import { ReviewBlock } from '@/types/review';
-import { BlockRenderer } from '../blocks/BlockRenderer';
+import { BlockRenderer } from '@/components/review/BlockRenderer';
 import { Button } from '@/components/ui/button';
 import { Plus, Grip } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -100,6 +100,12 @@ export const GridPanel: React.FC<GridPanelProps> = ({
     }
   }, [onDrop, readonly, rowId, position]);
 
+  const handleBlockUpdate = useCallback((updates: Partial<ReviewBlock>) => {
+    if (block) {
+      onUpdateBlock(block.id, updates);
+    }
+  }, [block, onUpdateBlock]);
+
   if (!block) {
     return (
       <div 
@@ -173,7 +179,7 @@ export const GridPanel: React.FC<GridPanelProps> = ({
         <BlockRenderer
           block={block}
           readonly={readonly}
-          onUpdate={onUpdateBlock}
+          onUpdate={handleBlockUpdate}
           className="h-full"
         />
       </div>
