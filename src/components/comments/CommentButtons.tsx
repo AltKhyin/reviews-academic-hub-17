@@ -41,13 +41,13 @@ export const CommentButtons: React.FC<CommentButtonsProps> = ({
 }) => {
   return (
     <div className="flex items-center gap-2 text-xs">
-      {/* Voting cluster - tightly grouped like posts */}
-      <div className="flex items-center border border-gray-700/30 rounded-md">
+      {/* Voting cluster - tightly grouped */}
+      <div className="flex items-center">
         <button 
           onClick={onUpvoteClick}
           className={`
-            px-2 py-1 rounded-r-none border-r border-gray-700/30 transition-colors disabled:opacity-50
-            ${userVote === 1 ? 'text-orange-500 bg-orange-500/10' : 'text-gray-400 hover:text-orange-500'}
+            px-1 py-1 transition-colors disabled:opacity-50
+            ${userVote === 1 ? 'text-orange-500' : 'text-gray-400 hover:text-orange-500'}
           `}
           disabled={isVoting || !isAuthenticated}
           aria-label="Vote up"
@@ -55,7 +55,7 @@ export const CommentButtons: React.FC<CommentButtonsProps> = ({
           <ArrowUp className="h-4 w-4" />
         </button>
         
-        <span className={`px-3 py-1 min-w-[30px] text-center text-sm font-medium ${
+        <span className={`px-1 text-sm font-medium min-w-[20px] text-center ${
           score > 0 ? 'text-orange-500' : 
           score < 0 ? 'text-blue-500' : 'text-gray-400'
         }`}>
@@ -65,8 +65,8 @@ export const CommentButtons: React.FC<CommentButtonsProps> = ({
         <button 
           onClick={onDownvoteClick}
           className={`
-            px-2 py-1 rounded-l-none border-l border-gray-700/30 transition-colors disabled:opacity-50
-            ${userVote === -1 ? 'text-blue-500 bg-blue-500/10' : 'text-gray-400 hover:text-blue-500'}
+            px-1 py-1 transition-colors disabled:opacity-50
+            ${userVote === -1 ? 'text-blue-500' : 'text-gray-400 hover:text-blue-500'}
           `}
           disabled={isVoting || !isAuthenticated}
           aria-label="Vote down"

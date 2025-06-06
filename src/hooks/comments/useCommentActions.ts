@@ -52,6 +52,7 @@ export function useCommentActions(
             description: "Não foi possível fazer upload da imagem.",
             variant: "destructive",
           });
+          // Continue without image instead of failing completely
           finalImageUrl = undefined;
         }
       }
@@ -136,6 +137,7 @@ export function useCommentActions(
             description: "Não foi possível fazer upload da imagem.",
             variant: "destructive",
           });
+          // Continue without image instead of failing completely
           finalImageUrl = undefined;
         }
       }

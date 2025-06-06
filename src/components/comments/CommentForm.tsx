@@ -4,9 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
-import { SendIcon, X, Type, Bold, Italic, Underline } from 'lucide-react';
+import { SendIcon, X, Type, Bold, Italic, Underline, Image } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { CommentImageUpload } from './CommentImageUpload';
+import { useToast } from '@/hooks/use-toast';
 
 interface CommentFormProps {
   onSubmit: (content: string, imageUrl?: string) => Promise<void>;
@@ -26,6 +26,7 @@ export const CommentForm: React.FC<CommentFormProps> = ({
   onCancel
 }) => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [content, setContent] = useState('');
   const [selectedImage, setSelectedImage] = useState<string>('');
   const [showControls, setShowControls] = useState(autoFocus);
@@ -88,6 +89,42 @@ export const CommentForm: React.FC<CommentFormProps> = ({
     }, 0);
   };
 
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "Arquivo muito grande",
+        description: "Por favor, selecione uma imagem menor que 5MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Tipo de arquivo inválido",
+        description: "Por favor, selecione apenas arquivos de imagem.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Create object URL for preview
+      const imageUrl = URL.createObjectURL(file);
+      setSelectedImage(imageUrl);
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast({
+        title: "Erro no upload",
+        description: "Não foi possível fazer upload da imagem.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (!user) {
     return (
       <div className="text-center p-4 text-gray-400 border border-dashed border-gray-700 rounded-md">
@@ -118,12 +155,94 @@ export const CommentForm: React.FC<CommentFormProps> = ({
           {/* Integrated controls inside textarea */}
           {showControls && (
             <div className="absolute bottom-2 right-2 flex items-center gap-1">
-              {/* Image upload */}
-              <CommentImageUpload
-                onImageSelect={setSelectedImage}
-                onImageRemove={() => setSelectedImage('')}
-                selectedImage={selectedImage}
-              />
+              {/* Image upload with preview */}
+              {!selectedImage ? (
+                <div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    id="comment-image-upload"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 text-gray-400 hover:text-gray-300"
+                    onClick={() => document.getElementById('comment-image-upload')?.click()}
+                    title="Adicionar imagem"
+                  >
+                    <Image className="h-3 w-3" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 p-1 bg-gray-800/40 rounded">
+                  <img
+                    src={selectedImage}
+                    alt="Preview"
+                    className="w-4 h-4 object-cover rounded"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-4 w-4 p-0 text-gray-400 hover:text-red-400"
+                    onClick={() => setSelectedImage('')}
+                    title="Remover imagem"
+                  >
+                    <X className="h-2 w-2" />
+                  </Button>
+                </div>
+              )}
+
+              {/* Formatting toggle button */}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className={`h-6 w-6 p-0 ${showFormatting ? 'text-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
+                onClick={() => setShowFormatting(!showFormatting)}
+                title="Formatação"
+              >
+                <Type className="h-3 w-3" />
+              </Button>
+
+              {/* Formatting options - expanding to the left */}
+              {showFormatting && (
+                <div className="absolute right-16 bottom-0 flex items-center gap-1 p-1 bg-gray-800/60 rounded border border-gray-700/30">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 text-gray-400 hover:text-gray-300"
+                    onClick={() => handleFormat('bold')}
+                    title="Negrito"
+                  >
+                    <Bold className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 text-gray-400 hover:text-gray-300"
+                    onClick={() => handleFormat('italic')}
+                    title="Itálico"
+                  >
+                    <Italic className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 text-gray-400 hover:text-gray-300"
+                    onClick={() => handleFormat('underline')}
+                    title="Sublinhado"
+                  >
+                    <Underline className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
               
               {/* Cancel button (for replies) */}
               {onCancel && (
@@ -152,72 +271,6 @@ export const CommentForm: React.FC<CommentFormProps> = ({
             </div>
           )}
         </div>
-        
-        {/* Formatting toolbar inside comment box when toggled */}
-        {showControls && (
-          <div className="mt-2 p-2 border border-gray-700/30 rounded-md bg-gray-800/20">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className={`h-6 w-6 p-0 ${showFormatting ? 'text-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
-                  onClick={() => setShowFormatting(!showFormatting)}
-                  title="Formatação"
-                >
-                  <Type className="h-3 w-3" />
-                </Button>
-                
-                {showFormatting && (
-                  <div className="flex items-center gap-1 ml-2 pl-2 border-l border-gray-700/30">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 text-gray-400 hover:text-gray-300"
-                      onClick={() => handleFormat('bold')}
-                      title="Negrito"
-                    >
-                      <Bold className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 text-gray-400 hover:text-gray-300"
-                      onClick={() => handleFormat('italic')}
-                      title="Itálico"
-                    >
-                      <Italic className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 text-gray-400 hover:text-gray-300"
-                      onClick={() => handleFormat('underline')}
-                      title="Sublinhado"
-                    >
-                      <Underline className="h-3 w-3" />
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* Selected image preview */}
-        {selectedImage && (
-          <div className="mt-2">
-            <img
-              src={selectedImage}
-              alt="Preview"
-              className="max-w-48 max-h-48 object-cover rounded border border-gray-700/30"
-            />
-          </div>
-        )}
       </div>
       
       {/* Success animation */}

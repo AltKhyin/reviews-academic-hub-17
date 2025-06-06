@@ -84,11 +84,11 @@ export const PostVotingIntegrated: React.FC<PostVotingIntegratedProps> = ({
   };
 
   return (
-    <div className="flex items-center border border-gray-700/30 rounded-md">
+    <div className="flex items-center">
       <Button 
         variant="ghost"
         size="sm"
-        className={`h-8 px-2 rounded-r-none border-r border-gray-700/30 ${
+        className={`h-8 w-8 p-0 ${
           userVote === 1 ? 'text-orange-500 bg-orange-500/10' : 'text-gray-400 hover:text-orange-500'
         }`}
         onClick={() => handleVote(1)}
@@ -98,7 +98,7 @@ export const PostVotingIntegrated: React.FC<PostVotingIntegratedProps> = ({
         <ArrowUp className="h-5 w-5" />
       </Button>
       
-      <span className={`px-3 py-1 text-sm font-medium min-w-[40px] text-center ${
+      <span className={`px-2 py-1 text-sm font-medium min-w-[24px] text-center ${
         score > 0 ? 'text-orange-500' : 
         score < 0 ? 'text-blue-500' : 'text-gray-400'
       }`}>
@@ -108,7 +108,7 @@ export const PostVotingIntegrated: React.FC<PostVotingIntegratedProps> = ({
       <Button 
         variant="ghost"
         size="sm"
-        className={`h-8 px-2 rounded-l-none border-l border-gray-700/30 ${
+        className={`h-8 w-8 p-0 ${
           userVote === -1 ? 'text-blue-500 bg-blue-500/10' : 'text-gray-400 hover:text-blue-500'
         }`}
         onClick={() => handleVote(-1)}
