@@ -33,18 +33,25 @@ export const CommentForm: React.FC<CommentFormProps> = ({
   const [showFormatting, setShowFormatting] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
+  const [isRichText, setIsRichText] = useState(false);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim() || isSubmitting) return;
+    if ((!content.trim() && !isRichText) || (!editorRef.current?.innerText.trim() && isRichText) || isSubmitting) return;
     
     try {
       setIsAnimating(true);
-      await onSubmit(content, selectedImage || undefined);
+      const finalContent = isRichText ? editorRef.current?.innerHTML || '' : content;
+      await onSubmit(finalContent, selectedImage || undefined);
       setContent('');
+      if (editorRef.current) {
+        editorRef.current.innerHTML = '';
+      }
       setSelectedImage('');
       setShowFormatting(false);
       setShowControls(false);
+      setIsRichText(false);
       
       setTimeout(() => {
         setIsAnimating(false);
@@ -60,33 +67,27 @@ export const CommentForm: React.FC<CommentFormProps> = ({
   };
 
   const handleFormat = (format: 'bold' | 'italic' | 'underline') => {
-    if (!textareaRef.current) return;
-    
-    const textarea = textareaRef.current;
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = content.substring(start, end);
-    
-    let formattedText = selectedText;
-    switch (format) {
-      case 'bold':
-        formattedText = `**${selectedText}**`;
-        break;
-      case 'italic':
-        formattedText = `*${selectedText}*`;
-        break;
-      case 'underline':
-        formattedText = `__${selectedText}__`;
-        break;
+    if (!isRichText) {
+      setIsRichText(true);
+      if (editorRef.current) {
+        editorRef.current.innerHTML = content.replace(/\n/g, '<br>');
+        editorRef.current.focus();
+      }
     }
     
-    const newContent = content.substring(0, start) + formattedText + content.substring(end);
-    setContent(newContent);
-    
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + formattedText.length, start + formattedText.length);
-    }, 0);
+    if (editorRef.current) {
+      editorRef.current.focus();
+      document.execCommand(format, false);
+      const newContent = editorRef.current.innerHTML;
+      setContent(newContent);
+    }
+  };
+
+  const handleRichTextInput = () => {
+    if (editorRef.current) {
+      const newContent = editorRef.current.innerHTML;
+      setContent(newContent);
+    }
   };
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -112,7 +113,6 @@ export const CommentForm: React.FC<CommentFormProps> = ({
     }
 
     try {
-      // Create object URL for preview
       const imageUrl = URL.createObjectURL(file);
       setSelectedImage(imageUrl);
     } catch (error) {
@@ -134,144 +134,166 @@ export const CommentForm: React.FC<CommentFormProps> = ({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex items-start gap-3 relative">
-      <Avatar className="w-8 h-8">
-        <AvatarImage src={user.user_metadata?.avatar_url} />
-        <AvatarFallback>{user.email?.[0].toUpperCase()}</AvatarFallback>
-      </Avatar>
-      <div className="flex-1">
-        <div className="relative">
-          <Textarea
-            ref={textareaRef}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            onFocus={handleFocus}
-            placeholder={placeholder}
-            className="resize-none pr-20"
-            rows={showControls ? 3 : 2}
-            autoFocus={autoFocus}
-          />
-          
-          {/* Integrated controls inside textarea */}
-          {showControls && (
-            <div className="absolute bottom-2 right-2 flex items-center gap-1">
-              {/* Image upload with preview */}
-              {!selectedImage ? (
-                <div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                    id="comment-image-upload"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
+    <div className="relative">
+      <form onSubmit={handleSubmit} className="flex items-start gap-3 relative">
+        <Avatar className="w-8 h-8">
+          <AvatarImage src={user.user_metadata?.avatar_url} />
+          <AvatarFallback>{user.email?.[0].toUpperCase()}</AvatarFallback>
+        </Avatar>
+        <div className="flex-1">
+          <div className="relative">
+            {isRichText ? (
+              <div
+                ref={editorRef}
+                contentEditable
+                onInput={handleRichTextInput}
+                onFocus={handleFocus}
+                className="min-h-[80px] p-3 border rounded-md resize-none pr-20 bg-gray-800/50 border-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={{ minHeight: showControls ? '96px' : '64px' }}
+                data-placeholder={placeholder}
+              />
+            ) : (
+              <Textarea
+                ref={textareaRef}
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                onFocus={handleFocus}
+                placeholder={placeholder}
+                className="resize-none pr-20"
+                rows={showControls ? 3 : 2}
+                autoFocus={autoFocus}
+              />
+            )}
+            
+            {/* Integrated controls inside textarea */}
+            {showControls && (
+              <div className="absolute bottom-2 right-2 flex items-center gap-1">
+                {/* Image upload with preview */}
+                {!selectedImage ? (
+                  <div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      id="comment-image-upload"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 text-gray-400 hover:text-gray-300"
+                      onClick={() => document.getElementById('comment-image-upload')?.click()}
+                      title="Adicionar imagem"
+                    >
+                      <Image className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 p-1 bg-gray-800/40 rounded">
+                    <img
+                      src={selectedImage}
+                      alt="Preview"
+                      className="w-4 h-4 object-cover rounded"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-4 w-4 p-0 text-gray-400 hover:text-red-400"
+                      onClick={() => setSelectedImage('')}
+                      title="Remover imagem"
+                    >
+                      <X className="h-2 w-2" />
+                    </Button>
+                  </div>
+                )}
+                
+                {/* Cancel button (for replies) */}
+                {onCancel && (
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
                     size="sm"
                     className="h-6 w-6 p-0 text-gray-400 hover:text-gray-300"
-                    onClick={() => document.getElementById('comment-image-upload')?.click()}
-                    title="Adicionar imagem"
+                    onClick={onCancel}
+                    title="Cancelar"
                   >
-                    <Image className="h-3 w-3" />
+                    <X className="h-3 w-3" />
                   </Button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1 p-1 bg-gray-800/40 rounded">
-                  <img
-                    src={selectedImage}
-                    alt="Preview"
-                    className="w-4 h-4 object-cover rounded"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-4 w-4 p-0 text-gray-400 hover:text-red-400"
-                    onClick={() => setSelectedImage('')}
-                    title="Remover imagem"
-                  >
-                    <X className="h-2 w-2" />
-                  </Button>
-                </div>
-              )}
-
-              {/* Formatting toggle button */}
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className={`h-6 w-6 p-0 ${showFormatting ? 'text-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
-                onClick={() => setShowFormatting(!showFormatting)}
-                title="Formatação"
-              >
-                <Type className="h-3 w-3" />
-              </Button>
-
-              {/* Formatting options - expanding to the left */}
-              {showFormatting && (
-                <div className="absolute right-16 bottom-0 flex items-center gap-1 p-1 bg-gray-800/60 rounded border border-gray-700/30">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0 text-gray-400 hover:text-gray-300"
-                    onClick={() => handleFormat('bold')}
-                    title="Negrito"
-                  >
-                    <Bold className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0 text-gray-400 hover:text-gray-300"
-                    onClick={() => handleFormat('italic')}
-                    title="Itálico"
-                  >
-                    <Italic className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0 text-gray-400 hover:text-gray-300"
-                    onClick={() => handleFormat('underline')}
-                    title="Sublinhado"
-                  >
-                    <Underline className="h-3 w-3" />
-                  </Button>
-                </div>
-              )}
-              
-              {/* Cancel button (for replies) */}
-              {onCancel && (
+                )}
+                
+                {/* Submit button */}
                 <Button 
-                  type="button" 
-                  variant="ghost" 
+                  type="submit" 
+                  disabled={(!content.trim() && !isRichText) || (!editorRef.current?.innerText.trim() && isRichText) || isSubmitting || isAnimating}
+                  size="sm"
+                  className="h-6 w-6 p-0 relative overflow-hidden"
+                  title={buttonText}
+                >
+                  <SendIcon className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </form>
+
+      {/* Bottom-left formatting controls */}
+      {showControls && (
+        <div className="mt-2 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {/* Formatting toggle button */}
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className={`h-7 px-2 text-xs ${showFormatting ? 'text-blue-400 bg-blue-400/10' : 'text-gray-400 hover:text-gray-300'}`}
+              onClick={() => setShowFormatting(!showFormatting)}
+              title="Formatação"
+            >
+              <Type className="h-3 w-3 mr-1" />
+              Formatação
+            </Button>
+
+            {/* Formatting options - expanding to the right */}
+            {showFormatting && (
+              <div className="flex items-center gap-1 p-1 bg-gray-800/60 rounded border border-gray-700/30">
+                <Button
+                  type="button"
+                  variant="ghost"
                   size="sm"
                   className="h-6 w-6 p-0 text-gray-400 hover:text-gray-300"
-                  onClick={onCancel}
-                  title="Cancelar"
+                  onClick={() => handleFormat('bold')}
+                  title="Negrito"
                 >
-                  <X className="h-3 w-3" />
+                  <Bold className="h-3 w-3" />
                 </Button>
-              )}
-              
-              {/* Submit button */}
-              <Button 
-                type="submit" 
-                disabled={!content.trim() || isSubmitting || isAnimating}
-                size="sm"
-                className="h-6 w-6 p-0 relative overflow-hidden"
-                title={buttonText}
-              >
-                <SendIcon className="h-3 w-3" />
-              </Button>
-            </div>
-          )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 text-gray-400 hover:text-gray-300"
+                  onClick={() => handleFormat('italic')}
+                  title="Itálico"
+                >
+                  <Italic className="h-3 w-3" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 text-gray-400 hover:text-gray-300"
+                  onClick={() => handleFormat('underline')}
+                  title="Sublinhado"
+                >
+                  <Underline className="h-3 w-3" />
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
       
       {/* Success animation */}
       {isAnimating && (
@@ -286,6 +308,6 @@ export const CommentForm: React.FC<CommentFormProps> = ({
           </div>
         </motion.div>
       )}
-    </form>
+    </div>
   );
 };

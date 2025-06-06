@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -226,16 +227,24 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
   }
 
   return (
-    <div className="py-6">
-      {/* Pinned indicator */}
+    <div className={`py-6 relative ${post.pinned ? 'pinned-post' : ''}`}>
+      {/* Pinned post enhancement with subtle visual cues */}
       {post.pinned && (
-        <div className="flex items-center mb-3 text-yellow-500 text-sm">
-          <Pin className="h-4 w-4 mr-1" />
-          <span>Fixado por admin</span>
-        </div>
+        <>
+          {/* Subtle gradient border and background */}
+          <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/5 via-orange-500/5 to-yellow-500/5 rounded-lg border border-yellow-500/20" />
+          
+          {/* Pinned indicator with enhanced styling */}
+          <div className="relative z-10 flex items-center mb-3 text-yellow-400 text-sm">
+            <div className="flex items-center bg-yellow-500/10 px-2 py-1 rounded-full border border-yellow-500/20">
+              <Pin className="h-4 w-4 mr-1" />
+              <span className="font-medium">Fixado</span>
+            </div>
+          </div>
+        </>
       )}
 
-      <div className="flex items-start space-x-4">
+      <div className={`flex items-start space-x-4 ${post.pinned ? 'relative z-10' : ''}`}>
         <div className="flex-1 min-w-0">
           {/* Header with user info and top-right actions */}
           <div className="flex items-center justify-between mb-2">

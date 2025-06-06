@@ -1,101 +1,62 @@
 
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family+Inter:wght@300;400;500;600&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    /* Core Background Colors - Pure Grays (NO BLUE TINT) */
-    --background: 0 0% 7%;        /* #121212 - Pure gray instead of blue-tinted */
-    --foreground: 0 0% 98%;       /* #ffffff - Pure white */
-
-    /* Card and Surface Colors - Pure Grays */
-    --card: 0 0% 10%;             /* #1a1a1a - Pure gray instead of blue-tinted */
-    --card-foreground: 0 0% 98%;  /* #ffffff */
-
-    /* Popover and Dropdown Colors - Pure Grays */
-    --popover: 0 0% 10%;          /* #1a1a1a - Pure gray instead of blue-tinted */
-    --popover-foreground: 0 0% 98%;
-
-    /* Primary Color System */
-    --primary: 0 0% 98%;          /* #ffffff */
-    --primary-foreground: 0 0% 8%; /* #121212 */
-
-    /* Secondary Surfaces - Pure Grays */
-    --secondary: 0 0% 13%;        /* #212121 - Pure gray instead of blue-tinted */
-    --secondary-foreground: 0 0% 98%;
-
-    /* Muted Elements - Pure Grays */
-    --muted: 0 0% 13%;            /* #212121 - Pure gray instead of blue-tinted */
-    --muted-foreground: 0 0% 65%; /* #a6a6a6 */
-
-    /* Accent Colors - Pure Grays */
-    --accent: 0 0% 13%;           /* #212121 - Pure gray instead of blue-tinted */
-    --accent-foreground: 0 0% 98%;
-
-    /* Destructive Colors */
-    --destructive: 0 70% 40%;
-    --destructive-foreground: 0 0% 100%;
-
-    /* Border and Input Colors - Pure Grays */
-    --border: 0 0% 16.5%;         /* #2a2a2a - Pure gray instead of blue-tinted */
-    --input: 0 0% 16.5%;          /* #2a2a2a - Pure gray instead of blue-tinted */
-    --ring: 0 0% 83%;
-
-    --radius: 6px;
-
-    /* Sidebar Colors - Consistent Pure Grays */
-    --sidebar-background: 0 0% 10%;     /* #1a1a1a - Pure gray */
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 0 0% 98%;
-    --sidebar-primary-foreground: 0 0% 8%;
-    --sidebar-accent: 0 0% 13%;         /* #212121 - Pure gray */
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 0 0% 16.5%;       /* #2a2a2a - Pure gray */
-    --sidebar-ring: 0 0% 83%;
-    
-    /* Scrollbar Colors - Pure Grays */
-    --scrollbar-track: 0 0% 10%;        /* #1a1a1a - Pure gray */
-    --scrollbar-thumb: 0 0% 25%;        /* Pure gray */
-    --scrollbar-thumb-hover: 0 0% 35%;  /* Pure gray */
-    
-    /* Enhanced Dark Theme Variables - Pure Gray Scale */
-    --editor-primary-bg: #121212;    /* Main background - Pure gray */
-    --editor-secondary-bg: #1a1a1a;  /* Cards, panels - Pure gray */
-    --editor-tertiary-bg: #212121;   /* Secondary elements - Pure gray */
-    --editor-quaternary-bg: #2a2a2a; /* Borders, separators - Pure gray */
-    
-    /* Success Color */
-    --editor-success-color: #22c55e;
-    
-    /* Interactive Elements - Pure Grays */
-    --editor-hover-bg: #2a2a2a;      /* Pure gray */
-    --editor-active-bg: #333333;     /* Pure gray */
-    
-    /* Text Colors */
-    --editor-text-primary: #ffffff;
-    --editor-text-secondary: #d1d5db;
-    --editor-text-muted: #9ca3af;
-    --editor-text-subtle: #6b7280;
-    
-    /* Z-index scale for proper layering */
-    --z-dropdown: 1000;
-    --z-sticky: 1020;
-    --z-fixed: 1030;
-    --z-modal-backdrop: 1040;
-    --z-modal: 1050;
-    --z-popover: 1060;
-    --z-tooltip: 1070;
-    --z-toast: 1080;
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
   }
 
-  html, body, #root {
-    height: 100%;
-    overflow: hidden;
-    background-color: #121212; /* Pure gray background */
-    color: #ffffff;
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
   }
 }
 
@@ -103,326 +64,78 @@
   * {
     @apply border-border;
   }
-
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
-    background-color: #121212; /* Enforce pure gray background */
-    color: #ffffff;
-  }
-  
-  /* Custom scrollbar styling for Webkit browsers */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-  
-  ::-webkit-scrollbar-track {
-    background: hsl(var(--scrollbar-track));
-    border-radius: 4px;
-  }
-  
-  ::-webkit-scrollbar-thumb {
-    background: hsl(var(--scrollbar-thumb));
-    border-radius: 4px;
-    opacity: 0;
-    transition: opacity 0.3s ease, background-color 0.2s ease;
-  }
-  
-  ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--scrollbar-thumb-hover));
-  }
-  
-  /* Show scrollbar on hover or when scrolling */
-  *:hover::-webkit-scrollbar-thumb,
-  *:active::-webkit-scrollbar-thumb,
-  .scrolling::-webkit-scrollbar-thumb {
-    opacity: 1;
-  }
-  
-  /* Firefox scrollbar styling */
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: transparent hsl(var(--scrollbar-track));
-    transition: scrollbar-color 0.3s ease;
-  }
-  
-  *:hover,
-  *:active,
-  .scrolling {
-    scrollbar-color: hsl(var(--scrollbar-thumb)) hsl(var(--scrollbar-track));
   }
 }
 
-@layer components {
-  /* CRITICAL: Fixed overflow and z-index for drag system AND inline menus */
-  .block-container,
-  .grid-container,
-  .grid-2d-container,
-  .grid-panel,
-  .block-editor {
-    overflow: visible !important;
-    position: relative;
-  }
-
-  /* FIXED: Grid cells must allow overflow for inline menus */
-  .grid-cell {
-    overflow: visible !important;
-    position: relative;
-    z-index: 1;
-  }
-
-  .grid-panel-filled,
-  .grid-panel-empty {
-    overflow: visible !important;
-    position: relative;
-    z-index: 1;
-  }
-
-  .block-content {
-    overflow: visible !important;
-    position: relative;
-    z-index: 1;
-  }
-
-  /* CRITICAL: Inline menus must have high z-index and proper positioning */
-  .inline-block-settings,
-  .block-menu,
-  .inline-menu,
-  .context-menu,
-  .dropdown-menu {
-    position: absolute !important;
-    z-index: var(--z-popover) !important;
-    background-color: #1a1a1a !important; /* Pure gray instead of blue-tinted */
-    border: 1px solid #2a2a2a !important; /* Pure gray border */
-    border-radius: 6px !important;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2) !important;
-    overflow: visible !important;
-  }
-
-  /* Ensure inline settings don't get clipped */
-  .inline-block-settings {
-    z-index: var(--z-tooltip) !important;
-    position: fixed !important;
-  }
-
-  /* Drag handle styling */
-  .cursor-grab {
-    cursor: grab;
-  }
-
-  .cursor-grabbing {
-    cursor: grabbing;
-  }
-
-  /* Enhanced dark theme for editor components - Pure Grays */
-  .native-editor {
-    background-color: #121212 !important; /* Pure gray */
-  }
-  
-  .block-palette {
-    background-color: #1a1a1a !important; /* Pure gray */
-    border-color: #2a2a2a !important;     /* Pure gray */
-  }
-  
-  .block-editor {
-    background-color: #121212 !important; /* Pure gray */
-    border-color: #2a2a2a !important;     /* Pure gray */
-  }
-  
-  .properties-panel {
-    background-color: #1a1a1a !important; /* Pure gray */
-    border-color: #2a2a2a !important;     /* Pure gray */
-  }
-
-  /* Issue Editor Specific Styling - Pure Grays */
-  .issue-editor-card {
-    background-color: #1a1a1a !important; /* Pure gray */
-    border-color: #2a2a2a !important;     /* Pure gray */
-    color: #ffffff !important;
-  }
-
-  .issue-editor-input {
-    background-color: #212121 !important; /* Pure gray */
-    border-color: #2a2a2a !important;     /* Pure gray */
-    color: #ffffff !important;
-  }
-
-  .issue-editor-input:focus {
-    border-color: #3b82f6 !important;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1) !important;
-  }
-
-  /* Diagram Editor Specific Styling - Pure Grays */
-  .diagram-fullscreen-container {
-    background-color: #121212 !important; /* Pure gray */
-  }
-
-  .diagram-toolbar {
-    background-color: #1a1a1a !important; /* Pure gray */
-    border-color: #2a2a2a !important;     /* Pure gray */
-  }
-
-  .diagram-canvas {
-    background-color: #121212 !important; /* Pure gray */
-    border-color: #2a2a2a !important;     /* Pure gray */
-  }
-
-  /* Color Picker and Control Styling - Pure Grays */
-  .color-picker-container {
-    background-color: #1a1a1a !important; /* Pure gray */
-    border-color: #2a2a2a !important;     /* Pure gray */
-  }
-
-  /* Form Elements - Pure Grays */
-  .form-input {
-    background-color: #212121 !important; /* Pure gray */
-    border-color: #2a2a2a !important;     /* Pure gray */
-    color: #ffffff !important;
-  }
-
-  .form-input:focus {
-    border-color: #3b82f6 !important;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1) !important;
-  }
-
-  .form-textarea {
-    background-color: #212121 !important; /* Pure gray */
-    border-color: #2a2a2a !important;     /* Pure gray */
-    color: #ffffff !important;
-  }
-
-  .form-textarea:focus {
-    border-color: #3b82f6 !important;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1) !important;
-  }
-
-  /* Button Variants - Pure Grays */
-  .btn-primary {
-    background-color: #3b82f6 !important;
-    color: #ffffff !important;
-    border-color: #3b82f6 !important;
-  }
-
-  .btn-primary:hover {
-    background-color: #2563eb !important;
-    border-color: #2563eb !important;
-  }
-
-  .btn-secondary {
-    background-color: #212121 !important; /* Pure gray */
-    color: #ffffff !important;
-    border-color: #2a2a2a !important;     /* Pure gray */
-  }
-
-  .btn-secondary:hover {
-    background-color: #2a2a2a !important; /* Pure gray */
-  }
-
-  .btn-ghost {
-    background-color: transparent !important;
-    color: #d1d5db !important;
-  }
-
-  .btn-ghost:hover {
-    background-color: #2a2a2a !important; /* Pure gray */
-    color: #ffffff !important;
-  }
-
-  /* Global overrides to prevent blue-tinted colors */
-  [class*="bg-slate"], [class*="bg-gray"] {
-    background-color: inherit !important;
-  }
-
-  /* Override any remaining blue-tinted backgrounds */
-  .bg-gray-900 {
-    background-color: #121212 !important; /* Pure gray */
-  }
-
-  .bg-gray-800 {
-    background-color: #1a1a1a !important; /* Pure gray */
-  }
-
-  .bg-gray-700 {
-    background-color: #212121 !important; /* Pure gray */
-  }
-
-  .bg-gray-600 {
-    background-color: #2a2a2a !important; /* Pure gray */
-  }
-
-  /* Z-index utilities */
-  .z-dropdown {
-    z-index: var(--z-dropdown);
-  }
-  
-  .z-sticky {
-    z-index: var(--z-sticky);
-  }
-  
-  .z-fixed {
-    z-index: var(--z-fixed);
-  }
-  
-  .z-modal {
-    z-index: var(--z-modal);
-  }
-  
-  .z-popover {
-    z-index: var(--z-popover);
-  }
-  
-  .z-tooltip {
-    z-index: var(--z-tooltip);
-  }
+/* Rich text editor styles */
+[contenteditable] {
+  outline: none;
 }
 
-/* Global dragging styles */
-body.dragging {
-  cursor: grabbing !important;
-}
-
-body.dragging * {
+[contenteditable]:empty:before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+  font-style: italic;
   pointer-events: none;
 }
 
-body.dragging .drop-zone,
-body.dragging [draggable="true"],
-body.dragging button {
-  pointer-events: all;
+[contenteditable] p {
+  margin: 0 0 1em 0;
 }
 
-/* Ensure drag handles are always interactive */
-[draggable="true"] {
-  pointer-events: all !important;
+[contenteditable] ul, 
+[contenteditable] ol {
+  margin: 1em 0;
+  padding-left: 1.5em;
 }
 
-/* CRITICAL: Ensure grid containers don't clip inline menus */
-.grid-2d-container {
-  overflow: visible !important;
-  position: relative !important;
-  z-index: 1 !important;
+[contenteditable] strong {
+  font-weight: bold;
 }
 
-.grid-2d-container .grid-container {
-  overflow: visible !important;
-  position: relative !important;
-  z-index: 1 !important;
+[contenteditable] em {
+  font-style: italic;
 }
 
-/* Disable drag and drop when in diagram fullscreen mode */
-.diagram-fullscreen-active * {
-  -webkit-user-drag: none !important;
-  -khtml-user-drag: none !important;
-  -moz-user-drag: none !important;
-  -o-user-drag: none !important;
-  user-drag: none !important;
-  pointer-events: auto !important;
+[contenteditable] u {
+  text-decoration: underline;
 }
 
-.diagram-fullscreen-active .sortable-ghost,
-.diagram-fullscreen-active .sortable-chosen,
-.diagram-fullscreen-active [draggable] {
-  opacity: 1 !important;
-  transform: none !important;
+/* Pinned post enhancement styles */
+.pinned-post {
+  position: relative;
+}
+
+.pinned-post::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(135deg, 
+    rgba(234, 179, 8, 0.1) 0%, 
+    rgba(249, 115, 22, 0.05) 50%, 
+    rgba(234, 179, 8, 0.1) 100%
+  );
+  border-radius: 8px;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.pinned-post:hover::before {
+  opacity: 1;
+}
+
+/* Subtle glow effect for pinned posts */
+.pinned-post {
+  box-shadow: 0 0 20px rgba(234, 179, 8, 0.05);
+  transition: box-shadow 0.3s ease;
+}
+
+.pinned-post:hover {
+  box-shadow: 0 0 30px rgba(234, 179, 8, 0.1);
 }
