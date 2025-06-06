@@ -1,6 +1,5 @@
-
 // ABOUTME: Review block types with enhanced layout metadata
-// Core data structures for review content blocks
+// Core data structures for review content blocks including comprehensive spacing controls
 
 import { ExtendedLayoutMeta } from './grid';
 
@@ -26,16 +25,29 @@ export interface BlockAlignment {
   vertical?: 'top' | 'center' | 'bottom';
 }
 
+// Enhanced spacing interface with individual side control
+export interface BlockSpacing {
+  margin?: {
+    top?: number;
+    right?: number;
+    bottom?: number;
+    left?: number;
+  };
+  padding?: {
+    top?: number;
+    right?: number;
+    bottom?: number;
+    left?: number;
+  };
+}
+
 export interface ReviewBlockMeta {
   layout?: ExtendedLayoutMeta;
   alignment?: BlockAlignment;
   backgroundColor?: string;
   textColor?: string;
   borderColor?: string;
-  spacing?: {
-    margin?: number;
-    padding?: number;
-  };
+  spacing?: BlockSpacing;
   visibility?: {
     desktop?: boolean;
     tablet?: boolean;

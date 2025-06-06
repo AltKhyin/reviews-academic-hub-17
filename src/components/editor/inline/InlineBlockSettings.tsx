@@ -1,15 +1,16 @@
 
-// ABOUTME: Refactored inline block settings with centered popup positioning
+// ABOUTME: Refactored inline block settings with centered popup positioning and spacing controls
 // Main settings interface using focused sub-components with proper modal-style positioning
 
 import React, { useState, useRef, useEffect } from 'react';
 import { ReviewBlock } from '@/types/review';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, Type, AlignLeft, Palette } from 'lucide-react';
+import { Settings, Type, AlignLeft, Palette, Move } from 'lucide-react';
 import { InlineAlignmentControls } from './InlineAlignmentControls';
 import { GeneralSettings } from './settings/GeneralSettings';
 import { ColorSettings } from './settings/ColorSettings';
+import { SpacingControls } from './SpacingControls';
 import { cn } from '@/lib/utils';
 
 interface InlineBlockSettingsProps {
@@ -158,7 +159,7 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
 
         <Tabs defaultValue="general" className="w-full">
           <TabsList 
-            className="grid w-full grid-cols-3 mb-4"
+            className="grid w-full grid-cols-4 mb-4"
             style={{ backgroundColor: '#212121' }}
           >
             <TabsTrigger 
@@ -176,6 +177,14 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
             >
               <AlignLeft className="w-3 h-3 mr-1" />
               Alinhamento
+            </TabsTrigger>
+            <TabsTrigger 
+              value="spacing"
+              className="text-xs data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+              style={{ color: '#ffffff' }}
+            >
+              <Move className="w-3 h-3 mr-1" />
+              Espaçamento
             </TabsTrigger>
             <TabsTrigger 
               value="colors"
@@ -203,6 +212,13 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
             <div className="text-xs mt-3" style={{ color: '#6b7280' }}>
               Controla o alinhamento vertical do conteúdo em grids com alturas diferentes.
             </div>
+          </TabsContent>
+
+          <TabsContent value="spacing">
+            <SpacingControls
+              block={block}
+              onUpdate={onUpdate}
+            />
           </TabsContent>
 
           <TabsContent value="colors">

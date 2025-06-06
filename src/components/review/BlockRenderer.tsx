@@ -1,6 +1,6 @@
 
-// ABOUTME: Enhanced block renderer with vertical alignment support and complete block type coverage
-// Handles all block types including divider with consistent alignment application and grid layout support
+// ABOUTME: Enhanced block renderer with vertical alignment support, complete block type coverage and spacing system
+// Handles all block types including divider with consistent alignment application, grid layout support, and customizable spacing
 
 import React from 'react';
 import { ReviewBlock } from '@/types/review';
@@ -15,6 +15,7 @@ import { ReviewerQuote } from './blocks/ReviewerQuote';
 import { PollBlock } from './blocks/PollBlock';
 import { CitationListBlock } from './blocks/CitationListBlock';
 import { DividerBlock } from './blocks/DividerBlock';
+import { generateSpacingStyles, getDefaultSpacing } from '@/utils/spacingUtils';
 import { cn } from '@/lib/utils';
 
 interface BlockRendererProps {
@@ -40,6 +41,12 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
 }) => {
   // Get vertical alignment from block metadata
   const verticalAlign = block.meta?.alignment?.vertical || 'top';
+  
+  // Get spacing from block metadata or use defaults
+  const customSpacing = block.meta?.spacing;
+  const defaultSpacing = getDefaultSpacing(block.type);
+  const finalSpacing = customSpacing || defaultSpacing;
+  const spacingStyles = generateSpacingStyles(finalSpacing);
   
   // Convert alignment to CSS classes
   const getAlignmentClass = (alignment: string) => {
@@ -74,7 +81,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
     const columnWidths = layout?.columnWidths || [];
     
     return (
-      <div className={cn("grid-renderer", className)}>
+      <div className={cn("grid-renderer", className)} style={spacingStyles}>
         <div 
           className="grid gap-4"
           style={{ 
@@ -132,6 +139,11 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
     }
   };
 
+  // For heading and paragraph blocks, spacing is handled internally
+  // For other blocks, apply spacing to the container
+  const shouldApplyContainerSpacing = !['heading', 'paragraph'].includes(block.type);
+  const containerStyle = shouldApplyContainerSpacing ? spacingStyles : {};
+
   return (
     <div 
       className={cn(
@@ -139,6 +151,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
         getAlignmentClass(verticalAlign),
         className
       )}
+      style={containerStyle}
       onClick={handleSectionView}
     >
       <div className="w-full">

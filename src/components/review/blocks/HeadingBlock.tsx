@@ -1,11 +1,12 @@
 
-// ABOUTME: Enhanced heading block with integrated inline settings and improved text direction
-// Supports multiple heading levels with comprehensive inline configuration
+// ABOUTME: Enhanced heading block with inline editing and customizable spacing
+// Supports H1-H6 levels with anchor links and comprehensive spacing controls
 
 import React from 'react';
 import { ReviewBlock } from '@/types/review';
 import { InlineTextEditor } from '@/components/editor/inline/InlineTextEditor';
 import { InlineBlockSettings } from '@/components/editor/inline/InlineBlockSettings';
+import { generateSpacingStyles, getDefaultSpacing } from '@/utils/spacingUtils';
 import { cn } from '@/lib/utils';
 
 interface HeadingBlockProps {
@@ -20,8 +21,8 @@ export const HeadingBlock: React.FC<HeadingBlockProps> = ({
   onUpdate
 }) => {
   const content = block.content;
-  const text = content.text || '';
   const level = content.level || 1;
+  const text = content.text || '';
   const anchor = content.anchor || '';
 
   // Color system integration
@@ -29,44 +30,43 @@ export const HeadingBlock: React.FC<HeadingBlockProps> = ({
   const backgroundColor = content.background_color || 'transparent';
   const borderColor = content.border_color || 'transparent';
 
+  // Spacing system integration
+  const customSpacing = block.meta?.spacing;
+  const defaultSpacing = getDefaultSpacing('heading');
+  const finalSpacing = customSpacing || defaultSpacing;
+  const spacingStyles = generateSpacingStyles(finalSpacing);
+
   const handleTextChange = (newText: string) => {
     if (onUpdate) {
       onUpdate({
         content: {
           ...content,
-          text: newText,
-          // Auto-generate anchor from text if not manually set
-          anchor: anchor || newText.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+          text: newText
         }
       });
     }
   };
 
-  const getHeadingTag = () => {
+  const getHeadingClasses = (level: number) => {
     switch (level) {
-      case 1: return 'h1';
-      case 2: return 'h2';
-      case 3: return 'h3';
-      case 4: return 'h4';
-      case 5: return 'h5';
-      case 6: return 'h6';
-      default: return 'h1';
+      case 1:
+        return 'text-3xl font-bold';
+      case 2:
+        return 'text-2xl font-semibold';
+      case 3:
+        return 'text-xl font-semibold';
+      case 4:
+        return 'text-lg font-medium';
+      case 5:
+        return 'text-base font-medium';
+      case 6:
+        return 'text-sm font-medium';
+      default:
+        return 'text-2xl font-semibold';
     }
   };
 
-  const getHeadingClass = () => {
-    switch (level) {
-      case 1: return 'text-4xl font-bold';
-      case 2: return 'text-3xl font-bold';
-      case 3: return 'text-2xl font-semibold';
-      case 4: return 'text-xl font-semibold';
-      case 5: return 'text-lg font-medium';
-      case 6: return 'text-base font-medium';
-      default: return 'text-4xl font-bold';
-    }
-  };
-
-  const HeadingTag = getHeadingTag() as keyof JSX.IntrinsicElements;
+  const HeadingTag = `h${level}` as keyof JSX.IntrinsicElements;
 
   const headingStyle: React.CSSProperties = {
     color: textColor,
@@ -74,22 +74,16 @@ export const HeadingBlock: React.FC<HeadingBlockProps> = ({
     borderColor: borderColor !== 'transparent' ? borderColor : undefined,
     borderWidth: borderColor !== 'transparent' ? '1px' : undefined,
     borderStyle: borderColor !== 'transparent' ? 'solid' : undefined,
-    direction: 'ltr',
-    textAlign: 'left',
-    unicodeBidi: 'normal'
+    ...spacingStyles
   };
 
   if (readonly) {
     return (
-      <div className="heading-block my-6">
+      <div className="heading-block">
         <HeadingTag
           id={anchor}
-          className={cn(
-            getHeadingClass(),
-            "leading-tight"
-          )}
+          className={cn("leading-tight", getHeadingClasses(level))}
           style={headingStyle}
-          dir="ltr"
         >
           {text}
         </HeadingTag>
@@ -98,7 +92,7 @@ export const HeadingBlock: React.FC<HeadingBlockProps> = ({
   }
 
   return (
-    <div className="heading-block my-6 group relative">
+    <div className="heading-block group relative">
       {/* Inline Settings */}
       <div className="absolute -top-2 -right-2 z-10">
         <InlineBlockSettings
@@ -109,23 +103,17 @@ export const HeadingBlock: React.FC<HeadingBlockProps> = ({
 
       <HeadingTag
         id={anchor}
-        className={cn(
-          getHeadingClass(),
-          "leading-tight"
-        )}
+        className={cn("leading-tight", getHeadingClasses(level))}
         style={headingStyle}
-        dir="ltr"
       >
         <InlineTextEditor
           value={text}
           onChange={handleTextChange}
-          placeholder={`Título nível ${level}`}
-          className="w-full"
-          readonly={readonly}
+          placeholder={`Título H${level}`}
+          disabled={readonly}
           style={{
-            direction: 'ltr',
-            textAlign: 'left',
-            unicodeBidi: 'normal'
+            color: textColor,
+            width: '100%'
           }}
         />
       </HeadingTag>

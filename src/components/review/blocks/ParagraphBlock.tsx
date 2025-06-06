@@ -1,11 +1,12 @@
 
-// ABOUTME: Enhanced paragraph block with integrated inline settings and fixed text direction
-// Handles formatted text content with comprehensive inline configuration
+// ABOUTME: Enhanced paragraph block with integrated inline settings, spacing controls and fixed text direction
+// Handles formatted text content with comprehensive inline configuration and customizable spacing
 
 import React from 'react';
 import { ReviewBlock } from '@/types/review';
 import { InlineRichTextEditor } from '@/components/editor/inline/InlineRichTextEditor';
 import { InlineBlockSettings } from '@/components/editor/inline/InlineBlockSettings';
+import { generateSpacingStyles, getDefaultSpacing } from '@/utils/spacingUtils';
 import { cn } from '@/lib/utils';
 
 interface ParagraphBlockProps {
@@ -28,6 +29,12 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
   const textColor = content.text_color || '#d1d5db';
   const backgroundColor = content.background_color || 'transparent';
   const borderColor = content.border_color || 'transparent';
+
+  // Spacing system integration
+  const customSpacing = block.meta?.spacing;
+  const defaultSpacing = getDefaultSpacing('paragraph');
+  const finalSpacing = customSpacing || defaultSpacing;
+  const spacingStyles = generateSpacingStyles(finalSpacing);
 
   const handleContentChange = (newContent: string) => {
     if (onUpdate) {
@@ -74,12 +81,13 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
     borderStyle: borderColor !== 'transparent' ? 'solid' : undefined,
     direction: 'ltr',
     textAlign: alignment as any,
-    unicodeBidi: 'normal'
+    unicodeBidi: 'normal',
+    ...spacingStyles
   };
 
   if (readonly) {
     return (
-      <div className="paragraph-block my-4">
+      <div className="paragraph-block">
         <div
           className={cn(
             "leading-relaxed p-3 rounded",
@@ -96,7 +104,7 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
   }
 
   return (
-    <div className="paragraph-block my-4 group relative">
+    <div className="paragraph-block group relative">
       {/* Inline Settings */}
       <div className="absolute -top-2 -right-2 z-10">
         <InlineBlockSettings
