@@ -1,3 +1,4 @@
+
 // ABOUTME: Interactive diagram maker block for scientific illustrations
 // Supports flowcharts, decision trees, process diagrams with drag-and-drop editing
 
@@ -7,20 +8,18 @@ import { DiagramCanvas } from './diagram/DiagramCanvas';
 import { DiagramToolbar } from './diagram/DiagramToolbar';
 import { DiagramTemplateSelector } from './diagram/DiagramTemplateSelector';
 import { DiagramExporter } from './diagram/DiagramExporter';
+import { DiagramFullscreenViewer } from './diagram/DiagramFullscreenViewer';
 import { DiagramContent, DiagramNode, DiagramConnection } from '@/types/review';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Edit3, 
   Eye, 
   Download, 
   FileText,
-  Settings,
   Grid3X3,
-  Save
+  Maximize2
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
 interface DiagramBlockProps {
   block: ReviewBlock;
@@ -39,6 +38,7 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
   const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
   const [showTemplates, setShowTemplates] = useState(false);
   const [showExporter, setShowExporter] = useState(false);
+  const [showFullscreen, setShowFullscreen] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
 
   // Initialize default content if empty
@@ -154,6 +154,25 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
     setShowTemplates(false);
   }, [handleContentUpdate]);
 
+  // Auto-open fullscreen when entering edit mode
+  useEffect(() => {
+    if (mode === 'edit' && !readonly) {
+      setShowFullscreen(true);
+    }
+  }, [mode, readonly]);
+
+  const handleModeChange = (newMode: 'edit' | 'preview') => {
+    setMode(newMode);
+    if (newMode === 'edit' && !readonly) {
+      setShowFullscreen(true);
+    }
+  };
+
+  const handleSave = () => {
+    // Save is handled automatically through handleContentUpdate
+    console.log('Diagram saved');
+  };
+
   if (readonly) {
     return (
       <Card className="diagram-block-readonly" style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
@@ -180,140 +199,146 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
   }
 
   return (
-    <Card className="diagram-block" style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
-      <div className="p-4">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Grid3X3 className="w-5 h-5" style={{ color: '#3b82f6' }} />
-            <input
-              type="text"
-              value={diagramContent.title}
-              onChange={(e) => handleContentUpdate({ title: e.target.value })}
-              className="text-lg font-semibold bg-transparent border-none outline-none"
-              style={{ color: '#ffffff' }}
-              placeholder="Título do diagrama"
-            />
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowTemplates(true)}
-              className="text-gray-400 hover:text-white"
-            >
-              <FileText className="w-4 h-4 mr-1" />
-              Modelos
-            </Button>
+    <>
+      <Card className="diagram-block" style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
+        <div className="p-4">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Grid3X3 className="w-5 h-5" style={{ color: '#3b82f6' }} />
+              <input
+                type="text"
+                value={diagramContent.title}
+                onChange={(e) => handleContentUpdate({ title: e.target.value })}
+                className="text-lg font-semibold bg-transparent border-none outline-none"
+                style={{ color: '#ffffff' }}
+                placeholder="Título do diagrama"
+              />
+            </div>
             
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowExporter(true)}
-              className="text-gray-400 hover:text-white"
-            >
-              <Download className="w-4 h-4 mr-1" />
-              Exportar
-            </Button>
-            
-            <div className="flex border rounded-md" style={{ borderColor: '#2a2a2a' }}>
+            <div className="flex items-center gap-2">
               <Button
-                variant={mode === 'edit' ? 'default' : 'ghost'}
+                variant="ghost"
                 size="sm"
-                onClick={() => setMode('edit')}
-                className="rounded-r-none"
+                onClick={() => setShowTemplates(true)}
+                className="text-gray-400 hover:text-white"
               >
-                <Edit3 className="w-4 h-4 mr-1" />
-                Editar
+                <FileText className="w-4 h-4 mr-1" />
+                Modelos
               </Button>
+              
               <Button
-                variant={mode === 'preview' ? 'default' : 'ghost'}
+                variant="ghost"
                 size="sm"
-                onClick={() => setMode('preview')}
-                className="rounded-l-none"
+                onClick={() => setShowExporter(true)}
+                className="text-gray-400 hover:text-white"
               >
-                <Eye className="w-4 h-4 mr-1" />
-                Visualizar
+                <Download className="w-4 h-4 mr-1" />
+                Exportar
               </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowFullscreen(true)}
+                className="text-gray-400 hover:text-white"
+              >
+                <Maximize2 className="w-4 h-4 mr-1" />
+                Fullscreen
+              </Button>
+              
+              <div className="flex border rounded-md" style={{ borderColor: '#2a2a2a' }}>
+                <Button
+                  variant={mode === 'edit' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => handleModeChange('edit')}
+                  className="rounded-r-none"
+                >
+                  <Edit3 className="w-4 h-4 mr-1" />
+                  Editar
+                </Button>
+                <Button
+                  variant={mode === 'preview' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => handleModeChange('preview')}
+                  className="rounded-l-none"
+                >
+                  <Eye className="w-4 h-4 mr-1" />
+                  Visualizar
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Description */}
-        {mode === 'edit' && (
-          <div className="mb-4">
-            <textarea
-              value={diagramContent.description || ''}
-              onChange={(e) => handleContentUpdate({ description: e.target.value })}
-              placeholder="Descrição do diagrama (opcional)"
-              className="w-full p-2 text-sm bg-transparent border rounded resize-none"
-              style={{ 
-                borderColor: '#2a2a2a', 
-                color: '#d1d5db',
-                minHeight: '60px'
-              }}
-            />
-          </div>
-        )}
+          {/* Description */}
+          {mode === 'edit' && (
+            <div className="mb-4">
+              <textarea
+                value={diagramContent.description || ''}
+                onChange={(e) => handleContentUpdate({ description: e.target.value })}
+                placeholder="Descrição do diagrama (opcional)"
+                className="w-full p-2 text-sm bg-transparent border rounded resize-none"
+                style={{ 
+                  borderColor: '#2a2a2a', 
+                  color: '#d1d5db',
+                  minHeight: '60px'
+                }}
+              />
+            </div>
+          )}
 
-        {/* Toolbar */}
-        {mode === 'edit' && (
-          <div className="mb-4">
-            <DiagramToolbar
+          {/* Canvas */}
+          <div 
+            ref={canvasRef}
+            className="border rounded-lg overflow-hidden"
+            style={{ borderColor: '#2a2a2a' }}
+          >
+            <DiagramCanvas
+              content={diagramContent}
+              mode={mode}
               selectedTool={selectedTool}
-              onToolChange={setSelectedTool}
-              canvas={diagramContent.canvas}
-              onCanvasUpdate={handleCanvasUpdate}
               selectedNodes={selectedNodes}
-              onNodesUpdate={(nodes) => {
-                const updatedNodes = diagramContent.nodes.map(node => {
-                  const updated = nodes.find(n => n.id === node.id);
-                  return updated || node;
-                });
-                handleContentUpdate({ nodes: updatedNodes });
-              }}
+              onNodeAdd={handleNodeAdd}
+              onNodeUpdate={handleNodeUpdate}
+              onNodeDelete={handleNodeDelete}
+              onConnectionAdd={handleConnectionAdd}
+              onConnectionDelete={handleConnectionDelete}
+              onSelectionChange={setSelectedNodes}
+              readonly={readonly}
             />
           </div>
-        )}
 
-        {/* Canvas */}
-        <div 
-          ref={canvasRef}
-          className="border rounded-lg overflow-hidden"
-          style={{ borderColor: '#2a2a2a' }}
-        >
-          <DiagramCanvas
-            content={diagramContent}
-            mode={mode}
-            selectedTool={selectedTool}
-            selectedNodes={selectedNodes}
-            onNodeAdd={handleNodeAdd}
-            onNodeUpdate={handleNodeUpdate}
-            onNodeDelete={handleNodeDelete}
-            onConnectionAdd={handleConnectionAdd}
-            onConnectionDelete={handleConnectionDelete}
-            onSelectionChange={setSelectedNodes}
-            readonly={readonly}
-          />
+          {/* Templates Modal */}
+          {showTemplates && (
+            <DiagramTemplateSelector
+              onTemplateSelect={handleTemplateApply}
+              onClose={() => setShowTemplates(false)}
+            />
+          )}
+
+          {/* Export Modal */}
+          {showExporter && (
+            <DiagramExporter
+              content={diagramContent}
+              onClose={() => setShowExporter(false)}
+            />
+          )}
         </div>
+      </Card>
 
-        {/* Templates Modal */}
-        {showTemplates && (
-          <DiagramTemplateSelector
-            onTemplateSelect={handleTemplateApply}
-            onClose={() => setShowTemplates(false)}
-          />
-        )}
-
-        {/* Export Modal */}
-        {showExporter && (
-          <DiagramExporter
-            content={diagramContent}
-            onClose={() => setShowExporter(false)}
-          />
-        )}
-      </div>
-    </Card>
+      {/* Fullscreen Viewer */}
+      {showFullscreen && (
+        <DiagramFullscreenViewer
+          content={diagramContent}
+          selectedTool={selectedTool}
+          selectedNodes={selectedNodes}
+          onContentUpdate={handleContentUpdate}
+          onToolChange={setSelectedTool}
+          onSelectionChange={setSelectedNodes}
+          onClose={() => setShowFullscreen(false)}
+          onSave={handleSave}
+        />
+      )}
+    </>
   );
 };
