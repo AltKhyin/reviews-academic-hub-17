@@ -1,3 +1,4 @@
+
 // ABOUTME: Block default configurations and content templates
 // Provides consistent default values for all block types
 
@@ -167,6 +168,31 @@ export const getBlockDefaults = (type: BlockType): BlockContent => {
         style: 'gradient',
         color: '#d1d5db',
         thickness: 1
+      };
+
+    case 'diagram':
+      return {
+        title: 'Novo Diagrama',
+        description: '',
+        canvas: {
+          width: 800,
+          height: 600,
+          backgroundColor: '#ffffff',
+          gridEnabled: true,
+          gridSize: 20,
+          gridColor: '#e5e7eb',
+          snapToGrid: true
+        },
+        nodes: [],
+        connections: [],
+        exportSettings: {
+          format: 'svg',
+          quality: 1,
+          transparentBackground: false
+        },
+        accessibility: {
+          altText: 'Diagrama científico interativo'
+        }
       };
 
     default:

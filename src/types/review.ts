@@ -17,7 +17,8 @@ export type BlockType =
   | 'poll'
   | 'reviewer_quote'
   | 'snapshot_card'
-  | 'number_card';
+  | 'number_card'
+  | 'diagram';
 
 // Enhanced alignment types with vertical support
 export interface BlockAlignment {
@@ -179,4 +180,92 @@ export interface ReviewPoll {
   opens_at?: string;
   closes_at?: string;
   created_at?: string;
+}
+
+// Diagram-specific types for scientific illustrations
+export interface DiagramNode {
+  id: string;
+  type: 'rectangle' | 'circle' | 'diamond' | 'triangle' | 'hexagon' | 'ellipse' | 'rounded-rect';
+  position: { x: number; y: number };
+  size: { width: number; height: number };
+  text: string;
+  style: {
+    backgroundColor: string;
+    borderColor: string;
+    textColor: string;
+    borderWidth: number;
+    borderStyle: 'solid' | 'dashed' | 'dotted';
+    borderRadius?: number;
+    fontSize: number;
+    fontWeight: 'normal' | 'bold';
+    textAlign: 'left' | 'center' | 'right';
+    opacity: number;
+  };
+  metadata?: {
+    category?: string;
+    importance?: 'low' | 'medium' | 'high';
+    tags?: string[];
+  };
+}
+
+export interface DiagramConnection {
+  id: string;
+  sourceNodeId: string;
+  targetNodeId: string;
+  sourcePoint: 'top' | 'right' | 'bottom' | 'left' | 'center';
+  targetPoint: 'top' | 'right' | 'bottom' | 'left' | 'center';
+  style: {
+    strokeColor: string;
+    strokeWidth: number;
+    strokeStyle: 'solid' | 'dashed' | 'dotted';
+    arrowType: 'none' | 'arrow' | 'double-arrow' | 'circle' | 'diamond';
+    curved: boolean;
+    opacity: number;
+  };
+  label?: {
+    text: string;
+    position: number; // 0-1, position along the line
+    style: {
+      backgroundColor: string;
+      textColor: string;
+      fontSize: number;
+    };
+  };
+}
+
+export interface DiagramTemplate {
+  id: string;
+  name: string;
+  description: string;
+  category: 'study-design' | 'decision-tree' | 'process-flow' | 'conceptual' | 'timeline' | 'organizational' | 'custom';
+  preview: string; // Base64 image or SVG
+  nodes: DiagramNode[];
+  connections: DiagramConnection[];
+  defaultSize: { width: number; height: number };
+}
+
+export interface DiagramContent {
+  title: string;
+  description?: string;
+  canvas: {
+    width: number;
+    height: number;
+    backgroundColor: string;
+    gridEnabled: boolean;
+    gridSize: number;
+    gridColor: string;
+    snapToGrid: boolean;
+  };
+  nodes: DiagramNode[];
+  connections: DiagramConnection[];
+  template?: string; // Template ID if created from template
+  exportSettings: {
+    format: 'svg' | 'png' | 'pdf';
+    quality: number;
+    transparentBackground: boolean;
+  };
+  accessibility: {
+    altText: string;
+    longDescription?: string;
+  };
 }

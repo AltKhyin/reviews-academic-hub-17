@@ -1,297 +1,261 @@
 
-// ABOUTME: Enhanced block palette with responsive descriptions and proper text wrapping
-// Provides all available block types with overflow-safe descriptions
+// ABOUTME: Block palette component for adding new blocks to the editor
+// Provides categorized block types with visual previews and drag-and-drop support
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ReviewBlock } from '@/types/review';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import { 
   Type, 
-  FileText, 
+  AlignLeft, 
   Image, 
   Table, 
-  AlertTriangle, 
+  MessageSquare, 
   BarChart3, 
+  Hash, 
   Quote, 
-  BarChart, 
-  BookOpen,
-  CreditCard,
+  Star,
+  Vote,
+  FileText,
   Minus,
+  Grid3X3,
   Search,
-  Layers,
-  Palette
+  Plus
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface BlockPaletteProps {
-  onBlockAdd: (blockType: string) => void;
-  className?: string;
+  onBlockAdd: (type: string, position?: number) => void;
 }
 
-interface BlockType {
-  id: string;
-  name: string;
-  description: string;
-  icon: React.ReactNode;
-  category: 'structure' | 'content' | 'interaction' | 'data';
-  color: string;
-}
-
-const BLOCK_TYPES: BlockType[] = [
-  // STRUCTURE
-  {
-    id: 'heading',
-    name: 'Título',
-    description: 'Cabeçalho de seção com âncora',
-    icon: <Type className="w-4 h-4" />,
-    category: 'structure',
-    color: '#8b5cf6'
-  },
-  {
-    id: 'paragraph',
-    name: 'Parágrafo',
-    description: 'Texto rico com citações',
-    icon: <FileText className="w-4 h-4" />,
-    category: 'structure',
-    color: '#ffffff'
-  },
-  {
-    id: 'divider',
-    name: 'Divisor',
-    description: 'Separação visual entre seções',
-    icon: <Minus className="w-4 h-4" />,
-    category: 'structure',
-    color: '#6b7280'
-  },
-  
-  // CONTENT
-  {
-    id: 'figure',
-    name: 'Figura',
-    description: 'Imagem com legenda e lightbox',
-    icon: <Image className="w-4 h-4" />,
-    category: 'content',
-    color: '#10b981'
-  },
-  {
-    id: 'table',
-    name: 'Tabela',
-    description: 'Dados estruturados com ordenação',
-    icon: <Table className="w-4 h-4" />,
-    category: 'content',
-    color: '#f59e0b'
-  },
-  {
-    id: 'callout',
-    name: 'Destaque',
-    description: 'Caixa de alerta ou informação',
-    icon: <AlertTriangle className="w-4 h-4" />,
-    category: 'content',
-    color: '#ef4444'
-  },
-  
-  // DATA & METRICS
-  {
-    id: 'snapshot_card',
-    name: 'Cartão de Evidência',
-    description: 'Resumo executivo com framework PICO',
-    icon: <CreditCard className="w-4 h-4" />,
-    category: 'data',
-    color: '#3b82f6'
-  },
-  {
-    id: 'number_card',
-    name: 'Cartão Numérico',
-    description: 'Destaque de estatísticas importantes',
-    icon: <BarChart3 className="w-4 h-4" />,
-    category: 'data',
-    color: '#3b82f6'
-  },
-  {
-    id: 'reviewer_quote',
-    name: 'Citação do Revisor',
-    description: 'Comentário ou opinião destacada',
-    icon: <Quote className="w-4 h-4" />,
-    category: 'data',
-    color: '#a855f7'
-  },
-  
-  // INTERACTION
-  {
-    id: 'poll',
-    name: 'Enquete',
-    description: 'Pesquisa interativa com resultados',
-    icon: <BarChart className="w-4 h-4" />,
-    category: 'interaction',
-    color: '#06b6d4'
-  },
-  {
-    id: 'citation_list',
-    name: 'Referências',
-    description: 'Lista de citações acadêmicas',
-    icon: <BookOpen className="w-4 h-4" />,
-    category: 'interaction',
-    color: '#9ca3af'
-  }
-];
-
-const CATEGORIES = [
-  { id: 'all', name: 'Todos', icon: <Layers className="w-4 h-4" /> },
-  { id: 'structure', name: 'Estrutura', icon: <Type className="w-4 h-4" /> },
-  { id: 'content', name: 'Conteúdo', icon: <FileText className="w-4 h-4" /> },
-  { id: 'data', name: 'Dados', icon: <BarChart3 className="w-4 h-4" /> },
-  { id: 'interaction', name: 'Interação', icon: <BarChart className="w-4 h-4" /> }
-];
-
-export const BlockPalette: React.FC<BlockPaletteProps> = ({
-  onBlockAdd,
-  className = ""
-}) => {
+export const BlockPalette: React.FC<BlockPaletteProps> = ({ onBlockAdd }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
-  const filteredBlocks = BLOCK_TYPES.filter(block => {
-    const matchesSearch = block.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         block.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || block.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const blockCategories = [
+    {
+      name: 'Texto',
+      blocks: [
+        {
+          type: 'heading',
+          icon: Type,
+          label: 'Título',
+          description: 'Cabeçalhos H1-H6',
+          color: '#3b82f6'
+        },
+        {
+          type: 'paragraph',
+          icon: AlignLeft,
+          label: 'Parágrafo',
+          description: 'Texto formatado',
+          color: '#6b7280'
+        },
+        {
+          type: 'quote',
+          icon: Quote,
+          label: 'Citação',
+          description: 'Bloco de citação',
+          color: '#8b5cf6'
+        },
+        {
+          type: 'divider',
+          icon: Minus,
+          label: 'Divisor',
+          description: 'Linha de separação',
+          color: '#9ca3af'
+        }
+      ]
+    },
+    {
+      name: 'Mídia',
+      blocks: [
+        {
+          type: 'figure',
+          icon: Image,
+          label: 'Figura',
+          description: 'Imagem com legenda',
+          color: '#10b981'
+        },
+        {
+          type: 'diagram',
+          icon: Grid3X3,
+          label: 'Diagrama',
+          description: 'Fluxogramas e diagramas científicos',
+          color: '#f59e0b'
+        }
+      ]
+    },
+    {
+      name: 'Dados',
+      blocks: [
+        {
+          type: 'table',
+          icon: Table,
+          label: 'Tabela',
+          description: 'Dados tabulares',
+          color: '#ef4444'
+        },
+        {
+          type: 'number_card',
+          icon: Hash,
+          label: 'Card Numérico',
+          description: 'Métricas destacadas',
+          color: '#06b6d4'
+        },
+        {
+          type: 'snapshot_card',
+          icon: BarChart3,
+          label: 'Card de Evidência',
+          description: 'Resumo de estudos',
+          color: '#8b5cf6'
+        }
+      ]
+    },
+    {
+      name: 'Interação',
+      blocks: [
+        {
+          type: 'callout',
+          icon: MessageSquare,
+          label: 'Callout',
+          description: 'Destaque informativo',
+          color: '#f59e0b'
+        },
+        {
+          type: 'poll',
+          icon: Vote,
+          label: 'Enquete',
+          description: 'Votação interativa',
+          color: '#10b981'
+        },
+        {
+          type: 'reviewer_quote',
+          icon: Star,
+          label: 'Avaliação',
+          description: 'Comentário de revisor',
+          color: '#a855f7'
+        }
+      ]
+    },
+    {
+      name: 'Referências',
+      blocks: [
+        {
+          type: 'citation_list',
+          icon: FileText,
+          label: 'Bibliografia',
+          description: 'Lista de referências',
+          color: '#6366f1'
+        }
+      ]
+    }
+  ];
 
-  const handleBlockAdd = (blockType: string) => {
-    onBlockAdd(blockType);
-  };
+  const filteredCategories = blockCategories
+    .map(category => ({
+      ...category,
+      blocks: category.blocks.filter(block =>
+        block.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        block.description.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    }))
+    .filter(category => category.blocks.length > 0);
 
   return (
-    <Card 
-      className={`block-palette h-full flex flex-col ${className}`}
-      style={{ 
-        backgroundColor: '#1a1a1a',
-        borderColor: '#2a2a2a'
-      }}
-    >
-      <CardHeader className="flex-shrink-0 pb-3">
-        <CardTitle className="flex items-center gap-2 text-sm" style={{ color: '#ffffff' }}>
-          <Palette className="w-4 h-4" style={{ color: '#3b82f6' }} />
+    <div className="h-full flex flex-col" style={{ backgroundColor: '#1a1a1a' }}>
+      {/* Header */}
+      <div className="p-4 border-b" style={{ borderColor: '#2a2a2a' }}>
+        <h3 className="font-semibold mb-3" style={{ color: '#ffffff' }}>
           Blocos Disponíveis
-        </CardTitle>
-        <div className="text-xs" style={{ color: '#9ca3af' }}>
-          Clique em um bloco para adicioná-lo ao final do documento
-        </div>
-      </CardHeader>
-
-      <CardContent className="flex-1 flex flex-col p-3 pt-0">
+        </h3>
+        
         {/* Search */}
-        <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-3 h-3" style={{ color: '#9ca3af' }} />
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
           <Input
             placeholder="Buscar blocos..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 h-8 text-xs"
-            style={{ 
-              backgroundColor: '#212121', 
-              borderColor: '#2a2a2a',
-              color: '#ffffff'
-            }}
+            className="pl-10 h-9"
+            style={{ backgroundColor: '#212121', borderColor: '#2a2a2a', color: '#ffffff' }}
           />
         </div>
+      </div>
 
-        {/* Categories */}
-        <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="flex-1 flex flex-col">
-          <TabsList 
-            className="grid grid-cols-2 gap-1 h-auto p-1 mb-3"
-            style={{ backgroundColor: '#212121' }}
-          >
-            {CATEGORIES.slice(0, 2).map((category) => (
-              <TabsTrigger
-                key={category.id}
-                value={category.id}
-                className="text-xs h-7 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-                style={{ color: '#ffffff' }}
-              >
-                {category.icon}
-                <span className="ml-1 hidden sm:inline">{category.name}</span>
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          <TabsList 
-            className="grid grid-cols-3 gap-1 h-auto p-1 mb-3"
-            style={{ backgroundColor: '#212121' }}
-          >
-            {CATEGORIES.slice(2).map((category) => (
-              <TabsTrigger
-                key={category.id}
-                value={category.id}
-                className="text-xs h-7 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
-                style={{ color: '#ffffff' }}
-              >
-                {category.icon}
-                <span className="ml-1 hidden sm:inline">{category.name}</span>
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          {/* Block List */}
-          <ScrollArea className="flex-1">
-            <div className="space-y-2">
-              {filteredBlocks.map((block) => (
-                <Button
-                  key={block.id}
-                  variant="outline"
-                  onClick={() => handleBlockAdd(block.id)}
-                  className="w-full p-3 h-auto text-left justify-start hover:scale-[1.02] transition-all duration-200"
-                  style={{ 
-                    backgroundColor: '#212121',
-                    borderColor: '#2a2a2a',
-                    color: '#ffffff'
-                  }}
-                >
-                  <div className="flex items-start gap-3 w-full">
-                    <div 
-                      className="flex-shrink-0 w-8 h-8 rounded-md flex items-center justify-center"
-                      style={{ backgroundColor: `${block.color}20`, color: block.color }}
+      {/* Block Categories */}
+      <ScrollArea className="flex-1 p-4">
+        <div className="space-y-6">
+          {filteredCategories.map((category) => (
+            <div key={category.name}>
+              <h4 className="text-sm font-medium mb-3 flex items-center gap-2" style={{ color: '#d1d5db' }}>
+                {category.name}
+                <Badge variant="outline" className="text-xs">
+                  {category.blocks.length}
+                </Badge>
+              </h4>
+              
+              <div className="grid grid-cols-1 gap-2">
+                {category.blocks.map((block) => {
+                  const Icon = block.icon;
+                  return (
+                    <Button
+                      key={block.type}
+                      variant="ghost"
+                      className={cn(
+                        "h-auto p-3 justify-start hover:bg-gray-800/50 group transition-all",
+                        "border border-transparent hover:border-gray-700"
+                      )}
+                      onClick={() => onBlockAdd(block.type)}
+                      style={{ 
+                        backgroundColor: 'transparent',
+                        color: '#ffffff'
+                      }}
                     >
-                      {block.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm mb-1 text-left" style={{ color: '#ffffff' }}>
-                        {block.name}
+                      <div className="flex items-start gap-3 w-full">
+                        <div 
+                          className="p-2 rounded-md flex-shrink-0 group-hover:scale-110 transition-transform"
+                          style={{ backgroundColor: `${block.color}20`, color: block.color }}
+                        >
+                          <Icon className="w-4 h-4" />
+                        </div>
+                        
+                        <div className="flex-1 text-left min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium text-sm">{block.label}</span>
+                            <Plus className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                          <p className="text-xs text-gray-400 line-clamp-2">
+                            {block.description}
+                          </p>
+                        </div>
                       </div>
-                      <div 
-                        className="text-xs leading-tight text-left break-words hyphens-auto"
-                        style={{ 
-                          color: '#d1d5db',
-                          wordWrap: 'break-word',
-                          overflowWrap: 'break-word',
-                          lineHeight: '1.3'
-                        }}
-                      >
-                        {block.description}
-                      </div>
-                    </div>
-                  </div>
-                </Button>
-              ))}
-            </div>
-
-            {filteredBlocks.length === 0 && (
-              <div className="text-center py-8">
-                <Search className="w-8 h-8 mx-auto mb-2" style={{ color: '#6b7280' }} />
-                <p className="text-sm" style={{ color: '#9ca3af' }}>
-                  Nenhum bloco encontrado
-                </p>
-                <p className="text-xs mt-1" style={{ color: '#6b7280' }}>
-                  Tente ajustar sua busca ou categoria
-                </p>
+                    </Button>
+                  );
+                })}
               </div>
-            )}
-          </ScrollArea>
-        </Tabs>
-      </CardContent>
-    </Card>
+            </div>
+          ))}
+        </div>
+
+        {filteredCategories.length === 0 && (
+          <div className="text-center py-12">
+            <Search className="w-12 h-12 mx-auto mb-4 opacity-30" style={{ color: '#6b7280' }} />
+            <p className="text-gray-400 mb-2">Nenhum bloco encontrado</p>
+            <p className="text-sm text-gray-500">
+              Tente ajustar os termos de busca
+            </p>
+          </div>
+        )}
+      </ScrollArea>
+
+      {/* Footer */}
+      <div className="p-4 border-t" style={{ borderColor: '#2a2a2a' }}>
+        <p className="text-xs text-gray-500 text-center">
+          Clique para adicionar • Arraste para organizar
+        </p>
+      </div>
+    </div>
   );
 };

@@ -15,6 +15,7 @@ import { ReviewerQuote } from './blocks/ReviewerQuote';
 import { PollBlock } from './blocks/PollBlock';
 import { CitationListBlock } from './blocks/CitationListBlock';
 import { DividerBlock } from './blocks/DividerBlock';
+import { DiagramBlock } from './blocks/DiagramBlock';
 import { generateSpacingStyles, getDefaultSpacing } from '@/utils/spacingUtils';
 import { cn } from '@/lib/utils';
 
@@ -130,6 +131,8 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
         return <CitationListBlock block={block} onUpdate={onUpdate} readonly={readonly} />;
       case 'divider':
         return <DividerBlock block={block} onInteraction={handleInteraction} onSectionView={handleSectionView} readonly={readonly} />;
+      case 'diagram':
+        return <DiagramBlock block={block} onUpdate={onUpdate} readonly={readonly} />;
       default:
         return (
           <div className="p-4 border border-red-500 rounded bg-red-500/10">
