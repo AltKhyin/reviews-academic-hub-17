@@ -1,4 +1,3 @@
-
 // ABOUTME: Advanced color picker component with fixed canvas rendering and intuitive UX
 // Provides comprehensive color selection with working visual interface and transparency control
 
@@ -65,7 +64,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
   className
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [hexInput, setHexInput] = useState(value);
+  const [hexInput, setHexInput] = useState(value || '#ffffff');
   const [isDragging, setIsDragging] = useState(false);
   const [alpha, setAlpha] = useState(100);
   const [currentHue, setCurrentHue] = useState(0);
@@ -151,19 +150,22 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
     };
   }, []);
 
-  // Initialize color values from hex
+  // Initialize color values from hex - with safe handling for undefined value
   useEffect(() => {
-    if (value.startsWith('#')) {
-      setHexInput(value);
-      const rgb = hexToRgb(value);
+    // Ensure value is defined and is a string before calling startsWith
+    const safeValue = value || '#ffffff';
+    
+    if (typeof safeValue === 'string' && safeValue.startsWith('#')) {
+      setHexInput(safeValue);
+      const rgb = hexToRgb(safeValue);
       if (rgb) {
         const hsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
         setCurrentHsv(hsv);
         setCurrentHue(hsv.h);
       }
       
-      if (value.length === 9) {
-        const alphaHex = value.slice(7, 9);
+      if (safeValue.length === 9) {
+        const alphaHex = safeValue.slice(7, 9);
         const alphaValue = Math.round((parseInt(alphaHex, 16) / 255) * 100);
         setAlpha(alphaValue);
       } else {
@@ -416,6 +418,9 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
     }
   }, [onChange, hexToRgb, rgbToHsv]);
 
+  // Safe value for display
+  const safeValue = value || '#ffffff';
+
   return (
     <div className={cn("space-y-2", className)}>
       {label && (
@@ -429,7 +434,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
                 variant="outline"
                 className="w-10 h-6 p-0 border-2 cursor-pointer hover:scale-105 transition-transform rounded"
                 style={{
-                  backgroundColor: value,
+                  backgroundColor: safeValue,
                   borderColor: 'var(--editor-primary-border)'
                 }}
               />
@@ -448,7 +453,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
                   <div 
                     className="w-8 h-8 rounded border-2 flex-shrink-0"
                     style={{ 
-                      backgroundColor: value,
+                      backgroundColor: safeValue,
                       borderColor: 'var(--editor-primary-border)'
                     }}
                   />
@@ -457,7 +462,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
                       Current Color
                     </div>
                     <div className="text-xs font-mono text-[var(--editor-muted-text)]">
-                      {value.toUpperCase()}
+                      {safeValue.toUpperCase()}
                     </div>
                   </div>
                 </div>
@@ -565,7 +570,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({
                             className="w-10 h-8 rounded border-2 hover:scale-110 transition-transform"
                             style={{
                               backgroundColor: preset.value,
-                              borderColor: preset.value === value ? 'var(--editor-focus-border)' : 'var(--editor-primary-border)'
+                              borderColor: preset.value === safeValue ? 'var(--editor-focus-border)' : 'var(--editor-primary-border)'
                             }}
                             onClick={() => handlePresetSelect(preset.value)}
                             title={preset.name}
