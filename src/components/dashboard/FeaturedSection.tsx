@@ -1,7 +1,11 @@
 
+// ABOUTME: Featured section with consistent color system
+// Uses app colors for proper visual identity
+
 import React from 'react';
 import { Issue } from '@/types/issue';
 import { ArticleCard } from './ArticleCard';
+import { CSS_VARIABLES } from '@/utils/colorSystem';
 
 interface FeaturedSectionProps {
   issues: Issue[];
@@ -18,9 +22,17 @@ export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ issues }) => {
     console.log("FeaturedSection: No issues to display");
     return (
       <section className="mb-8">
-        <h2 className="text-2xl font-bold mb-6">Artigo em Destaque</h2>
-        <div className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-500/20 rounded-lg p-8 text-center">
-          <p className="text-gray-300">
+        <h2 className="text-2xl font-bold mb-6" style={{ color: CSS_VARIABLES.TEXT_PRIMARY }}>
+          Artigo em Destaque
+        </h2>
+        <div 
+          className="border rounded-lg p-8 text-center"
+          style={{ 
+            backgroundColor: 'rgba(59, 130, 246, 0.1)', 
+            borderColor: 'rgba(59, 130, 246, 0.2)' 
+          }}
+        >
+          <p style={{ color: CSS_VARIABLES.TEXT_SECONDARY }}>
             Nenhum artigo em destaque disponível no momento.
           </p>
         </div>
@@ -32,7 +44,9 @@ export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ issues }) => {
 
   return (
     <section className="mb-8">
-      <h2 className="text-2xl font-bold mb-6">Artigo em Destaque</h2>
+      <h2 className="text-2xl font-bold mb-6" style={{ color: CSS_VARIABLES.TEXT_PRIMARY }}>
+        Artigo em Destaque
+      </h2>
       
       <div className="max-w-4xl mx-auto">
         <ArticleCard

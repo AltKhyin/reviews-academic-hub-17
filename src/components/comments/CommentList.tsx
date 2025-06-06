@@ -1,8 +1,12 @@
 
+// ABOUTME: Comment list component with consistent color system
+// Uses app colors for proper visual identity
+
 import React from 'react';
 import { Comment } from '@/types/commentTypes';
 import { CommentItem } from './CommentItem';
 import { Skeleton } from '@/components/ui/skeleton';
+import { CSS_VARIABLES } from '@/utils/colorSystem';
 
 interface CommentListProps {
   comments: Comment[];
@@ -29,7 +33,11 @@ export const CommentList: React.FC<CommentListProps> = ({
     return (
       <div className="space-y-4">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="border-l-2 border-gray-700/50 pl-4 py-1">
+          <div 
+            key={i} 
+            className="border-l-2 pl-4 py-1"
+            style={{ borderColor: 'rgba(107, 114, 128, 0.5)' }}
+          >
             <div className="flex items-start gap-3">
               <Skeleton className="w-6 h-6 rounded-full" />
               <div className="flex-1">
@@ -46,7 +54,7 @@ export const CommentList: React.FC<CommentListProps> = ({
 
   if (!comments || comments.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-400">
+      <div className="text-center py-8" style={{ color: CSS_VARIABLES.TEXT_MUTED }}>
         Nenhum comentário ainda. Seja o primeiro a comentar!
       </div>
     );

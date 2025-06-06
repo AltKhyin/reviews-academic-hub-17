@@ -1,24 +1,28 @@
 
-// ABOUTME: Main dashboard layout with simplified structure
-// Removes conditional sidebar mounting to prevent duplicates on community routes
+// ABOUTME: Main dashboard layout with consistent color system
+// Uses app colors for proper visual identity
 
 import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from '@/components/navigation/Sidebar';
 import { MobileSidebarToggle } from '@/components/sidebar/MobileSidebarToggle';
+import { CSS_VARIABLES } from '@/utils/colorSystem';
 
 export const DashboardLayout = () => {
   const location = useLocation();
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen" style={{ backgroundColor: CSS_VARIABLES.PRIMARY_BG }}>
       {/* Left Navigation Sidebar */}
       <Sidebar />
       
       {/* Main Content Area - with left margin to account for sidebar */}
       <div className="flex-1 flex flex-col overflow-hidden ml-64">
         {/* Mobile Header with Sidebar Toggle */}
-        <div className="lg:hidden flex items-center justify-between p-4 border-b">
+        <div 
+          className="lg:hidden flex items-center justify-between p-4 border-b"
+          style={{ borderColor: CSS_VARIABLES.BORDER_DEFAULT }}
+        >
           <MobileSidebarToggle />
         </div>
         
