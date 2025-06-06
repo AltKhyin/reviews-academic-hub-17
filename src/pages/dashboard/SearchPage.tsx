@@ -1,4 +1,3 @@
-
 // ABOUTME: Search page with filters and results display
 // Now uses optimal max-width containers for better content centering
 
@@ -230,7 +229,7 @@ const SearchPage: React.FC = () => {
       );
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex flex-col min-h-screen" style={{ backgroundColor: '#121212' }}>
       {/* Logo Header */}
       <header className="flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-12 pb-6">
         <Logo dark={false} size="2xlarge" />
@@ -242,8 +241,8 @@ const SearchPage: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             {/* Filters Section */}
             <div className="lg:col-span-1">
-              <Card className="p-6">
-                <h3 className="font-medium text-lg mb-2">Filtros</h3>
+              <Card className="p-6" style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
+                <h3 className="font-medium text-lg mb-2 text-white">Filtros</h3>
                 <SearchFilters 
                   filters={filters}
                   onFilterChange={handleFilterChange}
@@ -258,7 +257,7 @@ const SearchPage: React.FC = () => {
             {/* Search and Results Section */}
             <div className="lg:col-span-3">
               {/* Search Header */}
-              <Card className="p-6 mb-6">
+              <Card className="p-6 mb-6" style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
                 <SearchHeader 
                   queryText={queryText}
                   setQueryText={setQueryText}

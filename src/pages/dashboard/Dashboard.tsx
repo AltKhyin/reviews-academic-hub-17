@@ -21,7 +21,7 @@ const Dashboard = () => {
 
   if (isLoading) {
     return (
-      <div className="w-full min-h-screen">
+      <div className="w-full min-h-screen" style={{ backgroundColor: '#121212' }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <DashboardSkeleton />
         </div>
@@ -31,11 +31,11 @@ const Dashboard = () => {
 
   if (!issues || issues.length === 0) {
     return (
-      <div className="w-full min-h-screen">
+      <div className="w-full min-h-screen" style={{ backgroundColor: '#121212' }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="text-center py-16">
-            <h2 className="text-2xl font-bold mb-4">Nenhum conteúdo disponível</h2>
-            <p className="text-muted-foreground">
+            <h2 className="text-2xl font-bold mb-4 text-white">Nenhum conteúdo disponível</h2>
+            <p className="text-gray-400">
               Aguarde novos conteúdos serem publicados.
             </p>
           </div>
@@ -133,7 +133,7 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="w-full min-h-screen bg-background">
+    <div className="w-full min-h-screen" style={{ backgroundColor: '#121212' }}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="space-y-8">
           {visibleSectionIds.map((sectionId, index) => {

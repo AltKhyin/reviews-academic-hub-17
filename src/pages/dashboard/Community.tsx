@@ -43,7 +43,7 @@ const Community = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <div className="max-w-6xl mx-auto py-6 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: '#121212', minHeight: '100vh' }}>
       <CommunityHeader />
       
       {/* Two-column layout: main content + integrated sidebar */}
@@ -59,12 +59,14 @@ const Community = () => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pr-10"
+                  style={{ backgroundColor: '#212121', borderColor: '#2a2a2a', color: '#ffffff' }}
                 />
                 <Button 
                   type="submit" 
                   size="sm" 
                   variant="ghost" 
                   className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
+                  style={{ color: '#ffffff' }}
                 >
                   <Search className="h-4 w-4" />
                 </Button>
@@ -79,7 +81,7 @@ const Community = () => {
             {/* Tabs - centered but not constraining content width */}
             <div className="flex justify-center mb-6">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-2xl">
-                <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full mb-6">
+                <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full mb-6" style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
                   <TabsTrigger value="latest" className="text-sm">Recentes</TabsTrigger>
                   <TabsTrigger value="popular" className="text-sm">Populares</TabsTrigger>
                   <TabsTrigger value="oldest" className="text-sm">Mais Antigos</TabsTrigger>
@@ -137,9 +139,9 @@ const Community = () => {
           </div>
         </div>
 
-        {/* Integrated sidebar - desktop only, now uses bg-background for seamless integration */}
+        {/* Integrated sidebar - desktop only, now uses consistent background */}
         <div className="hidden lg:block">
-          <div className="bg-background overflow-hidden">
+          <div style={{ backgroundColor: '#121212' }} className="overflow-hidden">
             <RightSidebar isMobile={false} className="border-0 bg-transparent" />
           </div>
         </div>

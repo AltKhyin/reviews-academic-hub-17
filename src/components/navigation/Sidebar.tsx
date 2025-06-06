@@ -63,9 +63,9 @@ export const Sidebar = () => {
   ];
 
   return (
-    <div className={`fixed top-0 left-0 h-full z-40 bg-[#121212] border-r border-white/10 transition-all duration-300 ${
+    <div className={`fixed top-0 left-0 h-full z-40 bg-background border-r border-border transition-all duration-300 ${
       isCollapsed ? 'w-16' : 'w-64'
-    }`}>
+    }`} style={{ backgroundColor: '#121212', borderColor: '#2a2a2a' }}>
       <div className="flex flex-col h-full">
         <div className="flex justify-center items-center py-6">
           <Link to="/homepage" className="flex justify-center w-full">
@@ -86,9 +86,24 @@ export const Sidebar = () => {
                 <li key={index}>
                   <Link
                     to={item.path}
-                    className={`flex items-center px-3 py-2 font-medium tracking-wide rounded-md hover:bg-gray-800 ${
-                      item.active ? 'bg-gray-800 text-white' : 'text-gray-400'
+                    className={`flex items-center px-3 py-2 font-medium tracking-wide rounded-md transition-colors ${
+                      item.active 
+                        ? 'text-white' 
+                        : 'text-gray-400 hover:text-white'
                     }`}
+                    style={{
+                      backgroundColor: item.active ? '#2a2a2a' : 'transparent'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!item.active) {
+                        e.currentTarget.style.backgroundColor = '#2a2a2a';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!item.active) {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }
+                    }}
                   >
                     <span className="flex items-center justify-center">
                       {item.icon}
@@ -100,12 +115,21 @@ export const Sidebar = () => {
             })}
           </ul>
         </div>
-        <div className="p-4 border-t border-white/10">
+        <div className="p-4 border-t" style={{ borderColor: '#2a2a2a' }}>
           <div className="flex flex-col space-y-2">
             <Button 
               variant="ghost" 
-              className="w-full justify-start gap-2 text-gray-400 hover:text-white hover:bg-gray-800" 
+              className="w-full justify-start gap-2 text-gray-400 hover:text-white" 
               onClick={() => signOut()}
+              style={{
+                backgroundColor: 'transparent'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#2a2a2a';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
             >
               <LogOut size={24} strokeWidth={1.5} className="w-6 h-6" />
               {!isCollapsed && <span className="text-[0.95rem] tracking-[0.05em] font-medium">Sair</span>}
@@ -114,8 +138,17 @@ export const Sidebar = () => {
             <Button
               variant="ghost" 
               size="sm" 
-              className="w-full justify-between text-gray-400 hover:text-white hover:bg-gray-800 mt-2"
+              className="w-full justify-between text-gray-400 hover:text-white mt-2"
               onClick={toggleSidebar}
+              style={{
+                backgroundColor: 'transparent'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#2a2a2a';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }}
             >
               {!isCollapsed ? (
                 <>

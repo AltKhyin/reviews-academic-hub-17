@@ -22,10 +22,10 @@ const EditPage = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: '#121212' }}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white mx-auto"></div>
-          <p className="mt-4">Loading...</p>
+          <p className="mt-4 text-white">Loading...</p>
         </div>
       </div>
     );
@@ -38,16 +38,16 @@ const EditPage = () => {
 
   if (!hasAdminAccess && !hasEditorAccess) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Card className="w-96">
+      <div className="flex items-center justify-center min-h-screen" style={{ backgroundColor: '#121212' }}>
+        <Card className="w-96" style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
           <CardHeader>
-            <CardTitle className="text-center">Acesso Negado</CardTitle>
+            <CardTitle className="text-center text-white">Acesso Negado</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-center text-muted-foreground">
+            <p className="text-center text-gray-400">
               Você não tem permissão para acessar esta página.
             </p>
-            <div className="mt-4 text-xs text-center text-muted-foreground">
+            <div className="mt-4 text-xs text-center text-gray-400">
               Esta página requer privilégios de administrador ou editor.
             </div>
             <div className="mt-2 text-xs text-center text-gray-500">
@@ -60,13 +60,13 @@ const EditPage = () => {
   }
 
   return (
-    <div className="container mx-auto py-6">
+    <div className="container mx-auto py-6" style={{ backgroundColor: '#121212', minHeight: '100vh' }}>
       <div className="mb-6">
-        <h1 className="text-3xl font-bold flex items-center gap-2">
+        <h1 className="text-3xl font-bold flex items-center gap-2 text-white">
           <Crown className="w-8 h-8 text-yellow-500" />
           Painel {hasAdminAccess ? 'Administrativo' : 'Editorial'}
         </h1>
-        <p className="text-muted-foreground mt-2">
+        <p className="text-gray-400 mt-2">
           Gerencie configurações do sistema, usuários e conteúdo
         </p>
         {hasAdminAccess && (
@@ -77,7 +77,7 @@ const EditPage = () => {
       </div>
       
       <Tabs defaultValue="issues" className="w-full">
-        <TabsList className="grid w-full grid-cols-9">
+        <TabsList className="grid w-full grid-cols-9" style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
           <TabsTrigger value="issues" className="flex items-center gap-2">
             <FileText className="w-4 h-4" />
             Issues
@@ -149,23 +149,23 @@ const EditPage = () => {
         </TabsContent>
         
         <TabsContent value="analytics">
-          <Card>
+          <Card style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
             <CardHeader>
-              <CardTitle>Analytics</CardTitle>
+              <CardTitle className="text-white">Analytics</CardTitle>
             </CardHeader>
             <CardContent>
-              <p>Funcionalidade de analytics em desenvolvimento...</p>
+              <p className="text-gray-400">Funcionalidade de analytics em desenvolvimento...</p>
             </CardContent>
           </Card>
         </TabsContent>
         
         <TabsContent value="system">
-          <Card>
+          <Card style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
             <CardHeader>
-              <CardTitle>Configurações do Sistema</CardTitle>
+              <CardTitle className="text-white">Configurações do Sistema</CardTitle>
             </CardHeader>
             <CardContent>
-              <p>Configurações avançadas do sistema em desenvolvimento...</p>
+              <p className="text-gray-400">Configurações avançadas do sistema em desenvolvimento...</p>
             </CardContent>
           </Card>
         </TabsContent>
