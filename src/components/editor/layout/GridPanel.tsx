@@ -161,6 +161,7 @@ export const GridPanel: React.FC<GridPanelProps> = ({
           "hover:border-gray-500",
           className
         )}
+        style={{ overflow: 'visible', position: 'relative', zIndex: 1 }}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -198,6 +199,11 @@ export const GridPanel: React.FC<GridPanelProps> = ({
         isDragging && "cursor-grabbing",
         className
       )}
+      style={{ 
+        overflow: 'visible !important', 
+        position: 'relative', 
+        zIndex: isActive ? 10 : 1 
+      }}
       onClick={handleBlockClick}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -227,13 +233,17 @@ export const GridPanel: React.FC<GridPanelProps> = ({
         </div>
       )}
 
-      {/* Block Content */}
-      <div className="h-full overflow-visible relative z-10">
+      {/* Block Content - CRITICAL: Must allow overflow for inline menus */}
+      <div 
+        className="h-full relative z-10" 
+        style={{ overflow: 'visible !important', position: 'relative' }}
+      >
         <BlockRenderer
           block={block}
           readonly={readonly}
           onUpdate={handleBlockUpdate}
           className="h-full"
+          style={{ overflow: 'visible !important', position: 'relative' }}
         />
       </div>
 

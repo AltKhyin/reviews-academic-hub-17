@@ -131,7 +131,7 @@
 }
 
 @layer components {
-  /* CRITICAL: Fixed overflow and z-index for drag system */
+  /* CRITICAL: Fixed overflow and z-index for drag system AND inline menus */
   .block-container,
   .grid-container,
   .grid-2d-container,
@@ -141,19 +141,34 @@
     position: relative;
   }
 
+  /* FIXED: Grid cells must allow overflow for inline menus */
+  .grid-cell {
+    overflow: visible !important;
+    position: relative;
+    z-index: 1;
+  }
+
+  .grid-panel-filled,
+  .grid-panel-empty {
+    overflow: visible !important;
+    position: relative;
+    z-index: 1;
+  }
+
   .block-content {
     overflow: visible !important;
     position: relative;
     z-index: 1;
   }
 
-  /* Drag and drop specific styles */
+  /* CRITICAL: Inline menus must have high z-index and proper positioning */
+  .inline-block-settings,
   .block-menu,
   .inline-menu,
   .context-menu,
   .dropdown-menu {
     position: absolute !important;
-    z-index: var(--z-dropdown) !important;
+    z-index: var(--z-popover) !important;
     background-color: var(--editor-secondary-bg) !important;
     border: 1px solid #2a2a2a !important;
     border-radius: 6px !important;
@@ -161,16 +176,10 @@
     overflow: visible !important;
   }
 
-  /* Grid specific fixes */
-  .grid-cell {
-    overflow: visible !important;
-    position: relative;
-  }
-
-  .grid-panel-filled,
-  .grid-panel-empty {
-    overflow: visible !important;
-    position: relative;
+  /* Ensure inline settings don't get clipped */
+  .inline-block-settings {
+    z-index: var(--z-tooltip) !important;
+    position: fixed !important;
   }
 
   /* Drag handle styling */
@@ -246,4 +255,17 @@ body.dragging button {
 /* Ensure drag handles are always interactive */
 [draggable="true"] {
   pointer-events: all !important;
+}
+
+/* CRITICAL: Ensure grid containers don't clip inline menus */
+.grid-2d-container {
+  overflow: visible !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.grid-2d-container .grid-container {
+  overflow: visible !important;
+  position: relative !important;
+  z-index: 1 !important;
 }
