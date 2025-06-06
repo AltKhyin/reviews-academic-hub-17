@@ -5,6 +5,7 @@ import { Comment, EntityType } from '@/types/commentTypes';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { buildCommentData } from '@/utils/commentHelpers';
+import { useFileUpload } from '@/hooks/useFileUpload';
 
 /**
  * Hook for comment actions (add, reply, delete, vote)
@@ -16,6 +17,7 @@ export function useCommentActions(
 ) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { uploadFile } = useFileUpload();
   const [isAddingComment, setIsAddingComment] = useState(false);
   const [isDeletingComment, setIsDeletingComment] = useState(false);
   const [isReplying, setIsReplying] = useState(false);
@@ -34,10 +36,30 @@ export function useCommentActions(
 
     setIsAddingComment(true);
     try {
+      let finalImageUrl = imageUrl;
+      
+      // If imageUrl is a blob URL, upload it to storage
+      if (imageUrl && imageUrl.startsWith('blob:')) {
+        try {
+          const response = await fetch(imageUrl);
+          const blob = await response.blob();
+          const file = new File([blob], 'comment-image.jpg', { type: blob.type });
+          finalImageUrl = await uploadFile(file, 'community/comments');
+        } catch (uploadError) {
+          console.error('Error uploading image:', uploadError);
+          toast({
+            title: "Erro no upload",
+            description: "Não foi possível fazer upload da imagem.",
+            variant: "destructive",
+          });
+          finalImageUrl = undefined;
+        }
+      }
+      
       // Create the data object with the right entity ID field
       const commentData = {
         ...buildCommentData(content, user.id, entityType, entityId),
-        image_url: imageUrl || null
+        image_url: finalImageUrl || null
       };
       
       const { data: newComment, error } = await supabase
@@ -98,11 +120,31 @@ export function useCommentActions(
 
     setIsReplying(true);
     try {
+      let finalImageUrl = imageUrl;
+      
+      // If imageUrl is a blob URL, upload it to storage
+      if (imageUrl && imageUrl.startsWith('blob:')) {
+        try {
+          const response = await fetch(imageUrl);
+          const blob = await response.blob();
+          const file = new File([blob], 'comment-reply-image.jpg', { type: blob.type });
+          finalImageUrl = await uploadFile(file, 'community/comments');
+        } catch (uploadError) {
+          console.error('Error uploading image:', uploadError);
+          toast({
+            title: "Erro no upload",
+            description: "Não foi possível fazer upload da imagem.",
+            variant: "destructive",
+          });
+          finalImageUrl = undefined;
+        }
+      }
+      
       // Create comment data with parent_id
       const commentData = {
         ...buildCommentData(content, user.id, entityType, entityId),
         parent_id: parentId,
-        image_url: imageUrl || null
+        image_url: finalImageUrl || null
       };
       
       const { data: newReply, error } = await supabase

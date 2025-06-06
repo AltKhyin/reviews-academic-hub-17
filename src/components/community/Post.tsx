@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,13 +5,14 @@ import { useToast } from '@/hooks/use-toast';
 import { PostData } from '@/types/community';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Pin } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Pin, BookmarkPlus, Flag, Trash, PinOff, Bookmark, EyeOff, MessageSquare } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { PostContent } from '@/components/community/PostContent';
-import { PostVoting } from '@/components/community/post/PostVoting';
-import { PostActions } from '@/components/community/post/PostActions';
+import { PostVotingIntegrated } from '@/components/community/PostVotingIntegrated';
 import { IssueDiscussionBanner } from '@/components/community/post/IssueDiscussionBanner';
+import { usePinPost, useUnpinPost } from '@/hooks/useIssueDiscussion';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,9 +35,17 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
   const { toast } = useToast();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showReportDialog, setShowReportDialog] = useState(false);
+  const [showHideDialog, setShowHideDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [commentCount, setCommentCount] = useState(0);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isBookmarking, setIsBookmarking] = useState(false);
+  const [isHidden, setIsHidden] = useState(false);
+
+  const pinPost = usePinPost();
+  const unpinPost = useUnpinPost();
 
   const formatPostDate = (dateString: string) => {
     return formatDistanceToNow(new Date(dateString), { 
@@ -62,6 +70,35 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
     
     fetchCommentCount();
   }, [post.id]);
+
+  useEffect(() => {
+    if (!user) return;
+    
+    const checkAdminStatus = async () => {
+      const { data } = await supabase
+        .from('admin_users')
+        .select('user_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+        
+      setIsAdmin(!!data);
+    };
+    
+    checkAdminStatus();
+
+    const checkBookmarkStatus = async () => {
+      const { data } = await supabase
+        .from('post_bookmarks')
+        .select('id')
+        .eq('post_id', post.id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+        
+      setIsBookmarked(!!data);
+    };
+    
+    checkBookmarkStatus();
+  }, [user, post.id]);
 
   const handleDelete = async () => {
     if (!user) return;
@@ -103,6 +140,76 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
     setShowReportDialog(false);
   };
 
+  const handleHide = () => {
+    setIsHidden(true);
+    toast({
+      title: "Post ocultado",
+      description: "Este post foi ocultado da sua timeline.",
+    });
+    setShowHideDialog(false);
+  };
+
+  const handleBookmark = async () => {
+    if (!user) {
+      toast({
+        title: "Autenticação necessária",
+        description: "Faça login para salvar publicações.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setIsBookmarking(true);
+      
+      if (isBookmarked) {
+        await supabase
+          .from('post_bookmarks')
+          .delete()
+          .eq('post_id', post.id)
+          .eq('user_id', user.id);
+          
+        setIsBookmarked(false);
+        
+        toast({
+          title: "Publicação removida dos salvos",
+          description: "A publicação foi removida dos seus salvos.",
+        });
+      } else {
+        await supabase
+          .from('post_bookmarks')
+          .insert({
+            post_id: post.id,
+            user_id: user.id
+          });
+          
+        setIsBookmarked(true);
+        
+        toast({
+          title: "Publicação salva",
+          description: "A publicação foi adicionada aos seus salvos.",
+        });
+      }
+    } catch (error) {
+      console.error('Error bookmarking post:', error);
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar a publicação.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsBookmarking(false);
+    }
+  };
+
+  const handlePinToggle = async () => {
+    if (post.pinned) {
+      unpinPost.mutate(post.id);
+    } else {
+      pinPost.mutate({ postId: post.id, pinDurationDays: 7 });
+    }
+  };
+
   const toggleComments = () => {
     setShowComments(!showComments);
   };
@@ -113,6 +220,10 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
   };
 
   const isIssueDiscussion = post.post_flairs?.name === 'Discussão de Edição';
+
+  if (isHidden) {
+    return null;
+  }
 
   return (
     <div className="py-6">
@@ -126,7 +237,7 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
 
       <div className="flex items-start space-x-4">
         <div className="flex-1 min-w-0">
-          {/* Header */}
+          {/* Header with user info and top-right actions */}
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center">
               <Avatar className="h-6 w-6 mr-3">
@@ -140,6 +251,70 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
                 <span className="mx-1">•</span>
                 {formatPostDate(post.created_at)}
               </span>
+            </div>
+
+            {/* Top-right action cluster */}
+            <div className="flex items-center space-x-1">
+              {/* Bookmark button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`h-8 w-8 p-0 ${isBookmarked ? 'text-blue-500 hover:text-blue-600' : 'text-gray-400 hover:text-white'}`}
+                onClick={handleBookmark}
+                disabled={isBookmarking}
+                title="Salvar"
+              >
+                {isBookmarked ? <Bookmark className="h-5 w-5" /> : <BookmarkPlus className="h-5 w-5" />}
+              </Button>
+
+              {/* Report button */}
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="h-8 w-8 p-0 text-gray-400 hover:text-yellow-500"
+                onClick={() => setShowReportDialog(true)}
+                title="Denunciar"
+              >
+                <Flag className="h-5 w-5" />
+              </Button>
+
+              {/* Hide button */}
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="h-8 w-8 p-0 text-gray-400 hover:text-gray-500"
+                onClick={() => setShowHideDialog(true)}
+                title="Ocultar"
+              >
+                <EyeOff className="h-5 w-5" />
+              </Button>
+
+              {/* Admin pin button */}
+              {isAdmin && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={`h-8 w-8 p-0 ${post.pinned ? 'text-yellow-500 hover:text-yellow-600' : 'text-gray-400 hover:text-white'}`}
+                  onClick={handlePinToggle}
+                  disabled={pinPost.isPending || unpinPost.isPending}
+                  title={post.pinned ? 'Desafixar' : 'Fixar'}
+                >
+                  {post.pinned ? <PinOff className="h-5 w-5" /> : <Pin className="h-5 w-5" />}
+                </Button>
+              )}
+
+              {/* Delete button for post author or admin */}
+              {user && (user.id === post.user_id || isAdmin) && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 w-8 p-0 text-gray-400 hover:text-red-500"
+                  onClick={() => setShowDeleteDialog(true)}
+                  title="Excluir"
+                >
+                  <Trash className="h-5 w-5" />
+                </Button>
+              )}
             </div>
           </div>
           
@@ -164,28 +339,30 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
             <IssueDiscussionBanner issueId={post.issue_id} />
           )}
           
-          {/* Actions Row - Single row with voting and actions */}
-          <div className="flex items-center justify-between mt-4">
-            <div className="flex items-center space-x-1">
-              <PostVoting
-                postId={post.id}
-                initialScore={post.score || 0}
-                initialUserVote={post.userVote || 0}
-                onVoteChange={onVoteChange}
-              />
-            </div>
-            
-            <PostActions
+          {/* Bottom-left action cluster - voting and comments */}
+          <div className="flex items-center space-x-2 mt-4">
+            {/* Voting component - integrated and tightly grouped */}
+            <PostVotingIntegrated
               postId={post.id}
-              userId={post.user_id}
-              isPinned={post.pinned}
-              showComments={showComments}
-              commentCount={commentCount}
-              onToggleComments={toggleComments}
+              initialScore={post.score || 0}
+              initialUserVote={post.userVote || 0}
               onVoteChange={onVoteChange}
-              onReport={() => setShowReportDialog(true)}
-              onDelete={() => setShowDeleteDialog(true)}
             />
+
+            {/* Comments button */}
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className={`h-8 px-3 text-gray-400 hover:text-white ${showComments ? 'text-white bg-gray-700/30' : ''}`}
+              onClick={toggleComments}
+            >
+              <MessageSquare className="h-5 w-5" />
+              {commentCount > 0 && (
+                <span className="ml-2 text-sm">
+                  {commentCount}
+                </span>
+              )}
+            </Button>
           </div>
         </div>
       </div>
@@ -234,8 +411,21 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Subtle divider at bottom */}
-      <div className="mt-6 h-px bg-gradient-to-r from-transparent via-gray-700/30 to-transparent"></div>
+      {/* Hide Dialog */}
+      <AlertDialog open={showHideDialog} onOpenChange={setShowHideDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Ocultar publicação</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja ocultar esta publicação da sua timeline? Você poderá desfazer esta ação posteriormente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleHide}>Ocultar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

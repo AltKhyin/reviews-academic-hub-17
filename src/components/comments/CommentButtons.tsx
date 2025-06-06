@@ -41,13 +41,13 @@ export const CommentButtons: React.FC<CommentButtonsProps> = ({
 }) => {
   return (
     <div className="flex items-center gap-2 text-xs">
-      {/* Voting controls */}
-      <div className="flex items-center space-x-1">
+      {/* Voting cluster - tightly grouped like posts */}
+      <div className="flex items-center border border-gray-700/30 rounded-md">
         <button 
           onClick={onUpvoteClick}
           className={`
-            p-1 hover:bg-gray-800 rounded transition-colors disabled:opacity-50
-            ${userVote === 1 ? 'text-orange-500' : 'text-gray-400 hover:text-gray-300'}
+            px-2 py-1 rounded-r-none border-r border-gray-700/30 transition-colors disabled:opacity-50
+            ${userVote === 1 ? 'text-orange-500 bg-orange-500/10' : 'text-gray-400 hover:text-orange-500'}
           `}
           disabled={isVoting || !isAuthenticated}
           aria-label="Vote up"
@@ -55,7 +55,7 @@ export const CommentButtons: React.FC<CommentButtonsProps> = ({
           <ArrowUp className="h-4 w-4" />
         </button>
         
-        <span className={`min-w-[20px] text-center ${
+        <span className={`px-3 py-1 min-w-[30px] text-center text-sm font-medium ${
           score > 0 ? 'text-orange-500' : 
           score < 0 ? 'text-blue-500' : 'text-gray-400'
         }`}>
@@ -65,8 +65,8 @@ export const CommentButtons: React.FC<CommentButtonsProps> = ({
         <button 
           onClick={onDownvoteClick}
           className={`
-            p-1 hover:bg-gray-800 rounded transition-colors disabled:opacity-50
-            ${userVote === -1 ? 'text-blue-500' : 'text-gray-400 hover:text-gray-300'}
+            px-2 py-1 rounded-l-none border-l border-gray-700/30 transition-colors disabled:opacity-50
+            ${userVote === -1 ? 'text-blue-500 bg-blue-500/10' : 'text-gray-400 hover:text-blue-500'}
           `}
           disabled={isVoting || !isAuthenticated}
           aria-label="Vote down"
@@ -75,10 +75,10 @@ export const CommentButtons: React.FC<CommentButtonsProps> = ({
         </button>
       </div>
       
-      {/* Reply button - icon only */}
+      {/* Reply button */}
       <Button 
         onClick={onReplyClick}
-        className="text-gray-400 hover:text-white h-6 w-6 p-0"
+        className="text-gray-400 hover:text-white h-8 px-3"
         variant="ghost"
         size="sm"
         title="Responder"
@@ -86,12 +86,12 @@ export const CommentButtons: React.FC<CommentButtonsProps> = ({
         <MessageSquare className="h-4 w-4" />
       </Button>
       
-      {/* Delete button - icon only */}
+      {/* Delete button */}
       {isAuthor && (
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button 
-              className="text-gray-400 hover:text-red-400 h-6 w-6 p-0"
+              className="text-gray-400 hover:text-red-400 h-8 w-8 p-0"
               disabled={isDeleting}
               variant="ghost"
               size="sm"

@@ -1,13 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
-import { SendIcon, X, Type } from 'lucide-react';
+import { SendIcon, X, Type, Bold, Italic, Underline } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { CommentImageUpload } from './CommentImageUpload';
-import { CommentFormatting } from './CommentFormatting';
 
 interface CommentFormProps {
   onSubmit: (content: string, imageUrl?: string) => Promise<void>;
@@ -29,8 +28,10 @@ export const CommentForm: React.FC<CommentFormProps> = ({
   const { user } = useAuth();
   const [content, setContent] = useState('');
   const [selectedImage, setSelectedImage] = useState<string>('');
+  const [showControls, setShowControls] = useState(autoFocus);
   const [showFormatting, setShowFormatting] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,12 +39,12 @@ export const CommentForm: React.FC<CommentFormProps> = ({
     
     try {
       setIsAnimating(true);
-      await onSubmit(content, selectedImage);
+      await onSubmit(content, selectedImage || undefined);
       setContent('');
       setSelectedImage('');
       setShowFormatting(false);
+      setShowControls(false);
       
-      // Reset animation state after animation completes
       setTimeout(() => {
         setIsAnimating(false);
       }, 1000);
@@ -53,10 +54,14 @@ export const CommentForm: React.FC<CommentFormProps> = ({
     }
   };
 
+  const handleFocus = () => {
+    setShowControls(true);
+  };
+
   const handleFormat = (format: 'bold' | 'italic' | 'underline') => {
-    const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
-    if (!textarea) return;
+    if (!textareaRef.current) return;
     
+    const textarea = textareaRef.current;
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     const selectedText = content.substring(start, end);
@@ -77,7 +82,6 @@ export const CommentForm: React.FC<CommentFormProps> = ({
     const newContent = content.substring(0, start) + formattedText + content.substring(end);
     setContent(newContent);
     
-    // Restore cursor position
     setTimeout(() => {
       textarea.focus();
       textarea.setSelectionRange(start + formattedText.length, start + formattedText.length);
@@ -92,8 +96,6 @@ export const CommentForm: React.FC<CommentFormProps> = ({
     );
   }
 
-  const showControls = content.trim() || selectedImage || autoFocus;
-
   return (
     <form onSubmit={handleSubmit} className="flex items-start gap-3 relative">
       <Avatar className="w-8 h-8">
@@ -103,8 +105,10 @@ export const CommentForm: React.FC<CommentFormProps> = ({
       <div className="flex-1">
         <div className="relative">
           <Textarea
+            ref={textareaRef}
             value={content}
             onChange={(e) => setContent(e.target.value)}
+            onFocus={handleFocus}
             placeholder={placeholder}
             className="resize-none pr-20"
             rows={showControls ? 3 : 2}
@@ -114,18 +118,6 @@ export const CommentForm: React.FC<CommentFormProps> = ({
           {/* Integrated controls inside textarea */}
           {showControls && (
             <div className="absolute bottom-2 right-2 flex items-center gap-1">
-              {/* Formatting toggle */}
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className={`h-6 w-6 p-0 ${showFormatting ? 'text-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
-                onClick={() => setShowFormatting(!showFormatting)}
-                title="Formatação"
-              >
-                <Type className="h-3 w-3" />
-              </Button>
-              
               {/* Image upload */}
               <CommentImageUpload
                 onImageSelect={setSelectedImage}
@@ -161,11 +153,60 @@ export const CommentForm: React.FC<CommentFormProps> = ({
           )}
         </div>
         
-        {/* Formatting toolbar */}
-        <CommentFormatting 
-          onFormat={handleFormat}
-          isVisible={showFormatting}
-        />
+        {/* Formatting toolbar inside comment box when toggled */}
+        {showControls && (
+          <div className="mt-2 p-2 border border-gray-700/30 rounded-md bg-gray-800/20">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className={`h-6 w-6 p-0 ${showFormatting ? 'text-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
+                  onClick={() => setShowFormatting(!showFormatting)}
+                  title="Formatação"
+                >
+                  <Type className="h-3 w-3" />
+                </Button>
+                
+                {showFormatting && (
+                  <div className="flex items-center gap-1 ml-2 pl-2 border-l border-gray-700/30">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 text-gray-400 hover:text-gray-300"
+                      onClick={() => handleFormat('bold')}
+                      title="Negrito"
+                    >
+                      <Bold className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 text-gray-400 hover:text-gray-300"
+                      onClick={() => handleFormat('italic')}
+                      title="Itálico"
+                    >
+                      <Italic className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 text-gray-400 hover:text-gray-300"
+                      onClick={() => handleFormat('underline')}
+                      title="Sublinhado"
+                    >
+                      <Underline className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Selected image preview */}
         {selectedImage && (
