@@ -159,7 +159,6 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
               onUpdate={handleBlockUpdate}
               readonly={false}
               className="block-content-edit"
-              style={{ overflow: 'visible !important' }}
             />
           </div>
         ) : (

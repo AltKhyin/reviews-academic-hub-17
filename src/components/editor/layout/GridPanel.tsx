@@ -243,7 +243,6 @@ export const GridPanel: React.FC<GridPanelProps> = ({
           readonly={readonly}
           onUpdate={handleBlockUpdate}
           className="h-full"
-          style={{ overflow: 'visible !important', position: 'relative' }}
         />
       </div>
 
