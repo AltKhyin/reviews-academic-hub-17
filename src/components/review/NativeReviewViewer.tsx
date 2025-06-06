@@ -1,4 +1,3 @@
-
 // ABOUTME: Main viewer component for native review content with enhanced error handling
 // Provides comprehensive loading states, error boundaries, and user interaction tracking
 
@@ -262,7 +261,7 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
               )}
               <span className="flex items-center gap-1" style={{ color: '#d1d5db' }}>
                 <Eye className="w-4 h-4" />
-                Revisão Nativa
+                Revisão
               </span>
               <span className="text-xs" style={{ color: '#9ca3af' }}>
                 {blocks.length} {blocks.length === 1 ? 'bloco' : 'blocos'}
@@ -312,10 +311,10 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
               >
                 <FileText className="w-12 h-12 mx-auto mb-4" style={{ color: '#6b7280' }} />
                 <h3 className="text-lg font-medium mb-2" style={{ color: '#ffffff' }}>
-                  Conteúdo Nativo em Desenvolvimento
+                  Conteúdo da Revisão em Desenvolvimento
                 </h3>
                 <p className="mb-4" style={{ color: '#d1d5db' }}>
-                  O conteúdo nativo desta revisão ainda não foi criado. 
+                  O conteúdo desta revisão ainda não foi criado. 
                   {issue.article_pdf_url && ' Você pode visualizar o artigo original enquanto isso.'}
                 </p>
                 {issue.article_pdf_url && (
@@ -350,7 +349,7 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
             <div className="native-panel">
               <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: '#ffffff' }}>
                 <TrendingUp className="w-5 h-5" style={{ color: '#10b981' }} />
-                Revisão Nativa
+                Revisão
               </h3>
               <div className="space-y-4 max-h-[80vh] overflow-y-auto pr-4">
                 {blocks.map((block) => (

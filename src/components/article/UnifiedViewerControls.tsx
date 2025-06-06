@@ -29,7 +29,7 @@ export const UnifiedViewerControls: React.FC<UnifiedViewerControlsProps> = ({
   const viewModes = [
     {
       id: 'native' as const,
-      label: 'Revisão Nativa',
+      label: 'Revisão',
       icon: FileText,
       enabled: hasNativeContent,
     },

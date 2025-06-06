@@ -1,3 +1,4 @@
+
 // ABOUTME: Enhanced article viewer with unified controls and structured sections
 // Implements the 4-section layout: Header, Review Content, Recommendations, Comments
 
@@ -13,6 +14,7 @@ import { toast } from '@/hooks/use-toast';
 import { useNativeReview } from '@/hooks/useNativeReview';
 import { BlockRenderer } from '@/components/review/BlockRenderer';
 import { UnifiedViewerControls } from '@/components/article/UnifiedViewerControls';
+import { FloatingViewerControls } from '@/components/article/FloatingViewerControls';
 import { EnhancedPDFViewer } from '@/components/article/EnhancedPDFViewer';
 import { RecommendedArticles } from '@/components/article/RecommendedArticles';
 import { ExternalLectures } from '@/components/article/ExternalLectures';
@@ -29,6 +31,7 @@ const EnhancedArticleViewer: React.FC = () => {
   const [viewMode, setViewMode] = useState<'native' | 'pdf' | 'dual'>('native');
   const [readingMode, setReadingMode] = useState<'normal' | 'browser-fullscreen' | 'system-fullscreen'>('normal');
   const [startTime] = useState(Date.now());
+  const [showFloatingControls, setShowFloatingControls] = useState(false);
 
   // Fetch issue data
   const { data: issue, isLoading, error } = useQuery({
@@ -82,6 +85,17 @@ const EnhancedArticleViewer: React.FC = () => {
 
   // Get review data for native content
   const { reviewData, trackAnalytics, voteOnPoll } = useNativeReview(issue?.id || '');
+
+  // Handle scroll detection for floating controls
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrolled = window.scrollY > 300;
+      setShowFloatingControls(scrolled);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Handle reading mode changes
   useEffect(() => {
@@ -191,12 +205,9 @@ const EnhancedArticleViewer: React.FC = () => {
 
   return (
     <div className={containerClass} style={{ backgroundColor: '#121212', color: '#ffffff' }}>
-      {/* Section 1: Header */}
+      {/* Section 1: Header - Now scrolls naturally */}
       <div 
-        className={cn(
-          "border-b py-6",
-          !isFullscreen && "sticky top-0 z-30"
-        )}
+        className="border-b py-6"
         style={{ backgroundColor: '#121212', borderColor: '#2a2a2a' }}
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -240,7 +251,7 @@ const EnhancedArticleViewer: React.FC = () => {
               )}
               <span className="flex items-center gap-1" style={{ color: '#d1d5db' }}>
                 <Eye className="w-4 h-4" />
-                Revisão Nativa
+                Revisão
               </span>
             </div>
 
@@ -268,16 +279,18 @@ const EnhancedArticleViewer: React.FC = () => {
 
       {/* Section 2: Review Content with Unified Controls */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Unified Viewer Controls */}
-        <UnifiedViewerControls
-          currentViewMode={viewMode}
-          currentReadingMode={readingMode}
-          onViewModeChange={handleViewModeChange}
-          onReadingModeChange={handleReadingModeChange}
-          hasOriginalPDF={!!issue.article_pdf_url}
-          hasNativeContent={true}
-          className="mb-8"
-        />
+        {/* Static Unified Viewer Controls - only shown when not scrolled much */}
+        {!showFloatingControls && (
+          <UnifiedViewerControls
+            currentViewMode={viewMode}
+            currentReadingMode={readingMode}
+            onViewModeChange={handleViewModeChange}
+            onReadingModeChange={handleReadingModeChange}
+            hasOriginalPDF={!!issue.article_pdf_url}
+            hasNativeContent={true}
+            className="mb-8"
+          />
+        )}
 
         {/* Content Area */}
         {viewMode === 'native' && (
@@ -304,7 +317,7 @@ const EnhancedArticleViewer: React.FC = () => {
                 style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}
               >
                 <p style={{ color: '#d1d5db' }}>
-                  O conteúdo nativo desta revisão ainda não foi criado.
+                  O conteúdo desta revisão ainda não foi criado.
                 </p>
               </Card>
             )}
@@ -324,7 +337,7 @@ const EnhancedArticleViewer: React.FC = () => {
           <div className="dual-content grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="native-panel">
               <h3 className="text-lg font-semibold mb-4" style={{ color: '#ffffff' }}>
-                Revisão Nativa
+                Revisão
               </h3>
               <div className="space-y-4 max-h-[80vh] overflow-y-auto pr-4">
                 {reviewData?.blocks?.map((block) => (
@@ -353,34 +366,42 @@ const EnhancedArticleViewer: React.FC = () => {
         )}
       </div>
 
-      {/* Section 3: Recommendations (only show in normal reading mode) */}
-      {readingMode === 'normal' && (
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 border-t" style={{ borderColor: '#2a2a2a' }}>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div>
-              <h2 className="text-xl font-semibold mb-4" style={{ color: '#ffffff' }}>
-                Artigos Recomendados
-              </h2>
-              <RecommendedArticles currentArticleId={issue.id} />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold mb-4" style={{ color: '#ffffff' }}>
-                Palestras Externas
-              </h2>
-              <ExternalLectures issueId={issue.id} />
-            </div>
+      {/* Section 3: Recommendations - Always show regardless of reading mode */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 border-t" style={{ borderColor: '#2a2a2a' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div>
+            <h2 className="text-xl font-semibold mb-4" style={{ color: '#ffffff' }}>
+              Artigos Recomendados
+            </h2>
+            <RecommendedArticles currentArticleId={issue.id} />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold mb-4" style={{ color: '#ffffff' }}>
+              Palestras Externas
+            </h2>
+            <ExternalLectures issueId={issue.id} />
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Section 4: Comments (only show in normal reading mode) */}
-      {readingMode === 'normal' && (
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 border-t" style={{ borderColor: '#2a2a2a' }}>
-          <h2 className="text-xl font-semibold mb-6" style={{ color: '#ffffff' }}>
-            Comentários
-          </h2>
-          <ArticleComments articleId={issue.id} />
-        </div>
+      {/* Section 4: Comments - Always show regardless of reading mode */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 border-t" style={{ borderColor: '#2a2a2a' }}>
+        <h2 className="text-xl font-semibold mb-6" style={{ color: '#ffffff' }}>
+          Comentários
+        </h2>
+        <ArticleComments articleId={issue.id} />
+      </div>
+
+      {/* Floating Controls - Show when scrolled */}
+      {showFloatingControls && (
+        <FloatingViewerControls
+          currentViewMode={viewMode}
+          currentReadingMode={readingMode}
+          onViewModeChange={handleViewModeChange}
+          onReadingModeChange={handleReadingModeChange}
+          hasOriginalPDF={!!issue.article_pdf_url}
+          hasNativeContent={true}
+        />
       )}
     </div>
   );

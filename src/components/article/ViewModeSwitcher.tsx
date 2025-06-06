@@ -64,7 +64,7 @@ export const ViewModeSwitcher: React.FC<ViewModeSwitcherProps> = ({
   const modes = [
     {
       id: 'native',
-      label: 'Revisão Nativa',
+      label: 'Revisão',
       icon: FileText,
       enabled: hasNativeContent,
       description: 'Conteúdo estruturado e interativo'
