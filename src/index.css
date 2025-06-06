@@ -51,7 +51,7 @@
     --scrollbar-thumb: 210 12% 25%;
     --scrollbar-thumb-hover: 210 12% 35%;
     
-    /* Fixed Editor Theme Variables - Consistent Dark Palette */
+    /* Fixed Editor Theme Variables - Dark Palette */
     /* Primary colors - darkest */
     --editor-primary-bg: #121212;
     --editor-secondary-bg: #1a1a1a;
@@ -132,8 +132,8 @@
   html, body, #root {
     height: 100%;
     overflow: hidden;
-    background-color: #121212 !important;
-    color: #ffffff !important;
+    background-color: #121212;
+    color: #ffffff;
   }
 }
 
@@ -145,8 +145,8 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
-    background-color: #121212 !important;
-    color: #ffffff !important;
+    background-color: #121212;
+    color: #ffffff;
   }
   
   /* Custom scrollbar styling for Webkit browsers */
@@ -254,69 +254,69 @@
   
   /* Native Editor Design System Classes - Using Fixed Dark Theme */
   .native-editor {
-    background-color: var(--editor-primary-bg) !important;
+    background-color: var(--editor-primary-bg);
   }
   
   .block-palette {
-    background-color: var(--palette-palette-bg) !important;
-    border-color: var(--palette-palette-border) !important;
+    background-color: var(--palette-palette-bg);
+    border-color: var(--palette-palette-border);
   }
   
   .block-editor {
-    background-color: var(--editor-primary-bg) !important;
-    border-color: var(--editor-primary-border) !important;
+    background-color: var(--editor-primary-bg);
+    border-color: var(--editor-primary-border);
   }
   
   .block-palette .block-type-button {
-    background-color: var(--palette-palette-card-bg) !important;
-    border-color: var(--palette-palette-border) !important;
-    color: var(--palette-block-title-text) !important;
+    background-color: var(--palette-palette-card-bg);
+    border-color: var(--palette-palette-border);
+    color: var(--palette-block-title-text);
   }
   
   .block-palette .block-type-button:hover {
-    background-color: var(--palette-palette-card-hover) !important;
-    border-color: var(--editor-secondary-border) !important;
+    background-color: var(--palette-palette-card-hover);
+    border-color: var(--editor-secondary-border);
   }
   
   /* Block Editor specific styles */
   .block-editor-card {
-    background-color: var(--block-block-background) !important;
-    border-color: var(--block-block-border) !important;
+    background-color: var(--block-block-background);
+    border-color: var(--block-block-border);
   }
   
   .block-editor-card:hover {
-    background-color: var(--block-block-hover) !important;
-    border-color: var(--editor-secondary-border) !important;
+    background-color: var(--block-block-hover);
+    border-color: var(--editor-secondary-border);
   }
   
   .block-editor-card.active {
-    background-color: var(--block-block-selected) !important;
-    border-color: var(--editor-active-border) !important;
+    background-color: var(--block-block-selected);
+    border-color: var(--editor-active-border);
   }
   
   /* Properties panel */
   .properties-panel {
-    background-color: var(--editor-secondary-bg) !important;
-    border-color: var(--editor-primary-border) !important;
+    background-color: var(--editor-secondary-bg);
+    border-color: var(--editor-primary-border);
   }
   
   /* Status indicators using design tokens */
   .status-success {
-    color: var(--editor-success-color) !important;
-    background-color: color-mix(in srgb, var(--editor-success-color) 10%, transparent) !important;
-    border-color: color-mix(in srgb, var(--editor-success-color) 20%, transparent) !important;
+    color: var(--editor-success-color);
+    background-color: color-mix(in srgb, var(--editor-success-color) 10%, transparent);
+    border-color: color-mix(in srgb, var(--editor-success-color) 20%, transparent);
   }
   
   .status-warning {
-    color: var(--editor-warning-color) !important;
-    background-color: color-mix(in srgb, var(--editor-warning-color) 10%, transparent) !important;
-    border-color: color-mix(in srgb, var(--editor-warning-color) 20%, transparent) !important;
+    color: var(--editor-warning-color);
+    background-color: color-mix(in srgb, var(--editor-warning-color) 10%, transparent);
+    border-color: color-mix(in srgb, var(--editor-warning-color) 20%, transparent);
   }
   
   .status-info {
-    color: var(--editor-info-color) !important;
-    background-color: color-mix(in srgb, var(--editor-info-color) 10%, transparent) !important;
-    border-color: color-mix(in srgb, var(--editor-info-color) 20%, transparent) !important;
+    color: var(--editor-info-color);
+    background-color: color-mix(in srgb, var(--editor-info-color) 10%, transparent);
+    border-color: color-mix(in srgb, var(--editor-info-color) 20%, transparent);
   }
   
   /* Issue Editor specific fixes */
@@ -340,67 +340,6 @@
     background-color: #3b82f6 !important;
     border-color: #3b82f6 !important;
   }
-
-  /* High z-index for dropdowns and inline menus to prevent overflow issues */
-  .dropdown-menu-content,
-  [data-radix-popper-content-wrapper] {
-    z-index: 9999 !important;
-  }
-
-  /* Ensure block inline menus appear above grid containers */
-  .block-inline-menu {
-    z-index: 1000 !important;
-    position: relative !important;
-  }
-
-  /* Dropdown and popover content with proper background and z-index */
-  .dropdown-content,
-  .popover-content {
-    background-color: #1a1a1a !important;
-    border: 1px solid #2a2a2a !important;
-    color: #ffffff !important;
-    z-index: 9999 !important;
-    box-shadow: 0 10px 38px -10px rgba(0, 0, 0, 0.35), 0 10px 20px -15px rgba(0, 0, 0, 0.2) !important;
-  }
-
-  /* Grid container overflow management */
-  .grid-container {
-    overflow: visible !important;
-  }
-
-  .grid-cell {
-    overflow: visible !important;
-    position: relative;
-  }
-
-  /* Block container that allows menus to overflow */
-  .block-container {
-    position: relative;
-    overflow: visible !important;
-  }
-
-  /* Ensure toolbar and property panels use dark theme */
-  .toolbar,
-  .property-panel {
-    background-color: #1a1a1a !important;
-    border-color: #2a2a2a !important;
-    color: #ffffff !important;
-  }
-
-  /* Fix any lingering blue backgrounds */
-  .bg-blue-500,
-  .bg-blue-600,
-  .bg-blue-700 {
-    background-color: #1a1a1a !important;
-  }
-
-  /* Editor layout containers */
-  .editor-container,
-  .editor-workspace,
-  .editor-panel {
-    background-color: #121212 !important;
-    color: #ffffff !important;
-  }
 }
 
 @layer utilities {
@@ -411,54 +350,28 @@
   /* Editor utilities using fixed dark theme */
   .editor-layout {
     @apply h-full flex flex-col;
-    background-color: var(--editor-primary-bg) !important;
+    background-color: var(--editor-primary-bg);
   }
   
   .editor-header {
     @apply px-4 py-3;
-    border-bottom: 1px solid var(--editor-primary-border) !important;
-    background-color: var(--editor-primary-bg) !important;
+    border-bottom: 1px solid var(--editor-primary-border);
+    background-color: var(--editor-primary-bg);
   }
   
   .editor-content {
     @apply flex-1 flex overflow-hidden;
-    background-color: var(--editor-primary-bg) !important;
+    background-color: var(--editor-primary-bg);
   }
   
   .editor-sidebar {
-    background-color: var(--editor-secondary-bg) !important;
-    border-right: 1px solid var(--editor-primary-border) !important;
+    background-color: var(--editor-secondary-bg);
+    border-right: 1px solid var(--editor-primary-border);
   }
   
   .editor-main {
     @apply flex-1 overflow-hidden;
-    background-color: var(--editor-primary-bg) !important;
-  }
-
-  /* Z-index utilities for layering */
-  .z-dropdown {
-    z-index: 9999 !important;
-  }
-
-  .z-overlay {
-    z-index: 1000 !important;
-  }
-
-  .z-menu {
-    z-index: 1001 !important;
-  }
-
-  /* Background color utilities with !important to override any blues */
-  .bg-editor-primary {
-    background-color: #121212 !important;
-  }
-
-  .bg-editor-secondary {
-    background-color: #1a1a1a !important;
-  }
-
-  .bg-editor-tertiary {
-    background-color: #212121 !important;
+    background-color: var(--editor-primary-bg);
   }
 }
 
@@ -486,19 +399,4 @@
   50% {
     opacity: 0.3;
   }
-}
-
-/* Force dark theme on all editor elements */
-.native-editor *,
-.block-editor *,
-.block-palette *,
-.properties-panel * {
-  color: inherit !important;
-}
-
-/* Prevent any blue backgrounds from appearing */
-.native-editor [class*="bg-blue"],
-.block-editor [class*="bg-blue"],
-.editor-workspace [class*="bg-blue"] {
-  background-color: #1a1a1a !important;
 }

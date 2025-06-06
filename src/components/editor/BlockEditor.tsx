@@ -1,6 +1,6 @@
 
-// ABOUTME: Enhanced block editor with complete 2D grid support and fixed dark theme
-// Main editor with full grid functionality, responsive design, and proper menu overflow
+// ABOUTME: Enhanced block editor with complete 2D grid support and dynamic layout
+// Main editor with full grid functionality and responsive design
 
 import React, { useState, useCallback, useRef } from 'react';
 import { ReviewBlock, BlockType } from '@/types/review';
@@ -230,18 +230,15 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     // Create a new block first
     const newBlockId = onAddBlock('paragraph', blocks.length);
     
-    // Use a timeout to ensure the block is created before placing it
-    setTimeout(() => {
-      if (onPlaceBlockIn2DGrid && newBlockId) {
-        console.log('Placing newly created block in 2D grid:', { newBlockId, gridId, position });
-        onPlaceBlockIn2DGrid(newBlockId, gridId, position);
-      } else {
-        console.error('Failed to place block in 2D grid:', { newBlockId, onPlaceBlockIn2DGrid });
-      }
-    }, 100);
+    // Place it in the 2D grid immediately using the returned block ID
+    if (onPlaceBlockIn2DGrid && newBlockId) {
+      console.log('Placing newly created block in 2D grid:', { newBlockId, gridId, position });
+      onPlaceBlockIn2DGrid(newBlockId, gridId, position);
+    } else {
+      console.error('Failed to place block in 2D grid:', { newBlockId, onPlaceBlockIn2DGrid });
+    }
   }, [blocks, onAddBlock, onPlaceBlockIn2DGrid]);
 
-  // FIXED: Create wrapper functions to match the Grid2DContainer expected signatures
   const handleAddRowAbove = useCallback((gridId: string, rowIndex: number) => {
     addRowToGridById(gridId, 'above', rowIndex);
   }, [addRowToGridById]);
@@ -416,11 +413,8 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
 
   return (
     <div 
-      className={cn("block-editor py-6 overflow-visible", className)}
-      style={{ 
-        backgroundColor: '#121212',
-        minHeight: '100%'
-      }}
+      className={cn("block-editor py-6", className)}
+      style={getEditorStyles()}
     >
       {/* Dynamic width indicator for Dividir mode */}
       {isDividirMode && (
@@ -433,99 +427,92 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       )}
 
       {/* Render layout groups in order */}
-      <div className="space-y-8 overflow-visible">
-        {layoutGroups.map((group, groupIndex) => {
-          const globalIndex = group.blocks.length > 0 ? 
-            blocks.findIndex(b => b.id === group.blocks[0].id) : 0;
+      {layoutGroups.map((group, groupIndex) => {
+        const globalIndex = group.blocks.length > 0 ? 
+          blocks.findIndex(b => b.id === group.blocks[0].id) : 0;
 
-          if (group.type === '2d-grid') {
-            // Find the grid from extracted grids
-            const grid = grids.find(g => g.id === group.id);
-            if (grid) {
-              return (
-                <div key={group.id} className="mx-2 mb-8 overflow-visible">
-                  <Grid2DContainer
-                    grid={grid}
-                    activeBlockId={activeBlockId}
-                    onActiveBlockChange={onActiveBlockChange}
-                    onUpdateBlock={onUpdateBlock}
-                    onDeleteBlock={onDeleteBlock}
-                    onAddBlock={handleAddBlockTo2DGrid}
-                    onAddRowAbove={handleAddRowAbove}
-                    onAddRowBelow={handleAddRowBelow}
-                    onRemoveRow={handleRemoveRow}
-                    onUpdateGridLayout={updateGridLayout}
-                    dragState={dragState}
-                    onDragOver={handleDragOver2D}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                  />
-                </div>
-              );
-            } else {
-              console.warn('Grid not found for group:', group.id);
-              return null;
-            }
-          } else if (group.type === '1d-grid') {
+        if (group.type === '2d-grid') {
+          // Find the grid from extracted grids
+          const grid = grids.find(g => g.id === group.id);
+          if (grid) {
             return (
-              <div key={group.id} className="mx-2 mb-6 overflow-visible">
-                <ResizableGrid
-                  rowId={group.id}
-                  blocks={group.blocks}
-                  columns={group.config?.columns || group.blocks.length}
-                  gap={group.config?.gap || 4}
-                  columnWidths={group.config?.columnWidths}
-                  onUpdateLayout={updateColumnWidths}
-                  onAddBlock={addBlockToGrid}
-                  onUpdateBlock={onUpdateBlock}
-                  onDeleteBlock={onDeleteBlock}
+              <div key={group.id} className="mx-2 mb-8">
+                <Grid2DContainer
+                  grid={grid}
                   activeBlockId={activeBlockId}
                   onActiveBlockChange={onActiveBlockChange}
+                  onUpdateBlock={onUpdateBlock}
+                  onDeleteBlock={onDeleteBlock}
+                  onAddBlock={handleAddBlockTo2DGrid}
+                  onAddRowAbove={handleAddRowAbove}
+                  onAddRowBelow={handleAddRowBelow}
+                  onRemoveRow={handleRemoveRow}
+                  onUpdateGridLayout={updateGridLayout}
                   dragState={dragState}
-                  onDragOver={handleDragOver1D}
+                  onDragOver={handleDragOver2D}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                 />
               </div>
             );
           } else {
-            // Single block
-            const block = group.blocks[0];
-            return (
-              <div key={block.id} className="overflow-visible">
-                <SingleBlock
-                  block={block}
-                  globalIndex={globalIndex}
-                  activeBlockId={activeBlockId}
-                  dragState={dragState}
-                  onActiveBlockChange={onActiveBlockChange}
-                  onUpdateBlock={onUpdateBlock}
-                  onDeleteBlock={onDeleteBlock}
-                  onDuplicateBlock={onDuplicateBlock}
-                  onConvertToGrid={onConvertToGrid!}
-                  onConvertTo2DGrid={onConvertTo2DGrid}
-                  onAddBlockBetween={addBlockBetween}
-                  onDragStart={handleDragStart}
-                  onDragEnd={handleDragEnd}
-                  onDragOver={handleDragOver1D}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                />
-              </div>
-            );
+            console.warn('Grid not found for group:', group.id);
+            return null;
           }
-        })}
-      </div>
+        } else if (group.type === '1d-grid') {
+          return (
+            <div key={group.id} className="mx-2 mb-6">
+              <ResizableGrid
+                rowId={group.id}
+                blocks={group.blocks}
+                columns={group.config?.columns || group.blocks.length}
+                gap={group.config?.gap || 4}
+                columnWidths={group.config?.columnWidths}
+                onUpdateLayout={updateColumnWidths}
+                onAddBlock={addBlockToGrid}
+                onUpdateBlock={onUpdateBlock}
+                onDeleteBlock={onDeleteBlock}
+                activeBlockId={activeBlockId}
+                onActiveBlockChange={onActiveBlockChange}
+                dragState={dragState}
+                onDragOver={handleDragOver1D}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              />
+            </div>
+          );
+        } else {
+          // Single block
+          const block = group.blocks[0];
+          return (
+            <SingleBlock
+              key={block.id}
+              block={block}
+              globalIndex={globalIndex}
+              activeBlockId={activeBlockId}
+              dragState={dragState}
+              onActiveBlockChange={onActiveBlockChange}
+              onUpdateBlock={onUpdateBlock}
+              onDeleteBlock={onDeleteBlock}
+              onDuplicateBlock={onDuplicateBlock}
+              onConvertToGrid={onConvertToGrid!}
+              onConvertTo2DGrid={onConvertTo2DGrid}
+              onAddBlockBetween={addBlockBetween}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+              onDragOver={handleDragOver1D}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            />
+          );
+        }
+      })}
 
       <div className="flex justify-center mt-8 pt-4">
         <Button
           onClick={() => addBlockBetween(blocks.length)}
           variant="outline"
           className="text-gray-400 border-gray-600 hover:border-gray-500 hover:text-white"
-          style={{ 
-            backgroundColor: '#1a1a1a',
-            borderColor: '#2a2a2a'
-          }}
         >
           <Plus className="w-4 h-4 mr-2" />
           Adicionar Bloco
