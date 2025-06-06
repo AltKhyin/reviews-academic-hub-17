@@ -1,4 +1,3 @@
-
 // ABOUTME: Enhanced diagram block with comprehensive null safety and responsive design
 // Supports scientific diagrams with inline editing and fullscreen capabilities
 
@@ -77,6 +76,11 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
         }
       });
     }
+  };
+
+  const handleSave = () => {
+    // Save action that doesn't require parameters
+    console.log('Diagram saved');
   };
 
   const handleNodeAdd = (nodeType: string, position: { x: number; y: number }) => {
@@ -194,7 +198,7 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
             onContentUpdate={handleContentUpdate}
             onToolChange={setSelectedTool}
             onSelectionChange={setSelectedNodes}
-            onSave={handleContentUpdate}
+            onSave={handleSave}
             onClose={() => setIsFullscreen(false)}
           />
         )}
@@ -286,7 +290,7 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
           onContentUpdate={handleContentUpdate}
           onToolChange={setSelectedTool}
           onSelectionChange={setSelectedNodes}
-          onSave={handleContentUpdate}
+          onSave={handleSave}
           onClose={() => setIsFullscreen(false)}
         />
       )}
