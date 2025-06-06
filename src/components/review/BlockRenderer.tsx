@@ -1,6 +1,6 @@
 
-// ABOUTME: Enhanced block renderer with vertical alignment support and grid rendering
-// Handles all block types with consistent alignment application and grid layout support
+// ABOUTME: Enhanced block renderer with vertical alignment support and complete block type coverage
+// Handles all block types including divider with consistent alignment application and grid layout support
 
 import React from 'react';
 import { ReviewBlock } from '@/types/review';
@@ -14,6 +14,7 @@ import { NumberCard } from './blocks/NumberCard';
 import { ReviewerQuote } from './blocks/ReviewerQuote';
 import { PollBlock } from './blocks/PollBlock';
 import { CitationListBlock } from './blocks/CitationListBlock';
+import { DividerBlock } from './blocks/DividerBlock';
 import { cn } from '@/lib/utils';
 
 interface BlockRendererProps {
@@ -120,6 +121,8 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
         return <PollBlock block={block} onUpdate={onUpdate} readonly={readonly} />;
       case 'citation_list':
         return <CitationListBlock block={block} onUpdate={onUpdate} readonly={readonly} />;
+      case 'divider':
+        return <DividerBlock block={block} onInteraction={handleInteraction} onSectionView={handleSectionView} readonly={readonly} />;
       default:
         return (
           <div className="p-4 border border-red-500 rounded bg-red-500/10">

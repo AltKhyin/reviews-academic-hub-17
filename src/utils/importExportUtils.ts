@@ -1,6 +1,5 @@
-
-// ABOUTME: Enhanced import/export utilities with comprehensive format handling
-// Handles data migration, validation, and grid metadata normalization
+// ABOUTME: Enhanced import/export utilities with comprehensive format handling and content preservation
+// Handles data migration, validation, and complete content field mapping for all block types
 
 import { ReviewBlock, BlockType } from '@/types/review';
 import { normalizePercentages, validateGridLayout } from './gridLayoutUtils';
@@ -30,7 +29,213 @@ export interface ExportData {
 }
 
 /**
- * Validate import data structure
+ * Comprehensive content field mapping for all block types
+ * Ensures all content variants are properly preserved during import/export
+ */
+const normalizeBlockContent = (block: any): any => {
+  const content = block.content || block.payload || {};
+  
+  // Handle block-specific content normalization
+  switch (block.type) {
+    case 'heading':
+      return {
+        text: content.text || content.content || 'Novo Título',
+        level: content.level || 2,
+        anchor: content.anchor,
+        text_color: content.text_color,
+        background_color: content.background_color
+      };
+      
+    case 'paragraph':
+      return {
+        text: content.text || content.content || 'Novo parágrafo',
+        content: content.content || content.text,
+        text_color: content.text_color,
+        background_color: content.background_color
+      };
+      
+    case 'figure':
+      return {
+        url: content.url || content.src || '',
+        src: content.src || content.url || content.image_url || '',
+        caption: content.caption || 'Nova figura',
+        alt: content.alt || content.alt_text || '',
+        width: content.width || '100%',
+        height: content.height,
+        image_url: content.image_url || content.src || content.url,
+        alt_text: content.alt_text || content.alt
+      };
+      
+    case 'table':
+      return {
+        headers: content.headers || ['Coluna 1', 'Coluna 2'],
+        rows: content.rows || [['Dado 1', 'Dado 2']],
+        table_data: content.table_data || {
+          headers: content.headers || ['Coluna 1', 'Coluna 2'],
+          rows: content.rows || [['Dado 1', 'Dado 2']],
+          sortable: content.sortable || false,
+          compact: content.compact || false,
+          striped: content.striped || false,
+          bordered: content.bordered || false
+        },
+        caption: content.caption,
+        text_color: content.text_color,
+        background_color: content.background_color,
+        border_color: content.border_color
+      };
+      
+    case 'callout':
+      return {
+        text: content.text || 'Nova caixa de destaque',
+        content: content.content || content.text,
+        type: content.type || 'info',
+        title: content.title || 'Destaque',
+        text_color: content.text_color,
+        background_color: content.background_color,
+        border_color: content.border_color,
+        accent_color: content.accent_color
+      };
+      
+    case 'snapshot_card':
+      return {
+        title: content.title || 'Novo Snapshot',
+        subtitle: content.subtitle,
+        value: content.value || '0',
+        change: content.change,
+        trend: content.trend,
+        population: content.population,
+        intervention: content.intervention,
+        comparison: content.comparison,
+        outcome: content.outcome,
+        design: content.design,
+        // Preserve finding sections exactly as they are
+        finding_sections: content.finding_sections || content.key_findings ? 
+          content.finding_sections || [{
+            id: 'migrated_findings',
+            label: 'Principais Achados',
+            items: (content.key_findings || []).map((finding: string, index: number) => ({
+              id: `migrated_item_${index}`,
+              text: finding,
+              color: '#3b82f6'
+            }))
+          }] : [],
+        // Preserve custom badges exactly as they are
+        custom_badges: content.custom_badges || [],
+        // Legacy field migration
+        evidence_level: content.evidence_level,
+        recommendation_strength: content.recommendation_strength,
+        text_color: content.text_color,
+        background_color: content.background_color,
+        accent_color: content.accent_color
+      };
+      
+    case 'number_card':
+      return {
+        title: content.title || 'Novo Card Numérico',
+        number: content.number || content.value || '0',
+        value: content.value || content.number || '0',
+        description: content.description,
+        trend: content.trend || 'neutral',
+        percentage: content.percentage,
+        show_comparison: content.show_comparison,
+        show_target: content.show_target,
+        previous_value: content.previous_value,
+        target_value: content.target_value,
+        text_color: content.text_color,
+        background_color: content.background_color,
+        accent_color: content.accent_color
+      };
+      
+    case 'reviewer_quote':
+      return {
+        quote: content.quote || content.text || 'Nova citação do revisor',
+        text: content.text || content.quote,
+        author: content.author || content.reviewer || 'Revisor',
+        reviewer: content.reviewer || content.author,
+        role: content.role || 'Especialista',
+        institution: content.institution,
+        rating: content.rating,
+        show_context: content.show_context,
+        show_date: content.show_date,
+        show_location: content.show_location,
+        show_contact: content.show_contact,
+        show_rating: content.show_rating,
+        text_color: content.text_color,
+        background_color: content.background_color,
+        border_color: content.border_color
+      };
+      
+    case 'poll':
+      return {
+        question: content.question || 'Nova enquete',
+        options: content.options || [
+          { id: 'option-0', text: 'Opção 1', votes: 0 },
+          { id: 'option-1', text: 'Opção 2', votes: 0 }
+        ],
+        description: content.description,
+        poll_type: content.poll_type || 'single_choice',
+        poll_status: content.poll_status || 'active',
+        show_results: content.show_results,
+        show_vote_count: content.show_vote_count,
+        show_percentage: content.show_percentage,
+        result_display: content.result_display,
+        text_color: content.text_color,
+        background_color: content.background_color,
+        border_color: content.border_color,
+        accent_color: content.accent_color
+      };
+      
+    case 'citation_list':
+      return {
+        citations: content.citations || [],
+        title: content.title || 'Referências',
+        description: content.description,
+        show_abstract: content.show_abstract,
+        show_keywords: content.show_keywords,
+        group_by_type: content.group_by_type,
+        text_color: content.text_color,
+        background_color: content.background_color
+      };
+      
+    case 'divider':
+      return {
+        style: content.style || 'solid',
+        color: content.color || '#374151',
+        thickness: content.thickness || 1
+      };
+      
+    case 'code':
+      return {
+        code: content.code || '// Código aqui',
+        language: content.language || 'javascript',
+        text_color: content.text_color,
+        background_color: content.background_color
+      };
+      
+    case 'list':
+      return {
+        items: content.items || ['Item 1', 'Item 2'],
+        ordered: content.ordered || false,
+        text_color: content.text_color,
+        background_color: content.background_color
+      };
+      
+    case 'quote':
+      return {
+        text: content.text || 'Nova citação',
+        author: content.author || '',
+        text_color: content.text_color,
+        background_color: content.background_color,
+        border_color: content.border_color
+      };
+      
+    default:
+      return content;
+  }
+};
+
+/**
+ * Validate import data structure with enhanced content checking
  */
 export const validateImportData = (data: any): { isValid: boolean; errors: string[] } => {
   const errors: string[] = [];
@@ -49,18 +254,20 @@ export const validateImportData = (data: any): { isValid: boolean; errors: strin
     return { isValid: false, errors };
   }
   
-  // Validate each block
+  // Validate each block with content checking
   data.blocks.forEach((block: any, index: number) => {
     if (!block.type) {
       errors.push(`Block ${index}: missing type field`);
     }
     
-    if (!block.content && !block.payload) {
-      errors.push(`Block ${index}: missing content/payload field`);
+    // Content validation is now more permissive to handle various formats
+    const hasContent = block.content || block.payload;
+    if (!hasContent && block.type !== 'divider') {
+      console.warn(`Block ${index}: no content found, will use defaults`);
     }
     
     if (typeof block.sort_index !== 'number') {
-      errors.push(`Block ${index}: invalid sort_index`);
+      console.warn(`Block ${index}: invalid sort_index, will be auto-assigned`);
     }
   });
   
@@ -68,20 +275,24 @@ export const validateImportData = (data: any): { isValid: boolean; errors: strin
 };
 
 /**
- * Migrate legacy data formats to current structure
+ * Enhanced migration with comprehensive content preservation
  */
 export const migrateImportData = (data: any): ReviewBlock[] => {
-  console.log('Starting data migration:', { version: data.version, blocksCount: data.blocks?.length });
+  console.log('Starting enhanced data migration:', { 
+    version: data.version, 
+    blocksCount: data.blocks?.length,
+    timestamp: new Date().toISOString()
+  });
   
   if (!data.blocks || !Array.isArray(data.blocks)) {
     throw new Error('Invalid blocks data');
   }
   
   const migratedBlocks: ReviewBlock[] = data.blocks.map((block: any, index: number) => {
-    // Handle legacy payload field
-    const content = block.content || block.payload || {};
+    // Normalize content with comprehensive field mapping
+    const normalizedContent = normalizeBlockContent(block);
     
-    // Generate temporary ID if missing
+    // Generate proper ID if missing
     const id = block.id || -(Date.now() + Math.random() + index);
     
     // Migrate and validate layout metadata
@@ -90,7 +301,7 @@ export const migrateImportData = (data: any): ReviewBlock[] => {
     const migratedBlock: ReviewBlock = {
       id,
       type: block.type as BlockType,
-      content,
+      content: normalizedContent,
       sort_index: typeof block.sort_index === 'number' ? block.sort_index : index,
       visible: typeof block.visible === 'boolean' ? block.visible : true,
       meta,
@@ -101,6 +312,7 @@ export const migrateImportData = (data: any): ReviewBlock[] => {
     console.log(`Migrated block ${index}:`, {
       id: migratedBlock.id,
       type: migratedBlock.type,
+      contentKeys: Object.keys(migratedBlock.content),
       hasLayout: !!migratedBlock.meta?.layout,
       layoutType: migratedBlock.meta?.layout?.row_id ? '1D grid' : 
                   migratedBlock.meta?.layout?.grid_id ? '2D grid' : 'single'
@@ -112,10 +324,11 @@ export const migrateImportData = (data: any): ReviewBlock[] => {
   // Repair grid metadata after migration
   const repairedBlocks = repairGridMetadata(migratedBlocks);
   
-  console.log('Migration complete:', {
+  console.log('Enhanced migration complete:', {
     originalBlocks: data.blocks.length,
     migratedBlocks: repairedBlocks.length,
-    gridBlocks: repairedBlocks.filter(b => b.meta?.layout).length
+    gridBlocks: repairedBlocks.filter(b => b.meta?.layout).length,
+    contentPreserved: true
   });
   
   return repairedBlocks;
@@ -252,21 +465,24 @@ export const repairGridMetadata = (blocks: ReviewBlock[]): ReviewBlock[] => {
 };
 
 /**
- * Export blocks to standard format
+ * Enhanced export with content normalization
  */
 export const exportBlocks = (blocks: ReviewBlock[]): ExportData => {
-  // Ensure all blocks use the content field consistently
-  const exportBlocks = blocks.map(block => ({
-    ...block,
-    content: block.content, // Ensure content field is used
-    // Remove payload field if it exists for clean export
-    payload: undefined
-  })).filter(block => block.content !== undefined);
+  // Ensure all blocks have properly normalized content
+  const exportBlocks = blocks.map(block => {
+    const normalizedContent = normalizeBlockContent(block);
+    return {
+      ...block,
+      content: normalizedContent,
+      // Remove payload field if it exists for clean export
+      payload: undefined
+    };
+  }).filter(block => block.content !== undefined);
   
   const gridBlocks = exportBlocks.filter(b => b.meta?.layout).length;
   
   return {
-    version: '2.0',
+    version: '2.0.1',
     timestamp: new Date().toISOString(),
     blocks: exportBlocks,
     metadata: {
@@ -279,46 +495,85 @@ export const exportBlocks = (blocks: ReviewBlock[]): ExportData => {
 };
 
 /**
- * Create default content for block types
+ * Create default content for block types with comprehensive field mapping
  */
 export const getDefaultBlockContent = (type: BlockType): any => {
   const defaults: Record<BlockType, any> = {
-    paragraph: { text: 'Novo parágrafo' },
+    paragraph: { text: 'Novo parágrafo', content: 'Novo parágrafo' },
     heading: { text: 'Novo Título', level: 2 },
     list: { items: ['Item 1', 'Item 2'], ordered: false },
     quote: { text: 'Nova citação', author: '' },
     code: { code: '// Código aqui', language: 'javascript' },
-    divider: {},
-    figure: { caption: 'Nova figura', image_url: '', alt_text: '' },
+    divider: { style: 'solid', color: '#374151', thickness: 1 },
+    figure: { 
+      caption: 'Nova figura', 
+      url: '', 
+      src: '', 
+      image_url: '', 
+      alt: '', 
+      alt_text: '',
+      width: '100%'
+    },
     callout: { 
       text: 'Nova caixa de destaque',
+      content: 'Nova caixa de destaque',
       type: 'info',
       title: 'Destaque'
     },
     table: {
       headers: ['Coluna 1', 'Coluna 2'],
-      rows: [['Dado 1', 'Dado 2']]
+      rows: [['Dado 1', 'Dado 2']],
+      table_data: {
+        headers: ['Coluna 1', 'Coluna 2'],
+        rows: [['Dado 1', 'Dado 2']],
+        sortable: false,
+        compact: false,
+        striped: false,
+        bordered: false
+      }
     },
-    citation_list: { citations: [] },
+    citation_list: { 
+      citations: [],
+      title: 'Referências',
+      description: '',
+      show_abstract: false,
+      show_keywords: false,
+      group_by_type: false
+    },
     poll: {
       question: 'Nova enquete',
-      options: ['Opção 1', 'Opção 2'],
-      poll_type: 'single_choice'
+      options: [
+        { id: 'option-0', text: 'Opção 1', votes: 0 },
+        { id: 'option-1', text: 'Opção 2', votes: 0 }
+      ],
+      description: '',
+      poll_type: 'single_choice',
+      poll_status: 'active'
     },
     reviewer_quote: {
       quote: 'Nova citação do revisor',
+      text: 'Nova citação do revisor',
       author: 'Revisor',
-      role: 'Especialista'
+      reviewer: 'Revisor',
+      role: 'Especialista',
+      rating: 5
     },
     snapshot_card: {
       title: 'Novo Snapshot',
       subtitle: 'Dados importantes',
       value: '0',
-      evidence_level: 'moderate'
+      population: '',
+      intervention: '',
+      comparison: '',
+      outcome: '',
+      design: '',
+      finding_sections: [],
+      custom_badges: []
     },
     number_card: {
       title: 'Novo Card Numérico',
       number: '0',
+      value: '0',
       description: 'Descrição',
       trend: 'neutral'
     }

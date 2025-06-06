@@ -1,6 +1,6 @@
 
-// ABOUTME: Refactored inline block settings with improved positioning
-// Main settings interface using focused sub-components with proper positioning
+// ABOUTME: Refactored inline block settings with centered popup positioning
+// Main settings interface using focused sub-components with proper modal-style positioning
 
 import React, { useState, useRef, useEffect } from 'react';
 import { ReviewBlock } from '@/types/review';
@@ -26,53 +26,38 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
   containerRef
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [position, setPosition] = useState({ top: 0, left: 0 });
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
 
   if (!onUpdate) return null;
 
-  // Calculate position relative to the clicked button
-  const calculatePosition = () => {
-    if (!buttonRef.current) return;
-
-    const buttonRect = buttonRef.current.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    
-    // Panel dimensions (estimated)
-    const panelWidth = 320;
-    const panelHeight = 400;
-    
-    // Start with button position
-    let top = buttonRect.bottom + 8; // 8px gap below button
-    let left = buttonRect.left;
-    
-    // Adjust if panel would overflow right edge
-    if (left + panelWidth > viewportWidth) {
-      left = buttonRect.right - panelWidth;
-    }
-    
-    // Adjust if panel would overflow bottom edge
-    if (top + panelHeight > viewportHeight) {
-      top = buttonRect.top - panelHeight - 8; // 8px gap above button
-    }
-    
-    // Ensure panel doesn't go off-screen
-    left = Math.max(8, Math.min(left, viewportWidth - panelWidth - 8));
-    top = Math.max(8, top);
-    
-    setPosition({ top, left });
-  };
-
+  // Close menu when clicking outside or pressing Escape
   useEffect(() => {
-    if (isOpen) {
-      calculatePosition();
-      // Recalculate on window resize
-      const handleResize = () => calculatePosition();
-      window.addEventListener('resize', handleResize);
-      return () => window.removeEventListener('resize', handleResize);
-    }
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('mousedown', handleClickOutside);
+    
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.body.style.overflow = 'unset';
+    };
   }, [isOpen]);
 
   const handleContentUpdate = (field: string, value: any) => {
@@ -134,27 +119,29 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Full-screen backdrop with high z-index */}
       <div 
-        className="fixed inset-0 z-[100]"
+        className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[200]"
         onClick={() => setIsOpen(false)}
       />
       
-      {/* Settings Panel - Positioned absolutely relative to viewport */}
+      {/* Centered Settings Panel - Modal style */}
       <div 
         ref={panelRef}
-        className={cn("inline-block-settings rounded-lg p-3 min-w-80 max-w-sm", className)}
+        className={cn(
+          "inline-block-settings rounded-lg p-4 w-96 max-w-[90vw] max-h-[80vh] overflow-y-auto",
+          "fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2",
+          className
+        )}
         style={{ 
           backgroundColor: '#1a1a1a', 
           border: '1px solid #2a2a2a',
-          position: 'fixed',
-          top: position.top,
-          left: position.left,
-          zIndex: 110,
-          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3)'
+          zIndex: 210,
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 10px 25px -5px rgba(0, 0, 0, 0.6)'
         }}
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-4">
           <h4 className="text-sm font-medium" style={{ color: '#ffffff' }}>
             Configurações do Bloco
           </h4>
@@ -162,7 +149,7 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
             variant="ghost"
             size="sm"
             onClick={() => setIsOpen(false)}
-            className="h-6 w-6 p-0"
+            className="h-6 w-6 p-0 hover:bg-gray-700"
             style={{ color: '#ffffff' }}
           >
             <Settings className="w-3 h-3" />
