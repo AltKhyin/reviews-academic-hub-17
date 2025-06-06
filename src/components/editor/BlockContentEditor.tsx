@@ -191,6 +191,7 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
         isActive={isActive}
         isVisible={block.visible}
         isDragging={isDragging}
+        draggedOver={draggedOver}
       />
     </div>
   );
