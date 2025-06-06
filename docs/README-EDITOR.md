@@ -1,6 +1,6 @@
 
 # EDITOR NATIVO — MANUAL TÉCNICO COMPLETO & GUIA DE IA
-**Versão 4.0.0** • 2025-06-06
+**Versão 4.1.0** • 2025-06-06
 
 ## PROPÓSITO & FILOSOFIA
 
@@ -211,8 +211,8 @@ const paragraphBlock: ReviewBlock = {
 ### 3. SNAPSHOT_CARD ✅ Completo + Recursos Avançados
 **Configurações Inline Implementadas**:
 - Todos os campos PICOD editáveis inline
-- Sistema de badges customizáveis (NOVO)
-- Seções de achados editáveis (NOVO)  
+- Sistema de badges customizáveis
+- Seções de achados editáveis  
 - Cores: text_color, background_color, border_color, accent_color
 
 **Componentes Especializados**:
@@ -281,37 +281,330 @@ const snapshotBlock: ReviewBlock = {
 };
 ```
 
-### 4. FIGURE ⚠️ Parcialmente Implementado
-**Configurações Inline Faltando**:
-- Width/height adjustment
-- Alignment controls  
-- Caption editing inline
-- Color system integration
+### 4. FIGURE ✅ Completo
+**Configurações Inline Implementadas**:
+- Ajuste de largura/altura com presets e personalizado
+- Controles de alinhamento (esquerda, centro, direita)
+- Edição de legenda inline e texto alternativo
+- Ajuste de borda arredondada
+- Integração com sistema de cores
+- Exibição de URL da imagem com validação
 
-**Status**: Funcional mas com configurações limitadas
+**Exemplo de Uso**:
+```typescript
+const figureBlock: ReviewBlock = {
+  id: 4,
+  type: 'figure',
+  content: {
+    src: 'https://exemplo.com/imagem.jpg',
+    alt: 'Descrição da imagem para acessibilidade',
+    caption: 'Figura 1: Resultados do estudo',
+    width: '75%',         // ou valor específico em px
+    height: 'auto',
+    alignment: 'center',
+    border_radius: 8,
+    show_caption: true,
+    text_color: '#d1d5db',
+    background_color: 'transparent',
+    border_color: 'transparent',
+    caption_color: '#9ca3af'
+  },
+  sort_index: 3,
+  visible: true,
+  meta: {}
+};
+```
 
-### 5. TABLE ⚠️ Parcialmente Implementado
-**Configurações Inline Faltando**:
-- Sortable toggle
-- Compact mode toggle
-- Table-specific colors (header_bg, cell_bg, etc.)
-- Add/remove rows/columns
+### 5. TABLE ✅ Completo
+**Configurações Inline Implementadas**:
+- Ordenação de dados (toggle sortable)
+- Gerenciamento de linhas/colunas (adicionar/remover)
+- Estilos específicos de tabela (cabeçalho, células, etc.)
+- Modos compacto, listrado e com bordas
+- Edição inline de células
+- Personalização completa de cores
 
-**Status**: Funcional mas com configurações limitadas
+**Exemplo de Uso**:
+```typescript
+const tableBlock: ReviewBlock = {
+  id: 5,
+  type: 'table',
+  content: {
+    table_data: {
+      headers: ['Parâmetro', 'Antes', 'Depois', 'p-valor'],
+      rows: [
+        ['Glicemia de jejum', '126 mg/dL', '98 mg/dL', '<0.001'],
+        ['HbA1c', '8.2%', '6.8%', '<0.001'],
+        ['Peso', '82.4 kg', '79.1 kg', '0.03']
+      ],
+      sortable: true,
+      compact: false,
+      striped: true,
+      bordered: true
+    },
+    text_color: '#ffffff',
+    background_color: '#1a1a1a',
+    border_color: '#2a2a2a',
+    header_background_color: '#2a2a2a',
+    header_text_color: '#ffffff',
+    even_row_color: 'rgba(255,255,255,0.05)',
+    hover_color: 'rgba(59,130,246,0.1)'
+  },
+  sort_index: 4,
+  visible: true,
+  meta: {}
+};
+```
 
-### 6. CALLOUT ⚠️ Parcialmente Implementado
-**Configurações Inline Faltando**:
-- Type selector (info/warning/success/error/note/tip)
-- Icon customization
-- Color system integration
+### 6. CALLOUT ✅ Completo
+**Configurações Inline Implementadas**:
+- Seletor de tipo (info/warning/success/error/note/tip/etc)
+- Personalização de ícone e exibição/ocultação
+- Estilo de borda (esquerda, completa, nenhuma)
+- Tamanhos (compacto, normal, grande)
+- Integração com sistema de cores
+- Editor de título e conteúdo rico
 
-**Status**: Funcional mas com configurações limitadas
+**Exemplo de Uso**:
+```typescript
+const calloutBlock: ReviewBlock = {
+  id: 6,
+  type: 'callout',
+  content: {
+    type: 'warning',
+    title: 'Atenção para interações medicamentosas',
+    content: '<p>O uso concomitante com inibidores de CYP3A4 pode aumentar concentrações plasmáticas.</p>',
+    show_icon: true,
+    border_style: 'left',
+    size: 'normal',
+    text_color: '#ffffff',
+    background_color: '#f59e0b1a',
+    border_color: '#f59e0b',
+    accent_color: '#f59e0b',
+    title_color: '#ffffff'
+  },
+  sort_index: 5,
+  visible: true,
+  meta: {}
+};
+```
 
-### 7-10. TIPOS NÃO IMPLEMENTADOS
-- **NUMBER_CARD**: ❌ Não implementado
-- **REVIEWER_QUOTE**: ❌ Não implementado  
-- **POLL**: ❌ Não implementado
-- **CITATION_LIST**: ❌ Não implementado
+### 7. NUMBER_CARD ✅ Completo
+**Configurações Inline Implementadas**:
+- Formatos de número (inteiro, decimal, porcentagem, moeda)
+- Tendência (subindo, descendo, estável, neutro)
+- Variação percentual configurável
+- Valores de comparação (anterior, meta)
+- Personalização de ícone e tamanho
+- Diversos estilos de card
+- Sistema de cores completo
+
+**Exemplo de Uso**:
+```typescript
+const numberCardBlock: ReviewBlock = {
+  id: 7,
+  type: 'number_card',
+  content: {
+    number: '42',
+    number_format: 'percentage',
+    label: 'Redução de Risco Relativo',
+    description: 'Comparado ao grupo controle',
+    subtitle: 'Desfecho Primário',
+    trend: 'up',
+    percentage: 15,
+    previous_value: '36',
+    target_value: '50',
+    unit: '%',
+    size: 'normal',
+    card_style: 'default',
+    show_icon: true,
+    show_comparison: true,
+    show_target: true,
+    custom_icon: 'TrendingUp',
+    text_color: '#ffffff',
+    background_color: '#1a1a1a',
+    border_color: '#2a2a2a',
+    accent_color: '#3b82f6',
+    number_color: '#10b981',
+    label_color: '#ffffff'
+  },
+  sort_index: 6,
+  visible: true,
+  meta: {}
+};
+```
+
+### 8. REVIEWER_QUOTE ✅ Completo
+**Configurações Inline Implementadas**:
+- Citação com formatação rica
+- Dados do autor (nome, título, instituição)
+- Avatar customizável
+- Tipos de especialista com ícones específicos
+- Credenciais e localização
+- Sistema de avaliação por estrelas
+- Informações de contato
+- Múltiplos estilos de citação
+- Tamanhos variados (compacto, normal, grande)
+
+**Exemplo de Uso**:
+```typescript
+const reviewerQuoteBlock: ReviewBlock = {
+  id: 8,
+  type: 'reviewer_quote',
+  content: {
+    quote: 'Esta revisão sistemática estabelece definitivamente o benefício deste tratamento e deve modificar a prática clínica atual.',
+    author: 'Dr. João Silva',
+    title: 'Professor de Medicina',
+    institution: 'Universidade Federal de Medicina',
+    avatar_url: 'https://exemplo.com/avatar.jpg',
+    expertise_type: 'professor',
+    credentials: 'PhD, FAHA',
+    location: 'São Paulo, Brasil',
+    email: 'joao@exemplo.com',
+    website: 'https://exemplo.com',
+    quote_date: '2025-05-20',
+    context: 'Durante apresentação do estudo no congresso',
+    quote_style: 'default',
+    size: 'normal',
+    show_credentials: true,
+    show_location: true,
+    show_contact: false,
+    show_context: true,
+    show_date: true,
+    show_rating: true,
+    rating: 5,
+    text_color: '#ffffff',
+    background_color: '#1a1a1a',
+    border_color: '#2a2a2a',
+    accent_color: '#a855f7',
+    quote_color: '#ffffff',
+    author_color: '#ffffff'
+  },
+  sort_index: 7,
+  visible: true,
+  meta: {}
+};
+```
+
+### 9. POLL ✅ Completo
+**Configurações Inline Implementadas**:
+- Sistema completo de criação de enquetes
+- Suporte a escolha simples e múltipla
+- Opções personalizáveis com cores
+- Exibição de resultados em tempo real
+- Exibição configurável (barras, porcentagem, números)
+- Sistema de status (rascunho, ativo, encerrado, agendado)
+- Configuração de data limite
+- Controles de seleção mínima/máxima
+- Descrição com formatação rica
+
+**Exemplo de Uso**:
+```typescript
+const pollBlock: ReviewBlock = {
+  id: 9,
+  type: 'poll',
+  content: {
+    question: 'Com base nessa revisão, você mudaria sua prática clínica?',
+    description: 'Considere os resultados apresentados ao responder.',
+    poll_type: 'single_choice',
+    options: [
+      { id: 'option-1', text: 'Sim, imediatamente', votes: 42, color: '#10b981' },
+      { id: 'option-2', text: 'Sim, após mais estudos', votes: 28, color: '#f59e0b' },
+      { id: 'option-3', text: 'Não mudaria', votes: 14, color: '#ef4444' }
+    ],
+    votes: [42, 28, 14],
+    total_votes: 84,
+    poll_status: 'active',
+    deadline: '2025-12-31T23:59:59',
+    result_display: 'bar',
+    show_results: true,
+    show_vote_count: true,
+    show_percentage: true,
+    anonymous_voting: true,
+    require_auth: false,
+    max_selections: 1,
+    min_selections: 1,
+    text_color: '#ffffff',
+    background_color: '#1a1a1a',
+    border_color: '#2a2a2a',
+    accent_color: '#3b82f6',
+    question_color: '#ffffff'
+  },
+  sort_index: 8,
+  visible: true,
+  meta: {}
+};
+```
+
+### 10. CITATION_LIST ✅ Completo
+**Configurações Inline Implementadas**:
+- Suporte a múltiplos estilos de citação (APA, MLA, Chicago, Vancouver, ABNT, Harvard)
+- Sistema completo de gerenciamento de referências bibliográficas
+- Tipos de citação (artigo, livro, capítulo, conferência, tese, website)
+- Ordenação configurável (alfabética, por ano, por tipo)
+- Campos específicos por tipo de referência
+- Exibição de DOI, URL e PMID
+- Suporte a resumo e palavras-chave
+- Preview em tempo real no estilo selecionado
+
+**Exemplo de Uso**:
+```typescript
+const citationListBlock: ReviewBlock = {
+  id: 10,
+  type: 'citation_list',
+  content: {
+    title: 'Referências Bibliográficas',
+    description: 'Principais artigos utilizados nesta revisão',
+    citations: [
+      {
+        id: 'citation-1',
+        type: 'article',
+        authors: 'Smith, J., & Johnson, M.',
+        title: 'Efficacy and safety of new treatments for diabetes',
+        journal: 'Journal of Metabolic Disorders',
+        year: '2024',
+        volume: '42',
+        issue: '3',
+        pages: '256-268',
+        doi: '10.1234/jmd.2024.42.3.256',
+        pmid: '37654321',
+        abstract: 'Este estudo avaliou a eficácia de novos tratamentos...',
+        keywords: ['diabetes', 'tratamento', 'ensaio clínico'],
+        color: '#3b82f6'
+      },
+      {
+        id: 'citation-2',
+        type: 'book',
+        authors: 'Brown, A.',
+        title: 'Manual de diabetes mellitus',
+        publisher: 'Medical Press',
+        location: 'São Paulo',
+        year: '2023',
+        isbn: '978-1-2345-6789-0',
+        edition: '3',
+        color: '#8b5cf6'
+      }
+    ],
+    citation_style: 'apa',
+    numbered: true,
+    show_abstract: true,
+    show_keywords: true,
+    show_doi: true,
+    show_url: true,
+    sort_by: 'year',
+    group_by_type: false,
+    title_color: '#ffffff',
+    text_color: '#d1d5db',
+    background_color: '#1a1a1a',
+    border_color: '#2a2a2a',
+    accent_color: '#8b5cf6',
+    link_color: '#3b82f6'
+  },
+  sort_index: 9,
+  visible: true,
+  meta: {}
+};
+```
 
 ---
 
@@ -490,8 +783,13 @@ const reviewTemplate: ReviewBlock[] = [
 const comparisonGrid: ReviewBlock[] = [
   {
     id: 5,
-    type: 'snapshot_card',
-    content: { title: 'Antes da Intervenção' },
+    type: 'number_card',
+    content: { 
+      number: '126',
+      unit: 'mg/dL',
+      label: 'Antes da Intervenção',
+      number_format: 'integer'
+    },
     sort_index: 4,
     visible: true,
     meta: {
@@ -506,8 +804,15 @@ const comparisonGrid: ReviewBlock[] = [
   },
   {
     id: 6,
-    type: 'snapshot_card',
-    content: { title: 'Após a Intervenção' },
+    type: 'number_card',
+    content: { 
+      number: '98',
+      unit: 'mg/dL',
+      label: 'Após a Intervenção',
+      number_format: 'integer',
+      trend: 'down',
+      percentage: 22
+    },
     sort_index: 5,
     visible: true,
     meta: {
@@ -602,278 +907,618 @@ const createFindingSections = (findings: any) => {
 };
 ```
 
-### 5. Workflow de Importação de Texto
+### 5. Citações e Referências Automáticas
+
+**Geração Automática de Citações**:
+```typescript
+const generateCitationFromDoi = async (doi: string) => {
+  try {
+    // Chamar API de citação com DOI
+    const response = await fetch(`https://api.crossref.org/works/${doi}`);
+    const data = await response.json();
+    const work = data.message;
+    
+    // Extrair informações bibliográficas
+    const authors = work.author
+      .map((author) => `${author.family}, ${author.given.charAt(0)}`)
+      .join(', ');
+      
+    const citation: Citation = {
+      id: `citation-${Date.now()}`,
+      type: 'article',
+      authors,
+      title: work.title[0],
+      journal: work['container-title'][0],
+      year: work.published['date-parts'][0][0].toString(),
+      volume: work.volume,
+      issue: work.issue,
+      pages: work.page,
+      doi: doi,
+      url: work.URL,
+      color: '#3b82f6'
+    };
+    
+    return citation;
+  } catch (error) {
+    console.error('Failed to generate citation:', error);
+    return null;
+  }
+};
+```
+
+### 6. Templates de Review Completos
+
+**Estrutura de Review Clínica**:
+```typescript
+const clinicalReviewTemplate = [
+  // Cabeçalho da revisão
+  {
+    type: 'heading',
+    content: { text: 'Título da Revisão Clínica', level: 1 }
+  },
+  
+  // Snapshot card
+  {
+    type: 'snapshot_card',
+    content: { /* dados PICOD */ }
+  },
+  
+  // Introdução
+  {
+    type: 'heading',
+    content: { text: 'Introdução', level: 2, anchor: 'introducao' }
+  },
+  {
+    type: 'paragraph',
+    content: { text: 'Contexto da revisão...' }
+  },
+  
+  // Métodos
+  {
+    type: 'heading',
+    content: { text: 'Métodos', level: 2, anchor: 'metodos' }
+  },
+  {
+    type: 'callout',
+    content: {
+      type: 'info',
+      title: 'Sobre os métodos',
+      content: 'Detalhes sobre a busca e seleção de estudos...'
+    }
+  },
+  
+  // Resultados principais
+  {
+    type: 'heading',
+    content: { text: 'Resultados', level: 2, anchor: 'resultados' }
+  },
+  
+  // Grid de números-chave
+  [
+    {
+      type: 'number_card',
+      content: { number: '42', label: 'Estudos incluídos' }
+    },
+    {
+      type: 'number_card',
+      content: { number: '1254', label: 'Pacientes' }
+    }
+  ],
+  
+  // Tabela de resultados
+  {
+    type: 'table',
+    content: { /* tabela de dados */ }
+  },
+  
+  // Opinião de especialista
+  {
+    type: 'reviewer_quote',
+    content: { /* citação */ }
+  },
+  
+  // Enquete
+  {
+    type: 'poll',
+    content: { /* enquete */ }
+  },
+  
+  // Referências
+  {
+    type: 'citation_list',
+    content: { /* citações */ }
+  }
+];
+```
+
+### 7. Operações de Layout
+
+**Transformação de Single → Grid**:
+```typescript
+// Função para criar grid a partir de dois blocos
+const createGridFromBlocks = (block1: ReviewBlock, block2: ReviewBlock) => {
+  const rowId = `row_${Date.now()}`;
+  
+  // Atualizar metadados do primeiro bloco
+  block1.meta = block1.meta || {};
+  block1.meta.layout = {
+    row_id: rowId,
+    position: 0,
+    columns: 2,
+    gap: 4,
+    columnWidths: [50, 50]
+  };
+  
+  // Atualizar metadados do segundo bloco
+  block2.meta = block2.meta || {};
+  block2.meta.layout = {
+    row_id: rowId,
+    position: 1,
+    columns: 2,
+    gap: 4,
+    columnWidths: [50, 50]
+  };
+  
+  return [block1, block2];
+};
+
+// Mesclar blocos em grid
+const mergeBlocksIntoGrid = (blocks: ReviewBlock[], targetRowId: string) => {
+  // Encontrar blocos da linha alvo
+  const rowBlocks = blocks.filter(b => b.meta?.layout?.row_id === targetRowId);
+  
+  // Determinar número de colunas
+  const columns = rowBlocks.length + 1;
+  
+  // Recalcular larguras de colunas
+  const columnWidth = Math.floor(100 / columns);
+  const columnWidths = Array(columns).fill(columnWidth);
+  
+  // Ajustar última coluna para 100% total
+  columnWidths[columns - 1] = 100 - columnWidth * (columns - 1);
+  
+  // Atualizar todos os blocos da linha
+  return blocks.map(block => {
+    if (block.meta?.layout?.row_id === targetRowId) {
+      block.meta.layout.columns = columns;
+      block.meta.layout.columnWidths = columnWidths;
+    }
+    return block;
+  });
+};
+```
+
+### 8. Utilidades de Formatação
+
+**Saída Formatada para Grid de Números**:
+```typescript
+// Função para formatar números baseada no tipo
+const formatNumber = (value: string | number, format: string, precision: number = 1) => {
+  const num = typeof value === 'string' ? parseFloat(value) : value;
+  
+  if (isNaN(num)) return value;
+  
+  switch (format) {
+    case 'percentage':
+      return `${num.toFixed(precision)}%`;
+    case 'currency':
+      return new Intl.NumberFormat('pt-BR', { 
+        style: 'currency', 
+        currency: 'BRL',
+        minimumFractionDigits: precision
+      }).format(num);
+    case 'decimal':
+      return num.toFixed(precision);
+    case 'scientific':
+      return num.toExponential(precision);
+    default:
+      return num.toLocaleString('pt-BR');
+  }
+};
+```
+
+### 9. Workflow de Importação de Texto
 
 **Conversão de Texto Estruturado**:
 ```typescript
-const parseStructuredText = (rawText: string): ReviewBlock[] => {
+// Converter texto estruturado para blocos
+const convertStructuredTextToBlocks = (text: string): ReviewBlock[] => {
   const blocks: ReviewBlock[] = [];
+  const lines = text.split('\n').filter(line => line.trim());
+  
   let currentIndex = 0;
   
-  // Regex patterns para identificar seções
-  const titlePattern = /^#\s(.+)/gm;
-  const subtitlePattern = /^##\s(.+)/gm;
-  const paragraphPattern = /^(?!#)(.+)/gm;
-  
-  // Processar títulos
-  let match;
-  while ((match = titlePattern.exec(rawText)) !== null) {
-    blocks.push({
-      id: ++currentIndex,
-      type: 'heading',
-      content: {
-        text: match[1],
-        level: 1,
-        anchor: match[1].toLowerCase().replace(/\s+/g, '-')
-      },
-      sort_index: blocks.length,
-      visible: true,
-      meta: {}
-    });
-  }
-  
-  // Processar subtítulos
-  while ((match = subtitlePattern.exec(rawText)) !== null) {
-    blocks.push({
-      id: ++currentIndex,
-      type: 'heading',
-      content: {
-        text: match[1],
-        level: 2,
-        anchor: match[1].toLowerCase().replace(/\s+/g, '-')
-      },
-      sort_index: blocks.length,
-      visible: true,
-      meta: {}
-    });
-  }
-  
-  // Processar parágrafos
-  while ((match = paragraphPattern.exec(rawText)) !== null) {
-    blocks.push({
-      id: ++currentIndex,
-      type: 'paragraph',
-      content: {
-        text: match[1],
-        emphasis: 'normal',
-        alignment: 'left'
-      },
-      sort_index: blocks.length,
-      visible: true,
-      meta: {}
-    });
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    
+    // Detectar cabeçalhos
+    if (line.startsWith('# ')) {
+      blocks.push({
+        id: Date.now() + currentIndex++,
+        type: 'heading',
+        content: {
+          text: line.replace('# ', ''),
+          level: 1
+        },
+        sort_index: currentIndex,
+        visible: true,
+        meta: {}
+      });
+    } 
+    else if (line.startsWith('## ')) {
+      blocks.push({
+        id: Date.now() + currentIndex++,
+        type: 'heading',
+        content: {
+          text: line.replace('## ', ''),
+          level: 2
+        },
+        sort_index: currentIndex,
+        visible: true,
+        meta: {}
+      });
+    }
+    // Detectar tabelas
+    else if (line.includes('|') && lines[i+1]?.includes('|-')) {
+      const headers = line.split('|').map(h => h.trim()).filter(Boolean);
+      let rows = [];
+      let j = i + 2;
+      
+      while (j < lines.length && lines[j].includes('|')) {
+        const row = lines[j].split('|').map(c => c.trim()).filter(Boolean);
+        rows.push(row);
+        j++;
+      }
+      
+      blocks.push({
+        id: Date.now() + currentIndex++,
+        type: 'table',
+        content: {
+          table_data: {
+            headers,
+            rows,
+            sortable: true,
+            bordered: true
+          }
+        },
+        sort_index: currentIndex,
+        visible: true,
+        meta: {}
+      });
+      
+      i = j - 1; // Avançar para a linha após a tabela
+    }
+    // Detectar citações
+    else if (line.startsWith('>')) {
+      blocks.push({
+        id: Date.now() + currentIndex++,
+        type: 'callout',
+        content: {
+          type: 'info',
+          content: line.replace('>', '').trim()
+        },
+        sort_index: currentIndex,
+        visible: true,
+        meta: {}
+      });
+    }
+    // Parágrafo padrão
+    else {
+      blocks.push({
+        id: Date.now() + currentIndex++,
+        type: 'paragraph',
+        content: {
+          text: line
+        },
+        sort_index: currentIndex,
+        visible: true,
+        meta: {}
+      });
+    }
   }
   
   return blocks;
 };
 ```
 
-### 6. Validação e Otimização
+### 10. Plugin de Sugerir Estrutura
 
-**Checklist de Qualidade**:
+**Geração de Estruturas Baseadas em Resumos**:
 ```typescript
-const validateReviewBlocks = (blocks: ReviewBlock[]): string[] => {
-  const errors: string[] = [];
+const suggestStructureFromAbstract = (abstract: string) => {
+  // Analisar o resumo para identificar elementos PICOD
+  const population = extractPopulation(abstract);
+  const intervention = extractIntervention(abstract);
+  const comparison = extractComparison(abstract);
+  const outcomes = extractOutcomes(abstract);
+  const design = extractDesign(abstract);
   
-  // Verificar IDs únicos
-  const ids = blocks.map(b => b.id);
-  if (new Set(ids).size !== ids.length) {
-    errors.push('IDs duplicados encontrados');
-  }
-  
-  // Verificar sort_index sequencial
-  const sortIndices = blocks.map(b => b.sort_index).sort((a, b) => a - b);
-  for (let i = 0; i < sortIndices.length; i++) {
-    if (sortIndices[i] !== i) {
-      errors.push('Sort indices não sequenciais');
-      break;
+  // Gerar snapshot card base
+  const snapshotCard = {
+    type: 'snapshot_card',
+    content: {
+      population,
+      intervention,
+      comparison,
+      outcome: outcomes.primary,
+      design,
+      finding_sections: [
+        {
+          id: 'primary_outcomes',
+          label: 'Desfechos Primários',
+          items: outcomes.primaryItems.map((text, index) => ({
+            id: `primary_${index}`,
+            text,
+            color: '#10b981'
+          }))
+        }
+      ]
     }
-  }
+  };
   
-  // Verificar integridade dos grids
-  const gridBlocks = blocks.filter(b => b.meta?.layout?.row_id);
-  const gridRows = new Map();
+  // Identificar seções principais
+  const sections = [
+    { title: 'Introdução', emoji: '📋' },
+    { title: 'Métodos', emoji: '🔬' },
+    { title: 'Resultados', emoji: '📊' },
+    { title: 'Discussão', emoji: '💭' },
+    { title: 'Conclusão', emoji: '📝' }
+  ];
   
-  gridBlocks.forEach(block => {
-    const rowId = block.meta!.layout!.row_id;
-    if (!gridRows.has(rowId)) {
-      gridRows.set(rowId, []);
-    }
-    gridRows.get(rowId).push(block);
-  });
+  // Gerar estrutura básica
+  const suggestedStructure = [
+    { type: 'heading', content: { text: 'Título da Revisão', level: 1 } },
+    snapshotCard,
+    ...sections.map(section => ({
+      type: 'heading',
+      content: { 
+        text: `${section.emoji} ${section.title}`,
+        level: 2,
+        anchor: section.title.toLowerCase()
+      }
+    }))
+  ];
   
-  gridRows.forEach((rowBlocks, rowId) => {
-    if (rowBlocks.length !== rowBlocks[0].meta.layout.columns) {
-      errors.push(`Grid ${rowId}: número de blocos não confere com número de colunas`);
-    }
-  });
-  
-  return errors;
-};
-```
-
-### 7. Padrões de Performance
-
-**Otimização para Reviews Grandes**:
-```typescript
-// Lazy loading para blocos complexos
-const createLazyBlock = (type: BlockType, content: any): ReviewBlock => ({
-  id: Date.now() + Math.random(),
-  type,
-  content,
-  sort_index: 0, // Será ajustado na inserção
-  visible: true,
-  meta: {
-    lazy: true // Flag para carregamento lazy
-  }
-});
-
-// Batching para inserções múltiplas
-const batchInsertBlocks = (blocks: ReviewBlock[], batchSize = 10) => {
-  const batches = [];
-  for (let i = 0; i < blocks.length; i += batchSize) {
-    batches.push(blocks.slice(i, i + batchSize));
-  }
-  return batches;
+  return suggestedStructure;
 };
 ```
 
 ---
 
-## ARQUIVOS PRINCIPAIS DO SISTEMA
+## REVISÃO COLABORATIVA — COMENTÁRIOS & SUGESTÕES
 
-```
-src/components/editor/
-├── NativeEditor.tsx ✅ (núcleo principal - 202 linhas)
-├── BlockEditor.tsx ✅ (container de blocos)  
-├── BlockPalette.tsx ✅ (paleta de tipos)
-├── ImportExportManager.tsx ✅ (import/export - 538 linhas)
-├── inline/
-│   ├── InlineRichTextEditor.tsx ✅
-│   ├── InlineTextEditor.tsx ✅
-│   ├── InlineColorPicker.tsx ✅
-│   ├── InlineBlockSettings.tsx ⚠️ (incompleto)
-│   ├── BlockSpecificProperties.tsx ✅
-│   ├── InlineAlignmentControls.tsx ✅
-│   └── EditableTable.tsx ⚠️ (limitado)
-├── layout/ ✅ IMPLEMENTADO
-│   ├── ResizableGrid.tsx ✅ (grid responsivo)
-│   └── GridControls.tsx ✅ (controles de grid)
-└── hooks/
-    ├── useBlockManagement.ts ✅
-    ├── useGridLayoutManager.ts ✅ (grid state)
-    ├── useEnhancedGridOperations.ts ✅ (grid ops)
-    ├── useEditorAutoSave.ts ✅
-    └── useRichTextFormat.ts ✅
+O sistema de revisão colaborativa permite que vários revisores trabalhem em um único documento, adicionando comentários, sugestões e notas. Cada bloco pode receber comentários específicos.
 
-src/components/review/blocks/
-├── HeadingBlock.tsx ✅ (settings completo)
-├── ParagraphBlock.tsx ✅ (settings completo)
-├── SnapshotCardBlock.tsx ✅ (settings completo)
-├── snapshot/
-│   ├── CustomBadgesManager.tsx ✅ (badges customizáveis)
-│   └── FindingSectionsManager.tsx ✅ (seções de achados)
-├── FigureBlock.tsx ⚠️ (settings incompleto)
-├── TableBlock.tsx ⚠️ (settings incompleto)
-├── CalloutBlock.tsx ⚠️ (settings incompleto)
-├── NumberCard.tsx ❌ (não implementado)
-├── ReviewerQuote.tsx ❌ (não implementado)
-├── PollBlock.tsx ❌ (não implementado)
-└── CitationListBlock.tsx ❌ (não implementado)
+### Sistema de Comentários por Bloco
+
+```typescript
+interface BlockComment {
+  id: string;
+  block_id: number;
+  user_id: string;
+  user_name: string;
+  user_avatar: string;
+  created_at: string;
+  content: string;
+  status: 'open' | 'resolved' | 'pending';
+  replies?: BlockComment[];
+}
 ```
 
----
+### Fluxo de Trabalho
 
-## PROBLEMAS CONHECIDOS & LIMITAÇÕES
-
-### ⚠️ Configurações Inline Incompletas
-- **FIGURE**: Falta width/height, alignment, caption editing
-- **TABLE**: Falta sortable toggle, add/remove rows/columns  
-- **CALLOUT**: Falta type selector, icon customization
-
-### ⚠️ Sistema de Cores Parcial
-- **Funcionais**: heading, paragraph, snapshot_card
-- **Limitados**: figure, table, callout
-- **Não Funcionais**: number_card, reviewer_quote, poll, citation_list
-
-### ⚠️ Tipos de Bloco Não Implementados
-4 tipos de bloco ainda não possuem implementação:
-- NUMBER_CARD, REVIEWER_QUOTE, POLL, CITATION_LIST
+1. **Revisores adicionam comentários** a blocos específicos
+2. **Autor principal responde** ou marca como resolvidos
+3. **Editor-chefe** revisa todos os comentários
+4. **Publicação final** após resolução dos comentários
 
 ---
 
-## ROADMAP & PRÓXIMOS PASSOS
+## IMPORTAÇÃO DE ARTIGOS EXTERNOS
 
-### Prioridade 1 - Melhorias Imediatas
-- [ ] Completar configurações inline para figure, table, callout
-- [ ] Implementar alinhamento de conteúdo em grids
-- [ ] Fixar pipeline de cores para todos os blocos
+### Fluxos de Importação Suportados
 
-### Prioridade 2 - Novos Tipos de Bloco
-- [ ] Implementar NUMBER_CARD com configurações inline
-- [ ] Implementar REVIEWER_QUOTE com configurações inline
-- [ ] Implementar POLL com configurações inline  
-- [ ] Implementar CITATION_LIST com configurações inline
+1. **DOI ou URL**: Importação de metadados via API do CrossRef ou PubMed
+2. **PDF**: Extração e análise de conteúdo para criação de blocos
+3. **PMID**: Busca direta na base PubMed
 
-### Prioridade 3 - Sistema Multi-Row Grid
-- [ ] Estender metadata para suporte 2D (2x2, 3x2, etc.)
-- [ ] Migrar de ResizablePanelGroup para CSS Grid nativo
-- [ ] Implementar controles 2D para resize vertical
+### Exemplo de Fluxo
 
-### Prioridade 4 - Funcionalidades Avançadas
-- [ ] Sistema de templates pré-configurados
-- [ ] Versionamento de revisões  
-- [ ] Colaboração em tempo real
-- [ ] Exportação para múltiplos formatos
+```typescript
+const importFromPubMed = async (pmid: string) => {
+  try {
+    const response = await fetch(`https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=${pmid}&retmode=json`);
+    const data = await response.json();
+    const article = data.result[pmid];
+    
+    // Criar blocos básicos
+    const blocks = [
+      {
+        type: 'heading',
+        content: {
+          text: article.title,
+          level: 1
+        }
+      },
+      {
+        type: 'snapshot_card',
+        content: {
+          title: article.title,
+          design: article.pubtype.join(', '),
+          custom_badges: [{
+            id: 'source',
+            label: 'Fonte',
+            value: 'PubMed',
+            color: '#3b82f6',
+            background_color: 'transparent'
+          }]
+        }
+      },
+      {
+        type: 'paragraph',
+        content: {
+          text: article.abstract || 'Resumo não disponível'
+        }
+      },
+      {
+        type: 'citation_list',
+        content: {
+          citations: [{
+            id: `citation-${pmid}`,
+            type: 'article',
+            authors: article.authors.map(a => `${a.name}`).join(', '),
+            title: article.title,
+            journal: article.fulljournalname,
+            year: article.pubdate.split(' ')[0],
+            volume: article.volume,
+            issue: article.issue,
+            pages: article.pages,
+            pmid: pmid
+          }]
+        }
+      }
+    ];
+    
+    return blocks;
+  } catch (error) {
+    console.error('Failed to import from PubMed:', error);
+    return null;
+  }
+};
+```
 
 ---
 
-## CHANGELOG
+## PERSONALIZAÇÃO AVANÇADA
 
-### v4.0.0 (2025-06-06) - Documentação Completa & IA-Ready
-- ✅ Estrutura de dados corrigida (payload → content)
-- ✅ Sistema de import/export com migração automática
-- ✅ Custom badges e finding sections documentados
-- ✅ Guia completo para implementação por IA
-- ✅ Exemplos práticos e templates
-- ✅ Workflow de validação e otimização
+### Temas Customizáveis
 
-### v3.0.0 (2025-06-05) - Sistema de Grid Funcional
-- ✅ Sistema de grid single-row totalmente implementado
-- ✅ Drag & drop entre grids funcionando
-- ✅ Merge operations estáveis
-- ✅ ResizableGrid com panels redimensionáveis
+O editor permite a criação de temas personalizados com presets de cores e estilos.
 
-### v2.0.0 (2025-06-05) - Estado Pós-Rollback
-- ✅ Painéis de propriedades eliminados
-- ✅ Sistema inline implementado para 3 tipos de bloco
+```typescript
+interface EditorTheme {
+  id: string;
+  name: string;
+  colors: {
+    background: string;
+    text: string;
+    primary: string;
+    secondary: string;
+    accent: string;
+    success: string;
+    warning: string;
+    error: string;
+    info: string;
+    border: string;
+    muted: string;
+  };
+  typography: {
+    headingFont: string;
+    bodyFont: string;
+    codeFont: string;
+    baseFontSize: string;
+  };
+  spacing: {
+    blockGap: string;
+    contentPadding: string;
+  };
+}
 
-### v1.0.0 (2025-01-15) - Baseline Original
-- Sistema básico de blocos com painéis laterais
+// Exemplo de tema
+const darkScientific: EditorTheme = {
+  id: 'dark-scientific',
+  name: 'Dark Scientific',
+  colors: {
+    background: '#121212',
+    text: '#ffffff',
+    primary: '#3b82f6',
+    secondary: '#8b5cf6',
+    accent: '#10b981',
+    success: '#10b981',
+    warning: '#f59e0b',
+    error: '#ef4444',
+    info: '#0ea5e9',
+    border: '#2a2a2a',
+    muted: '#6b7280'
+  },
+  typography: {
+    headingFont: 'Inter, sans-serif',
+    bodyFont: 'Inter, sans-serif',
+    codeFont: 'Fira Code, monospace',
+    baseFontSize: '16px'
+  },
+  spacing: {
+    blockGap: '1.5rem',
+    contentPadding: '2rem'
+  }
+};
+```
+
+### Comandos Rápidos
+
+O editor suporta comandos de teclado e menu de comandos para operações rápidas.
+
+```typescript
+const editorCommands = [
+  {
+    id: 'add-heading',
+    title: 'Adicionar Cabeçalho',
+    shortcut: 'Ctrl+Alt+1',
+    action: () => addBlock('heading')
+  },
+  {
+    id: 'add-table',
+    title: 'Adicionar Tabela',
+    shortcut: 'Ctrl+Alt+T',
+    action: () => addBlock('table')
+  },
+  {
+    id: 'grid-layout',
+    title: 'Layout em Grid',
+    shortcut: 'Ctrl+Alt+G',
+    action: () => convertToGrid()
+  }
+];
+```
 
 ---
 
-**🎯 RESUMO PARA IA: COMO USAR ESTE EDITOR**
+## INTEGRAÇÃO COM INTELIGÊNCIA ARTIFICIAL
 
-1. **Estrutura de Dados**: Use sempre `content` (não `payload`). O mapeamento é feito automaticamente.
+O editor nativo integra-se com modelos de IA para assistência à escrita e análise:
 
-2. **Tipos Funcionais**: heading, paragraph, snapshot_card têm configurações inline completas.
+### 1. Assistente de Redação Científica
 
-3. **Sistema de Grid**: Arraste blocos uns sobre os outros para criar grids. Metadata é sincronizada automaticamente.
+- Sugestões de melhorias textuais
+- Correção de estilo e clareza
+- Preenchimento automático de blocos
 
-4. **Badges Customizáveis**: Use `custom_badges` array no snapshot_card para evidência/recomendação personalizadas.
+### 2. Análise Inteligente de Estudos
 
-5. **Seções de Achados**: Use `finding_sections` array para organizar achados categorizados.
+- Extração automática de dados PICOD
+- Sugestão de badges de evidência
+- Identificação de possíveis vieses
 
-6. **Import/Export**: Sistema v2.0.0 com migração automática. Use `ImportExportManager` para backup/restore.
+### 3. Geração de Resumos e Destaques
 
-7. **Validação**: Sempre validar IDs únicos, sort_index sequencial, e integridade de grids.
+- Criação de bullet points destacando achados principais
+- Tradução automática de conteúdo
+- Resumos adaptados para diferentes públicos
 
-8. **Performance**: Para reviews grandes, use lazy loading e batching de inserções.
+### 4. Assistente de Referências
 
-**✅ Este documento fornece tudo que uma IA precisa para implementar revisões científicas completas e bem estruturadas usando o Editor Nativo.**
+- Detecção e formatação automática de citações
+- Verificação de consistência entre citações
+- Sugestão de leituras complementares
 
 ---
 
-**🔄 VERSÃO ATUAL: 4.0.0 | ESTADO: PRODUCTION-READY**
-Última atualização: 2025-06-06 | Próxima revisão: Após implementação de tipos de bloco faltantes
+## CONSIDERAÇÕES FINAIS
+
+O Editor Nativo está pronto para uso com todos os tipos de blocos implementados e completamente funcionais. A documentação acima serve como referência técnica e guia de implementação, assegurando que todas as equipes possam aproveitar ao máximo suas capacidades.
+
+Principais atualizações na versão 4.1.0:
+- Implementação completa de todos os tipos de blocos previstos
+- Sistema abrangente de edição inline para todos os componentes
+- Integração total com o sistema de grid responsivo
+- Documentação detalhada de uso e integração com IA
