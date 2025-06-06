@@ -16,52 +16,25 @@ import {
   CheckCircle2,
   AlertTriangle
 } from 'lucide-react';
-import { ReviewBlock, SnapshotCardContent } from '@/types/review';
+import { SnapshotCardContent } from '@/types/review';
 import { cn } from '@/lib/utils';
 
 interface SnapshotCardProps {
-  block: ReviewBlock;
-  onInteraction?: (blockId: string, interactionType: string, data?: any) => void;
-  onSectionView?: (blockId: string) => void;
+  content: SnapshotCardContent;
+  onUpdate?: (updates: any) => void;
   readonly?: boolean;
 }
 
 export const SnapshotCard: React.FC<SnapshotCardProps> = ({
-  block,
-  onInteraction,
-  onSectionView,
+  content,
+  onUpdate,
   readonly
 }) => {
-  const content = block.content as SnapshotCardContent;
-
-  useEffect(() => {
-    // Track when this block comes into view
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            onInteraction?.(block.id.toString(), 'viewed', {
-              block_type: 'snapshot_card',
-              evidence_level: content.evidence_level,
-              recommendation_strength: content.recommendation_strength,
-              timestamp: Date.now()
-            });
-          }
-        });
-      },
-      { threshold: 0.5 }
-    );
-
-    const element = document.querySelector(`[data-block-id="${block.id}"]`);
-    if (element) {
-      observer.observe(element);
-    }
-
-    return () => observer.disconnect();
-  }, [block.id, onInteraction, content.evidence_level, content.recommendation_strength]);
+  // Safe access to content with fallbacks
+  const safeContent = content || {};
 
   const getEvidenceLevelConfig = () => {
-    switch (content.evidence_level) {
+    switch (safeContent.evidence_level) {
       case 'high':
         return {
           color: 'bg-green-500',
@@ -101,7 +74,7 @@ export const SnapshotCard: React.FC<SnapshotCardProps> = ({
   };
 
   const getRecommendationConfig = () => {
-    switch (content.recommendation_strength) {
+    switch (safeContent.recommendation_strength) {
       case 'strong':
         return {
           color: 'text-green-700 bg-green-100 border-green-200',
@@ -159,7 +132,7 @@ export const SnapshotCard: React.FC<SnapshotCardProps> = ({
               <h4 className="font-semibold text-gray-900 dark:text-gray-100">População</h4>
             </div>
             <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-              {content.population || 'Não especificada'}
+              {safeContent.population || 'Não especificada'}
             </p>
           </div>
 
@@ -170,7 +143,7 @@ export const SnapshotCard: React.FC<SnapshotCardProps> = ({
               <h4 className="font-semibold text-gray-900 dark:text-gray-100">Intervenção</h4>
             </div>
             <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-              {content.intervention || 'Não especificada'}
+              {safeContent.intervention || 'Não especificada'}
             </p>
           </div>
 
@@ -181,7 +154,7 @@ export const SnapshotCard: React.FC<SnapshotCardProps> = ({
               <h4 className="font-semibold text-gray-900 dark:text-gray-100">Comparação</h4>
             </div>
             <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-              {content.comparison || 'Não especificada'}
+              {safeContent.comparison || 'Não especificada'}
             </p>
           </div>
 
@@ -192,7 +165,7 @@ export const SnapshotCard: React.FC<SnapshotCardProps> = ({
               <h4 className="font-semibold text-gray-900 dark:text-gray-100">Desfecho</h4>
             </div>
             <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-              {content.outcome || 'Não especificado'}
+              {safeContent.outcome || 'Não especificado'}
             </p>
           </div>
         </div>
@@ -206,19 +179,19 @@ export const SnapshotCard: React.FC<SnapshotCardProps> = ({
             <h4 className="font-semibold text-gray-900 dark:text-gray-100">Desenho do Estudo</h4>
           </div>
           <Badge variant="outline" className="dark:border-gray-600 dark:text-gray-300">
-            {content.design || 'Não especificado'}
+            {safeContent.design || 'Não especificado'}
           </Badge>
         </div>
 
         {/* Key Findings */}
-        {content.key_findings && content.key_findings.length > 0 && (
+        {safeContent.key_findings && Array.isArray(safeContent.key_findings) && safeContent.key_findings.length > 0 && (
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <h4 className="font-semibold text-gray-900 dark:text-gray-100">Principais Achados</h4>
             </div>
             <ul className="space-y-1">
-              {content.key_findings.map((finding, index) => (
+              {safeContent.key_findings.map((finding, index) => (
                 <li key={index} className="text-sm text-gray-700 dark:text-gray-300 flex items-start gap-2">
                   <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mt-2 flex-shrink-0"></span>
                   {finding}

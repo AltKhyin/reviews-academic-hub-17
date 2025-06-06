@@ -87,7 +87,6 @@ export const HeadingBlock: React.FC<HeadingBlockProps> = ({
         value={text}
         onChange={handleTextChange}
         placeholder={`Heading ${level}`}
-        tag={`h${Math.min(Math.max(level, 1), 6)}` as keyof JSX.IntrinsicElements}
         style={props.style}
         className={props.className}
         disabled={readonly}
