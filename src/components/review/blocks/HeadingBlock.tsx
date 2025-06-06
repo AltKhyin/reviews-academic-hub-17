@@ -20,7 +20,7 @@ export const HeadingBlock: React.FC<HeadingBlockProps> = ({
   readonly = false,
   onUpdate
 }) => {
-  // Safe access to content with fallbacks
+  // Safe access to content with comprehensive fallbacks
   const content = block.content || {};
   const level = content.level || 1;
   const text = content.text || content.content || '';

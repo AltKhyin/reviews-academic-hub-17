@@ -20,12 +20,13 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
   readonly = false,
   onUpdate
 }) => {
-  const content = block.content;
+  // Safe access to content with comprehensive fallbacks
+  const content = block.content || {};
   const contentText = content.content || '';
   const alignment = content.alignment || 'left';
   const emphasis = content.emphasis || 'normal';
 
-  // Color system integration
+  // Color system integration with fallbacks
   const textColor = content.text_color || '#d1d5db';
   const backgroundColor = content.background_color || 'transparent';
   const borderColor = content.border_color || 'transparent';
