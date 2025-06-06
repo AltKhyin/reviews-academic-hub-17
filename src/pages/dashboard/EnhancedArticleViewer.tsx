@@ -1,3 +1,4 @@
+
 // ABOUTME: Enhanced article viewer with unified controls and structured sections
 // Implements the 4-section layout: Header, Review Content, Recommendations, Comments
 
@@ -87,13 +88,15 @@ const EnhancedArticleViewer: React.FC = () => {
   // Get review data for native content
   const { reviewData, trackAnalytics, voteOnPoll } = useNativeReview(issue?.id || '');
 
-  // Handle scroll detection for floating controls
+  // Handle scroll detection for floating controls - simplified to trigger on any scroll
   useEffect(() => {
     const handleScroll = () => {
-      const scrolled = window.scrollY > 300;
-      const deepScrolled = window.scrollY > 800;
-      setShowFloatingControls(scrolled);
-      setShowMinimalControls(deepScrolled);
+      const scrolled = window.scrollY > 0;
+      const moderateScroll = window.scrollY > 300;
+      
+      // Show minimal controls immediately when any scroll is detected
+      setShowMinimalControls(scrolled);
+      setShowFloatingControls(moderateScroll && !scrolled); // Only show standard controls in the middle range
     };
 
     window.addEventListener('scroll', handleScroll);
@@ -297,8 +300,8 @@ const EnhancedArticleViewer: React.FC = () => {
 
       {/* Section 2: Review Content with Unified Controls */}
       <div className={cn(getContentMaxWidth(), "mx-auto px-4 sm:px-6 lg:px-8 py-8")}>
-        {/* Static Unified Viewer Controls - only shown when not scrolled much */}
-        {!showFloatingControls && (
+        {/* Static Unified Viewer Controls - only shown when not scrolled */}
+        {!showMinimalControls && (
           <UnifiedViewerControls
             currentViewMode={viewMode}
             currentReadingMode={readingMode}
@@ -413,7 +416,7 @@ const EnhancedArticleViewer: React.FC = () => {
         </div>
       )}
 
-      {/* Standard Floating Controls - Show when scrolled moderately */}
+      {/* Standard Floating Controls - Show when scrolled moderately but not showing minimal */}
       {showFloatingControls && !showMinimalControls && (
         <FloatingViewerControls
           currentViewMode={viewMode}
@@ -425,7 +428,7 @@ const EnhancedArticleViewer: React.FC = () => {
         />
       )}
 
-      {/* Minimal Floating Controls - Show when scrolled deeply */}
+      {/* Minimal Floating Controls - Show as soon as user scrolls */}
       {showMinimalControls && (
         <MinimalFloatingControls
           currentViewMode={viewMode}

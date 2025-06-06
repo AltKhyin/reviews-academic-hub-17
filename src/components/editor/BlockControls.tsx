@@ -1,5 +1,5 @@
 
-// ABOUTME: Compact block controls for drag, visibility, and actions
+// ABOUTME: Compact block controls for drag, visibility, and actions with up/down arrows
 // Extracted from BlockContentEditor for better modularity
 
 import React from 'react';
@@ -89,11 +89,11 @@ export const BlockControls: React.FC<BlockControlsProps> = ({
                 e.stopPropagation();
                 onMove(blockId, 'up');
               }}
-              className="w-6 h-6 p-0 hover:bg-gray-600"
+              className="w-6 h-6 p-0 hover:bg-blue-600"
               style={{ backgroundColor: '#374151' }}
               title="Mover para cima"
             >
-              <ArrowUp className="w-3 h-3" style={{ color: '#d1d5db' }} />
+              <ArrowUp className="w-3 h-3" style={{ color: '#3b82f6' }} />
             </Button>
           )}
 
@@ -105,11 +105,11 @@ export const BlockControls: React.FC<BlockControlsProps> = ({
                 e.stopPropagation();
                 onMove(blockId, 'down');
               }}
-              className="w-6 h-6 p-0 hover:bg-gray-600"
+              className="w-6 h-6 p-0 hover:bg-blue-600"
               style={{ backgroundColor: '#374151' }}
               title="Mover para baixo"
             >
-              <ArrowDown className="w-3 h-3" style={{ color: '#d1d5db' }} />
+              <ArrowDown className="w-3 h-3" style={{ color: '#3b82f6' }} />
             </Button>
           )}
         </div>
@@ -135,6 +135,40 @@ export const BlockControls: React.FC<BlockControlsProps> = ({
         </div>
 
         <div className="flex items-center gap-0.5">
+          {/* Up Arrow - Quick Access */}
+          {!isFirst && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation();
+                onMove(blockId, 'up');
+              }}
+              className="w-6 h-6 p-0 hover:bg-blue-700"
+              style={{ backgroundColor: '#2a2a2a' }}
+              title="Mover para cima"
+            >
+              <ArrowUp className="w-3 h-3" style={{ color: '#3b82f6' }} />
+            </Button>
+          )}
+
+          {/* Down Arrow - Quick Access */}
+          {!isLast && (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={(e) => {
+                e.stopPropagation();
+                onMove(blockId, 'down');
+              }}
+              className="w-6 h-6 p-0 hover:bg-blue-700"
+              style={{ backgroundColor: '#2a2a2a' }}
+              title="Mover para baixo"
+            >
+              <ArrowDown className="w-3 h-3" style={{ color: '#3b82f6' }} />
+            </Button>
+          )}
+
           {/* Edit/Preview Toggle */}
           <Button
             size="sm"

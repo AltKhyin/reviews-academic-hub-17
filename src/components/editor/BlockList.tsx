@@ -25,7 +25,9 @@ import {
   Quote,
   BarChart3,
   List,
-  FlaskConical
+  FlaskConical,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -184,6 +186,8 @@ export const BlockList: React.FC<BlockListProps> = ({
         const isActive = block.id === activeBlockId;
         const isDraggedOver = dragState.draggedOver === index;
         const isDragging = dragState.draggedIndex === index;
+        const isFirst = index === 0;
+        const isLast = index === blocks.length - 1;
 
         return (
           <div key={block.id} className="space-y-1 w-full max-w-full overflow-hidden">
@@ -291,6 +295,38 @@ export const BlockList: React.FC<BlockListProps> = ({
 
                   {/* Action Buttons */}
                   <div className="flex items-center gap-0.5 flex-shrink-0">
+                    {/* Up Arrow */}
+                    {!isFirst && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onMoveBlock(block.id, 'up');
+                        }}
+                        className="w-6 h-6 p-0 hover:bg-blue-700"
+                        title="Mover para cima"
+                      >
+                        <ArrowUp className="w-3 h-3" style={{ color: '#3b82f6' }} />
+                      </Button>
+                    )}
+
+                    {/* Down Arrow */}
+                    {!isLast && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onMoveBlock(block.id, 'down');
+                        }}
+                        className="w-6 h-6 p-0 hover:bg-blue-700"
+                        title="Mover para baixo"
+                      >
+                        <ArrowDown className="w-3 h-3" style={{ color: '#3b82f6' }} />
+                      </Button>
+                    )}
+
                     <Button
                       size="sm"
                       variant="ghost"
