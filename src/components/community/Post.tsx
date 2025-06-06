@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -112,16 +113,10 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
   };
 
   const isIssueDiscussion = post.post_flairs?.name === 'Discussão de Edição';
-  const cardClasses = `rounded-lg border p-4 mb-6 ${
-    post.pinned 
-      ? 'bg-yellow-50/5 border-yellow-500/30' 
-      : isIssueDiscussion 
-        ? 'bg-purple-50/5 border-purple-500/30'
-        : 'bg-gray-800/10 border-gray-700/30'
-  }`;
 
   return (
-    <div className={cardClasses}>
+    <div className="py-6">
+      {/* Pinned indicator */}
       {post.pinned && (
         <div className="flex items-center mb-3 text-yellow-500 text-sm">
           <Pin className="h-4 w-4 mr-1" />
@@ -131,6 +126,7 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
 
       <div className="flex items-start space-x-4">
         <div className="flex-1 min-w-0">
+          {/* Header */}
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center">
               <Avatar className="h-6 w-6 mr-3">
@@ -147,8 +143,10 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
             </div>
           </div>
           
+          {/* Title */}
           <h3 className="text-lg font-medium leading-tight mb-2">{post.title}</h3>
           
+          {/* Flair */}
           {post.post_flairs && (
             <Badge 
               style={{ backgroundColor: post.post_flairs.color }}
@@ -158,19 +156,24 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
             </Badge>
           )}
           
+          {/* Content */}
           <PostContent post={post} onVoteChange={handlePollVoteChange} />
 
+          {/* Issue Discussion Banner */}
           {isIssueDiscussion && post.issue_id && (
             <IssueDiscussionBanner issueId={post.issue_id} />
           )}
           
-          <div className="flex items-center space-x-1 mt-4">
-            <PostVoting
-              postId={post.id}
-              initialScore={post.score || 0}
-              initialUserVote={post.userVote || 0}
-              onVoteChange={onVoteChange}
-            />
+          {/* Actions Row - Single row with voting and actions */}
+          <div className="flex items-center justify-between mt-4">
+            <div className="flex items-center space-x-1">
+              <PostVoting
+                postId={post.id}
+                initialScore={post.score || 0}
+                initialUserVote={post.userVote || 0}
+                onVoteChange={onVoteChange}
+              />
+            </div>
             
             <PostActions
               postId={post.id}
@@ -187,12 +190,14 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
         </div>
       </div>
 
+      {/* Comments Section */}
       {showComments && (
         <div className="mt-4 pt-4 border-t border-gray-700/30">
           <CommentSection postId={post.id} />
         </div>
       )}
 
+      {/* Delete Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -213,6 +218,7 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Report Dialog */}
       <AlertDialog open={showReportDialog} onOpenChange={setShowReportDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -227,6 +233,9 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Subtle divider at bottom */}
+      <div className="mt-6 h-px bg-gradient-to-r from-transparent via-gray-700/30 to-transparent"></div>
     </div>
   );
 };

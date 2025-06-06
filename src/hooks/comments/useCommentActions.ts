@@ -20,7 +20,7 @@ export function useCommentActions(
   const [isDeletingComment, setIsDeletingComment] = useState(false);
   const [isReplying, setIsReplying] = useState(false);
 
-  const addComment = async (content: string): Promise<void> => {
+  const addComment = async (content: string, imageUrl?: string): Promise<void> => {
     if (!user || !entityId || !entityType) {
       toast({
         title: "Autenticação necessária",
@@ -35,7 +35,10 @@ export function useCommentActions(
     setIsAddingComment(true);
     try {
       // Create the data object with the right entity ID field
-      const commentData = buildCommentData(content, user.id, entityType, entityId);
+      const commentData = {
+        ...buildCommentData(content, user.id, entityType, entityId),
+        image_url: imageUrl || null
+      };
       
       const { data: newComment, error } = await supabase
         .from('comments')
@@ -81,7 +84,7 @@ export function useCommentActions(
     }
   };
 
-  const replyToComment = async ({ parentId, content }: { parentId: string; content: string }): Promise<void> => {
+  const replyToComment = async ({ parentId, content, imageUrl }: { parentId: string; content: string; imageUrl?: string }): Promise<void> => {
     if (!user || !entityId || !entityType) {
       toast({
         title: "Autenticação necessária",
@@ -98,7 +101,8 @@ export function useCommentActions(
       // Create comment data with parent_id
       const commentData = {
         ...buildCommentData(content, user.id, entityType, entityId),
-        parent_id: parentId
+        parent_id: parentId,
+        image_url: imageUrl || null
       };
       
       const { data: newReply, error } = await supabase

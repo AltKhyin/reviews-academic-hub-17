@@ -4,11 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
-import { MessageSquare, SendIcon } from 'lucide-react';
+import { SendIcon, X, Type } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { CommentImageUpload } from './CommentImageUpload';
+import { CommentFormatting } from './CommentFormatting';
 
 interface CommentFormProps {
-  onSubmit: (content: string) => Promise<void>;
+  onSubmit: (content: string, imageUrl?: string) => Promise<void>;
   isSubmitting: boolean;
   placeholder?: string;
   buttonText?: string;
@@ -26,6 +28,8 @@ export const CommentForm: React.FC<CommentFormProps> = ({
 }) => {
   const { user } = useAuth();
   const [content, setContent] = useState('');
+  const [selectedImage, setSelectedImage] = useState<string>('');
+  const [showFormatting, setShowFormatting] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -34,8 +38,10 @@ export const CommentForm: React.FC<CommentFormProps> = ({
     
     try {
       setIsAnimating(true);
-      await onSubmit(content);
+      await onSubmit(content, selectedImage);
       setContent('');
+      setSelectedImage('');
+      setShowFormatting(false);
       
       // Reset animation state after animation completes
       setTimeout(() => {
@@ -47,6 +53,37 @@ export const CommentForm: React.FC<CommentFormProps> = ({
     }
   };
 
+  const handleFormat = (format: 'bold' | 'italic' | 'underline') => {
+    const textarea = document.querySelector('textarea') as HTMLTextAreaElement;
+    if (!textarea) return;
+    
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = content.substring(start, end);
+    
+    let formattedText = selectedText;
+    switch (format) {
+      case 'bold':
+        formattedText = `**${selectedText}**`;
+        break;
+      case 'italic':
+        formattedText = `*${selectedText}*`;
+        break;
+      case 'underline':
+        formattedText = `__${selectedText}__`;
+        break;
+    }
+    
+    const newContent = content.substring(0, start) + formattedText + content.substring(end);
+    setContent(newContent);
+    
+    // Restore cursor position
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + formattedText.length, start + formattedText.length);
+    }, 0);
+  };
+
   if (!user) {
     return (
       <div className="text-center p-4 text-gray-400 border border-dashed border-gray-700 rounded-md">
@@ -55,6 +92,8 @@ export const CommentForm: React.FC<CommentFormProps> = ({
     );
   }
 
+  const showControls = content.trim() || selectedImage || autoFocus;
+
   return (
     <form onSubmit={handleSubmit} className="flex items-start gap-3 relative">
       <Avatar className="w-8 h-8">
@@ -62,42 +101,85 @@ export const CommentForm: React.FC<CommentFormProps> = ({
         <AvatarFallback>{user.email?.[0].toUpperCase()}</AvatarFallback>
       </Avatar>
       <div className="flex-1">
-        <Textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          placeholder={placeholder}
-          className="mb-2 resize-none"
-          rows={2}
-          autoFocus={autoFocus}
-        />
-        <div className="flex justify-end gap-2">
-          {onCancel && (
-            <Button 
-              type="button" 
-              variant="ghost" 
-              size="sm"
-              onClick={onCancel}
-            >
-              Cancelar
-            </Button>
+        <div className="relative">
+          <Textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder={placeholder}
+            className="resize-none pr-20"
+            rows={showControls ? 3 : 2}
+            autoFocus={autoFocus}
+          />
+          
+          {/* Integrated controls inside textarea */}
+          {showControls && (
+            <div className="absolute bottom-2 right-2 flex items-center gap-1">
+              {/* Formatting toggle */}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className={`h-6 w-6 p-0 ${showFormatting ? 'text-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
+                onClick={() => setShowFormatting(!showFormatting)}
+                title="Formatação"
+              >
+                <Type className="h-3 w-3" />
+              </Button>
+              
+              {/* Image upload */}
+              <CommentImageUpload
+                onImageSelect={setSelectedImage}
+                onImageRemove={() => setSelectedImage('')}
+                selectedImage={selectedImage}
+              />
+              
+              {/* Cancel button (for replies) */}
+              {onCancel && (
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm"
+                  className="h-6 w-6 p-0 text-gray-400 hover:text-gray-300"
+                  onClick={onCancel}
+                  title="Cancelar"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              )}
+              
+              {/* Submit button */}
+              <Button 
+                type="submit" 
+                disabled={!content.trim() || isSubmitting || isAnimating}
+                size="sm"
+                className="h-6 w-6 p-0 relative overflow-hidden"
+                title={buttonText}
+              >
+                <SendIcon className="h-3 w-3" />
+              </Button>
+            </div>
           )}
-          <Button 
-            type="submit" 
-            disabled={!content.trim() || isSubmitting || isAnimating}
-            size="sm"
-            className="relative overflow-hidden"
-          >
-            {isSubmitting ? 'Enviando...' : (
-              <>
-                {buttonText}
-                <SendIcon className="ml-1 h-4 w-4" />
-              </>
-            )}
-          </Button>
         </div>
+        
+        {/* Formatting toolbar */}
+        <CommentFormatting 
+          onFormat={handleFormat}
+          isVisible={showFormatting}
+        />
+        
+        {/* Selected image preview */}
+        {selectedImage && (
+          <div className="mt-2">
+            <img
+              src={selectedImage}
+              alt="Preview"
+              className="max-w-48 max-h-48 object-cover rounded border border-gray-700/30"
+            />
+          </div>
+        )}
       </div>
       
-      {/* Success animation that appears when comment is submitted */}
+      {/* Success animation */}
       {isAnimating && (
         <motion.div 
           className="absolute top-0 left-0 w-full h-full flex items-center justify-center z-10"
@@ -106,7 +188,7 @@ export const CommentForm: React.FC<CommentFormProps> = ({
           transition={{ duration: 1, times: [0, 0.2, 0.8, 1] }}
         >
           <div className="bg-primary/20 backdrop-blur-sm rounded-full p-4">
-            <MessageSquare className="h-8 w-8 text-white" />
+            <SendIcon className="h-8 w-8 text-white" />
           </div>
         </motion.div>
       )}

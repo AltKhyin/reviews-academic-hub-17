@@ -27,7 +27,7 @@ export const PostsList: React.FC<PostsListProps> = ({
     return (
       <div className="space-y-6">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="bg-gray-800/10 rounded-lg border border-gray-700/30 p-4">
+          <div key={i} className="py-6">
             <div className="flex items-start space-x-4">
               <div className="flex flex-col items-center">
                 <Skeleton className="h-6 w-6 rounded-full" />
@@ -39,12 +39,13 @@ export const PostsList: React.FC<PostsListProps> = ({
                 <Skeleton className="h-6 w-3/4 mb-4" />
                 <Skeleton className="h-24 w-full mb-4" />
                 <div className="flex space-x-2">
-                  <Skeleton className="h-8 w-24" />
-                  <Skeleton className="h-8 w-24" />
-                  <Skeleton className="h-8 w-24" />
+                  <Skeleton className="h-8 w-8" />
+                  <Skeleton className="h-8 w-8" />
+                  <Skeleton className="h-8 w-8" />
                 </div>
               </div>
             </div>
+            <div className="mt-6 h-px bg-gradient-to-r from-transparent via-gray-700/30 to-transparent"></div>
           </div>
         ))}
       </div>
@@ -67,13 +68,18 @@ export const PostsList: React.FC<PostsListProps> = ({
   }
   
   return (
-    <div className="space-y-6">
-      {posts.map((post) => (
-        <Post 
-          key={post.id} 
-          post={post} 
-          onVoteChange={onVoteChange} 
-        />
+    <div>
+      {posts.map((post, index) => (
+        <React.Fragment key={post.id}>
+          <Post 
+            post={post} 
+            onVoteChange={onVoteChange} 
+          />
+          {/* No divider after the last post */}
+          {index !== posts.length - 1 && (
+            <div className="h-px bg-gradient-to-r from-transparent via-gray-700/30 to-transparent my-2"></div>
+          )}
+        </React.Fragment>
       ))}
     </div>
   );

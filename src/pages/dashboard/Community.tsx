@@ -90,7 +90,7 @@ const Community = () => {
               </Tabs>
             </div>
             
-            {/* Posts content */}
+            {/* Posts content - no card wrapper, cleaner spacing */}
             <div className="w-full">
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsContent value="latest" className="mt-0">

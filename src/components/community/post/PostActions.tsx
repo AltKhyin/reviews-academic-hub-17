@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, BookmarkPlus, Flag, Trash, Pin, PinOff } from 'lucide-react';
+import { MessageSquare, BookmarkPlus, Flag, Trash, Pin, PinOff, Bookmark } from 'lucide-react';
 import { usePinPost, useUnpinPost } from '@/hooks/useIssueDiscussion';
 
 interface PostActionsProps {
@@ -130,65 +130,69 @@ export const PostActions: React.FC<PostActionsProps> = ({
   };
 
   return (
-    <div className="flex mt-4 space-x-2 items-center">
+    <div className="flex items-center space-x-1">
+      {/* Comments button with count */}
       <Button 
         variant="ghost" 
         size="sm" 
-        className={`text-gray-400 hover:text-white ${showComments ? 'text-white' : ''}`}
+        className={`h-8 px-2 text-gray-400 hover:text-white ${showComments ? 'text-white' : ''}`}
         onClick={onToggleComments}
       >
-        <MessageSquare className="h-4 w-4 mr-1" />
-        Comentários
-        {!showComments && commentCount > 0 && (
-          <span className="ml-1 text-xs bg-gray-700/50 px-1.5 py-0.5 rounded-full">
+        <MessageSquare className="h-4 w-4" />
+        {commentCount > 0 && (
+          <span className="ml-1 text-xs">
             {commentCount}
           </span>
         )}
       </Button>
       
+      {/* Bookmark button */}
       <Button
         variant="ghost"
         size="sm"
-        className={`text-gray-400 ${isBookmarked ? 'text-blue-500 hover:text-blue-600' : 'hover:text-white'}`}
+        className={`h-8 w-8 p-0 ${isBookmarked ? 'text-blue-500 hover:text-blue-600' : 'text-gray-400 hover:text-white'}`}
         onClick={handleBookmark}
         disabled={isBookmarking}
+        title="Salvar"
       >
-        <BookmarkPlus className="h-4 w-4 mr-1" />
-        Salvar
+        {isBookmarked ? <Bookmark className="h-4 w-4" /> : <BookmarkPlus className="h-4 w-4" />}
       </Button>
 
+      {/* Admin pin button */}
       {isAdmin && (
         <Button
           variant="ghost"
           size="sm"
-          className={`text-gray-400 ${isPinned ? 'text-yellow-500 hover:text-yellow-600' : 'hover:text-white'}`}
+          className={`h-8 w-8 p-0 ${isPinned ? 'text-yellow-500 hover:text-yellow-600' : 'text-gray-400 hover:text-white'}`}
           onClick={handlePinToggle}
           disabled={pinPost.isPending || unpinPost.isPending}
+          title={isPinned ? 'Desafixar' : 'Fixar'}
         >
-          {isPinned ? <PinOff className="h-4 w-4 mr-1" /> : <Pin className="h-4 w-4 mr-1" />}
-          {isPinned ? 'Desafixar' : 'Fixar'}
+          {isPinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
         </Button>
       )}
 
+      {/* Report button */}
       <Button 
         variant="ghost" 
         size="sm"
         className="h-8 w-8 p-0 text-gray-400 hover:text-yellow-500"
         onClick={onReport}
+        title="Denunciar"
       >
         <Flag className="h-4 w-4" />
-        <span className="sr-only">Denunciar</span>
       </Button>
 
+      {/* Delete button for post author or admin */}
       {user && (user.id === userId || isAdmin) && (
         <Button 
           variant="ghost" 
           size="sm" 
-          className="text-gray-400 hover:text-red-500 ml-auto"
+          className="h-8 w-8 p-0 text-gray-400 hover:text-red-500"
           onClick={onDelete}
+          title="Excluir"
         >
-          <Trash className="h-4 w-4 mr-1" />
-          Excluir
+          <Trash className="h-4 w-4" />
         </Button>
       )}
     </div>

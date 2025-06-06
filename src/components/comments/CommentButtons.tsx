@@ -40,7 +40,8 @@ export const CommentButtons: React.FC<CommentButtonsProps> = ({
   isAuthenticated
 }) => {
   return (
-    <div className="flex items-center gap-3 text-xs">
+    <div className="flex items-center gap-2 text-xs">
+      {/* Voting controls */}
       <div className="flex items-center space-x-1">
         <button 
           onClick={onUpvoteClick}
@@ -74,27 +75,29 @@ export const CommentButtons: React.FC<CommentButtonsProps> = ({
         </button>
       </div>
       
+      {/* Reply button - icon only */}
       <Button 
         onClick={onReplyClick}
-        className="text-gray-400 hover:text-white"
+        className="text-gray-400 hover:text-white h-6 w-6 p-0"
         variant="ghost"
         size="sm"
+        title="Responder"
       >
-        <MessageSquare className="h-4 w-4 mr-1" />
-        Responder
+        <MessageSquare className="h-4 w-4" />
       </Button>
       
+      {/* Delete button - icon only */}
       {isAuthor && (
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button 
-              className="text-gray-400 hover:text-red-400"
+              className="text-gray-400 hover:text-red-400 h-6 w-6 p-0"
               disabled={isDeleting}
               variant="ghost"
               size="sm"
+              title="Excluir"
             >
-              <Trash2 className="h-4 w-4 mr-1" />
-              Excluir
+              <Trash2 className="h-4 w-4" />
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
