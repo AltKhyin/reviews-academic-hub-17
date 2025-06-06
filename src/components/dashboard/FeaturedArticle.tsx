@@ -37,7 +37,8 @@ const FeaturedArticle = ({ article }: FeaturedArticleProps) => {
           </p>
           <Link 
             to={`/article/${article.id}`}
-            className="mt-8 inline-block bg-white text-black px-6 py-2 rounded-md font-medium hover:bg-gray-200 transition-colors"
+            className="mt-8 inline-block bg-white text-white px-6 py-2 rounded-md font-medium hover:bg-gray-200 transition-colors"
+            style={{ color: 'white', backgroundColor: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(10px)' }}
           >
             Ler agora
           </Link>

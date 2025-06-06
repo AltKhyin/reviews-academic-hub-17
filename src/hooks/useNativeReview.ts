@@ -5,7 +5,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { EnhancedIssue, ReviewBlock, ReviewPoll, ReviewAnalytics, AnalyticsEventType } from '@/types/review';
+import { EnhancedIssue, ReviewBlock, ReviewPoll, ReviewAnalytics, AnalyticsEventType, BlockType } from '@/types/review';
 
 export const useNativeReview = (issueId: string) => {
   const { user } = useAuth();
@@ -62,13 +62,13 @@ export const useNativeReview = (issueId: string) => {
 
       // Normalize blocks to handle database schema inconsistencies
       const normalizedBlocks: ReviewBlock[] = (blocksData || []).map(block => ({
-        id: block.id,
-        type: block.type,
+        id: block.id.toString(),
+        type: block.type as BlockType,
         // Handle both 'payload' from database and 'content' from types
-        content: block.payload || block.content || {},
+        content: (block.payload as any) || {},
         sort_index: block.sort_index,
         visible: block.visible ?? true,
-        meta: block.meta || {},
+        meta: (block.meta as any) || {},
         issue_id: block.issue_id,
         created_at: block.created_at,
         updated_at: block.updated_at
@@ -97,12 +97,12 @@ export const useNativeReview = (issueId: string) => {
         polls: (pollsData || []).map(poll => ({
           id: poll.id,
           issue_id: poll.issue_id,
-          block_id: poll.block_id,
+          block_id: poll.block_id?.toString() || '',
           question: poll.question || '',
-          options: Array.isArray(poll.options) ? poll.options : [],
+          options: Array.isArray(poll.options) ? (poll.options as string[]) : [],
           poll_type: poll.poll_type || 'single_choice',
-          votes: Array.isArray(poll.votes) ? poll.votes : [],
-          total_votes: poll.total_votes || 0,
+          votes: Array.isArray(poll.votes) ? (poll.votes as number[]) : [],
+          total_votes: typeof poll.total_votes === 'number' ? poll.total_votes : 0,
           opens_at: poll.opens_at,
           closes_at: poll.closes_at,
           created_at: poll.created_at
@@ -188,7 +188,7 @@ export const useNativeReview = (issueId: string) => {
       }
 
       // Safely handle votes as Json type
-      const existingVotes = Array.isArray(currentPoll.votes) ? currentPoll.votes : [];
+      const existingVotes = Array.isArray(currentPoll.votes) ? (currentPoll.votes as number[]) : [];
       const votes = [...existingVotes];
       
       // Ensure votes array has enough elements
