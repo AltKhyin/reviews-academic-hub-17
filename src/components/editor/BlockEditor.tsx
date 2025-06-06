@@ -1,6 +1,6 @@
 
-// ABOUTME: Enhanced block editor with complete 2D grid support and dynamic layout
-// Main editor with full grid functionality and responsive design
+// ABOUTME: Enhanced block editor with complete drag/drop system and 2D grid support
+// Unified drag system that works across all block types and positions
 
 import React, { useState, useCallback, useRef } from 'react';
 import { ReviewBlock, BlockType } from '@/types/review';
@@ -85,11 +85,8 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
   // 2D Grid management
   const {
     grids,
-    createGrid,
     addRowToGridById,
     removeRowFromGridById,
-    placeBlockInGridById,
-    removeBlockFromGridById,
     updateGridLayout,
     extractGridsFromBlocks
   } = useGrid2DManager({
@@ -223,7 +220,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     return onAddBlock('paragraph', insertionIndex);
   }, [layoutState.rows, blocks, onAddBlock]);
 
-  // 2D Grid operations - FIXED: Proper block creation and placement
+  // 2D Grid operations with proper wrapper functions
   const handleAddBlockTo2DGrid = useCallback((gridId: string, position: GridPosition) => {
     console.log('Adding block to 2D grid:', { gridId, position });
     
@@ -239,6 +236,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     }
   }, [blocks, onAddBlock, onPlaceBlockIn2DGrid]);
 
+  // Create wrapper functions that match the expected signatures
   const handleAddRowAbove = useCallback((gridId: string, rowIndex: number) => {
     addRowToGridById(gridId, 'above', rowIndex);
   }, [addRowToGridById]);
@@ -251,7 +249,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     removeRowFromGridById(gridId, rowIndex);
   }, [removeRowFromGridById]);
 
-  // Handle drag start
+  // Enhanced drag start with proper source identification
   const handleDragStart = useCallback((e: React.DragEvent, blockId: number) => {
     if (processingDropRef.current) {
       e.preventDefault();
@@ -260,6 +258,8 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     
     const sourceRow = getRowByBlockId(blockId);
     const sourceGrid = blocks.find(b => b.id === blockId)?.meta?.layout?.grid_id;
+    
+    console.log('Starting drag:', { blockId, sourceRow: sourceRow?.id, sourceGrid });
     
     setDragState({
       draggedBlockId: blockId,
@@ -278,38 +278,30 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       sourceGridId: sourceGrid || null
     }));
 
+    // Add visual feedback
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.opacity = '0.5';
+    }
+
     document.body.classList.add('dragging');
   }, [getRowByBlockId, blocks]);
 
-  // Handle drag over for 1D grids
-  const handleDragOver1D = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number, targetType: 'grid' | 'single' | 'merge' = 'merge') => {
+  // Enhanced drag over handling
+  const handleDragOver = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number, targetType: 'grid' | 'single' | 'merge' = 'merge') => {
     e.preventDefault();
+    e.stopPropagation();
     e.dataTransfer.dropEffect = 'move';
     
     if (!dragState.isDragging || !dragState.draggedBlockId) return;
     if (dragState.draggedFromRowId === targetRowId) return;
+    
+    console.log('Drag over:', { targetRowId, targetPosition, targetType });
     
     setDragState(prev => ({
       ...prev,
       dragOverRowId: targetRowId,
       dragOverPosition: targetPosition || null,
       dropTargetType: targetType
-    }));
-  }, [dragState.isDragging, dragState.draggedBlockId, dragState.draggedFromRowId]);
-
-  // Handle drag over for 2D grids
-  const handleDragOver2D = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number, targetType?: 'grid' | 'single' | 'merge') => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    
-    if (!dragState.isDragging || !dragState.draggedBlockId) return;
-    if (dragState.draggedFromRowId === targetRowId) return;
-    
-    setDragState(prev => ({
-      ...prev,
-      dragOverRowId: targetRowId,
-      dragOverPosition: targetPosition || null,
-      dropTargetType: targetType || 'merge'
     }));
   }, [dragState.isDragging, dragState.draggedBlockId, dragState.draggedFromRowId]);
 
@@ -328,9 +320,10 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     }
   }, []);
 
-  // Handle drop for both 1D and 2D grids - FIXED: Proper 2D grid integration
+  // Enhanced drop handling with proper block movement
   const handleDrop = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number, dropType: 'grid' | 'single' | 'merge' = 'merge') => {
     e.preventDefault();
+    e.stopPropagation();
     
     if (!dragState.draggedBlockId || processingDropRef.current) return;
     
@@ -375,6 +368,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     } catch (error) {
       console.error('Drop operation failed:', error);
     } finally {
+      // Reset drag state
       setDragState({
         draggedBlockId: null,
         dragOverRowId: null,
@@ -386,14 +380,29 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       
       document.body.classList.remove('dragging');
       
+      // Remove visual feedback
+      const draggedElements = document.querySelectorAll('[style*="opacity: 0.5"]');
+      draggedElements.forEach(el => {
+        if (el instanceof HTMLElement) {
+          el.style.opacity = '';
+        }
+      });
+      
       setTimeout(() => {
         processingDropRef.current = false;
       }, 200);
     }
   }, [dragState.draggedBlockId, onMergeBlockIntoGrid, onPlaceBlockIn2DGrid, blocks]);
 
-  const handleDragEnd = useCallback(() => {
+  const handleDragEnd = useCallback((e: React.DragEvent) => {
+    console.log('Drag ended');
+    
     document.body.classList.remove('dragging');
+    
+    // Remove visual feedback
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.opacity = '';
+    }
     
     if (dragTimeoutRef.current) {
       clearTimeout(dragTimeoutRef.current);
@@ -413,7 +422,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
 
   return (
     <div 
-      className={cn("block-editor py-6 overflow-visible-force", className)}
+      className={cn("block-editor py-6 overflow-visible", className)}
       style={{
         backgroundColor: '#121212',
         color: '#ffffff'
@@ -439,7 +448,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
           const grid = grids.find(g => g.id === group.id);
           if (grid) {
             return (
-              <div key={group.id} className="mx-2 mb-8 overflow-visible-force">
+              <div key={group.id} className="mx-2 mb-8 overflow-visible">
                 <Grid2DContainer
                   grid={grid}
                   activeBlockId={activeBlockId}
@@ -452,7 +461,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                   onRemoveRow={handleRemoveRow}
                   onUpdateGridLayout={updateGridLayout}
                   dragState={dragState}
-                  onDragOver={handleDragOver2D}
+                  onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                 />
@@ -464,7 +473,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
           }
         } else if (group.type === '1d-grid') {
           return (
-            <div key={group.id} className="mx-2 mb-6 overflow-visible-force">
+            <div key={group.id} className="mx-2 mb-6 overflow-visible">
               <ResizableGrid
                 rowId={group.id}
                 blocks={group.blocks}
@@ -478,7 +487,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                 activeBlockId={activeBlockId}
                 onActiveBlockChange={onActiveBlockChange}
                 dragState={dragState}
-                onDragOver={handleDragOver1D}
+                onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
               />
@@ -503,7 +512,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
               onAddBlockBetween={addBlockBetween}
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
-              onDragOver={handleDragOver1D}
+              onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
             />

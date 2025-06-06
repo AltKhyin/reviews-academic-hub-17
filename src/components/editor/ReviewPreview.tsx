@@ -1,6 +1,6 @@
 
-// ABOUTME: Enhanced preview component with complete 2D grid support
-// Shows real-time preview of both 1D and 2D grid layouts with proper rendering
+// ABOUTME: Enhanced preview component with invisible 2D grid support
+// Shows real-time preview with invisible grid positioning - grids are purely for layout
 
 import React, { useMemo } from 'react';
 import { ReviewBlock } from '@/types/review';
@@ -210,8 +210,9 @@ export const ReviewPreview: React.FC<ReviewPreviewProps> = ({
           <div key={`group-${groupIndex}`} className="layout-group mb-8">
             {group.type === '2d-grid' && group.grid2DStructure ? (
               <div className="grid-2d-preview">
+                {/* INVISIBLE GRID - only CSS positioning, no visual elements */}
                 <div 
-                  className="grid-container"
+                  className="invisible-grid-container"
                   style={{
                     display: 'grid',
                     gridTemplateColumns: group.grid2DStructure.columnWidths 
@@ -221,49 +222,25 @@ export const ReviewPreview: React.FC<ReviewPreviewProps> = ({
                       ? group.grid2DStructure.rowHeights.map(h => `${h}px`).join(' ')
                       : `repeat(${group.grid2DStructure.rows}, minmax(120px, auto))`,
                     gap: `${group.grid2DStructure.gap}px`,
-                    border: '1px solid #2a2a2a',
-                    borderRadius: '8px',
-                    padding: `${group.grid2DStructure.gap}px`,
-                    backgroundColor: '#1a1a1a'
+                    // NO visible styling - pure positioning
                   }}
                 >
-                  {/* Create grid cells */}
-                  {Array.from({ length: group.grid2DStructure.rows }).map((_, rowIndex) =>
-                    Array.from({ length: group.grid2DStructure.columns }).map((_, colIndex) => {
-                      const blockAtPosition = group.grid2DStructure!.blocks.find(
-                        item => item.position.row === rowIndex && item.position.column === colIndex
-                      );
-                      
-                      return (
-                        <div
-                          key={`cell-${rowIndex}-${colIndex}`}
-                          style={{
-                            gridColumn: colIndex + 1,
-                            gridRow: rowIndex + 1,
-                            minHeight: '120px',
-                            border: blockAtPosition ? 'none' : '1px dashed #2a2a2a',
-                            borderRadius: '4px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}
-                        >
-                          {blockAtPosition ? (
-                            <BlockRenderer
-                              block={blockAtPosition.block}
-                              readonly={true}
-                              className="preview-grid-block w-full h-full"
-                            />
-                          ) : (
-                            <div className="text-gray-500 text-sm">Célula vazia</div>
-                          )}
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-                <div className="text-center text-xs text-gray-400 mt-2">
-                  Grid 2D • {group.grid2DStructure.columns} colunas × {group.grid2DStructure.rows} linhas
+                  {/* Render only blocks with content, no empty cells */}
+                  {group.grid2DStructure.blocks.map((item, index) => (
+                    <div
+                      key={`block-${item.block.id}`}
+                      style={{
+                        gridColumn: item.position.column + 1,
+                        gridRow: item.position.row + 1,
+                      }}
+                    >
+                      <BlockRenderer
+                        block={item.block}
+                        readonly={true}
+                        className="preview-grid-block w-full h-full"
+                      />
+                    </div>
+                  ))}
                 </div>
               </div>
             ) : group.type === '1d-grid' && group.gridConfig ? (
