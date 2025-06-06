@@ -82,15 +82,22 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
     direction: 'ltr',
     textAlign: alignment as any,
     unicodeBidi: 'normal',
+    wordWrap: 'break-word',
+    wordBreak: 'break-word',
+    overflowWrap: 'break-word',
+    hyphens: 'auto',
+    maxWidth: '100%',
+    width: '100%',
     ...spacingStyles
   };
 
   if (readonly) {
     return (
-      <div className="paragraph-block">
+      <div className="paragraph-block w-full">
         <div
           className={cn(
-            "leading-relaxed p-3 rounded",
+            "leading-relaxed p-3 rounded w-full max-w-full",
+            "break-words hyphens-auto overflow-wrap-anywhere",
             getAlignmentClass(alignment),
             getEmphasisClass(emphasis),
             "prose prose-invert max-w-none"
@@ -104,7 +111,7 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
   }
 
   return (
-    <div className="paragraph-block group relative">
+    <div className="paragraph-block group relative w-full">
       {/* Inline Settings */}
       <div className="absolute -top-2 -right-2 z-10">
         <InlineBlockSettings
@@ -115,7 +122,8 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
 
       <div
         className={cn(
-          "leading-relaxed rounded",
+          "leading-relaxed rounded w-full max-w-full",
+          "break-words hyphens-auto overflow-wrap-anywhere",
           getAlignmentClass(alignment),
           getEmphasisClass(emphasis)
         )}
@@ -132,6 +140,11 @@ export const ParagraphBlock: React.FC<ParagraphBlockProps> = ({
             direction: 'ltr',
             textAlign: alignment,
             width: '100%',
+            maxWidth: '100%',
+            wordWrap: 'break-word',
+            wordBreak: 'break-word',
+            overflowWrap: 'break-word',
+            hyphens: 'auto',
             unicodeBidi: 'normal'
           }}
         />

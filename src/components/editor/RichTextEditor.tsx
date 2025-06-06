@@ -119,14 +119,51 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
       font-style: italic;
     }
     
+    .rich-text-editor [contenteditable] {
+      word-wrap: break-word !important;
+      word-break: break-word !important;
+      overflow-wrap: break-word !important;
+      hyphens: auto !important;
+      white-space: pre-wrap !important;
+      max-width: 100% !important;
+      width: 100% !important;
+      overflow-x: hidden !important;
+    }
+    
+    .rich-text-editor [contenteditable] * {
+      word-wrap: break-word !important;
+      word-break: break-word !important;
+      overflow-wrap: break-word !important;
+      hyphens: auto !important;
+      max-width: 100% !important;
+    }
+    
     .rich-text-editor [contenteditable] p {
       margin: 0 0 1em 0;
+      word-wrap: break-word !important;
+      word-break: break-word !important;
+      overflow-wrap: break-word !important;
+      hyphens: auto !important;
+      max-width: 100% !important;
     }
     
     .rich-text-editor [contenteditable] ul, 
     .rich-text-editor [contenteditable] ol {
       margin: 1em 0;
       padding-left: 1.5em;
+      word-wrap: break-word !important;
+      word-break: break-word !important;
+      overflow-wrap: break-word !important;
+      hyphens: auto !important;
+      max-width: 100% !important;
+    }
+    
+    .rich-text-editor [contenteditable] li {
+      word-wrap: break-word !important;
+      word-break: break-word !important;
+      overflow-wrap: break-word !important;
+      hyphens: auto !important;
+      max-width: 100% !important;
     }
     
     .rich-text-editor [contenteditable] strong {
@@ -148,7 +185,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
       <style dangerouslySetInnerHTML={{ __html: editorStyles }} />
       
       <div 
-        className={`rich-text-editor border rounded-lg overflow-hidden ${className}`}
+        className={`rich-text-editor border rounded-lg overflow-hidden w-full max-w-full ${className}`}
         style={{ 
           backgroundColor: '#1a1a1a',
           borderColor: '#2a2a2a'
@@ -156,7 +193,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
       >
         {/* Toolbar */}
         <div 
-          className="flex items-center gap-1 p-2 border-b"
+          className="flex items-center gap-1 p-2 border-b overflow-x-auto"
           style={{ 
             backgroundColor: '#212121',
             borderColor: '#2a2a2a'
@@ -173,7 +210,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
                     size="sm"
                     onClick={button.action}
                     title={button.title}
-                    className="w-8 h-8 p-0"
+                    className="w-8 h-8 p-0 flex-shrink-0"
                     style={{
                       backgroundColor: button.active ? '#3b82f6' : 'transparent',
                       color: button.active ? '#ffffff' : '#d1d5db'
@@ -199,10 +236,17 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           onKeyDown={handleKeyDown}
           onMouseUp={updateFormatState}
           onKeyUp={updateFormatState}
-          className="min-h-[200px] p-4 outline-none"
+          className="min-h-[200px] p-4 outline-none w-full max-w-full overflow-hidden break-words hyphens-auto overflow-wrap-anywhere"
           style={{ 
             color: '#ffffff',
-            backgroundColor: '#1a1a1a'
+            backgroundColor: '#1a1a1a',
+            wordWrap: 'break-word',
+            wordBreak: 'break-word',
+            overflowWrap: 'break-word',
+            hyphens: 'auto',
+            whiteSpace: 'pre-wrap',
+            maxWidth: '100%',
+            width: '100%'
           }}
           data-placeholder={placeholder}
         />

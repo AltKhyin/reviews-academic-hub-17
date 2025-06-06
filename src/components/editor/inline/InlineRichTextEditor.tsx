@@ -239,12 +239,27 @@ export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
     { icon: ListOrdered, command: 'insertOrderedList', title: 'Lista numerada' }
   ];
 
+  const combinedStyle = {
+    color: '#ffffff',
+    backgroundColor: '#1a1a1a',
+    direction: 'ltr' as const,
+    textAlign: 'left' as const,
+    width: '100%',
+    maxWidth: '100%',
+    wordWrap: 'break-word' as const,
+    wordBreak: 'break-word' as const,
+    overflowWrap: 'break-word' as const,
+    hyphens: 'auto' as const,
+    whiteSpace: 'pre-wrap' as const,
+    ...style
+  };
+
   return (
-    <div className={cn("inline-rich-text-editor border rounded-lg overflow-hidden", className)}>
+    <div className={cn("inline-rich-text-editor border rounded-lg overflow-hidden w-full max-w-full", className)}>
       {/* Toolbar - only show when focused */}
       {isFocused && (
         <div 
-          className="flex items-center gap-1 p-2 border-b"
+          className="flex items-center gap-1 p-2 border-b overflow-x-auto"
           style={{ 
             backgroundColor: '#212121',
             borderColor: '#2a2a2a'
@@ -260,7 +275,7 @@ export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
                 size="sm"
                 onClick={() => executeCommand(button.command)}
                 title={button.title}
-                className="w-8 h-8 p-0"
+                className="w-8 h-8 p-0 flex-shrink-0"
                 style={{
                   backgroundColor: button.active ? '#3b82f6' : 'transparent',
                   color: button.active ? '#ffffff' : '#d1d5db'
@@ -283,7 +298,7 @@ export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
                 size="sm"
                 onClick={() => executeCommand(button.command)}
                 title={button.title}
-                className="w-8 h-8 p-0"
+                className="w-8 h-8 p-0 flex-shrink-0"
                 style={{ color: '#d1d5db' }}
               >
                 <IconComponent className="w-4 h-4" />
@@ -303,7 +318,7 @@ export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
                 size="sm"
                 onClick={() => executeCommand(button.command)}
                 title={button.title}
-                className="w-8 h-8 p-0"
+                className="w-8 h-8 p-0 flex-shrink-0"
                 style={{ color: '#d1d5db' }}
               >
                 <IconComponent className="w-4 h-4" />
@@ -325,19 +340,14 @@ export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
         onFocus={handleFocus}
         onBlur={handleBlur}
         className={cn(
-          "min-h-[100px] p-3 outline-none",
+          "min-h-[100px] p-3 outline-none w-full max-w-full overflow-hidden",
           "prose prose-invert max-w-none",
           "[&_p]:my-2 [&_p:first-child]:mt-0 [&_p:last-child]:mb-0",
           "[&_ul]:my-2 [&_ol]:my-2",
-          "[&_strong]:font-bold [&_em]:italic [&_u]:underline"
+          "[&_strong]:font-bold [&_em]:italic [&_u]:underline",
+          "break-words hyphens-auto overflow-wrap-anywhere"
         )}
-        style={{ 
-          color: '#ffffff',
-          backgroundColor: '#1a1a1a',
-          direction: 'ltr',
-          textAlign: 'left',
-          ...style
-        }}
+        style={combinedStyle}
         data-placeholder={placeholder}
       />
 
@@ -347,6 +357,42 @@ export const InlineRichTextEditor: React.FC<InlineRichTextEditorProps> = ({
           color: #9ca3af;
           font-style: italic;
           pointer-events: none;
+        }
+        
+        .inline-rich-text-editor [contenteditable] * {
+          word-wrap: break-word !important;
+          word-break: break-word !important;
+          overflow-wrap: break-word !important;
+          hyphens: auto !important;
+          max-width: 100% !important;
+        }
+        
+        .inline-rich-text-editor [contenteditable] p {
+          margin: 0.5rem 0;
+          word-wrap: break-word !important;
+          word-break: break-word !important;
+          overflow-wrap: break-word !important;
+          hyphens: auto !important;
+          max-width: 100% !important;
+        }
+        
+        .inline-rich-text-editor [contenteditable] ul,
+        .inline-rich-text-editor [contenteditable] ol {
+          margin: 0.5rem 0;
+          padding-left: 1.5rem;
+          word-wrap: break-word !important;
+          word-break: break-word !important;
+          overflow-wrap: break-word !important;
+          hyphens: auto !important;
+          max-width: 100% !important;
+        }
+        
+        .inline-rich-text-editor [contenteditable] li {
+          word-wrap: break-word !important;
+          word-break: break-word !important;
+          overflow-wrap: break-word !important;
+          hyphens: auto !important;
+          max-width: 100% !important;
         }
       `}</style>
     </div>

@@ -185,18 +185,18 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
   const isGridDropTarget = dragState?.dragOverRowId === rowId && dragState?.dropTargetType === 'merge';
 
   return (
-    <div className={cn("resizable-grid my-3", className)}>
+    <div className={cn("resizable-grid my-3 w-full max-w-full overflow-hidden", className)}>
       {/* Grid Controls */}
       {!readonly && (
         <GridControls
           rowId={rowId}
           columns={columns}
           hasBlocks={hasBlocks}
-          onAddColumn={handleAddColumn}
-          onRemoveColumn={handleRemoveColumn}
-          onMergeBlocks={handleMergeBlocks}
-          onConvertToSingle={handleConvertToSingle}
-          onReorderColumns={handleReorderColumns}
+          onAddColumn={() => {}}
+          onRemoveColumn={() => {}}
+          onMergeBlocks={() => {}}
+          onConvertToSingle={() => {}}
+          onReorderColumns={() => {}}
           className="mb-2"
         />
       )}
@@ -205,7 +205,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
         direction="horizontal"
         onLayout={handlePanelResize}
         className={cn(
-          "border rounded-lg transition-all",
+          "border rounded-lg transition-all w-full max-w-full overflow-hidden",
           isGridDropTarget && "border-green-500 shadow-lg bg-green-500/5"
         )}
         style={{ 
@@ -219,34 +219,36 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
           const isLast = index === columns - 1;
           
           return (
-            <div key={`panel-wrapper-${index}`}>
+            <div key={`panel-wrapper-${index}`} className="w-full max-w-full overflow-hidden">
               <ResizablePanel
                 defaultSize={panelSizes[index]}
                 minSize={10}
                 maxSize={80}
-                className="p-1"
+                className="p-1 w-full max-w-full overflow-hidden"
               >
-                <GridPanel
-                  rowId={rowId}
-                  position={index}
-                  block={block}
-                  readonly={readonly}
-                  activeBlockId={activeBlockId}
-                  dragState={dragState}
-                  onActiveBlockChange={onActiveBlockChange}
-                  onUpdateBlock={onUpdateBlock}
-                  onDeleteBlock={onDeleteBlock}
-                  onAddBlock={handleAddBlockToPosition}
-                  onDragOver={onDragOver}
-                  onDragLeave={onDragLeave}
-                  onDrop={onDrop}
-                />
+                <div className="w-full max-w-full overflow-hidden">
+                  <GridPanel
+                    rowId={rowId}
+                    position={index}
+                    block={block}
+                    readonly={readonly}
+                    activeBlockId={activeBlockId}
+                    dragState={dragState}
+                    onActiveBlockChange={onActiveBlockChange}
+                    onUpdateBlock={onUpdateBlock}
+                    onDeleteBlock={onDeleteBlock}
+                    onAddBlock={() => {}}
+                    onDragOver={onDragOver}
+                    onDragLeave={onDragLeave}
+                    onDrop={onDrop}
+                  />
+                </div>
               </ResizablePanel>
               
               {!isLast && (
                 <ResizableHandle 
                   withHandle 
-                  className="w-2 bg-gray-700 hover:bg-blue-600 transition-colors"
+                  className="w-2 bg-gray-700 hover:bg-blue-600 transition-colors flex-shrink-0"
                 />
               )}
             </div>
@@ -263,7 +265,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
       
       {/* Grid Info */}
       {!readonly && (
-        <div className="mt-1 text-xs text-gray-400 text-center">
+        <div className="mt-1 text-xs text-gray-400 text-center break-words">
           {columns} colunas • Arraste os divisores para ajustar proporções
           {columnWidths && (
             <span className="ml-2">

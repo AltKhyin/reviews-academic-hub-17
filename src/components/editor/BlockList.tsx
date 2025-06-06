@@ -1,3 +1,4 @@
+
 // ABOUTME: Enhanced block list with proper click handling and inline editing
 // Prevents unwanted block creation and provides intuitive interaction patterns - UPDATED: Reduced spacing by 50%
 
@@ -152,12 +153,12 @@ export const BlockList: React.FC<BlockListProps> = ({
 
   if (blocks.length === 0) {
     return (
-      <div className="block-list-empty text-center py-6">
+      <div className="block-list-empty text-center py-6 w-full max-w-full">
         <FileText className="w-12 h-12 mx-auto mb-2" style={{ color: '#6b7280' }} />
-        <h3 className="text-lg font-medium mb-1" style={{ color: '#ffffff' }}>
+        <h3 className="text-lg font-medium mb-1 break-words" style={{ color: '#ffffff' }}>
           Nenhum bloco adicionado
         </h3>
-        <p className="mb-3" style={{ color: '#9ca3af' }}>
+        <p className="mb-3 break-words" style={{ color: '#9ca3af' }}>
           Use a paleta à esquerda para adicionar blocos ao editor.
         </p>
         <Button
@@ -176,7 +177,7 @@ export const BlockList: React.FC<BlockListProps> = ({
   }
 
   return (
-    <div className="block-list space-y-1.5">
+    <div className="block-list space-y-1.5 w-full max-w-full overflow-hidden">
       {blocks.map((block, index) => {
         const Icon = getBlockIcon(block.type);
         const iconColor = getBlockColor(block.type);
@@ -185,10 +186,10 @@ export const BlockList: React.FC<BlockListProps> = ({
         const isDragging = dragState.draggedIndex === index;
 
         return (
-          <div key={block.id} className="space-y-1">
+          <div key={block.id} className="space-y-1 w-full max-w-full overflow-hidden">
             {/* Insert point at the top for first block */}
             {index === 0 && (
-              <div className="insert-point group">
+              <div className="insert-point group w-full">
                 <Button
                   size="sm"
                   variant="ghost"
@@ -204,7 +205,7 @@ export const BlockList: React.FC<BlockListProps> = ({
 
             <Card
               className={cn(
-                "block-list-item cursor-pointer transition-all duration-200 group",
+                "block-list-item cursor-pointer transition-all duration-200 group w-full max-w-full overflow-hidden",
                 isActive && "ring-2 ring-blue-500",
                 isDraggedOver && "border-blue-400",
                 isDragging && "opacity-50 scale-95"
@@ -220,11 +221,11 @@ export const BlockList: React.FC<BlockListProps> = ({
               onDragEnter={(e) => handleDragEnter(e, index)}
               onClick={(e) => handleBlockClick(e, block.id)}
             >
-              <CardContent className={cn("p-2", compact && "p-1.5")}>
-                <div className="flex items-center gap-2">
+              <CardContent className={cn("p-2 w-full max-w-full overflow-hidden", compact && "p-1.5")}>
+                <div className="flex items-center gap-2 w-full max-w-full overflow-hidden">
                   {/* Drag Handle */}
                   <div 
-                    className="drag-handle cursor-grab active:cursor-grabbing"
+                    className="drag-handle cursor-grab active:cursor-grabbing flex-shrink-0"
                     onMouseDown={(e) => e.stopPropagation()}
                   >
                     <GripVertical 
@@ -242,20 +243,26 @@ export const BlockList: React.FC<BlockListProps> = ({
                   </div>
 
                   {/* Block Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1 mb-0.5">
+                  <div className="flex-1 min-w-0 overflow-hidden">
+                    <div className="flex items-center gap-1 mb-0.5 overflow-hidden">
                       <h4 
                         className={cn(
-                          "font-medium truncate",
+                          "font-medium truncate min-w-0 overflow-hidden break-words hyphens-auto",
                           compact ? "text-xs" : "text-sm"
                         )}
-                        style={{ color: isActive ? '#ffffff' : '#ffffff' }}
+                        style={{ 
+                          color: isActive ? '#ffffff' : '#ffffff',
+                          wordWrap: 'break-word',
+                          wordBreak: 'break-word',
+                          overflowWrap: 'break-word'
+                        }}
+                        title={getBlockTitle(block)}
                       >
                         {getBlockTitle(block)}
                       </h4>
                       <Badge 
                         variant="outline" 
-                        className="text-xs"
+                        className="text-xs flex-shrink-0"
                         style={{ 
                           backgroundColor: 'transparent',
                           borderColor: iconColor,
@@ -266,16 +273,16 @@ export const BlockList: React.FC<BlockListProps> = ({
                       </Badge>
                     </div>
                     
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 overflow-hidden">
                       <span 
-                        className="text-xs"
+                        className="text-xs break-words"
                         style={{ color: isActive ? '#d1d5db' : '#9ca3af' }}
                       >
                         Posição {index + 1}
                       </span>
                       {!block.visible && (
                         <EyeOff 
-                          className="w-3 h-3" 
+                          className="w-3 h-3 flex-shrink-0" 
                           style={{ color: '#ef4444' }}
                         />
                       )}
@@ -283,7 +290,7 @@ export const BlockList: React.FC<BlockListProps> = ({
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex items-center gap-0.5">
+                  <div className="flex items-center gap-0.5 flex-shrink-0">
                     <Button
                       size="sm"
                       variant="ghost"
@@ -331,7 +338,7 @@ export const BlockList: React.FC<BlockListProps> = ({
             </Card>
 
             {/* Insert Point After Each Block */}
-            <div className="insert-point group">
+            <div className="insert-point group w-full">
               <Button
                 size="sm"
                 variant="ghost"

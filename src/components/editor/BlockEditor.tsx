@@ -412,10 +412,14 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
 
   return (
     <div 
-      className={cn("block-editor py-3 overflow-visible-force", className)}
+      className={cn("block-editor py-3 overflow-hidden w-full max-w-full", className)}
       style={{
         backgroundColor: '#121212',
-        color: '#ffffff'
+        color: '#ffffff',
+        wordWrap: 'break-word',
+        wordBreak: 'break-word',
+        overflowWrap: 'break-word',
+        hyphens: 'auto'
       }}
     >
       {/* Dynamic width indicator for Dividir mode */}
@@ -429,86 +433,89 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       )}
 
       {/* Render layout groups in order */}
-      {layoutGroups.map((group, groupIndex) => {
-        const globalIndex = group.blocks.length > 0 ? 
-          blocks.findIndex(b => b.id === group.blocks[0].id) : 0;
+      <div className="w-full max-w-full overflow-hidden">
+        {layoutGroups.map((group, groupIndex) => {
+          const globalIndex = group.blocks.length > 0 ? 
+            blocks.findIndex(b => b.id === group.blocks[0].id) : 0;
 
-        if (group.type === '2d-grid') {
-          // Find the grid from extracted grids
-          const grid = grids.find(g => g.id === group.id);
-          if (grid) {
+          if (group.type === '2d-grid') {
+            // Find the grid from extracted grids
+            const grid = grids.find(g => g.id === group.id);
+            if (grid) {
+              return (
+                <div key={group.id} className="mx-2 mb-4 w-full max-w-full overflow-hidden">
+                  <Grid2DContainer
+                    grid={grid}
+                    activeBlockId={activeBlockId}
+                    onActiveBlockChange={onActiveBlockChange}
+                    onUpdateBlock={onUpdateBlock}
+                    onDeleteBlock={onDeleteBlock}
+                    onAddBlock={handleAddBlockTo2DGrid}
+                    onAddRowAbove={handleAddRowAbove}
+                    onAddRowBelow={handleAddRowBelow}
+                    onRemoveRow={handleRemoveRow}
+                    onUpdateGridLayout={updateGridLayout}
+                    dragState={dragState}
+                    onDragOver={() => {}}
+                    onDragLeave={() => {}}
+                    onDrop={() => {}}
+                  />
+                </div>
+              );
+            } else {
+              console.warn('Grid not found for group:', group.id);
+              return null;
+            }
+          } else if (group.type === '1d-grid') {
             return (
-              <div key={group.id} className="mx-2 mb-4 overflow-visible-force">
-                <Grid2DContainer
-                  grid={grid}
-                  activeBlockId={activeBlockId}
-                  onActiveBlockChange={onActiveBlockChange}
+              <div key={group.id} className="mx-2 mb-3 w-full max-w-full overflow-hidden">
+                <ResizableGrid
+                  rowId={group.id}
+                  blocks={group.blocks}
+                  columns={group.config?.columns || group.blocks.length}
+                  gap={group.config?.gap || 4}
+                  columnWidths={group.config?.columnWidths}
+                  onUpdateLayout={updateColumnWidths}
+                  onAddBlock={addBlockToGrid}
                   onUpdateBlock={onUpdateBlock}
                   onDeleteBlock={onDeleteBlock}
-                  onAddBlock={handleAddBlockTo2DGrid}
-                  onAddRowAbove={handleAddRowAbove}
-                  onAddRowBelow={handleAddRowBelow}
-                  onRemoveRow={handleRemoveRow}
-                  onUpdateGridLayout={updateGridLayout}
+                  activeBlockId={activeBlockId}
+                  onActiveBlockChange={onActiveBlockChange}
                   dragState={dragState}
-                  onDragOver={handleDragOver2D}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
+                  onDragOver={() => {}}
+                  onDragLeave={() => {}}
+                  onDrop={() => {}}
                 />
               </div>
             );
           } else {
-            console.warn('Grid not found for group:', group.id);
-            return null;
+            // Single block
+            const block = group.blocks[0];
+            return (
+              <div key={block.id} className="w-full max-w-full overflow-hidden">
+                <SingleBlock
+                  block={block}
+                  globalIndex={globalIndex}
+                  activeBlockId={activeBlockId}
+                  dragState={dragState}
+                  onActiveBlockChange={onActiveBlockChange}
+                  onUpdateBlock={onUpdateBlock}
+                  onDeleteBlock={onDeleteBlock}
+                  onDuplicateBlock={onDuplicateBlock}
+                  onConvertToGrid={onConvertToGrid!}
+                  onConvertTo2DGrid={onConvertTo2DGrid}
+                  onAddBlockBetween={addBlockBetween}
+                  onDragStart={() => {}}
+                  onDragEnd={() => {}}
+                  onDragOver={() => {}}
+                  onDragLeave={() => {}}
+                  onDrop={() => {}}
+                />
+              </div>
+            );
           }
-        } else if (group.type === '1d-grid') {
-          return (
-            <div key={group.id} className="mx-2 mb-3 overflow-visible-force">
-              <ResizableGrid
-                rowId={group.id}
-                blocks={group.blocks}
-                columns={group.config?.columns || group.blocks.length}
-                gap={group.config?.gap || 4}
-                columnWidths={group.config?.columnWidths}
-                onUpdateLayout={updateColumnWidths}
-                onAddBlock={addBlockToGrid}
-                onUpdateBlock={onUpdateBlock}
-                onDeleteBlock={onDeleteBlock}
-                activeBlockId={activeBlockId}
-                onActiveBlockChange={onActiveBlockChange}
-                dragState={dragState}
-                onDragOver={handleDragOver1D}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-              />
-            </div>
-          );
-        } else {
-          // Single block
-          const block = group.blocks[0];
-          return (
-            <SingleBlock
-              key={block.id}
-              block={block}
-              globalIndex={globalIndex}
-              activeBlockId={activeBlockId}
-              dragState={dragState}
-              onActiveBlockChange={onActiveBlockChange}
-              onUpdateBlock={onUpdateBlock}
-              onDeleteBlock={onDeleteBlock}
-              onDuplicateBlock={onDuplicateBlock}
-              onConvertToGrid={onConvertToGrid!}
-              onConvertTo2DGrid={onConvertTo2DGrid}
-              onAddBlockBetween={addBlockBetween}
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
-              onDragOver={handleDragOver1D}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-            />
-          );
-        }
-      })}
+        })}
+      </div>
 
       <div className="flex justify-center mt-4 pt-2">
         <Button
