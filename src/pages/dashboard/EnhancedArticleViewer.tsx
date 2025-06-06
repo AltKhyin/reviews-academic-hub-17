@@ -1,4 +1,3 @@
-
 // ABOUTME: Enhanced article viewer with unified controls and structured sections
 // Implements the 4-section layout: Header, Review Content, Recommendations, Comments
 
@@ -15,6 +14,7 @@ import { useNativeReview } from '@/hooks/useNativeReview';
 import { BlockRenderer } from '@/components/review/BlockRenderer';
 import { UnifiedViewerControls } from '@/components/article/UnifiedViewerControls';
 import { FloatingViewerControls } from '@/components/article/FloatingViewerControls';
+import { MinimalFloatingControls } from '@/components/article/MinimalFloatingControls';
 import { EnhancedPDFViewer } from '@/components/article/EnhancedPDFViewer';
 import { RecommendedArticles } from '@/components/article/RecommendedArticles';
 import { ExternalLectures } from '@/components/article/ExternalLectures';
@@ -32,6 +32,7 @@ const EnhancedArticleViewer: React.FC = () => {
   const [readingMode, setReadingMode] = useState<'normal' | 'browser-fullscreen' | 'system-fullscreen'>('normal');
   const [startTime] = useState(Date.now());
   const [showFloatingControls, setShowFloatingControls] = useState(false);
+  const [showMinimalControls, setShowMinimalControls] = useState(false);
 
   // Fetch issue data
   const { data: issue, isLoading, error } = useQuery({
@@ -90,14 +91,16 @@ const EnhancedArticleViewer: React.FC = () => {
   useEffect(() => {
     const handleScroll = () => {
       const scrolled = window.scrollY > 300;
+      const deepScrolled = window.scrollY > 800;
       setShowFloatingControls(scrolled);
+      setShowMinimalControls(deepScrolled);
     };
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Handle reading mode changes
+  // Handle reading mode changes with improved layout preservation
   useEffect(() => {
     const handleEscapeKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && readingMode !== 'normal') {
@@ -105,9 +108,14 @@ const EnhancedArticleViewer: React.FC = () => {
       }
     };
 
-    if (readingMode !== 'normal') {
+    if (readingMode === 'browser-fullscreen') {
       document.addEventListener('keydown', handleEscapeKey);
-      document.body.style.overflow = 'hidden';
+      // Don't hide overflow for dual/pdf modes to preserve layout
+      if (viewMode === 'native') {
+        document.body.style.overflow = 'hidden';
+      }
+    } else if (readingMode === 'system-fullscreen') {
+      document.addEventListener('keydown', handleEscapeKey);
     } else {
       document.body.style.overflow = 'auto';
     }
@@ -116,7 +124,7 @@ const EnhancedArticleViewer: React.FC = () => {
       document.removeEventListener('keydown', handleEscapeKey);
       document.body.style.overflow = 'auto';
     };
-  }, [readingMode]);
+  }, [readingMode, viewMode]);
 
   // Handle system fullscreen
   useEffect(() => {
@@ -158,6 +166,22 @@ const EnhancedArticleViewer: React.FC = () => {
     }
   };
 
+  // Determine container classes based on reading mode and view mode
+  const getContainerClasses = () => {
+    if (readingMode === 'browser-fullscreen') {
+      return "fixed inset-0 z-40 bg-gray-900 overflow-y-auto";
+    }
+    return "enhanced-article-viewer";
+  };
+
+  const getContentMaxWidth = () => {
+    // For dual and pdf modes in reading modes, use full width to prevent popup behavior
+    if ((viewMode === 'dual' || viewMode === 'pdf') && readingMode !== 'normal') {
+      return "max-w-full";
+    }
+    return "max-w-6xl";
+  };
+
   if (isLoading) {
     return (
       <div 
@@ -197,20 +221,14 @@ const EnhancedArticleViewer: React.FC = () => {
     );
   }
 
-  const isFullscreen = readingMode !== 'normal';
-  const containerClass = cn(
-    "enhanced-article-viewer",
-    isFullscreen && "fixed inset-0 z-40 bg-gray-900 overflow-y-auto"
-  );
-
   return (
-    <div className={containerClass} style={{ backgroundColor: '#121212', color: '#ffffff' }}>
-      {/* Section 1: Header - Now scrolls naturally */}
+    <div className={getContainerClasses()} style={{ backgroundColor: '#121212', color: '#ffffff' }}>
+      {/* Section 1: Header - Always scrollable */}
       <div 
         className="border-b py-6"
         style={{ backgroundColor: '#121212', borderColor: '#2a2a2a' }}
       >
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className={cn(getContentMaxWidth(), "mx-auto px-4 sm:px-6 lg:px-8")}>
           {/* Back Button */}
           <div className="mb-4">
             <Button 
@@ -278,7 +296,7 @@ const EnhancedArticleViewer: React.FC = () => {
       </div>
 
       {/* Section 2: Review Content with Unified Controls */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className={cn(getContentMaxWidth(), "mx-auto px-4 sm:px-6 lg:px-8 py-8")}>
         {/* Static Unified Viewer Controls - only shown when not scrolled much */}
         {!showFloatingControls && (
           <UnifiedViewerControls
@@ -292,7 +310,7 @@ const EnhancedArticleViewer: React.FC = () => {
           />
         )}
 
-        {/* Content Area */}
+        {/* Content Area with improved reading mode support */}
         {viewMode === 'native' && (
           <div className="native-content space-y-6">
             {reviewData?.blocks && reviewData.blocks.length > 0 ? (
@@ -325,16 +343,21 @@ const EnhancedArticleViewer: React.FC = () => {
         )}
 
         {viewMode === 'pdf' && issue.article_pdf_url && (
-          <EnhancedPDFViewer 
-            url={issue.article_pdf_url} 
-            title="Artigo Original"
-            height="tall"
-            readingMode={readingMode}
-          />
+          <div className="pdf-content">
+            <EnhancedPDFViewer 
+              url={issue.article_pdf_url} 
+              title="Artigo Original"
+              height="tall"
+              readingMode={readingMode}
+            />
+          </div>
         )}
 
         {viewMode === 'dual' && (
-          <div className="dual-content grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className={cn(
+            "dual-content grid gap-6",
+            readingMode === 'normal' ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1 xl:grid-cols-2"
+          )}>
             <div className="native-panel">
               <h3 className="text-lg font-semibold mb-4" style={{ color: '#ffffff' }}>
                 Revisão
@@ -355,46 +378,56 @@ const EnhancedArticleViewer: React.FC = () => {
               <h3 className="text-lg font-semibold mb-4" style={{ color: '#ffffff' }}>
                 Artigo Original
               </h3>
-              <EnhancedPDFViewer 
-                url={issue.article_pdf_url} 
-                title="Artigo Original"
-                height="tall"
-                readingMode={readingMode}
-              />
+              <div className={cn(
+                readingMode !== 'normal' ? "h-[80vh]" : "max-h-[80vh]"
+              )}>
+                <EnhancedPDFViewer 
+                  url={issue.article_pdf_url} 
+                  title="Artigo Original"
+                  height="tall"
+                  readingMode={readingMode}
+                />
+              </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Section 3: Recommendations - Always show regardless of reading mode */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 border-t" style={{ borderColor: '#2a2a2a' }}>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div>
-            <h2 className="text-xl font-semibold mb-4" style={{ color: '#ffffff' }}>
-              Artigos Recomendados
-            </h2>
+      {/* Section 3: Recommendations - Single column, full width, no titles */}
+      {readingMode === 'normal' && (
+        <div className={cn(getContentMaxWidth(), "mx-auto px-4 sm:px-6 lg:px-8 py-8 border-t")} style={{ borderColor: '#2a2a2a' }}>
+          <div className="space-y-6">
             <RecommendedArticles currentArticleId={issue.id} />
-          </div>
-          <div>
-            <h2 className="text-xl font-semibold mb-4" style={{ color: '#ffffff' }}>
-              Palestras Externas
-            </h2>
             <ExternalLectures issueId={issue.id} />
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Section 4: Comments - Always show regardless of reading mode */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 border-t" style={{ borderColor: '#2a2a2a' }}>
-        <h2 className="text-xl font-semibold mb-6" style={{ color: '#ffffff' }}>
-          Comentários
-        </h2>
-        <ArticleComments articleId={issue.id} />
-      </div>
+      {/* Section 4: Comments - Always show in normal mode */}
+      {readingMode === 'normal' && (
+        <div className={cn(getContentMaxWidth(), "mx-auto px-4 sm:px-6 lg:px-8 py-8 border-t")} style={{ borderColor: '#2a2a2a' }}>
+          <h2 className="text-xl font-semibold mb-6" style={{ color: '#ffffff' }}>
+            Comentários
+          </h2>
+          <ArticleComments articleId={issue.id} />
+        </div>
+      )}
 
-      {/* Floating Controls - Show when scrolled */}
-      {showFloatingControls && (
+      {/* Standard Floating Controls - Show when scrolled moderately */}
+      {showFloatingControls && !showMinimalControls && (
         <FloatingViewerControls
+          currentViewMode={viewMode}
+          currentReadingMode={readingMode}
+          onViewModeChange={handleViewModeChange}
+          onReadingModeChange={handleReadingModeChange}
+          hasOriginalPDF={!!issue.article_pdf_url}
+          hasNativeContent={true}
+        />
+      )}
+
+      {/* Minimal Floating Controls - Show when scrolled deeply */}
+      {showMinimalControls && (
+        <MinimalFloatingControls
           currentViewMode={viewMode}
           currentReadingMode={readingMode}
           onViewModeChange={handleViewModeChange}

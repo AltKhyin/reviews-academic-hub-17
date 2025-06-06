@@ -21,6 +21,18 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
   readingMode = 'normal'
 }) => {
   const getHeightClass = () => {
+    // Adjust height based on reading mode to prevent popup behavior
+    if (readingMode !== 'normal') {
+      switch (height) {
+        case 'tall':
+          return 'h-[80vh]';
+        case 'full':
+          return 'h-[90vh]';
+        default:
+          return 'h-[60vh]';
+      }
+    }
+    
     switch (height) {
       case 'tall':
         return 'h-[85vh]';
@@ -31,10 +43,20 @@ export const EnhancedPDFViewer: React.FC<EnhancedPDFViewerProps> = ({
     }
   };
 
+  const getContainerClasses = () => {
+    const baseClasses = "bg-gray-900 rounded-lg shadow-lg overflow-hidden";
+    
+    // Don't apply fixed positioning in reading modes when used in dual view
+    if (readingMode === 'browser-fullscreen') {
+      return cn(baseClasses, "relative");
+    }
+    
+    return baseClasses;
+  };
+
   return (
     <div className={cn(
-      "bg-gray-900 rounded-lg shadow-lg overflow-hidden",
-      readingMode === 'browser-fullscreen' && "fixed inset-0 z-50 rounded-none",
+      getContainerClasses(),
       className
     )}>
       <div className={cn(

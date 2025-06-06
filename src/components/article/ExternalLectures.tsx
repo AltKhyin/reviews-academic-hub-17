@@ -31,7 +31,7 @@ export const ExternalLectures = ({ issueId }: ExternalLecturesProps) => {
   const lecture = lectures[0];
 
   return (
-    <Card className="p-6 mb-8 border-white/10 bg-white/5">
+    <Card className="p-6 border-white/10 bg-white/5">
       <h3 className="text-lg font-medium mb-4">Aprimore seus conhecimentos</h3>
       <div>
         <a
