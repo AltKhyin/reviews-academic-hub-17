@@ -1,6 +1,6 @@
 
-// ABOUTME: Block-specific property configurations extracted from InlineBlockSettings
-// Handles type-specific settings for different block types
+// ABOUTME: Block-specific properties editor for inline settings
+// Handles type-specific settings for all block types in the system
 
 import React from 'react';
 import { ReviewBlock } from '@/types/review';
@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 
 interface BlockSpecificPropertiesProps {
   block: ReviewBlock;
@@ -18,250 +19,242 @@ export const BlockSpecificProperties: React.FC<BlockSpecificPropertiesProps> = (
   block,
   onContentUpdate
 }) => {
-  const renderBlockProperties = () => {
-    switch (block.type) {
-      case 'heading':
-        return (
-          <div className="space-y-3">
-            <div className="space-y-2">
-              <Label style={{ color: '#d1d5db' }}>Nível</Label>
-              <Select 
-                value={String(block.content.level || 1)} 
-                onValueChange={(value) => onContentUpdate('level', parseInt(value))}
-              >
-                <SelectTrigger 
-                  className="h-8"
-                  style={{ backgroundColor: '#212121', borderColor: '#2a2a2a', color: '#ffffff' }}
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}>
-                  <SelectItem value="1">H1</SelectItem>
-                  <SelectItem value="2">H2</SelectItem>
-                  <SelectItem value="3">H3</SelectItem>
-                  <SelectItem value="4">H4</SelectItem>
-                  <SelectItem value="5">H5</SelectItem>
-                  <SelectItem value="6">H6</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label style={{ color: '#d1d5db' }}>Âncora</Label>
-              <Input
-                value={block.content.anchor || ''}
-                onChange={(e) => onContentUpdate('anchor', e.target.value)}
-                placeholder="id-do-titulo"
-                className="h-8 text-xs"
-                style={{ backgroundColor: '#212121', borderColor: '#2a2a2a', color: '#ffffff' }}
-              />
-            </div>
-          </div>
-        );
+  const renderHeadingProperties = () => (
+    <div className="space-y-3">
+      <div>
+        <Label className="text-xs" style={{ color: '#d1d5db' }}>Nível do Título</Label>
+        <Select 
+          value={block.content.level?.toString() || '2'} 
+          onValueChange={(value) => onContentUpdate('level', parseInt(value))}
+        >
+          <SelectTrigger className="h-8 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="1">H1 - Principal</SelectItem>
+            <SelectItem value="2">H2 - Seção</SelectItem>
+            <SelectItem value="3">H3 - Subseção</SelectItem>
+            <SelectItem value="4">H4 - Subtítulo</SelectItem>
+            <SelectItem value="5">H5 - Menor</SelectItem>
+            <SelectItem value="6">H6 - Mínimo</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  );
 
-      case 'paragraph':
-        return (
-          <div className="space-y-3">
-            <div className="space-y-2">
-              <Label style={{ color: '#d1d5db' }}>Alinhamento</Label>
-              <Select 
-                value={block.content.alignment || 'left'} 
-                onValueChange={(value) => onContentUpdate('alignment', value)}
-              >
-                <SelectTrigger 
-                  className="h-8"
-                  style={{ backgroundColor: '#212121', borderColor: '#2a2a2a', color: '#ffffff' }}
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}>
-                  <SelectItem value="left">Esquerda</SelectItem>
-                  <SelectItem value="center">Centro</SelectItem>
-                  <SelectItem value="right">Direita</SelectItem>
-                  <SelectItem value="justify">Justificado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label style={{ color: '#d1d5db' }}>Ênfase</Label>
-              <Select 
-                value={block.content.emphasis || 'normal'} 
-                onValueChange={(value) => onContentUpdate('emphasis', value)}
-              >
-                <SelectTrigger 
-                  className="h-8"
-                  style={{ backgroundColor: '#212121', borderColor: '#2a2a2a', color: '#ffffff' }}
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}>
-                  <SelectItem value="normal">Normal</SelectItem>
-                  <SelectItem value="lead">Destaque</SelectItem>
-                  <SelectItem value="small">Pequeno</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        );
+  const renderCalloutProperties = () => (
+    <div className="space-y-3">
+      <div>
+        <Label className="text-xs" style={{ color: '#d1d5db' }}>Tipo de Destaque</Label>
+        <Select 
+          value={block.content.type || 'info'} 
+          onValueChange={(value) => onContentUpdate('type', value)}
+        >
+          <SelectTrigger className="h-8 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="info">Informação</SelectItem>
+            <SelectItem value="warning">Aviso</SelectItem>
+            <SelectItem value="error">Erro</SelectItem>
+            <SelectItem value="success">Sucesso</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label className="text-xs" style={{ color: '#d1d5db' }}>Título</Label>
+        <Input
+          value={block.content.title || ''}
+          onChange={(e) => onContentUpdate('title', e.target.value)}
+          className="h-8 text-xs"
+          placeholder="Título do destaque"
+        />
+      </div>
+    </div>
+  );
 
-      case 'figure':
-        return (
-          <div className="space-y-3">
-            <div className="space-y-2">
-              <Label style={{ color: '#d1d5db' }}>Largura</Label>
-              <Input
-                value={block.content.width || 'auto'}
-                onChange={(e) => onContentUpdate('width', e.target.value)}
-                placeholder="auto, 100%, 500px"
-                className="h-8 text-xs"
-                style={{ backgroundColor: '#212121', borderColor: '#2a2a2a', color: '#ffffff' }}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label style={{ color: '#d1d5db' }}>Alinhamento</Label>
-              <Select 
-                value={block.content.alignment || 'center'} 
-                onValueChange={(value) => onContentUpdate('alignment', value)}
-              >
-                <SelectTrigger 
-                  className="h-8"
-                  style={{ backgroundColor: '#212121', borderColor: '#2a2a2a', color: '#ffffff' }}
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}>
-                  <SelectItem value="left">Esquerda</SelectItem>
-                  <SelectItem value="center">Centro</SelectItem>
-                  <SelectItem value="right">Direita</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        );
+  const renderNumberCardProperties = () => (
+    <div className="space-y-3">
+      <div>
+        <Label className="text-xs" style={{ color: '#d1d5db' }}>Tendência</Label>
+        <Select 
+          value={block.content.trend || 'neutral'} 
+          onValueChange={(value) => onContentUpdate('trend', value)}
+        >
+          <SelectTrigger className="h-8 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="up">Crescimento</SelectItem>
+            <SelectItem value="down">Queda</SelectItem>
+            <SelectItem value="neutral">Neutro</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label className="text-xs" style={{ color: '#d1d5db' }}>Número</Label>
+        <Input
+          value={block.content.number || ''}
+          onChange={(e) => onContentUpdate('number', e.target.value)}
+          className="h-8 text-xs"
+          placeholder="Valor numérico"
+        />
+      </div>
+    </div>
+  );
 
-      case 'callout':
-        return (
-          <div className="space-y-3">
-            <div className="space-y-2">
-              <Label style={{ color: '#d1d5db' }}>Tipo</Label>
-              <Select 
-                value={block.content.type || 'info'} 
-                onValueChange={(value) => onContentUpdate('type', value)}
-              >
-                <SelectTrigger 
-                  className="h-8"
-                  style={{ backgroundColor: '#212121', borderColor: '#2a2a2a', color: '#ffffff' }}
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}>
-                  <SelectItem value="info">Informação</SelectItem>
-                  <SelectItem value="warning">Atenção</SelectItem>
-                  <SelectItem value="success">Sucesso</SelectItem>
-                  <SelectItem value="error">Erro</SelectItem>
-                  <SelectItem value="note">Nota</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        );
+  const renderSnapshotCardProperties = () => (
+    <div className="space-y-3">
+      <div>
+        <Label className="text-xs" style={{ color: '#d1d5db' }}>Nível de Evidência</Label>
+        <Select 
+          value={block.content.evidence_level || 'moderate'} 
+          onValueChange={(value) => onContentUpdate('evidence_level', value)}
+        >
+          <SelectTrigger className="h-8 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="high">Alta</SelectItem>
+            <SelectItem value="moderate">Moderada</SelectItem>
+            <SelectItem value="low">Baixa</SelectItem>
+            <SelectItem value="very_low">Muito Baixa</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label className="text-xs" style={{ color: '#d1d5db' }}>Força da Recomendação</Label>
+        <Select 
+          value={block.content.recommendation_strength || 'weak'} 
+          onValueChange={(value) => onContentUpdate('recommendation_strength', value)}
+        >
+          <SelectTrigger className="h-8 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="strong">Forte</SelectItem>
+            <SelectItem value="weak">Fraca</SelectItem>
+            <SelectItem value="conditional">Condicional</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  );
 
-      case 'number_card':
-        return (
-          <div className="space-y-3">
-            <div className="space-y-2">
-              <Label style={{ color: '#d1d5db' }}>Tendência</Label>
-              <Select 
-                value={block.content.trend || 'neutral'} 
-                onValueChange={(value) => onContentUpdate('trend', value)}
-              >
-                <SelectTrigger 
-                  className="h-8"
-                  style={{ backgroundColor: '#212121', borderColor: '#2a2a2a', color: '#ffffff' }}
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}>
-                  <SelectItem value="neutral">Neutro</SelectItem>
-                  <SelectItem value="up">Subindo</SelectItem>
-                  <SelectItem value="down">Descendo</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {block.content.trend !== 'neutral' && (
-              <div className="space-y-2">
-                <Label style={{ color: '#d1d5db' }}>Porcentagem</Label>
-                <Input
-                  type="number"
-                  value={block.content.percentage || 0}
-                  onChange={(e) => onContentUpdate('percentage', Number(e.target.value))}
-                  className="h-8 text-xs"
-                  style={{ backgroundColor: '#212121', borderColor: '#2a2a2a', color: '#ffffff' }}
-                />
-              </div>
-            )}
-          </div>
-        );
+  const renderPollProperties = () => (
+    <div className="space-y-3">
+      <div>
+        <Label className="text-xs" style={{ color: '#d1d5db' }}>Tipo de Enquete</Label>
+        <Select 
+          value={block.content.poll_type || 'single_choice'} 
+          onValueChange={(value) => onContentUpdate('poll_type', value)}
+        >
+          <SelectTrigger className="h-8 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="single_choice">Escolha Única</SelectItem>
+            <SelectItem value="multiple_choice">Múltipla Escolha</SelectItem>
+            <SelectItem value="rating">Avaliação</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="flex items-center justify-between">
+        <Label className="text-xs" style={{ color: '#d1d5db' }}>Mostrar Resultados</Label>
+        <Switch
+          checked={block.content.show_results || false}
+          onCheckedChange={(checked) => onContentUpdate('show_results', checked)}
+          className="scale-75"
+        />
+      </div>
+    </div>
+  );
 
-      case 'table':
-        return (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={block.content.compact || false}
-                onCheckedChange={(checked) => onContentUpdate('compact', checked)}
-              />
-              <Label style={{ color: '#d1d5db' }}>Compacta</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={block.content.sortable || false}
-                onCheckedChange={(checked) => onContentUpdate('sortable', checked)}
-              />
-              <Label style={{ color: '#d1d5db' }}>Ordenável</Label>
-            </div>
-          </div>
-        );
+  const renderFigureProperties = () => (
+    <div className="space-y-3">
+      <div>
+        <Label className="text-xs" style={{ color: '#d1d5db' }}>URL da Imagem</Label>
+        <Input
+          value={block.content.image_url || ''}
+          onChange={(e) => onContentUpdate('image_url', e.target.value)}
+          className="h-8 text-xs"
+          placeholder="https://exemplo.com/imagem.jpg"
+        />
+      </div>
+      <div>
+        <Label className="text-xs" style={{ color: '#d1d5db' }}>Texto Alternativo</Label>
+        <Input
+          value={block.content.alt_text || ''}
+          onChange={(e) => onContentUpdate('alt_text', e.target.value)}
+          className="h-8 text-xs"
+          placeholder="Descrição da imagem"
+        />
+      </div>
+    </div>
+  );
 
-      case 'poll':
-        return (
-          <div className="space-y-3">
-            <div className="space-y-2">
-              <Label style={{ color: '#d1d5db' }}>Tipo</Label>
-              <Select 
-                value={block.content.poll_type || 'single_choice'} 
-                onValueChange={(value) => onContentUpdate('poll_type', value)}
-              >
-                <SelectTrigger 
-                  className="h-8"
-                  style={{ backgroundColor: '#212121', borderColor: '#2a2a2a', color: '#ffffff' }}
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}>
-                  <SelectItem value="single_choice">Escolha única</SelectItem>
-                  <SelectItem value="multiple_choice">Múltipla escolha</SelectItem>
-                  <SelectItem value="rating">Avaliação</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={block.content.show_results || true}
-                onCheckedChange={(checked) => onContentUpdate('show_results', checked)}
-              />
-              <Label style={{ color: '#d1d5db' }}>Mostrar resultados</Label>
-            </div>
-          </div>
-        );
+  const renderListProperties = () => (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <Label className="text-xs" style={{ color: '#d1d5db' }}>Lista Ordenada</Label>
+        <Switch
+          checked={block.content.ordered || false}
+          onCheckedChange={(checked) => onContentUpdate('ordered', checked)}
+          className="scale-75"
+        />
+      </div>
+    </div>
+  );
 
-      default:
-        return (
-          <p className="text-xs" style={{ color: '#9ca3af' }}>
-            Nenhuma propriedade específica disponível para este tipo de bloco.
-          </p>
-        );
-    }
-  };
+  const renderCodeProperties = () => (
+    <div className="space-y-3">
+      <div>
+        <Label className="text-xs" style={{ color: '#d1d5db' }}>Linguagem</Label>
+        <Select 
+          value={block.content.language || 'javascript'} 
+          onValueChange={(value) => onContentUpdate('language', value)}
+        >
+          <SelectTrigger className="h-8 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="javascript">JavaScript</SelectItem>
+            <SelectItem value="typescript">TypeScript</SelectItem>
+            <SelectItem value="python">Python</SelectItem>
+            <SelectItem value="html">HTML</SelectItem>
+            <SelectItem value="css">CSS</SelectItem>
+            <SelectItem value="sql">SQL</SelectItem>
+            <SelectItem value="bash">Bash</SelectItem>
+            <SelectItem value="json">JSON</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  );
 
-  return renderBlockProperties();
+  switch (block.type) {
+    case 'heading':
+      return renderHeadingProperties();
+    case 'callout':
+      return renderCalloutProperties();
+    case 'number_card':
+      return renderNumberCardProperties();
+    case 'snapshot_card':
+      return renderSnapshotCardProperties();
+    case 'poll':
+      return renderPollProperties();
+    case 'figure':
+      return renderFigureProperties();
+    case 'list':
+      return renderListProperties();
+    case 'code':
+      return renderCodeProperties();
+    default:
+      return (
+        <div className="text-xs" style={{ color: '#6b7280' }}>
+          Nenhuma propriedade específica disponível para este tipo de bloco.
+        </div>
+      );
+  }
 };

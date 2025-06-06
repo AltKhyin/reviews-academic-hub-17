@@ -1,10 +1,11 @@
 
-// ABOUTME: Individual grid panel with fixed drag functionality
+// ABOUTME: Individual grid panel with enhanced inline settings integration
 // Handles block display, empty states, and proper drag-and-drop within grid cells
 
 import React, { useCallback, useRef, useState } from 'react';
 import { ReviewBlock } from '@/types/review';
 import { BlockRenderer } from '@/components/review/BlockRenderer';
+import { InlineBlockSettings } from '@/components/editor/inline/InlineBlockSettings';
 import { Button } from '@/components/ui/button';
 import { Plus, Grip } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -53,6 +54,7 @@ export const GridPanel: React.FC<GridPanelProps> = ({
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const dragHandleRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   const isActive = block && activeBlockId === block.id;
   const isDropTarget = dragState?.dragOverRowId === rowId && 
@@ -64,12 +66,15 @@ export const GridPanel: React.FC<GridPanelProps> = ({
   }, [rowId, position, onAddBlock]);
 
   const handleBlockClick = useCallback((e: React.MouseEvent) => {
-    // Don't trigger if clicking on drag handle
+    // Don't trigger if clicking on drag handle or inline settings
     if (dragHandleRef.current?.contains(e.target as Node)) {
       return;
     }
     
-    if (block && onActiveBlockChange) {
+    const target = e.target as Element;
+    const isInteractiveElement = target.closest('.inline-block-settings, .inline-text-editor-display, .inline-rich-editor-display, input, textarea, button, select');
+    
+    if (!isInteractiveElement && block && onActiveBlockChange) {
       onActiveBlockChange(block.id);
     }
   }, [block, onActiveBlockChange]);
@@ -191,6 +196,7 @@ export const GridPanel: React.FC<GridPanelProps> = ({
 
   return (
     <div 
+      ref={panelRef}
       className={cn(
         "grid-panel-filled h-full relative group cursor-pointer",
         isActive && "ring-2 ring-blue-500",
@@ -214,28 +220,38 @@ export const GridPanel: React.FC<GridPanelProps> = ({
         <div 
           ref={dragHandleRef}
           className={cn(
-            "absolute top-2 right-2 z-30 transition-opacity cursor-grab active:cursor-grabbing",
+            "absolute top-2 left-2 z-30 transition-opacity cursor-grab active:cursor-grabbing",
             "opacity-0 group-hover:opacity-100"
           )}
           draggable="true"
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
-          onMouseDown={(e) => e.stopPropagation()} // Prevent block selection when grabbing handle
+          onMouseDown={(e) => e.stopPropagation()}
         >
           <Button
             variant="ghost"
             size="sm"
             className="w-6 h-6 p-0 bg-gray-800/90 hover:bg-gray-700/90 text-gray-400 hover:text-white border border-gray-600"
-            tabIndex={-1} // Remove from tab order
+            tabIndex={-1}
           >
             <Grip className="w-3 h-3" />
           </Button>
         </div>
       )}
 
+      {/* Inline Settings - Positioned properly within grid cell */}
+      {isActive && !readonly && (
+        <InlineBlockSettings
+          block={block}
+          onUpdate={handleBlockUpdate}
+          containerRef={panelRef}
+          className="absolute top-2 right-2 z-30"
+        />
+      )}
+
       {/* Block Content - CRITICAL: Must allow overflow for inline menus */}
       <div 
-        className="h-full relative z-10" 
+        className="h-full relative z-10 p-2" 
         style={{ overflow: 'visible !important', position: 'relative' }}
       >
         <BlockRenderer

@@ -1,12 +1,13 @@
 
-// ABOUTME: Simplified block content editor with extracted components
-// Main container for block editing with modular controls
+// ABOUTME: Enhanced block content editor with proper inline settings positioning
+// Main container for block editing with improved modular controls integration
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { ReviewBlock, BlockType } from '@/types/review';
 import { BlockRenderer } from '@/components/review/BlockRenderer';
 import { BlockControls } from './BlockControls';
 import { BlockStatusIndicators } from './BlockStatusIndicators';
+import { InlineBlockSettings } from './inline/InlineBlockSettings';
 import { cn } from '@/lib/utils';
 
 interface BlockContentEditorProps {
@@ -37,11 +38,12 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [editMode, setEditMode] = useState(true);
   const [draggedOver, setDraggedOver] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const handleBlockClick = useCallback((e: React.MouseEvent) => {
     // Don't select if clicking on interactive elements
     const target = e.target as Element;
-    const isInteractiveElement = target.closest('.inline-text-editor-display, .inline-rich-editor-display, input, textarea, button, select, .block-controls');
+    const isInteractiveElement = target.closest('.inline-text-editor-display, .inline-rich-editor-display, input, textarea, button, select, .block-controls, .inline-block-settings');
     
     if (!isInteractiveElement) {
       e.stopPropagation();
@@ -115,6 +117,7 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
 
   return (
     <div
+      ref={containerRef}
       className={cn(
         "block-content-editor group relative",
         "border rounded-lg transition-all duration-200",
@@ -149,6 +152,16 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
         onDelete={onDelete}
       />
 
+      {/* Inline Settings - Positioned close to block controls */}
+      {isActive && (
+        <InlineBlockSettings
+          block={block}
+          onUpdate={handleBlockUpdate}
+          containerRef={containerRef}
+          className="absolute"
+        />
+      )}
+
       {/* Block Content */}
       <div className="relative" style={{ overflow: 'visible !important' }}>
         {editMode ? (
@@ -178,7 +191,6 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
         isActive={isActive}
         isVisible={block.visible}
         isDragging={isDragging}
-        draggedOver={draggedOver}
       />
     </div>
   );
