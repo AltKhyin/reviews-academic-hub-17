@@ -1,6 +1,6 @@
 
-// ABOUTME: Refactored native editor with improved component separation
-// Main editor container with better organization and UX
+// ABOUTME: Refactored native editor with consistent dark theme and improved 2D grid integration
+// Main editor container with enhanced organization, UX, and proper color scheme
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { ReviewBlock } from '@/types/review';
@@ -123,7 +123,13 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
   }, [handleKeyboardShortcuts]);
 
   return (
-    <div className={cn("native-editor h-full flex flex-col", className)}>
+    <div 
+      className={cn("native-editor h-full flex flex-col overflow-hidden", className)}
+      style={{ 
+        backgroundColor: '#121212',
+        color: '#ffffff'
+      }}
+    >
       <EditorToolbar
         editorMode={editorMode}
         onModeChange={setEditorMode}
@@ -145,7 +151,10 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
           {(editorMode === 'edit' || editorMode === 'split') && (
             <div 
               className="w-64 border-r overflow-y-auto flex-shrink-0"
-              style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}
+              style={{ 
+                backgroundColor: '#1a1a1a', 
+                borderColor: '#2a2a2a' 
+              }}
             >
               <BlockPalette onBlockAdd={handleAddBlock} />
             </div>
@@ -155,10 +164,13 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
           {(editorMode === 'edit' || editorMode === 'split') && (
             <div 
               className={cn(
-                "flex-1 px-2",
+                "flex-1 px-2 overflow-y-auto",
                 editorMode === 'split' && "border-r"
               )} 
-              style={{ borderColor: '#2a2a2a' }}
+              style={{ 
+                borderColor: '#2a2a2a',
+                backgroundColor: '#121212'
+              }}
             >
               <BlockEditor
                 blocks={blocks}
@@ -179,7 +191,10 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
           
           {/* Preview */}
           {(editorMode === 'preview' || editorMode === 'split') && (
-            <div className="flex-1 px-2">
+            <div 
+              className="flex-1 px-2 overflow-y-auto"
+              style={{ backgroundColor: '#121212' }}
+            >
               <ReviewPreview 
                 blocks={blocks}
                 className="h-full"
