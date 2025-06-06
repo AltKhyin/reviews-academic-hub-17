@@ -1,3 +1,4 @@
+
 // ABOUTME: Enhanced SVG-based diagram canvas with improved text handling and responsive design
 // Supports node manipulation, connections, and fullscreen editing without drag conflicts
 
@@ -41,24 +42,39 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionStart, setConnectionStart] = useState<string | null>(null);
 
+  // Safe canvas access with fallback defaults
+  const canvas = content?.canvas || {
+    width: 800,
+    height: 600,
+    backgroundColor: '#ffffff',
+    gridEnabled: true,
+    gridSize: 20,
+    gridColor: '#e5e7eb',
+    snapToGrid: true
+  };
+
+  // Safe access to nodes and connections with fallbacks
+  const nodes = content?.nodes || [];
+  const connections = content?.connections || [];
+
   // Update viewBox when content canvas changes
   useEffect(() => {
-    if (content.canvas) {
+    if (canvas) {
       setViewBox({
         x: 0,
         y: 0,
-        width: content.canvas.width,
-        height: content.canvas.height
+        width: canvas.width,
+        height: canvas.height
       });
     }
-  }, [content.canvas]);
+  }, [canvas]);
 
   // Auto-fit content to available space in fullscreen
   useEffect(() => {
     if (mode === 'edit' && containerRef.current) {
       const container = containerRef.current;
       const resizeObserver = new ResizeObserver(() => {
-        if (content.nodes.length > 0) {
+        if (nodes.length > 0) {
           fitContentToView();
         }
       });
@@ -66,10 +82,10 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
       resizeObserver.observe(container);
       return () => resizeObserver.disconnect();
     }
-  }, [mode, content.nodes]);
+  }, [mode, nodes]);
 
   const fitContentToView = useCallback(() => {
-    if (!containerRef.current || content.nodes.length === 0) return;
+    if (!containerRef.current || nodes.length === 0) return;
 
     const container = containerRef.current;
     const containerRect = container.getBoundingClientRect();
@@ -77,7 +93,7 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
     // Calculate bounding box of all nodes
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     
-    content.nodes.forEach(node => {
+    nodes.forEach(node => {
       minX = Math.min(minX, node.position.x);
       minY = Math.min(minY, node.position.y);
       maxX = Math.max(maxX, node.position.x + node.size.width);
@@ -112,7 +128,7 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
       width: scaledWidth,
       height: scaledHeight
     });
-  }, [content.nodes]);
+  }, [nodes]);
 
   const getMousePosition = useCallback((event: React.MouseEvent): { x: number; y: number } => {
     if (!canvasRef.current) return { x: 0, y: 0 };
@@ -235,7 +251,7 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
   }, [readonly, selectedNodes, selectedTool, isConnecting, connectionStart, onSelectionChange, onConnectionAdd]);
 
   const handleNodeDuplicate = useCallback((nodeId: string, direction: 'top' | 'right' | 'bottom' | 'left') => {
-    const sourceNode = content.nodes.find(node => node.id === nodeId);
+    const sourceNode = nodes.find(node => node.id === nodeId);
     if (!sourceNode) return;
     
     // Calculate new position based on direction
@@ -287,7 +303,7 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
     setTimeout(() => {
       onConnectionAdd(newConnection);
     }, 100);
-  }, [content.nodes, onNodeUpdate, onConnectionAdd]);
+  }, [nodes, onNodeUpdate, onConnectionAdd]);
 
   // Function to calculate connection points based on node positions and connection points
   const getConnectionPoint = useCallback((node: DiagramNode, point: string) => {
@@ -309,9 +325,9 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
 
   // Render grid
   const renderGrid = () => {
-    if (!content.canvas.gridEnabled) return null;
+    if (!canvas.gridEnabled) return null;
     
-    const { gridSize, gridColor } = content.canvas;
+    const { gridSize, gridColor } = canvas;
     const lines = [];
     
     // Vertical lines
@@ -354,7 +370,7 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
       ref={containerRef}
       className="diagram-canvas w-full h-full relative overflow-hidden"
       style={{ 
-        backgroundColor: content.canvas.backgroundColor || 'transparent',
+        backgroundColor: canvas.backgroundColor || 'transparent',
         cursor: isPanning ? 'grabbing' : selectedTool === 'select' ? 'default' : 'crosshair'
       }}
     >
@@ -375,9 +391,9 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
         {renderGrid()}
         
         {/* Connections */}
-        {content.connections.map(connection => {
-          const sourceNode = content.nodes.find(node => node.id === connection.sourceNodeId);
-          const targetNode = content.nodes.find(node => node.id === connection.targetNodeId);
+        {connections.map(connection => {
+          const sourceNode = nodes.find(node => node.id === connection.sourceNodeId);
+          const targetNode = nodes.find(node => node.id === connection.targetNodeId);
           
           if (!sourceNode || !targetNode) return null;
           
@@ -397,7 +413,7 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
         })}
         
         {/* Nodes */}
-        {content.nodes.map(node => (
+        {nodes.map(node => (
           <DiagramNodeComponent
             key={node.id}
             node={node}
@@ -407,8 +423,8 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
             onDuplicate={(direction) => handleNodeDuplicate(node.id, direction)}
             onDelete={() => onNodeDelete(node.id)}
             readonly={readonly}
-            snapToGrid={content.canvas.snapToGrid}
-            gridSize={content.canvas.gridSize}
+            snapToGrid={canvas.snapToGrid}
+            gridSize={canvas.gridSize}
           />
         ))}
       </svg>
