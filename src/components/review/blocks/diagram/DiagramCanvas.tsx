@@ -45,14 +45,38 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
     currentPosition: { x: number; y: number };
   } | null>(null);
 
+  // Provide default canvas settings if content.canvas is undefined
+  const defaultCanvas = {
+    width: 800,
+    height: 600,
+    backgroundColor: '#ffffff',
+    gridEnabled: true,
+    gridSize: 20,
+    gridColor: '#e5e7eb',
+    snapToGrid: true
+  };
+
+  const canvas = content?.canvas || defaultCanvas;
+  const nodes = content?.nodes || [];
+  const connections = content?.connections || [];
+
   const [viewBox, setViewBox] = useState({
     x: 0,
     y: 0,
-    width: content.canvas.width,
-    height: content.canvas.height
+    width: canvas.width,
+    height: canvas.height
   });
 
   const [zoom, setZoom] = useState(1);
+
+  // Update viewBox when canvas dimensions change
+  useEffect(() => {
+    setViewBox(prev => ({
+      ...prev,
+      width: canvas.width,
+      height: canvas.height
+    }));
+  }, [canvas.width, canvas.height]);
 
   const handleCanvasClick = useCallback((event: React.MouseEvent<SVGSVGElement>) => {
     if (readonly || mode === 'preview') return;
@@ -185,8 +209,8 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
         mode === 'edit' ? "cursor-crosshair" : "cursor-default"
       )}
       style={{ 
-        width: content.canvas.width,
-        height: content.canvas.height,
+        width: canvas.width,
+        height: canvas.height,
         maxWidth: '100%',
         maxHeight: '70vh'
       }}
@@ -196,24 +220,24 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
         width="100%"
         height="100%"
         viewBox={`${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`}
-        style={{ backgroundColor: content.canvas.backgroundColor }}
+        style={{ backgroundColor: canvas.backgroundColor }}
         onClick={handleCanvasClick}
         onMouseMove={handleMouseMove}
         className="w-full h-full"
       >
         {/* Grid */}
-        {content.canvas.gridEnabled && mode === 'edit' && (
+        {canvas.gridEnabled && mode === 'edit' && (
           <DiagramGrid
-            size={content.canvas.gridSize}
-            color={content.canvas.gridColor}
+            size={canvas.gridSize}
+            color={canvas.gridColor}
             viewBox={viewBox}
           />
         )}
 
         {/* Connections */}
-        {content.connections.map(connection => {
-          const sourceNode = content.nodes.find(n => n.id === connection.sourceNodeId);
-          const targetNode = content.nodes.find(n => n.id === connection.targetNodeId);
+        {connections.map(connection => {
+          const sourceNode = nodes.find(n => n.id === connection.sourceNodeId);
+          const targetNode = nodes.find(n => n.id === connection.targetNodeId);
           
           if (!sourceNode || !targetNode) return null;
 
@@ -236,11 +260,11 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
         {pendingConnection && (
           <line
             x1={getNodeConnectionPoint(
-              content.nodes.find(n => n.id === pendingConnection.sourceNodeId)!,
+              nodes.find(n => n.id === pendingConnection.sourceNodeId)!,
               pendingConnection.sourcePoint
             ).x}
             y1={getNodeConnectionPoint(
-              content.nodes.find(n => n.id === pendingConnection.sourceNodeId)!,
+              nodes.find(n => n.id === pendingConnection.sourceNodeId)!,
               pendingConnection.sourcePoint
             ).y}
             x2={pendingConnection.currentPosition.x}
@@ -253,7 +277,7 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
         )}
 
         {/* Nodes */}
-        {content.nodes.map(node => (
+        {nodes.map(node => (
           <DiagramNodeComponent
             key={node.id}
             node={node}
@@ -261,8 +285,8 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
             onUpdate={(updates) => onNodeUpdate(node.id, updates)}
             onClick={(event) => handleNodeClick(node.id, event)}
             readonly={readonly || mode === 'preview'}
-            snapToGrid={content.canvas.snapToGrid}
-            gridSize={content.canvas.gridSize}
+            snapToGrid={canvas.snapToGrid}
+            gridSize={canvas.gridSize}
           />
         ))}
       </svg>
