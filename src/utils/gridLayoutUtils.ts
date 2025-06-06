@@ -73,6 +73,33 @@ export const panelSizesToColumnWidths = (panelSizes: number[]): number[] => {
 };
 
 /**
+ * Generate CSS grid container styles for 1D grids
+ */
+export const generateGridContainerStyles = (
+  columns: number,
+  gap: number = 4,
+  columnWidths?: number[]
+): React.CSSProperties => {
+  let gridTemplateColumns: string;
+  
+  if (columnWidths && columnWidths.length === columns) {
+    // Use specific column widths
+    const normalizedWidths = normalizePercentages(columnWidths);
+    gridTemplateColumns = normalizedWidths.map(width => `${width}%`).join(' ');
+  } else {
+    // Use equal columns
+    gridTemplateColumns = `repeat(${columns}, 1fr)`;
+  }
+  
+  return {
+    display: 'grid',
+    gridTemplateColumns,
+    gap: `${gap}px`,
+    width: '100%'
+  };
+};
+
+/**
  * Validate grid layout percentages
  */
 export const validateGridLayout = (widths: number[]): boolean => {
