@@ -1,8 +1,7 @@
+// ABOUTME: Enhanced diagram node with improved text wrapping and responsive design
+// Handles contextual actions, smart text sizing, and better mobile experience
 
-// ABOUTME: Enhanced diagram node with auto-selection, inline editing, and smart interactions
-// Handles contextual actions, text editing with formatting, and smart positioning
-
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { DiagramNode } from '@/types/review';
 import { Button } from '@/components/ui/button';
 import { Plus, Trash2, Bold, Italic, Type } from 'lucide-react';
@@ -41,6 +40,79 @@ export const DiagramNodeComponent: React.FC<DiagramNodeComponentProps> = ({
     if (!snapToGrid) return value;
     return Math.round(value / gridSize) * gridSize;
   }, [snapToGrid, gridSize]);
+
+  // Enhanced text measurement with word wrapping
+  const measureText = useCallback((text: string, fontSize: number, fontWeight: string, maxWidth?: number) => {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    if (!context) return { width: 100, height: 30 };
+    
+    context.font = `${fontWeight} ${fontSize}px Arial`;
+    const lineHeight = fontSize * 1.3;
+    
+    // Split text into words and lines
+    const words = text.split(/\s+/);
+    const lines: string[] = [];
+    let currentLine = '';
+    
+    // Default max width if not provided
+    const targetMaxWidth = maxWidth || 200;
+    
+    words.forEach(word => {
+      const testLine = currentLine ? `${currentLine} ${word}` : word;
+      const testWidth = context.measureText(testLine).width;
+      
+      if (testWidth <= targetMaxWidth || !currentLine) {
+        currentLine = testLine;
+      } else {
+        if (currentLine) lines.push(currentLine);
+        currentLine = word;
+      }
+    });
+    
+    if (currentLine) lines.push(currentLine);
+    
+    // Handle explicit line breaks
+    const allLines: string[] = [];
+    lines.forEach(line => {
+      if (line.includes('\n')) {
+        allLines.push(...line.split('\n'));
+      } else {
+        allLines.push(line);
+      }
+    });
+    
+    const maxLineWidth = Math.max(...allLines.map(line => context.measureText(line).width));
+    const height = allLines.length * lineHeight;
+    
+    return {
+      width: Math.max(maxLineWidth + 20, 80), // Add padding and minimum width
+      height: Math.max(height + 20, 50),     // Add padding and minimum height
+      lines: allLines
+    };
+  }, []);
+
+  // Auto-resize node when text changes
+  useEffect(() => {
+    if (!node.text) return;
+    
+    // Calculate responsive max width based on viewport
+    const viewportWidth = window.innerWidth;
+    const maxWidth = viewportWidth < 768 ? 120 : viewportWidth < 1024 ? 160 : 200;
+    
+    const { width, height } = measureText(
+      node.text, 
+      node.style.fontSize || 14, 
+      node.style.fontWeight || 'normal',
+      maxWidth
+    );
+    
+    if (Math.abs(width - node.size.width) > 5 || Math.abs(height - node.size.height) > 5) {
+      onUpdate({
+        size: { width, height }
+      });
+    }
+  }, [node.text, node.style.fontSize, node.style.fontWeight, node.size, measureText, onUpdate]);
 
   const handleMouseDown = useCallback((event: React.MouseEvent) => {
     if (readonly || isEditing) return;
@@ -152,6 +224,15 @@ export const DiagramNodeComponent: React.FC<DiagramNodeComponentProps> = ({
     }
   }, [onDelete]);
 
+  // Enhanced hover area detection with responsive padding
+  const hoverPadding = window.innerWidth < 768 ? 20 : 30;
+  const extendedHoverArea = {
+    x: node.position.x - hoverPadding,
+    y: node.position.y - hoverPadding,
+    width: node.size.width + (hoverPadding * 2),
+    height: node.size.height + (hoverPadding * 2)
+  };
+
   // Set up global mouse events for dragging
   React.useEffect(() => {
     if (isDragging) {
@@ -175,7 +256,7 @@ export const DiagramNodeComponent: React.FC<DiagramNodeComponentProps> = ({
   const renderShape = () => {
     const { position, size, style } = node;
     const commonProps = {
-      fill: style.backgroundColor,
+      fill: style.backgroundColor || 'transparent',
       stroke: isSelected ? '#3b82f6' : style.borderColor,
       strokeWidth: isSelected ? 3 : style.borderWidth,
       strokeDasharray: style.borderStyle === 'dashed' ? '5,5' : style.borderStyle === 'dotted' ? '2,2' : 'none',
@@ -273,15 +354,26 @@ export const DiagramNodeComponent: React.FC<DiagramNodeComponentProps> = ({
     }
   };
 
-  const textX = node.position.x + node.size.width / 2;
-  const textY = node.position.y + node.size.height / 2;
+  // Calculate responsive text position and wrapping
+  const textLines = node.text.split('\n');
+  const { lines } = measureText(node.text, node.style.fontSize || 14, node.style.fontWeight || 'normal');
+  const lineHeight = (node.style.fontSize || 14) * 1.3;
+  const textStartY = node.position.y + node.size.height / 2 - (lines.length - 1) * lineHeight / 2;
 
   return (
-    <g 
-      className="diagram-node"
-      onMouseEnter={() => setIsHovering(true)}
-      onMouseLeave={() => setIsHovering(false)}
-    >
+    <g className="diagram-node">
+      {/* Extended hover detection area (invisible) */}
+      <rect
+        x={extendedHoverArea.x}
+        y={extendedHoverArea.y}
+        width={extendedHoverArea.width}
+        height={extendedHoverArea.height}
+        fill="transparent"
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
+        style={{ pointerEvents: readonly ? 'none' : 'all' }}
+      />
+
       {/* Shape */}
       <g
         onMouseDown={handleMouseDown}
@@ -341,17 +433,19 @@ export const DiagramNodeComponent: React.FC<DiagramNodeComponentProps> = ({
                 color: node.style.textColor,
                 fontSize: `${node.style.fontSize}px`,
                 fontWeight: node.style.fontWeight,
-                textAlign: node.style.textAlign
+                textAlign: 'center',
+                lineHeight: '1.3'
               }}
+              placeholder="Digite o texto..."
             />
           </div>
         </foreignObject>
       ) : (
         <text
-          x={textX}
-          y={textY}
+          x={node.position.x + node.size.width / 2}
+          y={textStartY}
           textAnchor="middle"
-          dominantBaseline="middle"
+          dominantBaseline="text-before-edge"
           fill={node.style.textColor}
           fontSize={node.style.fontSize}
           fontWeight={node.style.fontWeight}
@@ -364,11 +458,11 @@ export const DiagramNodeComponent: React.FC<DiagramNodeComponentProps> = ({
             pointerEvents: 'none'
           }}
         >
-          {node.text.split('\n').map((line, index) => (
+          {lines.map((line, index) => (
             <tspan
               key={index}
-              x={textX}
-              dy={index === 0 ? 0 : node.style.fontSize * 1.2}
+              x={node.position.x + node.size.width / 2}
+              dy={index === 0 ? 0 : lineHeight}
             >
               {line}
             </tspan>
@@ -376,59 +470,64 @@ export const DiagramNodeComponent: React.FC<DiagramNodeComponentProps> = ({
         </text>
       )}
 
-      {/* Hover Actions */}
+      {/* Hover Actions with responsive positioning */}
       {isHovering && !readonly && !isEditing && (
         <g className="hover-actions">
-          {/* Duplicate buttons in 4 quadrants */}
+          {/* Duplicate buttons in 4 quadrants - responsive sizing */}
           <g
             className="duplicate-top"
-            transform={`translate(${node.position.x + node.size.width / 2 - 10}, ${node.position.y - 15})`}
+            transform={`translate(${node.position.x + node.size.width / 2 - 8}, ${node.position.y - 20})`}
             onClick={(e) => handleDuplicateClick('top', e)}
             style={{ cursor: 'pointer' }}
           >
-            <circle cx="10" cy="10" r="8" fill="#3b82f6" stroke="#ffffff" strokeWidth="1" />
-            <Plus className="w-4 h-4" x="6" y="6" fill="#ffffff" />
+            <circle cx="8" cy="8" r="8" fill="#3b82f6" stroke="#ffffff" strokeWidth="2" />
+            <line x1="5" y1="8" x2="11" y2="8" stroke="#ffffff" strokeWidth="2" />
+            <line x1="8" y1="5" x2="8" y2="11" stroke="#ffffff" strokeWidth="2" />
           </g>
           
           <g
             className="duplicate-right"
-            transform={`translate(${node.position.x + node.size.width + 5}, ${node.position.y + node.size.height / 2 - 10})`}
+            transform={`translate(${node.position.x + node.size.width + 4}, ${node.position.y + node.size.height / 2 - 8})`}
             onClick={(e) => handleDuplicateClick('right', e)}
             style={{ cursor: 'pointer' }}
           >
-            <circle cx="10" cy="10" r="8" fill="#3b82f6" stroke="#ffffff" strokeWidth="1" />
-            <Plus className="w-4 h-4" x="6" y="6" fill="#ffffff" />
+            <circle cx="8" cy="8" r="8" fill="#3b82f6" stroke="#ffffff" strokeWidth="2" />
+            <line x1="5" y1="8" x2="11" y2="8" stroke="#ffffff" strokeWidth="2" />
+            <line x1="8" y1="5" x2="8" y2="11" stroke="#ffffff" strokeWidth="2" />
           </g>
           
           <g
             className="duplicate-bottom"
-            transform={`translate(${node.position.x + node.size.width / 2 - 10}, ${node.position.y + node.size.height + 5})`}
+            transform={`translate(${node.position.x + node.size.width / 2 - 8}, ${node.position.y + node.size.height + 4})`}
             onClick={(e) => handleDuplicateClick('bottom', e)}
             style={{ cursor: 'pointer' }}
           >
-            <circle cx="10" cy="10" r="8" fill="#3b82f6" stroke="#ffffff" strokeWidth="1" />
-            <Plus className="w-4 h-4" x="6" y="6" fill="#ffffff" />
+            <circle cx="8" cy="8" r="8" fill="#3b82f6" stroke="#ffffff" strokeWidth="2" />
+            <line x1="5" y1="8" x2="11" y2="8" stroke="#ffffff" strokeWidth="2" />
+            <line x1="8" y1="5" x2="8" y2="11" stroke="#ffffff" strokeWidth="2" />
           </g>
           
           <g
             className="duplicate-left"
-            transform={`translate(${node.position.x - 25}, ${node.position.y + node.size.height / 2 - 10})`}
+            transform={`translate(${node.position.x - 20}, ${node.position.y + node.size.height / 2 - 8})`}
             onClick={(e) => handleDuplicateClick('left', e)}
             style={{ cursor: 'pointer' }}
           >
-            <circle cx="10" cy="10" r="8" fill="#3b82f6" stroke="#ffffff" strokeWidth="1" />
-            <Plus className="w-4 h-4" x="6" y="6" fill="#ffffff" />
+            <circle cx="8" cy="8" r="8" fill="#3b82f6" stroke="#ffffff" strokeWidth="2" />
+            <line x1="5" y1="8" x2="11" y2="8" stroke="#ffffff" strokeWidth="2" />
+            <line x1="8" y1="5" x2="8" y2="11" stroke="#ffffff" strokeWidth="2" />
           </g>
 
           {/* Delete button */}
           <g
             className="delete-button"
-            transform={`translate(${node.position.x + node.size.width - 10}, ${node.position.y - 10})`}
+            transform={`translate(${node.position.x + node.size.width - 8}, ${node.position.y - 8})`}
             onClick={handleDeleteClick}
             style={{ cursor: 'pointer' }}
           >
-            <circle cx="10" cy="10" r="8" fill="#dc2626" stroke="#ffffff" strokeWidth="1" />
-            <Trash2 className="w-4 h-4" x="6" y="6" fill="#ffffff" />
+            <circle cx="8" cy="8" r="8" fill="#dc2626" stroke="#ffffff" strokeWidth="2" />
+            <line x1="5" y1="5" x2="11" y2="11" stroke="#ffffff" strokeWidth="2" />
+            <line x1="11" y1="5" x2="5" y2="11" stroke="#ffffff" strokeWidth="2" />
           </g>
         </g>
       )}

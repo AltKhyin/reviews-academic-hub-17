@@ -1,15 +1,17 @@
 
 // ABOUTME: Comprehensive toolbar for diagram creation with shape tools and styling options
-// Provides access to node types, styling, canvas settings, and advanced features
+// Provides access to node types, styling, canvas settings, and template library
 
 import React from 'react';
 import { DiagramContent, DiagramNode } from '@/types/review';
+import { diagramTemplates } from './templates';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ColorPicker } from '@/components/ui/color-picker';
+import { Card } from '@/components/ui/card';
 import { 
   MousePointer2,
   Square,
@@ -23,10 +25,8 @@ import {
   Palette,
   Grid3X3,
   Settings,
-  Undo,
-  Redo,
-  Copy,
-  Trash2
+  FileText,
+  Monitor
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -37,6 +37,7 @@ interface DiagramToolbarProps {
   onCanvasUpdate: (updates: Partial<DiagramContent['canvas']>) => void;
   selectedNodes: string[];
   onNodesUpdate: (nodes: DiagramNode[]) => void;
+  onTemplateApply?: (templateNodes: DiagramNode[], templateConnections: any[]) => void;
 }
 
 export const DiagramToolbar: React.FC<DiagramToolbarProps> = ({
@@ -45,13 +46,14 @@ export const DiagramToolbar: React.FC<DiagramToolbarProps> = ({
   canvas,
   onCanvasUpdate,
   selectedNodes,
-  onNodesUpdate
+  onNodesUpdate,
+  onTemplateApply
 }) => {
   // Provide default canvas values if canvas is undefined
   const defaultCanvas = {
     width: 800,
     height: 600,
-    backgroundColor: '#ffffff',
+    backgroundColor: 'transparent',
     gridEnabled: true,
     gridSize: 20,
     gridColor: '#e5e7eb',
@@ -73,12 +75,18 @@ export const DiagramToolbar: React.FC<DiagramToolbarProps> = ({
   ];
 
   const shapeCategoryColors = {
-    'process': '#3b82f6',      // Blue - for process steps
-    'decision': '#f59e0b',     // Orange - for decision points
-    'start-end': '#10b981',    // Green - for start/end points
-    'data': '#8b5cf6',         // Purple - for data/input
-    'delay': '#ef4444',        // Red - for delays/problems
-    'custom': '#6b7280'        // Gray - for custom elements
+    'process': '#3b82f6',
+    'decision': '#f59e0b',
+    'start-end': '#10b981',
+    'data': '#8b5cf6',
+    'delay': '#ef4444',
+    'custom': '#6b7280'
+  };
+
+  const handleTemplateSelect = (template: any) => {
+    if (onTemplateApply) {
+      onTemplateApply(template.nodes, template.connections);
+    }
   };
 
   return (
@@ -168,134 +176,278 @@ export const DiagramToolbar: React.FC<DiagramToolbarProps> = ({
         </TabsContent>
 
         <TabsContent value="style" className="space-y-4 p-4">
-          {selectedNodes.length > 0 ? (
-            <div className="space-y-4">
+          <div className="space-y-4">
+            {/* Dashboard Background Color */}
+            <div className="space-y-3">
               <Label className="text-sm font-medium" style={{ color: '#ffffff' }}>
-                Estilizar {selectedNodes.length} elemento(s) selecionado(s)
+                <Monitor className="w-4 h-4 inline mr-2" />
+                Cores do Dashboard
               </Label>
               
-              {/* Quick Style Presets */}
-              <div className="grid grid-cols-3 gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    // Apply process style
-                    const updates = selectedNodes.map(nodeId => ({
-                      id: nodeId,
-                      style: {
-                        backgroundColor: '#3b82f6',
-                        borderColor: '#1d4ed8',
-                        textColor: '#ffffff',
-                        borderWidth: 2,
-                        borderStyle: 'solid' as const,
-                        fontSize: 14,
-                        fontWeight: 'normal' as const,
-                        textAlign: 'center' as const,
-                        opacity: 1
-                      }
-                    }));
-                    onNodesUpdate(updates as DiagramNode[]);
-                  }}
-                  className="text-xs"
-                >
-                  Processo
-                </Button>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs" style={{ color: '#d1d5db' }}>Cor de Fundo</Label>
+                  <ColorPicker
+                    value={safeCanvas.backgroundColor}
+                    onChange={(color) => onCanvasUpdate({ backgroundColor: color })}
+                  />
+                </div>
                 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    // Apply decision style
-                    const updates = selectedNodes.map(nodeId => ({
-                      id: nodeId,
-                      style: {
-                        backgroundColor: '#f59e0b',
-                        borderColor: '#d97706',
-                        textColor: '#ffffff',
-                        borderWidth: 2,
-                        borderStyle: 'solid' as const,
-                        fontSize: 14,
-                        fontWeight: 'bold' as const,
-                        textAlign: 'center' as const,
-                        opacity: 1
-                      }
-                    }));
-                    onNodesUpdate(updates as DiagramNode[]);
-                  }}
-                  className="text-xs"
-                >
-                  Decisão
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    // Apply highlight style
-                    const updates = selectedNodes.map(nodeId => ({
-                      id: nodeId,
-                      style: {
-                        backgroundColor: '#10b981',
-                        borderColor: '#059669',
-                        textColor: '#ffffff',
-                        borderWidth: 3,
-                        borderStyle: 'solid' as const,
-                        fontSize: 16,
-                        fontWeight: 'bold' as const,
-                        textAlign: 'center' as const,
-                        opacity: 1
-                      }
-                    }));
-                    onNodesUpdate(updates as DiagramNode[]);
-                  }}
-                  className="text-xs"
-                >
-                  Destaque
-                </Button>
-              </div>
-
-              <Separator style={{ backgroundColor: '#2a2a2a' }} />
-
-              {/* Manual Color Controls */}
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label className="text-xs" style={{ color: '#d1d5db' }}>Cor de Fundo</Label>
-                    <ColorPicker
-                      value="#3b82f6"
-                      onChange={(color) => {
-                        const updates = selectedNodes.map(nodeId => ({
-                          id: nodeId,
-                          style: { backgroundColor: color }
-                        }));
-                        onNodesUpdate(updates as DiagramNode[]);
-                      }}
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label className="text-xs" style={{ color: '#d1d5db' }}>Cor do Texto</Label>
-                    <ColorPicker
-                      value="#ffffff"
-                      onChange={(color) => {
-                        const updates = selectedNodes.map(nodeId => ({
-                          id: nodeId,
-                          style: { textColor: color }
-                        }));
-                        onNodesUpdate(updates as DiagramNode[]);
-                      }}
-                    />
-                  </div>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs" style={{ color: '#d1d5db' }}>Cor da Grade</Label>
+                  <ColorPicker
+                    value={safeCanvas.gridColor}
+                    onChange={(color) => onCanvasUpdate({ gridColor: color })}
+                  />
                 </div>
               </div>
             </div>
-          ) : (
-            <div className="text-center text-gray-400 py-8">
-              <Palette className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">Selecione elementos para estilizar</p>
+
+            <Separator style={{ backgroundColor: '#2a2a2a' }} />
+
+            {/* Node Styling */}
+            {selectedNodes.length > 0 ? (
+              <div className="space-y-4">
+                <Label className="text-sm font-medium" style={{ color: '#ffffff' }}>
+                  <Palette className="w-4 h-4 inline mr-2" />
+                  Estilizar {selectedNodes.length} elemento(s) selecionado(s)
+                </Label>
+                
+                {/* Quick Style Presets */}
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const updates = selectedNodes.map(nodeId => ({
+                        id: nodeId,
+                        style: {
+                          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                          borderColor: '#3b82f6',
+                          textColor: '#1e40af',
+                          borderWidth: 2,
+                          borderStyle: 'solid' as const,
+                          fontSize: 14,
+                          fontWeight: 'normal' as const,
+                          textAlign: 'center' as const,
+                          opacity: 1
+                        }
+                      }));
+                      onNodesUpdate(updates as DiagramNode[]);
+                    }}
+                    className="text-xs"
+                  >
+                    Processo
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const updates = selectedNodes.map(nodeId => ({
+                        id: nodeId,
+                        style: {
+                          backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                          borderColor: '#f59e0b',
+                          textColor: '#d97706',
+                          borderWidth: 2,
+                          borderStyle: 'solid' as const,
+                          fontSize: 14,
+                          fontWeight: 'bold' as const,
+                          textAlign: 'center' as const,
+                          opacity: 1
+                        }
+                      }));
+                      onNodesUpdate(updates as DiagramNode[]);
+                    }}
+                    className="text-xs"
+                  >
+                    Decisão
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const updates = selectedNodes.map(nodeId => ({
+                        id: nodeId,
+                        style: {
+                          backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                          borderColor: '#22c55e',
+                          textColor: '#16a34a',
+                          borderWidth: 3,
+                          borderStyle: 'solid' as const,
+                          fontSize: 16,
+                          fontWeight: 'bold' as const,
+                          textAlign: 'center' as const,
+                          opacity: 1
+                        }
+                      }));
+                      onNodesUpdate(updates as DiagramNode[]);
+                    }}
+                    className="text-xs"
+                  >
+                    Destaque
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const updates = selectedNodes.map(nodeId => ({
+                        id: nodeId,
+                        style: {
+                          backgroundColor: 'transparent',
+                          borderColor: '#6b7280',
+                          textColor: '#374151',
+                          borderWidth: 1,
+                          borderStyle: 'solid' as const,
+                          fontSize: 12,
+                          fontWeight: 'normal' as const,
+                          textAlign: 'center' as const,
+                          opacity: 0.8
+                        }
+                      }));
+                      onNodesUpdate(updates as DiagramNode[]);
+                    }}
+                    className="text-xs"
+                  >
+                    Sutil
+                  </Button>
+                </div>
+
+                <Separator style={{ backgroundColor: '#2a2a2a' }} />
+
+                {/* Manual Color Controls */}
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs" style={{ color: '#d1d5db' }}>Cor de Fundo</Label>
+                      <ColorPicker
+                        value="#3b82f6"
+                        onChange={(color) => {
+                          const updates = selectedNodes.map(nodeId => ({
+                            id: nodeId,
+                            style: { backgroundColor: color }
+                          }));
+                          onNodesUpdate(updates as DiagramNode[]);
+                        }}
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label className="text-xs" style={{ color: '#d1d5db' }}>Cor do Texto</Label>
+                      <ColorPicker
+                        value="#ffffff"
+                        onChange={(color) => {
+                          const updates = selectedNodes.map(nodeId => ({
+                            id: nodeId,
+                            style: { textColor: color }
+                          }));
+                          onNodesUpdate(updates as DiagramNode[]);
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs" style={{ color: '#d1d5db' }}>Cor da Borda</Label>
+                      <ColorPicker
+                        value="#3b82f6"
+                        onChange={(color) => {
+                          const updates = selectedNodes.map(nodeId => ({
+                            id: nodeId,
+                            style: { borderColor: color }
+                          }));
+                          onNodesUpdate(updates as DiagramNode[]);
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <Label className="text-xs" style={{ color: '#d1d5db' }}>Espessura da Borda</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="10"
+                        defaultValue="2"
+                        className="h-8"
+                        onChange={(e) => {
+                          const updates = selectedNodes.map(nodeId => ({
+                            id: nodeId,
+                            style: { borderWidth: Number(e.target.value) }
+                          }));
+                          onNodesUpdate(updates as DiagramNode[]);
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center text-gray-400 py-8">
+                <Palette className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Selecione elementos para estilizar</p>
+              </div>
+            )}
+
+            <Separator style={{ backgroundColor: '#2a2a2a' }} />
+
+            {/* Global Style Presets */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium" style={{ color: '#ffffff' }}>
+                Temas Predefinidos
+              </Label>
+              
+              <div className="grid grid-cols-1 gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    onCanvasUpdate({
+                      backgroundColor: '#ffffff',
+                      gridColor: '#e5e7eb'
+                    });
+                  }}
+                  className="justify-start"
+                >
+                  <div className="w-4 h-4 mr-2 bg-white border rounded" />
+                  Tema Claro
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    onCanvasUpdate({
+                      backgroundColor: '#1f2937',
+                      gridColor: '#374151'
+                    });
+                  }}
+                  className="justify-start"
+                >
+                  <div className="w-4 h-4 mr-2 bg-gray-800 border rounded" />
+                  Tema Escuro
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    onCanvasUpdate({
+                      backgroundColor: 'transparent',
+                      gridColor: '#e5e7eb'
+                    });
+                  }}
+                  className="justify-start"
+                >
+                  <div className="w-4 h-4 mr-2 bg-transparent border-2 border-dashed rounded" />
+                  Transparente
+                </Button>
+              </div>
             </div>
-          )}
+          </div>
         </TabsContent>
 
         <TabsContent value="canvas" className="space-y-4 p-4">
@@ -328,15 +480,6 @@ export const DiagramToolbar: React.FC<DiagramToolbarProps> = ({
                   max="1500"
                 />
               </div>
-            </div>
-
-            {/* Background Color */}
-            <div>
-              <Label className="text-xs" style={{ color: '#d1d5db' }}>Cor de Fundo</Label>
-              <ColorPicker
-                value={safeCanvas.backgroundColor}
-                onChange={(color) => onCanvasUpdate({ backgroundColor: color })}
-              />
             </div>
 
             <Separator style={{ backgroundColor: '#2a2a2a' }} />
@@ -386,10 +529,39 @@ export const DiagramToolbar: React.FC<DiagramToolbarProps> = ({
         </TabsContent>
 
         <TabsContent value="templates" className="space-y-4 p-4">
-          <div className="text-center text-gray-400 py-8">
-            <Settings className="w-8 h-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">Modelos serão implementados</p>
-            <p className="text-xs">Flowcharts, árvores de decisão, etc.</p>
+          <div className="space-y-4">
+            <Label className="text-sm font-medium" style={{ color: '#ffffff' }}>
+              <FileText className="w-4 h-4 inline mr-2" />
+              Modelos de Diagrama
+            </Label>
+            
+            <div className="grid grid-cols-1 gap-3">
+              {diagramTemplates.map((template) => (
+                <Card
+                  key={template.id}
+                  className="p-3 cursor-pointer hover:bg-gray-700 transition-colors"
+                  style={{ backgroundColor: '#2a2a2a', borderColor: '#374151' }}
+                  onClick={() => handleTemplateSelect(template)}
+                >
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-medium text-white">
+                      {template.name}
+                    </h4>
+                    <p className="text-xs text-gray-400 leading-relaxed">
+                      {template.description}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-blue-400 capitalize">
+                        {template.category.replace('-', ' ')}
+                      </span>
+                      <Button size="sm" variant="ghost" className="h-6 text-xs">
+                        Aplicar
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
           </div>
         </TabsContent>
       </Tabs>
