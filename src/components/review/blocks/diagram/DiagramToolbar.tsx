@@ -47,6 +47,19 @@ export const DiagramToolbar: React.FC<DiagramToolbarProps> = ({
   selectedNodes,
   onNodesUpdate
 }) => {
+  // Provide default canvas values if canvas is undefined
+  const defaultCanvas = {
+    width: 800,
+    height: 600,
+    backgroundColor: '#ffffff',
+    gridEnabled: true,
+    gridSize: 20,
+    gridColor: '#e5e7eb',
+    snapToGrid: true
+  };
+  
+  const safeCanvas = canvas || defaultCanvas;
+
   const tools = [
     { id: 'select', icon: MousePointer2, label: 'Selecionar' },
     { id: 'rectangle', icon: Square, label: 'Retângulo' },
@@ -297,7 +310,7 @@ export const DiagramToolbar: React.FC<DiagramToolbarProps> = ({
                 <Label className="text-xs" style={{ color: '#d1d5db' }}>Largura</Label>
                 <Input
                   type="number"
-                  value={canvas.width}
+                  value={safeCanvas.width}
                   onChange={(e) => onCanvasUpdate({ width: Number(e.target.value) })}
                   className="h-8"
                   min="400"
@@ -308,7 +321,7 @@ export const DiagramToolbar: React.FC<DiagramToolbarProps> = ({
                 <Label className="text-xs" style={{ color: '#d1d5db' }}>Altura</Label>
                 <Input
                   type="number"
-                  value={canvas.height}
+                  value={safeCanvas.height}
                   onChange={(e) => onCanvasUpdate({ height: Number(e.target.value) })}
                   className="h-8"
                   min="300"
@@ -321,7 +334,7 @@ export const DiagramToolbar: React.FC<DiagramToolbarProps> = ({
             <div>
               <Label className="text-xs" style={{ color: '#d1d5db' }}>Cor de Fundo</Label>
               <ColorPicker
-                value={canvas.backgroundColor}
+                value={safeCanvas.backgroundColor}
                 onChange={(color) => onCanvasUpdate({ backgroundColor: color })}
               />
             </div>
@@ -335,20 +348,20 @@ export const DiagramToolbar: React.FC<DiagramToolbarProps> = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => onCanvasUpdate({ gridEnabled: !canvas.gridEnabled })}
-                  className={canvas.gridEnabled ? 'text-blue-400' : 'text-gray-400'}
+                  onClick={() => onCanvasUpdate({ gridEnabled: !safeCanvas.gridEnabled })}
+                  className={safeCanvas.gridEnabled ? 'text-blue-400' : 'text-gray-400'}
                 >
                   <Grid3X3 className="w-4 h-4" />
                 </Button>
               </div>
               
-              {canvas.gridEnabled && (
+              {safeCanvas.gridEnabled && (
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label className="text-xs" style={{ color: '#d1d5db' }}>Tamanho</Label>
                     <Input
                       type="number"
-                      value={canvas.gridSize}
+                      value={safeCanvas.gridSize}
                       onChange={(e) => onCanvasUpdate({ gridSize: Number(e.target.value) })}
                       className="h-8"
                       min="10"
@@ -360,10 +373,10 @@ export const DiagramToolbar: React.FC<DiagramToolbarProps> = ({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => onCanvasUpdate({ snapToGrid: !canvas.snapToGrid })}
-                      className={canvas.snapToGrid ? 'text-blue-400' : 'text-gray-400'}
+                      onClick={() => onCanvasUpdate({ snapToGrid: !safeCanvas.snapToGrid })}
+                      className={safeCanvas.snapToGrid ? 'text-blue-400' : 'text-gray-400'}
                     >
-                      {canvas.snapToGrid ? 'Ativo' : 'Inativo'}
+                      {safeCanvas.snapToGrid ? 'Ativo' : 'Inativo'}
                     </Button>
                   </div>
                 </div>
