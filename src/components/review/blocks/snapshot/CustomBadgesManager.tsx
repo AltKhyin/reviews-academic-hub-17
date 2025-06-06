@@ -80,6 +80,7 @@ export const CustomBadgesManager: React.FC<CustomBadgesManagerProps> = ({
               <div>
                 <label className="text-xs text-gray-400 block mb-1">Cor do Texto</label>
                 <InlineColorPicker
+                  label="Texto"
                   value={badge.color}
                   onChange={(color) => updateBadge(badge.id, { color })}
                   readonly={readonly}
@@ -89,6 +90,7 @@ export const CustomBadgesManager: React.FC<CustomBadgesManagerProps> = ({
               <div>
                 <label className="text-xs text-gray-400 block mb-1">Cor de Fundo</label>
                 <InlineColorPicker
+                  label="Fundo"
                   value={badge.background_color}
                   onChange={(background_color) => updateBadge(badge.id, { background_color })}
                   readonly={readonly}

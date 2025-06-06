@@ -126,6 +126,7 @@ export const FindingSectionsManager: React.FC<FindingSectionsManagerProps> = ({
                   />
                   {!readonly && (
                     <InlineColorPicker
+                      label="Cor"
                       value={item.color}
                       onChange={(color) => updateItem(section.id, item.id, { color })}
                       readonly={readonly}
