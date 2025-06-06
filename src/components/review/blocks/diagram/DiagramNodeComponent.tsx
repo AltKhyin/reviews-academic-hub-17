@@ -1,9 +1,11 @@
 
-// ABOUTME: Individual diagram node component with shape rendering and interaction
-// Handles different node types, styling, text editing, and drag operations
+// ABOUTME: Enhanced diagram node with auto-selection, inline editing, and smart interactions
+// Handles contextual actions, text editing with formatting, and smart positioning
 
 import React, { useState, useRef, useCallback } from 'react';
 import { DiagramNode } from '@/types/review';
+import { Button } from '@/components/ui/button';
+import { Plus, Trash2, Bold, Italic, Type } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface DiagramNodeComponentProps {
@@ -11,6 +13,8 @@ interface DiagramNodeComponentProps {
   isSelected: boolean;
   onUpdate: (updates: Partial<DiagramNode>) => void;
   onClick: (event: React.MouseEvent) => void;
+  onDuplicate?: (direction: 'top' | 'right' | 'bottom' | 'left') => void;
+  onDelete?: () => void;
   readonly?: boolean;
   snapToGrid?: boolean;
   gridSize?: number;
@@ -21,11 +25,14 @@ export const DiagramNodeComponent: React.FC<DiagramNodeComponentProps> = ({
   isSelected,
   onUpdate,
   onClick,
+  onDuplicate,
+  onDelete,
   readonly = false,
   snapToGrid = true,
   gridSize = 20
 }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [isHovering, setIsHovering] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<{ x: number; y: number; nodeX: number; nodeY: number } | null>(null);
   const textRef = useRef<HTMLTextAreaElement>(null);
@@ -40,6 +47,9 @@ export const DiagramNodeComponent: React.FC<DiagramNodeComponentProps> = ({
     
     event.stopPropagation();
     
+    // Auto-select regardless of current tool
+    onClick(event);
+    
     const rect = event.currentTarget.getBoundingClientRect();
     const svgRect = event.currentTarget.closest('svg')?.getBoundingClientRect();
     if (!svgRect) return;
@@ -51,8 +61,6 @@ export const DiagramNodeComponent: React.FC<DiagramNodeComponentProps> = ({
       nodeX: node.position.x,
       nodeY: node.position.y
     });
-
-    onClick(event);
   }, [readonly, isEditing, node.position, onClick]);
 
   const handleMouseMove = useCallback((event: MouseEvent) => {
@@ -73,6 +81,18 @@ export const DiagramNodeComponent: React.FC<DiagramNodeComponentProps> = ({
     setIsDragging(false);
     setDragStart(null);
   }, []);
+
+  const handleClick = useCallback((event: React.MouseEvent) => {
+    if (readonly) return;
+    
+    event.stopPropagation();
+    
+    // Auto-select on click
+    onClick(event);
+    
+    // Start editing on click
+    setIsEditing(true);
+  }, [readonly, onClick]);
 
   const handleDoubleClick = useCallback((event: React.MouseEvent) => {
     if (readonly) return;
@@ -98,6 +118,40 @@ export const DiagramNodeComponent: React.FC<DiagramNodeComponentProps> = ({
     }
   }, [handleTextSubmit]);
 
+  const handleFontSizeChange = useCallback((delta: number) => {
+    const newSize = Math.max(8, Math.min(32, (node.style.fontSize || 14) + delta));
+    onUpdate({
+      style: {
+        ...node.style,
+        fontSize: newSize
+      }
+    });
+  }, [node.style, onUpdate]);
+
+  const handleFontWeightToggle = useCallback(() => {
+    const newWeight = node.style.fontWeight === 'bold' ? 'normal' : 'bold';
+    onUpdate({
+      style: {
+        ...node.style,
+        fontWeight: newWeight
+      }
+    });
+  }, [node.style, onUpdate]);
+
+  const handleDuplicateClick = useCallback((direction: 'top' | 'right' | 'bottom' | 'left', event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (onDuplicate) {
+      onDuplicate(direction);
+    }
+  }, [onDuplicate]);
+
+  const handleDeleteClick = useCallback((event: React.MouseEvent) => {
+    event.stopPropagation();
+    if (onDelete) {
+      onDelete();
+    }
+  }, [onDelete]);
+
   // Set up global mouse events for dragging
   React.useEffect(() => {
     if (isDragging) {
@@ -122,8 +176,8 @@ export const DiagramNodeComponent: React.FC<DiagramNodeComponentProps> = ({
     const { position, size, style } = node;
     const commonProps = {
       fill: style.backgroundColor,
-      stroke: style.borderColor,
-      strokeWidth: style.borderWidth,
+      stroke: isSelected ? '#3b82f6' : style.borderColor,
+      strokeWidth: isSelected ? 3 : style.borderWidth,
       strokeDasharray: style.borderStyle === 'dashed' ? '5,5' : style.borderStyle === 'dotted' ? '2,2' : 'none',
       opacity: style.opacity
     };
@@ -178,8 +232,6 @@ export const DiagramNodeComponent: React.FC<DiagramNodeComponentProps> = ({
       case 'diamond':
         const centerX = position.x + size.width / 2;
         const centerY = position.y + size.height / 2;
-        const halfWidth = size.width / 2;
-        const halfHeight = size.height / 2;
         
         return (
           <polygon
@@ -199,9 +251,7 @@ export const DiagramNodeComponent: React.FC<DiagramNodeComponentProps> = ({
       case 'hexagon':
         const hexCenterX = position.x + size.width / 2;
         const hexCenterY = position.y + size.height / 2;
-        const hexWidth = size.width / 2;
-        const hexHeight = size.height / 2;
-        const hexOffset = hexWidth * 0.3;
+        const hexOffset = size.width * 0.3;
         
         return (
           <polygon
@@ -227,10 +277,15 @@ export const DiagramNodeComponent: React.FC<DiagramNodeComponentProps> = ({
   const textY = node.position.y + node.size.height / 2;
 
   return (
-    <g className="diagram-node">
+    <g 
+      className="diagram-node"
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
+    >
       {/* Shape */}
       <g
         onMouseDown={handleMouseDown}
+        onClick={handleClick}
         onDoubleClick={handleDoubleClick}
         style={{ cursor: readonly ? 'default' : 'pointer' }}
       >
@@ -245,20 +300,51 @@ export const DiagramNodeComponent: React.FC<DiagramNodeComponentProps> = ({
           width={node.size.width}
           height={node.size.height}
         >
-          <textarea
-            ref={textRef}
-            value={node.text}
-            onChange={(e) => handleTextChange(e.target.value)}
-            onBlur={handleTextSubmit}
-            onKeyDown={handleKeyDown}
-            className="w-full h-full p-2 text-center bg-transparent border-none outline-none resize-none"
-            style={{
-              color: node.style.textColor,
-              fontSize: `${node.style.fontSize}px`,
-              fontWeight: node.style.fontWeight,
-              textAlign: node.style.textAlign
-            }}
-          />
+          <div className="w-full h-full flex flex-col">
+            {/* Text Formatting Toolbar */}
+            <div className="flex items-center gap-1 p-1 bg-gray-800 border border-gray-600 rounded-t mb-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => handleFontSizeChange(-2)}
+                className="h-6 w-6 p-0 text-xs"
+              >
+                -
+              </Button>
+              <span className="text-xs text-white px-1">{node.style.fontSize}px</span>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => handleFontSizeChange(2)}
+                className="h-6 w-6 p-0 text-xs"
+              >
+                +
+              </Button>
+              <Button
+                size="sm"
+                variant={node.style.fontWeight === 'bold' ? 'default' : 'ghost'}
+                onClick={handleFontWeightToggle}
+                className="h-6 w-6 p-0"
+              >
+                <Bold className="w-3 h-3" />
+              </Button>
+            </div>
+            
+            <textarea
+              ref={textRef}
+              value={node.text}
+              onChange={(e) => handleTextChange(e.target.value)}
+              onBlur={handleTextSubmit}
+              onKeyDown={handleKeyDown}
+              className="flex-1 p-2 text-center bg-transparent border border-gray-400 rounded-b outline-none resize-none"
+              style={{
+                color: node.style.textColor,
+                fontSize: `${node.style.fontSize}px`,
+                fontWeight: node.style.fontWeight,
+                textAlign: node.style.textAlign
+              }}
+            />
+          </div>
         </foreignObject>
       ) : (
         <text
@@ -270,6 +356,7 @@ export const DiagramNodeComponent: React.FC<DiagramNodeComponentProps> = ({
           fontSize={node.style.fontSize}
           fontWeight={node.style.fontWeight}
           onMouseDown={handleMouseDown}
+          onClick={handleClick}
           onDoubleClick={handleDoubleClick}
           style={{ 
             cursor: readonly ? 'default' : 'pointer',
@@ -289,46 +376,60 @@ export const DiagramNodeComponent: React.FC<DiagramNodeComponentProps> = ({
         </text>
       )}
 
-      {/* Selection Indicator */}
-      {isSelected && !readonly && (
-        <rect
-          x={node.position.x - 2}
-          y={node.position.y - 2}
-          width={node.size.width + 4}
-          height={node.size.height + 4}
-          fill="none"
-          stroke="#3b82f6"
-          strokeWidth="2"
-          strokeDasharray="4,4"
-          opacity="0.8"
-        />
-      )}
+      {/* Hover Actions */}
+      {isHovering && !readonly && !isEditing && (
+        <g className="hover-actions">
+          {/* Duplicate buttons in 4 quadrants */}
+          <g
+            className="duplicate-top"
+            transform={`translate(${node.position.x + node.size.width / 2 - 10}, ${node.position.y - 15})`}
+            onClick={(e) => handleDuplicateClick('top', e)}
+            style={{ cursor: 'pointer' }}
+          >
+            <circle cx="10" cy="10" r="8" fill="#3b82f6" stroke="#ffffff" strokeWidth="1" />
+            <Plus className="w-4 h-4" x="6" y="6" fill="#ffffff" />
+          </g>
+          
+          <g
+            className="duplicate-right"
+            transform={`translate(${node.position.x + node.size.width + 5}, ${node.position.y + node.size.height / 2 - 10})`}
+            onClick={(e) => handleDuplicateClick('right', e)}
+            style={{ cursor: 'pointer' }}
+          >
+            <circle cx="10" cy="10" r="8" fill="#3b82f6" stroke="#ffffff" strokeWidth="1" />
+            <Plus className="w-4 h-4" x="6" y="6" fill="#ffffff" />
+          </g>
+          
+          <g
+            className="duplicate-bottom"
+            transform={`translate(${node.position.x + node.size.width / 2 - 10}, ${node.position.y + node.size.height + 5})`}
+            onClick={(e) => handleDuplicateClick('bottom', e)}
+            style={{ cursor: 'pointer' }}
+          >
+            <circle cx="10" cy="10" r="8" fill="#3b82f6" stroke="#ffffff" strokeWidth="1" />
+            <Plus className="w-4 h-4" x="6" y="6" fill="#ffffff" />
+          </g>
+          
+          <g
+            className="duplicate-left"
+            transform={`translate(${node.position.x - 25}, ${node.position.y + node.size.height / 2 - 10})`}
+            onClick={(e) => handleDuplicateClick('left', e)}
+            style={{ cursor: 'pointer' }}
+          >
+            <circle cx="10" cy="10" r="8" fill="#3b82f6" stroke="#ffffff" strokeWidth="1" />
+            <Plus className="w-4 h-4" x="6" y="6" fill="#ffffff" />
+          </g>
 
-      {/* Resize Handles */}
-      {isSelected && !readonly && (
-        <g className="resize-handles">
-          {[
-            { x: node.position.x + node.size.width, y: node.position.y + node.size.height, cursor: 'se-resize' },
-            { x: node.position.x + node.size.width, y: node.position.y, cursor: 'ne-resize' },
-            { x: node.position.x, y: node.position.y + node.size.height, cursor: 'sw-resize' },
-            { x: node.position.x, y: node.position.y, cursor: 'nw-resize' }
-          ].map((handle, index) => (
-            <rect
-              key={index}
-              x={handle.x - 4}
-              y={handle.y - 4}
-              width="8"
-              height="8"
-              fill="#3b82f6"
-              stroke="#ffffff"
-              strokeWidth="1"
-              style={{ cursor: handle.cursor }}
-              onMouseDown={(e) => {
-                e.stopPropagation();
-                // TODO: Implement resize functionality
-              }}
-            />
-          ))}
+          {/* Delete button */}
+          <g
+            className="delete-button"
+            transform={`translate(${node.position.x + node.size.width - 10}, ${node.position.y - 10})`}
+            onClick={handleDeleteClick}
+            style={{ cursor: 'pointer' }}
+          >
+            <circle cx="10" cy="10" r="8" fill="#dc2626" stroke="#ffffff" strokeWidth="1" />
+            <Trash2 className="w-4 h-4" x="6" y="6" fill="#ffffff" />
+          </g>
         </g>
       )}
     </g>

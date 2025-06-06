@@ -1,6 +1,6 @@
 
-// ABOUTME: Interactive diagram maker block for scientific illustrations
-// Supports flowcharts, decision trees, process diagrams with drag-and-drop editing
+// ABOUTME: Enhanced interactive diagram block with block-level mode toggle and improved UX
+// Supports individual preview/edit modes, fullscreen editing, and comprehensive template library
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { ReviewBlock } from '@/types/review';
@@ -9,12 +9,11 @@ import { DiagramToolbar } from './diagram/DiagramToolbar';
 import { DiagramTemplateSelector } from './diagram/DiagramTemplateSelector';
 import { DiagramExporter } from './diagram/DiagramExporter';
 import { DiagramFullscreenViewer } from './diagram/DiagramFullscreenViewer';
+import { BlockModeToggle } from '../../editor/BlockModeToggle';
 import { DiagramContent, DiagramNode, DiagramConnection } from '@/types/review';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { 
-  Edit3, 
-  Eye, 
   Download, 
   FileText,
   Grid3X3,
@@ -33,13 +32,12 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
   readonly = false
 }) => {
   const content = block.content as DiagramContent;
-  const [mode, setMode] = useState<'edit' | 'preview'>('preview');
+  const [blockMode, setBlockMode] = useState<'edit' | 'preview'>('preview');
   const [selectedTool, setSelectedTool] = useState<string>('select');
   const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
   const [showTemplates, setShowTemplates] = useState(false);
   const [showExporter, setShowExporter] = useState(false);
   const [showFullscreen, setShowFullscreen] = useState(false);
-  const canvasRef = useRef<HTMLDivElement>(null);
 
   // Initialize default content if empty
   const defaultContent: DiagramContent = {
@@ -104,6 +102,15 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
   }, [diagramContent.nodes, handleContentUpdate]);
 
   const handleNodeUpdate = useCallback((nodeId: string, updates: Partial<DiagramNode>) => {
+    // Handle new node creation from duplication
+    if (nodeId === 'temp' && 'id' in updates) {
+      const newNode = updates as DiagramNode;
+      handleContentUpdate({
+        nodes: [...diagramContent.nodes, newNode]
+      });
+      return;
+    }
+
     const updatedNodes = diagramContent.nodes.map(node =>
       node.id === nodeId ? { ...node, ...updates } : node
     );
@@ -156,20 +163,12 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
 
   // Auto-open fullscreen when entering edit mode
   useEffect(() => {
-    if (mode === 'edit' && !readonly) {
+    if (blockMode === 'edit' && !readonly) {
       setShowFullscreen(true);
     }
-  }, [mode, readonly]);
-
-  const handleModeChange = (newMode: 'edit' | 'preview') => {
-    setMode(newMode);
-    if (newMode === 'edit' && !readonly) {
-      setShowFullscreen(true);
-    }
-  };
+  }, [blockMode, readonly]);
 
   const handleSave = () => {
-    // Save is handled automatically through handleContentUpdate
     console.log('Diagram saved');
   };
 
@@ -217,6 +216,13 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
             </div>
             
             <div className="flex items-center gap-2">
+              {/* Block Mode Toggle */}
+              <BlockModeToggle
+                mode={blockMode}
+                onModeChange={setBlockMode}
+                className="mr-2"
+              />
+
               <Button
                 variant="ghost"
                 size="sm"
@@ -246,32 +252,11 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
                 <Maximize2 className="w-4 h-4 mr-1" />
                 Fullscreen
               </Button>
-              
-              <div className="flex border rounded-md" style={{ borderColor: '#2a2a2a' }}>
-                <Button
-                  variant={mode === 'edit' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => handleModeChange('edit')}
-                  className="rounded-r-none"
-                >
-                  <Edit3 className="w-4 h-4 mr-1" />
-                  Editar
-                </Button>
-                <Button
-                  variant={mode === 'preview' ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => handleModeChange('preview')}
-                  className="rounded-l-none"
-                >
-                  <Eye className="w-4 h-4 mr-1" />
-                  Visualizar
-                </Button>
-              </div>
             </div>
           </div>
 
           {/* Description */}
-          {mode === 'edit' && (
+          {blockMode === 'edit' && (
             <div className="mb-4">
               <textarea
                 value={diagramContent.description || ''}
@@ -289,23 +274,67 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
 
           {/* Canvas */}
           <div 
-            ref={canvasRef}
             className="border rounded-lg overflow-hidden"
             style={{ borderColor: '#2a2a2a' }}
           >
-            <DiagramCanvas
-              content={diagramContent}
-              mode={mode}
-              selectedTool={selectedTool}
-              selectedNodes={selectedNodes}
-              onNodeAdd={handleNodeAdd}
-              onNodeUpdate={handleNodeUpdate}
-              onNodeDelete={handleNodeDelete}
-              onConnectionAdd={handleConnectionAdd}
-              onConnectionDelete={handleConnectionDelete}
-              onSelectionChange={setSelectedNodes}
-              readonly={readonly}
-            />
+            {blockMode === 'edit' ? (
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                {/* Toolbar */}
+                <div 
+                  className="lg:col-span-1 p-4 border-r"
+                  style={{ 
+                    backgroundColor: '#1a1a1a', 
+                    borderColor: '#2a2a2a' 
+                  }}
+                >
+                  <DiagramToolbar
+                    selectedTool={selectedTool}
+                    onToolChange={setSelectedTool}
+                    canvas={diagramContent.canvas}
+                    onCanvasUpdate={handleCanvasUpdate}
+                    selectedNodes={selectedNodes}
+                    onNodesUpdate={(nodes) => {
+                      const updatedNodes = diagramContent.nodes.map(node => {
+                        const updated = nodes.find(n => n.id === node.id);
+                        return updated || node;
+                      });
+                      handleContentUpdate({ nodes: updatedNodes });
+                    }}
+                  />
+                </div>
+
+                {/* Canvas */}
+                <div className="lg:col-span-3">
+                  <DiagramCanvas
+                    content={diagramContent}
+                    mode="edit"
+                    selectedTool={selectedTool}
+                    selectedNodes={selectedNodes}
+                    onNodeAdd={handleNodeAdd}
+                    onNodeUpdate={handleNodeUpdate}
+                    onNodeDelete={handleNodeDelete}
+                    onConnectionAdd={handleConnectionAdd}
+                    onConnectionDelete={handleConnectionDelete}
+                    onSelectionChange={setSelectedNodes}
+                    readonly={false}
+                  />
+                </div>
+              </div>
+            ) : (
+              <DiagramCanvas
+                content={diagramContent}
+                mode="preview"
+                selectedTool="select"
+                selectedNodes={[]}
+                onNodeAdd={() => {}}
+                onNodeUpdate={() => {}}
+                onNodeDelete={() => {}}
+                onConnectionAdd={() => {}}
+                onConnectionDelete={() => {}}
+                onSelectionChange={() => {}}
+                readonly={true}
+              />
+            )}
           </div>
 
           {/* Templates Modal */}

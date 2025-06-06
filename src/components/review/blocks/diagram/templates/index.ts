@@ -9,6 +9,9 @@ import { gradeRecommendationTemplate } from './gradeRecommendation';
 import { studyTimelineTemplate } from './studyTimeline';
 import { picodMapTemplate } from './picodMap';
 import { barriersAndFacilitatorsTemplate } from './barriersAndFacilitators';
+import { networkMetaAnalysisTemplate } from './networkMetaAnalysis';
+import { causalChainTemplate } from './causalChain';
+import { prismaFlowTemplate } from './prismaFlow';
 
 export const diagramTemplates = [
   clinicalDecisionTreeTemplate,
@@ -17,7 +20,10 @@ export const diagramTemplates = [
   gradeRecommendationTemplate,
   studyTimelineTemplate,
   picodMapTemplate,
-  barriersAndFacilitatorsTemplate
+  barriersAndFacilitatorsTemplate,
+  networkMetaAnalysisTemplate,
+  causalChainTemplate,
+  prismaFlowTemplate
 ];
 
 export {
@@ -27,5 +33,8 @@ export {
   gradeRecommendationTemplate,
   studyTimelineTemplate,
   picodMapTemplate,
-  barriersAndFacilitatorsTemplate
+  barriersAndFacilitatorsTemplate,
+  networkMetaAnalysisTemplate,
+  causalChainTemplate,
+  prismaFlowTemplate
 };
