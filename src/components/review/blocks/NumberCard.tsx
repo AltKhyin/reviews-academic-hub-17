@@ -23,7 +23,8 @@ export const NumberCard: React.FC<NumberCardProps> = ({
   readonly = false,
   onUpdate
 }) => {
-  const content = block.content;
+  // Safe access to content with comprehensive fallbacks
+  const content = block.content || {};
   const number = content.number || '0';
   const label = content.label || 'Métrica';
   const description = content.description || '';

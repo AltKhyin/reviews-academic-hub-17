@@ -30,8 +30,23 @@ export const SnapshotCard: React.FC<SnapshotCardProps> = ({
   onUpdate,
   readonly
 }) => {
-  // Safe access to content with fallbacks
-  const safeContent = content || {};
+  // Safe access to content with comprehensive fallbacks
+  const safeContent: SnapshotCardContent = {
+    title: content?.title || '',
+    subtitle: content?.subtitle || '',
+    value: content?.value || '',
+    change: content?.change || '',
+    trend: content?.trend || 'neutral',
+    icon: content?.icon || '',
+    evidence_level: content?.evidence_level || 'moderate',
+    recommendation_strength: content?.recommendation_strength || 'conditional',
+    population: content?.population || '',
+    intervention: content?.intervention || '',
+    comparison: content?.comparison || '',
+    outcome: content?.outcome || '',
+    design: content?.design || '',
+    key_findings: Array.isArray(content?.key_findings) ? content.key_findings : []
+  };
 
   const getEvidenceLevelConfig = () => {
     switch (safeContent.evidence_level) {
