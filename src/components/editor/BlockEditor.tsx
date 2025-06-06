@@ -1,6 +1,5 @@
-
 // ABOUTME: Enhanced block editor with complete 2D grid support and dynamic layout
-// Main editor with full grid functionality and responsive design
+// Main editor with full grid functionality and responsive design - UPDATED: Reduced spacing by 50%
 
 import React, { useState, useCallback, useRef } from 'react';
 import { ReviewBlock, BlockType } from '@/types/review';
@@ -413,7 +412,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
 
   return (
     <div 
-      className={cn("block-editor py-6 overflow-visible-force", className)}
+      className={cn("block-editor py-3 overflow-visible-force", className)}
       style={{
         backgroundColor: '#121212',
         color: '#ffffff'
@@ -421,7 +420,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     >
       {/* Dynamic width indicator for Dividir mode */}
       {isDividirMode && (
-        <div className="mb-4 text-center">
+        <div className="mb-2 text-center">
           <div className="inline-flex items-center px-3 py-1 bg-gray-900/20 border border-gray-600/30 rounded-full text-gray-400 text-sm">
             <span className="w-2 h-2 bg-gray-400 rounded-full mr-2 animate-pulse"></span>
             Modo Dividir Ativo • Editor Expandido
@@ -439,7 +438,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
           const grid = grids.find(g => g.id === group.id);
           if (grid) {
             return (
-              <div key={group.id} className="mx-2 mb-8 overflow-visible-force">
+              <div key={group.id} className="mx-2 mb-4 overflow-visible-force">
                 <Grid2DContainer
                   grid={grid}
                   activeBlockId={activeBlockId}
@@ -464,7 +463,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
           }
         } else if (group.type === '1d-grid') {
           return (
-            <div key={group.id} className="mx-2 mb-6 overflow-visible-force">
+            <div key={group.id} className="mx-2 mb-3 overflow-visible-force">
               <ResizableGrid
                 rowId={group.id}
                 blocks={group.blocks}
@@ -511,7 +510,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
         }
       })}
 
-      <div className="flex justify-center mt-8 pt-4">
+      <div className="flex justify-center mt-4 pt-2">
         <Button
           onClick={() => addBlockBetween(blocks.length)}
           variant="outline"

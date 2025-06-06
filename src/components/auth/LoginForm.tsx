@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -104,7 +103,7 @@ const LoginForm = ({ setMode }: LoginFormProps) => {
 
       <Button 
         type="submit" 
-        className="w-full bg-black hover:bg-gray-800 text-white"
+        className="w-full !bg-black hover:!bg-gray-800 !text-white !border-black"
         disabled={loading}
       >
         {loading ? (

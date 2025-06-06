@@ -1,6 +1,5 @@
-
 // ABOUTME: Refactored resizable grid with improved modularity and performance
-// Uses GridPanel components for better separation of concerns
+// Uses GridPanel components for better separation of concerns - UPDATED: Reduced spacing by 50%
 
 import React, { useCallback, useMemo } from 'react';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
@@ -186,7 +185,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
   const isGridDropTarget = dragState?.dragOverRowId === rowId && dragState?.dropTargetType === 'merge';
 
   return (
-    <div className={cn("resizable-grid my-6", className)}>
+    <div className={cn("resizable-grid my-3", className)}>
       {/* Grid Controls */}
       {!readonly && (
         <GridControls
@@ -198,7 +197,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
           onMergeBlocks={handleMergeBlocks}
           onConvertToSingle={handleConvertToSingle}
           onReorderColumns={handleReorderColumns}
-          className="mb-4"
+          className="mb-2"
         />
       )}
 
@@ -225,7 +224,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
                 defaultSize={panelSizes[index]}
                 minSize={10}
                 maxSize={80}
-                className="p-2"
+                className="p-1"
               >
                 <GridPanel
                   rowId={rowId}
@@ -257,14 +256,14 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
       
       {/* Grid Merge Feedback */}
       {isGridDropTarget && (
-        <div className="mt-2 text-center text-green-400 text-sm font-medium animate-pulse">
+        <div className="mt-1 text-center text-green-400 text-sm font-medium animate-pulse">
           ↓ Solte o bloco para adicionar a este grid ↓
         </div>
       )}
       
       {/* Grid Info */}
       {!readonly && (
-        <div className="mt-2 text-xs text-gray-400 text-center">
+        <div className="mt-1 text-xs text-gray-400 text-center">
           {columns} colunas • Arraste os divisores para ajustar proporções
           {columnWidths && (
             <span className="ml-2">

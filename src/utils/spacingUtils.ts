@@ -1,6 +1,6 @@
 
 // ABOUTME: Utility functions for converting spacing metadata to CSS styles
-// Handles margin and padding conversion with fallback defaults
+// Handles margin and padding conversion with fallback defaults - UPDATED: Reduced spacing by 50%
 
 import { BlockSpacing } from '@/types/review';
 
@@ -83,38 +83,38 @@ export const generateSpacingClasses = (spacing?: BlockSpacing): string => {
 };
 
 /**
- * Gets default spacing for a block type
+ * Gets default spacing for a block type - UPDATED: All values reduced by 50%
  */
 export const getDefaultSpacing = (blockType: string): BlockSpacing => {
   switch (blockType) {
     case 'heading':
       return {
-        margin: { top: 24, bottom: 16 }
+        margin: { top: 12, bottom: 8 }  // Reduced from 24/16 to 12/8
       };
     case 'paragraph':
       return {
-        margin: { top: 8, bottom: 8 }
+        margin: { top: 4, bottom: 4 }  // Reduced from 8/8 to 4/4
       };
     case 'figure':
       return {
-        margin: { top: 16, bottom: 16 }
+        margin: { top: 8, bottom: 8 }  // Reduced from 16/16 to 8/8
       };
     case 'table':
       return {
-        margin: { top: 16, bottom: 16 }
+        margin: { top: 8, bottom: 8 }  // Reduced from 16/16 to 8/8
       };
     case 'callout':
       return {
-        margin: { top: 16, bottom: 16 },
-        padding: { top: 12, right: 16, bottom: 12, left: 16 }
+        margin: { top: 8, bottom: 8 },  // Reduced from 16/16 to 8/8
+        padding: { top: 6, right: 8, bottom: 6, left: 8 }  // Reduced from 12/16/12/16 to 6/8/6/8
       };
     case 'divider':
       return {
-        margin: { top: 24, bottom: 24 }
+        margin: { top: 12, bottom: 12 }  // Reduced from 24/24 to 12/12
       };
     default:
       return {
-        margin: { top: 16, bottom: 16 }
+        margin: { top: 8, bottom: 8 }  // Reduced from 16/16 to 8/8
       };
   }
 };

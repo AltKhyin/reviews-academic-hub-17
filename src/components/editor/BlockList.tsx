@@ -1,6 +1,5 @@
-
 // ABOUTME: Enhanced block list with proper click handling and inline editing
-// Prevents unwanted block creation and provides intuitive interaction patterns
+// Prevents unwanted block creation and provides intuitive interaction patterns - UPDATED: Reduced spacing by 50%
 
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -153,12 +152,12 @@ export const BlockList: React.FC<BlockListProps> = ({
 
   if (blocks.length === 0) {
     return (
-      <div className="block-list-empty text-center py-12">
-        <FileText className="w-12 h-12 mx-auto mb-4" style={{ color: '#6b7280' }} />
-        <h3 className="text-lg font-medium mb-2" style={{ color: '#ffffff' }}>
+      <div className="block-list-empty text-center py-6">
+        <FileText className="w-12 h-12 mx-auto mb-2" style={{ color: '#6b7280' }} />
+        <h3 className="text-lg font-medium mb-1" style={{ color: '#ffffff' }}>
           Nenhum bloco adicionado
         </h3>
-        <p className="mb-6" style={{ color: '#9ca3af' }}>
+        <p className="mb-3" style={{ color: '#9ca3af' }}>
           Use a paleta à esquerda para adicionar blocos ao editor.
         </p>
         <Button
@@ -177,7 +176,7 @@ export const BlockList: React.FC<BlockListProps> = ({
   }
 
   return (
-    <div className="block-list space-y-3">
+    <div className="block-list space-y-1.5">
       {blocks.map((block, index) => {
         const Icon = getBlockIcon(block.type);
         const iconColor = getBlockColor(block.type);
@@ -186,7 +185,7 @@ export const BlockList: React.FC<BlockListProps> = ({
         const isDragging = dragState.draggedIndex === index;
 
         return (
-          <div key={block.id} className="space-y-2">
+          <div key={block.id} className="space-y-1">
             {/* Insert point at the top for first block */}
             {index === 0 && (
               <div className="insert-point group">
@@ -194,7 +193,7 @@ export const BlockList: React.FC<BlockListProps> = ({
                   size="sm"
                   variant="ghost"
                   onClick={(e) => handleAddBlockClick(e, 0)}
-                  className="w-full h-6 opacity-30 hover:opacity-100 transition-opacity text-xs"
+                  className="w-full h-5 opacity-30 hover:opacity-100 transition-opacity text-xs"
                   style={{ color: '#6b7280' }}
                 >
                   <Plus className="w-3 h-3 mr-1" />
@@ -221,8 +220,8 @@ export const BlockList: React.FC<BlockListProps> = ({
               onDragEnter={(e) => handleDragEnter(e, index)}
               onClick={(e) => handleBlockClick(e, block.id)}
             >
-              <CardContent className={cn("p-4", compact && "p-3")}>
-                <div className="flex items-center gap-3">
+              <CardContent className={cn("p-2", compact && "p-1.5")}>
+                <div className="flex items-center gap-2">
                   {/* Drag Handle */}
                   <div 
                     className="drag-handle cursor-grab active:cursor-grabbing"
@@ -237,18 +236,18 @@ export const BlockList: React.FC<BlockListProps> = ({
                   {/* Block Icon */}
                   <div className="flex-shrink-0">
                     <Icon 
-                      className="w-5 h-5" 
+                      className="w-4 h-4" 
                       style={{ color: iconColor }}
                     />
                   </div>
 
                   {/* Block Info */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-1 mb-0.5">
                       <h4 
                         className={cn(
                           "font-medium truncate",
-                          compact ? "text-sm" : "text-base"
+                          compact ? "text-xs" : "text-sm"
                         )}
                         style={{ color: isActive ? '#ffffff' : '#ffffff' }}
                       >
@@ -267,7 +266,7 @@ export const BlockList: React.FC<BlockListProps> = ({
                       </Badge>
                     </div>
                     
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
                       <span 
                         className="text-xs"
                         style={{ color: isActive ? '#d1d5db' : '#9ca3af' }}
@@ -284,7 +283,7 @@ export const BlockList: React.FC<BlockListProps> = ({
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-0.5">
                     <Button
                       size="sm"
                       variant="ghost"
@@ -292,12 +291,12 @@ export const BlockList: React.FC<BlockListProps> = ({
                         e.stopPropagation();
                         // Toggle visibility logic here
                       }}
-                      className="w-8 h-8 p-0"
+                      className="w-6 h-6 p-0"
                     >
                       {block.visible ? (
-                        <Eye className="w-4 h-4" style={{ color: '#10b981' }} />
+                        <Eye className="w-3 h-3" style={{ color: '#10b981' }} />
                       ) : (
-                        <EyeOff className="w-4 h-4" style={{ color: '#ef4444' }} />
+                        <EyeOff className="w-3 h-3" style={{ color: '#ef4444' }} />
                       )}
                     </Button>
 
@@ -309,9 +308,9 @@ export const BlockList: React.FC<BlockListProps> = ({
                           e.stopPropagation();
                           onDuplicateBlock(block.id);
                         }}
-                        className="w-8 h-8 p-0"
+                        className="w-6 h-6 p-0"
                       >
-                        <Copy className="w-4 h-4" style={{ color: '#6b7280' }} />
+                        <Copy className="w-3 h-3" style={{ color: '#6b7280' }} />
                       </Button>
                     )}
 
@@ -322,9 +321,9 @@ export const BlockList: React.FC<BlockListProps> = ({
                         e.stopPropagation();
                         onDeleteBlock(block.id);
                       }}
-                      className="w-8 h-8 p-0 hover:bg-red-900/20"
+                      className="w-6 h-6 p-0 hover:bg-red-900/20"
                     >
-                      <Trash2 className="w-4 h-4" style={{ color: '#ef4444' }} />
+                      <Trash2 className="w-3 h-3" style={{ color: '#ef4444' }} />
                     </Button>
                   </div>
                 </div>
@@ -337,7 +336,7 @@ export const BlockList: React.FC<BlockListProps> = ({
                 size="sm"
                 variant="ghost"
                 onClick={(e) => handleAddBlockClick(e, index + 1)}
-                className="w-full h-6 opacity-0 group-hover:opacity-100 transition-opacity text-xs"
+                className="w-full h-5 opacity-0 group-hover:opacity-100 transition-opacity text-xs"
                 style={{ color: '#6b7280' }}
               >
                 <Plus className="w-3 h-3 mr-1" />
