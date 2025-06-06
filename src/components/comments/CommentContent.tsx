@@ -19,6 +19,16 @@ export const CommentContent: React.FC<CommentContentProps> = ({
 }) => {
   const avatarFallback = profileName?.[0] || 'U';
   
+  // Render formatted content as HTML
+  const renderFormattedContent = (text: string) => {
+    // Clean and sanitize the HTML content to only allow basic formatting
+    const cleanedContent = text
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove scripts
+      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, ''); // Remove styles
+    
+    return { __html: cleanedContent };
+  };
+  
   return (
     <div className="flex-1 min-w-0">
       <div className="flex items-center gap-2 mb-1">
@@ -33,7 +43,14 @@ export const CommentContent: React.FC<CommentContentProps> = ({
         </span>
       </div>
       
-      <p className="text-sm mb-2">{content}</p>
+      <div 
+        className="text-sm mb-2 prose-sm prose-invert max-w-none"
+        dangerouslySetInnerHTML={renderFormattedContent(content)}
+        style={{
+          wordBreak: 'break-word',
+          overflowWrap: 'break-word'
+        }}
+      />
     </div>
   );
 };

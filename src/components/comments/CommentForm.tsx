@@ -70,13 +70,13 @@ export const CommentForm: React.FC<CommentFormProps> = ({
     let formattedText = selectedText;
     switch (format) {
       case 'bold':
-        formattedText = `**${selectedText}**`;
+        formattedText = `<strong>${selectedText}</strong>`;
         break;
       case 'italic':
-        formattedText = `*${selectedText}*`;
+        formattedText = `<em>${selectedText}</em>`;
         break;
       case 'underline':
-        formattedText = `__${selectedText}__`;
+        formattedText = `<u>${selectedText}</u>`;
         break;
     }
     
@@ -112,7 +112,6 @@ export const CommentForm: React.FC<CommentFormProps> = ({
     }
 
     try {
-      // Create object URL for preview
       const imageUrl = URL.createObjectURL(file);
       setSelectedImage(imageUrl);
     } catch (error) {
@@ -123,6 +122,14 @@ export const CommentForm: React.FC<CommentFormProps> = ({
         variant: "destructive",
       });
     }
+  };
+
+  // Render formatted content for preview
+  const renderFormattedContent = (text: string) => {
+    return text
+      .replace(/<strong>(.*?)<\/strong>/g, '<strong>$1</strong>')
+      .replace(/<em>(.*?)<\/em>/g, '<em>$1</em>')
+      .replace(/<u>(.*?)<\/u>/g, '<u>$1</u>');
   };
 
   if (!user) {
@@ -151,6 +158,25 @@ export const CommentForm: React.FC<CommentFormProps> = ({
             rows={showControls ? 3 : 2}
             autoFocus={autoFocus}
           />
+          
+          {/* Preview of formatted content */}
+          {content && showControls && (
+            <div 
+              className="absolute inset-x-3 top-3 bottom-12 pointer-events-none text-transparent"
+              dangerouslySetInnerHTML={{ __html: renderFormattedContent(content) }}
+              style={{
+                fontFamily: 'inherit',
+                fontSize: 'inherit',
+                lineHeight: 'inherit',
+                padding: 'inherit',
+                border: 'none',
+                background: 'none',
+                whiteSpace: 'pre-wrap',
+                wordWrap: 'break-word',
+                overflow: 'hidden'
+              }}
+            />
+          )}
           
           {/* Integrated controls inside textarea */}
           {showControls && (
@@ -195,54 +221,6 @@ export const CommentForm: React.FC<CommentFormProps> = ({
                   </Button>
                 </div>
               )}
-
-              {/* Formatting toggle button */}
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className={`h-6 w-6 p-0 ${showFormatting ? 'text-blue-400' : 'text-gray-400 hover:text-gray-300'}`}
-                onClick={() => setShowFormatting(!showFormatting)}
-                title="Formatação"
-              >
-                <Type className="h-3 w-3" />
-              </Button>
-
-              {/* Formatting options - expanding to the left */}
-              {showFormatting && (
-                <div className="absolute right-16 bottom-0 flex items-center gap-1 p-1 bg-gray-800/60 rounded border border-gray-700/30">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0 text-gray-400 hover:text-gray-300"
-                    onClick={() => handleFormat('bold')}
-                    title="Negrito"
-                  >
-                    <Bold className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0 text-gray-400 hover:text-gray-300"
-                    onClick={() => handleFormat('italic')}
-                    title="Itálico"
-                  >
-                    <Italic className="h-3 w-3" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0 text-gray-400 hover:text-gray-300"
-                    onClick={() => handleFormat('underline')}
-                    title="Sublinhado"
-                  >
-                    <Underline className="h-3 w-3" />
-                  </Button>
-                </div>
-              )}
               
               {/* Cancel button (for replies) */}
               {onCancel && (
@@ -271,6 +249,66 @@ export const CommentForm: React.FC<CommentFormProps> = ({
             </div>
           )}
         </div>
+        
+        {/* Bottom-left formatting controls */}
+        {showControls && (
+          <div className="mt-2 flex items-center gap-2">
+            {/* Formatting toggle button */}
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className={`h-6 px-2 text-xs ${showFormatting ? 'text-blue-400 bg-blue-400/10' : 'text-gray-400 hover:text-gray-300'}`}
+              onClick={() => setShowFormatting(!showFormatting)}
+              title="Formatação"
+            >
+              <Type className="h-3 w-3 mr-1" />
+              Formatação
+            </Button>
+
+            {/* Formatting options - expanding to the right */}
+            {showFormatting && (
+              <motion.div 
+                className="flex items-center gap-1 p-1 bg-gray-800/60 rounded border border-gray-700/30"
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: 'auto' }}
+                exit={{ opacity: 0, width: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 text-gray-400 hover:text-gray-300"
+                  onClick={() => handleFormat('bold')}
+                  title="Negrito"
+                >
+                  <Bold className="h-3 w-3" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 text-gray-400 hover:text-gray-300"
+                  onClick={() => handleFormat('italic')}
+                  title="Itálico"
+                >
+                  <Italic className="h-3 w-3" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 text-gray-400 hover:text-gray-300"
+                  onClick={() => handleFormat('underline')}
+                  title="Sublinhado"
+                >
+                  <Underline className="h-3 w-3" />
+                </Button>
+              </motion.div>
+            )}
+          </div>
+        )}
       </div>
       
       {/* Success animation */}
