@@ -1,187 +1,510 @@
 
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Global dark theme colors and improved z-index management */
-:root {
-  --background: #121212;
-  --background-secondary: #1a1a1a;
-  --background-tertiary: #212121;
-  --border: #2a2a2a;
-  --text: #ffffff;
-  --text-muted: #9ca3af;
+@layer base {
+  :root {
+    --background: 210 12% 8%;
+    --foreground: 210 12% 98%;
+
+    --card: 210 12% 10%;
+    --card-foreground: 210 12% 98%;
+
+    --popover: 210 12% 10%;
+    --popover-foreground: 210 12% 98%;
+
+    --primary: 210 12% 98%;
+    --primary-foreground: 210 12% 8%;
+
+    --secondary: 210 12% 13%;
+    --secondary-foreground: 210 12% 98%;
+
+    --muted: 210 12% 13%;
+    --muted-foreground: 210 12% 65%;
+
+    --accent: 210 12% 13%;
+    --accent-foreground: 210 12% 98%;
+
+    --destructive: 0 70% 40%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 12% 15%;
+    --input: 210 12% 15%;
+    --ring: 210 12% 83%;
+
+    --radius: 6px;
+
+    --sidebar-background: 210 12% 10%;
+    --sidebar-foreground: 210 12% 98%;
+    --sidebar-primary: 210 12% 98%;
+    --sidebar-primary-foreground: 210 12% 8%;
+    --sidebar-accent: 210 12% 13%;
+    --sidebar-accent-foreground: 210 12% 98%;
+    --sidebar-border: 210 12% 15%;
+    --sidebar-ring: 210 12% 83%;
+    
+    /* Scrollbar variables */
+    --scrollbar-track: 210 12% 10%;
+    --scrollbar-thumb: 210 12% 25%;
+    --scrollbar-thumb-hover: 210 12% 35%;
+    
+    /* Enhanced Dark Theme Variables - Using User's Preferred Colors */
+    /* Primary colors - darkest backgrounds */
+    --editor-primary-bg: #121212;
+    --editor-secondary-bg: #1a1a1a;
+    --editor-tertiary-bg: #212121;
+    --editor-surface-bg: #121212;
+    --editor-card-bg: #1a1a1a;
+    --editor-hover-bg: #212121;
+    --editor-active-bg: #2a2a2a;
+    --editor-selected-bg: #1e3a8a;
+    
+    /* Border colors */
+    --editor-primary-border: #2a2a2a;
+    --editor-secondary-border: #333333;
+    --editor-focus-border: #3b82f6;
+    --editor-active-border: #f59e0b;
+    
+    /* Text colors - high contrast */
+    --editor-primary-text: #ffffff;
+    --editor-secondary-text: #d1d5db;
+    --editor-muted-text: #9ca3af;
+    --editor-accent-text: #3b82f6;
+    --editor-link-text: #60a5fa;
+    
+    /* Status colors */
+    --editor-success-color: #10b981;
+    --editor-warning-color: #f59e0b;
+    --editor-error-color: #ef4444;
+    --editor-info-color: #3b82f6;
+    
+    /* Interactive colors - NO MORE BLUE BACKGROUNDS */
+    --editor-button-primary: #2a2a2a;
+    --editor-button-primary-hover: #333333;
+    --editor-button-secondary: #212121;
+    --editor-button-secondary-hover: #2a2a2a;
+    --editor-button-ghost: transparent;
+    --editor-button-ghost-hover: #212121;
+    
+    /* Block colors with distinct icons */
+    --block-block-background: #1a1a1a;
+    --block-block-border: #2a2a2a;
+    --block-block-hover: #212121;
+    --block-block-selected: #2a2a2a;
+    --block-block-active: #333333;
+    
+    /* Block type accent colors for icons */
+    --block-snapshot-card-accent: #3b82f6;
+    --block-heading-accent: #8b5cf6;
+    --block-paragraph-accent: #ffffff;
+    --block-figure-accent: #10b981;
+    --block-table-accent: #f59e0b;
+    --block-callout-accent: #ef4444;
+    --block-quote-accent: #a855f7;
+    --block-poll-accent: #06b6d4;
+    --block-citation-accent: #9ca3af;
+    --block-number-card-accent: #3b82f6;
+    --block-divider-accent: #6b7280;
+    
+    /* Preview colors */
+    --preview-preview-bg: #121212;
+    --preview-preview-card-bg: #1a1a1a;
+    --preview-preview-border: #2a2a2a;
+    --preview-preview-header-bg: #1a1a1a;
+    --preview-preview-footer-bg: #1a1a1a;
+    --preview-preview-scrollbar: #2a2a2a;
+    --preview-preview-scrollbar-hover: #333333;
+    
+    /* Palette colors */
+    --palette-palette-bg: #1a1a1a;
+    --palette-palette-card-bg: #212121;
+    --palette-palette-card-hover: #2a2a2a;
+    --palette-palette-border: #2a2a2a;
+    --palette-palette-header-bg: #1a1a1a;
+    --palette-category-text: #9ca3af;
+    --palette-block-title-text: #ffffff;
+    --palette-block-desc-text: #d1d5db;
+
+    /* Z-index scale for proper layering */
+    --z-dropdown: 1000;
+    --z-sticky: 1020;
+    --z-fixed: 1030;
+    --z-modal-backdrop: 1040;
+    --z-modal: 1050;
+    --z-popover: 1060;
+    --z-tooltip: 1070;
+    --z-toast: 1080;
+  }
+
+  html, body, #root {
+    height: 100%;
+    overflow: hidden;
+    background-color: #121212;
+    color: #ffffff;
+  }
 }
 
-body {
-  background-color: var(--background);
-  color: var(--text);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    background-color: #121212;
+    color: #ffffff;
+  }
+  
+  /* Custom scrollbar styling for Webkit browsers */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--scrollbar-track));
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--scrollbar-thumb));
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.3s ease, background-color 0.2s ease;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--scrollbar-thumb-hover));
+  }
+  
+  /* Show scrollbar on hover or when scrolling */
+  *:hover::-webkit-scrollbar-thumb,
+  *:active::-webkit-scrollbar-thumb,
+  .scrolling::-webkit-scrollbar-thumb {
+    opacity: 1;
+  }
+  
+  /* Firefox scrollbar styling */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: transparent hsl(var(--scrollbar-track));
+    transition: scrollbar-color 0.3s ease;
+  }
+  
+  *:hover,
+  *:active,
+  .scrolling {
+    scrollbar-color: hsl(var(--scrollbar-thumb)) hsl(var(--scrollbar-track));
+  }
 }
 
-/* Force overflow visible for editor containers to prevent menu clipping */
-.overflow-visible-force,
-.overflow-visible-force * {
-  overflow: visible !important;
+@layer components {
+  .auth-gradient {
+    background: linear-gradient(90deg, #1a1a1a 0%, #212121 100%);
+  }
+  
+  .hover-effect {
+    @apply transition-all duration-200;
+  }
+  
+  .card-elevation {
+    @apply shadow-[0_2px_4px_rgba(0,0,0,0.3)];
+  }
+  
+  .logo-text {
+    @apply font-serif font-medium tracking-tight text-white;
+  }
+
+  .subtitle-text {
+    @apply font-sans text-sm font-normal tracking-wide opacity-80 text-gray-300;
+  }
+  
+  /* Enhanced scrollbar utilities */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+  
+  .scrollbar-hidden {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  
+  .scrollbar-hidden::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Custom community scrollbar for sidebar */
+  .community-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--scrollbar-thumb)) transparent;
+  }
+  
+  .community-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .community-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .community-scroll::-webkit-scrollbar-thumb {
+    background: hsl(var(--scrollbar-thumb));
+    border-radius: 3px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  .community-scroll:hover::-webkit-scrollbar-thumb {
+    opacity: 1;
+  }
+  
+  /* Native Editor Design System Classes - Using Fixed Dark Theme */
+  .native-editor {
+    background-color: var(--editor-primary-bg);
+  }
+  
+  .block-palette {
+    background-color: var(--palette-palette-bg);
+    border-color: var(--palette-palette-border);
+  }
+  
+  .block-editor {
+    background-color: var(--editor-primary-bg);
+    border-color: var(--editor-primary-border);
+  }
+  
+  .block-palette .block-type-button {
+    background-color: var(--palette-palette-card-bg);
+    border-color: var(--palette-palette-border);
+    color: var(--palette-block-title-text);
+  }
+  
+  .block-palette .block-type-button:hover {
+    background-color: var(--palette-palette-card-hover);
+    border-color: var(--editor-secondary-border);
+  }
+  
+  /* Block Editor specific styles - FIXED BLUE ISSUE */
+  .block-editor-card {
+    background-color: var(--block-block-background);
+    border-color: var(--block-block-border);
+  }
+  
+  .block-editor-card:hover {
+    background-color: var(--block-block-hover);
+    border-color: var(--editor-secondary-border);
+  }
+  
+  .block-editor-card.active {
+    background-color: var(--block-block-selected);
+    border-color: var(--editor-active-border);
+  }
+  
+  /* Properties panel */
+  .properties-panel {
+    background-color: var(--editor-secondary-bg);
+    border-color: var(--editor-primary-border);
+  }
+  
+  /* Status indicators using design tokens */
+  .status-success {
+    color: var(--editor-success-color);
+    background-color: color-mix(in srgb, var(--editor-success-color) 10%, transparent);
+    border-color: color-mix(in srgb, var(--editor-success-color) 20%, transparent);
+  }
+  
+  .status-warning {
+    color: var(--editor-warning-color);
+    background-color: color-mix(in srgb, var(--editor-warning-color) 10%, transparent);
+    border-color: color-mix(in srgb, var(--editor-warning-color) 20%, transparent);
+  }
+  
+  .status-info {
+    color: var(--editor-info-color);
+    background-color: color-mix(in srgb, var(--editor-info-color) 10%, transparent);
+    border-color: color-mix(in srgb, var(--editor-info-color) 20%, transparent);
+  }
+  
+  /* Issue Editor specific fixes */
+  .issue-editor-card {
+    background-color: #1a1a1a !important;
+    border-color: #2a2a2a !important;
+    color: #ffffff !important;
+  }
+  
+  .radio-group-item {
+    background-color: #212121 !important;
+    border-color: #2a2a2a !important;
+    color: #ffffff !important;
+  }
+  
+  .radio-group-item:hover {
+    background-color: #2a2a2a !important;
+  }
+  
+  .radio-group-item[data-state="checked"] {
+    background-color: #3b82f6 !important;
+    border-color: #3b82f6 !important;
+  }
+
+  /* CRITICAL: Z-index and overflow fixes for menus */
+  .block-container {
+    position: relative;
+    overflow: visible !important;
+  }
+
+  .block-content {
+    overflow: visible !important;
+    position: relative;
+    z-index: 1;
+  }
+
+  .block-menu,
+  .inline-menu,
+  .context-menu,
+  .dropdown-menu {
+    position: absolute !important;
+    z-index: var(--z-dropdown) !important;
+    background-color: var(--editor-secondary-bg) !important;
+    border: 1px solid var(--editor-primary-border) !important;
+    border-radius: 6px !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2) !important;
+    overflow: visible !important;
+  }
+
+  .grid-panel {
+    overflow: visible !important;
+    position: relative;
+  }
+
+  .grid-container {
+    overflow: visible !important;
+  }
+
+  .grid-2d-container {
+    overflow: visible !important;
+  }
+
+  .resizable-grid {
+    overflow: visible !important;
+  }
+
+  /* Ensure all grid-related components don't clip */
+  .grid-cell,
+  .grid-item,
+  .grid-panel,
+  .block-panel {
+    overflow: visible !important;
+  }
 }
 
-/* Enhanced z-index management for overlays and menus */
-.block-editor {
-  position: relative;
-  z-index: 1;
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  
+  /* Editor utilities using fixed dark theme */
+  .editor-layout {
+    @apply h-full flex flex-col;
+    background-color: var(--editor-primary-bg);
+  }
+  
+  .editor-header {
+    @apply px-4 py-3;
+    border-bottom: 1px solid var(--editor-primary-border);
+    background-color: var(--editor-primary-bg);
+  }
+  
+  .editor-content {
+    @apply flex-1 flex overflow-hidden;
+    background-color: var(--editor-primary-bg);
+  }
+  
+  .editor-sidebar {
+    background-color: var(--editor-secondary-bg);
+    border-right: 1px solid var(--editor-primary-border);
+  }
+  
+  .editor-main {
+    @apply flex-1;
+    background-color: var(--editor-primary-bg);
+    overflow: visible;
+  }
+
+  /* Z-index utilities */
+  .z-dropdown {
+    z-index: var(--z-dropdown);
+  }
+  
+  .z-sticky {
+    z-index: var(--z-sticky);
+  }
+  
+  .z-fixed {
+    z-index: var(--z-fixed);
+  }
+  
+  .z-modal {
+    z-index: var(--z-modal);
+  }
+  
+  .z-popover {
+    z-index: var(--z-popover);
+  }
+  
+  .z-tooltip {
+    z-index: var(--z-tooltip);
+  }
+
+  /* Force overflow visible for interactive elements */
+  .overflow-visible-force {
+    overflow: visible !important;
+  }
+
+  .overflow-visible-force * {
+    overflow: visible !important;
+  }
 }
 
-/* Inline editor menus and controls should always be on top */
-.inline-editor-display,
-.inline-rich-editor-display,
-.inline-editor-menu,
-.block-controls,
-.grid-controls,
-.dropdown-menu,
-.popover,
-.tooltip {
-  position: relative;
-  z-index: 9999 !important;
+@keyframes subtle-pan {
+  0% {
+    transform: translate(0, 0) scale(1.1);
+  }
+  50% {
+    transform: translate(-5%, -5%) scale(1.1);
+  }
+  100% {
+    transform: translate(0, 0) scale(1.1);
+  }
 }
 
-/* Ensure menus can escape their containers */
-.inline-editor-display .menu-container,
-.inline-rich-editor-display .menu-container,
-.block-controls .menu-container {
-  position: fixed !important;
-  z-index: 10000 !important;
+/* Enhanced animations for dark theme */
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* Grid system specific z-index management */
-.grid-2d-container {
-  position: relative;
-  z-index: 2;
-}
-
-.grid-row-controls {
-  z-index: 50 !important;
-}
-
-.grid-cell {
-  position: relative;
-  z-index: 3;
-}
-
-.grid-cell.active {
-  z-index: 4;
-}
-
-/* Drag and drop visual feedback */
-.dragging .drag-source {
-  opacity: 0.5;
-  transform: scale(0.95);
-  transition: all 0.2s ease;
-}
-
-.drag-over {
-  background-color: rgba(34, 197, 94, 0.1);
-  border-color: rgb(34, 197, 94);
-  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.3);
-}
-
-.drop-target {
-  background-color: rgba(34, 197, 94, 0.2);
-  border: 2px solid rgb(34, 197, 94);
-  animation: pulse 1s infinite;
-}
-
-/* Dark theme component overrides */
-.card {
-  background-color: var(--background-secondary);
-  border-color: var(--border);
-}
-
-.button {
-  background-color: var(--background-tertiary);
-  border-color: var(--border);
-  color: var(--text);
-}
-
-.button:hover {
-  background-color: var(--background-secondary);
-}
-
-/* Improved scrollbar styling for dark theme */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--background);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #3a3a3a;
-}
-
-/* Animation keyframes */
 @keyframes pulse {
   0%, 100% {
     opacity: 1;
   }
   50% {
-    opacity: 0.7;
+    opacity: 0.3;
   }
 }
 
-/* Grid structure visibility control */
-.grid-structure {
-  /* Minimal visual indicators in editor mode only */
+/* Global dragging styles */
+body.dragging {
+  cursor: grabbing !important;
 }
 
-.grid-structure.readonly {
-  /* Completely invisible in preview/readonly mode */
-  border: none !important;
-  background: none !important;
-  padding: 0 !important;
-}
-
-/* Ensure proper spacing and alignment */
-.preview-content .invisible-grid-container {
-  /* Pure positioning container with no visual elements */
-  background: none;
-  border: none;
-  padding: 0;
-}
-
-/* Fix for menu positioning issues */
-.menu-portal {
-  position: fixed !important;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+body.dragging * {
   pointer-events: none;
-  z-index: 10000 !important;
 }
 
-.menu-portal > * {
-  pointer-events: auto;
-}
-
-/* Improved focus and selection styles */
-.block-content:focus-within {
-  outline: 2px solid #3b82f6;
-  outline-offset: 2px;
-}
-
-/* Enhanced visual feedback for interactive elements */
-.interactive-element {
-  transition: all 0.2s ease;
-}
-
-.interactive-element:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+body.dragging .drop-zone {
+  pointer-events: all;
 }
