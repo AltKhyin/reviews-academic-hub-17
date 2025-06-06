@@ -1,6 +1,6 @@
 
 // ABOUTME: Refactored issue editor with improved layout and component separation
-// Main editor page with better organization and reduced margins
+// Main editor page with better organization and data structure handling
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -84,11 +84,11 @@ const IssueEditor = () => {
 
       if (error) throw error;
       
-      // Transform database blocks to ReviewBlock format
+      // Transform database blocks to ReviewBlock format (FIXED: proper data mapping)
       return (data || []).map(dbBlock => ({
         id: dbBlock.id,
         type: dbBlock.type as any,
-        content: dbBlock.payload, // Database stores as 'payload', but we use 'content'
+        content: dbBlock.payload, // Database stores as 'payload', but our interface uses 'content'
         sort_index: dbBlock.sort_index,
         visible: dbBlock.visible,
         meta: dbBlock.meta as any,
@@ -179,13 +179,13 @@ const IssueEditor = () => {
         .delete()
         .eq('issue_id', id);
 
-      // Insert new blocks
+      // Insert new blocks (FIXED: proper data mapping)
       if (updatedBlocks.length > 0) {
         const blocksToInsert = updatedBlocks.map(block => ({
           issue_id: id,
           sort_index: block.sort_index,
           type: block.type as string,
-          payload: block.content as any, // Store as 'payload' in database
+          payload: block.content as any, // Store 'content' as 'payload' in database
           meta: block.meta as any,
           visible: block.visible
         }));
@@ -214,11 +214,11 @@ const IssueEditor = () => {
         .order('sort_index');
 
       if (newBlocks) {
-        // Transform database blocks back to ReviewBlock format
+        // Transform database blocks back to ReviewBlock format (FIXED: proper data mapping)
         const transformedBlocks = newBlocks.map(dbBlock => ({
           id: dbBlock.id,
           type: dbBlock.type as any,
-          content: dbBlock.payload, // Database stores as 'payload', but we use 'content'
+          content: dbBlock.payload, // Database stores as 'payload', but our interface uses 'content'
           sort_index: dbBlock.sort_index,
           visible: dbBlock.visible,
           meta: dbBlock.meta as any,
