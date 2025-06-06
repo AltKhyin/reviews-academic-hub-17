@@ -62,7 +62,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
   onDragLeave,
   onDrop
 }) => {
-  // Convert column widths to panel sizes
+  // Convert column widths to panel sizes with proper normalization
   const panelSizes = useMemo(() => {
     return columnWidthsToPanelSizes(columnWidths, columns);
   }, [columnWidths, columns]);
@@ -93,7 +93,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
     panelSizes
   });
 
-  // Debounced panel resize handler
+  // Debounced panel resize handler with proper normalization
   const handlePanelResize = useCallback((sizes: number[]) => {
     const normalizedWidths = panelSizesToColumnWidths(sizes);
     
@@ -220,7 +220,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
           const isLast = index === columns - 1;
           
           return (
-            <React.Fragment key={`panel-${index}`}>
+            <div key={`panel-wrapper-${index}`}>
               <ResizablePanel
                 defaultSize={panelSizes[index]}
                 minSize={10}
@@ -250,7 +250,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
                   className="w-2 bg-gray-700 hover:bg-blue-600 transition-colors"
                 />
               )}
-            </React.Fragment>
+            </div>
           );
         })}
       </ResizablePanelGroup>

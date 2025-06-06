@@ -1,0 +1,355 @@
+
+{
+  "version": "2.0",
+  "timestamp": "2025-01-06T03:30:00.000Z",
+  "metadata": {
+    "totalBlocks": 15,
+    "gridBlocks": 6,
+    "singleBlocks": 9,
+    "exportSource": "native-editor"
+  },
+  "blocks": [
+    {
+      "id": 1,
+      "type": "heading",
+      "content": {
+        "text": "Revisão Sistemática: Eficácia de Intervenções Cardiovasculares",
+        "level": 1,
+        "text_color": "#ffffff",
+        "background_color": "transparent"
+      },
+      "sort_index": 0,
+      "visible": true,
+      "meta": {},
+      "created_at": "2025-01-06T03:30:00.000Z",
+      "updated_at": "2025-01-06T03:30:00.000Z"
+    },
+    {
+      "id": 2,
+      "type": "paragraph",
+      "content": {
+        "text": "Esta revisão sistemática examina a eficácia de diferentes intervenções cardiovasculares em pacientes adultos com fatores de risco elevados.",
+        "text_color": "#d1d5db",
+        "background_color": "transparent"
+      },
+      "sort_index": 1,
+      "visible": true,
+      "meta": {},
+      "created_at": "2025-01-06T03:30:00.000Z",
+      "updated_at": "2025-01-06T03:30:00.000Z"
+    },
+    {
+      "id": 3,
+      "type": "number_card",
+      "content": {
+        "title": "Estudos Incluídos",
+        "number": "24",
+        "description": "Ensaios clínicos randomizados",
+        "trend": "up",
+        "text_color": "#ffffff",
+        "background_color": "#1e3a8a",
+        "accent_color": "#3b82f6"
+      },
+      "sort_index": 2,
+      "visible": true,
+      "meta": {
+        "layout": {
+          "row_id": "stats_row",
+          "position": 0,
+          "columns": 3,
+          "gap": 4,
+          "columnWidths": [33.33, 33.34, 33.33]
+        }
+      },
+      "created_at": "2025-01-06T03:30:00.000Z",
+      "updated_at": "2025-01-06T03:30:00.000Z"
+    },
+    {
+      "id": 4,
+      "type": "number_card",
+      "content": {
+        "title": "Participantes",
+        "number": "15,847",
+        "description": "Pacientes analisados",
+        "trend": "neutral",
+        "text_color": "#ffffff",
+        "background_color": "#166534",
+        "accent_color": "#22c55e"
+      },
+      "sort_index": 3,
+      "visible": true,
+      "meta": {
+        "layout": {
+          "row_id": "stats_row",
+          "position": 1,
+          "columns": 3,
+          "gap": 4,
+          "columnWidths": [33.33, 33.34, 33.33]
+        }
+      },
+      "created_at": "2025-01-06T03:30:00.000Z",
+      "updated_at": "2025-01-06T03:30:00.000Z"
+    },
+    {
+      "id": 5,
+      "type": "number_card",
+      "content": {
+        "title": "Redução de Risco",
+        "number": "23%",
+        "description": "Eventos cardiovasculares",
+        "trend": "down",
+        "text_color": "#ffffff",
+        "background_color": "#7c2d12",
+        "accent_color": "#f97316"
+      },
+      "sort_index": 4,
+      "visible": true,
+      "meta": {
+        "layout": {
+          "row_id": "stats_row",
+          "position": 2,
+          "columns": 3,
+          "gap": 4,
+          "columnWidths": [33.33, 33.34, 33.33]
+        }
+      },
+      "created_at": "2025-01-06T03:30:00.000Z",
+      "updated_at": "2025-01-06T03:30:00.000Z"
+    },
+    {
+      "id": 6,
+      "type": "heading",
+      "content": {
+        "text": "Metodologia",
+        "level": 2,
+        "text_color": "#ffffff",
+        "background_color": "transparent"
+      },
+      "sort_index": 5,
+      "visible": true,
+      "meta": {},
+      "created_at": "2025-01-06T03:30:00.000Z",
+      "updated_at": "2025-01-06T03:30:00.000Z"
+    },
+    {
+      "id": 7,
+      "type": "callout",
+      "content": {
+        "text": "Critérios de inclusão: Ensaios clínicos randomizados publicados entre 2018-2024, participantes adultos (≥18 anos), intervenções cardiovasculares validadas.",
+        "type": "info",
+        "title": "Critérios de Seleção",
+        "text_color": "#1e40af",
+        "background_color": "#dbeafe",
+        "border_color": "#3b82f6",
+        "accent_color": "#3b82f6"
+      },
+      "sort_index": 6,
+      "visible": true,
+      "meta": {},
+      "created_at": "2025-01-06T03:30:00.000Z",
+      "updated_at": "2025-01-06T03:30:00.000Z"
+    },
+    {
+      "id": 8,
+      "type": "snapshot_card",
+      "content": {
+        "title": "Evidência Clínica Principal",
+        "subtitle": "Intervenção Farmacológica",
+        "value": "Estatinas + ACE-I",
+        "change": "+18% eficácia",
+        "trend": "up",
+        "evidence_level": "high",
+        "recommendation_strength": "strong",
+        "population": "Adultos com diabetes tipo 2",
+        "intervention": "Terapia combinada",
+        "comparison": "Monoterapia",
+        "outcome": "Redução de eventos cardiovasculares maiores",
+        "design": "Meta-análise de ECRs",
+        "key_findings": [
+          "Redução significativa de mortalidade (RR: 0.77, IC95%: 0.65-0.92)",
+          "Melhora no perfil lipídico e controle pressórico",
+          "Baixa incidência de efeitos adversos graves"
+        ],
+        "text_color": "#ffffff",
+        "background_color": "#1e3a8a",
+        "accent_color": "#3b82f6"
+      },
+      "sort_index": 7,
+      "visible": true,
+      "meta": {
+        "layout": {
+          "row_id": "evidence_row",
+          "position": 0,
+          "columns": 2,
+          "gap": 4,
+          "columnWidths": [60, 40]
+        }
+      },
+      "created_at": "2025-01-06T03:30:00.000Z",
+      "updated_at": "2025-01-06T03:30:00.000Z"
+    },
+    {
+      "id": 9,
+      "type": "table",
+      "content": {
+        "headers": ["Intervenção", "N", "RR (IC95%)", "NNT"],
+        "rows": [
+          ["Estatinas", "8,245", "0.72 (0.61-0.85)", "28"],
+          ["ACE Inibidores", "4,892", "0.81 (0.70-0.94)", "35"],
+          ["Terapia Combinada", "2,710", "0.65 (0.52-0.81)", "22"]
+        ],
+        "caption": "Resultados por tipo de intervenção",
+        "text_color": "#d1d5db",
+        "background_color": "#1a1a1a",
+        "border_color": "#2a2a2a"
+      },
+      "sort_index": 8,
+      "visible": true,
+      "meta": {
+        "layout": {
+          "row_id": "evidence_row",
+          "position": 1,
+          "columns": 2,
+          "gap": 4,
+          "columnWidths": [60, 40]
+        }
+      },
+      "created_at": "2025-01-06T03:30:00.000Z",
+      "updated_at": "2025-01-06T03:30:00.000Z"
+    },
+    {
+      "id": 10,
+      "type": "heading",
+      "content": {
+        "text": "Discussão dos Achados",
+        "level": 2,
+        "text_color": "#ffffff",
+        "background_color": "transparent"
+      },
+      "sort_index": 9,
+      "visible": true,
+      "meta": {},
+      "created_at": "2025-01-06T03:30:00.000Z",
+      "updated_at": "2025-01-06T03:30:00.000Z"
+    },
+    {
+      "id": 11,
+      "type": "paragraph",
+      "content": {
+        "text": "Os resultados demonstram que a terapia combinada com estatinas e ACE inibidores oferece benefícios superiores em comparação com monoterapias isoladas. A redução observada no risco relativo de eventos cardiovasculares maiores foi consistente across diferentes subgrupos populacionais.",
+        "text_color": "#d1d5db",
+        "background_color": "transparent"
+      },
+      "sort_index": 10,
+      "visible": true,
+      "meta": {},
+      "created_at": "2025-01-06T03:30:00.000Z",
+      "updated_at": "2025-01-06T03:30:00.000Z"
+    },
+    {
+      "id": 12,
+      "type": "reviewer_quote",
+      "content": {
+        "quote": "Esta meta-análise fornece evidência robusta para a implementação de protocolos de terapia combinada em pacientes de alto risco cardiovascular.",
+        "author": "Dr. Maria Silva",
+        "role": "Cardiologista Intervencionista",
+        "institution": "Hospital das Clínicas",
+        "text_color": "#e5e7eb",
+        "background_color": "#374151",
+        "border_color": "#6b7280"
+      },
+      "sort_index": 11,
+      "visible": true,
+      "meta": {},
+      "created_at": "2025-01-06T03:30:00.000Z",
+      "updated_at": "2025-01-06T03:30:00.000Z"
+    },
+    {
+      "id": 13,
+      "type": "poll",
+      "content": {
+        "question": "Na sua prática clínica, qual abordagem você mais utiliza?",
+        "options": [
+          {"id": "opt1", "text": "Monoterapia com estatinas", "votes": 0},
+          {"id": "opt2", "text": "Monoterapia com ACE-I", "votes": 0},
+          {"id": "opt3", "text": "Terapia combinada", "votes": 0},
+          {"id": "opt4", "text": "Depende do perfil do paciente", "votes": 0}
+        ],
+        "poll_type": "single_choice",
+        "show_results": false,
+        "show_vote_count": true,
+        "show_percentage": true,
+        "result_display": "full",
+        "text_color": "#ffffff",
+        "background_color": "#1a1a1a",
+        "border_color": "#2a2a2a",
+        "accent_color": "#3b82f6"
+      },
+      "sort_index": 12,
+      "visible": true,
+      "meta": {
+        "layout": {
+          "row_id": "interaction_row",
+          "position": 0,
+          "columns": 1,
+          "gap": 4,
+          "columnWidths": [100]
+        }
+      },
+      "created_at": "2025-01-06T03:30:00.000Z",
+      "updated_at": "2025-01-06T03:30:00.000Z"
+    },
+    {
+      "id": 14,
+      "type": "citation_list",
+      "content": {
+        "citations": [
+          {
+            "id": "ref1",
+            "authors": "Smith J, Johnson K, Williams L",
+            "title": "Combined statin and ACE inhibitor therapy in cardiovascular disease prevention",
+            "journal": "New England Journal of Medicine",
+            "year": "2023",
+            "volume": "389",
+            "pages": "1245-1258",
+            "doi": "10.1056/NEJMoa2023001",
+            "pmid": "37123456"
+          },
+          {
+            "id": "ref2", 
+            "authors": "Brown A, Davis M, Wilson R",
+            "title": "Meta-analysis of cardiovascular interventions: A systematic review",
+            "journal": "The Lancet",
+            "year": "2024",
+            "volume": "403",
+            "pages": "567-580",
+            "doi": "10.1016/S0140-6736(24)00123-4",
+            "pmid": "38234567"
+          }
+        ],
+        "title": "Referências Principais",
+        "text_color": "#d1d5db",
+        "background_color": "transparent"
+      },
+      "sort_index": 13,
+      "visible": true,
+      "meta": {},
+      "created_at": "2025-01-06T03:30:00.000Z",
+      "updated_at": "2025-01-06T03:30:00.000Z"
+    },
+    {
+      "id": 15,
+      "type": "divider",
+      "content": {
+        "style": "solid",
+        "color": "#374151",
+        "thickness": 1
+      },
+      "sort_index": 14,
+      "visible": true,
+      "meta": {},
+      "created_at": "2025-01-06T03:30:00.000Z",
+      "updated_at": "2025-01-06T03:30:00.000Z"
+    }
+  ]
+}
