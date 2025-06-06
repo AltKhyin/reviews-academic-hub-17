@@ -1,6 +1,6 @@
 
-// ABOUTME: Refactored native editor with improved component separation
-// Main editor container with better organization and UX
+// ABOUTME: Refactored native editor with extracted hooks and better organization
+// Main editor container using focused sub-components and hooks
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { ReviewBlock } from '@/types/review';
@@ -11,6 +11,7 @@ import { EditorToolbar } from './EditorToolbar';
 import { EditorStatusBar } from './EditorStatusBar';
 import { useEditorAutoSave } from '@/hooks/useEditorAutoSave';
 import { useBlockManagement } from '@/hooks/useBlockManagement';
+import { useEditorKeyboardShortcuts } from './hooks/useEditorKeyboardShortcuts';
 import { cn } from '@/lib/utils';
 
 interface NativeEditorProps {
@@ -52,12 +53,24 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
     canRedo
   } = useBlockManagement({ initialBlocks, issueId });
 
-  // Auto-save functionality
   const { handleSave, isSaving, lastSaved } = useEditorAutoSave({
     data: blocks,
     onSave: onSave ? async (data) => { onSave(data); } : undefined,
     interval: 30000,
     enabled: !!issueId
+  });
+
+  const handleManualSave = useCallback(() => {
+    if (onSave) {
+      onSave(blocks);
+      setHasUnsavedChanges(false);
+    }
+  }, [blocks, onSave]);
+
+  useEditorKeyboardShortcuts({
+    onSave: handleManualSave,
+    onUndo: undo,
+    onRedo: redo
   });
 
   // Track changes
@@ -66,19 +79,11 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
     setHasUnsavedChanges(hasChanges);
   }, [blocks, initialBlocks]);
 
-  // Enhanced block addition that returns the new block ID
   const handleAddBlock = useCallback((type: any, position?: number) => {
     const newBlockId = addBlock(type, position);
     console.log('Block added in NativeEditor:', { type, position, newBlockId });
     return newBlockId;
   }, [addBlock]);
-
-  const handleManualSave = useCallback(() => {
-    if (onSave) {
-      onSave(blocks);
-      setHasUnsavedChanges(false);
-    }
-  }, [blocks, onSave]);
 
   const handleImport = useCallback((importedBlocks: ReviewBlock[]) => {
     console.log('Importing blocks:', importedBlocks);
@@ -92,35 +97,6 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
       }
     });
   }, [addBlock, updateBlock]);
-
-  const handleKeyboardShortcuts = useCallback((e: KeyboardEvent) => {
-    if (e.ctrlKey || e.metaKey) {
-      switch (e.key) {
-        case 's':
-          e.preventDefault();
-          handleManualSave();
-          break;
-        case 'z':
-          if (e.shiftKey) {
-            e.preventDefault();
-            redo();
-          } else {
-            e.preventDefault();
-            undo();
-          }
-          break;
-        case 'y':
-          e.preventDefault();
-          redo();
-          break;
-      }
-    }
-  }, [handleManualSave, undo, redo]);
-
-  useEffect(() => {
-    document.addEventListener('keydown', handleKeyboardShortcuts);
-    return () => document.removeEventListener('keydown', handleKeyboardShortcuts);
-  }, [handleKeyboardShortcuts]);
 
   return (
     <div 

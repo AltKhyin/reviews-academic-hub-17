@@ -1,17 +1,15 @@
 
-// ABOUTME: Simplified inline block settings with extracted components
-// Main settings interface for blocks with modular property panels
+// ABOUTME: Refactored inline block settings with extracted panels
+// Main settings interface using focused sub-components
 
 import React, { useState } from 'react';
 import { ReviewBlock } from '@/types/review';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, Eye, EyeOff, Palette, Type, AlignLeft } from 'lucide-react';
-import { InlineColorPicker } from './InlineColorPicker';
+import { Settings, Type, AlignLeft, Palette } from 'lucide-react';
 import { InlineAlignmentControls } from './InlineAlignmentControls';
-import { BlockSpecificProperties } from './BlockSpecificProperties';
+import { GeneralSettings } from './settings/GeneralSettings';
+import { ColorSettings } from './settings/ColorSettings';
 import { cn } from '@/lib/utils';
 
 interface InlineBlockSettingsProps {
@@ -134,76 +132,29 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="general" className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label style={{ color: '#d1d5db' }}>Bloco Visível</Label>
-            <div className="flex items-center gap-2">
-              {block.visible ? (
-                <Eye className="w-3 h-3" style={{ color: '#10b981' }} />
-              ) : (
-                <EyeOff className="w-3 h-3" style={{ color: '#ef4444' }} />
-              )}
-              <Switch
-                checked={block.visible}
-                onCheckedChange={handleVisibilityToggle}
-                className="scale-75"
-              />
-            </div>
-          </div>
-          
-          <div className="text-xs" style={{ color: '#6b7280' }}>
-            ID: {block.id} • Tipo: {block.type}
-          </div>
-
-          <BlockSpecificProperties 
+        <TabsContent value="general">
+          <GeneralSettings
             block={block}
             onContentUpdate={handleContentUpdate}
+            onVisibilityToggle={handleVisibilityToggle}
           />
         </TabsContent>
 
-        <TabsContent value="alignment" className="space-y-3">
+        <TabsContent value="alignment">
           <InlineAlignmentControls
             alignment={block.meta?.alignment?.vertical || 'top'}
             onAlignmentChange={handleAlignmentChange}
           />
-          <div className="text-xs" style={{ color: '#6b7280' }}>
+          <div className="text-xs mt-3" style={{ color: '#6b7280' }}>
             Controla o alinhamento vertical do conteúdo em grids com alturas diferentes.
           </div>
         </TabsContent>
 
-        <TabsContent value="colors" className="space-y-3">
-          <div className="space-y-2">
-            <InlineColorPicker
-              label="Texto"
-              value={block.content.text_color || '#ffffff'}
-              onChange={(color) => handleColorChange('text_color', color)}
-              readonly={false}
-              compact={true}
-            />
-            <InlineColorPicker
-              label="Fundo"
-              value={block.content.background_color || 'transparent'}
-              onChange={(color) => handleColorChange('background_color', color)}
-              readonly={false}
-              compact={true}
-            />
-            <InlineColorPicker
-              label="Borda"
-              value={block.content.border_color || 'transparent'}
-              onChange={(color) => handleColorChange('border_color', color)}
-              readonly={false}
-              compact={true}
-            />
-            {(block.type === 'snapshot_card' || block.type === 'callout' || block.type === 'number_card') && (
-              <InlineColorPicker
-                label="Destaque"
-                value={block.content.accent_color || '#3b82f6'}
-                onChange={(color) => handleColorChange('accent_color', color)}
-                readonly={false}
-                compact={true}
-              />
-            )}
-          </div>
+        <TabsContent value="colors">
+          <ColorSettings
+            block={block}
+            onColorChange={handleColorChange}
+          />
         </TabsContent>
       </Tabs>
     </div>

@@ -1,36 +1,25 @@
 
-// ABOUTME: Enhanced interactive poll block with comprehensive voting system and analytics
-// Provides complete poll creation, management, and real-time results with advanced options
+// ABOUTME: Refactored poll block with extracted components for better maintainability
+// Main poll container using focused sub-components
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Progress } from '@/components/ui/progress';
 import { ReviewBlock } from '@/types/review';
 import { InlineTextEditor } from '@/components/editor/inline/InlineTextEditor';
 import { InlineRichTextEditor } from '@/components/editor/inline/InlineRichTextEditor';
 import { InlineBlockSettings } from '@/components/editor/inline/InlineBlockSettings';
+import { PollConfig } from './poll/PollConfig';
+import { PollVoting } from './poll/PollVoting';
+import { PollResults } from './poll/PollResults';
 import { 
   BarChart3, 
-  Plus, 
-  Trash2, 
   Vote,
   Users,
   TrendingUp,
   Clock,
-  CheckCircle,
   Circle,
-  Square,
-  CheckSquare,
-  Calendar,
-  Eye,
-  EyeOff,
-  Settings,
-  PieChart
+  Settings
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -50,16 +39,9 @@ interface PollBlockProps {
 
 const pollTypes = {
   single_choice: { label: 'Escolha Única', icon: Circle, description: 'Uma opção por voto' },
-  multiple_choice: { label: 'Múltipla Escolha', icon: Square, description: 'Várias opções por voto' },
+  multiple_choice: { label: 'Múltipla Escolha', icon: Circle, description: 'Várias opções por voto' },
   rating: { label: 'Avaliação', icon: TrendingUp, description: 'Escala de 1-5' },
   ranking: { label: 'Ranking', icon: BarChart3, description: 'Ordenar por preferência' }
-};
-
-const resultDisplayTypes = {
-  bar: 'Barras',
-  pie: 'Pizza', 
-  list: 'Lista',
-  minimal: 'Minimal'
 };
 
 const pollStatuses = {
@@ -109,18 +91,15 @@ export const PollBlock: React.FC<PollBlockProps> = ({
   const pollType = content.poll_type || 'single_choice';
   const votes = content.votes || new Array(options.length).fill(0);
   const totalVotes = content.total_votes || 0;
-  const allowAddOptions = content.allow_add_options || false;
   const showResults = content.show_results ?? true;
-  const anonymousVoting = content.anonymous_voting ?? true;
-  const requireAuth = content.require_auth ?? false;
-  const deadline = content.deadline || '';
-  const maxSelections = content.max_selections || 1;
-  const minSelections = content.min_selections || 1;
   const pollStatus = content.poll_status || 'draft';
   const resultDisplay = content.result_display || 'bar';
   const showVoteCount = content.show_vote_count ?? true;
   const showPercentage = content.show_percentage ?? true;
-  const allowComments = content.allow_comments ?? false;
+  const anonymousVoting = content.anonymous_voting ?? true;
+  const deadline = content.deadline || '';
+  const maxSelections = content.max_selections || 1;
+  const minSelections = content.min_selections || 1;
   
   // Color system integration
   const textColor = content.text_color || '#ffffff';
@@ -163,7 +142,7 @@ export const PollBlock: React.FC<PollBlockProps> = ({
   };
 
   const removeOption = (index: number) => {
-    if (options.length <= 2) return; // Minimum 2 options
+    if (options.length <= 2) return;
     
     const newOptions = options.filter((_, i) => i !== index);
     const newVotes = votes.filter((_, i) => i !== index);
@@ -184,7 +163,6 @@ export const PollBlock: React.FC<PollBlockProps> = ({
     handleUpdate('total_votes', totalVotes + 1);
     setHasVoted(true);
     
-    // Trigger interaction event
     if (onInteraction) {
       onInteraction(String(block.id), 'poll_voted', {
         poll_id: block.id,
@@ -212,10 +190,6 @@ export const PollBlock: React.FC<PollBlockProps> = ({
     }
   };
 
-  const getVotePercentage = (optionVotes: number) => {
-    return totalVotes > 0 ? Math.round((optionVotes / totalVotes) * 100) : 0;
-  };
-
   const isPollActive = () => {
     if (pollStatus !== 'active') return false;
     if (deadline) {
@@ -238,120 +212,10 @@ export const PollBlock: React.FC<PollBlockProps> = ({
     color: textColor
   };
 
-  const renderResults = () => {
-    if (!showResults && !hasVoted) return null;
-
-    return (
-      <div className="space-y-3">
-        {options.map((option, index) => {
-          const optionVotes = votes[index] || 0;
-          const percentage = getVotePercentage(optionVotes);
-          
-          if (resultDisplay === 'minimal') {
-            return (
-              <div key={option.id} className="flex items-center justify-between text-sm">
-                <span style={{ color: textColor }}>{option.text}</span>
-                <div className="flex items-center gap-2">
-                  {showVoteCount && (
-                    <span style={{ color: textColor, opacity: 0.7 }}>{optionVotes}</span>
-                  )}
-                  {showPercentage && (
-                    <span style={{ color: textColor, opacity: 0.7 }}>{percentage}%</span>
-                  )}
-                </div>
-              </div>
-            );
-          }
-
-          return (
-            <div key={option.id} className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span style={{ color: textColor }}>{option.text}</span>
-                <div className="flex items-center gap-2 text-sm">
-                  {showVoteCount && (
-                    <span style={{ color: textColor, opacity: 0.7 }}>{optionVotes} votos</span>
-                  )}
-                  {showPercentage && (
-                    <span style={{ color: textColor, opacity: 0.7 }}>{percentage}%</span>
-                  )}
-                </div>
-              </div>
-              <Progress 
-                value={percentage} 
-                className="h-2"
-                style={{ 
-                  backgroundColor: borderColor,
-                  ['--progress-background' as any]: option.color
-                }}
-              />
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
-
-  const renderVotingInterface = () => {
-    if (hasVoted || !isPollActive()) return null;
-
-    return (
-      <div className="space-y-4">
-        <div className="space-y-2">
-          {options.map((option, index) => {
-            const isSelected = selectedOptions.includes(index);
-            const SelectIcon = pollType === 'single_choice' ? 
-              (isSelected ? CheckCircle : Circle) :
-              (isSelected ? CheckSquare : Square);
-
-            return (
-              <Button
-                key={option.id}
-                variant={isSelected ? "default" : "outline"}
-                className="w-full justify-start text-left h-auto p-3"
-                onClick={() => handleOptionSelect(index)}
-                style={{
-                  backgroundColor: isSelected ? accentColor : 'transparent',
-                  borderColor: isSelected ? accentColor : borderColor,
-                  color: isSelected ? '#ffffff' : textColor
-                }}
-              >
-                <SelectIcon className="w-4 h-4 mr-3 flex-shrink-0" />
-                <span className="flex-1">{option.text}</span>
-              </Button>
-            );
-          })}
-        </div>
-
-        <div className="flex items-center justify-between">
-          <div className="text-xs" style={{ color: textColor, opacity: 0.7 }}>
-            {pollType === 'multiple_choice' && maxSelections > 1 && (
-              <span>
-                Selecione {minSelections === maxSelections ? maxSelections : `${minSelections}-${maxSelections}`} opção(ões)
-              </span>
-            )}
-          </div>
-          
-          <Button
-            onClick={handleVote}
-            disabled={!canVote()}
-            className="flex items-center gap-2"
-            style={{ backgroundColor: accentColor }}
-          >
-            <Vote className="w-4 h-4" />
-            Votar
-          </Button>
-        </div>
-      </div>
-    );
-  };
-
   if (readonly) {
     return (
       <div className="poll-block my-6">
-        <Card 
-          className="border shadow-lg"
-          style={cardStyle}
-        >
+        <Card className="border shadow-lg" style={cardStyle}>
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2" style={{ color: questionColor }}>
@@ -397,8 +261,34 @@ export const PollBlock: React.FC<PollBlockProps> = ({
           </CardHeader>
           
           <CardContent className="space-y-6">
-            {renderVotingInterface()}
-            {renderResults()}
+            <PollVoting
+              options={options}
+              pollType={pollType}
+              selectedOptions={selectedOptions}
+              minSelections={minSelections}
+              maxSelections={maxSelections}
+              isPollActive={isPollActive()}
+              hasVoted={hasVoted}
+              canVote={canVote()}
+              textColor={textColor}
+              borderColor={borderColor}
+              accentColor={accentColor}
+              onOptionSelect={handleOptionSelect}
+              onVote={handleVote}
+            />
+            
+            <PollResults
+              options={options}
+              votes={votes}
+              totalVotes={totalVotes}
+              showResults={showResults}
+              hasVoted={hasVoted}
+              showVoteCount={showVoteCount}
+              showPercentage={showPercentage}
+              resultDisplay={resultDisplay}
+              textColor={textColor}
+              borderColor={borderColor}
+            />
             
             {hasVoted && (
               <div className="text-center text-sm" style={{ color: accentColor }}>
@@ -413,7 +303,6 @@ export const PollBlock: React.FC<PollBlockProps> = ({
 
   return (
     <div className="poll-block my-6 group relative">
-      {/* Inline Settings */}
       <div className="absolute -top-2 -right-2 z-10">
         <InlineBlockSettings
           block={block}
@@ -421,10 +310,7 @@ export const PollBlock: React.FC<PollBlockProps> = ({
         />
       </div>
 
-      <Card 
-        className="border shadow-lg"
-        style={cardStyle}
-      >
+      <Card className="border shadow-lg" style={cardStyle}>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -445,7 +331,6 @@ export const PollBlock: React.FC<PollBlockProps> = ({
             </Button>
           </div>
           
-          {/* Question Editor */}
           <InlineTextEditor
             value={question}
             onChange={(value) => handleUpdate('question', value)}
@@ -454,7 +339,6 @@ export const PollBlock: React.FC<PollBlockProps> = ({
             style={{ color: questionColor }}
           />
           
-          {/* Description Editor */}
           <InlineRichTextEditor
             value={description}
             onChange={(value) => handleUpdate('description', value)}
@@ -465,235 +349,28 @@ export const PollBlock: React.FC<PollBlockProps> = ({
         </CardHeader>
         
         <CardContent className="space-y-6">
-          {/* Configuration Panel */}
           {showConfig && (
-            <div 
-              className="p-4 rounded border space-y-4"
-              style={{ 
-                backgroundColor: 'rgba(0,0,0,0.3)',
-                borderColor: '#2a2a2a'
-              }}
-            >
-              {/* Poll Type and Status */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label className="text-xs font-medium mb-2 block" style={{ color: textColor }}>
-                    Tipo de Enquete
-                  </Label>
-                  <Select value={pollType} onValueChange={(value) => handleUpdate('poll_type', value)}>
-                    <SelectTrigger 
-                      style={{ backgroundColor: '#212121', borderColor: borderColor, color: textColor }}
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}>
-                      {Object.entries(pollTypes).map(([key, config]) => (
-                        <SelectItem key={key} value={key}>
-                          <div className="flex items-center gap-2">
-                            <config.icon className="w-4 h-4" />
-                            <div>
-                              <div>{config.label}</div>
-                              <div className="text-xs opacity-60">{config.description}</div>
-                            </div>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label className="text-xs font-medium mb-2 block" style={{ color: textColor }}>
-                    Status da Enquete
-                  </Label>
-                  <Select value={pollStatus} onValueChange={(value) => handleUpdate('poll_status', value)}>
-                    <SelectTrigger 
-                      style={{ backgroundColor: '#212121', borderColor: borderColor, color: textColor }}
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}>
-                      {Object.entries(pollStatuses).map(([key, config]) => (
-                        <SelectItem key={key} value={key}>
-                          <div className="flex items-center gap-2">
-                            <div 
-                              className="w-2 h-2 rounded-full"
-                              style={{ backgroundColor: config.color }}
-                            />
-                            {config.label}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label className="text-xs font-medium mb-2 block" style={{ color: textColor }}>
-                    Exibição dos Resultados
-                  </Label>
-                  <Select value={resultDisplay} onValueChange={(value) => handleUpdate('result_display', value)}>
-                    <SelectTrigger 
-                      style={{ backgroundColor: '#212121', borderColor: borderColor, color: textColor }}
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}>
-                      {Object.entries(resultDisplayTypes).map(([key, label]) => (
-                        <SelectItem key={key} value={key}>{label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Multiple Choice Settings */}
-              {pollType === 'multiple_choice' && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-xs font-medium mb-2 block" style={{ color: textColor }}>
-                      Mín. Seleções
-                    </Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      value={minSelections}
-                      onChange={(e) => handleUpdate('min_selections', Number(e.target.value))}
-                      style={{ backgroundColor: '#212121', borderColor: borderColor, color: textColor }}
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label className="text-xs font-medium mb-2 block" style={{ color: textColor }}>
-                      Máx. Seleções
-                    </Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      value={maxSelections}
-                      onChange={(e) => handleUpdate('max_selections', Number(e.target.value))}
-                      style={{ backgroundColor: '#212121', borderColor: borderColor, color: textColor }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Deadline */}
-              <div>
-                <Label className="text-xs font-medium mb-2 block" style={{ color: textColor }}>
-                  Data Limite (opcional)
-                </Label>
-                <Input
-                  type="datetime-local"
-                  value={deadline}
-                  onChange={(e) => handleUpdate('deadline', e.target.value)}
-                  style={{ backgroundColor: '#212121', borderColor: borderColor, color: textColor }}
-                />
-              </div>
-
-              {/* Options */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="show-results"
-                    checked={showResults}
-                    onCheckedChange={(checked) => handleUpdate('show_results', checked)}
-                  />
-                  <Label htmlFor="show-results" className="text-xs" style={{ color: textColor }}>
-                    Mostrar Resultados
-                  </Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="show-vote-count"
-                    checked={showVoteCount}
-                    onCheckedChange={(checked) => handleUpdate('show_vote_count', checked)}
-                  />
-                  <Label htmlFor="show-vote-count" className="text-xs" style={{ color: textColor }}>
-                    Número de Votos
-                  </Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="show-percentage"
-                    checked={showPercentage}
-                    onCheckedChange={(checked) => handleUpdate('show_percentage', checked)}
-                  />
-                  <Label htmlFor="show-percentage" className="text-xs" style={{ color: textColor }}>
-                    Porcentagem
-                  </Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="anonymous-voting"
-                    checked={anonymousVoting}
-                    onCheckedChange={(checked) => handleUpdate('anonymous_voting', checked)}
-                  />
-                  <Label htmlFor="anonymous-voting" className="text-xs" style={{ color: textColor }}>
-                    Votação Anônima
-                  </Label>
-                </div>
-              </div>
-            </div>
+            <PollConfig
+              pollType={pollType}
+              pollStatus={pollStatus}
+              resultDisplay={resultDisplay}
+              minSelections={minSelections}
+              maxSelections={maxSelections}
+              deadline={deadline}
+              showResults={showResults}
+              showVoteCount={showVoteCount}
+              showPercentage={showPercentage}
+              anonymousVoting={anonymousVoting}
+              options={options}
+              textColor={textColor}
+              borderColor={borderColor}
+              onUpdate={handleUpdate}
+              onOptionChange={handleOptionChange}
+              onAddOption={addOption}
+              onRemoveOption={removeOption}
+            />
           )}
-
-          {/* Options Editor */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium" style={{ color: textColor }}>
-                Opções de resposta:
-              </Label>
-              
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={addOption}
-                className="flex items-center gap-1"
-                style={{ borderColor: borderColor, color: textColor }}
-              >
-                <Plus className="w-4 h-4" />
-                Adicionar
-              </Button>
-            </div>
-            
-            {options.map((option, index) => (
-              <div key={option.id} className="flex items-center gap-2">
-                <div className="flex-1">
-                  <InlineTextEditor
-                    value={option.text}
-                    onChange={(value) => handleOptionChange(index, 'text', value)}
-                    placeholder={`Opção ${index + 1}`}
-                    className="w-full"
-                    style={{ color: textColor }}
-                  />
-                </div>
-                
-                <Input
-                  type="color"
-                  value={option.color}
-                  onChange={(e) => handleOptionChange(index, 'color', e.target.value)}
-                  className="w-12 h-8 p-1 cursor-pointer"
-                  style={{ backgroundColor: '#212121', borderColor: borderColor }}
-                />
-                
-                {options.length > 2 && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => removeOption(index)}
-                    className="text-red-400 hover:text-red-300 p-1"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                )}
-              </div>
-            ))}
-          </div>
           
-          {/* Preview Results */}
           {totalVotes > 0 && (
             <div className="space-y-3 pt-4 border-t" style={{ borderColor: borderColor }}>
               <div className="flex items-center gap-2">
@@ -703,7 +380,18 @@ export const PollBlock: React.FC<PollBlockProps> = ({
                 </span>
               </div>
               
-              {renderResults()}
+              <PollResults
+                options={options}
+                votes={votes}
+                totalVotes={totalVotes}
+                showResults={true}
+                hasVoted={true}
+                showVoteCount={showVoteCount}
+                showPercentage={showPercentage}
+                resultDisplay={resultDisplay}
+                textColor={textColor}
+                borderColor={borderColor}
+              />
             </div>
           )}
         </CardContent>
