@@ -1,12 +1,13 @@
-// ABOUTME: Main viewer component for native review content with enhanced dark theme
-// Orchestrates block rendering, analytics, and user interactions
+
+// ABOUTME: Main viewer component for native review content with enhanced error handling
+// Provides comprehensive loading states, error boundaries, and user interaction tracking
 
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { FileText, Clock, Users, TrendingUp, Eye, ArrowLeft } from 'lucide-react';
+import { FileText, Clock, Users, TrendingUp, Eye, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { EnhancedIssue } from '@/types/review';
 import { useNativeReview } from '@/hooks/useNativeReview';
 import { BlockRenderer } from './BlockRenderer';
@@ -24,7 +25,7 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
   issue,
   className
 }) => {
-  const { reviewData, isLoading, trackAnalytics, voteOnPoll } = useNativeReview(issue.id);
+  const { reviewData, isLoading, error, trackAnalytics, voteOnPoll } = useNativeReview(issue.id);
   const [viewMode, setViewMode] = useState<'native' | 'pdf' | 'dual'>('native');
   const [readingProgress, setReadingProgress] = useState(0);
   const [activeSection, setActiveSection] = useState<string | null>(null);
@@ -33,14 +34,16 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
 
   useEffect(() => {
     // Track review opened event
-    trackAnalytics({
-      eventType: 'review_opened',
-      eventData: {
-        review_type: issue.review_type,
-        has_original_pdf: !!issue.article_pdf_url,
-        total_blocks: reviewData?.blocks?.length || 0
-      }
-    });
+    if (reviewData) {
+      trackAnalytics({
+        eventType: 'review_opened',
+        eventData: {
+          review_type: issue.review_type,
+          has_original_pdf: !!issue.article_pdf_url,
+          total_blocks: reviewData.blocks?.length || 0
+        }
+      }).catch(console.error);
+    }
   }, [issue.id, issue.review_type, issue.article_pdf_url, reviewData?.blocks?.length, trackAnalytics]);
 
   useEffect(() => {
@@ -48,7 +51,7 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
     const handleScroll = () => {
       const scrollTop = window.pageYOffset;
       const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const progress = Math.min(100, Math.max(0, (scrollTop / docHeight) * 100));
+      const progress = docHeight > 0 ? Math.min(100, Math.max(0, (scrollTop / docHeight) * 100)) : 0;
       
       setReadingProgress(progress);
 
@@ -58,19 +61,19 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
           eventType: 'section_viewed',
           eventData: { milestone: '25%' },
           scrollDepth: progress
-        });
+        }).catch(console.error);
       } else if (progress > 50 && progress < 55) {
         trackAnalytics({
           eventType: 'section_viewed',
           eventData: { milestone: '50%' },
           scrollDepth: progress
-        });
+        }).catch(console.error);
       } else if (progress > 75 && progress < 80) {
         trackAnalytics({
           eventType: 'section_viewed',
           eventData: { milestone: '75%' },
           scrollDepth: progress
-        });
+        }).catch(console.error);
       } else if (progress > 95) {
         trackAnalytics({
           eventType: 'review_completed',
@@ -80,7 +83,7 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
           },
           scrollDepth: progress,
           timeSpent: Math.floor((Date.now() - startTime) / 1000)
-        });
+        }).catch(console.error);
       }
     };
 
@@ -97,7 +100,7 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
         from_mode: viewMode,
         to_mode: mode
       }
-    });
+    }).catch(console.error);
   };
 
   const handleBlockInteraction = (blockId: string, interactionType: string, data?: any) => {
@@ -108,7 +111,7 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
         interaction_type: interactionType,
         ...data
       }
-    });
+    }).catch(console.error);
   };
 
   const handleSectionView = (blockId: string) => {
@@ -127,6 +130,47 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
                style={{ borderColor: '#3b82f6' }}></div>
           <p style={{ color: '#d1d5db' }}>Carregando revisão...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    console.error('Native review viewer error:', error);
+    return (
+      <div 
+        className="flex items-center justify-center min-h-screen"
+        style={{ backgroundColor: '#121212', color: '#ffffff' }}
+      >
+        <Card className="p-8 max-w-md mx-4" style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
+          <div className="text-center">
+            <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-red-300 mb-2">Erro ao carregar revisão</h2>
+            <p className="text-red-200 mb-4">
+              Não foi possível carregar os dados da revisão.
+            </p>
+            <div className="space-y-2">
+              <Button asChild variant="outline" className="w-full">
+                <Link to="/dashboard">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Voltar ao Dashboard
+                </Link>
+              </Button>
+              <Button 
+                onClick={() => window.location.reload()} 
+                variant="outline"
+                className="w-full"
+              >
+                Tentar novamente
+              </Button>
+            </div>
+            <details className="mt-4 text-left">
+              <summary className="cursor-pointer text-red-300">Detalhes do erro</summary>
+              <pre className="mt-2 text-xs text-red-200 bg-red-500/20 p-2 rounded overflow-auto">
+                {error?.message || 'Erro desconhecido'}
+              </pre>
+            </details>
+          </div>
+        </Card>
       </div>
     );
   }
@@ -220,6 +264,9 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
                 <Eye className="w-4 h-4" />
                 Revisão Nativa
               </span>
+              <span className="text-xs" style={{ color: '#9ca3af' }}>
+                {blocks.length} {blocks.length === 1 ? 'bloco' : 'blocos'}
+              </span>
             </div>
 
             <h1 className="text-2xl md:text-3xl font-bold leading-tight" style={{ color: '#ffffff' }}>
@@ -245,15 +292,17 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {viewMode === 'native' && (
           <div className="native-content space-y-6">
-            {blocks.map((block) => (
-              <BlockRenderer
-                key={block.id}
-                block={block}
-                readonly={true}
-              />
-            ))}
-            
-            {blocks.length === 0 && (
+            {blocks.length > 0 ? (
+              blocks.map((block) => (
+                <BlockRenderer
+                  key={block.id}
+                  block={block}
+                  readonly={true}
+                  onInteraction={handleBlockInteraction}
+                  onSectionView={handleSectionView}
+                />
+              ))
+            ) : (
               <Card 
                 className="p-8 text-center shadow-lg"
                 style={{ 
@@ -310,6 +359,8 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
                     block={block}
                     readonly={true}
                     className="text-sm"
+                    onInteraction={handleBlockInteraction}
+                    onSectionView={handleSectionView}
                   />
                 ))}
               </div>

@@ -1,6 +1,6 @@
 
-// ABOUTME: Hook for managing native review data and interactions
-// Handles fetching, caching, and real-time updates for review content
+// ABOUTME: Hook for managing native review data with enhanced error handling
+// Handles database inconsistencies and provides robust content access
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -19,23 +19,102 @@ export const useNativeReview = (issueId: string) => {
       blocks: ReviewBlock[];
       polls: ReviewPoll[];
     }> => {
-      // Use the database function for efficient fetching
-      const { data, error } = await supabase.rpc('get_review_with_blocks', {
-        review_id: issueId
+      console.log('Fetching review data for issue:', issueId);
+
+      // Fetch issue data
+      const { data: issueData, error: issueError } = await supabase
+        .from('issues')
+        .select('*')
+        .eq('id', issueId)
+        .single();
+
+      if (issueError) {
+        console.error('Issue fetch error:', issueError);
+        throw issueError;
+      }
+
+      if (!issueData) {
+        throw new Error('Issue not found');
+      }
+
+      // Fetch review blocks with proper error handling
+      const { data: blocksData, error: blocksError } = await supabase
+        .from('review_blocks')
+        .select('*')
+        .eq('issue_id', issueId)
+        .order('sort_index', { ascending: true });
+
+      if (blocksError) {
+        console.error('Blocks fetch error:', blocksError);
+        // Don't throw here, just log and continue with empty blocks
+      }
+
+      // Fetch review polls
+      const { data: pollsData, error: pollsError } = await supabase
+        .from('review_polls')
+        .select('*')
+        .eq('issue_id', issueId);
+
+      if (pollsError) {
+        console.error('Polls fetch error:', pollsError);
+        // Don't throw here, just log and continue with empty polls
+      }
+
+      // Normalize blocks to handle database schema inconsistencies
+      const normalizedBlocks: ReviewBlock[] = (blocksData || []).map(block => ({
+        id: block.id,
+        type: block.type,
+        // Handle both 'payload' from database and 'content' from types
+        content: block.payload || block.content || {},
+        sort_index: block.sort_index,
+        visible: block.visible ?? true,
+        meta: block.meta || {},
+        issue_id: block.issue_id,
+        created_at: block.created_at,
+        updated_at: block.updated_at
+      }));
+
+      console.log('Fetched review data:', {
+        issue: issueData,
+        blocksCount: normalizedBlocks.length,
+        pollsCount: (pollsData || []).length
       });
 
-      if (error) throw error;
-      if (!data) throw new Error('Review not found');
-
-      const result = data as any;
       return {
-        issue: result.issue,
-        blocks: result.blocks || [],
-        polls: result.polls || []
+        issue: {
+          id: issueData.id,
+          title: issueData.title || '',
+          description: issueData.description || '',
+          authors: issueData.authors || '',
+          specialty: issueData.specialty || '',
+          year: issueData.year ? parseInt(issueData.year) : undefined,
+          population: issueData.population || '',
+          review_type: issueData.review_type || 'native',
+          article_pdf_url: issueData.article_pdf_url || '',
+          pdf_url: issueData.pdf_url || ''
+        },
+        blocks: normalizedBlocks,
+        polls: (pollsData || []).map(poll => ({
+          id: poll.id,
+          issue_id: poll.issue_id,
+          block_id: poll.block_id,
+          question: poll.question || '',
+          options: Array.isArray(poll.options) ? poll.options : [],
+          poll_type: poll.poll_type || 'single_choice',
+          votes: Array.isArray(poll.votes) ? poll.votes : [],
+          total_votes: poll.total_votes || 0,
+          opens_at: poll.opens_at,
+          closes_at: poll.closes_at,
+          created_at: poll.created_at
+        }))
       };
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
-    enabled: !!issueId
+    enabled: !!issueId,
+    retry: (failureCount, error) => {
+      console.log('Query retry attempt:', failureCount, error);
+      return failureCount < 2; // Retry up to 2 times
+    }
   });
 
   // Track analytics events
@@ -46,11 +125,18 @@ export const useNativeReview = (issueId: string) => {
       scrollDepth?: number;
       timeSpent?: number;
     }) => {
+      if (!user?.id) {
+        console.log('No user ID for analytics tracking');
+        return null;
+      }
+
+      console.log('Tracking analytics event:', params);
+
       const { data, error } = await supabase
         .from('review_analytics')
         .insert({
           issue_id: issueId,
-          user_id: user?.id,
+          user_id: user.id,
           session_id: generateSessionId(),
           event_type: params.eventType,
           event_data: params.eventData,
@@ -60,8 +146,16 @@ export const useNativeReview = (issueId: string) => {
           device_type: getDeviceType()
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Analytics tracking error:', error);
+        throw error;
+      }
+      
       return data;
+    },
+    onError: (error) => {
+      console.error('Analytics mutation error:', error);
+      // Don't throw analytics errors to avoid disrupting user experience
     }
   });
 
@@ -71,7 +165,9 @@ export const useNativeReview = (issueId: string) => {
       pollId: string;
       optionIndex: number;
     }) => {
-      // First, record the vote in poll votes tracking
+      console.log('Voting on poll:', params);
+
+      // First, record the vote in analytics
       await trackAnalytics.mutateAsync({
         eventType: 'poll_voted',
         eventData: {
@@ -87,10 +183,12 @@ export const useNativeReview = (issueId: string) => {
         .eq('id', params.pollId)
         .single();
 
-      if (!currentPoll) throw new Error('Poll not found');
+      if (!currentPoll) {
+        throw new Error('Poll not found');
+      }
 
       // Safely handle votes as Json type
-      const existingVotes = currentPoll.votes as number[] || [];
+      const existingVotes = Array.isArray(currentPoll.votes) ? currentPoll.votes : [];
       const votes = [...existingVotes];
       
       // Ensure votes array has enough elements
@@ -113,12 +211,20 @@ export const useNativeReview = (issueId: string) => {
         })
         .eq('id', params.pollId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Poll vote error:', error);
+        throw error;
+      }
+      
       return data;
     },
     onSuccess: () => {
+      console.log('Poll vote successful, invalidating queries');
       // Invalidate and refetch the review data to get updated poll results
       queryClient.invalidateQueries({ queryKey: ['native-review', issueId] });
+    },
+    onError: (error) => {
+      console.error('Vote mutation error:', error);
     }
   });
 
