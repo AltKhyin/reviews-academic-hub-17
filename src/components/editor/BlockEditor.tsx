@@ -1,3 +1,4 @@
+
 // ABOUTME: Enhanced block editor with complete 2D grid support and fixed dark theme
 // Main editor with full grid functionality, responsive design, and proper menu overflow
 
@@ -240,6 +241,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     }, 100);
   }, [blocks, onAddBlock, onPlaceBlockIn2DGrid]);
 
+  // FIXED: Create wrapper functions to match the Grid2DContainer expected signatures
   const handleAddRowAbove = useCallback((gridId: string, rowIndex: number) => {
     addRowToGridById(gridId, 'above', rowIndex);
   }, [addRowToGridById]);
@@ -449,9 +451,9 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                     onUpdateBlock={onUpdateBlock}
                     onDeleteBlock={onDeleteBlock}
                     onAddBlock={handleAddBlockTo2DGrid}
-                    onAddRowAbove={addRowToGridById}
-                    onAddRowBelow={addRowToGridById}
-                    onRemoveRow={removeRowFromGridById}
+                    onAddRowAbove={handleAddRowAbove}
+                    onAddRowBelow={handleAddRowBelow}
+                    onRemoveRow={handleRemoveRow}
                     onUpdateGridLayout={updateGridLayout}
                     dragState={dragState}
                     onDragOver={handleDragOver2D}
