@@ -1,4 +1,3 @@
-
 // ABOUTME: Enhanced preview component with complete 2D grid support
 // Shows real-time preview of both 1D and 2D grid layouts with proper rendering
 
@@ -210,6 +209,7 @@ export const ReviewPreview: React.FC<ReviewPreviewProps> = ({
           <div key={`group-${groupIndex}`} className="layout-group mb-8">
             {group.type === '2d-grid' && group.grid2DStructure ? (
               <div className="grid-2d-preview">
+                {/* INVISIBLE GRID: No backgrounds, borders, or labels */}
                 <div 
                   className="grid-container"
                   style={{
@@ -221,13 +221,10 @@ export const ReviewPreview: React.FC<ReviewPreviewProps> = ({
                       ? group.grid2DStructure.rowHeights.map(h => `${h}px`).join(' ')
                       : `repeat(${group.grid2DStructure.rows}, minmax(120px, auto))`,
                     gap: `${group.grid2DStructure.gap}px`,
-                    border: '1px solid #2a2a2a',
-                    borderRadius: '8px',
-                    padding: `${group.grid2DStructure.gap}px`,
-                    backgroundColor: '#1a1a1a'
+                    // NO visual grid elements - completely invisible
                   }}
                 >
-                  {/* Create grid cells */}
+                  {/* Create invisible grid cells */}
                   {Array.from({ length: group.grid2DStructure.rows }).map((_, rowIndex) =>
                     Array.from({ length: group.grid2DStructure.columns }).map((_, colIndex) => {
                       const blockAtPosition = group.grid2DStructure!.blocks.find(
@@ -241,30 +238,22 @@ export const ReviewPreview: React.FC<ReviewPreviewProps> = ({
                             gridColumn: colIndex + 1,
                             gridRow: rowIndex + 1,
                             minHeight: '120px',
-                            border: blockAtPosition ? 'none' : '1px dashed #2a2a2a',
-                            borderRadius: '4px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
+                            // NO borders, backgrounds, or visual indicators
                           }}
                         >
-                          {blockAtPosition ? (
+                          {blockAtPosition && (
                             <BlockRenderer
                               block={blockAtPosition.block}
                               readonly={true}
                               className="preview-grid-block w-full h-full"
                             />
-                          ) : (
-                            <div className="text-gray-500 text-sm">Célula vazia</div>
                           )}
                         </div>
                       );
                     })
                   )}
                 </div>
-                <div className="text-center text-xs text-gray-400 mt-2">
-                  Grid 2D • {group.grid2DStructure.columns} colunas × {group.grid2DStructure.rows} linhas
-                </div>
+                {/* NO grid info labels in preview */}
               </div>
             ) : group.type === '1d-grid' && group.gridConfig ? (
               <div 

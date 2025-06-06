@@ -51,83 +51,11 @@
     --scrollbar-thumb: 210 12% 25%;
     --scrollbar-thumb-hover: 210 12% 35%;
     
-    /* Enhanced Dark Theme Variables - Using User's Preferred Colors */
-    /* Primary colors - darkest backgrounds */
+    /* Enhanced Dark Theme Variables */
     --editor-primary-bg: #121212;
     --editor-secondary-bg: #1a1a1a;
     --editor-tertiary-bg: #212121;
-    --editor-surface-bg: #121212;
-    --editor-card-bg: #1a1a1a;
-    --editor-hover-bg: #212121;
-    --editor-active-bg: #2a2a2a;
-    --editor-selected-bg: #1e3a8a;
     
-    /* Border colors */
-    --editor-primary-border: #2a2a2a;
-    --editor-secondary-border: #333333;
-    --editor-focus-border: #3b82f6;
-    --editor-active-border: #f59e0b;
-    
-    /* Text colors - high contrast */
-    --editor-primary-text: #ffffff;
-    --editor-secondary-text: #d1d5db;
-    --editor-muted-text: #9ca3af;
-    --editor-accent-text: #3b82f6;
-    --editor-link-text: #60a5fa;
-    
-    /* Status colors */
-    --editor-success-color: #10b981;
-    --editor-warning-color: #f59e0b;
-    --editor-error-color: #ef4444;
-    --editor-info-color: #3b82f6;
-    
-    /* Interactive colors - NO MORE BLUE BACKGROUNDS */
-    --editor-button-primary: #2a2a2a;
-    --editor-button-primary-hover: #333333;
-    --editor-button-secondary: #212121;
-    --editor-button-secondary-hover: #2a2a2a;
-    --editor-button-ghost: transparent;
-    --editor-button-ghost-hover: #212121;
-    
-    /* Block colors with distinct icons */
-    --block-block-background: #1a1a1a;
-    --block-block-border: #2a2a2a;
-    --block-block-hover: #212121;
-    --block-block-selected: #2a2a2a;
-    --block-block-active: #333333;
-    
-    /* Block type accent colors for icons */
-    --block-snapshot-card-accent: #3b82f6;
-    --block-heading-accent: #8b5cf6;
-    --block-paragraph-accent: #ffffff;
-    --block-figure-accent: #10b981;
-    --block-table-accent: #f59e0b;
-    --block-callout-accent: #ef4444;
-    --block-quote-accent: #a855f7;
-    --block-poll-accent: #06b6d4;
-    --block-citation-accent: #9ca3af;
-    --block-number-card-accent: #3b82f6;
-    --block-divider-accent: #6b7280;
-    
-    /* Preview colors */
-    --preview-preview-bg: #121212;
-    --preview-preview-card-bg: #1a1a1a;
-    --preview-preview-border: #2a2a2a;
-    --preview-preview-header-bg: #1a1a1a;
-    --preview-preview-footer-bg: #1a1a1a;
-    --preview-preview-scrollbar: #2a2a2a;
-    --preview-preview-scrollbar-hover: #333333;
-    
-    /* Palette colors */
-    --palette-palette-bg: #1a1a1a;
-    --palette-palette-card-bg: #212121;
-    --palette-palette-card-hover: #2a2a2a;
-    --palette-palette-border: #2a2a2a;
-    --palette-palette-header-bg: #1a1a1a;
-    --palette-category-text: #9ca3af;
-    --palette-block-title-text: #ffffff;
-    --palette-block-desc-text: #d1d5db;
-
     /* Z-index scale for proper layering */
     --z-dropdown: 1000;
     --z-sticky: 1020;
@@ -203,158 +131,14 @@
 }
 
 @layer components {
-  .auth-gradient {
-    background: linear-gradient(90deg, #1a1a1a 0%, #212121 100%);
-  }
-  
-  .hover-effect {
-    @apply transition-all duration-200;
-  }
-  
-  .card-elevation {
-    @apply shadow-[0_2px_4px_rgba(0,0,0,0.3)];
-  }
-  
-  .logo-text {
-    @apply font-serif font-medium tracking-tight text-white;
-  }
-
-  .subtitle-text {
-    @apply font-sans text-sm font-normal tracking-wide opacity-80 text-gray-300;
-  }
-  
-  /* Enhanced scrollbar utilities */
-  .scrollbar-thin {
-    scrollbar-width: thin;
-  }
-  
-  .scrollbar-hidden {
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-  
-  .scrollbar-hidden::-webkit-scrollbar {
-    display: none;
-  }
-  
-  /* Custom community scrollbar for sidebar */
-  .community-scroll {
-    scrollbar-width: thin;
-    scrollbar-color: hsl(var(--scrollbar-thumb)) transparent;
-  }
-  
-  .community-scroll::-webkit-scrollbar {
-    width: 6px;
-  }
-  
-  .community-scroll::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  
-  .community-scroll::-webkit-scrollbar-thumb {
-    background: hsl(var(--scrollbar-thumb));
-    border-radius: 3px;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
-  
-  .community-scroll:hover::-webkit-scrollbar-thumb {
-    opacity: 1;
-  }
-  
-  /* Native Editor Design System Classes - Using Fixed Dark Theme */
-  .native-editor {
-    background-color: var(--editor-primary-bg);
-  }
-  
-  .block-palette {
-    background-color: var(--palette-palette-bg);
-    border-color: var(--palette-palette-border);
-  }
-  
+  /* CRITICAL: Fixed overflow and z-index for drag system */
+  .block-container,
+  .grid-container,
+  .grid-2d-container,
+  .grid-panel,
   .block-editor {
-    background-color: var(--editor-primary-bg);
-    border-color: var(--editor-primary-border);
-  }
-  
-  .block-palette .block-type-button {
-    background-color: var(--palette-palette-card-bg);
-    border-color: var(--palette-palette-border);
-    color: var(--palette-block-title-text);
-  }
-  
-  .block-palette .block-type-button:hover {
-    background-color: var(--palette-palette-card-hover);
-    border-color: var(--editor-secondary-border);
-  }
-  
-  /* Block Editor specific styles - FIXED BLUE ISSUE */
-  .block-editor-card {
-    background-color: var(--block-block-background);
-    border-color: var(--block-block-border);
-  }
-  
-  .block-editor-card:hover {
-    background-color: var(--block-block-hover);
-    border-color: var(--editor-secondary-border);
-  }
-  
-  .block-editor-card.active {
-    background-color: var(--block-block-selected);
-    border-color: var(--editor-active-border);
-  }
-  
-  /* Properties panel */
-  .properties-panel {
-    background-color: var(--editor-secondary-bg);
-    border-color: var(--editor-primary-border);
-  }
-  
-  /* Status indicators using design tokens */
-  .status-success {
-    color: var(--editor-success-color);
-    background-color: color-mix(in srgb, var(--editor-success-color) 10%, transparent);
-    border-color: color-mix(in srgb, var(--editor-success-color) 20%, transparent);
-  }
-  
-  .status-warning {
-    color: var(--editor-warning-color);
-    background-color: color-mix(in srgb, var(--editor-warning-color) 10%, transparent);
-    border-color: color-mix(in srgb, var(--editor-warning-color) 20%, transparent);
-  }
-  
-  .status-info {
-    color: var(--editor-info-color);
-    background-color: color-mix(in srgb, var(--editor-info-color) 10%, transparent);
-    border-color: color-mix(in srgb, var(--editor-info-color) 20%, transparent);
-  }
-  
-  /* Issue Editor specific fixes */
-  .issue-editor-card {
-    background-color: #1a1a1a !important;
-    border-color: #2a2a2a !important;
-    color: #ffffff !important;
-  }
-  
-  .radio-group-item {
-    background-color: #212121 !important;
-    border-color: #2a2a2a !important;
-    color: #ffffff !important;
-  }
-  
-  .radio-group-item:hover {
-    background-color: #2a2a2a !important;
-  }
-  
-  .radio-group-item[data-state="checked"] {
-    background-color: #3b82f6 !important;
-    border-color: #3b82f6 !important;
-  }
-
-  /* CRITICAL: Z-index and overflow fixes for menus */
-  .block-container {
-    position: relative;
     overflow: visible !important;
+    position: relative;
   }
 
   .block-content {
@@ -363,6 +147,7 @@
     z-index: 1;
   }
 
+  /* Drag and drop specific styles */
   .block-menu,
   .inline-menu,
   .context-menu,
@@ -370,69 +155,51 @@
     position: absolute !important;
     z-index: var(--z-dropdown) !important;
     background-color: var(--editor-secondary-bg) !important;
-    border: 1px solid var(--editor-primary-border) !important;
+    border: 1px solid #2a2a2a !important;
     border-radius: 6px !important;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2) !important;
     overflow: visible !important;
   }
 
-  .grid-panel {
+  /* Grid specific fixes */
+  .grid-cell {
     overflow: visible !important;
     position: relative;
   }
 
-  .grid-container {
+  .grid-panel-filled,
+  .grid-panel-empty {
     overflow: visible !important;
+    position: relative;
   }
 
-  .grid-2d-container {
-    overflow: visible !important;
+  /* Drag handle styling */
+  .cursor-grab {
+    cursor: grab;
   }
 
-  .resizable-grid {
-    overflow: visible !important;
+  .cursor-grabbing {
+    cursor: grabbing;
   }
 
-  /* Ensure all grid-related components don't clip */
-  .grid-cell,
-  .grid-item,
-  .grid-panel,
-  .block-panel {
-    overflow: visible !important;
-  }
-}
-
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+  /* Enhanced dark theme for editor components */
+  .native-editor {
+    background-color: #121212 !important;
   }
   
-  /* Editor utilities using fixed dark theme */
-  .editor-layout {
-    @apply h-full flex flex-col;
-    background-color: var(--editor-primary-bg);
+  .block-palette {
+    background-color: #1a1a1a !important;
+    border-color: #2a2a2a !important;
   }
   
-  .editor-header {
-    @apply px-4 py-3;
-    border-bottom: 1px solid var(--editor-primary-border);
-    background-color: var(--editor-primary-bg);
+  .block-editor {
+    background-color: #121212 !important;
+    border-color: #2a2a2a !important;
   }
   
-  .editor-content {
-    @apply flex-1 flex overflow-hidden;
-    background-color: var(--editor-primary-bg);
-  }
-  
-  .editor-sidebar {
-    background-color: var(--editor-secondary-bg);
-    border-right: 1px solid var(--editor-primary-border);
-  }
-  
-  .editor-main {
-    @apply flex-1;
-    background-color: var(--editor-primary-bg);
-    overflow: visible;
+  .properties-panel {
+    background-color: #1a1a1a !important;
+    border-color: #2a2a2a !important;
   }
 
   /* Z-index utilities */
@@ -459,41 +226,6 @@
   .z-tooltip {
     z-index: var(--z-tooltip);
   }
-
-  /* Force overflow visible for interactive elements */
-  .overflow-visible-force {
-    overflow: visible !important;
-  }
-
-  .overflow-visible-force * {
-    overflow: visible !important;
-  }
-}
-
-@keyframes subtle-pan {
-  0% {
-    transform: translate(0, 0) scale(1.1);
-  }
-  50% {
-    transform: translate(-5%, -5%) scale(1.1);
-  }
-  100% {
-    transform: translate(0, 0) scale(1.1);
-  }
-}
-
-/* Enhanced animations for dark theme */
-.animate-pulse {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.3;
-  }
 }
 
 /* Global dragging styles */
@@ -505,6 +237,13 @@ body.dragging * {
   pointer-events: none;
 }
 
-body.dragging .drop-zone {
+body.dragging .drop-zone,
+body.dragging [draggable="true"],
+body.dragging button {
   pointer-events: all;
+}
+
+/* Ensure drag handles are always interactive */
+[draggable="true"] {
+  pointer-events: all !important;
 }

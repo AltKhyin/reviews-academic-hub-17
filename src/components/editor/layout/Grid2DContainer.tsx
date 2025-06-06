@@ -1,8 +1,8 @@
 
-// ABOUTME: Complete 2D grid container with row management and drag/drop
-// Renders 2D grids with interactive row controls and proper drag integration
+// ABOUTME: Complete 2D grid container with fixed drag/drop and row controls
+// Renders 2D grids with proper interactive controls and drag integration
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useRef } from 'react';
 import { ReviewBlock } from '@/types/review';
 import { Grid2DLayout, GridPosition } from '@/types/grid';
 import { GridPanel } from './GridPanel';
@@ -57,6 +57,9 @@ export const Grid2DContainer: React.FC<Grid2DContainerProps> = ({
   onDrop
 }) => {
   const [hoveredRowIndex, setHoveredRowIndex] = useState<number | null>(null);
+  const [controlsVisible, setControlsVisible] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const controlsTimeoutRef = useRef<NodeJS.Timeout>();
   
   const handleAddBlock = useCallback((position: GridPosition) => {
     onAddBlock(grid.id, position);
@@ -74,7 +77,31 @@ export const Grid2DContainer: React.FC<Grid2DContainerProps> = ({
     onRemoveRow(grid.id, rowIndex);
   }, [grid.id, onRemoveRow]);
 
+  // Fixed row control visibility management
+  const showControls = useCallback(() => {
+    if (controlsTimeoutRef.current) {
+      clearTimeout(controlsTimeoutRef.current);
+    }
+    setControlsVisible(true);
+  }, []);
+
+  const hideControls = useCallback(() => {
+    controlsTimeoutRef.current = setTimeout(() => {
+      setControlsVisible(false);
+    }, 200); // Small delay to allow moving to controls
+  }, []);
+
+  const keepControlsVisible = useCallback(() => {
+    if (controlsTimeoutRef.current) {
+      clearTimeout(controlsTimeoutRef.current);
+    }
+  }, []);
+
+  // Enhanced drag handlers
   const handleCellDragOver = useCallback((e: React.DragEvent, position: GridPosition) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (onDragOver) {
       const positionNumber = position.row * grid.columns + position.column;
       onDragOver(e, grid.id, positionNumber, 'grid');
@@ -82,11 +109,27 @@ export const Grid2DContainer: React.FC<Grid2DContainerProps> = ({
   }, [grid.id, grid.columns, onDragOver]);
 
   const handleCellDrop = useCallback((e: React.DragEvent, position: GridPosition) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (onDrop) {
       const positionNumber = position.row * grid.columns + position.column;
       onDrop(e, grid.id, positionNumber, 'grid');
     }
   }, [grid.id, grid.columns, onDrop]);
+
+  const handleCellDragLeave = useCallback((e: React.DragEvent) => {
+    // Only trigger drag leave if actually leaving the cell
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+    
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      if (onDragLeave) {
+        onDragLeave(e);
+      }
+    }
+  }, [onDragLeave]);
 
   const handleGridPanelAdd = useCallback((targetRowId: string, positionNumber: number) => {
     const row = Math.floor(positionNumber / grid.columns);
@@ -97,24 +140,21 @@ export const Grid2DContainer: React.FC<Grid2DContainerProps> = ({
   const isGridDropTarget = dragState?.dragOverRowId === grid.id && dragState?.dropTargetType === 'grid';
 
   return (
-    <div className={cn("grid-2d-container my-8 relative", className)}>
-      {/* Grid Header */}
-      <div className="mb-4 text-center">
-        <h3 className="text-sm font-medium text-gray-400">
-          Grid 2D • {grid.columns} colunas × {grid.rows.length} linhas
-        </h3>
-      </div>
-
-      {/* Row Controls and Grid Structure */}
+    <div 
+      className={cn("grid-2d-container my-8 relative", className)}
+      ref={containerRef}
+      onMouseEnter={showControls}
+      onMouseLeave={hideControls}
+    >
+      {/* Grid Structure */}
       <div className="relative">
         <div 
           className={cn(
-            "border rounded-lg transition-all",
-            isGridDropTarget && "border-green-500 shadow-lg bg-green-500/5"
+            "grid-container transition-all",
+            isGridDropTarget && "ring-2 ring-green-500 shadow-lg"
           )}
           style={{ 
-            backgroundColor: '#1a1a1a',
-            borderColor: isGridDropTarget ? '#22c55e' : '#2a2a2a',
+            backgroundColor: 'transparent', // No background in edit mode
             display: 'grid',
             gridTemplateColumns: grid.columnWidths 
               ? grid.columnWidths.map(w => `${w}%`).join(' ')
@@ -126,10 +166,8 @@ export const Grid2DContainer: React.FC<Grid2DContainerProps> = ({
             padding: `${grid.gap}px`,
             position: 'relative'
           }}
-          onDragOver={onDragLeave}
-          onDragLeave={onDragLeave}
         >
-          {/* Render all cells */}
+          {/* Render all cells with proper drag handling */}
           {grid.rows.map((row, rowIndex) => (
             row.cells.map((cell, colIndex) => {
               const position: GridPosition = { row: rowIndex, column: colIndex };
@@ -141,62 +179,22 @@ export const Grid2DContainer: React.FC<Grid2DContainerProps> = ({
                 <div
                   key={cell.id}
                   className={cn(
-                    "grid-cell border border-dashed border-gray-600 rounded transition-all relative group",
-                    isDropTarget && "border-green-500 bg-green-500/10",
-                    cell.block && "border-solid border-gray-500"
+                    "grid-cell relative group transition-all",
+                    isDropTarget && "ring-2 ring-green-500 bg-green-500/5",
+                    cell.block && "has-block"
                   )}
                   style={{
                     gridColumn: colIndex + 1,
                     gridRow: rowIndex + 1,
-                    minHeight: '120px'
+                    minHeight: '120px',
+                    border: cell.block ? 'none' : '1px dashed #404040', // Subtle border for empty cells
+                    borderRadius: '4px'
                   }}
                   onMouseEnter={() => setHoveredRowIndex(rowIndex)}
-                  onMouseLeave={() => setHoveredRowIndex(null)}
                   onDragOver={(e) => handleCellDragOver(e, position)}
-                  onDragLeave={onDragLeave}
+                  onDragLeave={handleCellDragLeave}
                   onDrop={(e) => handleCellDrop(e, position)}
                 >
-                  {/* Row Controls - Show only on first column */}
-                  {!readonly && colIndex === 0 && hoveredRowIndex === rowIndex && (
-                    <div className="absolute -left-16 top-1/2 transform -translate-y-1/2 flex flex-col items-center gap-1 z-20">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleAddRowAbove(rowIndex)}
-                        className="w-8 h-6 p-0 text-gray-400 hover:text-white hover:bg-gray-700"
-                        title="Adicionar linha acima"
-                      >
-                        <Plus className="w-3 h-3" />
-                      </Button>
-                      
-                      <div className="w-6 h-6 flex items-center justify-center text-gray-500">
-                        <GripVertical className="w-3 h-3" />
-                      </div>
-                      
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleAddRowBelow(rowIndex)}
-                        className="w-8 h-6 p-0 text-gray-400 hover:text-white hover:bg-gray-700"
-                        title="Adicionar linha abaixo"
-                      >
-                        <Plus className="w-3 h-3" />
-                      </Button>
-                      
-                      {grid.rows.length > 1 && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleRemoveRow(rowIndex)}
-                          className="w-8 h-6 p-0 text-red-400 hover:text-red-300 hover:bg-red-900/20"
-                          title="Remover linha"
-                        >
-                          <Minus className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </div>
-                  )}
-
                   {/* Cell Content */}
                   {cell.block ? (
                     <GridPanel
@@ -226,15 +224,92 @@ export const Grid2DContainer: React.FC<Grid2DContainerProps> = ({
                       </button>
                     </div>
                   )}
+
+                  {/* Drop indicator */}
+                  {isDropTarget && (
+                    <div className="absolute inset-0 border-2 border-green-500 rounded bg-green-500/10 flex items-center justify-center pointer-events-none">
+                      <div className="text-green-400 text-sm font-medium animate-pulse">
+                        ↓ Soltar aqui ↓
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })
           ))}
         </div>
 
-        {/* Global Row Controls for Empty Grids */}
-        {!readonly && grid.rows.length === 0 && (
-          <div className="absolute -left-16 top-1/2 transform -translate-y-1/2 flex flex-col items-center gap-1 z-20">
+        {/* FIXED: Row Controls with proper positioning and interaction */}
+        {!readonly && controlsVisible && (
+          <div 
+            className="absolute left-0 top-0 h-full flex flex-col justify-around items-start z-20"
+            style={{ 
+              transform: 'translateX(-60px)',
+              pointerEvents: 'all' // Ensure controls are interactive
+            }}
+            onMouseEnter={keepControlsVisible}
+            onMouseLeave={hideControls}
+          >
+            {grid.rows.map((_, rowIndex) => (
+              <div 
+                key={`row-controls-${rowIndex}`}
+                className="flex flex-col items-center gap-1 bg-gray-800 border border-gray-600 rounded-md p-1"
+                style={{ 
+                  opacity: hoveredRowIndex === rowIndex ? 1 : 0.6,
+                  transition: 'opacity 0.2s'
+                }}
+              >
+                {/* Add row above */}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => handleAddRowAbove(rowIndex)}
+                  className="w-6 h-6 p-0 text-gray-400 hover:text-white hover:bg-gray-700"
+                  title="Adicionar linha acima"
+                >
+                  <Plus className="w-3 h-3" />
+                </Button>
+                
+                {/* Row drag handle */}
+                <div className="w-6 h-6 flex items-center justify-center text-gray-500 cursor-move">
+                  <GripVertical className="w-3 h-3" />
+                </div>
+                
+                {/* Add row below */}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => handleAddRowBelow(rowIndex)}
+                  className="w-6 h-6 p-0 text-gray-400 hover:text-white hover:bg-gray-700"
+                  title="Adicionar linha abaixo"
+                >
+                  <Plus className="w-3 h-3" />
+                </Button>
+                
+                {/* Remove row (only if more than 1 row) */}
+                {grid.rows.length > 1 && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleRemoveRow(rowIndex)}
+                    className="w-6 h-6 p-0 text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                    title="Remover linha"
+                  >
+                    <Minus className="w-3 h-3" />
+                  </Button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Global controls for empty grids */}
+        {!readonly && grid.rows.length === 0 && controlsVisible && (
+          <div 
+            className="absolute left-0 top-1/2 transform -translate-y-1/2 z-20"
+            style={{ transform: 'translateX(-60px) translateY(-50%)' }}
+            onMouseEnter={keepControlsVisible}
+          >
             <Button
               size="sm"
               variant="ghost"
@@ -252,25 +327,6 @@ export const Grid2DContainer: React.FC<Grid2DContainerProps> = ({
       {isGridDropTarget && (
         <div className="mt-2 text-center text-green-400 text-sm font-medium animate-pulse">
           ↓ Solte o bloco na célula desejada ↓
-        </div>
-      )}
-
-      {/* Grid Info */}
-      {!readonly && (
-        <div className="mt-4 text-xs text-gray-400 text-center space-y-1">
-          <div>
-            {grid.columns} colunas × {grid.rows.length} linhas • Gap: {grid.gap}px
-          </div>
-          {grid.columnWidths && (
-            <div>
-              Larguras: {grid.columnWidths.map(w => `${w.toFixed(1)}%`).join(' / ')}
-            </div>
-          )}
-          {grid.rowHeights && (
-            <div>
-              Alturas: {grid.rowHeights.map(h => `${h.toFixed(1)}px`).join(' / ')}
-            </div>
-          )}
         </div>
       )}
     </div>
