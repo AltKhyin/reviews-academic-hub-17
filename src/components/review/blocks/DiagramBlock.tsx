@@ -1,97 +1,100 @@
 
-// ABOUTME: Enhanced interactive diagram block with block-level mode toggle and improved UX
-// Supports individual preview/edit modes, fullscreen editing, and comprehensive template library
+// ABOUTME: Enhanced diagram block with comprehensive null safety and responsive design
+// Supports scientific diagrams with inline editing and fullscreen capabilities
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { ReviewBlock } from '@/types/review';
+import React, { useState } from 'react';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ReviewBlock, DiagramContent } from '@/types/review';
 import { DiagramCanvas } from './diagram/DiagramCanvas';
 import { DiagramToolbar } from './diagram/DiagramToolbar';
-import { DiagramTemplateSelector } from './diagram/DiagramTemplateSelector';
-import { DiagramExporter } from './diagram/DiagramExporter';
 import { DiagramFullscreenViewer } from './diagram/DiagramFullscreenViewer';
-import { BlockModeToggle } from '../../editor/BlockModeToggle';
-import { DiagramContent, DiagramNode, DiagramConnection } from '@/types/review';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { 
-  Download, 
-  FileText,
-  Grid3X3,
-  Maximize2
-} from 'lucide-react';
+import { InlineBlockSettings } from '@/components/editor/inline/InlineBlockSettings';
+import { generateSpacingStyles, getDefaultSpacing } from '@/utils/spacingUtils';
+import { cn } from '@/lib/utils';
+import { Maximize2, Edit3 } from 'lucide-react';
 
 interface DiagramBlockProps {
   block: ReviewBlock;
-  onUpdate?: (updates: Partial<ReviewBlock>) => void;
   readonly?: boolean;
+  onUpdate?: (updates: Partial<ReviewBlock>) => void;
 }
 
-export const DiagramBlock: React.FC<DiagramBlockProps> = ({
-  block,
-  onUpdate,
-  readonly = false
+export const DiagramBlock: React.FC<DiagramBlockProps> = ({ 
+  block, 
+  readonly = false,
+  onUpdate
 }) => {
-  const content = block.content as DiagramContent;
-  const [blockMode, setBlockMode] = useState<'edit' | 'preview'>('preview');
-  const [selectedTool, setSelectedTool] = useState<string>('select');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [selectedTool, setSelectedTool] = useState('select');
   const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
-  const [showTemplates, setShowTemplates] = useState(false);
-  const [showExporter, setShowExporter] = useState(false);
-  const [showFullscreen, setShowFullscreen] = useState(false);
 
-  // Initialize default content if empty
-  const defaultContent: DiagramContent = {
-    title: 'Novo Diagrama',
+  // Safe access to content with comprehensive fallbacks
+  const content = block.content || {};
+  
+  // Create complete diagram content with all required fields and fallbacks
+  const diagramContent: DiagramContent = {
+    title: content.title || 'Untitled Diagram',
+    description: content.description || '',
     canvas: {
-      width: 800,
-      height: 600,
-      backgroundColor: '#ffffff',
-      gridEnabled: true,
-      gridSize: 20,
-      gridColor: '#e5e7eb',
-      snapToGrid: true
+      width: content.canvas?.width || 800,
+      height: content.canvas?.height || 600,
+      backgroundColor: content.canvas?.backgroundColor || '#ffffff',
+      gridEnabled: content.canvas?.gridEnabled ?? true,
+      gridSize: content.canvas?.gridSize || 20,
+      gridColor: content.canvas?.gridColor || '#e5e7eb',
+      snapToGrid: content.canvas?.snapToGrid ?? true,
+      ...content.canvas
     },
-    nodes: [],
-    connections: [],
+    nodes: Array.isArray(content.nodes) ? content.nodes : [],
+    connections: Array.isArray(content.connections) ? content.connections : [],
+    template: content.template || undefined,
     exportSettings: {
       format: 'svg',
       quality: 1,
-      transparentBackground: false
+      transparentBackground: false,
+      ...content.exportSettings
     },
     accessibility: {
-      altText: 'Diagrama científico interativo'
+      altText: content.accessibility?.altText || 'Scientific diagram',
+      longDescription: content.accessibility?.longDescription || '',
+      ...content.accessibility
     }
   };
 
-  const diagramContent = content || defaultContent;
+  // Spacing system integration
+  const customSpacing = block.meta?.spacing;
+  const defaultSpacing = getDefaultSpacing('diagram');
+  const finalSpacing = customSpacing || defaultSpacing;
+  const spacingStyles = generateSpacingStyles(finalSpacing);
 
-  const handleContentUpdate = useCallback((updates: Partial<DiagramContent>) => {
+  const handleContentUpdate = (updates: Partial<DiagramContent>) => {
     if (onUpdate) {
       onUpdate({
         content: {
-          ...diagramContent,
+          ...content,
           ...updates
         }
       });
     }
-  }, [diagramContent, onUpdate]);
+  };
 
-  const handleNodeAdd = useCallback((nodeType: string, position: { x: number; y: number }) => {
-    const newNode: DiagramNode = {
+  const handleNodeAdd = (nodeType: string, position: { x: number; y: number }) => {
+    const newNode = {
       id: `node_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type: nodeType as any,
       position,
       size: { width: 120, height: 60 },
-      text: 'Novo Item',
+      text: 'New Node',
       style: {
         backgroundColor: '#3b82f6',
-        borderColor: '#1d4ed8',
+        borderColor: '#1e40af',
         textColor: '#ffffff',
         borderWidth: 2,
-        borderStyle: 'solid',
+        borderStyle: 'solid' as const,
         fontSize: 14,
-        fontWeight: 'normal',
-        textAlign: 'center',
+        fontWeight: 'normal' as const,
+        textAlign: 'center' as const,
         opacity: 1
       }
     };
@@ -99,26 +102,19 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
     handleContentUpdate({
       nodes: [...diagramContent.nodes, newNode]
     });
-  }, [diagramContent.nodes, handleContentUpdate]);
+  };
 
-  const handleNodeUpdate = useCallback((nodeId: string, updates: Partial<DiagramNode>) => {
-    // Handle new node creation from duplication
-    if (nodeId === 'temp' && 'id' in updates) {
-      const newNode = updates as DiagramNode;
-      handleContentUpdate({
-        nodes: [...diagramContent.nodes, newNode]
-      });
-      return;
-    }
-
+  const handleNodeUpdate = (nodeId: string, updates: any) => {
     const updatedNodes = diagramContent.nodes.map(node =>
       node.id === nodeId ? { ...node, ...updates } : node
     );
     
-    handleContentUpdate({ nodes: updatedNodes });
-  }, [diagramContent.nodes, handleContentUpdate]);
+    handleContentUpdate({
+      nodes: updatedNodes
+    });
+  };
 
-  const handleNodeDelete = useCallback((nodeId: string) => {
+  const handleNodeDelete = (nodeId: string) => {
     const updatedNodes = diagramContent.nodes.filter(node => node.id !== nodeId);
     const updatedConnections = diagramContent.connections.filter(
       conn => conn.sourceNodeId !== nodeId && conn.targetNodeId !== nodeId
@@ -128,246 +124,161 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
       nodes: updatedNodes,
       connections: updatedConnections
     });
-  }, [diagramContent.nodes, diagramContent.connections, handleContentUpdate]);
+  };
 
-  const handleConnectionAdd = useCallback((connection: DiagramConnection) => {
+  const handleConnectionAdd = (connection: any) => {
     handleContentUpdate({
       connections: [...diagramContent.connections, connection]
     });
-  }, [diagramContent.connections, handleContentUpdate]);
+  };
 
-  const handleConnectionDelete = useCallback((connectionId: string) => {
+  const handleConnectionDelete = (connectionId: string) => {
     const updatedConnections = diagramContent.connections.filter(
       conn => conn.id !== connectionId
     );
     
-    handleContentUpdate({ connections: updatedConnections });
-  }, [diagramContent.connections, handleContentUpdate]);
-
-  const handleCanvasUpdate = useCallback((canvasUpdates: Partial<DiagramContent['canvas']>) => {
     handleContentUpdate({
-      canvas: {
-        ...diagramContent.canvas,
-        ...canvasUpdates
-      }
+      connections: updatedConnections
     });
-  }, [diagramContent.canvas, handleContentUpdate]);
-
-  const handleTemplateApply = useCallback((templateNodes: DiagramNode[], templateConnections: DiagramConnection[]) => {
-    handleContentUpdate({
-      nodes: templateNodes,
-      connections: templateConnections
-    });
-    setShowTemplates(false);
-  }, [handleContentUpdate]);
-
-  // Auto-open fullscreen when entering edit mode
-  useEffect(() => {
-    if (blockMode === 'edit' && !readonly) {
-      setShowFullscreen(true);
-    }
-  }, [blockMode, readonly]);
-
-  const handleSave = () => {
-    console.log('Diagram saved');
   };
 
   if (readonly) {
     return (
-      <Card className="diagram-block-readonly" style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
-        <div className="p-4">
-          <h3 className="text-lg font-semibold mb-4" style={{ color: '#ffffff' }}>
-            {diagramContent.title}
-          </h3>
-          <DiagramCanvas
+      <div className="diagram-block w-full max-w-full overflow-hidden" style={spacingStyles}>
+        <Card className="w-full max-w-full overflow-hidden" style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
+          <div className="p-4 border-b" style={{ borderColor: '#2a2a2a' }}>
+            <div className="flex items-center justify-between">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-lg font-medium truncate" style={{ color: '#ffffff' }}>
+                  {diagramContent.title}
+                </h3>
+                {diagramContent.description && (
+                  <p className="text-sm mt-1 break-words" style={{ color: '#d1d5db' }}>
+                    {diagramContent.description}
+                  </p>
+                )}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsFullscreen(true)}
+                style={{ borderColor: '#3b82f6', color: '#3b82f6' }}
+              >
+                <Maximize2 className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+          
+          <div className="aspect-[4/3] w-full max-w-full overflow-hidden">
+            <DiagramCanvas
+              content={diagramContent}
+              mode="preview"
+              selectedTool={selectedTool}
+              selectedNodes={selectedNodes}
+              onNodeAdd={handleNodeAdd}
+              onNodeUpdate={handleNodeUpdate}
+              onNodeDelete={handleNodeDelete}
+              onConnectionAdd={handleConnectionAdd}
+              onConnectionDelete={handleConnectionDelete}
+              onSelectionChange={setSelectedNodes}
+              readonly={true}
+            />
+          </div>
+        </Card>
+
+        {isFullscreen && (
+          <DiagramFullscreenViewer
             content={diagramContent}
-            mode="preview"
-            selectedTool="select"
-            selectedNodes={[]}
-            onNodeAdd={() => {}}
-            onNodeUpdate={() => {}}
-            onNodeDelete={() => {}}
-            onConnectionAdd={() => {}}
-            onConnectionDelete={() => {}}
-            onSelectionChange={() => {}}
+            onClose={() => setIsFullscreen(false)}
             readonly={true}
           />
-        </div>
-      </Card>
+        )}
+      </div>
     );
   }
 
   return (
-    <>
-      <Card className="diagram-block" style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
-        <div className="p-4">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Grid3X3 className="w-5 h-5" style={{ color: '#3b82f6' }} />
+    <div className="diagram-block group relative w-full max-w-full overflow-hidden" style={spacingStyles}>
+      {/* Inline Settings */}
+      <div className="absolute -top-2 -right-2 z-10">
+        <InlineBlockSettings
+          block={block}
+          onUpdate={onUpdate}
+        />
+      </div>
+
+      <Card className="w-full max-w-full overflow-hidden" style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
+        {/* Header */}
+        <div className="p-4 border-b" style={{ borderColor: '#2a2a2a' }}>
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0 flex-1">
               <input
                 type="text"
                 value={diagramContent.title}
                 onChange={(e) => handleContentUpdate({ title: e.target.value })}
-                className="text-lg font-semibold bg-transparent border-none outline-none"
+                className="text-lg font-medium bg-transparent border-none outline-none w-full"
                 style={{ color: '#ffffff' }}
-                placeholder="Título do diagrama"
+                placeholder="Diagram Title"
+              />
+              <textarea
+                value={diagramContent.description}
+                onChange={(e) => handleContentUpdate({ description: e.target.value })}
+                className="text-sm mt-1 bg-transparent border-none outline-none w-full resize-none"
+                style={{ color: '#d1d5db' }}
+                placeholder="Optional description..."
+                rows={2}
               />
             </div>
             
             <div className="flex items-center gap-2">
-              {/* Block Mode Toggle */}
-              <BlockModeToggle
-                mode={blockMode}
-                onModeChange={setBlockMode}
-                className="mr-2"
-              />
-
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                onClick={() => setShowTemplates(true)}
-                className="text-gray-400 hover:text-white"
+                onClick={() => setIsFullscreen(true)}
+                style={{ borderColor: '#3b82f6', color: '#3b82f6' }}
               >
-                <FileText className="w-4 h-4 mr-1" />
-                Modelos
-              </Button>
-              
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowExporter(true)}
-                className="text-gray-400 hover:text-white"
-              >
-                <Download className="w-4 h-4 mr-1" />
-                Exportar
-              </Button>
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowFullscreen(true)}
-                className="text-gray-400 hover:text-white"
-              >
-                <Maximize2 className="w-4 h-4 mr-1" />
-                Fullscreen
+                <Edit3 className="w-4 h-4 mr-1" />
+                Edit
               </Button>
             </div>
           </div>
+        </div>
 
-          {/* Description */}
-          {blockMode === 'edit' && (
-            <div className="mb-4">
-              <textarea
-                value={diagramContent.description || ''}
-                onChange={(e) => handleContentUpdate({ description: e.target.value })}
-                placeholder="Descrição do diagrama (opcional)"
-                className="w-full p-2 text-sm bg-transparent border rounded resize-none"
-                style={{ 
-                  borderColor: '#2a2a2a', 
-                  color: '#d1d5db',
-                  minHeight: '60px'
-                }}
-              />
-            </div>
-          )}
-
-          {/* Canvas */}
-          <div 
-            className="border rounded-lg overflow-hidden"
-            style={{ borderColor: '#2a2a2a' }}
-          >
-            {blockMode === 'edit' ? (
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-                {/* Toolbar */}
-                <div 
-                  className="lg:col-span-1 p-4 border-r"
-                  style={{ 
-                    backgroundColor: '#1a1a1a', 
-                    borderColor: '#2a2a2a' 
-                  }}
-                >
-                  <DiagramToolbar
-                    selectedTool={selectedTool}
-                    onToolChange={setSelectedTool}
-                    canvas={diagramContent.canvas}
-                    onCanvasUpdate={handleCanvasUpdate}
-                    selectedNodes={selectedNodes}
-                    onNodesUpdate={(nodes) => {
-                      const updatedNodes = diagramContent.nodes.map(node => {
-                        const updated = nodes.find(n => n.id === node.id);
-                        return updated || node;
-                      });
-                      handleContentUpdate({ nodes: updatedNodes });
-                    }}
-                  />
-                </div>
-
-                {/* Canvas */}
-                <div className="lg:col-span-3">
-                  <DiagramCanvas
-                    content={diagramContent}
-                    mode="edit"
-                    selectedTool={selectedTool}
-                    selectedNodes={selectedNodes}
-                    onNodeAdd={handleNodeAdd}
-                    onNodeUpdate={handleNodeUpdate}
-                    onNodeDelete={handleNodeDelete}
-                    onConnectionAdd={handleConnectionAdd}
-                    onConnectionDelete={handleConnectionDelete}
-                    onSelectionChange={setSelectedNodes}
-                    readonly={false}
-                  />
-                </div>
-              </div>
-            ) : (
-              <DiagramCanvas
-                content={diagramContent}
-                mode="preview"
-                selectedTool="select"
-                selectedNodes={[]}
-                onNodeAdd={() => {}}
-                onNodeUpdate={() => {}}
-                onNodeDelete={() => {}}
-                onConnectionAdd={() => {}}
-                onConnectionDelete={() => {}}
-                onSelectionChange={() => {}}
-                readonly={true}
-              />
-            )}
-          </div>
-
-          {/* Templates Modal */}
-          {showTemplates && (
-            <DiagramTemplateSelector
-              onTemplateSelect={handleTemplateApply}
-              onClose={() => setShowTemplates(false)}
-            />
-          )}
-
-          {/* Export Modal */}
-          {showExporter && (
-            <DiagramExporter
-              content={diagramContent}
-              onClose={() => setShowExporter(false)}
-            />
-          )}
+        {/* Toolbar */}
+        <DiagramToolbar
+          selectedTool={selectedTool}
+          onToolChange={setSelectedTool}
+          selectedNodes={selectedNodes}
+          onNodeUpdate={handleNodeUpdate}
+        />
+        
+        {/* Canvas */}
+        <div className="aspect-[4/3] w-full max-w-full overflow-hidden">
+          <DiagramCanvas
+            content={diagramContent}
+            mode="edit"
+            selectedTool={selectedTool}
+            selectedNodes={selectedNodes}
+            onNodeAdd={handleNodeAdd}
+            onNodeUpdate={handleNodeUpdate}
+            onNodeDelete={handleNodeDelete}
+            onConnectionAdd={handleConnectionAdd}
+            onConnectionDelete={handleConnectionDelete}
+            onSelectionChange={setSelectedNodes}
+            readonly={false}
+          />
         </div>
       </Card>
 
-      {/* Fullscreen Viewer */}
-      {showFullscreen && (
+      {/* Fullscreen Editor */}
+      {isFullscreen && (
         <DiagramFullscreenViewer
           content={diagramContent}
-          selectedTool={selectedTool}
-          selectedNodes={selectedNodes}
           onContentUpdate={handleContentUpdate}
-          onToolChange={setSelectedTool}
-          onSelectionChange={setSelectedNodes}
-          onClose={() => setShowFullscreen(false)}
-          onSave={handleSave}
+          onClose={() => setIsFullscreen(false)}
+          readonly={false}
         />
       )}
-    </>
+    </div>
   );
 };
