@@ -1,13 +1,35 @@
-// ABOUTME: Enhanced snapshot card block with full editability and integrated inline color editing
-// Displays and allows editing of evidence summary with inline editors and color customization
+
+// ABOUTME: Enhanced snapshot card block with customizable sections and badges
+// Displays and allows editing of evidence summary with full customization
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { FlaskConical, Users, Target, BarChart3, Lightbulb } from 'lucide-react';
 import { ReviewBlock } from '@/types/review';
 import { InlineTextEditor } from '@/components/editor/inline/InlineTextEditor';
 import { InlineBlockSettings } from '@/components/editor/inline/InlineBlockSettings';
+import { FindingSectionsManager } from './snapshot/FindingSectionsManager';
+import { CustomBadgesManager } from './snapshot/CustomBadgesManager';
+
+interface FindingItem {
+  id: string;
+  text: string;
+  color: string;
+}
+
+interface FindingSection {
+  id: string;
+  label: string;
+  items: FindingItem[];
+}
+
+interface CustomBadge {
+  id: string;
+  label: string;
+  value: string;
+  color: string;
+  background_color: string;
+}
 
 interface SnapshotCardBlockProps {
   block: ReviewBlock;
@@ -22,22 +44,6 @@ export const SnapshotCardBlock: React.FC<SnapshotCardBlockProps> = ({
 }) => {
   const content = block.content;
 
-  const evidenceLevels = {
-    high: { label: 'Alta', color: '#10b981', bg: '#065f46' },
-    moderate: { label: 'Moderada', color: '#f59e0b', bg: '#92400e' },
-    low: { label: 'Baixa', color: '#ef4444', bg: '#991b1b' },
-    very_low: { label: 'Muito Baixa', color: '#6b7280', bg: '#374151' }
-  };
-
-  const recommendationStrengths = {
-    strong: { label: 'Forte', color: '#10b981' },
-    conditional: { label: 'Condicional', color: '#f59e0b' },
-    against: { label: 'Contra', color: '#ef4444' }
-  };
-
-  const evidenceLevel = evidenceLevels[content.evidence_level as keyof typeof evidenceLevels] || evidenceLevels.moderate;
-  const recommendationStrength = recommendationStrengths[content.recommendation_strength as keyof typeof recommendationStrengths] || recommendationStrengths.conditional;
-
   const handleFieldUpdate = (field: string, value: any) => {
     if (onUpdate) {
       onUpdate({
@@ -49,21 +55,97 @@ export const SnapshotCardBlock: React.FC<SnapshotCardBlockProps> = ({
     }
   };
 
-  const handleKeyFindingsUpdate = (index: number, value: string) => {
-    const newFindings = [...(content.key_findings || [])];
-    newFindings[index] = value;
-    handleFieldUpdate('key_findings', newFindings);
+  // Migrate legacy key_findings to new finding_sections format
+  const getFindingSections = (): FindingSection[] => {
+    if (content.finding_sections && Array.isArray(content.finding_sections)) {
+      return content.finding_sections;
+    }
+    
+    // Migrate from legacy key_findings
+    if (content.key_findings && Array.isArray(content.key_findings)) {
+      const legacySection: FindingSection = {
+        id: 'legacy_findings',
+        label: 'Principais Achados',
+        items: content.key_findings.map((finding: string, index: number) => ({
+          id: `legacy_item_${index}`,
+          text: finding,
+          color: '#3b82f6'
+        }))
+      };
+      return [legacySection];
+    }
+    
+    // Default empty section
+    return [{
+      id: 'default_findings',
+      label: 'Principais Achados',
+      items: []
+    }];
   };
 
-  const addKeyFinding = () => {
-    const newFindings = [...(content.key_findings || []), ''];
-    handleFieldUpdate('key_findings', newFindings);
+  const getCustomBadges = (): CustomBadge[] => {
+    if (content.custom_badges && Array.isArray(content.custom_badges)) {
+      return content.custom_badges;
+    }
+    
+    // Migrate from legacy evidence_level and recommendation_strength
+    const badges: CustomBadge[] = [];
+    
+    if (content.evidence_level) {
+      const evidenceLevels: any = {
+        high: { label: 'Alta', color: '#10b981' },
+        moderate: { label: 'Moderada', color: '#f59e0b' },
+        low: { label: 'Baixa', color: '#ef4444' },
+        very_low: { label: 'Muito Baixa', color: '#6b7280' }
+      };
+      
+      const level = evidenceLevels[content.evidence_level] || evidenceLevels.moderate;
+      badges.push({
+        id: 'evidence_level',
+        label: 'Evidência',
+        value: level.label,
+        color: level.color,
+        background_color: 'transparent'
+      });
+    }
+    
+    if (content.recommendation_strength) {
+      const recommendationStrengths: any = {
+        strong: { label: 'Forte', color: '#10b981' },
+        conditional: { label: 'Condicional', color: '#f59e0b' },
+        against: { label: 'Contra', color: '#ef4444' }
+      };
+      
+      const strength = recommendationStrengths[content.recommendation_strength] || recommendationStrengths.conditional;
+      badges.push({
+        id: 'recommendation_strength',
+        label: 'Recomendação',
+        value: strength.label,
+        color: strength.color,
+        background_color: 'transparent'
+      });
+    }
+    
+    return badges;
   };
 
-  const removeKeyFinding = (index: number) => {
-    const newFindings = [...(content.key_findings || [])];
-    newFindings.splice(index, 1);
-    handleFieldUpdate('key_findings', newFindings);
+  const handleSectionsUpdate = (sections: FindingSection[]) => {
+    handleFieldUpdate('finding_sections', sections);
+    // Clear legacy key_findings when using new format
+    if (content.key_findings) {
+      handleFieldUpdate('key_findings', undefined);
+    }
+  };
+
+  const handleBadgesUpdate = (badges: CustomBadge[]) => {
+    handleFieldUpdate('custom_badges', badges);
+    // Clear legacy fields when using new format
+    if (content.evidence_level) {
+      handleFieldUpdate('evidence_level', undefined);
+    }
+    if (content.recommendation_strength) {
+      handleFieldUpdate('recommendation_strength', undefined);
+    }
   };
 
   // Color system integration
@@ -181,125 +263,20 @@ export const SnapshotCardBlock: React.FC<SnapshotCardBlockProps> = ({
             </div>
           </div>
 
-          {/* Key Findings */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="font-semibold text-sm" style={{ color: textColor }}>
-                Principais Achados
-              </h4>
-              {!readonly && (
-                <button
-                  onClick={addKeyFinding}
-                  className="text-xs px-2 py-1 rounded hover:bg-gray-700"
-                  style={{ color: accentColor, backgroundColor: '#2a2a2a' }}
-                >
-                  + Adicionar
-                </button>
-              )}
-            </div>
-            <ul className="space-y-2">
-              {(content.key_findings || []).map((finding: string, index: number) => (
-                <li key={index} className="flex items-start gap-2">
-                  <div className="w-2 h-2 rounded-full bg-blue-400 mt-2 flex-shrink-0"></div>
-                  <div className="flex-1">
-                    <InlineTextEditor
-                      value={finding}
-                      onChange={(value) => handleKeyFindingsUpdate(index, value)}
-                      placeholder="Digite um achado importante..."
-                      readonly={readonly}
-                      className="text-sm text-gray-300"
-                    />
-                  </div>
-                  {!readonly && (
-                    <button
-                      onClick={() => removeKeyFinding(index)}
-                      className="text-xs px-1 py-1 rounded hover:bg-red-900 text-red-400 ml-2"
-                    >
-                      ×
-                    </button>
-                  )}
-                </li>
-              ))}
-              {(!content.key_findings || content.key_findings.length === 0) && readonly && (
-                <li className="text-sm text-gray-500 italic">
-                  Nenhum achado principal especificado
-                </li>
-              )}
-            </ul>
-          </div>
+          {/* Enhanced Finding Sections */}
+          <FindingSectionsManager
+            sections={getFindingSections()}
+            readonly={readonly}
+            textColor={textColor}
+            onUpdateSections={handleSectionsUpdate}
+          />
 
-          {/* Evidence and Recommendation Selectors */}
-          {!readonly && (
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: textColor }}>
-                  Nível de Evidência
-                </label>
-                <select
-                  value={content.evidence_level || 'moderate'}
-                  onChange={(e) => handleFieldUpdate('evidence_level', e.target.value)}
-                  className="w-full p-2 rounded border text-sm"
-                  style={{ 
-                    backgroundColor: '#2a2a2a',
-                    borderColor: '#374151',
-                    color: '#ffffff'
-                  }}
-                >
-                  <option value="high">Alta</option>
-                  <option value="moderate">Moderada</option>
-                  <option value="low">Baixa</option>
-                  <option value="very_low">Muito Baixa</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: textColor }}>
-                  Força da Recomendação
-                </label>
-                <select
-                  value={content.recommendation_strength || 'conditional'}
-                  onChange={(e) => handleFieldUpdate('recommendation_strength', e.target.value)}
-                  className="w-full p-2 rounded border text-sm"
-                  style={{ 
-                    backgroundColor: '#2a2a2a',
-                    borderColor: '#374151',
-                    color: '#ffffff'
-                  }}
-                >
-                  <option value="strong">Forte</option>
-                  <option value="conditional">Condicional</option>
-                  <option value="against">Contra</option>
-                </select>
-              </div>
-            </div>
-          )}
-
-          {/* Evidence and Recommendation Badges */}
-          <div className="flex flex-wrap gap-3 pt-4 border-t border-gray-700">
-            <Badge 
-              variant="outline" 
-              className="px-3 py-1"
-              style={{ 
-                backgroundColor: evidenceLevel.bg,
-                borderColor: evidenceLevel.color,
-                color: evidenceLevel.color
-              }}
-            >
-              Evidência: {evidenceLevel.label}
-            </Badge>
-            
-            <Badge 
-              variant="outline" 
-              className="px-3 py-1"
-              style={{ 
-                backgroundColor: 'transparent',
-                borderColor: recommendationStrength.color,
-                color: recommendationStrength.color
-              }}
-            >
-              Recomendação: {recommendationStrength.label}
-            </Badge>
-          </div>
+          {/* Custom Badges Manager */}
+          <CustomBadgesManager
+            badges={getCustomBadges()}
+            readonly={readonly}
+            onUpdateBadges={handleBadgesUpdate}
+          />
         </CardContent>
       </Card>
     </div>
