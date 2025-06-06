@@ -189,6 +189,12 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
         {isFullscreen && (
           <DiagramFullscreenViewer
             content={diagramContent}
+            selectedTool={selectedTool}
+            selectedNodes={selectedNodes}
+            onContentUpdate={handleContentUpdate}
+            onToolChange={setSelectedTool}
+            onSelectionChange={setSelectedNodes}
+            onSave={handleContentUpdate}
             onClose={() => setIsFullscreen(false)}
           />
         )}
@@ -248,6 +254,9 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
           selectedTool={selectedTool}
           onToolChange={setSelectedTool}
           selectedNodes={selectedNodes}
+          canvas={diagramContent.canvas}
+          onCanvasUpdate={(updates) => handleContentUpdate({ canvas: { ...diagramContent.canvas, ...updates } })}
+          onNodesUpdate={(nodes) => handleContentUpdate({ nodes })}
         />
         
         {/* Canvas */}
@@ -272,7 +281,12 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
       {isFullscreen && (
         <DiagramFullscreenViewer
           content={diagramContent}
+          selectedTool={selectedTool}
+          selectedNodes={selectedNodes}
           onContentUpdate={handleContentUpdate}
+          onToolChange={setSelectedTool}
+          onSelectionChange={setSelectedNodes}
+          onSave={handleContentUpdate}
           onClose={() => setIsFullscreen(false)}
         />
       )}

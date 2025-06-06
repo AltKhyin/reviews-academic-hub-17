@@ -40,7 +40,8 @@ export const TableBlock: React.FC<TableBlockProps> = ({
   readonly = false,
   onUpdate
 }) => {
-  const content = block.content;
+  // Safe access to content with comprehensive fallbacks
+  const content = block.content || {};
   const tableData: TableData = content.table_data || {
     headers: ['Coluna 1', 'Coluna 2'],
     rows: [['Dado 1', 'Dado 2']],
