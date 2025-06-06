@@ -165,6 +165,7 @@ export type AnalyticsEventType =
   | 'section_viewed'
   | 'review_completed'
   | 'view_mode_changed'
+  | 'reading_mode_changed'
   | 'poll_voted';
 
 // Review Poll types

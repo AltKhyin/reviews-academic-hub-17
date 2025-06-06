@@ -1,4 +1,3 @@
-
 // ABOUTME: Enhanced article viewer with unified controls and structured sections
 // Implements the 4-section layout: Header, Review Content, Recommendations, Comments
 
@@ -114,7 +113,7 @@ const EnhancedArticleViewer: React.FC = () => {
           setReadingMode('browser-fullscreen'); // Fallback to browser fullscreen
         });
       }
-    } else if (document.fullscreenElement && readingMode !== 'system-fullscreen') {
+    } else if (document.fullscreenElement && readingMode === 'normal') {
       document.exitFullscreen();
     }
   }, [readingMode]);
@@ -380,7 +379,7 @@ const EnhancedArticleViewer: React.FC = () => {
           <h2 className="text-xl font-semibold mb-6" style={{ color: '#ffffff' }}>
             Comentários
           </h2>
-          <ArticleComments articleId={issue.id} entityType="issue" />
+          <ArticleComments articleId={issue.id} />
         </div>
       )}
     </div>

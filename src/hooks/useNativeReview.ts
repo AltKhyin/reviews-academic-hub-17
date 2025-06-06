@@ -62,7 +62,7 @@ export const useNativeReview = (issueId: string) => {
 
       // Normalize blocks to handle database schema inconsistencies
       const normalizedBlocks: ReviewBlock[] = (blocksData || []).map(block => ({
-        id: block.id.toString(),
+        id: block.id, // Keep as number from database
         type: block.type as BlockType,
         // Handle both 'payload' from database and 'content' from types
         content: (block.payload as any) || {},
@@ -97,7 +97,7 @@ export const useNativeReview = (issueId: string) => {
         polls: (pollsData || []).map(poll => ({
           id: poll.id,
           issue_id: poll.issue_id,
-          block_id: poll.block_id?.toString() || '',
+          block_id: poll.block_id || undefined, // Keep as number from database or undefined
           question: poll.question || '',
           options: Array.isArray(poll.options) ? (poll.options as string[]) : [],
           poll_type: poll.poll_type || 'single_choice',
