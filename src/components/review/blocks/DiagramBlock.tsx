@@ -1,4 +1,3 @@
-
 // ABOUTME: Interactive diagram maker block for scientific illustrations
 // Supports flowcharts, decision trees, process diagrams with drag-and-drop editing
 
@@ -16,7 +15,7 @@ import {
   Edit3, 
   Eye, 
   Download, 
-  Template,
+  FileText,
   Settings,
   Grid3X3,
   Save
@@ -204,7 +203,7 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
               onClick={() => setShowTemplates(true)}
               className="text-gray-400 hover:text-white"
             >
-              <Template className="w-4 h-4 mr-1" />
+              <FileText className="w-4 h-4 mr-1" />
               Modelos
             </Button>
             

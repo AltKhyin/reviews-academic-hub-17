@@ -250,7 +250,7 @@ export const DiagramToolbar: React.FC<DiagramToolbarProps> = ({
                   <div>
                     <Label className="text-xs" style={{ color: '#d1d5db' }}>Cor de Fundo</Label>
                     <ColorPicker
-                      color="#3b82f6"
+                      value="#3b82f6"
                       onChange={(color) => {
                         const updates = selectedNodes.map(nodeId => ({
                           id: nodeId,
@@ -264,7 +264,7 @@ export const DiagramToolbar: React.FC<DiagramToolbarProps> = ({
                   <div>
                     <Label className="text-xs" style={{ color: '#d1d5db' }}>Cor do Texto</Label>
                     <ColorPicker
-                      color="#ffffff"
+                      value="#ffffff"
                       onChange={(color) => {
                         const updates = selectedNodes.map(nodeId => ({
                           id: nodeId,
@@ -321,7 +321,7 @@ export const DiagramToolbar: React.FC<DiagramToolbarProps> = ({
             <div>
               <Label className="text-xs" style={{ color: '#d1d5db' }}>Cor de Fundo</Label>
               <ColorPicker
-                color={canvas.backgroundColor}
+                value={canvas.backgroundColor}
                 onChange={(color) => onCanvasUpdate({ backgroundColor: color })}
               />
             </div>

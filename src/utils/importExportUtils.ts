@@ -229,6 +229,32 @@ const normalizeBlockContent = (block: any): any => {
         border_color: content.border_color
       };
       
+    case 'diagram':
+      return {
+        title: content.title || 'Novo Diagrama',
+        description: content.description || '',
+        canvas: content.canvas || {
+          width: 800,
+          height: 600,
+          backgroundColor: '#ffffff',
+          gridEnabled: true,
+          gridSize: 20,
+          gridColor: '#e5e7eb',
+          snapToGrid: true
+        },
+        nodes: content.nodes || [],
+        connections: content.connections || [],
+        template: content.template,
+        exportSettings: content.exportSettings || {
+          format: 'svg',
+          quality: 1,
+          transparentBackground: false
+        },
+        accessibility: content.accessibility || {
+          altText: 'Diagrama científico interativo'
+        }
+      };
+      
     default:
       return content;
   }
@@ -576,6 +602,29 @@ export const getDefaultBlockContent = (type: BlockType): any => {
       value: '0',
       description: 'Descrição',
       trend: 'neutral'
+    },
+    diagram: {
+      title: 'Novo Diagrama',
+      description: '',
+      canvas: {
+        width: 800,
+        height: 600,
+        backgroundColor: '#ffffff',
+        gridEnabled: true,
+        gridSize: 20,
+        gridColor: '#e5e7eb',
+        snapToGrid: true
+      },
+      nodes: [],
+      connections: [],
+      exportSettings: {
+        format: 'svg',
+        quality: 1,
+        transparentBackground: false
+      },
+      accessibility: {
+        altText: 'Diagrama científico interativo'
+      }
     }
   };
   
