@@ -1,30 +1,34 @@
 
+// ABOUTME: Main dashboard layout with simplified structure
+// Removes conditional sidebar mounting to prevent duplicates on community routes
+
 import React from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from '@/components/navigation/Sidebar';
 import { MobileSidebarToggle } from '@/components/sidebar/MobileSidebarToggle';
-import { RightSidebar } from '@/components/sidebar/RightSidebar';
-import { AuthGuard } from '@/components/auth/AuthGuard';
 
 export const DashboardLayout = () => {
+  const location = useLocation();
+
   return (
-    <AuthGuard requireAuth={true} fallbackPath="/auth">
-      <div className="flex h-screen bg-background overflow-hidden">
-        <Sidebar />
-        
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 flex overflow-hidden">
-            <main className="flex-1 overflow-auto">
-              <div className="md:hidden p-4">
-                <MobileSidebarToggle />
-              </div>
-              <Outlet />
-            </main>
-            
-            <RightSidebar />
-          </div>
+    <div className="flex h-screen bg-background">
+      {/* Left Navigation Sidebar */}
+      <Sidebar />
+      
+      {/* Main Content Area - with left margin to account for sidebar */}
+      <div className="flex-1 flex flex-col overflow-hidden ml-64">
+        {/* Mobile Header with Sidebar Toggle */}
+        <div className="lg:hidden flex items-center justify-between p-4 border-b">
+          <MobileSidebarToggle />
         </div>
+        
+        {/* Main Content Container - simplified single column layout */}
+        <main className="flex-1 overflow-auto">
+          <div className="h-full">
+            <Outlet />
+          </div>
+        </main>
       </div>
-    </AuthGuard>
+    </div>
   );
 };

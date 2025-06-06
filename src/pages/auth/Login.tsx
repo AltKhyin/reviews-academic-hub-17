@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -25,15 +25,8 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 const Login: React.FC = () => {
-  const { signIn, user } = useAuth();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
-  
-  // Redirect if already logged in
-  useEffect(() => {
-    if (user) {
-      navigate('/homepage');
-    }
-  }, [user, navigate]);
   
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -46,7 +39,7 @@ const Login: React.FC = () => {
   const onSubmit = async (data: LoginFormValues) => {
     try {
       await signIn(data.email, data.password);
-      navigate('/homepage');
+      navigate('/dashboard');
     } catch (error) {
       // Error is handled in the auth context
       console.error('Login error:', error);
@@ -91,7 +84,7 @@ const Login: React.FC = () => {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full bg-black hover:bg-gray-800 text-white">
+              <Button type="submit" className="w-full">
                 Sign In
               </Button>
             </form>

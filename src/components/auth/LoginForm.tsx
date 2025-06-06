@@ -104,7 +104,7 @@ const LoginForm = ({ setMode }: LoginFormProps) => {
 
       <Button 
         type="submit" 
-        className="w-full bg-black hover:bg-gray-800 text-white border-0"
+        className="w-full bg-black hover:bg-gray-800 text-white"
         disabled={loading}
       >
         {loading ? (
