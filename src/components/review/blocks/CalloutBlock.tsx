@@ -1,4 +1,3 @@
-
 // ABOUTME: Enhanced callout block with comprehensive inline settings and color integration  
 // Handles contextual information display with full type selection and customization
 
@@ -52,7 +51,8 @@ export const CalloutBlock: React.FC<CalloutBlockProps> = ({
   readonly = false,
   onUpdate
 }) => {
-  const content = block.content;
+  // Safe access to content with comprehensive fallbacks
+  const content = block.content || {};
   const type = content.type || 'info';
   const title = content.title || '';
   const contentText = content.content || '';
