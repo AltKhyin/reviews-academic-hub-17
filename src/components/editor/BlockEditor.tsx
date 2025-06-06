@@ -413,14 +413,17 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
 
   return (
     <div 
-      className={cn("block-editor py-6", className)}
-      style={getEditorStyles()}
+      className={cn("block-editor py-6 overflow-visible-force", className)}
+      style={{
+        backgroundColor: '#121212',
+        color: '#ffffff'
+      }}
     >
       {/* Dynamic width indicator for Dividir mode */}
       {isDividirMode && (
         <div className="mb-4 text-center">
-          <div className="inline-flex items-center px-3 py-1 bg-blue-900/20 border border-blue-500/30 rounded-full text-blue-400 text-sm">
-            <span className="w-2 h-2 bg-blue-400 rounded-full mr-2 animate-pulse"></span>
+          <div className="inline-flex items-center px-3 py-1 bg-gray-900/20 border border-gray-600/30 rounded-full text-gray-400 text-sm">
+            <span className="w-2 h-2 bg-gray-400 rounded-full mr-2 animate-pulse"></span>
             Modo Dividir Ativo • Editor Expandido
           </div>
         </div>
@@ -436,7 +439,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
           const grid = grids.find(g => g.id === group.id);
           if (grid) {
             return (
-              <div key={group.id} className="mx-2 mb-8">
+              <div key={group.id} className="mx-2 mb-8 overflow-visible-force">
                 <Grid2DContainer
                   grid={grid}
                   activeBlockId={activeBlockId}
@@ -461,7 +464,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
           }
         } else if (group.type === '1d-grid') {
           return (
-            <div key={group.id} className="mx-2 mb-6">
+            <div key={group.id} className="mx-2 mb-6 overflow-visible-force">
               <ResizableGrid
                 rowId={group.id}
                 blocks={group.blocks}
@@ -513,6 +516,10 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
           onClick={() => addBlockBetween(blocks.length)}
           variant="outline"
           className="text-gray-400 border-gray-600 hover:border-gray-500 hover:text-white"
+          style={{
+            backgroundColor: '#212121',
+            borderColor: '#2a2a2a'
+          }}
         >
           <Plus className="w-4 h-4 mr-2" />
           Adicionar Bloco

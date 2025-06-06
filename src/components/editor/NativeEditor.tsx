@@ -123,7 +123,10 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
   }, [handleKeyboardShortcuts]);
 
   return (
-    <div className={cn("native-editor h-full flex flex-col", className)}>
+    <div 
+      className={cn("native-editor h-full flex flex-col overflow-visible-force", className)}
+      style={{ backgroundColor: '#121212' }}
+    >
       <EditorToolbar
         editorMode={editorMode}
         onModeChange={setEditorMode}
@@ -155,7 +158,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
           {(editorMode === 'edit' || editorMode === 'split') && (
             <div 
               className={cn(
-                "flex-1 px-2",
+                "flex-1 px-2 overflow-visible-force",
                 editorMode === 'split' && "border-r"
               )} 
               style={{ borderColor: '#2a2a2a' }}

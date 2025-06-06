@@ -1,12 +1,13 @@
 
-// ABOUTME: 2D grid container with row and column management
-// Renders complete 2D grids with visual row controls and cell interactions
+// ABOUTME: Complete 2D grid container with row management and drag/drop
+// Renders 2D grids with interactive row controls and proper drag integration
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { ReviewBlock } from '@/types/review';
 import { Grid2DLayout, GridPosition } from '@/types/grid';
-import { GridRowControls } from './GridRowControls';
 import { GridPanel } from './GridPanel';
+import { Button } from '@/components/ui/button';
+import { Plus, Minus, GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface DragState {
@@ -55,6 +56,7 @@ export const Grid2DContainer: React.FC<Grid2DContainerProps> = ({
   onDragLeave,
   onDrop
 }) => {
+  const [hoveredRowIndex, setHoveredRowIndex] = useState<number | null>(null);
   
   const handleAddBlock = useCallback((position: GridPosition) => {
     onAddBlock(grid.id, position);
@@ -72,7 +74,6 @@ export const Grid2DContainer: React.FC<Grid2DContainerProps> = ({
     onRemoveRow(grid.id, rowIndex);
   }, [grid.id, onRemoveRow]);
 
-  // Convert GridPosition to number for GridPanel compatibility
   const handleCellDragOver = useCallback((e: React.DragEvent, position: GridPosition) => {
     if (onDragOver) {
       const positionNumber = position.row * grid.columns + position.column;
@@ -88,7 +89,6 @@ export const Grid2DContainer: React.FC<Grid2DContainerProps> = ({
   }, [grid.id, grid.columns, onDrop]);
 
   const handleGridPanelAdd = useCallback((targetRowId: string, positionNumber: number) => {
-    // Convert position number back to GridPosition
     const row = Math.floor(positionNumber / grid.columns);
     const column = positionNumber % grid.columns;
     handleAddBlock({ row, column });
@@ -105,37 +105,16 @@ export const Grid2DContainer: React.FC<Grid2DContainerProps> = ({
         </h3>
       </div>
 
-      {/* Main Grid Container with Row Controls */}
+      {/* Row Controls and Grid Structure */}
       <div className="relative">
-        {/* Row Controls Column */}
-        {!readonly && (
-          <div className="absolute -left-12 top-0 bottom-0 flex flex-col justify-start pt-4">
-            {grid.rows.map((row, rowIndex) => (
-              <div 
-                key={row.id}
-                className="flex-1 flex items-center justify-center min-h-[120px]"
-              >
-                <GridRowControls
-                  rowIndex={rowIndex}
-                  totalRows={grid.rows.length}
-                  onAddRowAbove={handleAddRowAbove}
-                  onAddRowBelow={handleAddRowBelow}
-                  onRemoveRow={handleRemoveRow}
-                  compact={true}
-                />
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* 2D Grid Structure */}
         <div 
           className={cn(
-            "border rounded-lg transition-all pl-4",
-            isGridDropTarget && "border-green-500 shadow-lg bg-green-500/5",
-            "bg-gray-900/50 border-gray-700"
+            "border rounded-lg transition-all",
+            isGridDropTarget && "border-green-500 shadow-lg bg-green-500/5"
           )}
           style={{ 
+            backgroundColor: '#1a1a1a',
+            borderColor: isGridDropTarget ? '#22c55e' : '#2a2a2a',
             display: 'grid',
             gridTemplateColumns: grid.columnWidths 
               ? grid.columnWidths.map(w => `${w}%`).join(' ')
@@ -144,11 +123,13 @@ export const Grid2DContainer: React.FC<Grid2DContainerProps> = ({
               ? grid.rowHeights.map(h => `${h}px`).join(' ')
               : `repeat(${grid.rows.length}, minmax(120px, auto))`,
             gap: `${grid.gap}px`,
-            padding: `${grid.gap}px`
+            padding: `${grid.gap}px`,
+            position: 'relative'
           }}
           onDragOver={onDragLeave}
           onDragLeave={onDragLeave}
         >
+          {/* Render all cells */}
           {grid.rows.map((row, rowIndex) => (
             row.cells.map((cell, colIndex) => {
               const position: GridPosition = { row: rowIndex, column: colIndex };
@@ -160,7 +141,7 @@ export const Grid2DContainer: React.FC<Grid2DContainerProps> = ({
                 <div
                   key={cell.id}
                   className={cn(
-                    "grid-cell border border-dashed border-gray-600 rounded transition-all",
+                    "grid-cell border border-dashed border-gray-600 rounded transition-all relative group",
                     isDropTarget && "border-green-500 bg-green-500/10",
                     cell.block && "border-solid border-gray-500"
                   )}
@@ -169,10 +150,54 @@ export const Grid2DContainer: React.FC<Grid2DContainerProps> = ({
                     gridRow: rowIndex + 1,
                     minHeight: '120px'
                   }}
+                  onMouseEnter={() => setHoveredRowIndex(rowIndex)}
+                  onMouseLeave={() => setHoveredRowIndex(null)}
                   onDragOver={(e) => handleCellDragOver(e, position)}
                   onDragLeave={onDragLeave}
                   onDrop={(e) => handleCellDrop(e, position)}
                 >
+                  {/* Row Controls - Show only on first column */}
+                  {!readonly && colIndex === 0 && hoveredRowIndex === rowIndex && (
+                    <div className="absolute -left-16 top-1/2 transform -translate-y-1/2 flex flex-col items-center gap-1 z-20">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleAddRowAbove(rowIndex)}
+                        className="w-8 h-6 p-0 text-gray-400 hover:text-white hover:bg-gray-700"
+                        title="Adicionar linha acima"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </Button>
+                      
+                      <div className="w-6 h-6 flex items-center justify-center text-gray-500">
+                        <GripVertical className="w-3 h-3" />
+                      </div>
+                      
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleAddRowBelow(rowIndex)}
+                        className="w-8 h-6 p-0 text-gray-400 hover:text-white hover:bg-gray-700"
+                        title="Adicionar linha abaixo"
+                      >
+                        <Plus className="w-3 h-3" />
+                      </Button>
+                      
+                      {grid.rows.length > 1 && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleRemoveRow(rowIndex)}
+                          className="w-8 h-6 p-0 text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                          title="Remover linha"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Cell Content */}
                   {cell.block ? (
                     <GridPanel
                       rowId={grid.id}
@@ -206,6 +231,21 @@ export const Grid2DContainer: React.FC<Grid2DContainerProps> = ({
             })
           ))}
         </div>
+
+        {/* Global Row Controls for Empty Grids */}
+        {!readonly && grid.rows.length === 0 && (
+          <div className="absolute -left-16 top-1/2 transform -translate-y-1/2 flex flex-col items-center gap-1 z-20">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => handleAddRowAbove(0)}
+              className="w-8 h-6 p-0 text-gray-400 hover:text-white hover:bg-gray-700"
+              title="Adicionar primeira linha"
+            >
+              <Plus className="w-3 h-3" />
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Grid Drop Feedback */}

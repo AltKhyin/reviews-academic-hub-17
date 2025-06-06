@@ -1,6 +1,6 @@
 
-// ABOUTME: Preview component for native review content with enhanced grid layout support
-// Shows real-time preview of how the review will look to readers with proper grid rendering
+// ABOUTME: Enhanced preview component with complete 2D grid support
+// Shows real-time preview of both 1D and 2D grid layouts with proper rendering
 
 import React, { useMemo } from 'react';
 import { ReviewBlock } from '@/types/review';
@@ -15,15 +15,32 @@ interface ReviewPreviewProps {
   className?: string;
 }
 
+interface Grid2DBlock {
+  block: ReviewBlock;
+  position: { row: number; column: number };
+}
+
+interface Grid2DStructure {
+  id: string;
+  columns: number;
+  rows: number;
+  gap: number;
+  columnWidths?: number[];
+  rowHeights?: number[];
+  blocks: Grid2DBlock[];
+}
+
 interface LayoutGroup {
-  type: 'single' | 'grid';
+  type: 'single' | '1d-grid' | '2d-grid';
   blocks: ReviewBlock[];
   rowId?: string;
+  gridId?: string;
   gridConfig?: {
     columns: number;
     gap: number;
     columnWidths?: number[];
   };
+  grid2DStructure?: Grid2DStructure;
 }
 
 export const ReviewPreview: React.FC<ReviewPreviewProps> = ({
@@ -32,45 +49,97 @@ export const ReviewPreview: React.FC<ReviewPreviewProps> = ({
 }) => {
   const visibleBlocks = blocks.filter(block => block.visible);
 
-  // Group blocks by layout rows for proper grid rendering
+  // Enhanced layout grouping with 2D grid support
   const layoutGroups: LayoutGroup[] = useMemo(() => {
     const groups: LayoutGroup[] = [];
     const processedBlockIds = new Set<number>();
     
-    // Sort blocks by sort_index to maintain order
     const sortedBlocks = [...visibleBlocks].sort((a, b) => a.sort_index - b.sort_index);
 
+    // First pass: Handle 2D grids
+    const grid2DIds = new Set<string>();
     sortedBlocks.forEach((block) => {
-      if (processedBlockIds.has(block.id)) return;
-
-      const layout = block.meta?.layout;
-      
-      if (layout?.row_id && typeof layout.row_id === 'string') {
-        // This block is part of a grid row
-        const rowBlocks = sortedBlocks.filter(b => 
-          b.meta?.layout?.row_id === layout.row_id && 
-          !processedBlockIds.has(b.id)
+      const gridId = block.meta?.layout?.grid_id;
+      if (gridId && !grid2DIds.has(gridId) && !processedBlockIds.has(block.id)) {
+        grid2DIds.add(gridId);
+        const gridBlocks = sortedBlocks.filter(b => 
+          b.meta?.layout?.grid_id === gridId && !processedBlockIds.has(b.id)
         );
         
-        // Mark all blocks in this row as processed
-        rowBlocks.forEach(b => processedBlockIds.add(b.id));
+        if (gridBlocks.length > 0) {
+          gridBlocks.forEach(b => processedBlockIds.add(b.id));
+          
+          // Extract grid configuration
+          const firstBlock = gridBlocks[0];
+          const layout = firstBlock.meta?.layout;
+          const columns = layout?.columns || 2;
+          const rows = layout?.grid_rows || Math.ceil(gridBlocks.length / columns);
+          const gap = layout?.gap || 4;
+          const columnWidths = layout?.columnWidths;
+          const rowHeights = layout?.rowHeights;
+          
+          // Create 2D grid structure
+          const grid2DStructure: Grid2DStructure = {
+            id: gridId,
+            columns,
+            rows,
+            gap,
+            columnWidths,
+            rowHeights,
+            blocks: gridBlocks.map(block => ({
+              block,
+              position: block.meta?.layout?.grid_position || { row: 0, column: 0 }
+            })).filter(item => 
+              item.position.row >= 0 && 
+              item.position.column >= 0 &&
+              item.position.row < rows &&
+              item.position.column < columns
+            )
+          };
+          
+          groups.push({
+            type: '2d-grid',
+            blocks: gridBlocks,
+            gridId,
+            grid2DStructure
+          });
+        }
+      }
+    });
+
+    // Second pass: Handle 1D grids
+    const rowIds = new Set<string>();
+    sortedBlocks.forEach((block) => {
+      const rowId = block.meta?.layout?.row_id;
+      if (rowId && !rowIds.has(rowId) && !processedBlockIds.has(block.id)) {
+        rowIds.add(rowId);
+        const rowBlocks = sortedBlocks.filter(b => 
+          b.meta?.layout?.row_id === rowId && !processedBlockIds.has(b.id)
+        );
         
-        // Extract grid configuration from the first block's layout
-        const gridConfig = {
-          columns: layout.columns || rowBlocks.length,
-          gap: layout.gap || 4,
-          columnWidths: layout.columnWidths
-        };
-        
-        groups.push({
-          type: 'grid',
-          blocks: rowBlocks,
-          rowId: layout.row_id,
-          gridConfig
-        });
-      } else {
-        // Single block
-        processedBlockIds.add(block.id);
+        if (rowBlocks.length > 0) {
+          rowBlocks.forEach(b => processedBlockIds.add(b.id));
+          
+          if (rowBlocks.length > 1 || (rowBlocks[0]?.meta?.layout?.columns ?? 1) > 1) {
+            const layout = rowBlocks[0]?.meta?.layout;
+            groups.push({
+              type: '1d-grid',
+              blocks: rowBlocks,
+              rowId,
+              gridConfig: {
+                columns: layout?.columns || rowBlocks.length,
+                gap: layout?.gap || 4,
+                columnWidths: layout?.columnWidths
+              }
+            });
+          }
+        }
+      }
+    });
+
+    // Third pass: Handle single blocks
+    sortedBlocks.forEach((block) => {
+      if (!processedBlockIds.has(block.id)) {
         groups.push({
           type: 'single',
           blocks: [block]
@@ -78,7 +147,12 @@ export const ReviewPreview: React.FC<ReviewPreviewProps> = ({
       }
     });
 
-    return groups;
+    // Sort by minimum sort_index within each group
+    return groups.sort((a, b) => {
+      const aMinSort = Math.min(...a.blocks.map(block => block.sort_index));
+      const bMinSort = Math.min(...b.blocks.map(block => block.sort_index));
+      return aMinSort - bMinSort;
+    });
   }, [visibleBlocks]);
 
   if (visibleBlocks.length === 0) {
@@ -134,7 +208,65 @@ export const ReviewPreview: React.FC<ReviewPreviewProps> = ({
       <div className="preview-content max-w-4xl mx-auto px-6 py-8">
         {layoutGroups.map((group, groupIndex) => (
           <div key={`group-${groupIndex}`} className="layout-group mb-8">
-            {group.type === 'grid' && group.gridConfig ? (
+            {group.type === '2d-grid' && group.grid2DStructure ? (
+              <div className="grid-2d-preview">
+                <div 
+                  className="grid-container"
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: group.grid2DStructure.columnWidths 
+                      ? group.grid2DStructure.columnWidths.map(w => `${w}%`).join(' ')
+                      : `repeat(${group.grid2DStructure.columns}, 1fr)`,
+                    gridTemplateRows: group.grid2DStructure.rowHeights
+                      ? group.grid2DStructure.rowHeights.map(h => `${h}px`).join(' ')
+                      : `repeat(${group.grid2DStructure.rows}, minmax(120px, auto))`,
+                    gap: `${group.grid2DStructure.gap}px`,
+                    border: '1px solid #2a2a2a',
+                    borderRadius: '8px',
+                    padding: `${group.grid2DStructure.gap}px`,
+                    backgroundColor: '#1a1a1a'
+                  }}
+                >
+                  {/* Create grid cells */}
+                  {Array.from({ length: group.grid2DStructure.rows }).map((_, rowIndex) =>
+                    Array.from({ length: group.grid2DStructure.columns }).map((_, colIndex) => {
+                      const blockAtPosition = group.grid2DStructure!.blocks.find(
+                        item => item.position.row === rowIndex && item.position.column === colIndex
+                      );
+                      
+                      return (
+                        <div
+                          key={`cell-${rowIndex}-${colIndex}`}
+                          style={{
+                            gridColumn: colIndex + 1,
+                            gridRow: rowIndex + 1,
+                            minHeight: '120px',
+                            border: blockAtPosition ? 'none' : '1px dashed #2a2a2a',
+                            borderRadius: '4px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                        >
+                          {blockAtPosition ? (
+                            <BlockRenderer
+                              block={blockAtPosition.block}
+                              readonly={true}
+                              className="preview-grid-block w-full h-full"
+                            />
+                          ) : (
+                            <div className="text-gray-500 text-sm">Célula vazia</div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+                <div className="text-center text-xs text-gray-400 mt-2">
+                  Grid 2D • {group.grid2DStructure.columns} colunas × {group.grid2DStructure.rows} linhas
+                </div>
+              </div>
+            ) : group.type === '1d-grid' && group.gridConfig ? (
               <div 
                 className="grid-container"
                 style={generateGridContainerStyles(

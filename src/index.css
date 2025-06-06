@@ -51,8 +51,8 @@
     --scrollbar-thumb: 210 12% 25%;
     --scrollbar-thumb-hover: 210 12% 35%;
     
-    /* Fixed Editor Theme Variables - Dark Palette */
-    /* Primary colors - darkest */
+    /* Enhanced Dark Theme Variables - Using User's Preferred Colors */
+    /* Primary colors - darkest backgrounds */
     --editor-primary-bg: #121212;
     --editor-secondary-bg: #1a1a1a;
     --editor-tertiary-bg: #212121;
@@ -81,9 +81,9 @@
     --editor-error-color: #ef4444;
     --editor-info-color: #3b82f6;
     
-    /* Interactive colors - improved contrast */
-    --editor-button-primary: #3b82f6;
-    --editor-button-primary-hover: #2563eb;
+    /* Interactive colors - NO MORE BLUE BACKGROUNDS */
+    --editor-button-primary: #2a2a2a;
+    --editor-button-primary-hover: #333333;
     --editor-button-secondary: #212121;
     --editor-button-secondary-hover: #2a2a2a;
     --editor-button-ghost: transparent;
@@ -93,8 +93,8 @@
     --block-block-background: #1a1a1a;
     --block-block-border: #2a2a2a;
     --block-block-hover: #212121;
-    --block-block-selected: #1e3a8a;
-    --block-block-active: #1e40af;
+    --block-block-selected: #2a2a2a;
+    --block-block-active: #333333;
     
     /* Block type accent colors for icons */
     --block-snapshot-card-accent: #3b82f6;
@@ -127,6 +127,16 @@
     --palette-category-text: #9ca3af;
     --palette-block-title-text: #ffffff;
     --palette-block-desc-text: #d1d5db;
+
+    /* Z-index scale for proper layering */
+    --z-dropdown: 1000;
+    --z-sticky: 1020;
+    --z-fixed: 1030;
+    --z-modal-backdrop: 1040;
+    --z-modal: 1050;
+    --z-popover: 1060;
+    --z-tooltip: 1070;
+    --z-toast: 1080;
   }
 
   html, body, #root {
@@ -278,7 +288,7 @@
     border-color: var(--editor-secondary-border);
   }
   
-  /* Block Editor specific styles */
+  /* Block Editor specific styles - FIXED BLUE ISSUE */
   .block-editor-card {
     background-color: var(--block-block-background);
     border-color: var(--block-block-border);
@@ -340,6 +350,56 @@
     background-color: #3b82f6 !important;
     border-color: #3b82f6 !important;
   }
+
+  /* CRITICAL: Z-index and overflow fixes for menus */
+  .block-container {
+    position: relative;
+    overflow: visible !important;
+  }
+
+  .block-content {
+    overflow: visible !important;
+    position: relative;
+    z-index: 1;
+  }
+
+  .block-menu,
+  .inline-menu,
+  .context-menu,
+  .dropdown-menu {
+    position: absolute !important;
+    z-index: var(--z-dropdown) !important;
+    background-color: var(--editor-secondary-bg) !important;
+    border: 1px solid var(--editor-primary-border) !important;
+    border-radius: 6px !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2) !important;
+    overflow: visible !important;
+  }
+
+  .grid-panel {
+    overflow: visible !important;
+    position: relative;
+  }
+
+  .grid-container {
+    overflow: visible !important;
+  }
+
+  .grid-2d-container {
+    overflow: visible !important;
+  }
+
+  .resizable-grid {
+    overflow: visible !important;
+  }
+
+  /* Ensure all grid-related components don't clip */
+  .grid-cell,
+  .grid-item,
+  .grid-panel,
+  .block-panel {
+    overflow: visible !important;
+  }
 }
 
 @layer utilities {
@@ -370,8 +430,43 @@
   }
   
   .editor-main {
-    @apply flex-1 overflow-hidden;
+    @apply flex-1;
     background-color: var(--editor-primary-bg);
+    overflow: visible;
+  }
+
+  /* Z-index utilities */
+  .z-dropdown {
+    z-index: var(--z-dropdown);
+  }
+  
+  .z-sticky {
+    z-index: var(--z-sticky);
+  }
+  
+  .z-fixed {
+    z-index: var(--z-fixed);
+  }
+  
+  .z-modal {
+    z-index: var(--z-modal);
+  }
+  
+  .z-popover {
+    z-index: var(--z-popover);
+  }
+  
+  .z-tooltip {
+    z-index: var(--z-tooltip);
+  }
+
+  /* Force overflow visible for interactive elements */
+  .overflow-visible-force {
+    overflow: visible !important;
+  }
+
+  .overflow-visible-force * {
+    overflow: visible !important;
   }
 }
 
@@ -399,4 +494,17 @@
   50% {
     opacity: 0.3;
   }
+}
+
+/* Global dragging styles */
+body.dragging {
+  cursor: grabbing !important;
+}
+
+body.dragging * {
+  pointer-events: none;
+}
+
+body.dragging .drop-zone {
+  pointer-events: all;
 }
