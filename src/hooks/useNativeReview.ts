@@ -1,4 +1,3 @@
-
 // ABOUTME: Hook for managing native review data with enhanced error handling
 // Handles database inconsistencies and provides robust content access
 
@@ -100,7 +99,9 @@ export const useNativeReview = (issueId: string) => {
           block_id: poll.block_id || undefined, // Keep as number from database or undefined
           question: poll.question || '',
           options: Array.isArray(poll.options) ? (poll.options as string[]) : [],
-          poll_type: poll.poll_type || 'single_choice',
+          poll_type: (poll.poll_type === 'single_choice' || poll.poll_type === 'multiple_choice') 
+            ? poll.poll_type as 'single_choice' | 'multiple_choice'
+            : 'single_choice', // Safe fallback
           votes: Array.isArray(poll.votes) ? (poll.votes as number[]) : [],
           total_votes: typeof poll.total_votes === 'number' ? poll.total_votes : 0,
           opens_at: poll.opens_at,
