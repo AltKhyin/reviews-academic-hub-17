@@ -66,6 +66,13 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
     setHasUnsavedChanges(hasChanges);
   }, [blocks, initialBlocks]);
 
+  // Enhanced block addition that returns the new block ID
+  const handleAddBlock = useCallback((type: any, position?: number) => {
+    const newBlockId = addBlock(type, position);
+    console.log('Block added in NativeEditor:', { type, position, newBlockId });
+    return newBlockId;
+  }, [addBlock]);
+
   const handleManualSave = useCallback(() => {
     if (onSave) {
       onSave(blocks);
@@ -77,15 +84,14 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
     console.log('Importing blocks:', importedBlocks);
     importedBlocks.forEach((block, index) => {
       if (index === 0) {
-        addBlock(block.type, 0);
-        updateBlock(blocks[0]?.id || 0, block);
+        const firstBlockId = addBlock(block.type, 0);
+        updateBlock(firstBlockId, block);
       } else {
-        addBlock(block.type, index);
-        const newBlockId = -(Date.now() + Math.random() + index);
+        const newBlockId = addBlock(block.type, index);
         updateBlock(newBlockId, { ...block, id: newBlockId });
       }
     });
-  }, [addBlock, updateBlock, blocks]);
+  }, [addBlock, updateBlock]);
 
   const handleKeyboardShortcuts = useCallback((e: KeyboardEvent) => {
     if (e.ctrlKey || e.metaKey) {
@@ -141,7 +147,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
               className="w-64 border-r overflow-y-auto flex-shrink-0"
               style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}
             >
-              <BlockPalette onBlockAdd={addBlock} />
+              <BlockPalette onBlockAdd={handleAddBlock} />
             </div>
           )}
           
@@ -161,7 +167,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
                 onUpdateBlock={updateBlock}
                 onDeleteBlock={deleteBlock}
                 onMoveBlock={moveBlock}
-                onAddBlock={addBlock}
+                onAddBlock={handleAddBlock}
                 onDuplicateBlock={duplicateBlock}
                 onConvertToGrid={convertToGrid}
                 onConvertTo2DGrid={convertTo2DGrid}

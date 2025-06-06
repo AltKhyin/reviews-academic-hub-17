@@ -1,9 +1,11 @@
+
 // ABOUTME: Enhanced block management with complete 2D grid support
 // Handles block operations for both 1D and 2D grid layouts
 
 import { useState, useCallback, useMemo } from 'react';
 import { ReviewBlock, BlockType } from '@/types/review';
 import { GridPosition } from '@/types/grid';
+import { generateGridId } from '@/utils/grid2DUtils';
 
 interface UseBlockManagementProps {
   initialBlocks?: ReviewBlock[];
@@ -47,8 +49,8 @@ export const useBlockManagement = ({
     return -(Date.now() + Math.random());
   }, []);
 
-  // Add new block
-  const addBlock = useCallback((type: BlockType, position?: number) => {
+  // Add new block - FIXED: Now returns the block ID
+  const addBlock = useCallback((type: BlockType, position?: number): number => {
     const newBlock: ReviewBlock = {
       id: generateBlockId(),
       type,
@@ -87,6 +89,12 @@ export const useBlockManagement = ({
   // Update block
   const updateBlock = useCallback((blockId: number, updates: Partial<ReviewBlock>) => {
     setBlocks(prevBlocks => {
+      const blockExists = prevBlocks.some(block => block.id === blockId);
+      if (!blockExists) {
+        console.warn('Attempted to update non-existent block:', blockId);
+        return prevBlocks;
+      }
+
       const newBlocks = prevBlocks.map(block => 
         block.id === blockId 
           ? { 
@@ -107,6 +115,12 @@ export const useBlockManagement = ({
   // Delete block
   const deleteBlock = useCallback((blockId: number) => {
     setBlocks(prevBlocks => {
+      const blockExists = prevBlocks.some(block => block.id === blockId);
+      if (!blockExists) {
+        console.warn('Attempted to delete non-existent block:', blockId);
+        return prevBlocks;
+      }
+
       const newBlocks = prevBlocks.filter(block => block.id !== blockId);
       
       // Update sort indices
@@ -158,7 +172,12 @@ export const useBlockManagement = ({
       ...originalBlock,
       id: generateBlockId(),
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
+      // Reset grid metadata to avoid conflicts
+      meta: originalBlock.meta?.layout?.grid_id ? {
+        ...originalBlock.meta,
+        layout: undefined
+      } : originalBlock.meta
     };
 
     setBlocks(prevBlocks => {
@@ -202,13 +221,19 @@ export const useBlockManagement = ({
     console.log('Converted block to 1D grid:', { blockId, columns, rowId });
   }, [blocks, updateBlock]);
 
-  // Convert single block to 2D grid
+  // Convert single block to 2D grid - FIXED: Proper grid creation
   const convertTo2DGrid = useCallback((blockId: number, columns: number, rows: number) => {
     const block = blocks.find(b => b.id === blockId);
-    if (!block) return;
+    if (!block) {
+      console.error('Block not found for 2D grid conversion:', blockId);
+      return;
+    }
 
-    const gridId = `grid-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const gridId = generateGridId();
     
+    console.log('Converting block to 2D grid:', { blockId, columns, rows, gridId });
+    
+    // Update the original block to be part of the 2D grid at position (0,0)
     updateBlock(blockId, {
       meta: {
         ...block.meta,
@@ -224,7 +249,7 @@ export const useBlockManagement = ({
       }
     });
 
-    console.log('Converted block to 2D grid:', { blockId, columns, rows, gridId });
+    console.log('Successfully converted block to 2D grid:', { blockId, gridId });
   }, [blocks, updateBlock]);
 
   // Enhanced merge function for both 1D and 2D grids
@@ -281,10 +306,17 @@ export const useBlockManagement = ({
           }
         }
         
+        // Clear any existing grid metadata from the dragged block
+        const cleanMeta = draggedBlock.meta ? { ...draggedBlock.meta } : {};
+        if (cleanMeta.layout?.row_id) {
+          delete cleanMeta.layout.row_id;
+          delete cleanMeta.layout.position;
+        }
+        
         // Update the dragged block to be part of the 2D grid
         updateBlock(draggedBlockId, {
           meta: {
-            ...draggedBlock.meta,
+            ...cleanMeta,
             layout: {
               ...gridConfig,
               grid_id: targetRowId,
@@ -308,15 +340,10 @@ export const useBlockManagement = ({
 
     // Handle 1D grid merge (existing logic)
     const targetBlocks = blocks.filter(b => b.meta?.layout?.row_id === targetRowId);
-    const targetBlock = targetBlocks.find(b => (b.meta?.layout?.position ?? 0) === targetPosition);
     const targetRow = targetBlocks.length > 0 ? targetBlocks[0] : null;
 
     if (!targetRow) {
-      console.error('Invalid merge target:', { 
-        targetRowId, 
-        targetBlock: { _type: typeof targetBlock, value: targetBlock?.id || 'undefined' },
-        targetRow: { _type: typeof targetRow, value: targetRow?.id || 'undefined' }
-      });
+      console.error('Invalid merge target:', { targetRowId });
       return;
     }
 
@@ -329,10 +356,18 @@ export const useBlockManagement = ({
     // Calculate insertion position
     let insertPosition = targetPosition ?? targetBlocks.length;
     
+    // Clear any existing 2D grid metadata from the dragged block
+    const cleanMeta = draggedBlock.meta ? { ...draggedBlock.meta } : {};
+    if (cleanMeta.layout?.grid_id) {
+      delete cleanMeta.layout.grid_id;
+      delete cleanMeta.layout.grid_position;
+      delete cleanMeta.layout.grid_rows;
+    }
+    
     // Update dragged block to be part of the target grid
     updateBlock(draggedBlockId, {
       meta: {
-        ...draggedBlock.meta,
+        ...cleanMeta,
         layout: {
           row_id: targetRowId,
           position: insertPosition,
@@ -370,28 +405,78 @@ export const useBlockManagement = ({
     });
   }, [blocks, updateBlock]);
 
-  // Place block in 2D grid
+  // Place block in 2D grid - FIXED: Proper validation and error handling
   const placeBlockIn2DGrid = useCallback((
     blockId: number,
     gridId: string,
     position: GridPosition
   ) => {
+    console.log('Placing block in 2D grid:', { blockId, gridId, position });
+    
     const block = blocks.find(b => b.id === blockId);
-    if (!block) return;
+    if (!block) {
+      console.error('Block not found for 2D grid placement:', blockId);
+      return;
+    }
 
     // Find grid configuration from existing blocks or use defaults
     const gridBlocks = blocks.filter(b => b.meta?.layout?.grid_id === gridId);
-    const gridConfig = gridBlocks.length > 0 ? gridBlocks[0].meta?.layout : {
-      columns: 2,
-      grid_rows: 2,
-      gap: 4,
-      columnWidths: [50, 50],
-      rowHeights: [120, 120]
-    };
+    let gridConfig;
+    
+    if (gridBlocks.length > 0) {
+      gridConfig = gridBlocks[0].meta?.layout;
+    } else {
+      // Default configuration for new grids
+      gridConfig = {
+        columns: 2,
+        grid_rows: 2,
+        gap: 4,
+        columnWidths: [50, 50],
+        rowHeights: [120, 120]
+      };
+    }
 
+    // Validate position bounds
+    if (position.row >= (gridConfig.grid_rows || 2) || 
+        position.column >= (gridConfig.columns || 2) ||
+        position.row < 0 || position.column < 0) {
+      console.error('Invalid grid position:', { 
+        position, 
+        gridBounds: { 
+          rows: gridConfig.grid_rows || 2, 
+          columns: gridConfig.columns || 2 
+        } 
+      });
+      return;
+    }
+
+    // Check if position is already occupied
+    const conflictingBlock = gridBlocks.find(b => {
+      const blockPos = b.meta?.layout?.grid_position;
+      return blockPos && 
+             blockPos.row === position.row && 
+             blockPos.column === position.column;
+    });
+
+    if (conflictingBlock) {
+      console.warn('Grid position already occupied, removing existing block:', {
+        position,
+        existingBlockId: conflictingBlock.id
+      });
+      deleteBlock(conflictingBlock.id);
+    }
+
+    // Clear any existing layout metadata
+    const cleanMeta = block.meta ? { ...block.meta } : {};
+    if (cleanMeta.layout?.row_id) {
+      delete cleanMeta.layout.row_id;
+      delete cleanMeta.layout.position;
+    }
+
+    // Update block with 2D grid metadata
     updateBlock(blockId, {
       meta: {
-        ...block.meta,
+        ...cleanMeta,
         layout: {
           ...gridConfig,
           grid_id: gridId,
@@ -400,8 +485,8 @@ export const useBlockManagement = ({
       }
     });
 
-    console.log('Placed block in 2D grid:', { blockId, gridId, position });
-  }, [blocks, updateBlock]);
+    console.log('Successfully placed block in 2D grid:', { blockId, gridId, position });
+  }, [blocks, updateBlock, deleteBlock]);
 
   // History management
   const undo = useCallback(() => {

@@ -22,7 +22,7 @@ interface BlockEditorProps {
   onUpdateBlock: (blockId: number, updates: Partial<ReviewBlock>) => void;
   onDeleteBlock: (blockId: number) => void;
   onMoveBlock: (blockId: number, direction: 'up' | 'down') => void;
-  onAddBlock: (type: BlockType, position?: number) => void;
+  onAddBlock: (type: BlockType, position?: number) => number;
   onDuplicateBlock: (blockId: number) => void;
   onConvertToGrid?: (blockId: number, columns: number) => void;
   onConvertTo2DGrid?: (blockId: number, columns: number, rows: number) => void;
@@ -122,14 +122,23 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       if (gridId && !grid2DIds.has(gridId)) {
         grid2DIds.add(gridId);
         const gridBlocks = blocks.filter(b => b.meta?.layout?.grid_id === gridId);
-        gridBlocks.forEach(b => processedBlockIds.add(b.id));
         
-        groups.push({
-          type: '2d-grid',
-          id: gridId,
-          blocks: gridBlocks,
-          config: gridBlocks[0]?.meta?.layout
+        // Validate that blocks have valid grid positions
+        const validGridBlocks = gridBlocks.filter(b => {
+          const pos = b.meta?.layout?.grid_position;
+          return pos && typeof pos.row === 'number' && typeof pos.column === 'number';
         });
+        
+        if (validGridBlocks.length > 0) {
+          validGridBlocks.forEach(b => processedBlockIds.add(b.id));
+          
+          groups.push({
+            type: '2d-grid',
+            id: gridId,
+            blocks: validGridBlocks,
+            config: validGridBlocks[0]?.meta?.layout
+          });
+        }
       }
     });
 
@@ -139,16 +148,21 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       const rowId = block.meta?.layout?.row_id;
       if (rowId && !rowIds.has(rowId) && !processedBlockIds.has(block.id)) {
         rowIds.add(rowId);
-        const rowBlocks = blocks.filter(b => b.meta?.layout?.row_id === rowId);
-        rowBlocks.forEach(b => processedBlockIds.add(b.id));
+        const rowBlocks = blocks.filter(b => 
+          b.meta?.layout?.row_id === rowId && !processedBlockIds.has(b.id)
+        );
         
-        if (rowBlocks.length > 1 || (rowBlocks[0]?.meta?.layout?.columns ?? 1) > 1) {
-          groups.push({
-            type: '1d-grid',
-            id: rowId,
-            blocks: rowBlocks,
-            config: rowBlocks[0]?.meta?.layout
-          });
+        if (rowBlocks.length > 0) {
+          rowBlocks.forEach(b => processedBlockIds.add(b.id));
+          
+          if (rowBlocks.length > 1 || (rowBlocks[0]?.meta?.layout?.columns ?? 1) > 1) {
+            groups.push({
+              type: '1d-grid',
+              id: rowId,
+              blocks: rowBlocks,
+              config: rowBlocks[0]?.meta?.layout
+            });
+          }
         }
       }
     });
@@ -173,7 +187,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
   }, [blocks]);
 
   const addBlockBetween = useCallback((position: number, type: BlockType = 'paragraph') => {
-    onAddBlock(type, position);
+    return onAddBlock(type, position);
   }, [onAddBlock]);
 
   const addBlockToGrid = useCallback((rowId: string, position: number) => {
@@ -206,29 +220,23 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
         blocks.length;
     }
 
-    onAddBlock('paragraph', insertionIndex);
+    return onAddBlock('paragraph', insertionIndex);
   }, [layoutState.rows, blocks, onAddBlock]);
 
-  // 2D Grid operations - FIXED: Removed truthiness check on void function
+  // 2D Grid operations - FIXED: Proper block creation and placement
   const handleAddBlockTo2DGrid = useCallback((gridId: string, position: GridPosition) => {
     console.log('Adding block to 2D grid:', { gridId, position });
     
     // Create a new block first
-    const blockIndex = blocks.length;
-    onAddBlock('paragraph', blockIndex);
+    const newBlockId = onAddBlock('paragraph', blocks.length);
     
-    // Since onAddBlock doesn't return the block ID, we need to get the newly created block
-    // The new block will be at the end of the array after the next render
-    setTimeout(() => {
-      // Get the last block which should be our newly created one
-      const newBlocks = [...blocks];
-      if (newBlocks.length > blockIndex) {
-        const newBlock = newBlocks[newBlocks.length - 1];
-        if (onPlaceBlockIn2DGrid) {
-          onPlaceBlockIn2DGrid(newBlock.id, gridId, position);
-        }
-      }
-    }, 100);
+    // Place it in the 2D grid immediately using the returned block ID
+    if (onPlaceBlockIn2DGrid && newBlockId) {
+      console.log('Placing newly created block in 2D grid:', { newBlockId, gridId, position });
+      onPlaceBlockIn2DGrid(newBlockId, gridId, position);
+    } else {
+      console.error('Failed to place block in 2D grid:', { newBlockId, onPlaceBlockIn2DGrid });
+    }
   }, [blocks, onAddBlock, onPlaceBlockIn2DGrid]);
 
   const handleAddRowAbove = useCallback((gridId: string, rowIndex: number) => {
@@ -251,10 +259,11 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     }
     
     const sourceRow = getRowByBlockId(blockId);
+    const sourceGrid = blocks.find(b => b.id === blockId)?.meta?.layout?.grid_id;
     
     setDragState({
       draggedBlockId: blockId,
-      draggedFromRowId: sourceRow?.id || null,
+      draggedFromRowId: sourceRow?.id || sourceGrid || null,
       dragOverRowId: null,
       dragOverPosition: null,
       isDragging: true,
@@ -265,11 +274,12 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     e.dataTransfer.setData('text/plain', blockId.toString());
     e.dataTransfer.setData('application/json', JSON.stringify({
       blockId,
-      sourceRowId: sourceRow?.id || null
+      sourceRowId: sourceRow?.id || null,
+      sourceGridId: sourceGrid || null
     }));
 
     document.body.classList.add('dragging');
-  }, [getRowByBlockId]);
+  }, [getRowByBlockId, blocks]);
 
   // Handle drag over for 1D grids
   const handleDragOver1D = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number, targetType: 'grid' | 'single' | 'merge' = 'merge') => {
@@ -318,7 +328,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     }
   }, []);
 
-  // Handle drop for both 1D and 2D grids
+  // Handle drop for both 1D and 2D grids - FIXED: Proper 2D grid integration
   const handleDrop = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number, dropType: 'grid' | 'single' | 'merge' = 'merge') => {
     e.preventDefault();
     
@@ -336,7 +346,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
 
       // Handle 2D grid drops
       if (targetRowId.startsWith('grid-') && onPlaceBlockIn2DGrid && targetPosition !== undefined) {
-        // Convert linear position to grid position
+        // Find the grid configuration to convert linear position to grid position
         const gridBlocks = blocks.filter(b => b.meta?.layout?.grid_id === targetRowId);
         const columns = gridBlocks[0]?.meta?.layout?.columns || 2;
         const gridPosition: GridPosition = {
@@ -344,12 +354,26 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
           column: targetPosition % columns
         };
         
+        console.log('Placing block in 2D grid:', { 
+          blockId: dragState.draggedBlockId, 
+          gridId: targetRowId, 
+          position: gridPosition 
+        });
+        
         onPlaceBlockIn2DGrid(dragState.draggedBlockId, targetRowId, gridPosition);
       } 
       // Handle 1D grid drops
       else if (onMergeBlockIntoGrid) {
+        console.log('Merging block into 1D grid:', { 
+          blockId: dragState.draggedBlockId, 
+          targetRowId, 
+          targetPosition 
+        });
+        
         onMergeBlockIntoGrid(dragState.draggedBlockId, targetRowId, targetPosition);
       }
+    } catch (error) {
+      console.error('Drop operation failed:', error);
     } finally {
       setDragState({
         draggedBlockId: null,
@@ -431,6 +455,9 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                 />
               </div>
             );
+          } else {
+            console.warn('Grid not found for group:', group.id);
+            return null;
           }
         } else if (group.type === '1d-grid') {
           return (
