@@ -1,32 +1,34 @@
+
 // ABOUTME: Centralized color management system for all block types
-// Provides comprehensive color editing with current color preservation
+// Provides comprehensive color editing with current color preservation using consistent app colors
 
 import React from 'react';
 import { ColorPicker } from '@/components/ui/color-picker';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { ReviewBlock } from '@/types/review';
+import { CSS_VARIABLES, APP_COLORS } from '@/utils/colorSystem';
 
 interface ColorSystemProps {
   block: ReviewBlock;
   onUpdate: (updates: Partial<ReviewBlock>) => void;
 }
 
-// Default colors for different block types
+// Default colors using our app color system
 const DEFAULT_COLORS = {
-  text: '#ffffff',
+  text: APP_COLORS.TEXT_PRIMARY,
   background: 'transparent',
-  border: '#2a2a2a',
-  accent: '#3b82f6',
-  heading: '#ffffff',
-  paragraph: '#d1d5db',
+  border: APP_COLORS.BORDER_DEFAULT,
+  accent: APP_COLORS.INFO,
+  heading: APP_COLORS.TEXT_PRIMARY,
+  paragraph: APP_COLORS.TEXT_SECONDARY,
   callout: {
-    info: { bg: '#1e3a8a', border: '#3b82f6', text: '#bfdbfe' },
-    warning: { bg: '#92400e', border: '#f59e0b', text: '#fde68a' },
-    success: { bg: '#14532d', border: '#22c55e', text: '#bbf7d0' },
-    error: { bg: '#991b1b', border: '#ef4444', text: '#fecaca' },
-    note: { bg: '#374151', border: '#6b7280', text: '#d1d5db' },
-    tip: { bg: '#065f46', border: '#10b981', text: '#a7f3d0' }
+    info: { bg: 'rgba(59, 130, 246, 0.1)', border: APP_COLORS.INFO, text: '#bfdbfe' },
+    warning: { bg: 'rgba(245, 158, 11, 0.1)', border: APP_COLORS.WARNING, text: '#fde68a' },
+    success: { bg: 'rgba(34, 197, 94, 0.1)', border: APP_COLORS.SUCCESS, text: '#bbf7d0' },
+    error: { bg: 'rgba(239, 68, 68, 0.1)', border: APP_COLORS.ERROR, text: '#fecaca' },
+    note: { bg: 'rgba(107, 114, 128, 0.1)', border: '#6b7280', text: APP_COLORS.TEXT_SECONDARY },
+    tip: { bg: 'rgba(16, 185, 129, 0.1)', border: '#10b981', text: '#a7f3d0' }
   }
 };
 
@@ -302,7 +304,7 @@ export const ColorSystem: React.FC<ColorSystemProps> = ({ block, onUpdate }) => 
     <div className="color-system space-y-4">
       <div className="flex items-center gap-2 mb-4">
         <div className="w-4 h-4 rounded" style={{ backgroundColor: DEFAULT_COLORS.accent }} />
-        <Label className="text-sm font-semibold" style={{ color: '#ffffff' }}>
+        <Label className="text-sm font-semibold" style={{ color: CSS_VARIABLES.TEXT_PRIMARY }}>
           Configurações de Cor
         </Label>
       </div>

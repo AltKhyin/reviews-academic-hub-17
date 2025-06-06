@@ -7,54 +7,78 @@
 
 @layer base {
   :root {
-    --background: 210 12% 8%;
-    --foreground: 210 12% 98%;
+    /* Core Background Colors - Pure Grays */
+    --background: 210 12% 7.5%;  /* #121212 */
+    --foreground: 210 12% 98%;   /* #ffffff */
 
-    --card: 210 12% 10%;
+    /* Card and Surface Colors */
+    --card: 210 12% 10.5%;       /* #1a1a1a */
     --card-foreground: 210 12% 98%;
 
-    --popover: 210 12% 10%;
+    /* Popover and Dropdown Colors */
+    --popover: 210 12% 10.5%;    /* #1a1a1a */
     --popover-foreground: 210 12% 98%;
 
+    /* Primary Color System */
     --primary: 210 12% 98%;
     --primary-foreground: 210 12% 8%;
 
-    --secondary: 210 12% 13%;
+    /* Secondary Surfaces */
+    --secondary: 210 12% 13%;    /* #212121 */
     --secondary-foreground: 210 12% 98%;
 
-    --muted: 210 12% 13%;
+    /* Muted Elements */
+    --muted: 210 12% 13%;        /* #212121 */
     --muted-foreground: 210 12% 65%;
 
-    --accent: 210 12% 13%;
+    /* Accent Colors */
+    --accent: 210 12% 13%;       /* #212121 */
     --accent-foreground: 210 12% 98%;
 
+    /* Destructive Colors */
     --destructive: 0 70% 40%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 12% 15%;
-    --input: 210 12% 15%;
+    /* Border and Input Colors */
+    --border: 210 12% 16.5%;     /* #2a2a2a */
+    --input: 210 12% 16.5%;      /* #2a2a2a */
     --ring: 210 12% 83%;
 
     --radius: 6px;
 
-    --sidebar-background: 210 12% 10%;
+    /* Sidebar Colors - Consistent with Main Theme */
+    --sidebar-background: 210 12% 10.5%;     /* #1a1a1a */
     --sidebar-foreground: 210 12% 98%;
     --sidebar-primary: 210 12% 98%;
     --sidebar-primary-foreground: 210 12% 8%;
-    --sidebar-accent: 210 12% 13%;
+    --sidebar-accent: 210 12% 13%;           /* #212121 */
     --sidebar-accent-foreground: 210 12% 98%;
-    --sidebar-border: 210 12% 15%;
+    --sidebar-border: 210 12% 16.5%;         /* #2a2a2a */
     --sidebar-ring: 210 12% 83%;
     
-    /* Scrollbar variables */
-    --scrollbar-track: 210 12% 10%;
+    /* Scrollbar Colors */
+    --scrollbar-track: 210 12% 10.5%;       /* #1a1a1a */
     --scrollbar-thumb: 210 12% 25%;
     --scrollbar-thumb-hover: 210 12% 35%;
     
-    /* Enhanced Dark Theme Variables */
-    --editor-primary-bg: #121212;
-    --editor-secondary-bg: #1a1a1a;
-    --editor-tertiary-bg: #212121;
+    /* Enhanced Dark Theme Variables - Consistent Gray Scale */
+    --editor-primary-bg: #121212;    /* Main background */
+    --editor-secondary-bg: #1a1a1a;  /* Cards, panels */
+    --editor-tertiary-bg: #212121;   /* Secondary elements */
+    --editor-quaternary-bg: #2a2a2a; /* Borders, separators */
+    
+    /* Success Color */
+    --editor-success-color: #22c55e;
+    
+    /* Interactive Elements */
+    --editor-hover-bg: #2a2a2a;
+    --editor-active-bg: #333333;
+    
+    /* Text Colors */
+    --editor-text-primary: #ffffff;
+    --editor-text-secondary: #d1d5db;
+    --editor-text-muted: #9ca3af;
+    --editor-text-subtle: #6b7280;
     
     /* Z-index scale for proper layering */
     --z-dropdown: 1000;
@@ -70,8 +94,8 @@
   html, body, #root {
     height: 100%;
     overflow: hidden;
-    background-color: #121212;
-    color: #ffffff;
+    background-color: var(--editor-primary-bg);
+    color: var(--editor-text-primary);
   }
 }
 
@@ -83,8 +107,8 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
-    background-color: #121212;
-    color: #ffffff;
+    background-color: var(--editor-primary-bg);
+    color: var(--editor-text-primary);
   }
   
   /* Custom scrollbar styling for Webkit browsers */
@@ -170,7 +194,7 @@
     position: absolute !important;
     z-index: var(--z-popover) !important;
     background-color: var(--editor-secondary-bg) !important;
-    border: 1px solid #2a2a2a !important;
+    border: 1px solid var(--editor-quaternary-bg) !important;
     border-radius: 6px !important;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2) !important;
     overflow: visible !important;
@@ -191,24 +215,118 @@
     cursor: grabbing;
   }
 
-  /* Enhanced dark theme for editor components */
+  /* Enhanced dark theme for editor components - NO BLUE TINTS */
   .native-editor {
-    background-color: #121212 !important;
+    background-color: var(--editor-primary-bg) !important;
   }
   
   .block-palette {
-    background-color: #1a1a1a !important;
-    border-color: #2a2a2a !important;
+    background-color: var(--editor-secondary-bg) !important;
+    border-color: var(--editor-quaternary-bg) !important;
   }
   
   .block-editor {
-    background-color: #121212 !important;
-    border-color: #2a2a2a !important;
+    background-color: var(--editor-primary-bg) !important;
+    border-color: var(--editor-quaternary-bg) !important;
   }
   
   .properties-panel {
-    background-color: #1a1a1a !important;
-    border-color: #2a2a2a !important;
+    background-color: var(--editor-secondary-bg) !important;
+    border-color: var(--editor-quaternary-bg) !important;
+  }
+
+  /* Issue Editor Specific Styling - Consistent Colors */
+  .issue-editor-card {
+    background-color: var(--editor-secondary-bg) !important;
+    border-color: var(--editor-quaternary-bg) !important;
+    color: var(--editor-text-primary) !important;
+  }
+
+  .issue-editor-input {
+    background-color: var(--editor-tertiary-bg) !important;
+    border-color: var(--editor-quaternary-bg) !important;
+    color: var(--editor-text-primary) !important;
+  }
+
+  .issue-editor-input:focus {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1) !important;
+  }
+
+  /* Diagram Editor Specific Styling */
+  .diagram-fullscreen-container {
+    background-color: var(--editor-primary-bg) !important;
+  }
+
+  .diagram-toolbar {
+    background-color: var(--editor-secondary-bg) !important;
+    border-color: var(--editor-quaternary-bg) !important;
+  }
+
+  .diagram-canvas {
+    background-color: var(--editor-primary-bg) !important;
+    border-color: var(--editor-quaternary-bg) !important;
+  }
+
+  /* Color Picker and Control Styling */
+  .color-picker-container {
+    background-color: var(--editor-secondary-bg) !important;
+    border-color: var(--editor-quaternary-bg) !important;
+  }
+
+  /* Form Elements */
+  .form-input {
+    background-color: var(--editor-tertiary-bg) !important;
+    border-color: var(--editor-quaternary-bg) !important;
+    color: var(--editor-text-primary) !important;
+  }
+
+  .form-input:focus {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1) !important;
+  }
+
+  .form-textarea {
+    background-color: var(--editor-tertiary-bg) !important;
+    border-color: var(--editor-quaternary-bg) !important;
+    color: var(--editor-text-primary) !important;
+  }
+
+  .form-textarea:focus {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1) !important;
+  }
+
+  /* Button Variants */
+  .btn-primary {
+    background-color: #3b82f6 !important;
+    color: var(--editor-text-primary) !important;
+    border-color: #3b82f6 !important;
+  }
+
+  .btn-primary:hover {
+    background-color: #2563eb !important;
+    border-color: #2563eb !important;
+  }
+
+  .btn-secondary {
+    background-color: var(--editor-tertiary-bg) !important;
+    color: var(--editor-text-primary) !important;
+    border-color: var(--editor-quaternary-bg) !important;
+  }
+
+  .btn-secondary:hover {
+    background-color: var(--editor-hover-bg) !important;
+  }
+
+  .btn-ghost {
+    background-color: transparent !important;
+    color: var(--editor-text-secondary) !important;
+  }
+
+  .btn-ghost:hover {
+    background-color: var(--editor-hover-bg) !important;
+    color: var(--editor-text-primary) !important;
   }
 
   /* Z-index utilities */
@@ -268,4 +386,21 @@ body.dragging button {
   overflow: visible !important;
   position: relative !important;
   z-index: 1 !important;
+}
+
+/* Disable drag and drop when in diagram fullscreen mode */
+.diagram-fullscreen-active * {
+  -webkit-user-drag: none !important;
+  -khtml-user-drag: none !important;
+  -moz-user-drag: none !important;
+  -o-user-drag: none !important;
+  user-drag: none !important;
+  pointer-events: auto !important;
+}
+
+.diagram-fullscreen-active .sortable-ghost,
+.diagram-fullscreen-active .sortable-chosen,
+.diagram-fullscreen-active [draggable] {
+  opacity: 1 !important;
+  transform: none !important;
 }

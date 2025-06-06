@@ -1,11 +1,12 @@
 
 // ABOUTME: Dynamic layout container that applies customizable spacing and sizing
-// Core component for the layout customization system
+// Core component for the layout customization system with consistent color usage
 
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { SpacingConfig, SizeConfig } from '@/types/layout';
 import { generateSectionClasses } from '@/utils/layoutUtils';
+import { CSS_VARIABLES } from '@/utils/colorSystem';
 
 interface LayoutContainerProps {
   children: React.ReactNode;
@@ -42,10 +43,17 @@ export const LayoutContainer: React.FC<LayoutContainerProps> = ({
     return generateSectionClasses(padding, margin, size, additionalClasses);
   }, [padding, margin, size, className, centerContent, background]);
 
+  const containerStyle = React.useMemo(() => ({
+    backgroundColor: background === 'dark' ? CSS_VARIABLES.SECONDARY_BG : undefined,
+    borderColor: CSS_VARIABLES.BORDER_DEFAULT,
+    color: CSS_VARIABLES.TEXT_PRIMARY,
+  }), [background]);
+
   return (
     <Component 
       className={cn(layoutClasses)}
       data-section-id={sectionId}
+      style={containerStyle}
     >
       {children}
     </Component>

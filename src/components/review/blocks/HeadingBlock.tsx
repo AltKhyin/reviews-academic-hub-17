@@ -1,6 +1,6 @@
 
 // ABOUTME: Enhanced heading block with inline editing and customizable spacing
-// Supports H1-H6 levels with anchor links and comprehensive spacing controls
+// Supports H1-H6 levels with anchor links and comprehensive spacing controls using consistent colors
 
 import React from 'react';
 import { ReviewBlock } from '@/types/review';
@@ -8,6 +8,7 @@ import { InlineTextEditor } from '@/components/editor/inline/InlineTextEditor';
 import { InlineBlockSettings } from '@/components/editor/inline/InlineBlockSettings';
 import { generateSpacingStyles, getDefaultSpacing } from '@/utils/spacingUtils';
 import { cn } from '@/lib/utils';
+import { CSS_VARIABLES, APP_COLORS } from '@/utils/colorSystem';
 
 interface HeadingBlockProps {
   block: ReviewBlock;
@@ -25,8 +26,8 @@ export const HeadingBlock: React.FC<HeadingBlockProps> = ({
   const text = content.text || '';
   const anchor = content.anchor || '';
 
-  // Color system integration
-  const textColor = content.text_color || '#ffffff';
+  // Color system integration - use app colors instead of hardcoded values
+  const textColor = content.text_color || APP_COLORS.TEXT_PRIMARY;
   const backgroundColor = content.background_color || 'transparent';
   const borderColor = content.border_color || 'transparent';
 
