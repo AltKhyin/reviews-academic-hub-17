@@ -6,79 +6,51 @@ import { ptBR } from 'date-fns/locale';
 
 interface CommentContentProps {
   content: string;
-  className?: string;
-  created_at?: string;
-  profileName?: string;
-  avatarUrl?: string;
-}
-
-interface CommentHeaderProps {
-  profileName: string;
-  avatarUrl?: string;
   created_at: string;
+  profileName: string;
+  avatarUrl?: string | null;
 }
 
-export const CommentHeader: React.FC<CommentHeaderProps> = ({ 
-  profileName, 
-  avatarUrl, 
-  created_at 
-}) => {
-  return (
-    <div className="flex items-center gap-2 mb-2">
-      <Avatar className="h-6 w-6">
-        <AvatarImage src={avatarUrl || undefined} />
-        <AvatarFallback>
-          {profileName?.[0]?.toUpperCase() || 'U'}
-        </AvatarFallback>
-      </Avatar>
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-medium text-gray-300">{profileName}</span>
-        <span className="text-xs text-gray-400">
-          {formatDistanceToNow(new Date(created_at), { 
-            addSuffix: true, 
-            locale: ptBR 
-          })}
-        </span>
-      </div>
-    </div>
-  );
-};
-
-export const CommentContent: React.FC<CommentContentProps> = ({ 
-  content, 
-  className = '',
+export const CommentContent: React.FC<CommentContentProps> = ({
+  content,
   created_at,
   profileName,
   avatarUrl
 }) => {
-  // Check if content contains HTML tags (rich text)
-  const isRichText = /<[^>]*>/g.test(content);
+  const avatarFallback = profileName?.[0] || 'U';
   
   return (
-    <div>
-      {/* Show header if profile info is provided */}
-      {profileName && created_at && (
-        <CommentHeader 
-          profileName={profileName}
-          avatarUrl={avatarUrl}
-          created_at={created_at}
-        />
-      )}
+    <div className="flex-1 min-w-0">
+      <div className="flex items-center gap-2 mb-1">
+        <span className="font-medium text-sm">
+          {profileName}
+        </span>
+        <span className="text-xs text-gray-400">
+          {formatDistanceToNow(new Date(created_at), {
+            addSuffix: true,
+            locale: ptBR
+          })}
+        </span>
+      </div>
       
-      {isRichText ? (
-        <div 
-          className={`prose prose-sm max-w-none text-gray-200 ${className}`}
-          dangerouslySetInnerHTML={{ __html: content }}
-          style={{
-            // Override prose styles for dark theme
-            color: '#e5e7eb'
-          }}
-        />
-      ) : (
-        <div className={`whitespace-pre-wrap text-gray-200 ${className}`}>
-          {content}
-        </div>
-      )}
+      <p className="text-sm mb-2">{content}</p>
+    </div>
+  );
+};
+
+export const CommentHeader: React.FC<Omit<CommentContentProps, 'content'>> = ({
+  profileName,
+  avatarUrl,
+  created_at
+}) => {
+  const avatarFallback = profileName?.[0] || 'U';
+  
+  return (
+    <div className="flex items-start gap-3">
+      <Avatar className="w-6 h-6 mt-1">
+        <AvatarImage src={avatarUrl || undefined} />
+        <AvatarFallback>{avatarFallback}</AvatarFallback>
+      </Avatar>
     </div>
   );
 };
