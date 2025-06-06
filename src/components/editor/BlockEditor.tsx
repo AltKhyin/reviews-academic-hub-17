@@ -1,3 +1,4 @@
+
 // ABOUTME: Enhanced block editor with complete 2D grid support and dynamic layout
 // Main editor with full grid functionality and responsive design
 
@@ -24,7 +25,9 @@ interface BlockEditorProps {
   onAddBlock: (type: BlockType, position?: number) => void;
   onDuplicateBlock: (blockId: number) => void;
   onConvertToGrid?: (blockId: number, columns: number) => void;
+  onConvertTo2DGrid?: (blockId: number, columns: number, rows: number) => void;
   onMergeBlockIntoGrid?: (draggedBlockId: number, targetRowId: string, targetPosition?: number) => void;
+  onPlaceBlockIn2DGrid?: (blockId: number, gridId: string, position: GridPosition) => void;
   className?: string;
 }
 
@@ -47,7 +50,9 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
   onAddBlock,
   onDuplicateBlock,
   onConvertToGrid,
+  onConvertTo2DGrid,
   onMergeBlockIntoGrid,
+  onPlaceBlockIn2DGrid,
   className
 }) => {
   const [dragState, setDragState] = useState<DragState>({
@@ -99,6 +104,74 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     console.log('Extracted 2D grids from blocks:', extracted2DGrids.length);
   }, [blocks, extractGridsFromBlocks]);
 
+  // Organize blocks into layout groups
+  const layoutGroups = React.useMemo(() => {
+    const groups: Array<{
+      type: '1d-grid' | '2d-grid' | 'single';
+      id: string;
+      blocks: ReviewBlock[];
+      config?: any;
+    }> = [];
+
+    const processedBlockIds = new Set<number>();
+
+    // First, handle 2D grids
+    const grid2DIds = new Set<string>();
+    blocks.forEach(block => {
+      const gridId = block.meta?.layout?.grid_id;
+      if (gridId && !grid2DIds.has(gridId)) {
+        grid2DIds.add(gridId);
+        const gridBlocks = blocks.filter(b => b.meta?.layout?.grid_id === gridId);
+        gridBlocks.forEach(b => processedBlockIds.add(b.id));
+        
+        groups.push({
+          type: '2d-grid',
+          id: gridId,
+          blocks: gridBlocks,
+          config: gridBlocks[0]?.meta?.layout
+        });
+      }
+    });
+
+    // Then handle 1D grids
+    const rowIds = new Set<string>();
+    blocks.forEach(block => {
+      const rowId = block.meta?.layout?.row_id;
+      if (rowId && !rowIds.has(rowId) && !processedBlockIds.has(block.id)) {
+        rowIds.add(rowId);
+        const rowBlocks = blocks.filter(b => b.meta?.layout?.row_id === rowId);
+        rowBlocks.forEach(b => processedBlockIds.add(b.id));
+        
+        if (rowBlocks.length > 1 || (rowBlocks[0]?.meta?.layout?.columns ?? 1) > 1) {
+          groups.push({
+            type: '1d-grid',
+            id: rowId,
+            blocks: rowBlocks,
+            config: rowBlocks[0]?.meta?.layout
+          });
+        }
+      }
+    });
+
+    // Finally, handle single blocks
+    blocks.forEach(block => {
+      if (!processedBlockIds.has(block.id)) {
+        groups.push({
+          type: 'single',
+          id: `single-${block.id}`,
+          blocks: [block]
+        });
+      }
+    });
+
+    // Sort by minimum sort_index within each group
+    return groups.sort((a, b) => {
+      const aMinSort = Math.min(...a.blocks.map(block => block.sort_index));
+      const bMinSort = Math.min(...b.blocks.map(block => block.sort_index));
+      return aMinSort - bMinSort;
+    });
+  }, [blocks]);
+
   const addBlockBetween = useCallback((position: number, type: BlockType = 'paragraph') => {
     onAddBlock(type, position);
   }, [onAddBlock]);
@@ -138,17 +211,19 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
 
   // 2D Grid operations
   const handleAddBlockTo2DGrid = useCallback((gridId: string, position: GridPosition) => {
-    const blockIndex = blocks.length;
-    onAddBlock('paragraph', blockIndex);
+    console.log('Adding block to 2D grid:', { gridId, position });
     
-    // After block is created, place it in the grid
+    // Create a new block first
+    const blockIndex = blocks.length;
+    const newBlockId = onAddBlock('paragraph', blockIndex);
+    
+    // Place it in the 2D grid after a brief delay to ensure the block exists
     setTimeout(() => {
-      const newBlock = blocks[blockIndex];
-      if (newBlock) {
-        placeBlockInGridById(gridId, newBlock, position);
+      if (onPlaceBlockIn2DGrid && newBlockId) {
+        onPlaceBlockIn2DGrid(newBlockId, gridId, position);
       }
     }, 100);
-  }, [blocks, onAddBlock, placeBlockInGridById]);
+  }, [blocks, onAddBlock, onPlaceBlockIn2DGrid]);
 
   const handleAddRowAbove = useCallback((gridId: string, rowIndex: number) => {
     addRowToGridById(gridId, 'above', rowIndex);
@@ -161,25 +236,6 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
   const handleRemoveRow = useCallback((gridId: string, rowIndex: number) => {
     removeRowFromGridById(gridId, rowIndex);
   }, [removeRowFromGridById]);
-
-  // Convert single block to 2D grid
-  const handleConvertTo2DGrid = useCallback((blockId: number, columns: number, rows: number) => {
-    console.log('Converting block to 2D grid:', { blockId, columns, rows });
-    
-    const block = blocks.find(b => b.id === blockId);
-    if (!block) {
-      console.error('Block not found for 2D grid conversion:', blockId);
-      return;
-    }
-
-    // Create new 2D grid
-    const newGrid = createGrid(columns, rows);
-    
-    // Place the original block in the first cell (0,0)
-    placeBlockInGridById(newGrid.id, block, { row: 0, column: 0 });
-    
-    console.log('Created 2D grid:', newGrid.id);
-  }, [blocks, createGrid, placeBlockInGridById]);
 
   // Handle drag start
   const handleDragStart = useCallback((e: React.DragEvent, blockId: number) => {
@@ -209,7 +265,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     document.body.classList.add('dragging');
   }, [getRowByBlockId]);
 
-  // Handle drag over for 1D grids (number position)
+  // Handle drag over for 1D grids
   const handleDragOver1D = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number, targetType: 'grid' | 'single' | 'merge' = 'merge') => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
@@ -225,7 +281,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     }));
   }, [dragState.isDragging, dragState.draggedBlockId, dragState.draggedFromRowId]);
 
-  // Handle drag over for 2D grids (number position for compatibility)
+  // Handle drag over for 2D grids
   const handleDragOver2D = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number, targetType?: 'grid' | 'single' | 'merge') => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
@@ -256,8 +312,8 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     }
   }, []);
 
-  // Handle drop for 1D grids
-  const handleDrop1D = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number, dropType: 'grid' | 'single' | 'merge' = 'merge') => {
+  // Handle drop for both 1D and 2D grids
+  const handleDrop = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number, dropType: 'grid' | 'single' | 'merge' = 'merge') => {
     e.preventDefault();
     
     if (!dragState.draggedBlockId || processingDropRef.current) return;
@@ -265,38 +321,27 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     processingDropRef.current = true;
     
     try {
-      if (onMergeBlockIntoGrid) {
-        onMergeBlockIntoGrid(dragState.draggedBlockId, targetRowId, targetPosition);
-      }
-    } finally {
-      setDragState({
-        draggedBlockId: null,
-        dragOverRowId: null,
-        dragOverPosition: null,
-        isDragging: false,
-        draggedFromRowId: null,
-        dropTargetType: null
+      console.log('Drop operation:', { 
+        draggedBlockId: dragState.draggedBlockId, 
+        targetRowId, 
+        targetPosition, 
+        dropType 
       });
-      
-      document.body.classList.remove('dragging');
-      
-      setTimeout(() => {
-        processingDropRef.current = false;
-      }, 200);
-    }
-  }, [dragState.draggedBlockId, onMergeBlockIntoGrid]);
 
-  // Handle drop for 2D grids (number position for compatibility)
-  const handleDrop2D = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number, dropType?: 'grid' | 'single' | 'merge') => {
-    e.preventDefault();
-    
-    if (!dragState.draggedBlockId || processingDropRef.current) return;
-    
-    processingDropRef.current = true;
-    
-    try {
-      // Handle 2D grid drop logic here
-      if (targetPosition !== undefined && onMergeBlockIntoGrid) {
+      // Handle 2D grid drops
+      if (targetRowId.startsWith('grid-') && onPlaceBlockIn2DGrid && targetPosition !== undefined) {
+        // Convert linear position to grid position
+        const gridBlocks = blocks.filter(b => b.meta?.layout?.grid_id === targetRowId);
+        const columns = gridBlocks[0]?.meta?.layout?.columns || 2;
+        const gridPosition: GridPosition = {
+          row: Math.floor(targetPosition / columns),
+          column: targetPosition % columns
+        };
+        
+        onPlaceBlockIn2DGrid(dragState.draggedBlockId, targetRowId, gridPosition);
+      } 
+      // Handle 1D grid drops
+      else if (onMergeBlockIntoGrid) {
         onMergeBlockIntoGrid(dragState.draggedBlockId, targetRowId, targetPosition);
       }
     } finally {
@@ -315,7 +360,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
         processingDropRef.current = false;
       }, 200);
     }
-  }, [dragState.draggedBlockId, onMergeBlockIntoGrid]);
+  }, [dragState.draggedBlockId, onMergeBlockIntoGrid, onPlaceBlockIn2DGrid, blocks]);
 
   const handleDragEnd = useCallback(() => {
     document.body.classList.remove('dragging');
@@ -336,49 +381,6 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     processingDropRef.current = false;
   }, []);
 
-  const renderGridRow = (row: { id: string; blocks: ReviewBlock[]; columns: number; gap: number; columnWidths?: number[] }) => (
-    <div key={row.id} className="mx-2 mb-6">
-      <ResizableGrid
-        rowId={row.id}
-        blocks={row.blocks}
-        columns={row.columns}
-        gap={row.gap}
-        columnWidths={row.columnWidths}
-        onUpdateLayout={updateColumnWidths}
-        onAddBlock={addBlockToGrid}
-        onUpdateBlock={onUpdateBlock}
-        onDeleteBlock={onDeleteBlock}
-        activeBlockId={activeBlockId}
-        onActiveBlockChange={onActiveBlockChange}
-        dragState={dragState}
-        onDragOver={handleDragOver1D}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop1D}
-      />
-    </div>
-  );
-
-  const render2DGrid = (grid: any) => (
-    <div key={grid.id} className="mx-2 mb-8">
-      <Grid2DContainer
-        grid={grid}
-        activeBlockId={activeBlockId}
-        onActiveBlockChange={onActiveBlockChange}
-        onUpdateBlock={onUpdateBlock}
-        onDeleteBlock={onDeleteBlock}
-        onAddBlock={handleAddBlockTo2DGrid}
-        onAddRowAbove={handleAddRowAbove}
-        onAddRowBelow={handleAddRowBelow}
-        onRemoveRow={handleRemoveRow}
-        onUpdateGridLayout={updateGridLayout}
-        dragState={dragState}
-        onDragOver={handleDragOver2D}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop2D}
-      />
-    </div>
-  );
-
   return (
     <div 
       className={cn("block-editor py-6", className)}
@@ -394,16 +396,61 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
         </div>
       )}
 
-      {/* Render 2D Grids */}
-      {grids.map(grid => render2DGrid(grid))}
-      
-      {/* Render existing 1D grids and single blocks */}
-      {layoutState.rows.map((row, index) => {
-        if (row.columns > 1) {
-          return renderGridRow(row);
+      {/* Render layout groups in order */}
+      {layoutGroups.map((group, groupIndex) => {
+        const globalIndex = group.blocks.length > 0 ? 
+          blocks.findIndex(b => b.id === group.blocks[0].id) : 0;
+
+        if (group.type === '2d-grid') {
+          // Find the grid from extracted grids
+          const grid = grids.find(g => g.id === group.id);
+          if (grid) {
+            return (
+              <div key={group.id} className="mx-2 mb-8">
+                <Grid2DContainer
+                  grid={grid}
+                  activeBlockId={activeBlockId}
+                  onActiveBlockChange={onActiveBlockChange}
+                  onUpdateBlock={onUpdateBlock}
+                  onDeleteBlock={onDeleteBlock}
+                  onAddBlock={handleAddBlockTo2DGrid}
+                  onAddRowAbove={handleAddRowAbove}
+                  onAddRowBelow={handleAddRowBelow}
+                  onRemoveRow={handleRemoveRow}
+                  onUpdateGridLayout={updateGridLayout}
+                  dragState={dragState}
+                  onDragOver={handleDragOver2D}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                />
+              </div>
+            );
+          }
+        } else if (group.type === '1d-grid') {
+          return (
+            <div key={group.id} className="mx-2 mb-6">
+              <ResizableGrid
+                rowId={group.id}
+                blocks={group.blocks}
+                columns={group.config?.columns || group.blocks.length}
+                gap={group.config?.gap || 4}
+                columnWidths={group.config?.columnWidths}
+                onUpdateLayout={updateColumnWidths}
+                onAddBlock={addBlockToGrid}
+                onUpdateBlock={onUpdateBlock}
+                onDeleteBlock={onDeleteBlock}
+                activeBlockId={activeBlockId}
+                onActiveBlockChange={onActiveBlockChange}
+                dragState={dragState}
+                onDragOver={handleDragOver1D}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              />
+            </div>
+          );
         } else {
-          const block = row.blocks[0];
-          const globalIndex = blocks.findIndex(b => b.id === block.id);
+          // Single block
+          const block = group.blocks[0];
           return (
             <SingleBlock
               key={block.id}
@@ -416,13 +463,13 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
               onDeleteBlock={onDeleteBlock}
               onDuplicateBlock={onDuplicateBlock}
               onConvertToGrid={onConvertToGrid!}
-              onConvertTo2DGrid={handleConvertTo2DGrid}
+              onConvertTo2DGrid={onConvertTo2DGrid}
               onAddBlockBetween={addBlockBetween}
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
               onDragOver={handleDragOver1D}
               onDragLeave={handleDragLeave}
-              onDrop={handleDrop1D}
+              onDrop={handleDrop}
             />
           );
         }
