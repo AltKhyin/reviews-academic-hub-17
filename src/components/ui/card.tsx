@@ -1,24 +1,17 @@
-
 import * as React from "react"
+
 import { cn } from "@/lib/utils"
-import { CSS_VARIABLES } from "@/utils/colorSystem"
 
 const Card = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, style, ...props }, ref) => (
+>(({ className, ...props }, ref) => (
   <div
     ref={ref}
     className={cn(
-      "rounded-lg border shadow-sm",
+      "rounded-lg border bg-card text-card-foreground shadow-sm",
       className
     )}
-    style={{
-      backgroundColor: CSS_VARIABLES.SECONDARY_BG,
-      borderColor: CSS_VARIABLES.BORDER_DEFAULT,
-      color: CSS_VARIABLES.TEXT_PRIMARY,
-      ...style
-    }}
     {...props}
   />
 ))
@@ -39,17 +32,13 @@ CardHeader.displayName = "CardHeader"
 const CardTitle = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLHeadingElement>
->(({ className, style, ...props }, ref) => (
+>(({ className, ...props }, ref) => (
   <h3
     ref={ref}
     className={cn(
       "text-2xl font-semibold leading-none tracking-tight",
       className
     )}
-    style={{
-      color: CSS_VARIABLES.TEXT_PRIMARY,
-      ...style
-    }}
     {...props}
   />
 ))
@@ -58,14 +47,10 @@ CardTitle.displayName = "CardTitle"
 const CardDescription = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
->(({ className, style, ...props }, ref) => (
+>(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={cn("text-sm", className)}
-    style={{
-      color: CSS_VARIABLES.TEXT_SECONDARY,
-      ...style
-    }}
+    className={cn("text-sm text-muted-foreground", className)}
     {...props}
   />
 ))

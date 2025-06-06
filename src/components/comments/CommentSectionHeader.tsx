@@ -1,9 +1,5 @@
 
-// ABOUTME: Comment section header with consistent color system
-// Displays comment count and loading state using app colors
-
 import React from 'react';
-import { CSS_VARIABLES } from '@/utils/colorSystem';
 
 interface CommentSectionHeaderProps {
   commentCount: number;
@@ -15,10 +11,10 @@ export const CommentSectionHeader: React.FC<CommentSectionHeaderProps> = ({
   isLoading 
 }) => {
   return (
-    <h3 className="text-lg font-medium mb-2 flex items-center" style={{ color: CSS_VARIABLES.TEXT_PRIMARY }}>
+    <h3 className="text-lg font-medium mb-2 flex items-center">
       Comentários
       {!isLoading && (
-        <span className="ml-2 text-sm" style={{ color: CSS_VARIABLES.TEXT_MUTED }}>
+        <span className="ml-2 text-sm text-gray-400">
           ({commentCount})
         </span>
       )}

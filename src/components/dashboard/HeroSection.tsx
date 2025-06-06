@@ -1,11 +1,7 @@
 
-// ABOUTME: Hero section with consistent color system
-// Uses app colors for proper visual identity
-
 import React from 'react';
 import { Issue } from '@/types/issue';
 import { Link } from 'react-router-dom';
-import { CSS_VARIABLES } from '@/utils/colorSystem';
 
 interface HeroSectionProps {
   featuredIssue: Issue;
@@ -29,29 +25,19 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ featuredIssue }) => {
       </div>
       
       <div className="relative h-full flex items-center px-12 z-10">
-        <div className="max-w-2xl">
-          <span 
-            className="text-sm font-medium px-2 py-1 rounded"
-            style={{ 
-              color: CSS_VARIABLES.TEXT_SECONDARY, 
-              backgroundColor: 'rgba(0, 0, 0, 0.4)' 
-            }}
-          >
+        <div className="max-w-2xl text-white">
+          <span className="text-sm font-medium text-gray-300 bg-black/40 px-2 py-1 rounded">
             {featuredIssue.specialty || 'FEATURED'}
           </span>
-          <h1 className="mt-4 text-5xl font-serif font-medium leading-tight" style={{ color: CSS_VARIABLES.TEXT_PRIMARY }}>
+          <h1 className="mt-4 text-5xl font-serif font-medium leading-tight">
             {featuredIssue.title}
           </h1>
-          <p className="mt-4 text-lg max-w-xl" style={{ color: CSS_VARIABLES.TEXT_SECONDARY }}>
+          <p className="mt-4 text-lg text-gray-200 max-w-xl">
             {featuredIssue.description || 'Explore this featured content'}
           </p>
           <Link 
             to={`/article/${featuredIssue.id}`}
-            className="mt-8 inline-block px-6 py-2 rounded-md font-medium hover:opacity-90 transition-colors"
-            style={{ 
-              backgroundColor: CSS_VARIABLES.TEXT_PRIMARY, 
-              color: CSS_VARIABLES.PRIMARY_BG 
-            }}
+            className="mt-8 inline-block bg-white text-black px-6 py-2 rounded-md font-medium hover:bg-gray-200 transition-colors"
           >
             Ler agora
           </Link>

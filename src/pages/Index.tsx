@@ -1,25 +1,21 @@
 
-// ABOUTME: Landing page with consistent color system
-// Uses app color system for proper visual identity
+// ABOUTME: Landing page with dynamic section rendering system
+// Uses layout customization system for full control over homepage layout
 
 import React from 'react';
 import { useLayoutConfig } from '@/hooks/useLayoutConfig';
 import { PageLayoutContainer } from '@/components/layout/LayoutContainer';
 import { SectionFactory } from '@/components/homepage/SectionFactory';
-import { CSS_VARIABLES } from '@/utils/colorSystem';
 
 const Index = () => {
   const { config, isLoading, getOrderedVisibleSections } = useLayoutConfig();
 
   if (isLoading) {
     return (
-      <div 
-        className="flex items-center justify-center min-h-screen"
-        style={{ backgroundColor: CSS_VARIABLES.PRIMARY_BG }}
-      >
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 mx-auto" style={{ borderColor: '#3b82f6' }}></div>
-          <p className="mt-4" style={{ color: CSS_VARIABLES.TEXT_SECONDARY }}>Carregando página...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Carregando página...</p>
         </div>
       </div>
     );
@@ -34,7 +30,7 @@ const Index = () => {
       globalPadding={config.globalPadding}
       globalMargin={config.globalMargin}
       globalSize={config.globalSize}
-      className=""
+      className="bg-gray-100"
     >
       {visibleSections.map((section) => (
         <SectionFactory
@@ -46,10 +42,8 @@ const Index = () => {
       {visibleSections.length === 0 && (
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4" style={{ color: CSS_VARIABLES.TEXT_PRIMARY }}>
-              Nenhuma seção visível
-            </h1>
-            <p style={{ color: CSS_VARIABLES.TEXT_SECONDARY }}>
+            <h1 className="text-2xl font-bold mb-4">Nenhuma seção visível</h1>
+            <p className="text-gray-600">
               Configure as seções da página inicial no painel administrativo.
             </p>
           </div>

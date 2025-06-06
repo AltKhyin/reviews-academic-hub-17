@@ -107,8 +107,8 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
-    background-color: var(--editor-primary-bg) !important;
-    color: var(--editor-text-primary) !important;
+    background-color: var(--editor-primary-bg);
+    color: var(--editor-text-primary);
   }
   
   /* Custom scrollbar styling for Webkit browsers */
@@ -329,79 +329,6 @@
     color: var(--editor-text-primary) !important;
   }
 
-  /* Global Page Styling - Force Consistent Colors */
-  .page-container,
-  main,
-  .main-content,
-  .dashboard-layout,
-  .search-page,
-  .community-page,
-  .edit-page,
-  .profile-page {
-    background-color: var(--editor-primary-bg) !important;
-    color: var(--editor-text-primary) !important;
-  }
-
-  /* Search Page Specific Overrides */
-  .search-container,
-  .search-results,
-  .search-filters {
-    background-color: var(--editor-primary-bg) !important;
-    color: var(--editor-text-primary) !important;
-  }
-
-  .search-card,
-  .filter-card {
-    background-color: var(--editor-secondary-bg) !important;
-    border-color: var(--editor-quaternary-bg) !important;
-    color: var(--editor-text-primary) !important;
-  }
-
-  /* Community Page Specific Overrides */
-  .community-container,
-  .community-feed,
-  .community-post {
-    background-color: var(--editor-primary-bg) !important;
-    color: var(--editor-text-primary) !important;
-  }
-
-  .post-card,
-  .comment-card {
-    background-color: var(--editor-secondary-bg) !important;
-    border-color: var(--editor-quaternary-bg) !important;
-    color: var(--editor-text-primary) !important;
-  }
-
-  /* Admin Panel Specific Overrides */
-  .admin-panel,
-  .admin-container,
-  .admin-section {
-    background-color: var(--editor-primary-bg) !important;
-    color: var(--editor-text-primary) !important;
-  }
-
-  .admin-card,
-  .management-card {
-    background-color: var(--editor-secondary-bg) !important;
-    border-color: var(--editor-quaternary-bg) !important;
-    color: var(--editor-text-primary) !important;
-  }
-
-  /* Profile Page Specific Overrides */
-  .profile-container,
-  .profile-section,
-  .profile-activity {
-    background-color: var(--editor-primary-bg) !important;
-    color: var(--editor-text-primary) !important;
-  }
-
-  .profile-card,
-  .activity-card {
-    background-color: var(--editor-secondary-bg) !important;
-    border-color: var(--editor-quaternary-bg) !important;
-    color: var(--editor-text-primary) !important;
-  }
-
   /* Z-index utilities */
   .z-dropdown {
     z-index: var(--z-dropdown);
@@ -425,43 +352,6 @@
   
   .z-tooltip {
     z-index: var(--z-tooltip);
-  }
-
-  /* Remove any remaining blue-tinted backgrounds */
-  * {
-    background-color: inherit;
-  }
-
-  /* Force override any lingering blue-tinted colors */
-  [style*="#121417"],
-  [style*="#161a1d"],
-  [style*="#1d2125"] {
-    background-color: var(--editor-primary-bg) !important;
-  }
-
-  /* Ensure all cards use consistent styling */
-  .card,
-  [class*="card"],
-  [class*="Card"] {
-    background-color: var(--editor-secondary-bg) !important;
-    border-color: var(--editor-quaternary-bg) !important;
-    color: var(--editor-text-primary) !important;
-  }
-
-  /* Ensure all input elements use consistent styling */
-  input,
-  textarea,
-  select {
-    background-color: var(--editor-tertiary-bg) !important;
-    border-color: var(--editor-quaternary-bg) !important;
-    color: var(--editor-text-primary) !important;
-  }
-
-  input:focus,
-  textarea:focus,
-  select:focus {
-    border-color: #3b82f6 !important;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1) !important;
   }
 }
 
@@ -513,16 +403,4 @@ body.dragging button {
 .diagram-fullscreen-active [draggable] {
   opacity: 1 !important;
   transform: none !important;
-}
-
-/* Global enforcement to prevent any blue-tinted colors from appearing */
-* {
-  --prevent-blue-tint: true;
-}
-
-/* Override any potential blue-tinted hardcoded values */
-*[style*="rgb(18, 20, 23)"],
-*[style*="rgb(22, 26, 29)"],
-*[style*="rgb(29, 33, 37)"] {
-  background-color: var(--editor-primary-bg) !important;
 }

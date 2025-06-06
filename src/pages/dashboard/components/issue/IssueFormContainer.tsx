@@ -1,6 +1,6 @@
 
-// ABOUTME: Issue form container with consistent color system
-// Uses app colors for proper visual identity
+// ABOUTME: Refactored issue form container with improved organization
+// Main form container with better component separation and prop handling
 
 import React, { useState } from 'react';
 import { IssueFormValues } from '@/schemas/issue-form-schema';
@@ -8,7 +8,6 @@ import { IssueForm } from './IssueForm';
 import { ExternalLecturesManager } from './ExternalLecturesManager';
 import { IssueDiscussionConfig } from '@/components/issue/IssueDiscussionConfig';
 import { Card } from '@/components/ui/card';
-import { CSS_VARIABLES } from '@/utils/colorSystem';
 
 interface IssueFormContainerProps {
   issueId?: string;
@@ -47,10 +46,7 @@ export const IssueFormContainer: React.FC<IssueFormContainerProps> = ({
     <div className="space-y-8">
       <Card 
         className="p-6 border"
-        style={{ 
-          backgroundColor: CSS_VARIABLES.SECONDARY_BG, 
-          borderColor: CSS_VARIABLES.BORDER_DEFAULT 
-        }}
+        style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}
       >
         <IssueForm
           defaultValues={defaultValues}
@@ -62,10 +58,7 @@ export const IssueFormContainer: React.FC<IssueFormContainerProps> = ({
       
       <Card 
         className="p-6 border"
-        style={{ 
-          backgroundColor: CSS_VARIABLES.SECONDARY_BG, 
-          borderColor: CSS_VARIABLES.BORDER_DEFAULT 
-        }}
+        style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}
       >
         <IssueDiscussionConfig
           issueId={issueId}
@@ -76,10 +69,7 @@ export const IssueFormContainer: React.FC<IssueFormContainerProps> = ({
       {issueId && (
         <Card 
           className="p-6 border"
-          style={{ 
-            backgroundColor: CSS_VARIABLES.SECONDARY_BG, 
-            borderColor: CSS_VARIABLES.BORDER_DEFAULT 
-          }}
+          style={{ backgroundColor: '#212121', borderColor: '#2a2a2a' }}
         >
           <ExternalLecturesManager issueId={issueId} />
         </Card>

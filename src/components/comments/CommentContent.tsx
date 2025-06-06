@@ -1,12 +1,8 @@
 
-// ABOUTME: Comment content display with consistent color system
-// Uses app colors for proper visual identity
-
 import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { CSS_VARIABLES } from '@/utils/colorSystem';
 
 interface CommentContentProps {
   content: string;
@@ -26,10 +22,10 @@ export const CommentContent: React.FC<CommentContentProps> = ({
   return (
     <div className="flex-1 min-w-0">
       <div className="flex items-center gap-2 mb-1">
-        <span className="font-medium text-sm" style={{ color: CSS_VARIABLES.TEXT_PRIMARY }}>
+        <span className="font-medium text-sm">
           {profileName}
         </span>
-        <span className="text-xs" style={{ color: CSS_VARIABLES.TEXT_MUTED }}>
+        <span className="text-xs text-gray-400">
           {formatDistanceToNow(new Date(created_at), {
             addSuffix: true,
             locale: ptBR
@@ -37,7 +33,7 @@ export const CommentContent: React.FC<CommentContentProps> = ({
         </span>
       </div>
       
-      <p className="text-sm mb-2" style={{ color: CSS_VARIABLES.TEXT_SECONDARY }}>{content}</p>
+      <p className="text-sm mb-2">{content}</p>
     </div>
   );
 };

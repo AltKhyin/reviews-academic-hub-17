@@ -1,11 +1,7 @@
 
-// ABOUTME: Review status badge with consistent color system
-// Uses app colors for status indicators
-
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import type { ReviewStatus as ReviewStatusType } from '@/types/issue';
-import { CSS_VARIABLES, APP_COLORS } from '@/utils/colorSystem';
 
 interface ReviewStatusBadgeProps {
   status: ReviewStatusType;
@@ -15,15 +11,15 @@ export const ReviewStatusBadge: React.FC<ReviewStatusBadgeProps> = ({ status }) 
   const getStatusStyles = () => {
     switch (status) {
       case 'draft':
-        return { backgroundColor: CSS_VARIABLES.TERTIARY_BG, color: CSS_VARIABLES.TEXT_SECONDARY };
+        return 'bg-gray-500 hover:bg-gray-600';
       case 'in_review':
-        return { backgroundColor: APP_COLORS.WARNING, color: CSS_VARIABLES.TEXT_PRIMARY };
+        return 'bg-yellow-500 hover:bg-yellow-600';
       case 'approved':
-        return { backgroundColor: APP_COLORS.SUCCESS, color: CSS_VARIABLES.TEXT_PRIMARY };
+        return 'bg-green-500 hover:bg-green-600';
       case 'rejected':
-        return { backgroundColor: APP_COLORS.ERROR, color: CSS_VARIABLES.TEXT_PRIMARY };
+        return 'bg-red-500 hover:bg-red-600';
       default:
-        return { backgroundColor: CSS_VARIABLES.TERTIARY_BG, color: CSS_VARIABLES.TEXT_SECONDARY };
+        return 'bg-gray-500 hover:bg-gray-600';
     }
   };
 
@@ -42,10 +38,8 @@ export const ReviewStatusBadge: React.FC<ReviewStatusBadgeProps> = ({ status }) 
     }
   };
 
-  const styles = getStatusStyles();
-
   return (
-    <Badge style={styles}>
+    <Badge className={getStatusStyles()}>
       {getStatusLabel()}
     </Badge>
   );
