@@ -1,4 +1,3 @@
-
 // ABOUTME: Enhanced SVG-based diagram canvas with improved text handling and responsive design
 // Supports node manipulation, connections, and fullscreen editing without drag conflicts
 
@@ -290,6 +289,24 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
     }, 100);
   }, [content.nodes, onNodeUpdate, onConnectionAdd]);
 
+  // Function to calculate connection points based on node positions and connection points
+  const getConnectionPoint = useCallback((node: DiagramNode, point: string) => {
+    const { position, size } = node;
+    
+    switch (point) {
+      case 'top':
+        return { x: position.x + size.width / 2, y: position.y };
+      case 'right':
+        return { x: position.x + size.width, y: position.y + size.height / 2 };
+      case 'bottom':
+        return { x: position.x + size.width / 2, y: position.y + size.height };
+      case 'left':
+        return { x: position.x, y: position.y + size.height / 2 };
+      default:
+        return { x: position.x + size.width / 2, y: position.y + size.height / 2 };
+    }
+  }, []);
+
   // Render grid
   const renderGrid = () => {
     if (!content.canvas.gridEnabled) return null;
@@ -358,15 +375,26 @@ export const DiagramCanvas: React.FC<DiagramCanvasProps> = ({
         {renderGrid()}
         
         {/* Connections */}
-        {content.connections.map(connection => (
-          <DiagramConnectionComponent
-            key={connection.id}
-            connection={connection}
-            nodes={content.nodes}
-            onDelete={() => onConnectionDelete(connection.id)}
-            readonly={readonly}
-          />
-        ))}
+        {content.connections.map(connection => {
+          const sourceNode = content.nodes.find(node => node.id === connection.sourceNodeId);
+          const targetNode = content.nodes.find(node => node.id === connection.targetNodeId);
+          
+          if (!sourceNode || !targetNode) return null;
+          
+          const sourcePoint = getConnectionPoint(sourceNode, connection.sourcePoint);
+          const targetPoint = getConnectionPoint(targetNode, connection.targetPoint);
+          
+          return (
+            <DiagramConnectionComponent
+              key={connection.id}
+              connection={connection}
+              sourcePoint={sourcePoint}
+              targetPoint={targetPoint}
+              onDelete={() => onConnectionDelete(connection.id)}
+              readonly={readonly}
+            />
+          );
+        })}
         
         {/* Nodes */}
         {content.nodes.map(node => (
