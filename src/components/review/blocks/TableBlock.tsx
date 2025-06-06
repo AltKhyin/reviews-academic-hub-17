@@ -1,11 +1,23 @@
-// ABOUTME: Enhanced table block with comprehensive inline settings and color integration
-// Handles tabular data display with sorting, editing, and customizable styling
+
+// ABOUTME: Enhanced table block with comprehensive inline settings and full editing capabilities
+// Supports sortable tables, row/column management, and complete customization
 
 import React, { useState } from 'react';
 import { ReviewBlock } from '@/types/review';
+import { InlineTextEditor } from '@/components/editor/inline/InlineTextEditor';
 import { InlineBlockSettings } from '@/components/editor/inline/InlineBlockSettings';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2, Edit3, Check, X } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { 
+  Plus, 
+  Minus, 
+  ArrowUp, 
+  ArrowDown, 
+  MoreVertical,
+  Trash2
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface TableBlockProps {
@@ -14,211 +26,205 @@ interface TableBlockProps {
   onUpdate?: (updates: Partial<ReviewBlock>) => void;
 }
 
+interface TableData {
+  headers: string[];
+  rows: string[][];
+  sortable?: boolean;
+  compact?: boolean;
+  striped?: boolean;
+  bordered?: boolean;
+}
+
 export const TableBlock: React.FC<TableBlockProps> = ({ 
   block, 
   readonly = false,
   onUpdate
 }) => {
   const content = block.content;
-  const headers = content.headers || [];
-  const rows = content.rows || [];
-  const sortable = content.sortable || false;
-  const compact = content.compact || false;
-  
-  // Color system integration
-  const textColor = content.text_color || '#d1d5db';
-  const backgroundColor = content.background_color || 'transparent';
-  const borderColor = content.border_color || '#2a2a2a';
-  const headerBgColor = content.header_bg_color || '#1a1a1a';
-  const cellBgColor = content.cell_bg_color || 'transparent';
+  const tableData: TableData = content.table_data || {
+    headers: ['Coluna 1', 'Coluna 2'],
+    rows: [['Dado 1', 'Dado 2']],
+    sortable: false,
+    compact: false,
+    striped: true,
+    bordered: true
+  };
 
-  const [editingCell, setEditingCell] = useState<{row: number, col: number} | null>(null);
   const [sortColumn, setSortColumn] = useState<number | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
-  const handleCellEdit = (rowIndex: number, colIndex: number, value: string) => {
-    if (!onUpdate) return;
-    
-    const newRows = [...rows];
-    if (!newRows[rowIndex]) newRows[rowIndex] = [];
-    newRows[rowIndex][colIndex] = value;
-    
-    onUpdate({
-      content: {
-        ...content,
-        rows: newRows
-      }
-    });
+  // Color system integration
+  const textColor = content.text_color || '#ffffff';
+  const backgroundColor = content.background_color || '#1a1a1a';
+  const borderColor = content.border_color || '#2a2a2a';
+  const headerBackgroundColor = content.header_background_color || '#2a2a2a';
+  const headerTextColor = content.header_text_color || '#ffffff';
+  const evenRowColor = content.even_row_color || 'rgba(255,255,255,0.05)';
+  const hoverColor = content.hover_color || 'rgba(59,130,246,0.1)';
+
+  const handleTableDataChange = (newTableData: Partial<TableData>) => {
+    if (onUpdate) {
+      onUpdate({
+        content: {
+          ...content,
+          table_data: {
+            ...tableData,
+            ...newTableData
+          }
+        }
+      });
+    }
   };
 
-  const handleHeaderEdit = (index: number, value: string) => {
-    if (!onUpdate) return;
-    
-    const newHeaders = [...headers];
-    newHeaders[index] = value;
-    
-    onUpdate({
-      content: {
-        ...content,
-        headers: newHeaders
-      }
-    });
+  const handleCellChange = (rowIndex: number, colIndex: number, value: string, isHeader = false) => {
+    if (isHeader) {
+      const newHeaders = [...tableData.headers];
+      newHeaders[colIndex] = value;
+      handleTableDataChange({ headers: newHeaders });
+    } else {
+      const newRows = [...tableData.rows];
+      newRows[rowIndex][colIndex] = value;
+      handleTableDataChange({ rows: newRows });
+    }
   };
 
   const addColumn = () => {
-    if (!onUpdate) return;
-    
-    const newHeaders = [...headers, `Coluna ${headers.length + 1}`];
-    const newRows = rows.map(row => [...row, '']);
-    
-    onUpdate({
-      content: {
-        ...content,
-        headers: newHeaders,
-        rows: newRows
-      }
-    });
+    const newHeaders = [...tableData.headers, `Coluna ${tableData.headers.length + 1}`];
+    const newRows = tableData.rows.map(row => [...row, '']);
+    handleTableDataChange({ headers: newHeaders, rows: newRows });
+  };
+
+  const removeColumn = (colIndex: number) => {
+    if (tableData.headers.length <= 1) return;
+    const newHeaders = tableData.headers.filter((_, i) => i !== colIndex);
+    const newRows = tableData.rows.map(row => row.filter((_, i) => i !== colIndex));
+    handleTableDataChange({ headers: newHeaders, rows: newRows });
   };
 
   const addRow = () => {
-    if (!onUpdate) return;
-    
-    const newRow = Array(headers.length).fill('');
-    const newRows = [...rows, newRow];
-    
-    onUpdate({
-      content: {
-        ...content,
-        rows: newRows
-      }
-    });
+    const newRow = new Array(tableData.headers.length).fill('');
+    const newRows = [...tableData.rows, newRow];
+    handleTableDataChange({ rows: newRows });
   };
 
-  const deleteColumn = (index: number) => {
-    if (!onUpdate) return;
-    
-    const newHeaders = headers.filter((_, i) => i !== index);
-    const newRows = rows.map(row => row.filter((_, i) => i !== index));
-    
-    onUpdate({
-      content: {
-        ...content,
-        headers: newHeaders,
-        rows: newRows
-      }
-    });
+  const removeRow = (rowIndex: number) => {
+    if (tableData.rows.length <= 1) return;
+    const newRows = tableData.rows.filter((_, i) => i !== rowIndex);
+    handleTableDataChange({ rows: newRows });
   };
 
-  const deleteRow = (index: number) => {
-    if (!onUpdate) return;
-    
-    const newRows = rows.filter((_, i) => i !== index);
-    
-    onUpdate({
-      content: {
-        ...content,
-        rows: newRows
-      }
-    });
+  const moveRow = (fromIndex: number, toIndex: number) => {
+    if (toIndex < 0 || toIndex >= tableData.rows.length) return;
+    const newRows = [...tableData.rows];
+    const [movedRow] = newRows.splice(fromIndex, 1);
+    newRows.splice(toIndex, 0, movedRow);
+    handleTableDataChange({ rows: newRows });
   };
 
-  const handleSort = (columnIndex: number) => {
-    if (!sortable || !onUpdate) return;
+  const handleSort = (colIndex: number) => {
+    if (!tableData.sortable) return;
     
-    const newDirection = sortColumn === columnIndex && sortDirection === 'asc' ? 'desc' : 'asc';
-    setSortColumn(columnIndex);
+    const newDirection = sortColumn === colIndex && sortDirection === 'asc' ? 'desc' : 'asc';
+    setSortColumn(colIndex);
     setSortDirection(newDirection);
-    
-    const sortedRows = [...rows].sort((a, b) => {
-      const aVal = a[columnIndex] || '';
-      const bVal = b[columnIndex] || '';
-      
-      if (newDirection === 'asc') {
-        return aVal.localeCompare(bVal);
-      } else {
-        return bVal.localeCompare(aVal);
-      }
-    });
-    
-    onUpdate({
-      content: {
-        ...content,
-        rows: sortedRows
-      }
-    });
-  };
 
-  const containerStyle: React.CSSProperties = {
-    color: textColor,
-    backgroundColor: backgroundColor !== 'transparent' ? backgroundColor : undefined,
-    borderColor: borderColor !== 'transparent' ? borderColor : undefined,
-    borderWidth: borderColor !== 'transparent' ? '1px' : undefined,
-    borderStyle: borderColor !== 'transparent' ? 'solid' : undefined,
+    const sortedRows = [...tableData.rows].sort((a, b) => {
+      const aVal = a[colIndex] || '';
+      const bVal = b[colIndex] || '';
+      
+      // Try to parse as numbers
+      const aNum = parseFloat(aVal);
+      const bNum = parseFloat(bVal);
+      
+      if (!isNaN(aNum) && !isNaN(bNum)) {
+        return newDirection === 'asc' ? aNum - bNum : bNum - aNum;
+      }
+      
+      // String comparison
+      return newDirection === 'asc' 
+        ? aVal.localeCompare(bVal) 
+        : bVal.localeCompare(aVal);
+    });
+
+    handleTableDataChange({ rows: sortedRows });
   };
 
   const tableStyle: React.CSSProperties = {
-    borderColor: borderColor
+    backgroundColor: backgroundColor,
+    borderColor: borderColor,
+    color: textColor
   };
 
   const headerStyle: React.CSSProperties = {
-    backgroundColor: headerBgColor,
-    color: textColor,
-    borderColor: borderColor
-  };
-
-  const cellStyle: React.CSSProperties = {
-    backgroundColor: cellBgColor !== 'transparent' ? cellBgColor : undefined,
-    color: textColor,
-    borderColor: borderColor
+    backgroundColor: headerBackgroundColor,
+    color: headerTextColor
   };
 
   if (readonly) {
     return (
       <div className="table-block my-6">
-        <div 
-          className="rounded-lg p-4"
-          style={containerStyle}
-        >
-          <div className="overflow-x-auto">
-            <table 
-              className={cn(
-                "w-full border-collapse border",
-                compact ? "text-sm" : "text-base"
-              )}
-              style={tableStyle}
-            >
-              {headers.length > 0 && (
-                <thead>
-                  <tr>
-                    {headers.map((header, index) => (
-                      <th
-                        key={index}
-                        className="border px-4 py-2 text-left font-semibold"
-                        style={headerStyle}
-                      >
-                        {header}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-              )}
-              <tbody>
-                {rows.map((row, rowIndex) => (
-                  <tr key={rowIndex}>
-                    {row.map((cell, cellIndex) => (
-                      <td
-                        key={cellIndex}
-                        className="border px-4 py-2"
-                        style={cellStyle}
-                      >
-                        {cell}
-                      </td>
-                    ))}
-                  </tr>
+        <div className="overflow-x-auto">
+          <table 
+            className={cn(
+              "w-full",
+              tableData.compact ? "text-sm" : "text-base",
+              tableData.bordered && "border border-collapse"
+            )}
+            style={tableStyle}
+          >
+            <thead>
+              <tr style={headerStyle}>
+                {tableData.headers.map((header, index) => (
+                  <th 
+                    key={index}
+                    className={cn(
+                      "px-4 py-3 text-left font-semibold",
+                      tableData.bordered && "border",
+                      tableData.sortable && "cursor-pointer hover:opacity-80"
+                    )}
+                    style={{ borderColor: borderColor }}
+                    onClick={() => tableData.sortable && handleSort(index)}
+                  >
+                    <div className="flex items-center gap-2">
+                      {header}
+                      {tableData.sortable && sortColumn === index && (
+                        sortDirection === 'asc' ? 
+                        <ArrowUp className="w-4 h-4" /> : 
+                        <ArrowDown className="w-4 h-4" />
+                      )}
+                    </div>
+                  </th>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </tr>
+            </thead>
+            <tbody>
+              {tableData.rows.map((row, rowIndex) => (
+                <tr 
+                  key={rowIndex}
+                  className={cn(
+                    tableData.striped && rowIndex % 2 === 0 && "bg-opacity-50",
+                    "hover:opacity-80 transition-colors"
+                  )}
+                  style={{
+                    backgroundColor: tableData.striped && rowIndex % 2 === 0 ? evenRowColor : undefined
+                  }}
+                >
+                  {row.map((cell, colIndex) => (
+                    <td 
+                      key={colIndex}
+                      className={cn(
+                        "px-4 py-3",
+                        tableData.bordered && "border"
+                      )}
+                      style={{ borderColor: borderColor }}
+                    >
+                      {cell}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     );
@@ -234,164 +240,206 @@ export const TableBlock: React.FC<TableBlockProps> = ({
         />
       </div>
 
-      <div 
-        className="rounded-lg p-4"
-        style={containerStyle}
-      >
+      <div className="space-y-4">
+        {/* Table Configuration Panel */}
+        <div 
+          className="p-4 rounded border space-y-4"
+          style={{ 
+            backgroundColor: 'rgba(0,0,0,0.3)',
+            borderColor: '#2a2a2a'
+          }}
+        >
+          {/* Table Options */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="sortable"
+                checked={tableData.sortable}
+                onCheckedChange={(checked) => handleTableDataChange({ sortable: checked })}
+              />
+              <Label htmlFor="sortable" className="text-xs" style={{ color: textColor }}>
+                Ordenável
+              </Label>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="compact"
+                checked={tableData.compact}
+                onCheckedChange={(checked) => handleTableDataChange({ compact: checked })}
+              />
+              <Label htmlFor="compact" className="text-xs" style={{ color: textColor }}>
+                Compacto
+              </Label>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="striped"
+                checked={tableData.striped}
+                onCheckedChange={(checked) => handleTableDataChange({ striped: checked })}
+              />
+              <Label htmlFor="striped" className="text-xs" style={{ color: textColor }}>
+                Listrado
+              </Label>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="bordered"
+                checked={tableData.bordered}
+                onCheckedChange={(checked) => handleTableDataChange({ bordered: checked })}
+              />
+              <Label htmlFor="bordered" className="text-xs" style={{ color: textColor }}>
+                Bordas
+              </Label>
+            </div>
+          </div>
+
+          {/* Column/Row Management */}
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              onClick={addColumn}
+              className="flex items-center gap-1"
+            >
+              <Plus className="w-3 h-3" />
+              Coluna
+            </Button>
+            <Button
+              size="sm"
+              onClick={addRow}
+              className="flex items-center gap-1"
+            >
+              <Plus className="w-3 h-3" />
+              Linha
+            </Button>
+          </div>
+        </div>
+
+        {/* Editable Table */}
         <div className="overflow-x-auto">
           <table 
             className={cn(
-              "w-full border-collapse border",
-              compact ? "text-sm" : "text-base"
+              "w-full",
+              tableData.compact ? "text-sm" : "text-base",
+              tableData.bordered && "border border-collapse"
             )}
             style={tableStyle}
           >
-            {/* Headers */}
-            {headers.length > 0 && (
-              <thead>
-                <tr>
-                  {headers.map((header, index) => (
-                    <th
-                      key={index}
-                      className="border px-4 py-2 text-left font-semibold relative group/header"
-                      style={headerStyle}
-                      onClick={() => sortable && handleSort(index)}
-                    >
-                      <input
-                        type="text"
+            <thead>
+              <tr style={headerStyle}>
+                {tableData.headers.map((header, index) => (
+                  <th 
+                    key={index}
+                    className={cn(
+                      "px-4 py-3 text-left font-semibold relative group",
+                      tableData.bordered && "border"
+                    )}
+                    style={{ borderColor: borderColor }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <InlineTextEditor
                         value={header}
-                        onChange={(e) => handleHeaderEdit(index, e.target.value)}
-                        className="bg-transparent border-none outline-none w-full"
-                        style={{ color: textColor }}
-                        placeholder="Cabeçalho"
+                        onChange={(value) => handleCellChange(-1, index, value, true)}
+                        className="font-semibold flex-1"
+                        style={{ color: headerTextColor }}
                       />
                       
-                      {/* Column Controls */}
-                      <div className="absolute -top-1 -right-1 opacity-0 group-hover/header:opacity-100 transition-opacity">
+                      {tableData.sortable && (
                         <Button
-                          variant="ghost"
                           size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            deleteColumn(index);
-                          }}
-                          className="h-4 w-4 p-0 bg-red-800 border border-red-600"
+                          variant="ghost"
+                          onClick={() => handleSort(index)}
+                          className="p-1 h-auto opacity-0 group-hover:opacity-100"
                         >
-                          <X className="w-2 h-2" />
+                          {sortColumn === index && sortDirection === 'asc' ? 
+                            <ArrowUp className="w-3 h-3" /> : 
+                            <ArrowDown className="w-3 h-3" />
+                          }
                         </Button>
-                      </div>
-                      
-                      {sortable && sortColumn === index && (
-                        <span className="ml-2">
-                          {sortDirection === 'asc' ? '↑' : '↓'}
-                        </span>
                       )}
-                    </th>
-                  ))}
-                  <th className="border px-2 py-2 w-12" style={headerStyle}>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={addColumn}
-                      className="h-6 w-6 p-0"
-                      title="Adicionar coluna"
-                    >
-                      <Plus className="w-3 h-3" />
-                    </Button>
-                  </th>
-                </tr>
-              </thead>
-            )}
 
-            {/* Body */}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => removeColumn(index)}
+                        className="p-1 h-auto opacity-0 group-hover:opacity-100 text-red-400"
+                        disabled={tableData.headers.length <= 1}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
             <tbody>
-              {rows.map((row, rowIndex) => (
-                <tr key={rowIndex} className="group/row">
-                  {row.map((cell, cellIndex) => (
-                    <td
-                      key={cellIndex}
-                      className="border px-4 py-2 relative"
-                      style={cellStyle}
-                      onClick={() => setEditingCell({row: rowIndex, col: cellIndex})}
+              {tableData.rows.map((row, rowIndex) => (
+                <tr 
+                  key={rowIndex}
+                  className={cn(
+                    tableData.striped && rowIndex % 2 === 0 && "bg-opacity-50",
+                    "group hover:opacity-80 transition-colors"
+                  )}
+                  style={{
+                    backgroundColor: tableData.striped && rowIndex % 2 === 0 ? evenRowColor : undefined
+                  }}
+                >
+                  {row.map((cell, colIndex) => (
+                    <td 
+                      key={colIndex}
+                      className={cn(
+                        "px-4 py-3 relative",
+                        tableData.bordered && "border"
+                      )}
+                      style={{ borderColor: borderColor }}
                     >
-                      {editingCell?.row === rowIndex && editingCell?.col === cellIndex ? (
-                        <input
-                          type="text"
-                          value={cell}
-                          onChange={(e) => handleCellEdit(rowIndex, cellIndex, e.target.value)}
-                          onBlur={() => setEditingCell(null)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') setEditingCell(null);
-                          }}
-                          className="bg-transparent border-none outline-none w-full"
-                          style={{ color: textColor }}
-                          autoFocus
-                        />
-                      ) : (
-                        <div className="cursor-pointer">
-                          {cell || (
-                            <span style={{ color: '#6b7280' }}>
-                              Clique para editar
-                            </span>
-                          )}
+                      <InlineTextEditor
+                        value={cell}
+                        onChange={(value) => handleCellChange(rowIndex, colIndex, value)}
+                        placeholder="..."
+                        style={{ color: textColor }}
+                      />
+                      
+                      {colIndex === 0 && (
+                        <div className="absolute -left-8 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 flex flex-col gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => moveRow(rowIndex, rowIndex - 1)}
+                            className="p-1 h-auto"
+                            disabled={rowIndex === 0}
+                          >
+                            <ArrowUp className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => moveRow(rowIndex, rowIndex + 1)}
+                            className="p-1 h-auto"
+                            disabled={rowIndex === tableData.rows.length - 1}
+                          >
+                            <ArrowDown className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => removeRow(rowIndex)}
+                            className="p-1 h-auto text-red-400"
+                            disabled={tableData.rows.length <= 1}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
                         </div>
                       )}
                     </td>
                   ))}
-                  <td className="border px-2 py-2 w-12" style={cellStyle}>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => deleteRow(rowIndex)}
-                      className="h-6 w-6 p-0 opacity-0 group-hover/row:opacity-100 transition-opacity bg-red-800 border border-red-600"
-                      title="Remover linha"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </td>
                 </tr>
               ))}
-              
-              {/* Add Row */}
-              <tr>
-                <td 
-                  colSpan={headers.length + 1} 
-                  className="border px-4 py-2 text-center"
-                  style={cellStyle}
-                >
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={addRow}
-                    className="flex items-center gap-2"
-                    title="Adicionar linha"
-                  >
-                    <Plus className="w-4 h-4" />
-                    Adicionar Linha
-                  </Button>
-                </td>
-              </tr>
             </tbody>
           </table>
         </div>
-
-        {/* Empty State */}
-        {headers.length === 0 && (
-          <div className="text-center py-8">
-            <div className="text-4xl mb-2">📊</div>
-            <div className="text-sm mb-4" style={{ color: '#9ca3af' }}>
-              Clique em "Adicionar Coluna" para começar sua tabela
-            </div>
-            <Button
-              variant="outline"
-              onClick={addColumn}
-              className="flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              Adicionar Primeira Coluna
-            </Button>
-          </div>
-        )}
       </div>
     </div>
   );
