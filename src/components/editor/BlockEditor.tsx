@@ -209,18 +209,24 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     onAddBlock('paragraph', insertionIndex);
   }, [layoutState.rows, blocks, onAddBlock]);
 
-  // 2D Grid operations
+  // 2D Grid operations - FIXED: Removed truthiness check on void function
   const handleAddBlockTo2DGrid = useCallback((gridId: string, position: GridPosition) => {
     console.log('Adding block to 2D grid:', { gridId, position });
     
     // Create a new block first
     const blockIndex = blocks.length;
-    const newBlockId = onAddBlock('paragraph', blockIndex);
+    onAddBlock('paragraph', blockIndex);
     
-    // Place it in the 2D grid after a brief delay to ensure the block exists
+    // Since onAddBlock doesn't return the block ID, we need to get the newly created block
+    // The new block will be at the end of the array after the next render
     setTimeout(() => {
-      if (onPlaceBlockIn2DGrid && newBlockId) {
-        onPlaceBlockIn2DGrid(newBlockId, gridId, position);
+      // Get the last block which should be our newly created one
+      const newBlocks = [...blocks];
+      if (newBlocks.length > blockIndex) {
+        const newBlock = newBlocks[newBlocks.length - 1];
+        if (onPlaceBlockIn2DGrid) {
+          onPlaceBlockIn2DGrid(newBlock.id, gridId, position);
+        }
       }
     }, 100);
   }, [blocks, onAddBlock, onPlaceBlockIn2DGrid]);
