@@ -32,37 +32,46 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
 
   if (!onUpdate) return null;
 
-  // Calculate optimal position for the settings panel
+  // Calculate position relative to the clicked button
   const calculatePosition = () => {
-    if (!buttonRef.current || !containerRef?.current) return;
+    if (!buttonRef.current) return;
 
     const buttonRect = buttonRef.current.getBoundingClientRect();
-    const containerRect = containerRef.current.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
     
-    // Position relative to the container
-    const relativeTop = buttonRect.top - containerRect.top;
-    const relativeLeft = buttonRect.left - containerRect.left;
+    // Panel dimensions (estimated)
+    const panelWidth = 320;
+    const panelHeight = 400;
     
-    // Adjust position to prevent overflow
-    let top = relativeTop + buttonRect.height + 8;
-    let left = relativeLeft;
+    // Start with button position
+    let top = buttonRect.bottom + 8; // 8px gap below button
+    let left = buttonRect.left;
     
-    // If panel would overflow right, position it to the left of the button
-    if (left + 320 > containerRect.width) {
-      left = relativeLeft - 320 + buttonRect.width;
+    // Adjust if panel would overflow right edge
+    if (left + panelWidth > viewportWidth) {
+      left = buttonRect.right - panelWidth;
     }
     
-    // If panel would overflow bottom, position it above the button
-    if (top + 400 > containerRect.height) {
-      top = relativeTop - 400 - 8;
+    // Adjust if panel would overflow bottom edge
+    if (top + panelHeight > viewportHeight) {
+      top = buttonRect.top - panelHeight - 8; // 8px gap above button
     }
     
-    setPosition({ top: Math.max(0, top), left: Math.max(0, left) });
+    // Ensure panel doesn't go off-screen
+    left = Math.max(8, Math.min(left, viewportWidth - panelWidth - 8));
+    top = Math.max(8, top);
+    
+    setPosition({ top, left });
   };
 
   useEffect(() => {
     if (isOpen) {
       calculatePosition();
+      // Recalculate on window resize
+      const handleResize = () => calculatePosition();
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
     }
   }, [isOpen]);
 
@@ -127,22 +136,22 @@ export const InlineBlockSettings: React.FC<InlineBlockSettingsProps> = ({
     <>
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 z-50"
+        className="fixed inset-0 z-[100]"
         onClick={() => setIsOpen(false)}
       />
       
-      {/* Settings Panel */}
+      {/* Settings Panel - Positioned absolutely relative to viewport */}
       <div 
         ref={panelRef}
         className={cn("inline-block-settings rounded-lg p-3 min-w-80 max-w-sm", className)}
         style={{ 
           backgroundColor: '#1a1a1a', 
           border: '1px solid #2a2a2a',
-          position: 'absolute',
+          position: 'fixed',
           top: position.top,
           left: position.left,
-          zIndex: 1070,
-          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)'
+          zIndex: 110,
+          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3)'
         }}
       >
         <div className="flex items-center justify-between mb-3">
