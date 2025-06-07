@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -81,6 +82,27 @@ export const IssueForm: React.FC<IssueFormProps> = ({
                       {...field} 
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="backend_tags"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Backend Tags</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder={`Estrutura JSON hierárquica para recomendações:\n{\n  "Cardiologia": ["Dislipidemia", "Estatinas"],\n  "Endocrinologia": ["Diabetes tipo 2", "Remissão"]\n}`}
+                      rows={6} 
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Tags estruturadas em JSON para sistema de recomendação. Não são exibidas aos usuários.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -242,37 +264,6 @@ export const IssueForm: React.FC<IssueFormProps> = ({
                   </FormControl>
                   <FormDescription>
                     Categoria da população do estudo
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        </div>
-
-        {/* Backend Administration Fields */}
-        <div>
-          <h3 className="text-lg font-medium mb-4 text-warning">
-            🔒 Administração Backend
-          </h3>
-          <div className="border border-warning/20 rounded-lg p-4 bg-warning/5">
-            <FormField
-              control={form.control}
-              name="backend_tags"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-warning">
-                    Backend Tags (Apenas Admin)
-                  </FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Tags internas para sistema de recomendação - separadas por vírgula"
-                      rows={2} 
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormDescription className="text-muted-foreground">
-                    ⚠️ Estas tags são apenas para uso interno do sistema de recomendação e nunca serão exibidas aos usuários
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

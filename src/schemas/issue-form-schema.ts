@@ -22,7 +22,7 @@ export const issueFormSchema = z.object({
   score: z.number().optional().default(0),
   population: z.string().optional(),
   // Backend-only fields for recommendation system
-  backend_tags: z.string().optional()
+  backend_tags: z.string().optional() // Will store JSON string
 });
 
 export type IssueFormValues = {
@@ -44,5 +44,5 @@ export type IssueFormValues = {
   design?: string;
   score?: number;
   population?: string;
-  backend_tags?: string; // Added for internal recommendation system
+  backend_tags?: string; // JSON string for hierarchical tags
 };
