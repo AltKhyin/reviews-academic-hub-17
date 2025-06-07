@@ -27,15 +27,94 @@ export const useArchiveData = () => {
     }
   });
 
-  // Fetch active tag configuration
-  const { data: tagConfig = {}, isLoading: tagConfigLoading } = useQuery({
-    queryKey: ['tag-configuration'],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_active_tag_config');
-      if (error) throw error;
-      return (data || {}) as TagHierarchy;
-    }
-  });
+  // Temporary hardcoded tag configuration until migration is run
+  const tagConfig: TagHierarchy = {
+    "Cardiologia": [
+      "Dislipidemia",
+      "Estatinas",
+      "Hipertensão",
+      "Risco cardiovascular"
+    ],
+    "Endocrinologia": [
+      "Diabetes tipo 2",
+      "Remissão",
+      "Controle glicêmico",
+      "Obesidade"
+    ],
+    "Fisioterapia": [],
+    "Fonoaudiologia": [],
+    "Psicologia": [
+      "Depressão",
+      "Psicoterapia",
+      "Suporte psicossocial"
+    ],
+    "Psiquiatria": [
+      "Depressão",
+      "Psicoterapia",
+      "Suporte psicossocial"
+    ],
+    "Saúde mental": [
+      "Escuta ativa",
+      "Psicoeducação"
+    ],
+    "Nutrição": [
+      "Educação alimentar",
+      "Nutrição clínica",
+      "Suplementação"
+    ],
+    "Atividade física": [
+      "Adesão"
+    ],
+    "Clínica médica": [
+      "Nefrologia",
+      "Gastroenterologia",
+      "Reumatologia",
+      "Infectologia",
+      "Pneumologia"
+    ],
+    "Geriatria": [],
+    "Pediatria": [
+      "Nutrição infantil",
+      "Prevenção pediátrica",
+      "Rastreios pediátricos"
+    ],
+    "Medicina de família": [
+      "Atenção primária",
+      "Seguimento longitudinal"
+    ],
+    "Decisão compartilhada": [
+      "Comunicação clínica"
+    ],
+    "Saúde pública": [
+      "Políticas públicas",
+      "Programas populacionais",
+      "Ações coletivas",
+      "Vacinação"
+    ],
+    "Farmacologia": [
+      "Desprescrição"
+    ],
+    "Enfermagem": [],
+    "Real world evidence": [
+      "Estudos pragmáticos",
+      "Aplicação clínica",
+      "Barreiras de implementação"
+    ],
+    "Bioestatística": [],
+    "Inferência causal": [],
+    "Rastreio clínico": [],
+    "Testes diagnósticos": [],
+    "Odontologia": [],
+    "Educação em saúde": [],
+    "Hospital": [],
+    "Cirurgia": [
+      "Ortopedia",
+      "Urologia",
+      "Cirurgia geral",
+      "Indicação cirúrgica",
+      "Otorrinologia"
+    ]
+  };
 
   // Get all available tags from the configuration
   const allTags = useMemo(() => {
@@ -47,7 +126,7 @@ export const useArchiveData = () => {
       }
     });
     return [...new Set(tags)];
-  }, [tagConfig]);
+  }, []);
 
   // Calculate tag matches for each issue
   const calculateTagMatches = (issue: ArchiveIssue, selectedTags: string[]): number => {
@@ -162,13 +241,13 @@ export const useArchiveData = () => {
     }
 
     return issuesWithMatches;
-  }, [issues, filterState, tagConfig]);
+  }, [issues, filterState]);
 
   // Update contextual tags when selected tags change
   useEffect(() => {
     const contextual = generateContextualTags(filterState.selectedTags);
     setFilterState(prev => ({ ...prev, contextualTags: contextual }));
-  }, [filterState.selectedTags, tagConfig]);
+  }, [filterState.selectedTags]);
 
   const selectTag = (tag: string) => {
     setFilterState(prev => {
@@ -203,7 +282,7 @@ export const useArchiveData = () => {
     tagConfig,
     allTags,
     filterState,
-    isLoading: issuesLoading || tagConfigLoading,
+    isLoading: issuesLoading,
     selectTag,
     setSearchQuery,
     clearFilters
