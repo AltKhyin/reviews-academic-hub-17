@@ -1,5 +1,5 @@
 
-// Centralized archive page with optimized layout and spacing
+// ABOUTME: Centralized archive page with optimal layout and spacing
 import React from 'react';
 import { ArchiveHeader } from '@/components/archive/ArchiveHeader';
 import { TagsPanel } from '@/components/archive/TagsPanel';
@@ -21,8 +21,8 @@ const ArchivePage = () => {
       className="min-h-screen bg-background"
       style={{ backgroundColor: 'hsl(var(--background))' }}
     >
-      {/* Centralized container with reduced width */}
-      <div className="max-w-5xl mx-auto px-6 lg:px-8 py-8">
+      {/* Optimized container width */}
+      <div className="max-w-6xl mx-auto px-6 lg:px-8 py-8">
         <ArchiveHeader
           searchQuery={filterState.searchQuery}
           onSearchChange={setSearchQuery}

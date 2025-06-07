@@ -1,5 +1,5 @@
 
-// Enhanced interactive tags panel with green outline for recommended tags
+// ABOUTME: Monochromatic tags panel with clean visual hierarchy
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { TagHierarchy } from '@/types/archive';
@@ -58,9 +58,9 @@ export const TagsPanel: React.FC<TagsPanelProps> = ({
                 cursor-pointer transition-all duration-200 text-sm py-2 px-4 font-medium
                 border-2 hover:shadow-sm
                 ${selected 
-                  ? 'bg-green-500/90 text-white border-green-500 hover:bg-green-600 shadow-md' 
+                  ? 'bg-foreground text-background border-foreground hover:bg-foreground/90' 
                   : contextual
-                    ? 'bg-transparent text-white border-green-500 hover:bg-green-500/10'
+                    ? 'bg-transparent text-foreground border-foreground/60 hover:bg-foreground/10'
                     : 'bg-transparent text-muted-foreground border-border hover:bg-muted/20 hover:text-foreground hover:border-muted'
                 }
               `}
@@ -74,7 +74,7 @@ export const TagsPanel: React.FC<TagsPanelProps> = ({
       
       {/* Status indicator with subtle styling */}
       {selectedTags.length > 0 && (
-        <div className="border-l-2 border-green-500 pl-4 py-2">
+        <div className="border-l-2 border-foreground pl-4 py-2">
           <div className="text-sm text-foreground font-medium">
             {selectedTags.length === 1 
               ? `Filtrando por "${selectedTags[0]}"`

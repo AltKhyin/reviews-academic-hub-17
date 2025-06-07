@@ -1,5 +1,5 @@
 
-// Enhanced results grid with integrated discrete search and optimized spacing
+// ABOUTME: Clean results grid with discrete search integration
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
@@ -29,25 +29,14 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({
   if (isLoading) {
     return (
       <div className="space-y-8">
-        <div className="animate-pulse">
-          <div className="h-4 bg-muted/30 rounded w-48"></div>
-        </div>
+        {/* Loading State */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {Array.from({ length: 8 }).map((_, index) => (
             <div 
               key={index}
-              className="bg-card border border-border rounded-lg overflow-hidden animate-pulse"
+              className="bg-card border border-border rounded-lg overflow-hidden animate-pulse aspect-[3/4]"
             >
-              <div className="h-56 bg-muted/20"></div>
-              <div className="p-5 space-y-3">
-                <div className="h-4 bg-muted/20 rounded"></div>
-                <div className="h-6 bg-muted/20 rounded"></div>
-                <div className="flex gap-2">
-                  <div className="h-5 bg-muted/20 rounded w-16"></div>
-                  <div className="h-5 bg-muted/20 rounded w-20"></div>
-                  <div className="h-5 bg-muted/20 rounded w-12"></div>
-                </div>
-              </div>
+              <div className="h-full bg-muted/20"></div>
             </div>
           ))}
         </div>
@@ -81,8 +70,8 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({
 
   return (
     <div className="space-y-8">
-      {/* Results header with integrated discrete search */}
-      <div className="flex justify-between items-center border-b border-border pb-4">
+      {/* Clean header with discrete search */}
+      <div className="flex justify-between items-center">
         <div className="text-sm text-muted-foreground">
           <span className="font-semibold text-foreground text-lg">{issues.length}</span>
           <span className="ml-1">
@@ -90,21 +79,21 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({
           </span>
         </div>
         
-        {/* Discrete search integration */}
-        <div className="relative w-80">
+        {/* Discrete search */}
+        <div className="relative w-72">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
           <Input
             type="text"
             placeholder="Buscar conteúdo..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-10 h-9 bg-muted/20 border-muted text-foreground placeholder:text-muted-foreground focus:border-green-500 focus:ring-1 focus:ring-green-500/20 text-sm rounded-full"
+            className="pl-10 h-9 bg-muted/10 border-muted/30 text-foreground placeholder:text-muted-foreground focus:border-foreground focus:ring-1 focus:ring-foreground/20 text-sm rounded-full"
           />
         </div>
       </div>
       
-      {/* Enhanced grid with tighter spacing */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {/* Grid with improved spacing */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
         {issues.map((issue) => (
           <IssueCard
             key={issue.id}
