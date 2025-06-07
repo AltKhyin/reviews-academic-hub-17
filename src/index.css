@@ -7,95 +7,63 @@
 
 @layer base {
   :root {
-    /* Core Background Colors - Pure Grays (NO BLUE TINT) */
-    --background: 0 0% 7%;        /* #121212 - Pure gray instead of blue-tinted */
-    --foreground: 0 0% 98%;       /* #ffffff - Pure white */
+    /* ENFORCED MONOCHROMATIC THEME - Pure Grayscale Design System */
+    
+    /* Brand Colors - Pure Grayscale */
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 7%;
 
-    /* Card and Surface Colors - Pure Grays */
-    --card: 0 0% 10%;             /* #1a1a1a - Pure gray instead of blue-tinted */
-    --card-foreground: 0 0% 98%;  /* #ffffff */
-
-    /* Popover and Dropdown Colors - Pure Grays */
-    --popover: 0 0% 10%;          /* #1a1a1a - Pure gray instead of blue-tinted */
-    --popover-foreground: 0 0% 98%;
-
-    /* Primary Color System */
-    --primary: 0 0% 98%;          /* #ffffff */
-    --primary-foreground: 0 0% 8%; /* #121212 */
-
-    /* Secondary Surfaces - Pure Grays */
-    --secondary: 0 0% 13%;        /* #212121 - Pure gray instead of blue-tinted */
+    --secondary: 0 0% 13%;
     --secondary-foreground: 0 0% 98%;
 
-    /* Muted Elements - Pure Grays */
-    --muted: 0 0% 13%;            /* #212121 - Pure gray instead of blue-tinted */
-    --muted-foreground: 0 0% 65%; /* #a6a6a6 */
+    --background: 0 0% 7%;
+    --foreground: 0 0% 96%;
 
-    /* Accent Colors - Pure Grays */
-    --accent: 0 0% 13%;           /* #212121 - Pure gray instead of blue-tinted */
+    --muted: 0 0% 60%;
+    --muted-foreground: 0 0% 85%;
+
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 0 0% 40%;
+
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 96%;
+
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 96%;
+
+    --accent: 0 0% 13%;
     --accent-foreground: 0 0% 98%;
 
-    /* Destructive Colors */
-    --destructive: 0 70% 40%;
+    /* Semantic Colors Only */
+    --success: 142 76% 36%;
+    --warning: 38 92% 50%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Border and Input Colors - Pure Grays */
-    --border: 0 0% 16.5%;         /* #2a2a2a - Pure gray instead of blue-tinted */
-    --input: 0 0% 16.5%;          /* #2a2a2a - Pure gray instead of blue-tinted */
-    --ring: 0 0% 83%;
+    /* Interactive States - Pure Grayscale */
+    --hover: rgba(255, 255, 255, 0.06);
+    --active: rgba(255, 255, 255, 0.12);
+    --disabled: rgba(255, 255, 255, 0.24);
 
     --radius: 6px;
 
-    /* Sidebar Colors - Consistent Pure Grays */
-    --sidebar-background: 0 0% 10%;     /* #1a1a1a - Pure gray */
+    /* Sidebar Colors - Pure Grayscale */
+    --sidebar-background: 0 0% 10%;
     --sidebar-foreground: 0 0% 98%;
     --sidebar-primary: 0 0% 98%;
-    --sidebar-primary-foreground: 0 0% 8%;
-    --sidebar-accent: 0 0% 13%;         /* #212121 - Pure gray */
+    --sidebar-primary-foreground: 0 0% 7%;
+    --sidebar-accent: 0 0% 13%;
     --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 0 0% 16.5%;       /* #2a2a2a - Pure gray */
-    --sidebar-ring: 0 0% 83%;
-    
-    /* Scrollbar Colors - Pure Grays */
-    --scrollbar-track: 0 0% 10%;        /* #1a1a1a - Pure gray */
-    --scrollbar-thumb: 0 0% 25%;        /* Pure gray */
-    --scrollbar-thumb-hover: 0 0% 35%;  /* Pure gray */
-    
-    /* Enhanced Dark Theme Variables - Pure Gray Scale */
-    --editor-primary-bg: #121212;    /* Main background - Pure gray */
-    --editor-secondary-bg: #1a1a1a;  /* Cards, panels - Pure gray */
-    --editor-tertiary-bg: #212121;   /* Secondary elements - Pure gray */
-    --editor-quaternary-bg: #2a2a2a; /* Borders, separators - Pure gray */
-    
-    /* Success Color */
-    --editor-success-color: #22c55e;
-    
-    /* Interactive Elements - Pure Grays */
-    --editor-hover-bg: #2a2a2a;      /* Pure gray */
-    --editor-active-bg: #333333;     /* Pure gray */
-    
-    /* Text Colors */
-    --editor-text-primary: #ffffff;
-    --editor-text-secondary: #d1d5db;
-    --editor-text-muted: #9ca3af;
-    --editor-text-subtle: #6b7280;
-    
-    /* Z-index scale for proper layering */
-    --z-dropdown: 1000;
-    --z-sticky: 1020;
-    --z-fixed: 1030;
-    --z-modal-backdrop: 1040;
-    --z-modal: 1050;
-    --z-popover: 1060;
-    --z-tooltip: 1070;
-    --z-toast: 1080;
+    --sidebar-border: 0 0% 20%;
+    --sidebar-ring: 0 0% 40%;
   }
 
   html, body, #root {
     height: 100%;
     overflow: hidden;
-    background-color: #121212; /* Pure gray background */
-    color: #ffffff;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
   }
 }
 
@@ -107,30 +75,28 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
-    background-color: #121212; /* Enforce pure gray background */
-    color: #ffffff;
   }
   
-  /* Custom scrollbar styling for Webkit browsers */
+  /* Custom scrollbar styling - Pure Grayscale */
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
   
   ::-webkit-scrollbar-track {
-    background: hsl(var(--scrollbar-track));
+    background: hsl(var(--card));
     border-radius: 4px;
   }
   
   ::-webkit-scrollbar-thumb {
-    background: hsl(var(--scrollbar-thumb));
+    background: hsl(var(--muted));
     border-radius: 4px;
     opacity: 0;
     transition: opacity 0.3s ease, background-color 0.2s ease;
   }
   
   ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--scrollbar-thumb-hover));
+    background: hsl(var(--muted-foreground));
   }
   
   /* Show scrollbar on hover or when scrolling */
@@ -140,244 +106,131 @@
     opacity: 1;
   }
   
-  /* Firefox scrollbar styling */
+  /* Firefox scrollbar styling - Pure Grayscale */
   * {
     scrollbar-width: thin;
-    scrollbar-color: transparent hsl(var(--scrollbar-track));
+    scrollbar-color: transparent hsl(var(--card));
     transition: scrollbar-color 0.3s ease;
   }
   
   *:hover,
   *:active,
   .scrolling {
-    scrollbar-color: hsl(var(--scrollbar-thumb)) hsl(var(--scrollbar-track));
+    scrollbar-color: hsl(var(--muted)) hsl(var(--card));
   }
 }
 
 @layer components {
-  /* CRITICAL: Fixed overflow and z-index for drag system AND inline menus */
-  .block-container,
-  .grid-container,
-  .grid-2d-container,
-  .grid-panel,
-  .block-editor {
-    overflow: visible !important;
-    position: relative;
-  }
-
-  /* FIXED: Grid cells must allow overflow for inline menus */
-  .grid-cell {
-    overflow: visible !important;
-    position: relative;
-    z-index: 1;
-  }
-
-  .grid-panel-filled,
-  .grid-panel-empty {
-    overflow: visible !important;
-    position: relative;
-    z-index: 1;
-  }
-
-  .block-content {
-    overflow: visible !important;
-    position: relative;
-    z-index: 1;
-  }
-
-  /* CRITICAL: Inline menus must have high z-index and proper positioning */
-  .inline-block-settings,
-  .block-menu,
-  .inline-menu,
-  .context-menu,
-  .dropdown-menu {
-    position: absolute !important;
-    z-index: var(--z-popover) !important;
-    background-color: #1a1a1a !important; /* Pure gray instead of blue-tinted */
-    border: 1px solid #2a2a2a !important; /* Pure gray border */
-    border-radius: 6px !important;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2) !important;
-    overflow: visible !important;
-  }
-
-  /* Ensure inline settings don't get clipped */
-  .inline-block-settings {
-    z-index: var(--z-tooltip) !important;
-    position: fixed !important;
-  }
-
-  /* Drag handle styling */
-  .cursor-grab {
-    cursor: grab;
-  }
-
-  .cursor-grabbing {
-    cursor: grabbing;
-  }
-
-  /* Enhanced dark theme for editor components - Pure Grays */
-  .native-editor {
-    background-color: #121212 !important; /* Pure gray */
-  }
-  
-  .block-palette {
-    background-color: #1a1a1a !important; /* Pure gray */
-    border-color: #2a2a2a !important;     /* Pure gray */
-  }
-  
-  .block-editor {
-    background-color: #121212 !important; /* Pure gray */
-    border-color: #2a2a2a !important;     /* Pure gray */
-  }
-  
-  .properties-panel {
-    background-color: #1a1a1a !important; /* Pure gray */
-    border-color: #2a2a2a !important;     /* Pure gray */
-  }
-
-  /* Issue Editor Specific Styling - Pure Grays */
-  .issue-editor-card {
-    background-color: #1a1a1a !important; /* Pure gray */
-    border-color: #2a2a2a !important;     /* Pure gray */
-    color: #ffffff !important;
-  }
-
-  .issue-editor-input {
-    background-color: #212121 !important; /* Pure gray */
-    border-color: #2a2a2a !important;     /* Pure gray */
-    color: #ffffff !important;
-  }
-
-  .issue-editor-input:focus {
-    border-color: #3b82f6 !important;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1) !important;
-  }
-
-  /* Diagram Editor Specific Styling - Pure Grays */
-  .diagram-fullscreen-container {
-    background-color: #121212 !important; /* Pure gray */
-  }
-
-  .diagram-toolbar {
-    background-color: #1a1a1a !important; /* Pure gray */
-    border-color: #2a2a2a !important;     /* Pure gray */
-  }
-
-  .diagram-canvas {
-    background-color: #121212 !important; /* Pure gray */
-    border-color: #2a2a2a !important;     /* Pure gray */
-  }
-
-  /* Color Picker and Control Styling - Pure Grays */
-  .color-picker-container {
-    background-color: #1a1a1a !important; /* Pure gray */
-    border-color: #2a2a2a !important;     /* Pure gray */
-  }
-
-  /* Form Elements - Pure Grays */
-  .form-input {
-    background-color: #212121 !important; /* Pure gray */
-    border-color: #2a2a2a !important;     /* Pure gray */
-    color: #ffffff !important;
-  }
-
-  .form-input:focus {
-    border-color: #3b82f6 !important;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1) !important;
-  }
-
-  .form-textarea {
-    background-color: #212121 !important; /* Pure gray */
-    border-color: #2a2a2a !important;     /* Pure gray */
-    color: #ffffff !important;
-  }
-
-  .form-textarea:focus {
-    border-color: #3b82f6 !important;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1) !important;
-  }
-
-  /* Button Variants - Pure Grays */
+  /* Button variants enforcing monochromatic theme */
   .btn-primary {
-    background-color: #3b82f6 !important;
-    color: #ffffff !important;
-    border-color: #3b82f6 !important;
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    border-color: hsl(var(--border));
   }
 
   .btn-primary:hover {
-    background-color: #2563eb !important;
-    border-color: #2563eb !important;
+    background-color: var(--hover);
   }
 
   .btn-secondary {
-    background-color: #212121 !important; /* Pure gray */
-    color: #ffffff !important;
-    border-color: #2a2a2a !important;     /* Pure gray */
+    background-color: hsl(var(--secondary));
+    color: hsl(var(--secondary-foreground));
+    border-color: hsl(var(--border));
   }
 
   .btn-secondary:hover {
-    background-color: #2a2a2a !important; /* Pure gray */
+    background-color: var(--hover);
   }
 
   .btn-ghost {
-    background-color: transparent !important;
-    color: #d1d5db !important;
+    background-color: transparent;
+    color: hsl(var(--muted-foreground));
   }
 
   .btn-ghost:hover {
-    background-color: #2a2a2a !important; /* Pure gray */
-    color: #ffffff !important;
+    background-color: var(--hover);
+    color: hsl(var(--foreground));
   }
 
-  /* Global overrides to prevent blue-tinted colors */
-  [class*="bg-slate"], [class*="bg-gray"] {
-    background-color: inherit !important;
+  /* Form elements - Pure Grayscale */
+  .form-input {
+    background-color: hsl(var(--input));
+    border-color: hsl(var(--border));
+    color: hsl(var(--foreground));
   }
 
-  /* Override any remaining blue-tinted backgrounds */
-  .bg-gray-900 {
-    background-color: #121212 !important; /* Pure gray */
+  .form-input:focus {
+    border-color: hsl(var(--ring));
+    box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2);
   }
 
-  .bg-gray-800 {
-    background-color: #1a1a1a !important; /* Pure gray */
+  /* Card components - Pure Grayscale */
+  .card-dark {
+    background-color: hsl(var(--card));
+    border-color: hsl(var(--border));
+    color: hsl(var(--card-foreground));
   }
 
-  .bg-gray-700 {
-    background-color: #212121 !important; /* Pure gray */
+  /* Override any remaining blue-tinted elements */
+  .bg-blue-500,
+  .bg-blue-600,
+  .bg-blue-700 {
+    background-color: hsl(var(--primary)) !important;
   }
 
-  .bg-gray-600 {
-    background-color: #2a2a2a !important; /* Pure gray */
+  .text-blue-500,
+  .text-blue-600,
+  .text-blue-400 {
+    color: hsl(var(--foreground)) !important;
   }
 
-  /* Z-index utilities */
-  .z-dropdown {
-    z-index: var(--z-dropdown);
+  .border-blue-500,
+  .border-blue-600 {
+    border-color: hsl(var(--border)) !important;
   }
-  
-  .z-sticky {
-    z-index: var(--z-sticky);
+
+  /* Hover states - Pure Grayscale */
+  .hover\:bg-blue-600:hover,
+  .hover\:bg-blue-700:hover {
+    background-color: var(--hover) !important;
   }
-  
-  .z-fixed {
-    z-index: var(--z-fixed);
+
+  /* Focus states - Pure Grayscale */
+  .focus\:ring-blue-500:focus {
+    box-shadow: 0 0 0 2px hsl(var(--ring) / 0.2) !important;
   }
-  
-  .z-modal {
-    z-index: var(--z-modal);
+
+  /* Semantic color classes */
+  .text-success {
+    color: hsl(var(--success));
   }
-  
-  .z-popover {
-    z-index: var(--z-popover);
+
+  .bg-success {
+    background-color: hsl(var(--success));
   }
-  
-  .z-tooltip {
-    z-index: var(--z-tooltip);
+
+  .text-warning {
+    color: hsl(var(--warning));
+  }
+
+  .bg-warning {
+    background-color: hsl(var(--warning));
+  }
+
+  .text-destructive {
+    color: hsl(var(--destructive));
+  }
+
+  .bg-destructive {
+    background-color: hsl(var(--destructive));
+  }
+
+  .border-destructive {
+    border-color: hsl(var(--destructive));
   }
 }
 
-/* Global dragging styles */
+/* Global drag and drop styles - Pure Grayscale */
 body.dragging {
   cursor: grabbing !important;
 }
@@ -392,37 +245,6 @@ body.dragging button {
   pointer-events: all;
 }
 
-/* Ensure drag handles are always interactive */
 [draggable="true"] {
   pointer-events: all !important;
-}
-
-/* CRITICAL: Ensure grid containers don't clip inline menus */
-.grid-2d-container {
-  overflow: visible !important;
-  position: relative !important;
-  z-index: 1 !important;
-}
-
-.grid-2d-container .grid-container {
-  overflow: visible !important;
-  position: relative !important;
-  z-index: 1 !important;
-}
-
-/* Disable drag and drop when in diagram fullscreen mode */
-.diagram-fullscreen-active * {
-  -webkit-user-drag: none !important;
-  -khtml-user-drag: none !important;
-  -moz-user-drag: none !important;
-  -o-user-drag: none !important;
-  user-drag: none !important;
-  pointer-events: auto !important;
-}
-
-.diagram-fullscreen-active .sortable-ghost,
-.diagram-fullscreen-active .sortable-chosen,
-.diagram-fullscreen-active [draggable] {
-  opacity: 1 !important;
-  transform: none !important;
 }

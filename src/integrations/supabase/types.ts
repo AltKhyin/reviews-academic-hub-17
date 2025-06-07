@@ -492,6 +492,7 @@ export type Database = {
           created_at: string
           description: string | null
           design: string | null
+          edition: string | null
           featured: boolean | null
           id: string
           pdf_url: string
@@ -518,6 +519,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           design?: string | null
+          edition?: string | null
           featured?: boolean | null
           id?: string
           pdf_url: string
@@ -544,6 +546,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           design?: string | null
+          edition?: string | null
           featured?: boolean | null
           id?: string
           pdf_url?: string

@@ -27,7 +27,7 @@ export const IssueActionButtons: React.FC<IssueActionButtonsProps> = ({
           variant="outline" 
           onClick={onToggleFeatured}
           disabled={isDisabled}
-          className={isFeatured ? "text-yellow-500 hover:text-yellow-700" : "text-muted-foreground"}
+          className={isFeatured ? "text-warning hover:text-warning/80" : "text-muted-foreground"}
         >
           <Star className="mr-2 h-4 w-4" /> {isFeatured ? 'Destacada' : 'Destacar'}
         </Button>
@@ -36,7 +36,7 @@ export const IssueActionButtons: React.FC<IssueActionButtonsProps> = ({
         variant="outline" 
         onClick={onDelete} 
         disabled={isDisabled}
-        className="text-red-500 hover:text-red-700"
+        className="text-destructive hover:text-destructive/80 border-destructive"
       >
         <Trash className="mr-2 h-4 w-4" /> Excluir
       </Button>
@@ -44,6 +44,7 @@ export const IssueActionButtons: React.FC<IssueActionButtonsProps> = ({
         variant={isPublished ? "outline" : "default"}
         onClick={onTogglePublish}
         disabled={isDisabled}
+        className={isPublished ? "text-success border-success" : ""}
       >
         {isPublished ? 'Despublicar' : 'Publicar'}
       </Button>
