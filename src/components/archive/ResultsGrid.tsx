@@ -1,10 +1,10 @@
 
-// ABOUTME: Clean results grid with discrete search integration
+// ABOUTME: Updated results container to use masonry layout with discrete search integration
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { IssueCard } from './IssueCard';
+import { MasonryGrid } from './MasonryGrid';
 import { ArchiveIssue } from '@/types/archive';
 
 interface ResultsGridProps {
@@ -29,16 +29,22 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({
   if (isLoading) {
     return (
       <div className="space-y-8">
-        {/* Loading State */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {Array.from({ length: 8 }).map((_, index) => (
-            <div 
-              key={index}
-              className="bg-card border border-border rounded-lg overflow-hidden animate-pulse aspect-[3/4]"
-            >
-              <div className="h-full bg-muted/20"></div>
-            </div>
-          ))}
+        {/* Loading State - Masonry skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+          {Array.from({ length: 12 }).map((_, index) => {
+            // Vary skeleton heights for masonry effect
+            const heights = ['h-64', 'h-80', 'h-72', 'h-96'];
+            const height = heights[index % heights.length];
+            
+            return (
+              <div 
+                key={index}
+                className={`bg-card border border-border rounded-lg overflow-hidden animate-pulse ${height}`}
+              >
+                <div className="h-full bg-muted/20"></div>
+              </div>
+            );
+          })}
         </div>
       </div>
     );
@@ -70,7 +76,7 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({
 
   return (
     <div className="space-y-8">
-      {/* Clean header with discrete search */}
+      {/* Discrete header with minimal search */}
       <div className="flex justify-between items-center">
         <div className="text-sm text-muted-foreground">
           <span className="font-semibold text-foreground text-lg">{issues.length}</span>
@@ -79,30 +85,24 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({
           </span>
         </div>
         
-        {/* Discrete search */}
-        <div className="relative w-72">
+        {/* Minimal, discrete search input */}
+        <div className="relative w-80">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
           <Input
             type="text"
-            placeholder="Buscar conteúdo..."
+            placeholder="Buscar por conteúdo..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-10 h-9 bg-muted/10 border-muted/30 text-foreground placeholder:text-muted-foreground focus:border-foreground focus:ring-1 focus:ring-foreground/20 text-sm rounded-full"
+            className="pl-10 h-9 bg-transparent border-muted/40 text-foreground placeholder:text-muted-foreground/60 focus:border-muted focus:ring-1 focus:ring-muted/30 text-sm rounded-full transition-all duration-200 hover:border-muted/60"
           />
         </div>
       </div>
       
-      {/* Grid with improved spacing */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-        {issues.map((issue) => (
-          <IssueCard
-            key={issue.id}
-            issue={issue}
-            onClick={handleIssueClick}
-            tagMatches={issue.tagMatches}
-          />
-        ))}
-      </div>
+      {/* Pinterest-style masonry grid */}
+      <MasonryGrid 
+        issues={issues}
+        onIssueClick={handleIssueClick}
+      />
     </div>
   );
 };
