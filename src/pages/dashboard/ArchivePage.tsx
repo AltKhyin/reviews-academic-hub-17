@@ -1,5 +1,5 @@
 
-// ABOUTME: Centralized archive page with optimal layout and spacing
+// ABOUTME: Centralized archive page with optimal layout and spacing for 4-column masonry grid
 import React from 'react';
 import { ArchiveHeader } from '@/components/archive/ArchiveHeader';
 import { TagsPanel } from '@/components/archive/TagsPanel';
@@ -21,8 +21,8 @@ const ArchivePage = () => {
       className="min-h-screen bg-background"
       style={{ backgroundColor: 'hsl(var(--background))' }}
     >
-      {/* Optimized container width */}
-      <div className="max-w-6xl mx-auto px-6 lg:px-8 py-8">
+      {/* Expanded container width to properly fit 4 columns with margins */}
+      <div className="max-w-7xl mx-auto px-6 lg:px-8 py-8">
         <ArchiveHeader
           searchQuery={filterState.searchQuery}
           onSearchChange={setSearchQuery}

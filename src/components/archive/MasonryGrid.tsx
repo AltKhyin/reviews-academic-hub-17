@@ -1,3 +1,4 @@
+
 // ABOUTME: Pinterest-style masonry grid with dynamic heights and smooth transitions
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { IssueCard } from './IssueCard';
@@ -45,8 +46,17 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
     
     const containerWidth = containerRef.current.offsetWidth;
     const cardWithGap = baseWidth + gap;
+    
+    // Calculate how many columns can fit
     const maxColumns = Math.floor((containerWidth + gap) / cardWithGap);
-    const newColumns = Math.max(1, Math.min(5, maxColumns));
+    
+    // Default to 4 columns, but adjust based on available space
+    let newColumns = 4;
+    if (maxColumns < 4) {
+      newColumns = Math.max(1, maxColumns);
+    } else if (maxColumns >= 5) {
+      newColumns = 5;
+    }
     
     if (newColumns !== columns) {
       setColumns(newColumns);
@@ -112,41 +122,49 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
 
   if (!issues.length) return null;
 
+  // Calculate the total width needed for the grid
+  const gridWidth = columns * baseWidth + (columns - 1) * gap;
+
   return (
-    <div 
-      ref={containerRef}
-      className="relative w-full"
-      style={{ height: containerHeight }}
-    >
-      {issues.map((issue, index) => {
-        const layout = layouts.find(l => l.id === issue.id);
-        if (!layout) return null;
+    <div className="flex justify-center w-full">
+      <div 
+        ref={containerRef}
+        className="relative"
+        style={{ 
+          height: containerHeight,
+          width: gridWidth
+        }}
+      >
+        {issues.map((issue, index) => {
+          const layout = layouts.find(l => l.id === issue.id);
+          if (!layout) return null;
 
-        const left = layout.column * (baseWidth + gap);
+          const left = layout.column * (baseWidth + gap);
 
-        return (
-          <div
-            key={issue.id}
-            className={`absolute transition-all duration-500 ease-out ${
-              layout.transition ? 'opacity-100' : 'opacity-0'
-            }`}
-            style={{
-              left: `${left}px`,
-              top: `${layout.top}px`,
-              width: `${baseWidth}px`,
-              height: `${layout.height}px`,
-              transform: 'translateZ(0)', // Hardware acceleration
-            }}
-          >
-            <IssueCard
-              issue={issue}
-              onClick={onIssueClick}
-              tagMatches={issue.tagMatches}
-              height={layout.height}
-            />
-          </div>
-        );
-      })}
+          return (
+            <div
+              key={issue.id}
+              className={`absolute transition-all duration-500 ease-out ${
+                layout.transition ? 'opacity-100' : 'opacity-0'
+              }`}
+              style={{
+                left: `${left}px`,
+                top: `${layout.top}px`,
+                width: `${baseWidth}px`,
+                height: `${layout.height}px`,
+                transform: 'translateZ(0)', // Hardware acceleration
+              }}
+            >
+              <IssueCard
+                issue={issue}
+                onClick={onIssueClick}
+                tagMatches={issue.tagMatches}
+                height={layout.height}
+              />
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };
