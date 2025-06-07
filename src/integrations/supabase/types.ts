@@ -488,6 +488,7 @@ export type Database = {
         Row: {
           article_pdf_url: string | null
           authors: string | null
+          backend_tags: Json | null
           cover_image_url: string | null
           created_at: string
           description: string | null
@@ -515,6 +516,7 @@ export type Database = {
         Insert: {
           article_pdf_url?: string | null
           authors?: string | null
+          backend_tags?: Json | null
           cover_image_url?: string | null
           created_at?: string
           description?: string | null
@@ -542,6 +544,7 @@ export type Database = {
         Update: {
           article_pdf_url?: string | null
           authors?: string | null
+          backend_tags?: Json | null
           cover_image_url?: string | null
           created_at?: string
           description?: string | null
@@ -1154,6 +1157,36 @@ export type Database = {
         }
         Relationships: []
       }
+      tag_configurations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          tag_data: Json
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          tag_data?: Json
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          tag_data?: Json
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
       tags: {
         Row: {
           created_at: string
@@ -1430,6 +1463,10 @@ export type Database = {
       _ltree_gist_options: {
         Args: { "": unknown }
         Returns: undefined
+      }
+      get_active_tag_config: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
       }
       get_current_user_id: {
         Args: Record<PropertyKey, never>

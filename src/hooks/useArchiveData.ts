@@ -27,94 +27,21 @@ export const useArchiveData = () => {
     }
   });
 
-  // Temporary hardcoded tag configuration until migration is run
-  const tagConfig: TagHierarchy = {
-    "Cardiologia": [
-      "Dislipidemia",
-      "Estatinas",
-      "Hipertensão",
-      "Risco cardiovascular"
-    ],
-    "Endocrinologia": [
-      "Diabetes tipo 2",
-      "Remissão",
-      "Controle glicêmico",
-      "Obesidade"
-    ],
-    "Fisioterapia": [],
-    "Fonoaudiologia": [],
-    "Psicologia": [
-      "Depressão",
-      "Psicoterapia",
-      "Suporte psicossocial"
-    ],
-    "Psiquiatria": [
-      "Depressão",
-      "Psicoterapia",
-      "Suporte psicossocial"
-    ],
-    "Saúde mental": [
-      "Escuta ativa",
-      "Psicoeducação"
-    ],
-    "Nutrição": [
-      "Educação alimentar",
-      "Nutrição clínica",
-      "Suplementação"
-    ],
-    "Atividade física": [
-      "Adesão"
-    ],
-    "Clínica médica": [
-      "Nefrologia",
-      "Gastroenterologia",
-      "Reumatologia",
-      "Infectologia",
-      "Pneumologia"
-    ],
-    "Geriatria": [],
-    "Pediatria": [
-      "Nutrição infantil",
-      "Prevenção pediátrica",
-      "Rastreios pediátricos"
-    ],
-    "Medicina de família": [
-      "Atenção primária",
-      "Seguimento longitudinal"
-    ],
-    "Decisão compartilhada": [
-      "Comunicação clínica"
-    ],
-    "Saúde pública": [
-      "Políticas públicas",
-      "Programas populacionais",
-      "Ações coletivas",
-      "Vacinação"
-    ],
-    "Farmacologia": [
-      "Desprescrição"
-    ],
-    "Enfermagem": [],
-    "Real world evidence": [
-      "Estudos pragmáticos",
-      "Aplicação clínica",
-      "Barreiras de implementação"
-    ],
-    "Bioestatística": [],
-    "Inferência causal": [],
-    "Rastreio clínico": [],
-    "Testes diagnósticos": [],
-    "Odontologia": [],
-    "Educação em saúde": [],
-    "Hospital": [],
-    "Cirurgia": [
-      "Ortopedia",
-      "Urologia",
-      "Cirurgia geral",
-      "Indicação cirúrgica",
-      "Otorrinologia"
-    ]
-  };
+  // Fetch active tag configuration from database
+  const { data: tagConfigData } = useQuery({
+    queryKey: ['active-tag-config'],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_active_tag_config');
+      if (error) {
+        console.error('Error fetching tag config:', error);
+        return null;
+      }
+      return data as TagHierarchy;
+    }
+  });
+
+  // Use fetched tag config or fallback to empty object
+  const tagConfig: TagHierarchy = tagConfigData || {};
 
   // Get all available tags from the configuration
   const allTags = useMemo(() => {
@@ -126,7 +53,7 @@ export const useArchiveData = () => {
       }
     });
     return [...new Set(tags)];
-  }, []);
+  }, [tagConfig]);
 
   // Calculate tag matches for each issue
   const calculateTagMatches = (issue: ArchiveIssue, selectedTags: string[]): number => {
@@ -145,7 +72,10 @@ export const useArchiveData = () => {
     // Check backend tags (hierarchical JSON)
     if (issue.backend_tags) {
       try {
-        const backendTags = JSON.parse(issue.backend_tags) as TagHierarchy;
+        const backendTags = typeof issue.backend_tags === 'string' 
+          ? JSON.parse(issue.backend_tags) 
+          : issue.backend_tags as TagHierarchy;
+        
         selectedTags.forEach(tag => {
           // Check if tag is a category
           if (backendTags[tag]) {
@@ -241,13 +171,13 @@ export const useArchiveData = () => {
     }
 
     return issuesWithMatches;
-  }, [issues, filterState]);
+  }, [issues, filterState, tagConfig]);
 
   // Update contextual tags when selected tags change
   useEffect(() => {
     const contextual = generateContextualTags(filterState.selectedTags);
     setFilterState(prev => ({ ...prev, contextualTags: contextual }));
-  }, [filterState.selectedTags]);
+  }, [filterState.selectedTags, tagConfig]);
 
   const selectTag = (tag: string) => {
     setFilterState(prev => {

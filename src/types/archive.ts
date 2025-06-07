@@ -20,7 +20,7 @@ export interface ArchiveIssue {
   authors?: string;
   description?: string;
   specialty: string; // User-facing tags
-  backend_tags?: string; // JSON string of TagHierarchy
+  backend_tags?: string | TagHierarchy; // JSON string or parsed object of TagHierarchy
   published_at: string;
   created_at: string;
   score?: number;

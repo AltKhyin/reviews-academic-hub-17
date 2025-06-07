@@ -1,117 +1,62 @@
 
 // Hook for managing tag configuration in the admin panel
 import { useState } from 'react';
-import { TagHierarchy } from '@/types/archive';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { TagHierarchy, TagConfiguration } from '@/types/archive';
 
 export const useTagConfiguration = () => {
   const [isEditing, setIsEditing] = useState(false);
+  const queryClient = useQueryClient();
 
-  // Temporary hardcoded active configuration until migration is run
-  const activeConfig = {
-    id: 'temp-config',
-    tag_data: {
-      "Cardiologia": [
-        "Dislipidemia",
-        "Estatinas",
-        "Hipertensão",
-        "Risco cardiovascular"
-      ],
-      "Endocrinologia": [
-        "Diabetes tipo 2",
-        "Remissão",
-        "Controle glicêmico",
-        "Obesidade"
-      ],
-      "Fisioterapia": [],
-      "Fonoaudiologia": [],
-      "Psicologia": [
-        "Depressão",
-        "Psicoterapia",
-        "Suporte psicossocial"
-      ],
-      "Psiquiatria": [
-        "Depressão",
-        "Psicoterapia",
-        "Suporte psicossocial"
-      ],
-      "Saúde mental": [
-        "Escuta ativa",
-        "Psicoeducação"
-      ],
-      "Nutrição": [
-        "Educação alimentar",
-        "Nutrição clínica",
-        "Suplementação"
-      ],
-      "Atividade física": [
-        "Adesão"
-      ],
-      "Clínica médica": [
-        "Nefrologia",
-        "Gastroenterologia",
-        "Reumatologia",
-        "Infectologia",
-        "Pneumologia"
-      ],
-      "Geriatria": [],
-      "Pediatria": [
-        "Nutrição infantil",
-        "Prevenção pediátrica",
-        "Rastreios pediátricos"
-      ],
-      "Medicina de família": [
-        "Atenção primária",
-        "Seguimento longitudinal"
-      ],
-      "Decisão compartilhada": [
-        "Comunicação clínica"
-      ],
-      "Saúde pública": [
-        "Políticas públicas",
-        "Programas populacionais",
-        "Ações coletivas",
-        "Vacinação"
-      ],
-      "Farmacologia": [
-        "Desprescrição"
-      ],
-      "Enfermagem": [],
-      "Real world evidence": [
-        "Estudos pragmáticos",
-        "Aplicação clínica",
-        "Barreiras de implementação"
-      ],
-      "Bioestatística": [],
-      "Inferência causal": [],
-      "Rastreio clínico": [],
-      "Testes diagnósticos": [],
-      "Odontologia": [],
-      "Educação em saúde": [],
-      "Hospital": [],
-      "Cirurgia": [
-        "Ortopedia",
-        "Urologia",
-        "Cirurgia geral",
-        "Indicação cirúrgica",
-        "Otorrinologia"
-      ]
-    } as TagHierarchy,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    created_by: 'temp-user',
-    is_active: true,
-    version: 1
-  };
+  // Fetch all tag configurations
+  const { data: configurations = [], isLoading } = useQuery({
+    queryKey: ['tag-configurations'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('tag_configurations')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-  // Mock function for creating configuration (will be replaced after migration)
-  const createConfiguration = {
-    mutateAsync: async (tagData: TagHierarchy) => {
-      console.log('Tag configuration would be saved:', tagData);
-      // Temporary implementation - just log the data
-      return Promise.resolve(tagData);
+      if (error) throw error;
+      return data as TagConfiguration[];
+    }
+  });
+
+  // Get active configuration
+  const activeConfig = configurations.find(config => config.is_active) || null;
+
+  // Create new configuration mutation
+  const createConfiguration = useMutation({
+    mutationFn: async (tagData: TagHierarchy) => {
+      // First, deactivate all existing configurations
+      const { error: deactivateError } = await supabase
+        .from('tag_configurations')
+        .update({ is_active: false })
+        .eq('is_active', true);
+
+      if (deactivateError) throw deactivateError;
+
+      // Create new active configuration
+      const { data, error } = await supabase
+        .from('tag_configurations')
+        .insert({
+          tag_data: tagData,
+          is_active: true,
+          version: (activeConfig?.version || 0) + 1
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
     },
-    isPending: false
-  };
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tag-configurations'] });
+      queryClient.invalidateQueries({ queryKey: ['active-tag-config'] });
+      setIsEditing(false);
+    }
+  });
 
   // Validate JSON structure
   const validateTagData = (jsonString: string): { valid: boolean; data?: TagHierarchy; error?: string } => {
@@ -164,9 +109,9 @@ export const useTagConfiguration = () => {
   };
 
   return {
-    configurations: [activeConfig],
+    configurations,
     activeConfig,
-    isLoading: false,
+    isLoading,
     isEditing,
     setIsEditing,
     createConfiguration,
