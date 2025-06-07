@@ -1,7 +1,7 @@
-
 // Enhanced results grid component with improved visual design and cover support
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Search } from 'lucide-react';
 import { IssueCard } from './IssueCard';
 import { ArchiveIssue } from '@/types/archive';
 
