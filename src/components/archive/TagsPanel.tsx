@@ -1,5 +1,5 @@
 
-// Enhanced interactive tags panel with green color scheme and no background box
+// Enhanced interactive tags panel with refined green styling for recommendations
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { TagHierarchy } from '@/types/archive';
@@ -43,9 +43,9 @@ export const TagsPanel: React.FC<TagsPanelProps> = ({
   }
 
   return (
-    <div className="mb-10">
+    <div className="mb-8">
       {/* Tags without background container */}
-      <div className="flex flex-wrap gap-3 mb-6">
+      <div className="flex flex-wrap gap-2 mb-6">
         {displayTags.map((tag) => {
           const selected = isTagSelected(tag);
           const contextual = isContextualTag(tag);
@@ -55,13 +55,13 @@ export const TagsPanel: React.FC<TagsPanelProps> = ({
               key={tag}
               variant="outline"
               className={`
-                cursor-pointer transition-all duration-200 text-sm py-2 px-4 font-medium
-                border-2 hover:shadow-sm
+                cursor-pointer transition-all duration-200 text-sm py-1.5 px-3 font-medium
+                border-2 hover:shadow-sm rounded-full
                 ${selected 
                   ? 'bg-green-500/90 text-white border-green-500 hover:bg-green-600 shadow-md' 
                   : contextual
-                    ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100 hover:border-green-300'
-                    : 'bg-transparent text-muted-foreground border-border hover:bg-muted/20 hover:text-foreground hover:border-muted'
+                    ? 'bg-transparent text-green-600 border-green-500 hover:bg-green-50/5 hover:text-green-500'
+                    : 'bg-transparent text-muted-foreground border-border hover:bg-muted/10 hover:text-foreground hover:border-muted'
                 }
               `}
               onClick={() => onTagSelect(tag)}
