@@ -1,5 +1,5 @@
 
-// Enhanced interactive tags panel with green color scheme and no background box
+// Enhanced interactive tags panel with green outline for recommended tags
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { TagHierarchy } from '@/types/archive';
@@ -60,7 +60,7 @@ export const TagsPanel: React.FC<TagsPanelProps> = ({
                 ${selected 
                   ? 'bg-green-500/90 text-white border-green-500 hover:bg-green-600 shadow-md' 
                   : contextual
-                    ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100 hover:border-green-300'
+                    ? 'bg-transparent text-white border-green-500 hover:bg-green-500/10'
                     : 'bg-transparent text-muted-foreground border-border hover:bg-muted/20 hover:text-foreground hover:border-muted'
                 }
               `}

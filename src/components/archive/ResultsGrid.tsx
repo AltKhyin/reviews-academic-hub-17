@@ -1,8 +1,9 @@
 
-// Enhanced results grid with optimized spacing and visual hierarchy
+// Enhanced results grid with integrated discrete search and optimized spacing
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { IssueCard } from './IssueCard';
 import { ArchiveIssue } from '@/types/archive';
 
@@ -10,12 +11,14 @@ interface ResultsGridProps {
   issues: Array<ArchiveIssue & { tagMatches?: number }>;
   isLoading: boolean;
   searchQuery: string;
+  onSearchChange: (query: string) => void;
 }
 
 export const ResultsGrid: React.FC<ResultsGridProps> = ({
   issues,
   isLoading,
-  searchQuery
+  searchQuery,
+  onSearchChange
 }) => {
   const navigate = useNavigate();
 
@@ -29,8 +32,8 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({
         <div className="animate-pulse">
           <div className="h-4 bg-muted/30 rounded w-48"></div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-8">
-          {Array.from({ length: 10 }).map((_, index) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {Array.from({ length: 8 }).map((_, index) => (
             <div 
               key={index}
               className="bg-card border border-border rounded-lg overflow-hidden animate-pulse"
@@ -78,7 +81,7 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({
 
   return (
     <div className="space-y-8">
-      {/* Results header with improved typography */}
+      {/* Results header with integrated discrete search */}
       <div className="flex justify-between items-center border-b border-border pb-4">
         <div className="text-sm text-muted-foreground">
           <span className="font-semibold text-foreground text-lg">{issues.length}</span>
@@ -87,14 +90,21 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({
           </span>
         </div>
         
-        {/* Sort indicator for future enhancement */}
-        <div className="text-xs text-muted-foreground">
-          Ordenado por relevância
+        {/* Discrete search integration */}
+        <div className="relative w-80">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+          <Input
+            type="text"
+            placeholder="Buscar conteúdo..."
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            className="pl-10 h-9 bg-muted/20 border-muted text-foreground placeholder:text-muted-foreground focus:border-green-500 focus:ring-1 focus:ring-green-500/20 text-sm rounded-full"
+          />
         </div>
       </div>
       
-      {/* Enhanced grid with better responsive breakpoints */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-8">
+      {/* Enhanced grid with tighter spacing */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {issues.map((issue) => (
           <IssueCard
             key={issue.id}

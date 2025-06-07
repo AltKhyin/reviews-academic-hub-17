@@ -1,5 +1,5 @@
 
-// Enhanced archive page with refined composition and visual hierarchy
+// Centralized archive page with optimized layout and spacing
 import React from 'react';
 import { ArchiveHeader } from '@/components/archive/ArchiveHeader';
 import { TagsPanel } from '@/components/archive/TagsPanel';
@@ -21,8 +21,8 @@ const ArchivePage = () => {
       className="min-h-screen bg-background"
       style={{ backgroundColor: 'hsl(var(--background))' }}
     >
-      {/* Enhanced container with better spacing */}
-      <div className="max-w-[1600px] mx-auto px-6 lg:px-8 py-8">
+      {/* Centralized container with reduced width */}
+      <div className="max-w-5xl mx-auto px-6 lg:px-8 py-8">
         <ArchiveHeader
           searchQuery={filterState.searchQuery}
           onSearchChange={setSearchQuery}
@@ -39,6 +39,7 @@ const ArchivePage = () => {
           issues={issues}
           isLoading={isLoading}
           searchQuery={filterState.searchQuery}
+          onSearchChange={setSearchQuery}
         />
       </div>
     </div>
