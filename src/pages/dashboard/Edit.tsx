@@ -1,7 +1,5 @@
 
-// ABOUTME: Admin panel with tabs for managing various system configurations
-// Includes layout customization for homepage sections
-
+// Updated Edit page with Tags tab
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,8 +10,9 @@ import { IssuesManagementPanel } from '@/components/admin/IssuesManagementPanel'
 import { CommentReportsPanel } from '@/components/dashboard/CommentReportsPanel';
 import { ReviewerCommentsManager } from '@/components/admin/ReviewerCommentsManager';
 import { LayoutCustomizationPanel } from '@/components/admin/LayoutCustomizationPanel';
+import { TagManagementPanel } from '@/components/admin/TagManagementPanel';
 import HomepageSectionsManager from '@/components/dashboard/HomepageSectionsManager';
-import { Settings, BarChart3, Users, MessageSquare, Crown, Layout, FileText, Edit, Palette } from 'lucide-react';
+import { Settings, BarChart3, Users, MessageSquare, Crown, Layout, FileText, Edit, Palette, Tags } from 'lucide-react';
 
 const EditPage = () => {
   const { isAdmin, isEditor, isLoading, user, profile } = useAuth();
@@ -77,10 +76,14 @@ const EditPage = () => {
       </div>
       
       <Tabs defaultValue="issues" className="w-full">
-        <TabsList className="grid w-full grid-cols-9" style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
+        <TabsList className="grid w-full grid-cols-10" style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
           <TabsTrigger value="issues" className="flex items-center gap-2">
             <FileText className="w-4 h-4" />
             Issues
+          </TabsTrigger>
+          <TabsTrigger value="tags" className="flex items-center gap-2">
+            <Tags className="w-4 h-4" />
+            Tags
           </TabsTrigger>
           <TabsTrigger value="sections" className="flex items-center gap-2">
             <Layout className="w-4 h-4" />
@@ -120,6 +123,10 @@ const EditPage = () => {
         
         <TabsContent value="issues">
           <IssuesManagementPanel />
+        </TabsContent>
+        
+        <TabsContent value="tags">
+          <TagManagementPanel />
         </TabsContent>
         
         <TabsContent value="sections">

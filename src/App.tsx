@@ -1,4 +1,5 @@
 
+// Updated App.tsx with Archive route
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -13,6 +14,7 @@ import AuthPage from "./pages/auth/AuthPage";
 import Dashboard from "./pages/dashboard/Dashboard";
 import ArticleViewer from "./pages/dashboard/ArticleViewer";
 import SearchPage from "./pages/dashboard/SearchPage";
+import ArchivePage from "./pages/dashboard/ArchivePage";
 import Community from "./pages/dashboard/Community";
 import Profile from "./pages/dashboard/Profile";
 import Edit from "./pages/dashboard/Edit";
@@ -67,6 +69,7 @@ const App = () => {
               <Route path="/" element={<DashboardLayout />}>
                 <Route path="homepage" element={<Dashboard />} />
                 <Route path="article/:id" element={<ArticleViewer />} />
+                <Route path="acervo" element={<ArchivePage />} />
                 <Route path="search" element={<SearchPage />} />
                 <Route path="community" element={<Community />} />
                 <Route path="articles" element={<Dashboard />} />

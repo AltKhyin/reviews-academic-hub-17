@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -12,7 +11,8 @@ import {
   LogOut,
   ChevronRight,
   ChevronLeft,
-  MessageSquare
+  MessageSquare,
+  Archive
 } from 'lucide-react';
 
 export const Sidebar = () => {
@@ -36,10 +36,17 @@ export const Sidebar = () => {
       active: isActive('/homepage')
     },
     {
+      name: 'Acervo',
+      icon: <Archive size={24} strokeWidth={1.5} className="w-6 h-6" />,
+      path: '/acervo',
+      active: isActive('/acervo')
+    },
+    {
       name: 'Procurar',
       icon: <Search size={24} strokeWidth={1.5} className="w-6 h-6" />,
       path: '/search',
-      active: isActive('/search')
+      active: isActive('/search'),
+      showToAdmin: true
     },
     {
       name: 'Comunidade',
