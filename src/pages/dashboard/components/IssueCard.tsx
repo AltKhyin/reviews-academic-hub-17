@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Issue } from '@/types/issue';
-import { getEditionDisplay } from '@/utils/editionFormatter';
 
 interface IssueCardProps {
   issue: Issue;
@@ -33,9 +32,9 @@ export const IssueCard: React.FC<IssueCardProps> = ({ issue, formatTags }) => {
           </span>
         </CardTitle>
         <CardDescription>{issue.description || 'Sem descrição'}</CardDescription>
-        {(issue.edition || issue.specialty) && (
+        {issue.specialty && (
           <div className="mt-2 text-xs">
-            <p className="text-muted-foreground">Edição: {getEditionDisplay(issue)}</p>
+            <p className="text-muted-foreground">Tags: {formatTags(issue.specialty)}</p>
           </div>
         )}
       </CardHeader>

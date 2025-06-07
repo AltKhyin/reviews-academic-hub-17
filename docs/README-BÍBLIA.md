@@ -561,21 +561,21 @@ get_review_with_blocks(review_id UUID) → JSONB
 
 ### Color System
 ```css
-/* Primary Brand Colors — Monochrome only */
---primary: 0 0% 100%;          /* White as default "accent" (for text/icons/buttons) */
---secondary: 0 0% 12%;         /* Card/side menu background (#1f1f1f) */
---background: 0 0% 7%;         /* Main background (#121212) */
---foreground: 0 0% 96%;        /* Primary text (#f5f5f5) */
+/* Primary Brand Colors */
+--primary: 217 91% 60%;      /* Blue accent */
+--secondary: 210 40% 98%;    /* Light background */
+--background: 0 0% 7%;       /* Dark (#121212) */
+--foreground: 0 0% 98%;      /* White text */
 
-/* Status Colors — Semantic only, used sparingly */
---success: 142 76% 36%;        /* Keep green for "online" indicators etc */
---warning: 38 92% 50%;         /* Reserved for alerts/tooltips if necessary */
---destructive: 0 84% 60%;      /* For delete/danger zones */
+/* Status Colors */
+--success: 142 76% 36%;      /* Green */
+--warning: 38 92% 50%;       /* Yellow */
+--destructive: 0 84% 60%;    /* Red */
 
-/* Interactive States — Grayscale transparency only */
---hover: rgba(255, 255, 255, 0.06);    /* Subtle highlight on hover */
---active: rgba(255, 255, 255, 0.12);   /* Slightly stronger for pressed state */
---disabled: rgba(255, 255, 255, 0.24); /* Muted elements */
+/* Interactive States */
+--hover: rgba(255,255,255,0.1);
+--active: rgba(255,255,255,0.2);
+--disabled: rgba(255,255,255,0.3);
 
 /* **NEW:** Editor-specific colors */
 --editor-bg: #121212;        /* Editor background */

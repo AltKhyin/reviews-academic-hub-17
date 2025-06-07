@@ -2,7 +2,6 @@
 import React from 'react';
 import { Issue } from '@/types/issue';
 import { Link } from 'react-router-dom';
-import { getEditionDisplay } from '@/utils/editionFormatter';
 
 interface HeroSectionProps {
   featuredIssue: Issue;
@@ -28,7 +27,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ featuredIssue }) => {
       <div className="relative h-full flex items-center px-12 z-10">
         <div className="max-w-2xl text-white">
           <span className="text-sm font-medium text-gray-300 bg-black/40 px-2 py-1 rounded">
-            {getEditionDisplay(featuredIssue)}
+            {featuredIssue.specialty || 'FEATURED'}
           </span>
           <h1 className="mt-4 text-5xl font-serif font-medium leading-tight">
             {featuredIssue.title}

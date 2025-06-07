@@ -8,8 +8,7 @@ interface FeaturedArticleProps {
     title: string;
     description: string;
     image: string;
-    edition?: string;
-    category?: string;
+    category: string;
   };
 }
 
@@ -28,7 +27,7 @@ const FeaturedArticle = ({ article }: FeaturedArticleProps) => {
       <div className="relative h-full flex items-center px-12 z-10">
         <div className="max-w-2xl text-white">
           <span className="text-sm font-medium text-gray-300 bg-black/40 px-2 py-1 rounded">
-            {article.edition || article.category}
+            {article.category}
           </span>
           <h1 className="mt-4 text-5xl font-serif font-medium leading-tight">
             {article.title}
