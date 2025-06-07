@@ -1,5 +1,5 @@
 
-// Main archive page component
+// Main archive page component with enhanced visual design
 import React from 'react';
 import { ArchiveHeader } from '@/components/archive/ArchiveHeader';
 import { TagsPanel } from '@/components/archive/TagsPanel';
@@ -18,10 +18,10 @@ const ArchivePage = () => {
 
   return (
     <div 
-      className="min-h-screen p-6 lg:p-8"
-      style={{ backgroundColor: '#121212' }}
+      className="min-h-screen bg-background"
+      style={{ backgroundColor: 'hsl(var(--background))' }}
     >
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8 py-8">
         <ArchiveHeader
           searchQuery={filterState.searchQuery}
           onSearchChange={setSearchQuery}

@@ -1,5 +1,5 @@
 
-// Interactive tags panel for the archive page
+// Enhanced interactive tags panel with improved visual design
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { TagHierarchy } from '@/types/archive';
@@ -38,47 +38,55 @@ export const TagsPanel: React.FC<TagsPanelProps> = ({
   const isTagSelected = (tag: string) => selectedTags.includes(tag);
   const isContextualTag = (tag: string) => contextualTags.includes(tag);
 
+  if (displayTags.length === 0) {
+    return null;
+  }
+
   return (
-    <div className="mb-8">
-      <div className="flex flex-wrap gap-2">
-        {displayTags.map((tag) => {
-          const selected = isTagSelected(tag);
-          const contextual = isContextualTag(tag);
-          
-          return (
-            <Badge
-              key={tag}
-              variant={selected ? "default" : "outline"}
-              className={`
-                cursor-pointer transition-all duration-200 text-sm py-2 px-4
-                ${selected 
-                  ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700' 
-                  : contextual
-                    ? 'bg-gray-700 text-gray-300 border-gray-600 hover:bg-gray-600'
-                    : 'bg-transparent text-gray-400 border-gray-600 hover:bg-gray-800 hover:text-white'
-                }
-              `}
-              onClick={() => onTagSelect(tag)}
-            >
-              {tag}
-            </Badge>
-          );
-        })}
-      </div>
-      
-      {selectedTags.length > 0 && (
-        <div className="mt-4 text-sm text-gray-400">
-          {selectedTags.length === 1 
-            ? `Ordenando por relevância para "${selectedTags[0]}"`
-            : `Ordenando por relevância para ${selectedTags.length} tags selecionadas`
-          }
-          {contextualTags.length > 0 && (
-            <span className="ml-2">
-              • {contextualTags.length} tags relacionadas sugeridas
-            </span>
-          )}
+    <div className="mb-10">
+      <div className="bg-card border border-border rounded-lg p-6">
+        <div className="flex flex-wrap gap-3">
+          {displayTags.map((tag) => {
+            const selected = isTagSelected(tag);
+            const contextual = isContextualTag(tag);
+            
+            return (
+              <Badge
+                key={tag}
+                variant={selected ? "default" : "outline"}
+                className={`
+                  cursor-pointer transition-all duration-200 text-sm py-2 px-4 font-medium
+                  ${selected 
+                    ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
+                    : contextual
+                      ? 'bg-muted/50 text-muted-foreground border-muted hover:bg-muted/70 hover:text-foreground'
+                      : 'bg-transparent text-muted-foreground border-border hover:bg-muted/30 hover:text-foreground hover:border-muted'
+                  }
+                `}
+                onClick={() => onTagSelect(tag)}
+              >
+                {tag}
+              </Badge>
+            );
+          })}
         </div>
-      )}
+        
+        {selectedTags.length > 0 && (
+          <div className="mt-6 pt-4 border-t border-border">
+            <div className="text-sm text-muted-foreground">
+              {selectedTags.length === 1 
+                ? `Filtrando por "${selectedTags[0]}"`
+                : `Filtrando por ${selectedTags.length} especialidades selecionadas`
+              }
+              {contextualTags.length > 0 && (
+                <span className="ml-3 text-muted-foreground/70">
+                  • {contextualTags.length} tags relacionadas sugeridas
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
