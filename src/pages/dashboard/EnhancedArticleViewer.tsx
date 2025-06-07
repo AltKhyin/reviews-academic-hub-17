@@ -1,4 +1,3 @@
-
 // ABOUTME: Enhanced article viewer with unified controls and structured sections
 // Implements the 4-section layout: Header, Review Content, Recommendations, Comments
 
@@ -22,6 +21,7 @@ import { ExternalLectures } from '@/components/article/ExternalLectures';
 import { ArticleComments } from '@/components/article/ArticleComments';
 import { ArticleActions } from '@/components/article/ArticleActions';
 import { EnhancedIssue } from '@/types/review';
+import { getEditionDisplay } from '@/utils/editionFormatter';
 import { cn } from '@/lib/utils';
 
 const EnhancedArticleViewer: React.FC = () => {
@@ -71,6 +71,7 @@ const EnhancedArticleViewer: React.FC = () => {
         description: data.description || '',
         authors: data.authors || '',
         specialty: data.specialty || '',
+        edition: data.edition || '',
         year: data.year ? parseInt(data.year) : undefined,
         population: data.population || '',
         review_type: data.review_type || 'native',
@@ -256,7 +257,7 @@ const EnhancedArticleViewer: React.FC = () => {
                   color: '#93c5fd'
                 }}
               >
-                {issue.specialty}
+                {getEditionDisplay(issue)}
               </Badge>
               {issue.year && (
                 <span className="flex items-center gap-1" style={{ color: '#d1d5db' }}>

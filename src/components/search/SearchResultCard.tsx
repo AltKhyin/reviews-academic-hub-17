@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Issue } from '@/types/issue';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, User, FileText, ExternalLink, Download } from 'lucide-react';
+import { getEditionDisplay } from '@/utils/editionFormatter';
 
 interface SearchResultCardProps {
   article: Issue;
@@ -36,16 +37,16 @@ export const SearchResultCard: React.FC<SearchResultCardProps> = ({ article }) =
     }
   };
 
-  const getSpecialtyColor = (specialty: string) => {
+  const getEditionColor = (edition: string) => {
     const colors = {
-      'Cardiologia': 'bg-red-500/20 text-red-300 border-red-500/30',
-      'Neurologia': 'bg-purple-500/20 text-purple-300 border-purple-500/30',
-      'Oncologia': 'bg-orange-500/20 text-orange-300 border-orange-500/30',
-      'Pediatria': 'bg-green-500/20 text-green-300 border-green-500/30',
-      'Psiquiatria': 'bg-blue-500/20 text-blue-300 border-blue-500/30',
-      'Nutrição': 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
+      'Edição #001': 'bg-red-500/20 text-red-300 border-red-500/30',
+      'Edição #002': 'bg-purple-500/20 text-purple-300 border-purple-500/30',
+      'Edição #003': 'bg-orange-500/20 text-orange-300 border-orange-500/30',
+      'Edição #004': 'bg-green-500/20 text-green-300 border-green-500/30',
+      'Edição #005': 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+      'Edição #006': 'bg-yellow-500/20 text-yellow-300 border-yellow-500/30',
     };
-    return colors[specialty as keyof typeof colors] || 'bg-gray-500/20 text-gray-300 border-gray-500/30';
+    return colors[edition as keyof typeof colors] || 'bg-gray-500/20 text-gray-300 border-gray-500/30';
   };
 
   return (
@@ -118,18 +119,15 @@ export const SearchResultCard: React.FC<SearchResultCardProps> = ({ article }) =
               )}
             </div>
 
-            {/* Specialty Tags */}
-            {article.specialty && (
+            {/* Edition Display */}
+            {(article.edition || article.specialty) && (
               <div className="flex flex-wrap gap-2">
-                {article.specialty.split(', ').map((tag, index) => (
-                  <Badge 
-                    key={index} 
-                    variant="outline" 
-                    className={`text-xs ${getSpecialtyColor(tag.trim())}`}
-                  >
-                    {tag.trim()}
-                  </Badge>
-                ))}
+                <Badge 
+                  variant="outline" 
+                  className={`text-xs ${getEditionColor(getEditionDisplay(article))}`}
+                >
+                  {getEditionDisplay(article)}
+                </Badge>
               </div>
             )}
 

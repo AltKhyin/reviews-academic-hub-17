@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -59,13 +58,40 @@ export const IssueForm: React.FC<IssueFormProps> = ({ form, onSubmit, onCancel, 
                 </FormItem>
               )}
             />
+          </div>
+        </div>
+
+        {/* Informações da Revisão */}
+        <div>
+          <h3 className="text-lg font-medium mb-4">Informações da Revisão</h3>
+          <p className="text-sm text-muted-foreground mb-4">Metadados e informações básicas da revisão</p>
+          <div className="space-y-4">
+            <FormField
+              control={form.control}
+              name="edition"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Edição</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="Ex: [tag:Edição #015] ou Edição #015" 
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Número ou identificação da edição que será exibida aos usuários
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             
             <FormField
               control={form.control}
               name="tags"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Tags</FormLabel>
+                  <FormLabel>Tags (Metadados de Backend)</FormLabel>
                   <FormControl>
                     <Input 
                       placeholder="[tag:hematologia][tag:medicina]" 
@@ -73,7 +99,7 @@ export const IssueForm: React.FC<IssueFormProps> = ({ form, onSubmit, onCancel, 
                     />
                   </FormControl>
                   <FormDescription>
-                    Use o formato [tag:nome] para cada tag
+                    Tags para indexação e recomendações - não exibidas aos usuários
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

@@ -6,6 +6,7 @@ export const issueFormSchema = z.object({
   title: z.string().min(1, "O título é obrigatório"),
   description: z.string().optional(),
   tags: z.string().optional(),
+  edition: z.string().optional(),
   pdf_url: z.string().optional(),
   article_pdf_url: z.string().optional(),
   cover_image_url: z.string().optional(),
@@ -28,6 +29,7 @@ export type IssueFormValues = {
   title: string;
   description?: string;
   tags?: string;
+  edition?: string;
   pdf_url?: string;
   article_pdf_url?: string;
   cover_image_url?: string;

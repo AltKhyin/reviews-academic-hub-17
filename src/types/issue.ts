@@ -2,6 +2,7 @@ export interface Issue {
   id: string;
   title: string;
   specialty: string;
+  edition?: string | null;
   description?: string | null;
   pdf_url: string;
   article_pdf_url?: string | null;
@@ -34,6 +35,7 @@ export type FormIssueValues = {
   title: string;
   description?: string;
   tags?: string;
+  edition?: string;
   pdf_url: string;
   article_pdf_url?: string;
   cover_image_url?: string;
