@@ -1,5 +1,5 @@
 
-// Enhanced interactive tags panel with improved visual design
+// Enhanced interactive tags panel with green color scheme and no background box
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { TagHierarchy } from '@/types/archive';
@@ -44,49 +44,50 @@ export const TagsPanel: React.FC<TagsPanelProps> = ({
 
   return (
     <div className="mb-10">
-      <div className="bg-card border border-border rounded-lg p-6">
-        <div className="flex flex-wrap gap-3">
-          {displayTags.map((tag) => {
-            const selected = isTagSelected(tag);
-            const contextual = isContextualTag(tag);
-            
-            return (
-              <Badge
-                key={tag}
-                variant={selected ? "default" : "outline"}
-                className={`
-                  cursor-pointer transition-all duration-200 text-sm py-2 px-4 font-medium
-                  ${selected 
-                    ? 'bg-primary text-primary-foreground border-primary hover:bg-primary/90' 
-                    : contextual
-                      ? 'bg-muted/50 text-muted-foreground border-muted hover:bg-muted/70 hover:text-foreground'
-                      : 'bg-transparent text-muted-foreground border-border hover:bg-muted/30 hover:text-foreground hover:border-muted'
-                  }
-                `}
-                onClick={() => onTagSelect(tag)}
-              >
-                {tag}
-              </Badge>
-            );
-          })}
-        </div>
-        
-        {selectedTags.length > 0 && (
-          <div className="mt-6 pt-4 border-t border-border">
-            <div className="text-sm text-muted-foreground">
-              {selectedTags.length === 1 
-                ? `Filtrando por "${selectedTags[0]}"`
-                : `Filtrando por ${selectedTags.length} especialidades selecionadas`
-              }
-              {contextualTags.length > 0 && (
-                <span className="ml-3 text-muted-foreground/70">
-                  • {contextualTags.length} tags relacionadas sugeridas
-                </span>
-              )}
-            </div>
-          </div>
-        )}
+      {/* Tags without background container */}
+      <div className="flex flex-wrap gap-3 mb-6">
+        {displayTags.map((tag) => {
+          const selected = isTagSelected(tag);
+          const contextual = isContextualTag(tag);
+          
+          return (
+            <Badge
+              key={tag}
+              variant="outline"
+              className={`
+                cursor-pointer transition-all duration-200 text-sm py-2 px-4 font-medium
+                border-2 hover:shadow-sm
+                ${selected 
+                  ? 'bg-green-500/90 text-white border-green-500 hover:bg-green-600 shadow-md' 
+                  : contextual
+                    ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100 hover:border-green-300'
+                    : 'bg-transparent text-muted-foreground border-border hover:bg-muted/20 hover:text-foreground hover:border-muted'
+                }
+              `}
+              onClick={() => onTagSelect(tag)}
+            >
+              {tag}
+            </Badge>
+          );
+        })}
       </div>
+      
+      {/* Status indicator with subtle styling */}
+      {selectedTags.length > 0 && (
+        <div className="border-l-2 border-green-500 pl-4 py-2">
+          <div className="text-sm text-foreground font-medium">
+            {selectedTags.length === 1 
+              ? `Filtrando por "${selectedTags[0]}"`
+              : `${selectedTags.length} especialidades selecionadas`
+            }
+            {contextualTags.length > 0 && (
+              <span className="ml-3 text-muted-foreground font-normal">
+                • {contextualTags.length} sugestões relacionadas
+              </span>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

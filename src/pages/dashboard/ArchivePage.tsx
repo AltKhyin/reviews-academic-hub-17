@@ -1,5 +1,5 @@
 
-// Main archive page component with enhanced visual design
+// Enhanced archive page with refined composition and visual hierarchy
 import React from 'react';
 import { ArchiveHeader } from '@/components/archive/ArchiveHeader';
 import { TagsPanel } from '@/components/archive/TagsPanel';
@@ -21,7 +21,8 @@ const ArchivePage = () => {
       className="min-h-screen bg-background"
       style={{ backgroundColor: 'hsl(var(--background))' }}
     >
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 py-8">
+      {/* Enhanced container with better spacing */}
+      <div className="max-w-[1600px] mx-auto px-6 lg:px-8 py-8">
         <ArchiveHeader
           searchQuery={filterState.searchQuery}
           onSearchChange={setSearchQuery}
