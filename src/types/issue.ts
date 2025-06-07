@@ -1,3 +1,4 @@
+
 export interface Issue {
   id: string;
   title: string;
@@ -20,6 +21,7 @@ export interface Issue {
   real_title_ptbr?: string | null;
   search_title?: string | null;
   search_description?: string | null;
+  backend_tags?: string | null; // Added for internal recommendation system
   
   // New fields for native review support
   review_type?: 'pdf' | 'native' | 'hybrid';
@@ -48,6 +50,7 @@ export type FormIssueValues = {
   design?: string;
   score?: number;
   population?: string;
+  backend_tags?: string; // Added for recommendation system
 };
 
 export interface UserProfile {

@@ -39,6 +39,7 @@ export const useIssueUpdate = (id?: string) => {
         design: values.design,
         score: values.score,
         population: values.population,
+        backend_tags: values.backend_tags, // Include backend_tags in update
         updated_at: new Date().toISOString()
       };
 

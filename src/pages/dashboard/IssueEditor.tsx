@@ -114,7 +114,8 @@ const IssueEditor = () => {
         year: '',
         design: '',
         score: 0,
-        population: ''
+        population: '',
+        backend_tags: '' // Initialize backend_tags for new issues
       });
     } else if (issue) {
       const formattedTags = issue.specialty ? 
@@ -143,7 +144,8 @@ const IssueEditor = () => {
         year: issue.year || '',
         design: issue.design || '',
         score: issue.score || 0,
-        population: issue.population || ''
+        population: issue.population || '',
+        backend_tags: issue.backend_tags || '' // Load backend_tags from database
       });
     }
   }, [issue, isNewIssue, setFormValues]);

@@ -1,10 +1,12 @@
 // ABOUTME: Search page with filters and results display
 // Now uses optimal max-width containers for better content centering
+// RESTRICTED: Admin access only for advanced search functionality
 
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { AuthGuard } from '@/components/auth/AuthGuard';
 import Logo from '@/components/common/Logo';
 import { SearchHeader } from '@/components/search/SearchHeader';
 import { SearchFilters } from '@/components/search/SearchFilters';
@@ -229,66 +231,74 @@ const SearchPage: React.FC = () => {
       );
 
   return (
-    <div className="flex flex-col min-h-screen" style={{ backgroundColor: '#121212' }}>
-      {/* Logo Header */}
-      <header className="flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-12 pb-6">
-        <Logo dark={false} size="2xlarge" />
-      </header>
-
-      {/* Main content wrapper - Centered with optimal max-width */}
-      <div className="flex-1 flex items-center justify-center mb-6">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Filters Section */}
-            <div className="lg:col-span-1">
-              <Card className="p-6" style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
-                <h3 className="font-medium text-lg mb-2 text-white">Filtros</h3>
-                <SearchFilters 
-                  filters={filters}
-                  onFilterChange={handleFilterChange}
-                  facetGroups={facetGroups}
-                  areaSearchText={areaSearchText}
-                  setAreaSearchText={setAreaSearchText}
-                  filteredAreaOptions={filteredAreaOptions}
-                />
-              </Card>
+    <AuthGuard requireAdmin={true}>
+      <div className="flex flex-col min-h-screen" style={{ backgroundColor: '#121212' }}>
+        {/* Logo Header */}
+        <header className="flex items-center justify-center px-4 sm:px-6 lg:px-8 pt-12 pb-6">
+          <div className="flex flex-col items-center space-y-2">
+            <Logo dark={false} size="2xlarge" />
+            <div className="text-center">
+              <h1 className="text-2xl font-bold text-foreground">Busca Avançada</h1>
+              <p className="text-sm text-warning">🔒 Acesso Restrito - Administradores</p>
             </div>
+          </div>
+        </header>
 
-            {/* Search and Results Section */}
-            <div className="lg:col-span-3">
-              {/* Search Header */}
-              <Card className="p-6 mb-6" style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
-                <SearchHeader 
-                  queryText={queryText}
-                  setQueryText={setQueryText}
-                  handleSubmitSearch={handleSubmitSearch}
-                  searchTags={searchTags}
-                  handleTagRemove={handleTagRemove}
-                  handleTagToggleExclude={handleTagToggleExclude}
+        {/* Main content wrapper - Centered with optimal max-width */}
+        <div className="flex-1 flex items-center justify-center mb-6">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              {/* Filters Section */}
+              <div className="lg:col-span-1">
+                <Card className="p-6" style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
+                  <h3 className="font-medium text-lg mb-2 text-white">Filtros</h3>
+                  <SearchFilters 
+                    filters={filters}
+                    onFilterChange={handleFilterChange}
+                    facetGroups={facetGroups}
+                    areaSearchText={areaSearchText}
+                    setAreaSearchText={setAreaSearchText}
+                    filteredAreaOptions={filteredAreaOptions}
+                  />
+                </Card>
+              </div>
+
+              {/* Search and Results Section */}
+              <div className="lg:col-span-3">
+                {/* Search Header */}
+                <Card className="p-6 mb-6" style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
+                  <SearchHeader 
+                    queryText={queryText}
+                    setQueryText={setQueryText}
+                    handleSubmitSearch={handleSubmitSearch}
+                    searchTags={searchTags}
+                    handleTagRemove={handleTagRemove}
+                    handleTagToggleExclude={handleTagToggleExclude}
+                    clearFilters={clearFilters}
+                    queryPreview={queryPreview}
+                  />
+                </Card>
+
+                {/* Results area */}
+                <SearchResults 
+                  isLoading={isLoading}
+                  error={error}
+                  searchResults={searchResults}
+                  refetch={refetch}
+                  sortBy={sortBy}
+                  setSortBy={setSortBy}
+                  currentPage={currentPage}
+                  setCurrentPage={setCurrentPage}
                   clearFilters={clearFilters}
-                  queryPreview={queryPreview}
+                  filters={filters}
+                  searchTags={searchTags}
                 />
-              </Card>
-
-              {/* Results area */}
-              <SearchResults 
-                isLoading={isLoading}
-                error={error}
-                searchResults={searchResults}
-                refetch={refetch}
-                sortBy={sortBy}
-                setSortBy={setSortBy}
-                currentPage={currentPage}
-                setCurrentPage={setCurrentPage}
-                clearFilters={clearFilters}
-                filters={filters}
-                searchTags={searchTags}
-              />
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </AuthGuard>
   );
 };
 

@@ -23,7 +23,8 @@ export const useIssueEditor = (id?: string) => {
     year: '',
     design: '',
     score: 0,
-    population: ''
+    population: '',
+    backend_tags: '' // Include backend_tags in initial state
   });
 
   const { isSubmitting, setIsSubmitting, updateIssue, deleteIssue } = useIssueUpdate(id);

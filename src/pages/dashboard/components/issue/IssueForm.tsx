@@ -250,6 +250,37 @@ export const IssueForm: React.FC<IssueFormProps> = ({
           </div>
         </div>
 
+        {/* Backend Administration Fields */}
+        <div>
+          <h3 className="text-lg font-medium mb-4 text-warning">
+            🔒 Administração Backend
+          </h3>
+          <div className="border border-warning/20 rounded-lg p-4 bg-warning/5">
+            <FormField
+              control={form.control}
+              name="backend_tags"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-warning">
+                    Backend Tags (Apenas Admin)
+                  </FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Tags internas para sistema de recomendação - separadas por vírgula"
+                      rows={2} 
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormDescription className="text-muted-foreground">
+                    ⚠️ Estas tags são apenas para uso interno do sistema de recomendação e nunca serão exibidas aos usuários
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+
         {/* File Upload Fields */}
         <div>
           <h3 className="text-lg font-medium mb-4">Arquivos</h3>
