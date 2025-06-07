@@ -171,6 +171,53 @@
     color: hsl(var(--card-foreground));
   }
 
+  /* Masonry Grid Optimizations */
+  .masonry-container {
+    contain: layout style;
+  }
+
+  .masonry-item {
+    contain: layout style paint;
+    will-change: transform, opacity;
+  }
+
+  /* Smooth transitions for masonry repositioning */
+  .masonry-item-enter {
+    opacity: 0;
+    transform: scale(0.8) translateY(20px);
+  }
+
+  .masonry-item-enter-active {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    transition: opacity 300ms ease-out, transform 300ms ease-out;
+  }
+
+  .masonry-item-exit {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+
+  .masonry-item-exit-active {
+    opacity: 0;
+    transform: scale(0.8) translateY(-20px);
+    transition: opacity 200ms ease-in, transform 200ms ease-in;
+  }
+
+  /* Enhanced text shadows for better readability */
+  .enhanced-text-shadow {
+    text-shadow: 
+      0 2px 8px rgba(0, 0, 0, 0.8),
+      0 1px 3px rgba(0, 0, 0, 0.9),
+      0 0 1px rgba(0, 0, 0, 1);
+  }
+
+  .subtle-text-shadow {
+    text-shadow: 
+      0 1px 4px rgba(0, 0, 0, 0.8),
+      0 0 2px rgba(0, 0, 0, 0.6);
+  }
+
   /* Override any remaining blue-tinted elements */
   .bg-blue-500,
   .bg-blue-600,

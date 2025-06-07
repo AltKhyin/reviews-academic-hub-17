@@ -1,5 +1,5 @@
 
-// ABOUTME: Clean, monochromatic issue card with stable hover states and visual hierarchy
+// ABOUTME: Clean, monochromatic issue card with stable hover states and dynamic height support
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,12 +10,14 @@ interface IssueCardProps {
   issue: ArchiveIssue;
   onClick: (issueId: string) => void;
   tagMatches?: number;
+  height?: number; // Dynamic height support for masonry layout
 }
 
 export const IssueCard: React.FC<IssueCardProps> = ({
   issue,
   onClick,
-  tagMatches = 0
+  tagMatches = 0,
+  height
 }) => {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
@@ -41,9 +43,14 @@ export const IssueCard: React.FC<IssueCardProps> = ({
   const coverImage = issue.cover_image_url || 
     placeholderCovers[parseInt(issue.id.slice(-1)) % placeholderCovers.length];
 
+  // Dynamic styling based on height prop
+  const cardStyle = height ? { height: `${height}px` } : {};
+  const aspectRatioClass = height ? '' : 'aspect-[3/4]';
+
   return (
     <Card 
-      className="group cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-card border-border overflow-hidden aspect-[3/4] relative"
+      className={`group cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-card border-border overflow-hidden ${aspectRatioClass} relative w-full`}
+      style={cardStyle}
       onClick={() => onClick(issue.id)}
     >
       {/* Cover Image - Primary Visual Element */}
@@ -58,8 +65,8 @@ export const IssueCard: React.FC<IssueCardProps> = ({
           }}
         />
         
-        {/* Gradient Overlay for Text Readability */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+        {/* Enhanced Gradient Overlay for Better Text Readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
       </div>
 
       {/* Edition Badge - Top Corner */}
@@ -84,15 +91,21 @@ export const IssueCard: React.FC<IssueCardProps> = ({
         </div>
       )}
 
-      {/* Content Overlay - Always Visible */}
+      {/* Content Overlay - Always Visible with Enhanced Shadow */}
       <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
-        {/* Title - Secondary Element */}
-        <h3 className="text-white font-semibold text-lg leading-tight mb-3 line-clamp-2">
+        {/* Title - Secondary Element with Enhanced Shadow */}
+        <h3 className="text-white font-semibold text-lg leading-tight mb-3 line-clamp-2" 
+            style={{ 
+              textShadow: '0 2px 8px rgba(0,0,0,0.8), 0 1px 3px rgba(0,0,0,0.9)' 
+            }}>
           {issue.search_title || issue.title}
         </h3>
         
-        {/* Micro Information - Tertiary Elements */}
-        <div className="flex items-center justify-between text-white/80 text-sm">
+        {/* Micro Information - Tertiary Elements with Enhanced Shadow */}
+        <div className="flex items-center justify-between text-white/80 text-sm"
+             style={{ 
+               textShadow: '0 1px 4px rgba(0,0,0,0.8)' 
+             }}>
           <div className="flex items-center space-x-1">
             <Calendar className="w-3 h-3" />
             <span>{formatDate(issue.published_at || issue.created_at)}</span>

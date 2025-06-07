@@ -1,10 +1,10 @@
 
-// ABOUTME: Clean results grid with discrete search integration
+// ABOUTME: Clean results grid with Pinterest-style masonry layout and discrete search integration
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { IssueCard } from './IssueCard';
+import { MasonryGrid } from './MasonryGrid';
 import { ArchiveIssue } from '@/types/archive';
 
 interface ResultsGridProps {
@@ -29,16 +29,24 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({
   if (isLoading) {
     return (
       <div className="space-y-8">
-        {/* Loading State */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {Array.from({ length: 8 }).map((_, index) => (
-            <div 
-              key={index}
-              className="bg-card border border-border rounded-lg overflow-hidden animate-pulse aspect-[3/4]"
-            >
-              <div className="h-full bg-muted/20"></div>
-            </div>
-          ))}
+        {/* Loading State with Masonry-style Skeletons */}
+        <div className="relative">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            {Array.from({ length: 12 }).map((_, index) => {
+              // Varying skeleton heights for masonry effect
+              const heights = ['h-80', 'h-96', 'h-72', 'h-88', 'h-64'];
+              const height = heights[index % heights.length];
+              
+              return (
+                <div 
+                  key={index}
+                  className={`bg-card border border-border rounded-lg overflow-hidden animate-pulse ${height}`}
+                >
+                  <div className="h-full bg-muted/20"></div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     );
@@ -92,17 +100,11 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({
         </div>
       </div>
       
-      {/* Grid with improved spacing */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-        {issues.map((issue) => (
-          <IssueCard
-            key={issue.id}
-            issue={issue}
-            onClick={handleIssueClick}
-            tagMatches={issue.tagMatches}
-          />
-        ))}
-      </div>
+      {/* Pinterest-style Masonry Grid */}
+      <MasonryGrid
+        issues={issues}
+        onIssueClick={handleIssueClick}
+      />
     </div>
   );
 };
