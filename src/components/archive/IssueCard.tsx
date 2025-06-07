@@ -85,7 +85,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({
             >
               {tagMatches} match{tagMatches > 1 ? 'es' : ''}
             </Badge>
-          )}
+          </div>
         )}
 
         {/* Upward expanding overlay - covers the entire cover area on hover */}
