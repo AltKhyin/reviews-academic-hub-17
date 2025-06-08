@@ -1,17 +1,20 @@
 
-// ABOUTME: Main entry point with standard query client and auth context
+// ABOUTME: Main entry point with corrected query client imports and initialization
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter } from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
-import { queryClient, backgroundSync } from '@/lib/queryClient'
+import { getQueryClient, initializeBackgroundOptimization } from '@/lib/queryClient'
 import { AuthProvider } from '@/contexts/AuthContext'
 import App from './App'
 import './index.css'
 
+// Get the optimized query client instance
+const queryClient = getQueryClient();
+
 // Initialize background optimizations
-backgroundSync.optimizeCache();
+initializeBackgroundOptimization();
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

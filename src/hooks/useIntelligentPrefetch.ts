@@ -99,8 +99,9 @@ export const useIntelligentPrefetch = () => {
               ];
               break;
             case '/archive':
+            case '/acervo':
               targetQueries = [
-                ['archive-issues', false],
+                ['archive-issues', 'false'], // Changed boolean to string
                 ['archive-metadata'],
               ];
               break;

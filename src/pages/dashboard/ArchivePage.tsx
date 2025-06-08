@@ -67,7 +67,7 @@ const ArchivePage = () => {
           issues={issues}
           isLoading={isLoading}
           searchQuery={filterState.searchQuery}
-          onSearchChange={setSearchQuery}
+          selectedTags={filterState.selectedTags}
         />
       </div>
     </div>

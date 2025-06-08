@@ -1,102 +1,327 @@
-// ABOUTME: Performance utility functions and helpers for optimization across the application
-export class PerformanceProfiler {
-  private static measurements = new Map<string, number>();
-  private static logs: Array<{ operation: string; duration: number; timestamp: number }> = [];
+// ABOUTME: Comprehensive performance monitoring and optimization utilities
+interface PerformanceEntry {
+  timestamp: number;
+  duration: number;
+  metadata?: any;
+}
 
-  static startMeasurement(operation: string): void {
-    this.measurements.set(operation, performance.now());
+interface PerformanceReport {
+  [key: string]: {
+    count: number;
+    total: number;
+    average: number;
+    min: number;
+    max: number;
+  };
+}
+
+// Performance measurement utilities
+export class PerformanceProfiler {
+  private static measurements = new Map<string, PerformanceEntry[]>();
+  private static activeTimers = new Map<string, number>();
+
+  static startMeasurement(operationName: string, metadata?: any): void {
+    const timestamp = performance.now();
+    this.activeTimers.set(operationName, timestamp);
+    
+    if (metadata) {
+      console.log(`⏱️ Started: ${operationName}`, metadata);
+    }
   }
 
-  static endMeasurement(operation: string): number {
-    const startTime = this.measurements.get(operation);
+  static endMeasurement(operationName: string): number {
+    const endTime = performance.now();
+    const startTime = this.activeTimers.get(operationName);
+    
     if (!startTime) {
-      console.warn(`No start measurement found for operation: ${operation}`);
+      console.warn(`No active timer found for operation: ${operationName}`);
       return 0;
     }
-
-    const duration = performance.now() - startTime;
-    this.measurements.delete(operation);
     
-    this.logs.push({
-      operation,
+    const duration = endTime - startTime;
+    this.activeTimers.delete(operationName);
+    
+    // Store measurement
+    if (!this.measurements.has(operationName)) {
+      this.measurements.set(operationName, []);
+    }
+    
+    this.measurements.get(operationName)!.push({
+      timestamp: endTime,
       duration,
-      timestamp: Date.now(),
     });
-
-    // Keep only last 100 measurements
-    if (this.logs.length > 100) {
-      this.logs = this.logs.slice(-100);
+    
+    // Keep only last 100 measurements per operation
+    const measurements = this.measurements.get(operationName)!;
+    if (measurements.length > 100) {
+      measurements.splice(0, measurements.length - 100);
     }
-
-    if (duration > 100) { // Log slow operations
-      console.warn(`⚠️ Slow operation detected: ${operation} took ${duration.toFixed(2)}ms`);
-    }
-
+    
+    console.log(`✅ Completed: ${operationName} (${duration.toFixed(2)}ms)`);
     return duration;
   }
 
-  static getAverageTime(operation: string): number {
-    const operationLogs = this.logs.filter(log => log.operation === operation);
-    if (operationLogs.length === 0) return 0;
+  static getPerformanceReport(): PerformanceReport {
+    const report: PerformanceReport = {};
     
-    const total = operationLogs.reduce((sum, log) => sum + log.duration, 0);
-    return total / operationLogs.length;
-  }
-
-  static getPerformanceReport(): Record<string, { average: number; count: number; recent: number[] }> {
-    const report: Record<string, { average: number; count: number; recent: number[] }> = {};
-    
-    const operations = [...new Set(this.logs.map(log => log.operation))];
-    
-    operations.forEach(operation => {
-      const operationLogs = this.logs.filter(log => log.operation === operation);
-      const durations = operationLogs.map(log => log.duration);
-      const average = durations.reduce((sum, d) => sum + d, 0) / durations.length;
+    this.measurements.forEach((measurements, operationName) => {
+      if (measurements.length === 0) return;
       
-      report[operation] = {
-        average,
-        count: durations.length,
-        recent: durations.slice(-5), // Last 5 measurements
+      const durations = measurements.map(m => m.duration);
+      const total = durations.reduce((sum, d) => sum + d, 0);
+      
+      report[operationName] = {
+        count: measurements.length,
+        total,
+        average: total / measurements.length,
+        min: Math.min(...durations),
+        max: Math.max(...durations),
       };
     });
     
     return report;
   }
+
+  static clearMeasurements(): void {
+    this.measurements.clear();
+    this.activeTimers.clear();
+  }
 }
 
-// Debounce function for performance optimization
+// Memory leak detection utilities
+export class MemoryLeakDetector {
+  private static eventListenerCount = 0;
+  private static timerCount = 0;
+  private static intervalIds = new Set<number>();
+  private static timeoutIds = new Set<number>();
+
+  static trackEventListeners(): void {
+    const originalAddEventListener = EventTarget.prototype.addEventListener;
+    const originalRemoveEventListener = EventTarget.prototype.removeEventListener;
+    
+    EventTarget.prototype.addEventListener = function(...args) {
+      MemoryLeakDetector.eventListenerCount++;
+      return originalAddEventListener.apply(this, args);
+    };
+    
+    EventTarget.prototype.removeEventListener = function(...args) {
+      MemoryLeakDetector.eventListenerCount = Math.max(0, MemoryLeakDetector.eventListenerCount - 1);
+      return originalRemoveEventListener.apply(this, args);
+    };
+  }
+
+  static trackTimers(): void {
+    const originalSetTimeout = window.setTimeout;
+    const originalSetInterval = window.setInterval;
+    const originalClearTimeout = window.clearTimeout;
+    const originalClearInterval = window.clearInterval;
+    
+    window.setTimeout = ((callback: any, delay: any, ...args: any[]) => {
+      const id = originalSetTimeout(callback, delay, ...args);
+      this.timeoutIds.add(id);
+      this.timerCount++;
+      return id;
+    }) as typeof setTimeout;
+    
+    window.setInterval = ((callback: any, delay: any, ...args: any[]) => {
+      const id = originalSetInterval(callback, delay, ...args);
+      this.intervalIds.add(id);
+      this.timerCount++;
+      return id;
+    }) as typeof setInterval;
+    
+    window.clearTimeout = (id: number) => {
+      this.timeoutIds.delete(id);
+      this.timerCount = Math.max(0, this.timerCount - 1);
+      return originalClearTimeout(id);
+    };
+    
+    window.clearInterval = (id: number) => {
+      this.intervalIds.delete(id);
+      this.timerCount = Math.max(0, this.timerCount - 1);
+      return originalClearInterval(id);
+    };
+  }
+
+  static getLeakReport() {
+    return {
+      eventListeners: this.eventListenerCount,
+      timers: this.timerCount,
+      activeIntervals: this.intervalIds.size,
+      activeTimeouts: this.timeoutIds.size,
+      memoryUsage: (performance as any).memory ? {
+        used: (performance as any).memory.usedJSHeapSize,
+        total: (performance as any).memory.totalJSHeapSize,
+        limit: (performance as any).memory.jsHeapSizeLimit,
+      } : null,
+    };
+  }
+
+  static cleanup(): void {
+    // Clear all tracked intervals and timeouts
+    this.intervalIds.forEach(id => clearInterval(id));
+    this.timeoutIds.forEach(id => clearTimeout(id));
+    
+    this.intervalIds.clear();
+    this.timeoutIds.clear();
+    this.eventListenerCount = 0;
+    this.timerCount = 0;
+  }
+}
+
+// Query performance analysis
+export class QueryPerformanceAnalyzer {
+  private static queryMetrics = new Map<string, {
+    executionTimes: number[];
+    cacheHits: number;
+    cacheMisses: number;
+    errorCount: number;
+  }>();
+
+  static recordQueryExecution(queryKey: string, executionTime: number, fromCache: boolean, error?: Error): void {
+    if (!this.queryMetrics.has(queryKey)) {
+      this.queryMetrics.set(queryKey, {
+        executionTimes: [],
+        cacheHits: 0,
+        cacheMisses: 0,
+        errorCount: 0,
+      });
+    }
+    
+    const metrics = this.queryMetrics.get(queryKey)!;
+    
+    if (!fromCache) {
+      metrics.executionTimes.push(executionTime);
+      // Keep only last 50 execution times
+      if (metrics.executionTimes.length > 50) {
+        metrics.executionTimes.splice(0, 1);
+      }
+    }
+    
+    if (fromCache) {
+      metrics.cacheHits++;
+    } else {
+      metrics.cacheMisses++;
+    }
+    
+    if (error) {
+      metrics.errorCount++;
+    }
+  }
+
+  static getQueryReport() {
+    const report: { [key: string]: any } = {};
+    
+    this.queryMetrics.forEach((metrics, queryKey) => {
+      const executionTimes = metrics.executionTimes;
+      const totalRequests = metrics.cacheHits + metrics.cacheMisses;
+      
+      report[queryKey] = {
+        totalRequests,
+        cacheHitRate: totalRequests > 0 ? (metrics.cacheHits / totalRequests) * 100 : 0,
+        averageExecutionTime: executionTimes.length > 0 
+          ? executionTimes.reduce((sum, time) => sum + time, 0) / executionTimes.length 
+          : 0,
+        errorRate: totalRequests > 0 ? (metrics.errorCount / totalRequests) * 100 : 0,
+        slowQueries: executionTimes.filter(time => time > 1000).length,
+      };
+    });
+    
+    return report;
+  }
+
+  static clearMetrics(): void {
+    this.queryMetrics.clear();
+  }
+}
+
+// Component render performance tracking
+export class ComponentPerformanceTracker {
+  private static renderCounts = new Map<string, number>();
+  private static renderTimes = new Map<string, number[]>();
+
+  static trackComponentRender(componentName: string, renderTime: number): void {
+    // Update render count
+    const currentCount = this.renderCounts.get(componentName) || 0;
+    this.renderCounts.set(componentName, currentCount + 1);
+    
+    // Update render times
+    if (!this.renderTimes.has(componentName)) {
+      this.renderTimes.set(componentName, []);
+    }
+    
+    const times = this.renderTimes.get(componentName)!;
+    times.push(renderTime);
+    
+    // Keep only last 100 render times
+    if (times.length > 100) {
+      times.splice(0, 1);
+    }
+    
+    // Log slow renders
+    if (renderTime > 16) { // More than one frame at 60fps
+      console.warn(`🐌 Slow render detected: ${componentName} took ${renderTime.toFixed(2)}ms`);
+    }
+  }
+
+  static getComponentReport() {
+    const report: { [key: string]: any } = {};
+    
+    this.renderTimes.forEach((times, componentName) => {
+      const renderCount = this.renderCounts.get(componentName) || 0;
+      const averageTime = times.length > 0 
+        ? times.reduce((sum, time) => sum + time, 0) / times.length 
+        : 0;
+      
+      report[componentName] = {
+        renderCount,
+        averageRenderTime: averageTime,
+        slowRenders: times.filter(time => time > 16).length,
+        maxRenderTime: times.length > 0 ? Math.max(...times) : 0,
+      };
+    });
+    
+    return report;
+  }
+
+  static clearMetrics(): void {
+    this.renderCounts.clear();
+    this.renderTimes.clear();
+  }
+}
+
+// Debounce utility for performance
 export function debounce<T extends (...args: any[]) => any>(
   func: T,
   wait: number,
-  immediate?: boolean
+  immediate = false
 ): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout | null = null;
+  let timeout: number | undefined;
   
-  return function executedFunction(...args: Parameters<T>) {
+  return function(this: any, ...args: Parameters<T>) {
     const later = () => {
-      timeout = null;
-      if (!immediate) func(...args);
+      timeout = undefined;
+      if (!immediate) func.apply(this, args);
     };
     
     const callNow = immediate && !timeout;
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait) as any;
     
-    if (timeout) clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-    
-    if (callNow) func(...args);
+    if (callNow) func.apply(this, args);
   };
 }
 
-// Throttle function for performance optimization
+// Throttle utility for performance
 export function throttle<T extends (...args: any[]) => any>(
   func: T,
   limit: number
 ): (...args: Parameters<T>) => void {
   let inThrottle: boolean;
   
-  return function throttledFunction(...args: Parameters<T>) {
+  return function(this: any, ...args: Parameters<T>) {
     if (!inThrottle) {
-      func(...args);
+      func.apply(this, args);
       inThrottle = true;
       setTimeout(() => inThrottle = false, limit);
     }
@@ -152,84 +377,6 @@ export const BundleAnalyzer = {
     if (moduleSize && moduleSize > 500) { // 500KB threshold
       console.warn(`📦 Large module imported: ${moduleName} (~${(moduleSize / 1024).toFixed(1)}MB)`);
     }
-  },
-};
-
-// Memory leak detector
-export const MemoryLeakDetector = {
-  trackEventListeners: () => {
-    const originalAddEventListener = EventTarget.prototype.addEventListener;
-    const originalRemoveEventListener = EventTarget.prototype.removeEventListener;
-    const listeners = new WeakMap();
-    
-    EventTarget.prototype.addEventListener = function(type, listener, options) {
-      if (!listeners.has(this)) {
-        listeners.set(this, new Set());
-      }
-      listeners.get(this).add({ type, listener, options });
-      return originalAddEventListener.call(this, type, listener, options);
-    };
-    
-    EventTarget.prototype.removeEventListener = function(type, listener, options) {
-      if (listeners.has(this)) {
-        const elementListeners = listeners.get(this);
-        elementListeners.forEach(l => {
-          if (l.type === type && l.listener === listener) {
-            elementListeners.delete(l);
-          }
-        });
-      }
-      return originalRemoveEventListener.call(this, type, listener, options);
-    };
-    
-    // Check for memory leaks periodically
-    setInterval(() => {
-      let totalListeners = 0;
-      // Note: WeakMap doesn't allow iteration, this is a simplified approach
-      if (totalListeners > 1000) {
-        console.warn('🚨 Potential memory leak: High number of event listeners detected');
-      }
-    }, 60000);
-  },
-  
-  trackTimers: () => {
-    const activeTimers = new Set();
-    const originalSetTimeout = window.setTimeout;
-    const originalSetInterval = window.setInterval;
-    const originalClearTimeout = window.clearTimeout;
-    const originalClearInterval = window.clearInterval;
-    
-    window.setTimeout = function(callback, delay, ...args) {
-      const id = originalSetTimeout.call(this, (...args) => {
-        activeTimers.delete(id);
-        return callback(...args);
-      }, delay, ...args);
-      activeTimers.add(id);
-      return id;
-    };
-    
-    window.setInterval = function(callback, delay, ...args) {
-      const id = originalSetInterval.call(this, callback, delay, ...args);
-      activeTimers.add(id);
-      return id;
-    };
-    
-    window.clearTimeout = function(id) {
-      activeTimers.delete(id);
-      return originalClearTimeout.call(this, id);
-    };
-    
-    window.clearInterval = function(id) {
-      activeTimers.delete(id);
-      return originalClearInterval.call(this, id);
-    };
-    
-    // Report active timers periodically
-    setInterval(() => {
-      if (activeTimers.size > 50) {
-        console.warn(`🚨 High number of active timers: ${activeTimers.size}`);
-      }
-    }, 30000);
   },
 };
 
