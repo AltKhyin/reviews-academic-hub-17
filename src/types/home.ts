@@ -27,7 +27,7 @@ export interface PopularIssuesSectionConfig extends HomeSectionConfig {
   period: string;
 }
 
-// Use a flexible approach for sections instead of strict intersection types
+// Use a union type for sections instead of intersection types
 export interface HomeSettings {
   sections: {
     reviewer_notes: HomeSectionConfig;

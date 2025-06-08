@@ -1,4 +1,3 @@
-
 // ABOUTME: Home page management interface for admins
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,7 +15,7 @@ import { useHomeData } from '@/hooks/useHomeData';
 import { useReviewerNotes } from '@/hooks/useReviewerNotes';
 import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { HomeSettings } from '@/types/home';
+import { HomeSettings, HomeSectionConfig } from '@/types/home';
 
 type SectionKey = keyof HomeSettings['sections'];
 
@@ -97,8 +96,8 @@ export const HomeManager = () => {
 
     const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
     
-    // Create a new sections object with swapped orders
-    const newSections = { ...localSettings.sections };
+    // Create a new sections object with swapped orders - using any to avoid complex type intersection issues
+    const newSections = { ...localSettings.sections } as any;
     const currentSection = newSections[sectionId];
     const targetSectionId = sections[targetIndex][0] as SectionKey;
     const targetSection = newSections[targetSectionId];
