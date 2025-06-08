@@ -1,5 +1,5 @@
 
-// ABOUTME: Main entry point with corrected query client imports and initialization
+// ABOUTME: Main entry point with advanced performance optimization integration
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { QueryClientProvider } from '@tanstack/react-query'
@@ -7,6 +7,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
 import { getQueryClient, initializeBackgroundOptimization } from '@/lib/queryClient'
 import { AuthProvider } from '@/contexts/AuthContext'
+import { AdvancedPerformanceProvider } from '@/providers/AdvancedPerformanceProvider'
 import App from './App'
 import './index.css'
 
@@ -19,12 +20,19 @@ initializeBackgroundOptimization();
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider>
-          <App />
-          <Toaster />
-        </AuthProvider>
-      </BrowserRouter>
+      <AdvancedPerformanceProvider
+        enableDashboard={process.env.NODE_ENV === 'development'}
+        enableAdvancedMonitoring={true}
+        enableMemoryLeakDetection={true}
+        enableBudgetEnforcement={true}
+      >
+        <BrowserRouter>
+          <AuthProvider>
+            <App />
+            <Toaster />
+          </AuthProvider>
+        </BrowserRouter>
+      </AdvancedPerformanceProvider>
     </QueryClientProvider>
   </React.StrictMode>,
 )
