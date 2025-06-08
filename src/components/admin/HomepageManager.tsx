@@ -1,4 +1,3 @@
-
 // ABOUTME: Comprehensive homepage management interface with section control and upcoming releases scheduling
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +12,16 @@ import { Eye, EyeOff, ChevronUp, ChevronDown, RotateCcw, Calendar, Clock, Refres
 import { toast } from '@/hooks/use-toast';
 import { useSectionVisibility } from '@/hooks/useSectionVisibility';
 import { useUpcomingReleaseSettings } from '@/hooks/useUpcomingReleaseSettings';
+
+interface LocalReleaseSettings {
+  customDate: string;
+  customTime: string;
+  isRecurring: boolean;
+  recurringPattern: 'weekly' | 'biweekly';
+  recurringDays: string[];
+  recurringTime: string;
+  wipeSuggestions: boolean;
+}
 
 export const HomepageManager = () => {
   const { 
@@ -32,12 +41,12 @@ export const HomepageManager = () => {
   } = useUpcomingReleaseSettings();
   
   const [localSections, setLocalSections] = useState(sections);
-  const [releaseSettings, setReleaseSettings] = useState({
+  const [releaseSettings, setReleaseSettings] = useState<LocalReleaseSettings>({
     customDate: '',
     customTime: '',
     isRecurring: false,
     recurringPattern: 'weekly',
-    recurringDays: [] as string[],
+    recurringDays: [],
     recurringTime: '10:00',
     wipeSuggestions: true
   });
@@ -327,7 +336,7 @@ export const HomepageManager = () => {
                       <Label htmlFor="pattern">Padrão</Label>
                       <Select
                         value={releaseSettings.recurringPattern}
-                        onValueChange={(value) => 
+                        onValueChange={(value: 'weekly' | 'biweekly') => 
                           setReleaseSettings(prev => ({ ...prev, recurringPattern: value }))
                         }
                       >

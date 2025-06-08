@@ -50,7 +50,7 @@ export const useUpcomingReleaseSettings = () => {
         return DEFAULT_SETTINGS;
       }
 
-      return { ...DEFAULT_SETTINGS, ...data.value } as UpcomingReleaseSettings;
+      return { ...DEFAULT_SETTINGS, ...(data.value as object) } as UpcomingReleaseSettings;
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -58,7 +58,7 @@ export const useUpcomingReleaseSettings = () => {
   // Update settings mutation
   const updateSettingsMutation = useMutation({
     mutationFn: async (newSettings: Partial<UpcomingReleaseSettings>) => {
-      const updatedSettings = { ...settings, ...newSettings };
+      const updatedSettings = settings ? { ...settings, ...newSettings } : { ...DEFAULT_SETTINGS, ...newSettings };
       
       const { data, error } = await supabase
         .from('site_meta')

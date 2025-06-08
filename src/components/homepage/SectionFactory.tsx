@@ -1,6 +1,7 @@
 
 // ABOUTME: Enhanced section factory with lazy loading and performance optimizations
 import React, { Suspense, memo } from 'react';
+import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 
 // Lazy load all sections for better performance
 const HeroSection = React.lazy(() => import('./sections/HeroSection').then(module => ({ default: module.HeroSection })));
@@ -74,12 +75,12 @@ const SectionErrorBoundary = ({ children, sectionId }: { children: React.ReactNo
   }
 
   return (
-    <React.ErrorBoundary
+    <ErrorBoundary
       onError={() => setHasError(true)}
       fallback={null}
     >
       {children}
-    </React.ErrorBoundary>
+    </ErrorBoundary>
   );
 };
 
