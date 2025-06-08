@@ -2,10 +2,10 @@
 // ABOUTME: Performance-optimized masonry grid component with proper memoization and dependency management
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { IssueCard } from './IssueCard';
-import { Issue } from '@/types/issue';
+import { ArchiveIssue } from '@/types/archive';
 
 interface OptimizedMasonryGridProps {
-  issues: Issue[];
+  issues: ArchiveIssue[];
   searchQuery: string;
   selectedTags: string[];
   isLoading: boolean;
@@ -135,7 +135,7 @@ export const OptimizedMasonryGrid = React.memo<OptimizedMasonryGridProps>(({
 
   // Memoized column arrays for performance
   const columnArrays = useMemo(() => {
-    const columns: Issue[][] = Array.from({ length: gridLayout.columns }, () => []);
+    const columns: ArchiveIssue[][] = Array.from({ length: gridLayout.columns }, () => []);
     const columnHeights = new Array(gridLayout.columns).fill(0);
     
     filteredIssues.forEach((issue, index) => {

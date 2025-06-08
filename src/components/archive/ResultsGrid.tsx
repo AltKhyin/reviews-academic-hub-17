@@ -2,10 +2,10 @@
 // ABOUTME: Updated results grid component using the optimized masonry grid
 import React from 'react';
 import { OptimizedMasonryGrid } from './OptimizedMasonryGrid';
-import { Issue } from '@/types/issue';
+import { ArchiveIssue } from '@/types/archive';
 
 interface ResultsGridProps {
-  issues: Issue[];
+  issues: ArchiveIssue[];
   searchQuery: string;
   selectedTags: string[];
   isLoading: boolean;
