@@ -11,7 +11,8 @@ import { CommentReportsPanel } from '@/components/dashboard/CommentReportsPanel'
 import { TagManagementPanel } from '@/components/admin/TagManagementPanel';
 import { EnhancedAnalyticsDashboard } from '@/components/analytics/EnhancedAnalyticsDashboard';
 import { HomepageManager } from '@/components/admin/HomepageManager';
-import { Settings, BarChart3, Users, MessageSquare, Crown, FileText, Edit, Tags, Home } from 'lucide-react';
+import { HomeManager } from '@/components/admin/HomeManager';
+import { Settings, BarChart3, Users, MessageSquare, Crown, FileText, Edit, Tags, Home, HomeIcon } from 'lucide-react';
 
 const EditPage = () => {
   const { isAdmin, isEditor, isLoading, user, profile } = useAuth();
@@ -75,7 +76,7 @@ const EditPage = () => {
       </div>
       
       <Tabs defaultValue="issues" className="w-full">
-        <TabsList className="grid w-full grid-cols-8" style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
+        <TabsList className="grid w-full grid-cols-9" style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
           <TabsTrigger value="issues" className="flex items-center gap-2">
             <FileText className="w-4 h-4" />
             Issues
@@ -83,6 +84,10 @@ const EditPage = () => {
           <TabsTrigger value="tags" className="flex items-center gap-2">
             <Tags className="w-4 h-4" />
             Tags
+          </TabsTrigger>
+          <TabsTrigger value="home" className="flex items-center gap-2">
+            <HomeIcon className="w-4 h-4" />
+            Home
           </TabsTrigger>
           <TabsTrigger value="homepage" className="flex items-center gap-2">
             <Home className="w-4 h-4" />
@@ -118,6 +123,10 @@ const EditPage = () => {
         
         <TabsContent value="tags">
           <TagManagementPanel />
+        </TabsContent>
+        
+        <TabsContent value="home">
+          <HomeManager />
         </TabsContent>
         
         <TabsContent value="homepage">

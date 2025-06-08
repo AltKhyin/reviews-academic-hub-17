@@ -12,6 +12,7 @@ import { QueryOptimizationProvider } from "./components/optimization/QueryOptimi
 import { DashboardLayout } from "./layouts/DashboardLayout";
 import AuthPage from "./pages/auth/AuthPage";
 import Dashboard from "./pages/dashboard/Dashboard";
+import { HomePage } from "./pages/home/HomePage";
 import ArticleViewer from "./pages/dashboard/ArticleViewer";
 import SearchPage from "./pages/dashboard/SearchPage";
 import ArchivePage from "./pages/dashboard/ArchivePage";
@@ -54,6 +55,7 @@ const App = () => {
             
             {/* Protected routes that require authentication */}
             <Route path="/" element={<DashboardLayout />}>
+              <Route path="home" element={<HomePage />} />
               <Route path="homepage" element={<Dashboard />} />
               <Route path="article/:id" element={<ArticleViewer />} />
               <Route path="acervo" element={<ArchivePage />} />
@@ -64,7 +66,7 @@ const App = () => {
               <Route path="edit" element={<Edit />} />
               <Route path="edit/issue/:id" element={<IssueEditor />} />
               <Route path="edit/issue/new" element={<IssueEditor />} />
-              <Route index element={<Navigate to="/homepage" replace />} />
+              <Route index element={<Navigate to="/home" replace />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />
