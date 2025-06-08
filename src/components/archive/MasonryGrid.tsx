@@ -1,5 +1,6 @@
-// ABOUTME: Pinterest-style masonry grid with dynamic heights, improved responsiveness and minimal spacing
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+
+// ABOUTME: Pinterest-style masonry grid with robust mount-safe measurement and dynamic height calculation
+import React, { useEffect, useLayoutEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { IssueCard } from './IssueCard';
 import { ArchiveIssue } from '@/types/archive';
 
@@ -13,7 +14,8 @@ interface CardLayout {
   height: number;
   column: number;
   top: number;
-  transition: boolean;
+  left: number;
+  measured: boolean;
 }
 
 export const MasonryGrid: React.FC<MasonryGridProps> = ({
@@ -21,172 +23,269 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
   onIssueClick
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const [layouts, setLayouts] = useState<CardLayout[]>([]);
   const [columns, setColumns] = useState(4);
   const [containerHeight, setContainerHeight] = useState(0);
+  const [isLayoutReady, setIsLayoutReady] = useState(false);
+  const [imageLoadCount, setImageLoadCount] = useState(0);
+  const layoutTimeoutRef = useRef<NodeJS.Timeout>();
+  const resizeObserverRef = useRef<ResizeObserver>();
 
-  // Reduced base card dimensions and minimal spacing
+  // Fixed masonry configuration
   const baseWidth = 280;
-  const baseHeight = 374;
-  const gap = 4; // Reduced from 20 to 4 for minimal spacing
+  const gap = 4;
+  const maxRetries = 10;
+  const retryDelay = 50;
 
-  // Height variants for visual interest
-  const heightVariants = [
-    baseHeight * 0.85,
-    baseHeight * 1.0,
-    baseHeight * 1.2,
-    baseHeight * 1.4,
-    baseHeight * 1.6
-  ];
-
-  // Improved responsive column calculation
-  const updateColumns = useCallback(() => {
-    if (!containerRef.current) return;
+  // Calculate responsive columns based on container width
+  const calculateColumns = useCallback((containerWidth: number): number => {
+    if (containerWidth <= 0) return 1;
     
-    const containerWidth = containerRef.current.offsetWidth;
     const cardWithGap = baseWidth + gap;
-    
-    // Calculate optimal columns based on container width
     const maxPossibleColumns = Math.floor((containerWidth + gap) / cardWithGap);
     
-    let newColumns = 4; // Default
+    if (containerWidth < 640) return 1; // Mobile
+    if (containerWidth < 768) return 2; // Small tablet
+    if (containerWidth < 1024) return 3; // Tablet
+    if (containerWidth < 1280) return 4; // Desktop
+    return Math.min(5, maxPossibleColumns); // Large desktop
+  }, [baseWidth, gap]);
+
+  // Measure actual card height from DOM
+  const measureCardHeight = useCallback((cardId: string): number => {
+    const cardElement = cardRefs.current.get(cardId);
+    if (!cardElement) return 0;
     
-    if (containerWidth < 640) { // Mobile
-      newColumns = 1;
-    } else if (containerWidth < 768) { // Small tablet
-      newColumns = 2;
-    } else if (containerWidth < 1024) { // Tablet
-      newColumns = 3;
-    } else if (containerWidth < 1280) { // Desktop
-      newColumns = 4;
-    } else { // Large desktop
-      newColumns = Math.min(5, maxPossibleColumns);
+    // Force a reflow to ensure accurate measurement
+    cardElement.style.height = 'auto';
+    const height = cardElement.offsetHeight;
+    
+    // Fallback to computed style if offsetHeight is 0
+    if (height === 0) {
+      const computedStyle = window.getComputedStyle(cardElement);
+      return parseInt(computedStyle.height, 10) || 0;
     }
     
-    console.log(`Container width: ${containerWidth}, Setting columns: ${newColumns}`);
+    return height;
+  }, []);
+
+  // Check if all cards have been measured and have valid heights
+  const areAllCardsMeasured = useCallback((): boolean => {
+    if (issues.length === 0) return true;
     
-    if (newColumns !== columns) {
-      setColumns(newColumns);
+    for (const issue of issues) {
+      const cardElement = cardRefs.current.get(issue.id);
+      if (!cardElement) return false;
+      
+      const height = measureCardHeight(issue.id);
+      if (height <= 0) return false;
     }
-  }, [columns, baseWidth, gap]);
+    
+    return true;
+  }, [issues, measureCardHeight]);
 
-  // Get deterministic height variant for each issue
-  const getCardHeight = useCallback((issueId: string, index: number): number => {
-    const hash = issueId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const variantIndex = (hash + index) % heightVariants.length;
-    return heightVariants[variantIndex];
-  }, [heightVariants]);
-
-  // Calculate masonry layout with improved algorithm
-  const calculateLayout = useCallback(() => {
-    if (!issues.length || columns === 0) {
+  // Calculate masonry layout with actual measured heights
+  const calculateLayout = useCallback((retryCount = 0): void => {
+    if (!containerRef.current || issues.length === 0) {
       setLayouts([]);
       setContainerHeight(0);
+      setIsLayoutReady(true);
       return;
     }
 
-    const columnHeights = new Array(columns).fill(0);
-    const newLayouts: CardLayout[] = [];
+    const containerWidth = containerRef.current.offsetWidth;
+    if (containerWidth <= 0) {
+      if (retryCount < maxRetries) {
+        setTimeout(() => calculateLayout(retryCount + 1), retryDelay);
+      }
+      return;
+    }
 
-    issues.forEach((issue, index) => {
-      const height = getCardHeight(issue.id, index);
-      
+    const cols = calculateColumns(containerWidth);
+    setColumns(cols);
+
+    // Check if all cards are measured
+    if (!areAllCardsMeasured()) {
+      if (retryCount < maxRetries) {
+        // Use requestAnimationFrame for better timing
+        requestAnimationFrame(() => {
+          setTimeout(() => calculateLayout(retryCount + 1), retryDelay);
+        });
+      }
+      return;
+    }
+
+    const columnHeights = new Array(cols).fill(0);
+    const newLayouts: CardLayout[] = [];
+    const containerOffset = Math.max(0, (containerWidth - (cols * baseWidth + (cols - 1) * gap)) / 2);
+
+    issues.forEach((issue) => {
       // Find column with minimum height
       const minColumnIndex = columnHeights.indexOf(Math.min(...columnHeights));
       
+      // Measure actual height from DOM
+      const height = measureCardHeight(issue.id);
+      
+      // Calculate position
+      const left = containerOffset + (minColumnIndex * (baseWidth + gap));
+      const top = columnHeights[minColumnIndex];
+
       newLayouts.push({
         id: issue.id,
         height,
         column: minColumnIndex,
-        top: columnHeights[minColumnIndex],
-        transition: true
+        top,
+        left,
+        measured: height > 0
       });
 
-      // Update column height
-      columnHeights[minColumnIndex] += height + gap;
+      // Update column height (no vertical gap for tight packing)
+      columnHeights[minColumnIndex] += height;
     });
 
     setLayouts(newLayouts);
-    setContainerHeight(Math.max(...columnHeights) - gap);
-  }, [issues, columns, getCardHeight, gap]);
+    setContainerHeight(Math.max(...columnHeights));
+    setIsLayoutReady(true);
 
-  // Recalculate layout when dependencies change
-  useEffect(() => {
-    calculateLayout();
+    console.log(`Layout calculated: ${newLayouts.length} cards, ${cols} columns, height: ${Math.max(...columnHeights)}`);
+  }, [issues, calculateColumns, measureCardHeight, areAllCardsMeasured, baseWidth, gap, maxRetries, retryDelay]);
+
+  // Debounced layout calculation
+  const debouncedCalculateLayout = useCallback(() => {
+    if (layoutTimeoutRef.current) {
+      clearTimeout(layoutTimeoutRef.current);
+    }
+    
+    setIsLayoutReady(false);
+    layoutTimeoutRef.current = setTimeout(() => {
+      calculateLayout();
+    }, 100);
   }, [calculateLayout]);
 
-  // Improved resize handling with debouncing
-  useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
+  // Handle container resize
+  const handleResize = useCallback((entries: ResizeObserverEntry[]) => {
+    const entry = entries[0];
+    if (!entry) return;
     
-    const handleResize = () => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => {
-        updateColumns();
-      }, 100); // Debounce resize events
-    };
-
-    updateColumns(); // Initial calculation
+    const newWidth = entry.contentRect.width;
+    const newColumns = calculateColumns(newWidth);
     
-    window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      clearTimeout(timeoutId);
-    };
-  }, [updateColumns]);
+    if (newColumns !== columns) {
+      console.log(`Columns changed: ${columns} -> ${newColumns}`);
+      debouncedCalculateLayout();
+    }
+  }, [columns, calculateColumns, debouncedCalculateLayout]);
 
-  // Use ResizeObserver for more accurate container size tracking
+  // Handle image load events
+  const handleImageLoad = useCallback(() => {
+    setImageLoadCount(prev => prev + 1);
+    // Recalculate layout after a short delay to allow for DOM updates
+    setTimeout(() => {
+      calculateLayout();
+    }, 100);
+  }, [calculateLayout]);
+
+  // Store card ref
+  const setCardRef = useCallback((issueId: string, element: HTMLDivElement | null) => {
+    if (element) {
+      cardRefs.current.set(issueId, element);
+      
+      // Attach image load listeners
+      const images = element.querySelectorAll('img');
+      images.forEach(img => {
+        if (!img.complete) {
+          img.addEventListener('load', handleImageLoad, { once: true });
+          img.addEventListener('error', handleImageLoad, { once: true });
+        }
+      });
+    } else {
+      cardRefs.current.delete(issueId);
+    }
+  }, [handleImageLoad]);
+
+  // Initialize resize observer
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const resizeObserver = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const { width } = entry.contentRect;
-        if (width > 0) {
-          updateColumns();
-        }
-      }
-    });
-
-    resizeObserver.observe(containerRef.current);
+    resizeObserverRef.current = new ResizeObserver(handleResize);
+    resizeObserverRef.current.observe(containerRef.current);
 
     return () => {
-      resizeObserver.disconnect();
+      if (resizeObserverRef.current) {
+        resizeObserverRef.current.disconnect();
+      }
     };
-  }, [updateColumns]);
+  }, [handleResize]);
+
+  // Layout effect for DOM measurements (runs after DOM updates)
+  useLayoutEffect(() => {
+    // Clear any existing timeout
+    if (layoutTimeoutRef.current) {
+      clearTimeout(layoutTimeoutRef.current);
+    }
+
+    // Calculate layout after a brief delay to ensure all cards are mounted
+    layoutTimeoutRef.current = setTimeout(() => {
+      calculateLayout();
+    }, 50);
+
+    return () => {
+      if (layoutTimeoutRef.current) {
+        clearTimeout(layoutTimeoutRef.current);
+      }
+    };
+  }, [issues, calculateLayout]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (layoutTimeoutRef.current) {
+        clearTimeout(layoutTimeoutRef.current);
+      }
+      if (resizeObserverRef.current) {
+        resizeObserverRef.current.disconnect();
+      }
+    };
+  }, []);
+
+  // Memoized container styles for performance
+  const containerStyles = useMemo(() => {
+    const maxWidth = (baseWidth * 4) + (gap * 3) + 32; // 4 columns max + padding
+    return {
+      height: `${containerHeight}px`,
+      maxWidth: `${maxWidth}px`,
+      position: 'relative' as const,
+      margin: '0 auto',
+    };
+  }, [containerHeight, baseWidth, gap]);
 
   if (!issues.length) return null;
-
-  // Calculate the total width needed for the grid
-  const gridWidth = columns * baseWidth + (columns - 1) * gap;
 
   return (
     <div className="flex justify-center w-full">
       <div 
         ref={containerRef}
-        className="relative w-full max-w-none"
-        style={{ 
-          height: containerHeight,
-          maxWidth: gridWidth
-        }}
+        className="w-full px-4"
+        style={containerStyles}
       >
         {issues.map((issue, index) => {
           const layout = layouts.find(l => l.id === issue.id);
-          if (!layout) return null;
-
-          const left = layout.column * (baseWidth + gap);
+          const isVisible = layout && layout.measured && isLayoutReady;
 
           return (
             <div
               key={issue.id}
+              ref={(el) => setCardRef(issue.id, el)}
               className={`absolute transition-all duration-300 ease-out ${
-                layout.transition ? 'opacity-100' : 'opacity-0'
+                isVisible ? 'opacity-100' : 'opacity-0'
               }`}
               style={{
-                left: `${left}px`,
-                top: `${layout.top}px`,
+                left: layout?.left || 0,
+                top: layout?.top || 0,
                 width: `${baseWidth}px`,
                 transform: 'translateZ(0)', // Hardware acceleration
+                visibility: isVisible ? 'visible' : 'hidden',
               }}
             >
               <IssueCard
