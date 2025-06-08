@@ -13,7 +13,7 @@ export interface ReviewerComment {
   created_at: string;
 }
 
-export const useReviewerComments = () => {
+export const useReviewerComments = (enabled: boolean = true) => {
   const queryClient = useQueryClient();
 
   const { data: comments = [], isLoading } = useQuery({
@@ -34,8 +34,9 @@ export const useReviewerComments = () => {
       console.log("Fetched reviewer comments:", data);
       return data as ReviewerComment[];
     },
-    refetchInterval: 30000, // Refetch every 30 seconds
-    staleTime: 10000, // Consider data stale after 10 seconds
+    enabled, // Only run query when enabled
+    refetchInterval: enabled ? 60000 : false, // Reduce frequency to 60 seconds and only when enabled
+    staleTime: enabled ? 30000 : 300000, // 30 seconds when enabled, 5 minutes when disabled
   });
 
   const addComment = useMutation({

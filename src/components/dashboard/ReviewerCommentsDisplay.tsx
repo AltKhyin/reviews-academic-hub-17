@@ -1,80 +1,110 @@
 
+// ABOUTME: Optimized reviewer comments display with conditional data fetching
 import React from 'react';
 import { useReviewerComments } from '@/hooks/useReviewerComments';
-import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { CheckCircle2, MessageSquare, Trash2 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { useAuth } from '@/contexts/AuthContext';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { MessageSquare, Clock } from 'lucide-react';
 
-export const ReviewerCommentsDisplay = () => {
-  const { comments, hasComments, isLoading, deleteComment } = useReviewerComments();
-  const { isAdmin, isEditor } = useAuth();
+export const ReviewerCommentsDisplay: React.FC = () => {
+  // Only enable the hook when this component is actually rendered
+  const { comments, hasComments, isLoading } = useReviewerComments(true);
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
   if (isLoading) {
     return (
-      <section className="mb-16">
-        <Card className="border-white/10 bg-gradient-to-r from-white/5 to-transparent">
-          <CardContent className="pt-6">
-            <div className="animate-pulse space-y-4">
-              <div className="h-20 bg-gray-700 rounded"></div>
-              <div className="h-20 bg-gray-700 rounded"></div>
+      <section className="mb-8">
+        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2 text-white">
+          <MessageSquare className="w-6 h-6" />
+          Comentários dos Revisores
+        </h2>
+        <div className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-500/20 rounded-lg p-6">
+          <div className="animate-pulse flex space-x-4">
+            <div className="rounded-full bg-gray-600 h-10 w-10"></div>
+            <div className="flex-1 space-y-2 py-1">
+              <div className="h-4 bg-gray-600 rounded w-3/4"></div>
+              <div className="h-4 bg-gray-600 rounded w-1/2"></div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </section>
     );
   }
 
   if (!hasComments) {
-    return null; // Don't show empty state, just hide the section
+    return (
+      <section className="mb-8">
+        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2 text-white">
+          <MessageSquare className="w-6 h-6" />
+          Comentários dos Revisores
+        </h2>
+        <div className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-500/20 rounded-lg p-6 text-center">
+          <p className="text-gray-300">
+            Nenhum comentário de revisor disponível no momento.
+          </p>
+        </div>
+      </section>
+    );
   }
 
+  // Show only the most recent comment
+  const latestComment = comments[0];
+
   return (
-    <section className="mb-16">
-      <Card className="border-white/10 bg-gradient-to-r from-white/5 to-transparent">
-        <CardContent className="pt-6 space-y-6">
-          {comments.map((comment) => (
-            <div key={comment.id} className="flex space-x-6">
-              <div className="flex-shrink-0">
-                <Avatar className="border-2 border-primary/20" style={{ width: '80px', height: '80px' }}>
-                  <AvatarImage src={comment.reviewer_avatar} alt={comment.reviewer_name} />
-                  <AvatarFallback>{comment.reviewer_name.charAt(0)}</AvatarFallback>
-                </Avatar>
-              </div>
-              
-              <div className="flex-1">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <h3 className="font-medium text-lg">{comment.reviewer_name}</h3>
-                    <CheckCircle2 className="h-4 w-4 ml-1 text-blue-500" />
-                  </div>
-                  
-                  {(isAdmin || isEditor) && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      onClick={() => deleteComment.mutate(comment.id)}
-                      className="text-gray-400 hover:text-red-400"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
+    <section className="mb-8">
+      <h2 className="text-2xl font-bold mb-6 flex items-center gap-2 text-white">
+        <MessageSquare className="w-6 h-6" />
+        Comentários dos Revisores
+      </h2>
+      
+      <Card className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-500/20">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              {latestComment.reviewer_avatar ? (
+                <img 
+                  src={latestComment.reviewer_avatar} 
+                  alt={latestComment.reviewer_name}
+                  className="w-8 h-8 rounded-full"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
+                  <span className="text-blue-400 text-sm font-medium">
+                    {latestComment.reviewer_name.charAt(0).toUpperCase()}
+                  </span>
                 </div>
-                
-                <p className="text-muted-foreground text-xs mb-2">
-                  {formatDistanceToNow(new Date(comment.created_at), { 
-                    addSuffix: true,
-                    locale: ptBR
-                  })}
-                </p>
-                
-                <p className="text-gray-200 leading-relaxed">{comment.comment}</p>
+              )}
+              <div>
+                <CardTitle className="text-lg text-white">{latestComment.reviewer_name}</CardTitle>
+                <div className="flex items-center space-x-1 text-gray-400 text-sm">
+                  <Clock className="w-3 h-3" />
+                  <span>{formatDate(latestComment.created_at)}</span>
+                </div>
               </div>
             </div>
-          ))}
+            <Badge variant="outline" className="bg-blue-500/20 text-blue-400 border-blue-400/30">
+              Revisor
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <p className="text-gray-300 leading-relaxed">
+            {latestComment.comment}
+          </p>
+          {comments.length > 1 && (
+            <p className="text-gray-500 text-sm mt-3">
+              +{comments.length - 1} comentário{comments.length > 2 ? 's' : ''} adicional{comments.length > 2 ? 'is' : ''}
+            </p>
+          )}
         </CardContent>
       </Card>
     </section>
