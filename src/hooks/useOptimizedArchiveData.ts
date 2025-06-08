@@ -1,20 +1,15 @@
 
-// ABOUTME: Heavily optimized archive data hook with intelligent caching and field selection
+// ABOUTME: Simplified archive data hook without tag hierarchy - only fetches issues and basic metadata
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Issue } from '@/types/issue';
 import { useStableAuth } from './useStableAuth';
-
-interface TagConfig {
-  [category: string]: string[];
-}
 
 interface ArchiveDataState {
   issues: Issue[];
   totalCount: number;
   specialties: string[];
   years: string[];
-  tagConfig: TagConfig;
 }
 
 // Optimized query for archive with minimal fields
@@ -32,7 +27,6 @@ const fetchArchiveIssues = async (includeUnpublished: boolean = false): Promise<
       featured,
       created_at,
       published_at,
-      backend_tags,
       description,
       search_title,
       search_description
@@ -58,9 +52,6 @@ const fetchArchiveIssues = async (includeUnpublished: boolean = false): Promise<
     featured: Boolean(issue.featured),
     created_at: issue.created_at,
     published_at: issue.published_at,
-    backend_tags: typeof issue.backend_tags === 'string' 
-      ? issue.backend_tags 
-      : JSON.stringify(issue.backend_tags || ''),
     description: issue.description,
     search_title: issue.search_title,
     search_description: issue.search_description,
@@ -76,82 +67,17 @@ const fetchArchiveIssues = async (includeUnpublished: boolean = false): Promise<
     review_content: null,
     toc_data: null,
     design: null,
+    backend_tags: null, // Not used in simplified archive
   }));
 };
 
-// Optimized metadata fetching
+// Simple metadata extraction without tag configuration
 const fetchArchiveMetadata = async (issues: Issue[]) => {
   // Extract unique specialties and years from issues data
   const specialties = [...new Set(issues.map(issue => issue.specialty).filter(Boolean))].sort();
   const years = [...new Set(issues.map(issue => issue.year).filter(Boolean))].sort().reverse();
   
-  // Get active tag configuration
-  const { data: tagConfigData } = await supabase
-    .from('tag_configurations')
-    .select('tag_data')
-    .eq('is_active', true)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single();
-
-  let tagConfig: TagConfig = {};
-  
-  if (tagConfigData?.tag_data) {
-    try {
-      tagConfig = typeof tagConfigData.tag_data === 'object' 
-        ? tagConfigData.tag_data as TagConfig
-        : JSON.parse(tagConfigData.tag_data as string);
-    } catch (error) {
-      console.warn('Failed to parse tag configuration:', error);
-      // Fallback to extracting tags from issues
-      tagConfig = extractTagsFromIssues(issues);
-    }
-  } else {
-    // Fallback: extract tag configuration from issues backend_tags
-    tagConfig = extractTagsFromIssues(issues);
-  }
-
-  return { specialties, years, tagConfig };
-};
-
-// Fallback function to extract tag structure from issues
-const extractTagsFromIssues = (issues: Issue[]): TagConfig => {
-  const tagConfig: TagConfig = {};
-  
-  issues.forEach(issue => {
-    if (issue.backend_tags) {
-      try {
-        const tags = typeof issue.backend_tags === 'string' 
-          ? JSON.parse(issue.backend_tags) 
-          : issue.backend_tags;
-        
-        if (typeof tags === 'object' && tags !== null) {
-          Object.entries(tags).forEach(([category, tagList]) => {
-            if (!tagConfig[category]) {
-              tagConfig[category] = [];
-            }
-            
-            if (Array.isArray(tagList)) {
-              tagList.forEach(tag => {
-                if (typeof tag === 'string' && !tagConfig[category].includes(tag)) {
-                  tagConfig[category].push(tag);
-                }
-              });
-            }
-          });
-        }
-      } catch (error) {
-        // Skip parsing errors for individual issues
-      }
-    }
-  });
-  
-  // Sort tag arrays for consistency
-  Object.keys(tagConfig).forEach(category => {
-    tagConfig[category].sort();
-  });
-  
-  return tagConfig;
+  return { specialties, years };
 };
 
 export const useOptimizedArchiveData = () => {
@@ -172,9 +98,9 @@ export const useOptimizedArchiveData = () => {
     queryKey: ['archive-metadata', issues.length],
     queryFn: () => fetchArchiveMetadata(issues),
     enabled: issues.length > 0,
-    staleTime: 15 * 60 * 1000, // 15 minutes - metadata changes less frequently
+    staleTime: 15 * 60 * 1000, // 15 minutes
     gcTime: 45 * 60 * 1000, // 45 minutes
-    retry: 1, // Less critical, single retry
+    retry: 1,
   });
 
   const isLoading = issuesLoading || (issues.length > 0 && metadataLoading);
@@ -186,7 +112,6 @@ export const useOptimizedArchiveData = () => {
       totalCount: issues.length,
       specialties: metadata?.specialties || [],
       years: metadata?.years || [],
-      tagConfig: metadata?.tagConfig || {},
     } as ArchiveDataState,
     isLoading,
     error,
