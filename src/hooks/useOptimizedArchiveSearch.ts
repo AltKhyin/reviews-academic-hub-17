@@ -1,5 +1,5 @@
 
-// ABOUTME: Optimized archive search with hierarchical backend_tags and client-side filtering
+// ABOUTME: Optimized archive search with hierarchical backend_tags and client-side scoring (no filtering)
 import { useMemo } from 'react';
 import { useOptimizedArchiveData } from './useOptimizedArchiveData';
 import { Issue } from '@/types/issue';
@@ -26,43 +26,61 @@ interface SearchResult {
   };
 }
 
-// Client-side search scoring algorithm
-const calculateSearchScore = (issue: Issue, searchQuery: string): number => {
-  if (!searchQuery.trim()) return 0;
-  
-  const query = searchQuery.toLowerCase();
+// Enhanced search scoring algorithm with tag relevance boosting
+const calculateSearchScore = (issue: Issue, searchQuery: string, selectedTags: string[]): number => {
   let score = 0;
   
-  // Title matches (highest priority)
-  if (issue.title?.toLowerCase().includes(query)) score += 10;
-  if (issue.search_title?.toLowerCase().includes(query)) score += 8;
-  
-  // Author matches
-  if (issue.authors?.toLowerCase().includes(query)) score += 6;
-  
-  // Description matches
-  if (issue.description?.toLowerCase().includes(query)) score += 4;
-  if (issue.search_description?.toLowerCase().includes(query)) score += 3;
-  
-  // Specialty matches
-  if (issue.specialty?.toLowerCase().includes(query)) score += 5;
-  
-  // Backend tags matches
-  if (issue.backend_tags) {
-    try {
-      const tags = typeof issue.backend_tags === 'string' 
-        ? JSON.parse(issue.backend_tags) 
-        : issue.backend_tags;
-      
-      const tagString = JSON.stringify(tags).toLowerCase();
-      if (tagString.includes(query)) score += 3;
-    } catch (e) {
-      if (typeof issue.backend_tags === 'string' && 
-          issue.backend_tags.toLowerCase().includes(query)) {
-        score += 3;
+  // Base relevance score for search query
+  if (searchQuery.trim()) {
+    const query = searchQuery.toLowerCase();
+    
+    // Title matches (highest priority)
+    if (issue.title?.toLowerCase().includes(query)) score += 10;
+    if (issue.search_title?.toLowerCase().includes(query)) score += 8;
+    
+    // Author matches
+    if (issue.authors?.toLowerCase().includes(query)) score += 6;
+    
+    // Description matches
+    if (issue.description?.toLowerCase().includes(query)) score += 4;
+    if (issue.search_description?.toLowerCase().includes(query)) score += 3;
+    
+    // Specialty matches
+    if (issue.specialty?.toLowerCase().includes(query)) score += 5;
+    
+    // Backend tags matches
+    if (issue.backend_tags) {
+      try {
+        const tags = typeof issue.backend_tags === 'string' 
+          ? JSON.parse(issue.backend_tags) 
+          : issue.backend_tags;
+        
+        const tagString = JSON.stringify(tags).toLowerCase();
+        if (tagString.includes(query)) score += 3;
+      } catch (e) {
+        if (typeof issue.backend_tags === 'string' && 
+            issue.backend_tags.toLowerCase().includes(query)) {
+          score += 3;
+        }
       }
     }
   }
+  
+  // Tag relevance boosting (key change - this boosts instead of filters)
+  if (selectedTags.length > 0) {
+    const tagMatches = calculateTagMatches(issue, selectedTags);
+    // Each tag match significantly boosts the score
+    score += tagMatches * 15;
+    
+    // Additional boost for specialty exact matches
+    if (selectedTags.includes(issue.specialty)) {
+      score += 25;
+    }
+  }
+  
+  // Base recency score to ensure all items have some ordering
+  const daysSinceCreated = (Date.now() - new Date(issue.created_at).getTime()) / (1000 * 60 * 60 * 24);
+  score += Math.max(0, 100 - daysSinceCreated * 0.1); // Slight recency bonus
   
   return score;
 };
@@ -116,11 +134,81 @@ const calculateTagMatches = (issue: Issue, selectedTags: string[]): number => {
   return matches;
 };
 
-// Advanced filtering with performance optimization
-const filterAndSortIssues = (
+// Get contextual tags based on selected tags and search query
+const getContextualTags = (
+  issues: Issue[],
+  selectedTags: string[],
+  searchQuery: string,
+  tagConfig: Record<string, string[]>
+): string[] => {
+  const contextualTags = new Set<string>();
+  
+  // If no tags selected, show popular tags based on search
+  if (selectedTags.length === 0) {
+    if (searchQuery.trim()) {
+      const allTags = Object.values(tagConfig).flat();
+      allTags.forEach(tag => {
+        if (tag.toLowerCase().includes(searchQuery.toLowerCase())) {
+          contextualTags.add(tag);
+        }
+      });
+    }
+    return Array.from(contextualTags).slice(0, 5);
+  }
+  
+  // Find related tags from the same categories as selected tags
+  selectedTags.forEach(selectedTag => {
+    Object.entries(tagConfig).forEach(([category, tags]) => {
+      if (tags.includes(selectedTag)) {
+        // Add other tags from the same category
+        tags.forEach(tag => {
+          if (tag !== selectedTag && !selectedTags.includes(tag)) {
+            contextualTags.add(tag);
+          }
+        });
+      }
+    });
+  });
+  
+  // Also find tags that commonly appear with selected tags in issues
+  const issuesWithSelectedTags = issues.filter(issue => 
+    calculateTagMatches(issue, selectedTags) > 0
+  );
+  
+  issuesWithSelectedTags.forEach(issue => {
+    if (issue.backend_tags) {
+      try {
+        const tags = typeof issue.backend_tags === 'string' 
+          ? JSON.parse(issue.backend_tags) 
+          : issue.backend_tags;
+        
+        if (typeof tags === 'object') {
+          Object.values(tags).forEach(tagList => {
+            if (Array.isArray(tagList)) {
+              tagList.forEach(tag => {
+                if (typeof tag === 'string' && 
+                    !selectedTags.includes(tag) &&
+                    !contextualTags.has(tag)) {
+                  contextualTags.add(tag);
+                }
+              });
+            }
+          });
+        }
+      } catch (e) {
+        // Skip parsing errors
+      }
+    }
+  });
+  
+  return Array.from(contextualTags).slice(0, 8);
+};
+
+// Score-based sorting instead of filtering
+const scoreAndSortIssues = (
   issues: Issue[],
   filters: SearchFilters
-): { filtered: Issue[]; metrics: SearchResult['searchMetrics'] } => {
+): { sorted: Issue[]; metrics: SearchResult['searchMetrics'] } => {
   const { searchQuery, selectedTags, specialty, year, sortBy } = filters;
   
   const metrics = {
@@ -130,124 +218,106 @@ const filterAndSortIssues = (
     tagMatches: 0,
   };
   
-  let filtered = issues.filter(issue => {
-    // Specialty filter
-    if (specialty && issue.specialty !== specialty) return false;
+  // Apply hard filters only for specialty and year (these are structural filters)
+  let filteredIssues = issues;
+  if (specialty) {
+    filteredIssues = filteredIssues.filter(issue => issue.specialty === specialty);
+  }
+  if (year) {
+    filteredIssues = filteredIssues.filter(issue => issue.year === year.toString());
+  }
+  
+  // Calculate scores for all remaining issues
+  const scoredIssues = filteredIssues.map(issue => {
+    const score = calculateSearchScore(issue, searchQuery, selectedTags);
     
-    // Year filter
-    if (year && issue.year !== year.toString()) return false;
-    
-    // Tag filter (hierarchical)
-    if (selectedTags.length > 0) {
-      const tagMatches = calculateTagMatches(issue, selectedTags);
-      if (tagMatches === 0) return false;
-      metrics.tagMatches += tagMatches;
-    }
-    
-    // Search query filter
+    // Update metrics for matching issues
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      let hasMatch = false;
-      
-      // Title match
       if (issue.title?.toLowerCase().includes(query) || 
           issue.search_title?.toLowerCase().includes(query)) {
-        hasMatch = true;
         metrics.titleMatches++;
       }
-      
-      // Description match
       if (issue.description?.toLowerCase().includes(query) || 
           issue.search_description?.toLowerCase().includes(query)) {
-        hasMatch = true;
         metrics.descriptionMatches++;
       }
-      
-      // Author match
       if (issue.authors?.toLowerCase().includes(query)) {
-        hasMatch = true;
         metrics.authorMatches++;
       }
-      
-      // Specialty match
-      if (issue.specialty?.toLowerCase().includes(query)) {
-        hasMatch = true;
-      }
-      
-      // Backend tags match
-      if (issue.backend_tags) {
-        try {
-          const tags = typeof issue.backend_tags === 'string' 
-            ? JSON.parse(issue.backend_tags) 
-            : issue.backend_tags;
-          
-          const tagString = JSON.stringify(tags).toLowerCase();
-          if (tagString.includes(query)) {
-            hasMatch = true;
-            metrics.tagMatches++;
-          }
-        } catch (e) {
-          if (typeof issue.backend_tags === 'string' && 
-              issue.backend_tags.toLowerCase().includes(query)) {
-            hasMatch = true;
-            metrics.tagMatches++;
-          }
-        }
-      }
-      
-      if (!hasMatch) return false;
     }
     
-    return true;
+    if (selectedTags.length > 0) {
+      const tagMatches = calculateTagMatches(issue, selectedTags);
+      if (tagMatches > 0) {
+        metrics.tagMatches += tagMatches;
+      }
+    }
+    
+    return { ...issue, searchScore: score };
   });
   
-  // Sort results
-  filtered.sort((a, b) => {
+  // Sort by score and secondary criteria
+  scoredIssues.sort((a, b) => {
     switch (sortBy) {
-      case 'newest':
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      case 'oldest':
-        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-      case 'title':
-        return (a.title || '').localeCompare(b.title || '');
       case 'score':
-        if (searchQuery.trim()) {
-          const scoreA = calculateSearchScore(a, searchQuery);
-          const scoreB = calculateSearchScore(b, searchQuery);
-          return scoreB - scoreA;
+        return b.searchScore - a.searchScore;
+      case 'newest':
+        if (Math.abs(b.searchScore - a.searchScore) < 5) { // Similar scores
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         }
-        return (b.score || 0) - (a.score || 0);
+        return b.searchScore - a.searchScore;
+      case 'oldest':
+        if (Math.abs(b.searchScore - a.searchScore) < 5) {
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        }
+        return b.searchScore - a.searchScore;
+      case 'title':
+        if (Math.abs(b.searchScore - a.searchScore) < 5) {
+          return (a.title || '').localeCompare(b.title || '');
+        }
+        return b.searchScore - a.searchScore;
       default:
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        return b.searchScore - a.searchScore;
     }
   });
   
-  return { filtered, metrics };
+  return { sorted: scoredIssues, metrics };
 };
 
 export const useOptimizedArchiveSearch = (filters: SearchFilters) => {
   // Fetch all data once with aggressive caching
   const { data, isLoading, error } = useOptimizedArchiveData();
   
-  // Memoized filtering and sorting
-  const searchResult = useMemo((): SearchResult => {
+  // Memoized scoring and sorting
+  const searchResult = useMemo((): SearchResult & { contextualTags: string[] } => {
     if (!data?.issues) {
       return {
         issues: [],
         totalCount: 0,
         filteredCount: 0,
-        searchMetrics: { titleMatches: 0, descriptionMatches: 0, authorMatches: 0, tagMatches: 0 }
+        searchMetrics: { titleMatches: 0, descriptionMatches: 0, authorMatches: 0, tagMatches: 0 },
+        contextualTags: []
       };
     }
     
-    const { filtered, metrics } = filterAndSortIssues(data.issues, filters);
-    const archiveIssues = convertIssuesToArchiveIssues(filtered);
+    const { sorted, metrics } = scoreAndSortIssues(data.issues, filters);
+    const archiveIssues = convertIssuesToArchiveIssues(sorted);
+    
+    // Calculate contextual tags
+    const contextualTags = getContextualTags(
+      data.issues, 
+      filters.selectedTags, 
+      filters.searchQuery,
+      data.tagConfig || {}
+    );
     
     return {
       issues: archiveIssues,
       totalCount: data.totalCount,
-      filteredCount: filtered.length,
-      searchMetrics: metrics
+      filteredCount: sorted.length,
+      searchMetrics: metrics,
+      contextualTags
     };
   }, [data, filters.searchQuery, filters.selectedTags, filters.specialty, filters.year, filters.sortBy]);
   
