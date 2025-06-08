@@ -1,3 +1,4 @@
+
 // ABOUTME: Advanced performance utilities for memory leak detection, query optimization, and resource management
 interface MemoryMetrics {
   heapUsed: number;
@@ -51,24 +52,24 @@ class AdvancedMemoryLeakDetector {
     const originalClearTimeout = window.clearTimeout;
     const originalClearInterval = window.clearInterval;
     
-    window.setTimeout = (...args) => {
-      const id = originalSetTimeout(...args);
+    window.setTimeout = (handler: TimerHandler, timeout?: number, ...args: any[]) => {
+      const id = originalSetTimeout(handler, timeout, ...args);
       this.timers.add(id);
       return id;
     };
     
-    window.setInterval = (...args) => {
-      const id = originalSetInterval(...args);
+    window.setInterval = (handler: TimerHandler, timeout?: number, ...args: any[]) => {
+      const id = originalSetInterval(handler, timeout, ...args);
       this.timers.add(id);
       return id;
     };
     
-    window.clearTimeout = (id) => {
+    window.clearTimeout = (id: number) => {
       this.timers.delete(id);
       return originalClearTimeout(id);
     };
     
-    window.clearInterval = (id) => {
+    window.clearInterval = (id: number) => {
       this.timers.delete(id);
       return originalClearInterval(id);
     };
