@@ -44,14 +44,17 @@ const getNetworkCondition = (): NetworkCondition => {
   const downlink = connection.downlink;
   const saveData = connection.saveData;
   
+  const isSlowConnection = effectiveType === 'slow-2g' || 
+                          effectiveType === '2g' ||
+                          saveData === true;
+  const isFastConnection = effectiveType === '4g' && downlink > 2;
+  
   return {
     effectiveType,
     downlink,
     saveData,
-    isSlowConnection: effectiveType === 'slow-2g' || 
-                     effectiveType === '2g' ||
-                     saveData === true,
-    isFastConnection: effectiveType === '4g' && downlink > 2
+    isSlowConnection,
+    isFastConnection
   };
 };
 
