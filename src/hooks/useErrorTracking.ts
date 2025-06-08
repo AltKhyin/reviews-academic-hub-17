@@ -346,6 +346,6 @@ export const withErrorTracking = (Component: React.ComponentType<any>) => {
       
     }, [trackError]);
     
-    return <Component {...props} />;
+    return React.createElement(Component, props);
   };
 };
