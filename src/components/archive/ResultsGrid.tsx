@@ -1,105 +1,29 @@
 
-// ABOUTME: Clean results grid without filtering descriptors to prevent content displacement
+// ABOUTME: Updated results grid component using the optimized masonry grid
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Search } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { MasonryGrid } from './MasonryGrid';
-import { ArchiveIssue } from '@/types/archive';
+import { OptimizedMasonryGrid } from './OptimizedMasonryGrid';
+import { Issue } from '@/types/issue';
 
 interface ResultsGridProps {
-  issues: Array<ArchiveIssue & { tagMatches?: number }>;
-  isLoading: boolean;
+  issues: Issue[];
   searchQuery: string;
-  onSearchChange: (query: string) => void;
+  selectedTags: string[];
+  isLoading: boolean;
 }
 
 export const ResultsGrid: React.FC<ResultsGridProps> = ({
   issues,
-  isLoading,
   searchQuery,
-  onSearchChange
+  selectedTags,
+  isLoading,
 }) => {
-  const navigate = useNavigate();
-
-  const handleIssueClick = (issueId: string) => {
-    navigate(`/article/${issueId}`);
-  };
-
-  if (isLoading) {
-    return (
-      <div className="space-y-8">
-        {/* Loading State with Masonry-style Skeletons */}
-        <div className="relative">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-            {Array.from({ length: 12 }).map((_, index) => {
-              // Varying skeleton heights for masonry effect
-              const heights = ['h-80', 'h-96', 'h-72', 'h-88', 'h-64'];
-              const height = heights[index % heights.length];
-              
-              return (
-                <div 
-                  key={index}
-                  className={`bg-card border border-border rounded-lg overflow-hidden animate-pulse ${height}`}
-                >
-                  <div className="h-full bg-muted/20"></div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (issues.length === 0) {
-    return (
-      <div className="text-center py-20">
-        <div className="max-w-md mx-auto space-y-6">
-          <div className="w-20 h-20 bg-muted/20 rounded-full flex items-center justify-center mx-auto">
-            <Search className="w-10 h-10 text-muted-foreground" />
-          </div>
-          <div className="space-y-3">
-            <h3 className="text-xl font-semibold text-foreground">
-              Nenhuma edição encontrada
-            </h3>
-            {searchQuery && (
-              <p className="text-muted-foreground leading-relaxed">
-                Sua busca por <span className="font-medium text-foreground">"{searchQuery}"</span> não retornou resultados. 
-                <br />
-                Tente ajustar os termos de busca ou remover alguns filtros.
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-8">
-      {/* Clean header with discrete search - no filtering count displays */}
-      <div className="flex justify-between items-center">
-        {/* Removed the count display that shows "X edições encontradas" */}
-        <div></div>
-        
-        {/* Discrete search */}
-        <div className="relative w-72">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-          <Input
-            type="text"
-            placeholder="Buscar conteúdo..."
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="pl-10 h-9 bg-muted/10 border-muted/30 text-foreground placeholder:text-muted-foreground focus:border-foreground focus:ring-1 focus:ring-foreground/20 text-sm rounded-full"
-          />
-        </div>
-      </div>
-      
-      {/* Pinterest-style Masonry Grid */}
-      <MasonryGrid
+    <div className="w-full">
+      <OptimizedMasonryGrid
         issues={issues}
-        onIssueClick={handleIssueClick}
+        searchQuery={searchQuery}
+        selectedTags={selectedTags}
+        isLoading={isLoading}
       />
     </div>
   );
