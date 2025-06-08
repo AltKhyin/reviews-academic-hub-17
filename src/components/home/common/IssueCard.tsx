@@ -5,12 +5,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, User, Eye, TrendingUp } from 'lucide-react';
 import { Issue } from '@/types/issue';
-import { PopularIssue } from '@/types/home';
+import { PopularIssue, HomeIssue } from '@/types/home';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface IssueCardProps {
-  issue: Issue | PopularIssue;
+  issue: Issue | PopularIssue | HomeIssue;
   onClick: () => void;
   showNewBadge?: boolean;
   showViewCount?: boolean;

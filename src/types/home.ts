@@ -18,12 +18,21 @@ export interface HomeSectionConfig {
   [key: string]: any;
 }
 
+// More specific section configs that extend the base
+export interface RecentIssuesSectionConfig extends HomeSectionConfig {
+  days_for_new_badge: number;
+}
+
+export interface PopularIssuesSectionConfig extends HomeSectionConfig {
+  period: string;
+}
+
 export interface HomeSettings {
   sections: {
     reviewer_notes: HomeSectionConfig;
     featured_carousel: HomeSectionConfig;
-    recent_issues: HomeSectionConfig & { days_for_new_badge: number };
-    popular_issues: HomeSectionConfig & { period: string };
+    recent_issues: RecentIssuesSectionConfig;
+    popular_issues: PopularIssuesSectionConfig;
     recommended_issues: HomeSectionConfig;
     upcoming_releases: HomeSectionConfig;
   };
@@ -47,6 +56,18 @@ export interface PopularIssue {
   specialty: string;
   published_at: string;
   view_count: number;
+}
+
+// Lightweight Issue type for home page display
+export interface HomeIssue {
+  id: string;
+  title: string;
+  cover_image_url?: string;
+  specialty: string;
+  published_at: string;
+  description?: string;
+  authors?: string;
+  score?: number;
 }
 
 export interface IssueView {

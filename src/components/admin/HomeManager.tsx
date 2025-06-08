@@ -1,4 +1,3 @@
-
 // ABOUTME: Home page management interface for admins
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,7 +15,7 @@ import { useHomeData } from '@/hooks/useHomeData';
 import { useReviewerNotes } from '@/hooks/useReviewerNotes';
 import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { HomeSettings } from '@/types/home';
+import { HomeSettings, HomeSectionConfig } from '@/types/home';
 
 export const HomeManager = () => {
   const { 
@@ -62,7 +61,7 @@ export const HomeManager = () => {
     setEditingNote(null);
   };
 
-  const handleSectionToggle = (sectionId: string) => {
+  const handleSectionToggle = (sectionId: keyof HomeSettings['sections']) => {
     if (!localSettings) return;
     
     const updatedSettings = {
@@ -70,8 +69,8 @@ export const HomeManager = () => {
       sections: {
         ...localSettings.sections,
         [sectionId]: {
-          ...localSettings.sections[sectionId as keyof typeof localSettings.sections],
-          visible: !localSettings.sections[sectionId as keyof typeof localSettings.sections].visible
+          ...localSettings.sections[sectionId],
+          visible: !localSettings.sections[sectionId].visible
         }
       }
     };
@@ -79,7 +78,7 @@ export const HomeManager = () => {
     setLocalSettings(updatedSettings);
   };
 
-  const handleSectionReorder = (sectionId: string, direction: 'up' | 'down') => {
+  const handleSectionReorder = (sectionId: keyof HomeSettings['sections'], direction: 'up' | 'down') => {
     if (!localSettings) return;
 
     const sections = Object.entries(localSettings.sections);
@@ -97,16 +96,16 @@ export const HomeManager = () => {
     
     // Swap orders
     const newSections = { ...localSettings.sections };
-    const currentOrder = newSections[sectionId as keyof typeof newSections].order;
-    const targetSectionId = sections[targetIndex][0];
-    const targetOrder = newSections[targetSectionId as keyof typeof newSections].order;
+    const currentOrder = newSections[sectionId].order;
+    const targetSectionId = sections[targetIndex][0] as keyof HomeSettings['sections'];
+    const targetOrder = newSections[targetSectionId].order;
     
-    newSections[sectionId as keyof typeof newSections] = {
-      ...newSections[sectionId as keyof typeof newSections],
+    newSections[sectionId] = {
+      ...newSections[sectionId],
       order: targetOrder
     };
-    newSections[targetSectionId as keyof typeof newSections] = {
-      ...newSections[targetSectionId as keyof typeof newSections],
+    newSections[targetSectionId] = {
+      ...newSections[targetSectionId],
       order: currentOrder
     };
 

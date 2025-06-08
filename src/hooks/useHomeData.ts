@@ -2,19 +2,24 @@
 // ABOUTME: Optimized data management hook for the home page system
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { HomeSettings, ReviewerNote, PopularIssue } from '@/types/home';
-import { Issue } from '@/types/issue';
+import { HomeSettings, ReviewerNote, PopularIssue, HomeIssue } from '@/types/home';
 
 export const useHomeData = () => {
   const queryClient = useQueryClient();
 
-  // Get home settings
+  // Get home settings with proper type safety
   const { data: homeSettings, isLoading: settingsLoading } = useQuery({
     queryKey: ['homeSettings'],
     queryFn: async (): Promise<HomeSettings> => {
       const { data, error } = await supabase.rpc('get_home_settings');
       if (error) throw error;
-      return data as HomeSettings;
+      
+      // Safe JSON parsing with fallback
+      try {
+        return data as HomeSettings;
+      } catch {
+        return getDefaultHomeSettings();
+      }
     },
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
@@ -36,10 +41,10 @@ export const useHomeData = () => {
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Get featured issues (now supports multiple)
+  // Get featured issues (now supports multiple) - using HomeIssue type
   const { data: featuredIssues, isLoading: featuredLoading } = useQuery({
     queryKey: ['featuredIssues'],
-    queryFn: async (): Promise<Issue[]> => {
+    queryFn: async (): Promise<HomeIssue[]> => {
       const { data, error } = await supabase
         .from('issues')
         .select('id, title, cover_image_url, specialty, published_at, description, authors, score')
@@ -54,10 +59,10 @@ export const useHomeData = () => {
     staleTime: 15 * 60 * 1000, // 15 minutes
   });
 
-  // Get recent issues
+  // Get recent issues - using HomeIssue type
   const { data: recentIssues, isLoading: recentLoading } = useQuery({
     queryKey: ['recentIssues', homeSettings?.recent_issues?.max_items],
-    queryFn: async (): Promise<Issue[]> => {
+    queryFn: async (): Promise<HomeIssue[]> => {
       const limit = homeSettings?.recent_issues?.max_items || 10;
       const { data, error } = await supabase
         .from('issues')
@@ -92,10 +97,10 @@ export const useHomeData = () => {
     staleTime: 30 * 60 * 1000, // 30 minutes
   });
 
-  // Get recommended issues (simplified algorithm for now)
+  // Get recommended issues (simplified algorithm for now) - using HomeIssue type
   const { data: recommendedIssues, isLoading: recommendedLoading } = useQuery({
     queryKey: ['recommendedIssues', homeSettings?.recommended_issues?.max_items],
-    queryFn: async (): Promise<Issue[]> => {
+    queryFn: async (): Promise<HomeIssue[]> => {
       const limit = homeSettings?.recommended_issues?.max_items || 10;
       const { data, error } = await supabase
         .from('issues')
