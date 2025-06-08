@@ -1,6 +1,6 @@
 
 // ABOUTME: Bridge hook that connects optimized sidebar data fetching with the sidebar store
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useOptimizedSidebarData } from './useOptimizedSidebarData';
 import { useSidebarStore } from '@/stores/sidebarStore';
 import { supabase } from '@/integrations/supabase/client';
@@ -119,15 +119,36 @@ const fetchUserPollVote = async (userId: string, pollId: string) => {
 
 export const useSidebarDataBridge = (userId?: string) => {
   const optimizedData = useOptimizedSidebarData();
-  const {
-    setConfig,
-    setStats,
-    setOnlineUsers,
-    setThreads,
-    setPoll,
-    setUserVote,
-    setLoading
-  } = useSidebarStore();
+  const sidebarStore = useSidebarStore();
+
+  // Get stable references to store setters using useCallback
+  const setConfig = useCallback((config: SidebarConfig | null) => {
+    sidebarStore.setConfig(config);
+  }, [sidebarStore.setConfig]);
+
+  const setStats = useCallback((stats: any) => {
+    sidebarStore.setStats(stats);
+  }, [sidebarStore.setStats]);
+
+  const setOnlineUsers = useCallback((users: any[]) => {
+    sidebarStore.setOnlineUsers(users);
+  }, [sidebarStore.setOnlineUsers]);
+
+  const setThreads = useCallback((threads: any[]) => {
+    sidebarStore.setThreads(threads);
+  }, [sidebarStore.setThreads]);
+
+  const setPoll = useCallback((poll: Poll | null) => {
+    sidebarStore.setPoll(poll);
+  }, [sidebarStore.setPoll]);
+
+  const setUserVote = useCallback((vote: number | null) => {
+    sidebarStore.setUserVote(vote);
+  }, [sidebarStore.setUserVote]);
+
+  const setLoading = useCallback((section: string, loading: boolean) => {
+    sidebarStore.setLoading(section as any, loading);
+  }, [sidebarStore.setLoading]);
 
   // Fetch sidebar configuration
   const { data: config, isLoading: configLoading } = useQuery({
@@ -154,50 +175,54 @@ export const useSidebarDataBridge = (userId?: string) => {
     gcTime: 15 * 60 * 1000, // 15 minutes
   });
 
-  // Update store when optimized data changes
+  // Update store when optimized data changes - with dependency arrays that won't cause loops
   useEffect(() => {
-    if (optimizedData.stats) {
+    if (optimizedData.stats && JSON.stringify(optimizedData.stats) !== JSON.stringify(sidebarStore.stats)) {
       setStats(optimizedData.stats);
     }
-  }, [optimizedData.stats, setStats]);
+  }, [optimizedData.stats, setStats]); // Removed sidebarStore.stats from deps to prevent loop
 
   useEffect(() => {
-    if (optimizedData.onlineUsers) {
+    if (optimizedData.onlineUsers && optimizedData.onlineUsers.length > 0) {
       // Map last_seen to last_active for type compatibility
       const mappedUsers = optimizedData.onlineUsers.map(user => ({
         ...user,
         last_active: user.last_seen
       }));
-      setOnlineUsers(mappedUsers);
+      
+      // Only update if the data has actually changed
+      if (JSON.stringify(mappedUsers) !== JSON.stringify(sidebarStore.onlineUsers)) {
+        setOnlineUsers(mappedUsers);
+      }
     }
-  }, [optimizedData.onlineUsers, setOnlineUsers]);
+  }, [optimizedData.onlineUsers, setOnlineUsers]); // Removed sidebarStore.onlineUsers from deps
 
   useEffect(() => {
-    if (optimizedData.topThreads) {
+    if (optimizedData.topThreads && JSON.stringify(optimizedData.topThreads) !== JSON.stringify(sidebarStore.threads)) {
       setThreads(optimizedData.topThreads);
     }
-  }, [optimizedData.topThreads, setThreads]);
+  }, [optimizedData.topThreads, setThreads]); // Removed sidebarStore.threads from deps
 
   // Update store when configuration loads
   useEffect(() => {
-    if (config) {
+    if (config && JSON.stringify(config) !== JSON.stringify(sidebarStore.config)) {
       setConfig(config);
     }
-  }, [config, setConfig]);
+  }, [config, setConfig]); // Removed sidebarStore.config from deps
 
   // Update store when poll data loads
   useEffect(() => {
-    if (poll) {
+    if (poll && JSON.stringify(poll) !== JSON.stringify(sidebarStore.poll)) {
       setPoll(poll);
     }
-  }, [poll, setPoll]);
+  }, [poll, setPoll]); // Removed sidebarStore.poll from deps
 
   // Update store when user vote loads
   useEffect(() => {
-    if (userVote !== undefined) {
+    if (userVote !== undefined && userVote !== sidebarStore.userVote) {
       setUserVote(userVote);
     }
-  }, [userVote, setUserVote]);
+  }, [userVote, setUserVote]); // Removed sidebarStore.userVote from deps
 
   // Update loading states
   useEffect(() => {
