@@ -5,9 +5,10 @@ import { useOptimizedSidebarData } from './useOptimizedSidebarData';
 import { useSidebarStore } from '@/stores/sidebarStore';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { SidebarConfig, Poll } from '@/types/sidebar';
 
 // Fetch sidebar configuration from site_meta table
-const fetchSidebarConfig = async () => {
+const fetchSidebarConfig = async (): Promise<SidebarConfig> => {
   const { data, error } = await supabase
     .from('site_meta')
     .select('value')
@@ -52,11 +53,11 @@ const fetchSidebarConfig = async () => {
     };
   }
 
-  return data.value;
+  return data.value as SidebarConfig;
 };
 
 // Fetch weekly poll data
-const fetchWeeklyPoll = async () => {
+const fetchWeeklyPoll = async (): Promise<Poll | null> => {
   const { data, error } = await supabase
     .from('polls')
     .select('*')
@@ -67,7 +68,16 @@ const fetchWeeklyPoll = async () => {
 
   if (error || !data) return null;
 
-  return data;
+  // Type-safe conversion from database poll to Poll interface
+  return {
+    id: data.id,
+    question: data.question,
+    options: Array.isArray(data.options) ? data.options as string[] : [],
+    votes: Array.isArray(data.votes) ? data.votes as number[] : [],
+    closes_at: data.closes_at,
+    created_at: data.created_at,
+    active: data.active
+  };
 };
 
 // Fetch user's poll vote
@@ -132,7 +142,12 @@ export const useSidebarDataBridge = (userId?: string) => {
 
   useEffect(() => {
     if (optimizedData.onlineUsers) {
-      setOnlineUsers(optimizedData.onlineUsers);
+      // Map last_seen to last_active for type compatibility
+      const mappedUsers = optimizedData.onlineUsers.map(user => ({
+        ...user,
+        last_active: user.last_seen
+      }));
+      setOnlineUsers(mappedUsers);
     }
   }, [optimizedData.onlineUsers, setOnlineUsers]);
 

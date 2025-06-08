@@ -29,7 +29,7 @@ export const useOptimizedAuth = () => {
 
   // Single query to get all user data including permissions
   const { data: userData, isLoading, error } = useQuery({
-    queryKey: queryKeys.userPermissions(user?.id),
+    queryKey: queryKeys.userPermissions(user?.id || ''),
     queryFn: async (): Promise<OptimizedUserData | null> => {
       if (!user) return null;
 
@@ -90,7 +90,7 @@ export const useOptimizedAuth = () => {
         return null;
       }
     },
-    ...queryConfigs.profile,
+    ...queryConfigs.user,
     enabled: !!user && !!session,
   });
 
@@ -98,12 +98,12 @@ export const useOptimizedAuth = () => {
     user: userData,
     isLoading,
     error,
-    // Convenience getters
+    // Convenience getters with proper null checks
     isAuthenticated: !!userData,
-    isAdmin: userData?.permissions.isAdmin || false,
-    isEditor: userData?.permissions.isEditor || false,
-    canEdit: userData?.permissions.canEdit || false,
-    canManageUsers: userData?.permissions.canManageUsers || false,
+    isAdmin: userData?.permissions?.isAdmin || false,
+    isEditor: userData?.permissions?.isEditor || false,
+    canEdit: userData?.permissions?.canEdit || false,
+    canManageUsers: userData?.permissions?.canManageUsers || false,
     profile: userData?.profile || null,
   };
 };
@@ -113,12 +113,11 @@ export const usePermissions = () => {
   const { user } = useOptimizedAuth();
   
   return {
-    canEditIssues: user?.permissions.canEdit || false,
-    canManageUsers: user?.permissions.canManageUsers || false,
-    canAccessAdmin: user?.permissions.isAdmin || false,
-    canModerateComments: user?.permissions.isAdmin || false,
+    canEditIssues: user?.permissions?.canEdit || false,
+    canManageUsers: user?.permissions?.canManageUsers || false,
+    canAccessAdmin: user?.permissions?.isAdmin || false,
+    canModerateComments: user?.permissions?.isAdmin || false,
     canCreatePosts: !!user, // All authenticated users can create posts
     canVote: !!user, // All authenticated users can vote
   };
 };
-

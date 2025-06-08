@@ -72,7 +72,7 @@ export const useBackgroundSync = (options: BackgroundSyncOptions = {}) => {
       
       queryClient.getQueryCache().getAll().forEach(query => {
         const isStale = query.state.dataUpdatedAt < now - staleThreshold;
-        const isUserSpecific = query.queryKey.includes(user?.id);
+        const isUserSpecific = query.queryKey.includes(user?.user?.id);
         
         // Only invalidate stale user-specific data or critical public data
         if (isStale && (isUserSpecific || query.queryKey.includes('issues'))) {
@@ -84,7 +84,7 @@ export const useBackgroundSync = (options: BackgroundSyncOptions = {}) => {
     }, 15 * 60 * 1000); // Every 15 minutes
     
     return () => clearInterval(syncInterval);
-  }, [queryClient, user?.id, opts.enablePeriodicSync]);
+  }, [queryClient, user?.user?.id, opts.enablePeriodicSync]);
 
   // Visibility-based sync (when user returns to tab)
   const visibilitySync = useCallback(() => {
@@ -94,9 +94,9 @@ export const useBackgroundSync = (options: BackgroundSyncOptions = {}) => {
       if (!document.hidden) {
         // User returned to tab - refresh critical data
         queryClient.invalidateQueries({ queryKey: queryKeys.issues() });
-        if (user) {
-          queryClient.invalidateQueries({ queryKey: queryKeys.userReactions(user.id) });
-          queryClient.invalidateQueries({ queryKey: queryKeys.userBookmarks(user.id) });
+        if (user?.user?.id) {
+          queryClient.invalidateQueries({ queryKey: queryKeys.userReactions(user.user.id) });
+          queryClient.invalidateQueries({ queryKey: queryKeys.userBookmarks(user.user.id) });
         }
         console.log('Background sync: Visibility-based refresh');
       }
@@ -138,8 +138,8 @@ export const useBackgroundSync = (options: BackgroundSyncOptions = {}) => {
       console.log('Background sync: Network reconnected, refreshing data');
       // Refresh critical data when coming back online
       queryClient.invalidateQueries({ queryKey: queryKeys.issues() });
-      if (user) {
-        queryClient.invalidateQueries({ queryKey: queryKeys.profile(user.id) });
+      if (user?.user?.id) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.userPermissions(user.user.id) });
       }
     };
     

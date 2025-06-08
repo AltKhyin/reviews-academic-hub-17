@@ -195,7 +195,7 @@ const fetchCommunityActivity = async () => {
     // Get comments statistics
     const { data: allComments } = await supabase
       .from('comments')
-      .select('id, created_at, user_id');
+      .select('id, created_at, user_id, post_id');
 
     const totalComments = allComments?.length || 0;
 
@@ -206,7 +206,7 @@ const fetchCommunityActivity = async () => {
     );
     
     const activeDiscussions = new Set(
-      recentComments?.map(comment => comment.post_id)
+      recentComments?.map(comment => comment.post_id).filter(Boolean)
     ).size;
 
     // Get top contributors

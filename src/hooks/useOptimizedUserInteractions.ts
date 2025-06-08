@@ -27,19 +27,19 @@ export const useOptimizedUserInteractions = () => {
 
   // Single query to get all user reactions and bookmarks
   const { data: interactions, isLoading } = useQuery({
-    queryKey: queryKeys.userReactions(user?.id || ''),
+    queryKey: queryKeys.userReactions(user?.user?.id || ''),
     queryFn: async (): Promise<UserInteractionsData> => {
-      if (!user) return { reactions: [], bookmarks: [] };
+      if (!user?.user?.id) return { reactions: [], bookmarks: [] };
 
       const [reactionsResult, bookmarksResult] = await Promise.all([
         supabase
           .from('user_article_reactions')
           .select('issue_id, reaction_type')
-          .eq('user_id', user.id),
+          .eq('user_id', user.user.id),
         supabase
           .from('user_bookmarks')
           .select('issue_id, article_id')
-          .eq('user_id', user.id)
+          .eq('user_id', user.user.id)
       ]);
 
       if (reactionsResult.error) throw reactionsResult.error;
@@ -50,19 +50,19 @@ export const useOptimizedUserInteractions = () => {
         bookmarks: bookmarksResult.data || [],
       };
     },
-    ...queryConfigs.profile,
-    enabled: !!user,
+    ...queryConfigs.user,
+    enabled: !!user?.user?.id,
   });
 
   // Helper functions to check specific interactions
   const hasReaction = (issueId: string, reactionType: string) => {
-    return interactions?.reactions.some(
+    return interactions?.reactions?.some(
       r => r.issue_id === issueId && r.reaction_type === reactionType
     ) || false;
   };
 
   const isBookmarked = (issueId: string, articleId?: string) => {
-    return interactions?.bookmarks.some(
+    return interactions?.bookmarks?.some(
       b => b.issue_id === issueId && (!articleId || b.article_id === articleId)
     ) || false;
   };
@@ -74,13 +74,13 @@ export const useOptimizedUserInteractions = () => {
       reactionType: string;
       action: 'add' | 'remove';
     }) => {
-      if (!user) throw new Error('User not authenticated');
+      if (!user?.user?.id) throw new Error('User not authenticated');
 
       if (action === 'add') {
         const { error } = await supabase
           .from('user_article_reactions')
           .insert({
-            user_id: user.id,
+            user_id: user.user.id,
             issue_id: issueId,
             reaction_type: reactionType
           });
@@ -89,7 +89,7 @@ export const useOptimizedUserInteractions = () => {
         const { error } = await supabase
           .from('user_article_reactions')
           .delete()
-          .eq('user_id', user.id)
+          .eq('user_id', user.user.id)
           .eq('issue_id', issueId)
           .eq('reaction_type', reactionType);
         if (error) throw error;
@@ -97,10 +97,10 @@ export const useOptimizedUserInteractions = () => {
     },
     onMutate: async ({ issueId, reactionType, action }) => {
       // Optimistic update
-      await queryClient.cancelQueries({ queryKey: queryKeys.userReactions(user?.id || '') });
+      await queryClient.cancelQueries({ queryKey: queryKeys.userReactions(user?.user?.id || '') });
       
       const previousData = queryClient.getQueryData<UserInteractionsData>(
-        queryKeys.userReactions(user?.id || '')
+        queryKeys.userReactions(user?.user?.id || '')
       );
 
       if (previousData) {
@@ -110,7 +110,7 @@ export const useOptimizedUserInteractions = () => {
               r => !(r.issue_id === issueId && r.reaction_type === reactionType)
             );
 
-        queryClient.setQueryData(queryKeys.userReactions(user?.id || ''), {
+        queryClient.setQueryData(queryKeys.userReactions(user?.user?.id || ''), {
           ...previousData,
           reactions: newReactions,
         });
@@ -122,7 +122,7 @@ export const useOptimizedUserInteractions = () => {
       // Revert optimistic update
       if (context?.previousData) {
         queryClient.setQueryData(
-          queryKeys.userReactions(user?.id || ''),
+          queryKeys.userReactions(user?.user?.id || ''),
           context.previousData
         );
       }
@@ -141,13 +141,13 @@ export const useOptimizedUserInteractions = () => {
       articleId?: string;
       action: 'add' | 'remove';
     }) => {
-      if (!user) throw new Error('User not authenticated');
+      if (!user?.user?.id) throw new Error('User not authenticated');
 
       if (action === 'add') {
         const { error } = await supabase
           .from('user_bookmarks')
           .insert({
-            user_id: user.id,
+            user_id: user.user.id,
             issue_id: issueId,
             article_id: articleId || null
           });
@@ -156,7 +156,7 @@ export const useOptimizedUserInteractions = () => {
         let query = supabase
           .from('user_bookmarks')
           .delete()
-          .eq('user_id', user.id)
+          .eq('user_id', user.user.id)
           .eq('issue_id', issueId);
         
         if (articleId) {
@@ -171,10 +171,10 @@ export const useOptimizedUserInteractions = () => {
     },
     onMutate: async ({ issueId, articleId, action }) => {
       // Optimistic update
-      await queryClient.cancelQueries({ queryKey: queryKeys.userReactions(user?.id || '') });
+      await queryClient.cancelQueries({ queryKey: queryKeys.userReactions(user?.user?.id || '') });
       
       const previousData = queryClient.getQueryData<UserInteractionsData>(
-        queryKeys.userReactions(user?.id || '')
+        queryKeys.userReactions(user?.user?.id || '')
       );
 
       if (previousData) {
@@ -184,7 +184,7 @@ export const useOptimizedUserInteractions = () => {
               b => !(b.issue_id === issueId && (!articleId || b.article_id === articleId))
             );
 
-        queryClient.setQueryData(queryKeys.userReactions(user?.id || ''), {
+        queryClient.setQueryData(queryKeys.userReactions(user?.user?.id || ''), {
           ...previousData,
           bookmarks: newBookmarks,
         });
@@ -196,7 +196,7 @@ export const useOptimizedUserInteractions = () => {
       // Revert optimistic update
       if (context?.previousData) {
         queryClient.setQueryData(
-          queryKeys.userReactions(user?.id || ''),
+          queryKeys.userReactions(user?.user?.id || ''),
           context.previousData
         );
       }
@@ -242,4 +242,3 @@ export const useOptimizedUserInteractions = () => {
     isUpdatingBookmark: bookmarkMutation.isPending,
   };
 };
-
