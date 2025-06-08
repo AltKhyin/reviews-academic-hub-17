@@ -3,7 +3,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useAnalyticsData } from '@/hooks/useAnalyticsData';
+import { useVerifiedAnalytics } from '@/hooks/useVerifiedAnalytics';
 import { UserEngagementPanel } from './UserEngagementPanel';
 import { ContentMetricsPanel } from './ContentMetricsPanel';
 import { CommunityActivityPanel } from './CommunityActivityPanel';
@@ -19,9 +19,14 @@ import {
   AlertCircle,
   CheckCircle
 } from 'lucide-react';
+import { subDays } from 'date-fns';
 
 export const AnalyticsDashboard: React.FC = () => {
-  const { data: analytics, isLoading, error } = useAnalyticsData();
+  const { data: analytics, isLoading, error } = useVerifiedAnalytics({
+    startDate: subDays(new Date(), 30),
+    endDate: new Date(),
+    excludeAdminData: true
+  });
 
   if (isLoading) {
     return (
