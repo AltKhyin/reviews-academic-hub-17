@@ -44,7 +44,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
   const handleReactionClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    toggleReaction(issue.id, 'want_more');
+    toggleReaction({ issueId: issue.id, reactionType: 'want_more' });
   };
 
   const handleBookmarkClick = (e: React.MouseEvent) => {

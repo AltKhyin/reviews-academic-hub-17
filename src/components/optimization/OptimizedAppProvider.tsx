@@ -36,12 +36,12 @@ export const OptimizedAppProvider: React.FC<OptimizedAppProviderProps> = ({
     reportingInterval: 30000, // 30 seconds
   });
 
-  // Initialize error tracking
+  // Initialize error tracking with correct configuration properties
   const { errorMetrics } = useErrorTracking({
-    enableJavaScriptErrors: enableErrorTracking,
-    enableQueryErrors: enableErrorTracking,
-    enableNetworkErrors: enableErrorTracking,
-    maxStoredErrors: 50,
+    enableConsoleLogging: enableErrorTracking,
+    enableRemoteReporting: enableErrorTracking,
+    maxErrorHistory: 50,
+    reportingThreshold: 5,
   });
 
   // Initialize background sync
