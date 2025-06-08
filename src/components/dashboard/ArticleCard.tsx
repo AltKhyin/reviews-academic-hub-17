@@ -1,160 +1,112 @@
-
 import React from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Calendar, User, Heart, Bookmark } from 'lucide-react';
 import { Issue } from '@/types/issue';
-import { useNavigate } from 'react-router-dom';
-import { Calendar, User, FileText, Star } from 'lucide-react';
+import { useOptimizedUserInteractions } from '@/hooks/useOptimizedUserInteractions';
 
 interface ArticleCardProps {
   issue: Issue;
-  featured?: boolean;
-  variant?: 'default' | 'compact' | 'featured';
-  className?: string;
+  onClick: () => void;
 }
 
-export const ArticleCard: React.FC<ArticleCardProps> = ({ 
-  issue, 
-  featured = false, 
-  variant = 'default',
-  className = '' 
-}) => {
-  const navigate = useNavigate();
+export const ArticleCard: React.FC<ArticleCardProps> = ({ issue, onClick }) => {
+  const { 
+    hasReaction, 
+    isBookmarked, 
+    toggleReaction, 
+    toggleBookmark,
+    isUpdatingReaction,
+    isUpdatingBookmark
+  } = useOptimizedUserInteractions();
 
-  const handleClick = () => {
-    navigate(`/article/${issue.id}`);
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
   };
 
-  const getCardSizeClass = () => {
-    switch (variant) {
-      case 'compact':
-        return 'h-32';
-      case 'featured':
-        return 'h-64 md:h-80';
-      default:
-        return 'h-48';
-    }
+  const handleReactionClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toggleReaction(issue.id, 'want_more');
   };
 
-  const formatDate = (date: string) => {
-    try {
-      return new Date(date).toLocaleDateString('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-      });
-    } catch {
-      return 'Data inválida';
-    }
+  const handleBookmarkClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toggleBookmark(issue.id);
   };
 
-  const getSpecialtyColor = (specialty: string) => {
-    const colors = {
-      'Cardiologia': 'bg-red-500/20 text-red-300',
-      'Neurologia': 'bg-purple-500/20 text-purple-300',
-      'Oncologia': 'bg-orange-500/20 text-orange-300',
-      'Pediatria': 'bg-green-500/20 text-green-300',
-      'Psiquiatria': 'bg-blue-500/20 text-blue-300',
-      'Nutrição': 'bg-yellow-500/20 text-yellow-300',
-    };
-    return colors[specialty as keyof typeof colors] || 'bg-gray-500/20 text-gray-300';
-  };
+  const hasWantMoreReaction = hasReaction(issue.id, 'want_more');
+  const isIssueBookmarked = isBookmarked(issue.id);
 
   return (
     <Card 
-      className={`group cursor-pointer transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:scale-[1.02] border-white/10 bg-white/5 backdrop-blur-sm ${getCardSizeClass()} ${className}`}
-      onClick={handleClick}
+      className="group cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-card border-border overflow-hidden"
+      onClick={onClick}
     >
-      <CardContent className="p-0 h-full flex flex-col">
-        {/* Cover Image */}
-        <div className="relative h-1/2 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-t-lg overflow-hidden">
-          {issue.cover_image_url ? (
-            <img 
-              src={issue.cover_image_url} 
-              alt={issue.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-              }}
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <FileText className="w-12 h-12 text-white/30" />
-            </div>
-          )}
-          
-          {/* Featured Badge */}
-          {(featured || issue.featured) && (
-            <div className="absolute top-2 right-2">
-              <Badge className="bg-yellow-500/90 text-yellow-900 hover:bg-yellow-500">
-                <Star className="w-3 h-3 mr-1" />
-                Destaque
-              </Badge>
-            </div>
-          )}
-          
-          {/* Published Status */}
-          {!issue.published && (
-            <div className="absolute top-2 left-2">
-              <Badge variant="secondary" className="bg-gray-500/90 text-white">
-                Rascunho
-              </Badge>
-            </div>
-          )}
-        </div>
+      {/* Cover Image - Primary Visual Element */}
+      <div className="relative aspect-video overflow-hidden">
+        <img
+          src={issue.cover_image_url}
+          alt={issue.search_title || issue.title}
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          onError={(e) => {
+            const img = e.target as HTMLImageElement;
+            img.src = 'https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7';
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+      </div>
+      
+      {/* Optimized action buttons with batched state */}
+      <div className="absolute top-3 right-3 flex gap-2 z-10">
+        <button
+          onClick={handleBookmarkClick}
+          disabled={isUpdatingBookmark}
+          className={`p-2 rounded-full backdrop-blur-sm transition-colors ${
+            isIssueBookmarked 
+              ? 'bg-yellow-500/20 text-yellow-400' 
+              : 'bg-black/20 text-white hover:bg-black/40'
+          }`}
+        >
+          <Bookmark className={`w-4 h-4 ${isIssueBookmarked ? 'fill-current' : ''}`} />
+        </button>
+        
+        <button
+          onClick={handleReactionClick}
+          disabled={isUpdatingReaction}
+          className={`p-2 rounded-full backdrop-blur-sm transition-colors ${
+            hasWantMoreReaction 
+              ? 'bg-red-500/20 text-red-400' 
+              : 'bg-black/20 text-white hover:bg-black/40'
+          }`}
+        >
+          <Heart className={`w-4 h-4 ${hasWantMoreReaction ? 'fill-current' : ''}`} />
+        </button>
+      </div>
 
-        {/* Content */}
-        <div className="p-4 h-1/2 flex flex-col justify-between">
-          <div className="space-y-2">
-            {/* Title */}
-            <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-primary transition-colors">
-              {issue.title}
-            </h3>
-            
-            {/* Description */}
-            {issue.description && variant !== 'compact' && (
-              <p className="text-xs text-muted-foreground line-clamp-2">
-                {issue.description}
-              </p>
-            )}
+      {/* Content Overlay - Always Visible with Enhanced Shadow */}
+      <div className="p-4">
+        {/* Title - Secondary Element with Enhanced Shadow */}
+        <h3 className="text-lg font-semibold leading-tight mb-2 line-clamp-2 text-foreground">
+          {issue.search_title || issue.title}
+        </h3>
+        
+        {/* Micro Information - Tertiary Elements with Enhanced Shadow */}
+        <div className="flex items-center justify-between text-muted-foreground text-sm">
+          <div className="flex items-center space-x-1">
+            <Calendar className="w-3 h-3" />
+            <span>{formatDate(issue.created_at)}</span>
           </div>
-
-          {/* Meta Information */}
-          <div className="space-y-2 mt-auto">
-            {/* Specialty Tags */}
-            {issue.specialty && (
-              <div className="flex flex-wrap gap-1">
-                {issue.specialty.split(', ').slice(0, 2).map((tag, index) => (
-                  <Badge 
-                    key={index} 
-                    variant="outline" 
-                    className={`text-xs px-2 py-0.5 ${getSpecialtyColor(tag.trim())}`}
-                  >
-                    {tag.trim()}
-                  </Badge>
-                ))}
-              </div>
-            )}
-            
-            {/* Bottom Meta */}
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <div className="flex items-center gap-1">
-                <Calendar className="w-3 h-3" />
-                <span>{formatDate(issue.created_at)}</span>
-              </div>
-              
-              {issue.authors && (
-                <div className="flex items-center gap-1">
-                  <User className="w-3 h-3" />
-                  <span className="truncate max-w-20">{issue.authors}</span>
-                </div>
-              )}
-            </div>
+          
+          <div className="flex items-center space-x-1">
+            <User className="w-3 h-3" />
+            <span>{issue.authors?.split(',')[0] || 'Autor'}</span>
           </div>
         </div>
-      </CardContent>
+      </div>
     </Card>
   );
 };
-
-export default ArticleCard;
