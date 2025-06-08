@@ -1,132 +1,138 @@
-// ABOUTME: Enhanced tags panel with proper root/branch hierarchy display and three distinct visual states
+
+// ABOUTME: Backend tag selection panel with parent/subtag hierarchy and three visual states
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { TagHierarchy } from '@/types/archive';
+import { Button } from '@/components/ui/button';
+import { X } from 'lucide-react';
 
 interface TagsPanelProps {
-  tagConfig: TagHierarchy;
+  parentCategories: string[];
+  visibleSubtags: string[];
   selectedTags: string[];
-  contextualTags: string[];
+  hasActiveTagSelection: boolean;
+  isLoading: boolean;
   onTagSelect: (tag: string) => void;
-  maxInitialTags?: number;
+  onClearAllTags: () => void;
+  getTagState: (tag: string) => 'selected' | 'highlighted' | 'unselected';
 }
 
 export const TagsPanel: React.FC<TagsPanelProps> = ({
-  tagConfig,
+  parentCategories,
+  visibleSubtags,
   selectedTags,
-  contextualTags,
+  hasActiveTagSelection,
+  isLoading,
   onTagSelect,
-  maxInitialTags = 20
+  onClearAllTags,
+  getTagState
 }) => {
-  // Get root categories (parent tags only)
-  const rootCategories = Object.keys(tagConfig);
-  
-  // Determine which root categories are currently selected
-  const selectedRootCategories = selectedTags.filter(tag => rootCategories.includes(tag));
-  
-  // Get all subcategories for selected root categories
-  const getSubcategoriesForSelected = (): string[] => {
-    const subcategories: string[] = [];
-    selectedRootCategories.forEach(rootTag => {
-      const subs = tagConfig[rootTag] || [];
-      subcategories.push(...subs);
-    });
-    return subcategories;
-  };
+  if (isLoading) {
+    return (
+      <div className="mb-8">
+        <div className="flex flex-wrap gap-3">
+          {/* Loading skeleton */}
+          {Array.from({ length: 8 }).map((_, index) => (
+            <div
+              key={index}
+              className="h-8 w-24 bg-muted/20 rounded-md animate-pulse"
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
-  // Determine which tags should be displayed based on selection state
-  const getDisplayTags = (): { tag: string; type: 'root' | 'subcategory' }[] => {
-    const displayTags: { tag: string; type: 'root' | 'subcategory' }[] = [];
-    
-    if (selectedRootCategories.length === 0) {
-      // No root categories selected - show ONLY root categories (parent tags)
-      rootCategories.forEach(root => {
-        displayTags.push({ tag: root, type: 'root' });
-      });
-    } else {
-      // Root categories selected - show selected roots first, then their subcategories, then unselected roots
-      
-      // First: Show selected root categories
-      selectedRootCategories.forEach(root => {
-        displayTags.push({ tag: root, type: 'root' });
-      });
-      
-      // Second: Show subcategories of selected roots (these will be highlighted)
-      selectedRootCategories.forEach(root => {
-        const subcategories = tagConfig[root] || [];
-        subcategories.forEach(sub => {
-          displayTags.push({ tag: sub, type: 'subcategory' });
-        });
-      });
-      
-      // Third: Show unselected root categories
-      rootCategories.forEach(root => {
-        if (!selectedRootCategories.includes(root)) {
-          displayTags.push({ tag: root, type: 'root' });
-        }
-      });
-    }
-    
-    return displayTags;
-  };
-
-  const displayTags = getDisplayTags();
-  const subcategoriesForSelected = getSubcategoriesForSelected();
-
-  // Determine the visual state of each tag
-  const getTagState = (tag: string, type: 'root' | 'subcategory'): 'selected' | 'highlighted' | 'unselected' => {
-    // If the tag is directly selected
-    if (selectedTags.includes(tag)) {
-      return 'selected';
-    }
-    
-    // If it's a subcategory and its parent root is selected (but the subcategory itself isn't selected)
-    if (type === 'subcategory' && selectedRootCategories.length > 0) {
-      const isChildOfSelectedRoot = selectedRootCategories.some(rootTag => {
-        const subcategories = tagConfig[rootTag] || [];
-        return subcategories.includes(tag);
-      });
-      
-      if (isChildOfSelectedRoot) {
-        return 'highlighted';
-      }
-    }
-    
-    // Otherwise it's unselected
-    return 'unselected';
-  };
-
-  if (displayTags.length === 0) {
+  if (parentCategories.length === 0) {
     return null;
   }
 
+  const getTagStyleClasses = (state: 'selected' | 'highlighted' | 'unselected'): string => {
+    const baseClasses = 'cursor-pointer transition-all duration-200 text-sm py-2 px-4 font-medium border-2 hover:shadow-sm';
+    
+    switch (state) {
+      case 'selected':
+        return `${baseClasses} bg-white text-black border-white hover:bg-gray-100`;
+      case 'highlighted':
+        return `${baseClasses} bg-transparent text-white border-white/60 hover:bg-white/10 hover:border-white/80`;
+      case 'unselected':
+        return `${baseClasses} bg-transparent text-white/60 border-transparent hover:bg-white/5 hover:text-white/80`;
+    }
+  };
+
   return (
     <div className="mb-8">
-      <div className="flex flex-wrap gap-3">
-        {displayTags.map(({ tag, type }) => {
-          const state = getTagState(tag, type);
-          
-          return (
-            <Badge
-              key={tag}
-              variant="outline"
-              className={`
-                cursor-pointer transition-all duration-200 text-sm py-2 px-4 font-medium
-                border-2 hover:shadow-sm
-                ${state === 'selected'
-                  ? 'bg-foreground text-background border-foreground hover:bg-foreground/90' 
-                  : state === 'highlighted'
-                    ? 'bg-foreground/20 text-foreground border-foreground/80 hover:bg-foreground/30'
-                    : 'bg-transparent text-muted-foreground border-border hover:bg-muted/20 hover:text-foreground hover:border-muted-foreground'
-                }
-                ${type === 'subcategory' ? 'ml-6' : ''}
-              `}
-              onClick={() => onTagSelect(tag)}
+      <div className="space-y-4">
+        {/* Clear all button - only show when tags are selected */}
+        {hasActiveTagSelection && (
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              {selectedTags.length} {selectedTags.length === 1 ? 'categoria selecionada' : 'categorias selecionadas'}
+            </p>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClearAllTags}
+              className="text-muted-foreground hover:text-foreground h-8 px-2"
             >
-              {tag}
-            </Badge>
-          );
-        })}
+              <X className="w-4 h-4 mr-1" />
+              Limpar seleção
+            </Button>
+          </div>
+        )}
+
+        {/* Tags container */}
+        <div className="flex flex-wrap gap-3">
+          {/* Parent categories - always visible */}
+          {parentCategories.map(category => {
+            const state = getTagState(category);
+            return (
+              <Badge
+                key={category}
+                variant="outline"
+                className={getTagStyleClasses(state)}
+                onClick={() => onTagSelect(category)}
+              >
+                {category}
+              </Badge>
+            );
+          })}
+
+          {/* Subtags - only visible when parent is selected */}
+          {visibleSubtags.length > 0 && (
+            <>
+              {/* Visual separator */}
+              <div className="w-full flex items-center my-2">
+                <div className="flex-1 h-px bg-border"></div>
+                <span className="px-3 text-xs text-muted-foreground bg-background">
+                  Subtemas
+                </span>
+                <div className="flex-1 h-px bg-border"></div>
+              </div>
+
+              {/* Subtag badges with indentation */}
+              {visibleSubtags.map(subtag => {
+                const state = getTagState(subtag);
+                return (
+                  <Badge
+                    key={subtag}
+                    variant="outline"
+                    className={`ml-6 ${getTagStyleClasses(state)}`}
+                    onClick={() => onTagSelect(subtag)}
+                  >
+                    {subtag}
+                  </Badge>
+                );
+              })}
+            </>
+          )}
+        </div>
+
+        {/* Help text */}
+        {!hasActiveTagSelection && parentCategories.length > 0 && (
+          <p className="text-xs text-muted-foreground mt-2">
+            Selecione categorias para reordenar as edições por relevância
+          </p>
+        )}
       </div>
     </div>
   );

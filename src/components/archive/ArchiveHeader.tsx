@@ -1,17 +1,35 @@
 
-// ABOUTME: Enhanced archive header with integrated search functionality
+// ABOUTME: Enhanced archive header with search and integrated tag panel positioning
 import React from 'react';
 import { Archive, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { TagsPanel } from './TagsPanel';
 
 interface ArchiveHeaderProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  // Tag-related props
+  parentCategories?: string[];
+  visibleSubtags?: string[];
+  selectedTags?: string[];
+  hasActiveTagSelection?: boolean;
+  isTagsLoading?: boolean;
+  onTagSelect?: (tag: string) => void;
+  onClearAllTags?: () => void;
+  getTagState?: (tag: string) => 'selected' | 'highlighted' | 'unselected';
 }
 
 export const ArchiveHeader: React.FC<ArchiveHeaderProps> = ({
   searchQuery,
-  onSearchChange
+  onSearchChange,
+  parentCategories = [],
+  visibleSubtags = [],
+  selectedTags = [],
+  hasActiveTagSelection = false,
+  isTagsLoading = false,
+  onTagSelect = () => {},
+  onClearAllTags = () => {},
+  getTagState = () => 'unselected'
 }) => {
   return (
     <div className="mb-12">
@@ -32,7 +50,7 @@ export const ArchiveHeader: React.FC<ArchiveHeaderProps> = ({
           <p className="text-lg text-muted-foreground max-w-2xl leading-relaxed mx-auto">
             Explore nossa coleção completa de reviews médicos curados.
             <br />
-            Use as especialidades abaixo ou busque por conteúdo específico.
+            Use as categorias abaixo ou busque por conteúdo específico.
           </p>
         </div>
 
@@ -52,6 +70,20 @@ export const ArchiveHeader: React.FC<ArchiveHeaderProps> = ({
                          placeholder:text-muted-foreground"
             />
           </div>
+        </div>
+
+        {/* Tags panel - positioned under search bar as requested */}
+        <div className="w-full max-w-6xl">
+          <TagsPanel
+            parentCategories={parentCategories}
+            visibleSubtags={visibleSubtags}
+            selectedTags={selectedTags}
+            hasActiveTagSelection={hasActiveTagSelection}
+            isLoading={isTagsLoading}
+            onTagSelect={onTagSelect}
+            onClearAllTags={onClearAllTags}
+            getTagState={getTagState}
+          />
         </div>
       </div>
     </div>

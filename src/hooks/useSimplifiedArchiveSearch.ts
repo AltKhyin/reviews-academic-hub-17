@@ -1,5 +1,5 @@
 
-// ABOUTME: Simplified archive search with only text-based filtering, no tag system
+// ABOUTME: Simplified archive search with text-based filtering, optimized for tag reordering integration
 import { useMemo } from 'react';
 import { useOptimizedArchiveData } from './useOptimizedArchiveData';
 import { Issue } from '@/types/issue';
@@ -46,7 +46,7 @@ const calculateSearchScore = (issue: Issue, searchQuery: string): number => {
     if (issue.specialty?.toLowerCase().includes(query)) score += 5;
   }
   
-  // Base recency score to ensure consistent ordering
+  // Base recency score to ensure consistent ordering when no search query
   const daysSinceCreated = (Date.now() - new Date(issue.created_at).getTime()) / (1000 * 60 * 60 * 24);
   score += Math.max(0, 100 - daysSinceCreated * 0.1);
   
@@ -121,6 +121,11 @@ const filterAndSortIssues = (
   
   // Sort by score and secondary criteria
   scoredIssues.sort((a, b) => {
+    // If no search query, sort by creation date (newest first) for tag reordering compatibility
+    if (!searchQuery.trim()) {
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    }
+    
     switch (sortBy) {
       case 'score':
         return b.searchScore - a.searchScore;
@@ -151,7 +156,7 @@ export const useSimplifiedArchiveSearch = (filters: SearchFilters) => {
   // Fetch all data once with aggressive caching
   const { data, isLoading, error } = useOptimizedArchiveData();
   
-  // Memoized filtering and sorting
+  // Memoized filtering and sorting - optimized for tag reordering
   const searchResult = useMemo((): SearchResult => {
     if (!data?.issues) {
       return {
