@@ -100,11 +100,14 @@ export const useOptimizedTopThreads = () => {
           .order('score', { ascending: false })
           .limit(3);
         
-        return fallbackData?.map(post => ({
-          ...post,
+        return (fallbackData || []).map(post => ({
+          id: post.id,
+          title: post.title,
+          votes: post.votes,
+          created_at: post.created_at,
           comments: 0,
           thread_type: 'post'
-        })) || [];
+        }));
       }
     },
     ...queryConfigs.static,
