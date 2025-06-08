@@ -15,7 +15,7 @@ export const usePollVoting = () => {
   const { toast } = useToast();
 
   const vote = async (pollId: string, optionIndex: number) => {
-    if (!user?.user?.id || isVoting) return;
+    if (!user?.id || isVoting) return;
 
     setIsVoting(true);
     
@@ -24,7 +24,7 @@ export const usePollVoting = () => {
       await supabase
         .from('poll_user_votes')
         .delete()
-        .eq('user_id', user.user.id)
+        .eq('user_id', user.id)
         .eq('poll_id', pollId);
 
       // Insert new vote
@@ -32,7 +32,7 @@ export const usePollVoting = () => {
         .from('poll_user_votes')
         .insert({
           poll_id: pollId,
-          user_id: user.user.id,
+          user_id: user.id,
           option_index: optionIndex
         });
 
@@ -43,7 +43,7 @@ export const usePollVoting = () => {
 
       // Invalidate related queries to refresh vote counts
       queryClient.invalidateQueries({ queryKey: ['weeklyPoll'] });
-      queryClient.invalidateQueries({ queryKey: ['userPollVote', user.user.id, pollId] });
+      queryClient.invalidateQueries({ queryKey: ['userPollVote', user.id, pollId] });
 
       toast({
         title: "Voto registrado",
