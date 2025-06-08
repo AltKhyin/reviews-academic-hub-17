@@ -1,14 +1,13 @@
 
-// ABOUTME: Main home page component with optimized section rendering - Monochromatic design compliant
+// ABOUTME: Main home page component with horizontal scrollable sections - Monochromatic design compliant
 import React, { useMemo } from 'react';
 import { useHomeData } from '@/hooks/useHomeData';
-import { HomeHeader } from '@/components/home/HomeHeader';
 import { ReviewerNotesSection } from '@/components/home/sections/ReviewerNotesSection';
 import { FeaturedCarouselSection } from '@/components/home/sections/FeaturedCarouselSection';
 import { RecentIssuesSection } from '@/components/home/sections/RecentIssuesSection';
 import { PopularIssuesSection } from '@/components/home/sections/PopularIssuesSection';
 import { RecommendedIssuesSection } from '@/components/home/sections/RecommendedIssuesSection';
-import { UpcomingReleasesHomeSection } from '@/components/home/sections/UpcomingReleasesHomeSection';
+import { UpcomingReleasesSection } from '@/components/home/sections/UpcomingReleasesSection';
 
 const SECTION_COMPONENTS = {
   reviewer_notes: ReviewerNotesSection,
@@ -16,7 +15,7 @@ const SECTION_COMPONENTS = {
   recent_issues: RecentIssuesSection,
   popular_issues: PopularIssuesSection,
   recommended_issues: RecommendedIssuesSection,
-  upcoming_releases: UpcomingReleasesHomeSection,
+  upcoming_releases: UpcomingReleasesSection,
 } as const;
 
 export const HomePage: React.FC = () => {
@@ -35,16 +34,14 @@ export const HomePage: React.FC = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <HomeHeader />
-        
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="space-y-12">
+        <div className="max-w-full px-6 py-8">
+          <div className="space-y-16">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="space-y-4">
+              <div key={i} className="space-y-6">
                 <div className="h-8 bg-muted animate-pulse rounded w-1/4"></div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {[...Array(3)].map((_, j) => (
-                    <div key={j} className="h-64 bg-muted/60 animate-pulse rounded-lg"></div>
+                <div className="flex gap-6 overflow-hidden">
+                  {[...Array(5)].map((_, j) => (
+                    <div key={j} className="w-[260px] h-[380px] bg-muted/60 animate-pulse rounded-lg flex-shrink-0"></div>
                   ))}
                 </div>
               </div>
@@ -57,10 +54,8 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <HomeHeader />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-12">
+      <div className="max-w-full px-6 py-8">
+        <div className="space-y-16">
           {orderedSections.map((sectionId) => {
             const SectionComponent = SECTION_COMPONENTS[sectionId];
             return (
@@ -73,7 +68,7 @@ export const HomePage: React.FC = () => {
           {orderedSections.length === 0 && (
             <div className="text-center py-16">
               <h2 className="text-2xl font-bold text-foreground mb-4">
-                Bem-vindo à Central de Evidências
+                Bem-vindo
               </h2>
               <p className="text-muted-foreground">
                 Configure as seções da página inicial no painel administrativo para começar.

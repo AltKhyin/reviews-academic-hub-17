@@ -1,12 +1,10 @@
 
-// ABOUTME: Recommended issues section for the home page - Monochromatic design compliant
+// ABOUTME: Recommended issues horizontal section - Monochromatic design compliant
 import React from 'react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Sparkles, ArrowRight } from 'lucide-react';
 import { useHomeData } from '@/hooks/useHomeData';
 import { useNavigate } from 'react-router-dom';
 import { IssueCard } from '../common/IssueCard';
+import { HorizontalScrollableCards } from '../common/HorizontalScrollableCards';
 
 export const RecommendedIssuesSection: React.FC = () => {
   const { recommendedIssues, isLoading, trackIssueView } = useHomeData();
@@ -23,14 +21,11 @@ export const RecommendedIssuesSection: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 mb-6">
-          <Sparkles className="w-6 h-6 text-foreground" />
-          <h2 className="text-2xl font-bold text-foreground">Recomendadas Para Você</h2>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-muted animate-pulse rounded-lg h-64"></div>
+      <div className="space-y-6">
+        <h2 className="text-2xl font-semibold text-foreground">Recomendados para Você</h2>
+        <div className="flex gap-6 overflow-hidden">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="w-[260px] h-[380px] bg-muted animate-pulse rounded-lg flex-shrink-0"></div>
           ))}
         </div>
       </div>
@@ -41,36 +36,19 @@ export const RecommendedIssuesSection: React.FC = () => {
     return null;
   }
 
-  const displayIssues = recommendedIssues.slice(0, 6);
-
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-6 h-6 text-foreground" />
-          <h2 className="text-2xl font-bold text-foreground">Recomendadas Para Você</h2>
-          <Badge variant="secondary">Alto Score</Badge>
-        </div>
-        
-        <Button 
-          variant="outline" 
-          onClick={() => navigate('/acervo')}
-          className="flex items-center gap-2 border-border hover:bg-accent"
-        >
-          Ver todas
-          <ArrowRight className="w-4 h-4" />
-        </Button>
-      </div>
+      <h2 className="text-2xl font-semibold text-foreground">Recomendados para Você</h2>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {displayIssues.map((issue) => (
+      <HorizontalScrollableCards>
+        {recommendedIssues.map((issue) => (
           <IssueCard
             key={issue.id}
             issue={issue}
             onClick={() => handleIssueClick(issue.id)}
           />
         ))}
-      </div>
+      </HorizontalScrollableCards>
     </div>
   );
 };

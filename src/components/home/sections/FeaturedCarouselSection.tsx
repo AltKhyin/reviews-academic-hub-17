@@ -1,13 +1,13 @@
 
-// ABOUTME: Featured issues carousel section for the home page - Monochromatic design compliant
+// ABOUTME: Premium featured issues banner section - Cover-focused with microanimations
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ChevronLeft, ChevronRight, Star, Calendar, User } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, User } from 'lucide-react';
 import { useHomeData } from '@/hooks/useHomeData';
 import { useNavigate } from 'react-router-dom';
 import { HomeIssue } from '@/types/home';
+import { Button } from '@/components/ui/button';
 
 export const FeaturedCarouselSection: React.FC = () => {
   const { featuredIssues, isLoading, trackIssueView } = useHomeData();
@@ -20,7 +20,7 @@ export const FeaturedCarouselSection: React.FC = () => {
     
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % featuredIssues.length);
-    }, 5000);
+    }, 8000);
 
     return () => clearInterval(interval);
   }, [featuredIssues]);
@@ -48,148 +48,136 @@ export const FeaturedCarouselSection: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 mb-6">
-          <Star className="w-6 h-6 text-warning" />
-          <h2 className="text-2xl font-bold text-foreground">Edições em Destaque</h2>
-        </div>
-        <Card className="h-64 animate-pulse border-border bg-card">
-          <CardContent className="p-6">
-            <div className="h-6 bg-muted rounded w-3/4 mb-4"></div>
-            <div className="space-y-2">
-              <div className="h-4 bg-muted/60 rounded w-full"></div>
-              <div className="h-4 bg-muted/60 rounded w-2/3"></div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <Card className="h-[400px] animate-pulse border-border bg-card overflow-hidden">
+        <CardContent className="p-0 h-full">
+          <div className="h-full bg-muted"></div>
+        </CardContent>
+      </Card>
     );
   }
 
   if (!featuredIssues || featuredIssues.length === 0) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 mb-6">
-          <Star className="w-6 h-6 text-warning" />
-          <h2 className="text-2xl font-bold text-foreground">Edições em Destaque</h2>
-        </div>
-        <Card className="border-dashed border-border bg-card">
-          <CardContent className="p-8 text-center">
-            <Star className="w-12 h-12 text-muted mx-auto mb-4" />
-            <p className="text-muted-foreground">Nenhuma edição em destaque no momento.</p>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return null;
   }
 
   const currentIssue = featuredIssues[currentIndex];
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <Star className="w-6 h-6 text-warning" />
-          <h2 className="text-2xl font-bold text-foreground">Edições em Destaque</h2>
-          <Badge variant="secondary">{featuredIssues.length}</Badge>
-        </div>
-        
-        {featuredIssues.length > 1 && (
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={prevSlide}
-              className="w-8 h-8 p-0 border-border hover:bg-accent"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={nextSlide}
-              className="w-8 h-8 p-0 border-border hover:bg-accent"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
-        )}
-      </div>
-
-      <Card className="relative overflow-hidden group cursor-pointer hover:shadow-lg transition-all duration-300 border-border bg-card">
-        <CardContent className="p-0">
-          <div 
-            className="relative bg-gradient-to-r from-secondary to-accent text-primary-foreground p-8 min-h-[300px] flex items-center"
-            onClick={() => handleIssueClick(currentIssue)}
-          >
-            {currentIssue.cover_image_url && (
-              <div 
-                className="absolute inset-0 bg-cover bg-center opacity-20"
-                style={{ backgroundImage: `url(${currentIssue.cover_image_url})` }}
-              />
+    <Card className="relative overflow-hidden group cursor-pointer border-border bg-card">
+      <CardContent className="p-0">
+        <div 
+          className="relative h-[400px] flex items-center"
+          onClick={() => handleIssueClick(currentIssue)}
+        >
+          {/* Background Image */}
+          {currentIssue.cover_image_url && (
+            <div 
+              className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-105"
+              style={{ backgroundImage: `url(${currentIssue.cover_image_url})` }}
+            />
+          )}
+          
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
+          
+          {/* Content */}
+          <div className="relative z-10 max-w-2xl px-8">
+            <div className="flex items-center gap-2 mb-4">
+              <Badge className="bg-muted text-muted-foreground">
+                Edição #{currentIssue.id.slice(-3)}
+              </Badge>
+              <Badge variant="outline" className="text-white border-white/30">
+                {currentIssue.specialty}
+              </Badge>
+            </div>
+            
+            <h1 className="text-4xl font-bold mb-4 leading-tight text-white group-hover:text-white/90 transition-colors">
+              {currentIssue.title}
+            </h1>
+            
+            {currentIssue.description && (
+              <p className="text-lg text-white/80 mb-6 leading-relaxed">
+                {currentIssue.description}
+              </p>
             )}
             
-            <div className="relative z-10 max-w-4xl">
-              <div className="flex items-center gap-2 mb-4">
-                <Badge className="bg-warning text-background">
-                  <Star className="w-3 h-3 mr-1" />
-                  Destaque
-                </Badge>
-                <Badge variant="outline" className="text-primary-foreground border-primary-foreground">
-                  {currentIssue.specialty}
-                </Badge>
-              </div>
-              
-              <h3 className="text-3xl font-bold mb-4 leading-tight text-primary-foreground">
-                {currentIssue.title}
-              </h3>
-              
-              {currentIssue.description && (
-                <p className="text-lg opacity-90 mb-6 leading-relaxed text-primary-foreground">
-                  {currentIssue.description}
-                </p>
+            <div className="flex items-center gap-6 text-sm text-white/70">
+              {currentIssue.authors && (
+                <div className="flex items-center gap-1">
+                  <User className="w-4 h-4" />
+                  <span>{currentIssue.authors}</span>
+                </div>
               )}
               
-              <div className="flex items-center gap-6 text-sm opacity-80 text-primary-foreground">
-                {currentIssue.authors && (
-                  <div className="flex items-center gap-1">
-                    <User className="w-4 h-4" />
-                    <span>{currentIssue.authors}</span>
-                  </div>
-                )}
-                
-                {currentIssue.published_at && (
-                  <div className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
-                    <span>
-                      {new Date(currentIssue.published_at).toLocaleDateString('pt-BR')}
-                    </span>
-                  </div>
-                )}
-              </div>
+              {currentIssue.published_at && (
+                <div className="flex items-center gap-1">
+                  <Calendar className="w-4 h-4" />
+                  <span>
+                    {new Date(currentIssue.published_at).toLocaleDateString('pt-BR')}
+                  </span>
+                </div>
+              )}
             </div>
+            
+            <Button 
+              className="mt-6 bg-white text-black hover:bg-white/90 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleIssueClick(currentIssue);
+              }}
+            >
+              Ler agora
+            </Button>
           </div>
-        </CardContent>
-        
-        {featuredIssues.length > 1 && (
-          <div className="absolute bottom-4 right-4 flex gap-1">
-            {featuredIssues.map((_, index) => (
-              <button
-                key={index}
+          
+          {/* Navigation */}
+          {featuredIssues.length > 1 && (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white border-none opacity-0 group-hover:opacity-100 transition-opacity"
                 onClick={(e) => {
                   e.stopPropagation();
-                  setCurrentIndex(index);
+                  prevSlide();
                 }}
-                className={`w-2 h-2 rounded-full transition-all ${
-                  index === currentIndex 
-                    ? 'bg-primary-foreground' 
-                    : 'bg-primary-foreground/50 hover:bg-primary-foreground/75'
-                }`}
-              />
-            ))}
-          </div>
-        )}
-      </Card>
-    </div>
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </Button>
+              
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white border-none opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  nextSlide();
+                }}
+              >
+                <ChevronRight className="w-5 h-5" />
+              </Button>
+              
+              {/* Dots indicator */}
+              <div className="absolute bottom-4 right-4 flex gap-2">
+                {featuredIssues.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCurrentIndex(index);
+                    }}
+                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                      index === currentIndex 
+                        ? 'bg-white scale-125' 
+                        : 'bg-white/50 hover:bg-white/75'
+                    }`}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 };

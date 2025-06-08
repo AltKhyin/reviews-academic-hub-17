@@ -1,10 +1,9 @@
 
-// ABOUTME: Section displaying reviewer/admin notes on the home page - Monochromatic design compliant
+// ABOUTME: Simplified reviewer notes section - Twitter-like format, monochromatic design compliant
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MessageSquare, CheckCircle } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 import { useHomeData } from '@/hooks/useHomeData';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -14,13 +13,10 @@ export const ReviewerNotesSection: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 mb-6">
-          <MessageSquare className="w-6 h-6 text-foreground" />
-          <h2 className="text-2xl font-bold text-foreground">Notas dos Revisores</h2>
-        </div>
+      <div className="space-y-6">
+        <h2 className="text-2xl font-semibold text-foreground">Notas do Revisor</h2>
         <div className="space-y-3">
-          {[...Array(3)].map((_, i) => (
+          {[...Array(2)].map((_, i) => (
             <Card key={i} className="animate-pulse border-border bg-card">
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
@@ -28,7 +24,6 @@ export const ReviewerNotesSection: React.FC = () => {
                   <div className="flex-1 space-y-2">
                     <div className="h-4 bg-muted rounded w-1/4"></div>
                     <div className="h-4 bg-muted/60 rounded w-full"></div>
-                    <div className="h-4 bg-muted/60 rounded w-3/4"></div>
                   </div>
                 </div>
               </CardContent>
@@ -44,16 +39,12 @@ export const ReviewerNotesSection: React.FC = () => {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-6">
-        <MessageSquare className="w-6 h-6 text-foreground" />
-        <h2 className="text-2xl font-bold text-foreground">Notas dos Revisores</h2>
-        <Badge variant="secondary">{reviewerNotes.length}</Badge>
-      </div>
+    <div className="space-y-6">
+      <h2 className="text-2xl font-semibold text-foreground">Notas do Revisor</h2>
       
       <div className="space-y-3">
-        {reviewerNotes.map((note) => (
-          <Card key={note.id} className="border-l-4 border-l-accent bg-card hover:shadow-md transition-shadow">
+        {reviewerNotes.slice(0, 3).map((note) => (
+          <Card key={note.id} className="border-border bg-card hover:bg-accent/5 transition-colors">
             <CardContent className="p-4">
               <div className="flex items-start gap-3">
                 <Avatar className="w-10 h-10">
@@ -71,21 +62,18 @@ export const ReviewerNotesSection: React.FC = () => {
                     {note.is_verified && (
                       <CheckCircle className="w-4 h-4 text-success" />
                     )}
-                    <Badge variant="outline" className="text-xs border-border text-muted-foreground">
-                      Revisor
-                    </Badge>
+                    <span className="text-xs text-muted-foreground">·</span>
+                    <span className="text-xs text-muted-foreground">
+                      {formatDistanceToNow(new Date(note.created_at), { 
+                        addSuffix: true, 
+                        locale: ptBR 
+                      })}
+                    </span>
                   </div>
                   
-                  <p className="text-muted-foreground leading-relaxed mb-2">
+                  <p className="text-muted-foreground leading-relaxed">
                     {note.message}
                   </p>
-                  
-                  <div className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(note.created_at), { 
-                      addSuffix: true, 
-                      locale: ptBR 
-                    })}
-                  </div>
                 </div>
               </div>
             </CardContent>
