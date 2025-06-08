@@ -25,12 +25,15 @@ export const useOptimizedSidebarStats = () => {
           throw error;
         }
 
+        // Type assertion since we know the structure from our database function
+        const stats = data as any;
+
         return {
-          totalUsers: data?.totalUsers || 0,
-          onlineUsers: data?.onlineUsers || 0,
-          totalIssues: data?.totalIssues || 0,
-          totalPosts: data?.totalPosts || 0,
-          totalComments: data?.totalComments || 0,
+          totalUsers: stats?.totalUsers || 0,
+          onlineUsers: stats?.onlineUsers || 0,
+          totalIssues: stats?.totalIssues || 0,
+          totalPosts: stats?.totalPosts || 0,
+          totalComments: stats?.totalComments || 0,
         };
       } catch (error) {
         console.error('Sidebar stats fetch error:', error);
@@ -134,6 +137,6 @@ export const useOptimizedSidebarData = () => {
     // Overall loading state
     isLoading: stats.isLoading || reviewerComments.isLoading || topThreads.isLoading,
     // Check if any critical data failed to load
-    hasError: stats.error || reviewerComments.error || topThreads.error,
+    hasError: !!(stats.error || reviewerComments.error || topThreads.error),
   };
 };

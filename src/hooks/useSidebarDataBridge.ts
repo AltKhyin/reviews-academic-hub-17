@@ -177,18 +177,18 @@ export const useSidebarDataBridge = (userId?: string) => {
 
   // Update store when optimized data changes - with dependency arrays that won't cause loops
   useEffect(() => {
-    if (optimizedData.stats && JSON.stringify(optimizedData.stats) !== JSON.stringify(sidebarStore.stats)) {
-      setStats(optimizedData.stats);
+    if (optimizedData.stats.data && JSON.stringify(optimizedData.stats.data) !== JSON.stringify(sidebarStore.stats)) {
+      setStats(optimizedData.stats.data);
     }
-  }, [optimizedData.stats, setStats]); // Removed sidebarStore.stats from deps to prevent loop
+  }, [optimizedData.stats.data, setStats]);
 
   useEffect(() => {
-    if (optimizedData.highlightComments && optimizedData.highlightComments.length > 0) {
-      // Map highlight comments to online users format for compatibility
-      const mappedUsers = optimizedData.highlightComments.map(comment => ({
+    if (optimizedData.reviewerComments.data && optimizedData.reviewerComments.data.length > 0) {
+      // Map reviewer comments to online users format for compatibility
+      const mappedUsers = optimizedData.reviewerComments.data.map(comment => ({
         id: comment.id,
-        full_name: comment.author_name,
-        avatar_url: comment.author_avatar,
+        full_name: comment.reviewer_name,
+        avatar_url: comment.reviewer_avatar,
         last_active: comment.created_at
       }));
       
@@ -197,34 +197,34 @@ export const useSidebarDataBridge = (userId?: string) => {
         setOnlineUsers(mappedUsers);
       }
     }
-  }, [optimizedData.highlightComments, setOnlineUsers]); // Removed sidebarStore.onlineUsers from deps
+  }, [optimizedData.reviewerComments.data, setOnlineUsers]);
 
   useEffect(() => {
-    if (optimizedData.topThreads && JSON.stringify(optimizedData.topThreads) !== JSON.stringify(sidebarStore.threads)) {
-      setThreads(optimizedData.topThreads);
+    if (optimizedData.topThreads.data && JSON.stringify(optimizedData.topThreads.data) !== JSON.stringify(sidebarStore.threads)) {
+      setThreads(optimizedData.topThreads.data);
     }
-  }, [optimizedData.topThreads, setThreads]); // Removed sidebarStore.threads from deps
+  }, [optimizedData.topThreads.data, setThreads]);
 
   // Update store when configuration loads
   useEffect(() => {
     if (config && JSON.stringify(config) !== JSON.stringify(sidebarStore.config)) {
       setConfig(config);
     }
-  }, [config, setConfig]); // Removed sidebarStore.config from deps
+  }, [config, setConfig]);
 
   // Update store when poll data loads
   useEffect(() => {
     if (poll && JSON.stringify(poll) !== JSON.stringify(sidebarStore.poll)) {
       setPoll(poll);
     }
-  }, [poll, setPoll]); // Removed sidebarStore.poll from deps
+  }, [poll, setPoll]);
 
   // Update store when user vote loads
   useEffect(() => {
     if (userVote !== undefined && userVote !== sidebarStore.userVote) {
       setUserVote(userVote);
     }
-  }, [userVote, setUserVote]); // Removed sidebarStore.userVote from deps
+  }, [userVote, setUserVote]);
 
   // Update loading states
   useEffect(() => {
@@ -242,6 +242,6 @@ export const useSidebarDataBridge = (userId?: string) => {
 
   return {
     isLoading: optimizedData.isLoading || configLoading || pollLoading,
-    error: optimizedData.error
+    error: optimizedData.hasError
   };
 };

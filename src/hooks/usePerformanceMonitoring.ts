@@ -116,7 +116,8 @@ export const usePerformanceMonitoring = (config: PerformanceConfig = {}) => {
     const validQueries = queries.filter(q => q.state.dataUpdatedAt > 0);
     
     validQueries.forEach(query => {
-      const queryTime = query.state.dataUpdatedAt - (query.state.fetchFailureTime || query.state.dataUpdatedAt);
+      // Calculate query time based on available state properties
+      const queryTime = query.state.dataUpdatedAt - (query.state.errorUpdatedAt || query.state.dataUpdatedAt);
       if (queryTime > 0) {
         totalTime += queryTime;
         if (queryTime > 2000) { // Consider queries > 2s as slow
