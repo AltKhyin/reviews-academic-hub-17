@@ -1,5 +1,5 @@
 
-// ABOUTME: Optimized Dashboard with parallel loading and error boundaries - no UI changes
+// ABOUTME: Optimized Dashboard with integrated section visibility management - no UI changes
 import React from 'react';
 import { useParallelDataLoader } from '@/hooks/useParallelDataLoader';
 import { useStableAuth } from '@/hooks/useStableAuth';
@@ -22,6 +22,7 @@ const Dashboard = () => {
   } = useParallelDataLoader();
 
   console.log('Dashboard: Rendering with', issues?.length || 0, 'issues');
+  console.log('Dashboard: Section visibility config:', sectionVisibility);
 
   // Show skeleton only while essential data is loading
   const isInitialLoading = authLoading || (dataLoading && issues.length === 0);
@@ -95,16 +96,16 @@ const Dashboard = () => {
     .sort((a, b) => (b.score || 0) - (a.score || 0))
     .slice(0, 10);
 
-  // Get enabled sections in order
+  // Get enabled sections in order from the integrated configuration
   const enabledSections = sectionVisibility
     .filter(section => section.enabled)
     .sort((a, b) => a.order - b.order);
 
-  console.log('Dashboard: Visible sections:', enabledSections.map(s => s.id));
+  console.log('Dashboard: Visible sections from integrated config:', enabledSections.map(s => `${s.id} (order: ${s.order})`));
   console.log('Dashboard: Featured issue:', featuredIssue?.id);
 
-  const renderSection = (sectionId: string, index: number) => {
-    const isReviewerSection = sectionId === 'reviews';
+  const renderSection = (sectionConfig: any, index: number) => {
+    const sectionId = sectionConfig.id;
     const nextSection = enabledSections[index + 1];
     const isFollowedByFeatured = nextSection?.id === 'featured';
     
@@ -119,8 +120,14 @@ const Dashboard = () => {
         );
         
       case 'reviewer':
-        // Skip duplicate reviewer section
-        return null;
+        // Handle both 'reviewer' and 'reviews' for compatibility
+        return (
+          <DataErrorBoundary key={`reviewer-${index}`} context="reviewer comments">
+            <div className={isFollowedByFeatured ? 'mb-4' : ''}>
+              <ReviewerCommentsDisplay />
+            </div>
+          </DataErrorBoundary>
+        );
         
       case 'featured':
         if (!featuredIssue) return null;
@@ -162,6 +169,7 @@ const Dashboard = () => {
         );
         
       default:
+        console.warn(`Dashboard: Unknown section ID: ${sectionId}`);
         return null;
     }
   };
@@ -172,7 +180,7 @@ const Dashboard = () => {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="space-y-8">
             {enabledSections.map((section, index) => {
-              const sectionElement = renderSection(section.id, index);
+              const sectionElement = renderSection(section, index);
               // Only render if we have a valid element
               if (!sectionElement) return null;
               return sectionElement;

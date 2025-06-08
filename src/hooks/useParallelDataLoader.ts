@@ -1,9 +1,11 @@
-// ABOUTME: Parallel data loading hook that prevents waterfall dependencies
+
+// ABOUTME: Parallel data loading hook with integrated section visibility management
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Issue } from '@/types/issue';
 import { useStableAuth } from './useStableAuth';
+import { useSectionVisibility } from './useSectionVisibility';
 
 interface SectionVisibilityConfig {
   id: string;
@@ -73,15 +75,6 @@ const fetchMinimalIssues = async (): Promise<Issue[]> => {
   }));
 };
 
-// Default section visibility for immediate rendering
-const getDefaultSectionVisibility = (): SectionVisibilityConfig[] => [
-  { id: 'reviews', name: 'Reviewer Comments', enabled: true, order: 0 },
-  { id: 'featured', name: 'Featured Article', enabled: true, order: 1 },
-  { id: 'recent', name: 'Recent Issues', enabled: true, order: 2 },
-  { id: 'recommended', name: 'Recommended', enabled: true, order: 3 },
-  { id: 'trending', name: 'Trending', enabled: true, order: 4 },
-];
-
 // Minimal reviewer comments for quick load
 const fetchMinimalReviewerComments = async () => {
   const { data, error } = await supabase
@@ -94,8 +87,19 @@ const fetchMinimalReviewerComments = async () => {
   return data || [];
 };
 
+// Section ID mapping between different parts of the system
+const mapSectionVisibilityToConfig = (sections: any[]): SectionVisibilityConfig[] => {
+  return sections.map(section => ({
+    id: section.id,
+    name: section.title,
+    enabled: section.visible,
+    order: section.order
+  }));
+};
+
 export const useParallelDataLoader = (): ParallelDataState => {
   const { isAuthenticated, isLoading: authLoading } = useStableAuth();
+  const { sections, isLoading: sectionsLoading, getVisibleSections } = useSectionVisibility();
   const [errors, setErrors] = useState<Record<string, Error>>({});
   const retryCountRef = useRef(0);
   const maxRetries = 2;
@@ -115,10 +119,18 @@ export const useParallelDataLoader = (): ParallelDataState => {
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
-  // Section visibility - use defaults immediately, load real config in background
-  const [sectionVisibility, setSectionVisibility] = useState<SectionVisibilityConfig[]>(
-    getDefaultSectionVisibility()
-  );
+  // Section visibility - now properly integrated with actual settings
+  const [sectionVisibility, setSectionVisibility] = useState<SectionVisibilityConfig[]>([]);
+
+  // Update section visibility when sections change
+  useEffect(() => {
+    if (!sectionsLoading && sections.length > 0) {
+      const visibleSections = getVisibleSections();
+      const mappedSections = mapSectionVisibilityToConfig(visibleSections);
+      setSectionVisibility(mappedSections);
+      console.log('ParallelDataLoader: Updated section visibility from hook:', mappedSections);
+    }
+  }, [sections, sectionsLoading, getVisibleSections]);
 
   // Reviewer comments query - runs in parallel
   const { 
@@ -136,28 +148,6 @@ export const useParallelDataLoader = (): ParallelDataState => {
 
   // Featured issue - derived from issues data
   const featuredIssue = issues.find(issue => issue.featured) || issues[0] || null;
-
-  // Background section visibility loading (non-blocking)
-  useEffect(() => {
-    const loadSectionVisibility = async () => {
-      try {
-        // This could load from site_meta or other configuration
-        // For now, we use the defaults which are sufficient
-        // Real implementation would fetch from database but not block rendering
-        
-        // Simulated async config load that doesn't block
-        setTimeout(() => {
-          // If real config differs from defaults, update here
-          // setSectionVisibility(realConfig);
-        }, 1000);
-      } catch (error) {
-        console.warn('Section visibility config load failed, using defaults:', error);
-        // Keep using defaults - no user impact
-      }
-    };
-
-    loadSectionVisibility();
-  }, []);
 
   // Error management
   useEffect(() => {
@@ -189,7 +179,7 @@ export const useParallelDataLoader = (): ParallelDataState => {
     }
   }, [issuesError, commentsError]);
 
-  const isLoading = authLoading || (issuesLoading && issues.length === 0);
+  const isLoading = authLoading || sectionsLoading || (issuesLoading && issues.length === 0);
 
   return {
     issues,

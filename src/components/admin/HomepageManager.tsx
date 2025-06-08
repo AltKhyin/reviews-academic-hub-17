@@ -1,4 +1,4 @@
-// ABOUTME: Comprehensive homepage management interface with section control and upcoming releases scheduling
+// ABOUTME: Comprehensive homepage management interface with unified section schema
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -56,6 +56,7 @@ export const HomepageManager = () => {
     if (sections && sections.length > 0) {
       const sortedSections = getAllSections();
       setLocalSections([...sortedSections]);
+      console.log('HomepageManager: Loaded sections from hook:', sortedSections);
     }
   }, [sections, getAllSections]);
 
@@ -106,6 +107,8 @@ export const HomepageManager = () => {
       title: "Seções atualizadas",
       description: "A ordem das seções foi alterada com sucesso.",
     });
+    
+    console.log('HomepageManager: Reordered sections to:', updatedSections.map(s => `${s.id} (order: ${s.order})`));
   };
 
   const handleToggleVisibility = (sectionId: string) => {
@@ -124,6 +127,8 @@ export const HomepageManager = () => {
       title: "Seção atualizada",
       description: `Seção "${toggledSection?.title}" ${toggledSection?.visible ? 'mostrada' : 'ocultada'} com sucesso.`,
     });
+    
+    console.log('HomepageManager: Toggled visibility for', sectionId, 'to', toggledSection?.visible);
   };
 
   const handleReset = () => {
@@ -132,6 +137,7 @@ export const HomepageManager = () => {
       title: "Configurações restauradas",
       description: "As seções foram restauradas para a configuração padrão.",
     });
+    console.log('HomepageManager: Reset to defaults');
   };
 
   const handleSaveReleaseSettings = async () => {

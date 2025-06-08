@@ -1,5 +1,5 @@
 
-// ABOUTME: Enhanced unified hook with better synchronization and the upcoming section fix
+// ABOUTME: Enhanced unified hook with complete section schema and better synchronization
 import { useState, useEffect, useCallback } from 'react';
 
 export interface Section {
@@ -10,15 +10,12 @@ export interface Section {
 }
 
 const DEFAULT_SECTIONS: Section[] = [
-  { id: 'hero', title: 'Hero Section', visible: true, order: 0 },
-  { id: 'articles', title: 'Articles Grid', visible: true, order: 1 },
-  { id: 'reviews', title: 'Reviews do Editor', visible: true, order: 2 },
-  { id: 'reviewer', title: 'Notas do Revisor', visible: true, order: 3 },
-  { id: 'featured', title: 'Edições em Destaque', visible: true, order: 4 },
-  { id: 'upcoming', title: 'Próximas Edições', visible: true, order: 5 }, // Fixed: ensure this is always included
-  { id: 'recent', title: 'Edições Recentes', visible: true, order: 6 },
-  { id: 'recommended', title: 'Recomendados', visible: true, order: 7 },
-  { id: 'trending', title: 'Mais Acessados', visible: true, order: 8 },
+  { id: 'reviews', title: 'Reviews do Editor', visible: true, order: 0 },
+  { id: 'featured', title: 'Edições em Destaque', visible: true, order: 1 },
+  { id: 'upcoming', title: 'Próximas Edições', visible: true, order: 2 },
+  { id: 'recent', title: 'Edições Recentes', visible: true, order: 3 },
+  { id: 'recommended', title: 'Recomendados', visible: true, order: 4 },
+  { id: 'trending', title: 'Mais Acessados', visible: true, order: 5 },
 ];
 
 const STORAGE_KEY = 'homepage_sections';
@@ -53,20 +50,20 @@ export const useSectionVisibility = () => {
             .sort((a, b) => a.order - b.order);
           
           setSections(allSections);
-          console.log('Loaded sections from localStorage:', allSections);
+          console.log('SectionVisibility: Loaded sections from localStorage:', allSections);
         } else {
           setSections(DEFAULT_SECTIONS);
           localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_SECTIONS));
-          console.log('Initialized with default sections:', DEFAULT_SECTIONS);
+          console.log('SectionVisibility: Initialized with default sections:', DEFAULT_SECTIONS);
         }
       } catch (error) {
-        console.error('Error loading section visibility:', error);
+        console.error('SectionVisibility: Error loading section visibility:', error);
         setSections(DEFAULT_SECTIONS);
         // Try to save defaults in case of corrupted data
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_SECTIONS));
         } catch (saveError) {
-          console.error('Failed to save default sections:', saveError);
+          console.error('SectionVisibility: Failed to save default sections:', saveError);
         }
       } finally {
         setIsLoading(false);
@@ -88,7 +85,7 @@ export const useSectionVisibility = () => {
 
       setSections(validatedSections);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(validatedSections));
-      console.log('Sections saved successfully:', validatedSections);
+      console.log('SectionVisibility: Sections saved successfully:', validatedSections);
       
       // Broadcast to other tabs/windows
       broadcastChannel.postMessage({
@@ -96,7 +93,7 @@ export const useSectionVisibility = () => {
         sections: validatedSections
       });
     } catch (error) {
-      console.error('Error saving sections:', error);
+      console.error('SectionVisibility: Error saving sections:', error);
       // Fallback: try to restore previous state
       setSections(prevSections => prevSections);
     }
@@ -107,7 +104,7 @@ export const useSectionVisibility = () => {
     const handleBroadcast = (event: MessageEvent) => {
       if (event.data.type === 'SECTIONS_UPDATED') {
         setSections(event.data.sections);
-        console.log('Sections updated from broadcast:', event.data.sections);
+        console.log('SectionVisibility: Sections updated from broadcast:', event.data.sections);
       }
     };
 
@@ -181,7 +178,7 @@ export const useSectionVisibility = () => {
     setSections(DEFAULT_SECTIONS);
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_SECTIONS));
-      console.log('Reset to default sections');
+      console.log('SectionVisibility: Reset to default sections');
       
       // Broadcast reset to other tabs
       broadcastChannel.postMessage({
@@ -189,7 +186,7 @@ export const useSectionVisibility = () => {
         sections: DEFAULT_SECTIONS
       });
     } catch (error) {
-      console.error('Error resetting to defaults:', error);
+      console.error('SectionVisibility: Error resetting to defaults:', error);
     }
   }, [broadcastChannel]);
 

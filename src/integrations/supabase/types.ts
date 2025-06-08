@@ -484,6 +484,58 @@ export type Database = {
           },
         ]
       }
+      issue_views: {
+        Row: {
+          id: string
+          ip_address: unknown | null
+          issue_id: string
+          session_id: string | null
+          user_agent: string | null
+          user_id: string | null
+          viewed_at: string
+        }
+        Insert: {
+          id?: string
+          ip_address?: unknown | null
+          issue_id: string
+          session_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          viewed_at?: string
+        }
+        Update: {
+          id?: string
+          ip_address?: unknown | null
+          issue_id?: string
+          session_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          viewed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "issue_views_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "issues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "issue_views_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "online_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "issue_views_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       issues: {
         Row: {
           article_pdf_url: string | null
@@ -1133,6 +1185,57 @@ export type Database = {
         }
         Relationships: []
       }
+      reviewer_notes: {
+        Row: {
+          admin_id: string
+          avatar_url: string | null
+          created_at: string
+          display_name: string
+          id: string
+          is_active: boolean | null
+          is_verified: boolean | null
+          message: string
+          updated_at: string
+        }
+        Insert: {
+          admin_id: string
+          avatar_url?: string | null
+          created_at?: string
+          display_name: string
+          id?: string
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          message: string
+          updated_at?: string
+        }
+        Update: {
+          admin_id?: string
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string
+          id?: string
+          is_active?: boolean | null
+          is_verified?: boolean | null
+          message?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviewer_notes_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "online_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviewer_notes_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       site_meta: {
         Row: {
           created_at: string | null
@@ -1491,6 +1594,10 @@ export type Database = {
           score: number
         }[]
       }
+      get_home_settings: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       get_issues_batch: {
         Args: { p_issue_ids: string[] }
         Returns: {
@@ -1530,6 +1637,17 @@ export type Database = {
           description: string
           authors: string
           year: string
+        }[]
+      }
+      get_popular_issues: {
+        Args: { period_days?: number; max_items?: number }
+        Returns: {
+          id: string
+          title: string
+          cover_image_url: string
+          specialty: string
+          published_at: string
+          view_count: number
         }[]
       }
       get_query_performance_stats: {
