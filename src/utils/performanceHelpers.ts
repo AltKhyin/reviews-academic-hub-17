@@ -1,481 +1,414 @@
-
-// ABOUTME: Advanced performance utilities for memory leak detection, query optimization, and resource management
-interface MemoryMetrics {
-  heapUsed: number;
-  heapTotal: number;
-  heapLimit: number;
-  usagePercent: number;
-  trend: 'increasing' | 'stable' | 'decreasing';
+// ABOUTME: Comprehensive performance monitoring and optimization utilities
+interface PerformanceEntry {
+  timestamp: number;
+  duration: number;
+  metadata?: any;
 }
 
-interface QueryComplexityMetrics {
-  complexity: number;
-  estimatedTime: number;
-  cacheability: number;
-  priority: 'low' | 'medium' | 'high' | 'critical';
+interface PerformanceReport {
+  [key: string]: {
+    count: number;
+    total: number;
+    average: number;
+    min: number;
+    max: number;
+  };
 }
 
-interface ResourceLoadingMetrics {
-  totalSize: number;
-  loadTime: number;
-  criticalResources: string[];
-  optimizationOpportunities: string[];
+// Performance measurement utilities
+export class PerformanceProfiler {
+  private static measurements = new Map<string, PerformanceEntry[]>();
+  private static activeTimers = new Map<string, number>();
+
+  static startMeasurement(operationName: string, metadata?: any): void {
+    const timestamp = performance.now();
+    this.activeTimers.set(operationName, timestamp);
+    
+    if (metadata) {
+      console.log(`⏱️ Started: ${operationName}`, metadata);
+    }
+  }
+
+  static endMeasurement(operationName: string): number {
+    const endTime = performance.now();
+    const startTime = this.activeTimers.get(operationName);
+    
+    if (!startTime) {
+      console.warn(`No active timer found for operation: ${operationName}`);
+      return 0;
+    }
+    
+    const duration = endTime - startTime;
+    this.activeTimers.delete(operationName);
+    
+    // Store measurement
+    if (!this.measurements.has(operationName)) {
+      this.measurements.set(operationName, []);
+    }
+    
+    this.measurements.get(operationName)!.push({
+      timestamp: endTime,
+      duration,
+    });
+    
+    // Keep only last 100 measurements per operation
+    const measurements = this.measurements.get(operationName)!;
+    if (measurements.length > 100) {
+      measurements.splice(0, measurements.length - 100);
+    }
+    
+    console.log(`✅ Completed: ${operationName} (${duration.toFixed(2)}ms)`);
+    return duration;
+  }
+
+  static getPerformanceReport(): PerformanceReport {
+    const report: PerformanceReport = {};
+    
+    this.measurements.forEach((measurements, operationName) => {
+      if (measurements.length === 0) return;
+      
+      const durations = measurements.map(m => m.duration);
+      const total = durations.reduce((sum, d) => sum + d, 0);
+      
+      report[operationName] = {
+        count: measurements.length,
+        total,
+        average: total / measurements.length,
+        min: Math.min(...durations),
+        max: Math.max(...durations),
+      };
+    });
+    
+    return report;
+  }
+
+  static clearMeasurements(): void {
+    this.measurements.clear();
+    this.activeTimers.clear();
+  }
 }
 
-class AdvancedMemoryLeakDetector {
-  private memoryHistory: MemoryMetrics[] = [];
-  private listeners: Set<EventListener> = new Set();
-  private timers: Set<number> = new Set();
-  private observers: Set<MutationObserver | ResizeObserver | IntersectionObserver> = new Set();
-  private cleanupTasks: (() => void)[] = [];
-  private maxHistorySize = 50;
-  private criticalThreshold = 85; // 85% memory usage
+// Memory leak detection utilities
+export class MemoryLeakDetector {
+  private static eventListenerCount = 0;
+  private static timerCount = 0;
+  private static intervalIds = new Set<number>();
+  private static timeoutIds = new Set<number>();
 
-  trackEventListeners() {
+  static trackEventListeners(): void {
     const originalAddEventListener = EventTarget.prototype.addEventListener;
     const originalRemoveEventListener = EventTarget.prototype.removeEventListener;
     
-    EventTarget.prototype.addEventListener = function(type, listener, options) {
-      this.listeners?.add(listener);
-      return originalAddEventListener.call(this, type, listener, options);
+    EventTarget.prototype.addEventListener = function(...args) {
+      MemoryLeakDetector.eventListenerCount++;
+      return originalAddEventListener.apply(this, args);
     };
     
-    EventTarget.prototype.removeEventListener = function(type, listener, options) {
-      this.listeners?.delete(listener);
-      return originalRemoveEventListener.call(this, type, listener, options);
+    EventTarget.prototype.removeEventListener = function(...args) {
+      MemoryLeakDetector.eventListenerCount = Math.max(0, MemoryLeakDetector.eventListenerCount - 1);
+      return originalRemoveEventListener.apply(this, args);
     };
   }
 
-  trackTimers() {
+  static trackTimers(): void {
     const originalSetTimeout = window.setTimeout;
     const originalSetInterval = window.setInterval;
     const originalClearTimeout = window.clearTimeout;
     const originalClearInterval = window.clearInterval;
     
-    // Store originals and track timer IDs without overriding function signatures
-    const timerTracker = this;
-    
-    window.setTimeout = function(handler: TimerHandler, timeout?: number, ...args: any[]) {
-      const id = originalSetTimeout.call(window, handler, timeout, ...args);
-      timerTracker.timers.add(id);
+    window.setTimeout = ((callback: any, delay: any, ...args: any[]) => {
+      const id = originalSetTimeout(callback, delay, ...args);
+      this.timeoutIds.add(id);
+      this.timerCount++;
       return id;
-    } as typeof setTimeout;
+    }) as typeof setTimeout;
     
-    window.setInterval = function(handler: TimerHandler, timeout?: number, ...args: any[]) {
-      const id = originalSetInterval.call(window, handler, timeout, ...args);
-      timerTracker.timers.add(id);
+    window.setInterval = ((callback: any, delay: any, ...args: any[]) => {
+      const id = originalSetInterval(callback, delay, ...args);
+      this.intervalIds.add(id);
+      this.timerCount++;
       return id;
-    } as typeof setInterval;
+    }) as typeof setInterval;
     
-    window.clearTimeout = function(id: number) {
-      timerTracker.timers.delete(id);
-      return originalClearTimeout.call(window, id);
+    window.clearTimeout = (id: number) => {
+      this.timeoutIds.delete(id);
+      this.timerCount = Math.max(0, this.timerCount - 1);
+      return originalClearTimeout(id);
     };
     
-    window.clearInterval = function(id: number) {
-      timerTracker.timers.delete(id);
-      return originalClearInterval.call(window, id);
+    window.clearInterval = (id: number) => {
+      this.intervalIds.delete(id);
+      this.timerCount = Math.max(0, this.timerCount - 1);
+      return originalClearInterval(id);
     };
   }
 
-  getMemoryMetrics(): MemoryMetrics | null {
-    if (!('memory' in performance)) return null;
-    
-    const memory = (performance as any).memory;
-    const heapUsed = memory.usedJSHeapSize;
-    const heapTotal = memory.totalJSHeapSize;
-    const heapLimit = memory.jsHeapSizeLimit;
-    const usagePercent = (heapUsed / heapLimit) * 100;
-    
-    const metrics: MemoryMetrics = {
-      heapUsed,
-      heapTotal,
-      heapLimit,
-      usagePercent,
-      trend: this.calculateTrend(usagePercent),
+  static getLeakReport() {
+    return {
+      eventListeners: this.eventListenerCount,
+      timers: this.timerCount,
+      activeIntervals: this.intervalIds.size,
+      activeTimeouts: this.timeoutIds.size,
+      memoryUsage: (performance as any).memory ? {
+        used: (performance as any).memory.usedJSHeapSize,
+        total: (performance as any).memory.totalJSHeapSize,
+        limit: (performance as any).memory.jsHeapSizeLimit,
+      } : null,
     };
-    
-    this.memoryHistory.push(metrics);
-    if (this.memoryHistory.length > this.maxHistorySize) {
-      this.memoryHistory.shift();
-    }
-    
-    return metrics;
   }
 
-  private calculateTrend(currentUsage: number): 'increasing' | 'stable' | 'decreasing' {
-    if (this.memoryHistory.length < 3) return 'stable';
+  static cleanup(): void {
+    // Clear all tracked intervals and timeouts
+    this.intervalIds.forEach(id => clearInterval(id));
+    this.timeoutIds.forEach(id => clearTimeout(id));
     
-    const recent = this.memoryHistory.slice(-3).map(m => m.usagePercent);
-    const trend = recent[2] - recent[0];
-    
-    if (trend > 5) return 'increasing';
-    if (trend < -5) return 'decreasing';
-    return 'stable';
-  }
-
-  detectMemoryLeaks(): {
-    hasLeaks: boolean;
-    severity: 'low' | 'medium' | 'high' | 'critical';
-    recommendations: string[];
-  } {
-    const current = this.getMemoryMetrics();
-    if (!current) return { hasLeaks: false, severity: 'low', recommendations: [] };
-    
-    const recommendations: string[] = [];
-    let severity: 'low' | 'medium' | 'high' | 'critical' = 'low';
-    let hasLeaks = false;
-    
-    // Check memory usage threshold
-    if (current.usagePercent > this.criticalThreshold) {
-      hasLeaks = true;
-      severity = 'critical';
-      recommendations.push('Memory usage exceeds critical threshold');
-    }
-    
-    // Check memory trend
-    if (current.trend === 'increasing' && this.memoryHistory.length >= 5) {
-      const recentIncrease = this.memoryHistory.slice(-5).every((m, i, arr) => 
-        i === 0 || m.usagePercent > arr[i - 1].usagePercent
-      );
-      
-      if (recentIncrease) {
-        hasLeaks = true;
-        severity = severity === 'critical' ? 'critical' : 'high';
-        recommendations.push('Consistent memory growth detected');
-      }
-    }
-    
-    // Check for excessive listeners
-    if (this.listeners.size > 100) {
-      hasLeaks = true;
-      severity = severity === 'critical' ? 'critical' : 'medium';
-      recommendations.push(`Too many event listeners: ${this.listeners.size}`);
-    }
-    
-    // Check for excessive timers
-    if (this.timers.size > 20) {
-      hasLeaks = true;
-      severity = severity === 'critical' ? 'critical' : 'medium';
-      recommendations.push(`Too many active timers: ${this.timers.size}`);
-    }
-    
-    return { hasLeaks, severity, recommendations };
-  }
-
-  forceGarbageCollection() {
-    if ('gc' in window && typeof (window as any).gc === 'function') {
-      (window as any).gc();
-      console.log('🗑️ Forced garbage collection executed');
-    }
-  }
-
-  addCleanupTask(task: () => void) {
-    this.cleanupTasks.push(task);
-  }
-
-  cleanup() {
-    this.cleanupTasks.forEach(task => {
-      try {
-        task();
-      } catch (error) {
-        console.warn('Cleanup task failed:', error);
-      }
-    });
-    
-    this.timers.forEach(id => {
-      clearTimeout(id);
-      clearInterval(id);
-    });
-    
-    this.observers.forEach(observer => {
-      observer.disconnect();
-    });
-    
-    this.cleanupTasks = [];
-    this.timers.clear();
-    this.observers.clear();
+    this.intervalIds.clear();
+    this.timeoutIds.clear();
+    this.eventListenerCount = 0;
+    this.timerCount = 0;
   }
 }
 
-class QueryOptimizer {
-  private queryMetrics = new Map<string, QueryComplexityMetrics>();
-  private batchQueue = new Map<string, any[]>();
-  private batchTimeout: number | null = null;
-  private readonly batchDelay = 50; // 50ms batching window
+// Query performance analysis
+export class QueryPerformanceAnalyzer {
+  private static queryMetrics = new Map<string, {
+    executionTimes: number[];
+    cacheHits: number;
+    cacheMisses: number;
+    errorCount: number;
+  }>();
 
-  analyzeQueryComplexity(queryKey: unknown[]): QueryComplexityMetrics {
-    const keyString = JSON.stringify(queryKey);
-    
-    if (this.queryMetrics.has(keyString)) {
-      return this.queryMetrics.get(keyString)!;
+  static recordQueryExecution(queryKey: string, executionTime: number, fromCache: boolean, error?: Error): void {
+    if (!this.queryMetrics.has(queryKey)) {
+      this.queryMetrics.set(queryKey, {
+        executionTimes: [],
+        cacheHits: 0,
+        cacheMisses: 0,
+        errorCount: 0,
+      });
     }
     
-    let complexity = 1;
-    let estimatedTime = 100; // Base 100ms
-    let cacheability = 10; // Base 10 minutes
-    let priority: 'low' | 'medium' | 'high' | 'critical' = 'medium';
+    const metrics = this.queryMetrics.get(queryKey)!;
     
-    // Analyze query patterns
-    const queryString = keyString.toLowerCase();
-    
-    // Complex filters increase complexity
-    if (queryString.includes('filter')) complexity += 2;
-    if (queryString.includes('search')) complexity += 3;
-    if (queryString.includes('aggregate')) complexity += 4;
-    if (queryString.includes('join')) complexity += 3;
-    
-    // Adjust estimated time based on complexity
-    estimatedTime *= complexity;
-    
-    // Determine priority based on query type
-    if (queryString.includes('critical') || queryString.includes('auth')) {
-      priority = 'critical';
-      cacheability = 2; // 2 minutes for critical data
-    } else if (queryString.includes('real-time') || queryString.includes('notifications')) {
-      priority = 'high';
-      cacheability = 1; // 1 minute for real-time data
-    } else if (queryString.includes('analytics') || queryString.includes('stats')) {
-      priority = 'low';
-      cacheability = 30; // 30 minutes for analytics
-    }
-    
-    const metrics: QueryComplexityMetrics = {
-      complexity,
-      estimatedTime,
-      cacheability,
-      priority,
-    };
-    
-    this.queryMetrics.set(keyString, metrics);
-    return metrics;
-  }
-
-  shouldBatchQuery(queryKey: unknown[]): boolean {
-    const metrics = this.analyzeQueryComplexity(queryKey);
-    return metrics.priority !== 'critical' && metrics.complexity <= 3;
-  }
-
-  addToBatch(queryKey: unknown[], queryFn: () => Promise<any>): Promise<any> {
-    const keyString = JSON.stringify(queryKey);
-    
-    if (!this.batchQueue.has(keyString)) {
-      this.batchQueue.set(keyString, []);
-    }
-    
-    return new Promise((resolve, reject) => {
-      this.batchQueue.get(keyString)!.push({ resolve, reject, queryFn });
-      
-      if (this.batchTimeout) {
-        clearTimeout(this.batchTimeout);
-      }
-      
-      this.batchTimeout = window.setTimeout(() => {
-        this.executeBatch();
-      }, this.batchDelay);
-    });
-  }
-
-  private async executeBatch() {
-    const batches = Array.from(this.batchQueue.entries());
-    this.batchQueue.clear();
-    this.batchTimeout = null;
-    
-    for (const [keyString, requests] of batches) {
-      try {
-        // Execute the first query function (they should be identical for the same key)
-        const result = await requests[0].queryFn();
-        
-        // Resolve all requests with the same result
-        requests.forEach(({ resolve }) => resolve(result));
-      } catch (error) {
-        // Reject all requests with the same error
-        requests.forEach(({ reject }) => reject(error));
+    if (!fromCache) {
+      metrics.executionTimes.push(executionTime);
+      // Keep only last 50 execution times
+      if (metrics.executionTimes.length > 50) {
+        metrics.executionTimes.splice(0, 1);
       }
     }
-  }
-
-  getOptimizationRecommendations(): string[] {
-    const recommendations: string[] = [];
     
-    // Analyze stored metrics for recommendations
-    const highComplexityQueries = Array.from(this.queryMetrics.entries())
-      .filter(([_, metrics]) => metrics.complexity > 5);
-    
-    if (highComplexityQueries.length > 0) {
-      recommendations.push(`${highComplexityQueries.length} high-complexity queries detected`);
+    if (fromCache) {
+      metrics.cacheHits++;
+    } else {
+      metrics.cacheMisses++;
     }
     
-    const criticalQueries = Array.from(this.queryMetrics.entries())
-      .filter(([_, metrics]) => metrics.priority === 'critical');
-    
-    if (criticalQueries.length > 10) {
-      recommendations.push('Too many critical priority queries');
-    }
-    
-    return recommendations;
-  }
-}
-
-class ResourceLoadingOptimizer {
-  private loadingMetrics: ResourceLoadingMetrics = {
-    totalSize: 0,
-    loadTime: 0,
-    criticalResources: [],
-    optimizationOpportunities: [],
-  };
-
-  analyzeResourceLoading(): ResourceLoadingMetrics {
-    if (!('getEntriesByType' in performance)) {
-      return this.loadingMetrics;
-    }
-    
-    const resources = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
-    const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-    
-    let totalSize = 0;
-    const criticalResources: string[] = [];
-    const optimizationOpportunities: string[] = [];
-    
-    resources.forEach(resource => {
-      totalSize += resource.transferSize || 0;
-      
-      // Identify critical resources
-      if (resource.name.includes('.js') && resource.transferSize > 500000) { // > 500KB
-        criticalResources.push(`Large JS: ${resource.name} (${Math.round((resource.transferSize || 0) / 1024)}KB)`);
-      }
-      
-      if (resource.name.includes('.css') && resource.transferSize > 100000) { // > 100KB
-        criticalResources.push(`Large CSS: ${resource.name} (${Math.round((resource.transferSize || 0) / 1024)}KB)`);
-      }
-      
-      // Identify optimization opportunities
-      if (resource.duration > 1000) { // > 1 second load time
-        optimizationOpportunities.push(`Slow resource: ${resource.name} (${Math.round(resource.duration)}ms)`);
-      }
-      
-      if (!resource.name.includes('cache') && resource.duration > 100) {
-        optimizationOpportunities.push(`Consider caching: ${resource.name}`);
-      }
-    });
-    
-    this.loadingMetrics = {
-      totalSize,
-      loadTime: navigation?.loadEventEnd - navigation?.fetchStart || 0,
-      criticalResources,
-      optimizationOpportunities,
-    };
-    
-    return this.loadingMetrics;
-  }
-
-  preloadCriticalResources() {
-    // Preload critical stylesheets
-    const criticalCSS = [
-      '/src/index.css',
-      // Add other critical CSS files
-    ];
-    
-    criticalCSS.forEach(href => {
-      const link = document.createElement('link');
-      link.rel = 'preload';
-      link.as = 'style';
-      link.href = href;
-      document.head.appendChild(link);
-    });
-    
-    // Preload critical JavaScript modules
-    const criticalJS = [
-      '/src/main.tsx',
-      // Add other critical JS files
-    ];
-    
-    criticalJS.forEach(href => {
-      const link = document.createElement('link');
-      link.rel = 'modulepreload';
-      link.href = href;
-      document.head.appendChild(link);
-    });
-  }
-}
-
-class PerformanceProfiler {
-  private measurements = new Map<string, number[]>();
-  private maxMeasurements = 100;
-
-  startMeasurement(operation: string) {
-    const markName = `${operation}-start`;
-    performance.mark(markName);
-  }
-
-  endMeasurement(operation: string) {
-    const startMark = `${operation}-start`;
-    const endMark = `${operation}-end`;
-    const measureName = operation;
-    
-    try {
-      performance.mark(endMark);
-      performance.measure(measureName, startMark, endMark);
-      
-      const measure = performance.getEntriesByName(measureName, 'measure').pop();
-      if (measure) {
-        this.addMeasurement(operation, measure.duration);
-      }
-      
-      // Cleanup marks and measures
-      performance.clearMarks(startMark);
-      performance.clearMarks(endMark);
-      performance.clearMeasures(measureName);
-    } catch (error) {
-      console.warn(`Failed to measure ${operation}:`, error);
+    if (error) {
+      metrics.errorCount++;
     }
   }
 
-  private addMeasurement(operation: string, duration: number) {
-    if (!this.measurements.has(operation)) {
-      this.measurements.set(operation, []);
-    }
+  static getQueryReport() {
+    const report: { [key: string]: any } = {};
     
-    const durations = this.measurements.get(operation)!;
-    durations.push(duration);
-    
-    // Keep only recent measurements
-    if (durations.length > this.maxMeasurements) {
-      durations.shift();
-    }
-  }
-
-  getPerformanceReport(): Record<string, { average: number; count: number; max: number; min: number }> {
-    const report: Record<string, { average: number; count: number; max: number; min: number }> = {};
-    
-    this.measurements.forEach((durations, operation) => {
-      if (durations.length > 0) {
-        const average = durations.reduce((sum, d) => sum + d, 0) / durations.length;
-        const max = Math.max(...durations);
-        const min = Math.min(...durations);
-        
-        report[operation] = {
-          average,
-          count: durations.length,
-          max,
-          min,
-        };
-      }
+    this.queryMetrics.forEach((metrics, queryKey) => {
+      const executionTimes = metrics.executionTimes;
+      const totalRequests = metrics.cacheHits + metrics.cacheMisses;
+      
+      report[queryKey] = {
+        totalRequests,
+        cacheHitRate: totalRequests > 0 ? (metrics.cacheHits / totalRequests) * 100 : 0,
+        averageExecutionTime: executionTimes.length > 0 
+          ? executionTimes.reduce((sum, time) => sum + time, 0) / executionTimes.length 
+          : 0,
+        errorRate: totalRequests > 0 ? (metrics.errorCount / totalRequests) * 100 : 0,
+        slowQueries: executionTimes.filter(time => time > 1000).length,
+      };
     });
     
     return report;
   }
+
+  static clearMetrics(): void {
+    this.queryMetrics.clear();
+  }
 }
 
-// Export singleton instances
-export const MemoryLeakDetector = new AdvancedMemoryLeakDetector();
-export const QueryOptimizerInstance = new QueryOptimizer();
-export const ResourceLoadingOptimizerInstance = new ResourceLoadingOptimizer();
-export const PerformanceProfilerInstance = new PerformanceProfiler();
+// Component render performance tracking
+export class ComponentPerformanceTracker {
+  private static renderCounts = new Map<string, number>();
+  private static renderTimes = new Map<string, number[]>();
 
-// Initialize memory leak detection
-MemoryLeakDetector.trackEventListeners();
-MemoryLeakDetector.trackTimers();
+  static trackComponentRender(componentName: string, renderTime: number): void {
+    // Update render count
+    const currentCount = this.renderCounts.get(componentName) || 0;
+    this.renderCounts.set(componentName, currentCount + 1);
+    
+    // Update render times
+    if (!this.renderTimes.has(componentName)) {
+      this.renderTimes.set(componentName, []);
+    }
+    
+    const times = this.renderTimes.get(componentName)!;
+    times.push(renderTime);
+    
+    // Keep only last 100 render times
+    if (times.length > 100) {
+      times.splice(0, 1);
+    }
+    
+    // Log slow renders
+    if (renderTime > 16) { // More than one frame at 60fps
+      console.warn(`🐌 Slow render detected: ${componentName} took ${renderTime.toFixed(2)}ms`);
+    }
+  }
 
-// Initialize resource loading optimization
-ResourceLoadingOptimizerInstance.preloadCriticalResources();
+  static getComponentReport() {
+    const report: { [key: string]: any } = {};
+    
+    this.renderTimes.forEach((times, componentName) => {
+      const renderCount = this.renderCounts.get(componentName) || 0;
+      const averageTime = times.length > 0 
+        ? times.reduce((sum, time) => sum + time, 0) / times.length 
+        : 0;
+      
+      report[componentName] = {
+        renderCount,
+        averageRenderTime: averageTime,
+        slowRenders: times.filter(time => time > 16).length,
+        maxRenderTime: times.length > 0 ? Math.max(...times) : 0,
+      };
+    });
+    
+    return report;
+  }
+
+  static clearMetrics(): void {
+    this.renderCounts.clear();
+    this.renderTimes.clear();
+  }
+}
+
+// Debounce utility for performance
+export function debounce<T extends (...args: any[]) => any>(
+  func: T,
+  wait: number,
+  immediate = false
+): (...args: Parameters<T>) => void {
+  let timeout: number | undefined;
+  
+  return function(this: any, ...args: Parameters<T>) {
+    const later = () => {
+      timeout = undefined;
+      if (!immediate) func.apply(this, args);
+    };
+    
+    const callNow = immediate && !timeout;
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait) as any;
+    
+    if (callNow) func.apply(this, args);
+  };
+}
+
+// Throttle utility for performance
+export function throttle<T extends (...args: any[]) => any>(
+  func: T,
+  limit: number
+): (...args: Parameters<T>) => void {
+  let inThrottle: boolean;
+  
+  return function(this: any, ...args: Parameters<T>) {
+    if (!inThrottle) {
+      func.apply(this, args);
+      inThrottle = true;
+      setTimeout(() => inThrottle = false, limit);
+    }
+  };
+}
+
+// Memoization with TTL for expensive calculations
+export function memoizeWithTTL<T extends (...args: any[]) => any>(
+  func: T,
+  ttl: number = 60000 // 1 minute default
+): T {
+  const cache = new Map<string, { value: ReturnType<T>; expiry: number }>();
+  
+  return ((...args: Parameters<T>): ReturnType<T> => {
+    const key = JSON.stringify(args);
+    const now = Date.now();
+    const cached = cache.get(key);
+    
+    if (cached && now < cached.expiry) {
+      return cached.value;
+    }
+    
+    const result = func(...args);
+    cache.set(key, { value: result, expiry: now + ttl });
+    
+    // Cleanup expired entries periodically
+    if (cache.size > 50) {
+      for (const [k, v] of cache.entries()) {
+        if (now >= v.expiry) {
+          cache.delete(k);
+        }
+      }
+    }
+    
+    return result;
+  }) as T;
+}
+
+// Bundle size analyzer
+export const BundleAnalyzer = {
+  analyzeComponent: (componentName: string, component: any) => {
+    const serialized = JSON.stringify(component);
+    const sizeKB = new Blob([serialized]).size / 1024;
+    
+    if (sizeKB > 100) {
+      console.warn(`📦 Large component detected: ${componentName} (~${sizeKB.toFixed(1)}KB)`);
+    }
+    
+    return { componentName, sizeKB };
+  },
+  
+  trackImport: (moduleName: string, moduleSize?: number) => {
+    if (moduleSize && moduleSize > 500) { // 500KB threshold
+      console.warn(`📦 Large module imported: ${moduleName} (~${(moduleSize / 1024).toFixed(1)}MB)`);
+    }
+  },
+};
+
+// Performance budget checker
+export const PerformanceBudget = {
+  budgets: {
+    bundleSize: 2 * 1024 * 1024, // 2MB
+    initialLoadTime: 3000, // 3 seconds
+    cacheHitRate: 80, // 80%
+    memoryUsage: 150 * 1024 * 1024, // 150MB
+  },
+  
+  checkBudgets: (metrics: any) => {
+    const violations = [];
+    
+    if (metrics.bundleSize > PerformanceBudget.budgets.bundleSize) {
+      violations.push(`Bundle size exceeds budget: ${(metrics.bundleSize / 1024 / 1024).toFixed(1)}MB > ${(PerformanceBudget.budgets.bundleSize / 1024 / 1024).toFixed(1)}MB`);
+    }
+    
+    if (metrics.loadTime > PerformanceBudget.budgets.initialLoadTime) {
+      violations.push(`Load time exceeds budget: ${metrics.loadTime}ms > ${PerformanceBudget.budgets.initialLoadTime}ms`);
+    }
+    
+    if (metrics.cacheHitRate < PerformanceBudget.budgets.cacheHitRate) {
+      violations.push(`Cache hit rate below budget: ${metrics.cacheHitRate}% < ${PerformanceBudget.budgets.cacheHitRate}%`);
+    }
+    
+    if (violations.length > 0) {
+      console.warn('🚨 Performance Budget Violations:');
+      violations.forEach(violation => console.warn(`  • ${violation}`));
+    }
+    
+    return violations;
+  },
+};
