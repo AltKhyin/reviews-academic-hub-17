@@ -51,6 +51,45 @@ const calculateContainerOffset = (containerWidth: number, columns: number): numb
   return Math.max(0, (availableWidth - gridWidth) / 2) + containerPadding;
 };
 
+// Generate content-based dynamic height for each issue
+const generateContentBasedHeight = (issue: ArchiveIssue): number => {
+  const baseHeight = 380;
+  const titleLength = (issue.search_title || issue.title).length;
+  const descriptionLength = (issue.search_description || issue.description || '').length;
+  const authorsCount = issue.authors ? issue.authors.split(',').length : 0;
+  
+  // Content complexity factor (0.85 to 1.6 multiplier)
+  let heightMultiplier = 0.85;
+  
+  // Title impact (longer titles need more space)
+  if (titleLength > 60) heightMultiplier += 0.15;
+  else if (titleLength > 40) heightMultiplier += 0.1;
+  else if (titleLength > 20) heightMultiplier += 0.05;
+  
+  // Description impact
+  if (descriptionLength > 200) heightMultiplier += 0.25;
+  else if (descriptionLength > 100) heightMultiplier += 0.15;
+  else if (descriptionLength > 50) heightMultiplier += 0.1;
+  
+  // Authors impact
+  if (authorsCount > 3) heightMultiplier += 0.1;
+  else if (authorsCount > 1) heightMultiplier += 0.05;
+  
+  // Specialty tags impact
+  const specialtyCount = issue.specialty ? issue.specialty.split(',').length : 0;
+  if (specialtyCount > 3) heightMultiplier += 0.1;
+  else if (specialtyCount > 1) heightMultiplier += 0.05;
+  
+  // Add some controlled randomness for visual variety
+  const randomFactor = (parseInt(issue.id.slice(-2)) % 20) / 100; // 0 to 0.19
+  heightMultiplier += randomFactor;
+  
+  // Clamp to acceptable range (0.85x to 1.6x)
+  heightMultiplier = Math.max(0.85, Math.min(1.6, heightMultiplier));
+  
+  return Math.floor(baseHeight * heightMultiplier);
+};
+
 interface CardPosition {
   id: string;
   x: number;
@@ -162,7 +201,7 @@ export const TrueMasonryGrid = React.memo<TrueMasonryGridProps>(({
     };
   }, [handleResize]);
 
-  // Calculate card positions using true masonry algorithm
+  // Calculate card positions using true masonry algorithm with dynamic heights
   const calculateMasonryLayout = useCallback(() => {
     if (!containerWidth || processedIssues.length === 0) return;
 
@@ -175,19 +214,8 @@ export const TrueMasonryGrid = React.memo<TrueMasonryGridProps>(({
       // Find the shortest column
       const shortestColumnIndex = columnHeights.indexOf(Math.min(...columnHeights));
       
-      // Get actual card height from DOM if available
-      const cardElement = cardRefs.current.get(issue.id);
-      let cardHeight = 320; // Default fallback height
-      
-      if (cardElement) {
-        cardHeight = cardElement.offsetHeight;
-      } else {
-        // Estimate height based on content
-        const baseHeight = 280;
-        const titleHeight = (issue.title?.length || 0) * 0.8;
-        const descriptionHeight = (issue.description?.length || 0) * 0.1;
-        cardHeight = baseHeight + titleHeight + descriptionHeight;
-      }
+      // Generate dynamic height based on content
+      const cardHeight = generateContentBasedHeight(issue);
 
       // Calculate position
       const x = containerOffset + (shortestColumnIndex * (MASONRY_CONFIG.cardWidth + MASONRY_CONFIG.horizontalGap));
@@ -200,7 +228,7 @@ export const TrueMasonryGrid = React.memo<TrueMasonryGridProps>(({
         height: cardHeight
       });
 
-      // Update column height
+      // Update column height with zero vertical gap for tight packing
       columnHeights[shortestColumnIndex] += cardHeight + MASONRY_CONFIG.verticalGap;
     });
 
@@ -230,7 +258,7 @@ export const TrueMasonryGrid = React.memo<TrueMasonryGridProps>(({
     }
   }, []);
 
-  // Loading state
+  // Loading state with varied heights
   if (isLoading) {
     return (
       <div className="w-full px-4">
@@ -242,16 +270,23 @@ export const TrueMasonryGrid = React.memo<TrueMasonryGridProps>(({
               gap: `${MASONRY_CONFIG.verticalGap}px ${MASONRY_CONFIG.horizontalGap}px`
             }}
           >
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div 
-                key={i} 
-                className="bg-muted animate-pulse rounded-lg"
-                style={{ 
-                  width: `${MASONRY_CONFIG.cardWidth}px`,
-                  height: `${300 + (i % 3) * 50}px`
-                }}
-              />
-            ))}
+            {Array.from({ length: 8 }).map((_, i) => {
+              // Generate varied skeleton heights for visual variety
+              const baseHeight = 380;
+              const heightVariation = 0.85 + (i % 4) * 0.25; // Range from 0.85x to 1.6x
+              const skeletonHeight = Math.floor(baseHeight * heightVariation);
+              
+              return (
+                <div 
+                  key={i} 
+                  className="bg-muted animate-pulse rounded-lg"
+                  style={{ 
+                    width: `${MASONRY_CONFIG.cardWidth}px`,
+                    height: `${skeletonHeight}px`
+                  }}
+                />
+              );
+            })}
           </div>
         </div>
       </div>
