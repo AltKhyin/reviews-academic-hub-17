@@ -95,7 +95,7 @@ export const useOptimizedTopThreads = () => {
         // Fallback to regular posts query
         const { data: fallbackData } = await supabase
           .from('posts')
-          .select('id, title, score as votes, created_at')
+          .select('id, title, score, created_at')
           .eq('published', true)
           .order('score', { ascending: false })
           .limit(3);
@@ -103,7 +103,7 @@ export const useOptimizedTopThreads = () => {
         return (fallbackData || []).map(post => ({
           id: post.id,
           title: post.title,
-          votes: post.votes,
+          votes: post.score,
           created_at: post.created_at,
           comments: 0,
           thread_type: 'post'
