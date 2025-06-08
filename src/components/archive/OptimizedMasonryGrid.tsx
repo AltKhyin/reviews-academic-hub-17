@@ -151,6 +151,12 @@ export const OptimizedMasonryGrid = React.memo<OptimizedMasonryGridProps>(({
     return columns;
   }, [filteredIssues, gridLayout.columns]);
 
+  // Handle card click
+  const handleCardClick = useCallback((issueId: string) => {
+    console.log('Issue clicked:', issueId);
+    // TODO: Implement navigation to issue detail page or open modal
+  }, []);
+
   // Loading skeleton
   if (isLoading) {
     return (
@@ -199,6 +205,7 @@ export const OptimizedMasonryGrid = React.memo<OptimizedMasonryGridProps>(({
               <IssueCard
                 key={issue.id}
                 issue={issue}
+                onClick={handleCardClick}
                 className="w-full"
               />
             ))}
