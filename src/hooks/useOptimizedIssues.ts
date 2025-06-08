@@ -63,18 +63,41 @@ export const useOptimizedIssues = (options: UseIssuesOptions = {}) => {
           return [];
         }
 
-        const processedIssues: Issue[] = data.map(issue => ({
-          ...issue,
-          backend_tags: typeof issue.backend_tags === 'string' ? issue.backend_tags : JSON.stringify(issue.backend_tags || ''),
-          year: issue.year || '',
-          pdf_url: issue.pdf_url || '',
-          specialty: issue.specialty || '',
-          published: issue.published || false,
-          created_at: issue.created_at || new Date().toISOString(),
-          updated_at: issue.updated_at || new Date().toISOString(),
-          review_type: (issue.review_type as 'pdf' | 'native' | 'hybrid') || 'pdf',
-          published_at: issue.published_at || null,
-        }));
+        // Type assertion to ensure we're working with the correct data structure
+        const issueData = data as any[];
+
+        const processedIssues: Issue[] = issueData
+          .filter(item => item && typeof item === 'object' && item.id) // Filter out invalid items
+          .map(issue => ({
+            id: issue.id,
+            title: issue.title || '',
+            description: issue.description || null,
+            cover_image_url: issue.cover_image_url || null,
+            published: Boolean(issue.published),
+            featured: Boolean(issue.featured),
+            specialty: issue.specialty || '',
+            authors: issue.authors || null,
+            search_title: issue.search_title || null,
+            search_description: issue.search_description || null,
+            year: issue.year || null,
+            design: issue.design || null,
+            score: issue.score || null,
+            created_at: issue.created_at || new Date().toISOString(),
+            updated_at: issue.updated_at || new Date().toISOString(),
+            pdf_url: issue.pdf_url || '',
+            review_type: (issue.review_type as 'pdf' | 'native' | 'hybrid') || 'pdf',
+            published_at: issue.published_at || null,
+            backend_tags: typeof issue.backend_tags === 'string' 
+              ? issue.backend_tags 
+              : JSON.stringify(issue.backend_tags || ''),
+            // Optional fields with defaults
+            article_pdf_url: issue.article_pdf_url || null,
+            real_title: issue.real_title || null,
+            real_title_ptbr: issue.real_title_ptbr || null,
+            population: issue.population || null,
+            review_content: issue.review_content || null,
+            toc_data: issue.toc_data || null,
+          }));
 
         return processedIssues;
       } catch (error: any) {
@@ -106,16 +129,34 @@ export const useOptimizedIssue = (id: string) => {
       
       // Process the data to ensure proper typing
       const processedIssue: Issue = {
-        ...data,
-        backend_tags: typeof data.backend_tags === 'string' ? data.backend_tags : JSON.stringify(data.backend_tags || ''),
-        year: data.year || '',
-        pdf_url: data.pdf_url || '',
+        id: data.id,
+        title: data.title || '',
+        description: data.description || null,
+        cover_image_url: data.cover_image_url || null,
+        published: Boolean(data.published),
+        featured: Boolean(data.featured),
         specialty: data.specialty || '',
-        published: data.published || false,
+        authors: data.authors || null,
+        search_title: data.search_title || null,
+        search_description: data.search_description || null,
+        year: data.year || null,
+        design: data.design || null,
+        score: data.score || null,
         created_at: data.created_at || new Date().toISOString(),
         updated_at: data.updated_at || new Date().toISOString(),
+        pdf_url: data.pdf_url || '',
         review_type: (data.review_type as 'pdf' | 'native' | 'hybrid') || 'pdf',
         published_at: data.published_at || null,
+        backend_tags: typeof data.backend_tags === 'string' 
+          ? data.backend_tags 
+          : JSON.stringify(data.backend_tags || ''),
+        // Optional fields
+        article_pdf_url: data.article_pdf_url || null,
+        real_title: data.real_title || null,
+        real_title_ptbr: data.real_title_ptbr || null,
+        population: data.population || null,
+        review_content: data.review_content || null,
+        toc_data: data.toc_data || null,
       };
       
       return processedIssue;
@@ -147,16 +188,32 @@ export const useOptimizedFeaturedIssue = () => {
       
       // Process the data to ensure proper typing
       const processedIssue: Issue = {
-        ...data,
-        backend_tags: '',
-        year: '',
-        pdf_url: data.pdf_url || '',
+        id: data.id,
+        title: data.title || '',
+        description: data.description || null,
+        cover_image_url: data.cover_image_url || null,
+        published: Boolean(data.published),
+        featured: Boolean(data.featured),
         specialty: data.specialty || '',
-        published: data.published || true,
+        authors: data.authors || null,
+        search_title: data.search_title || null,
+        search_description: data.search_description || null,
         created_at: data.created_at || new Date().toISOString(),
         updated_at: data.updated_at || new Date().toISOString(),
-        review_type: 'pdf' as const,
+        pdf_url: data.pdf_url || '',
         published_at: data.published_at || null,
+        review_type: 'pdf' as const,
+        // Default values for missing fields
+        backend_tags: '',
+        year: null,
+        design: null,
+        score: null,
+        population: null,
+        article_pdf_url: null,
+        real_title: null,
+        real_title_ptbr: null,
+        review_content: null,
+        toc_data: null,
       };
       
       return processedIssue;
