@@ -11,7 +11,7 @@ import { CommentReportsPanel } from '@/components/dashboard/CommentReportsPanel'
 import { ReviewerCommentsManager } from '@/components/admin/ReviewerCommentsManager';
 import { LayoutCustomizationPanel } from '@/components/admin/LayoutCustomizationPanel';
 import { TagManagementPanel } from '@/components/admin/TagManagementPanel';
-import { EnhancedAnalyticsDashboard } from '@/components/analytics/EnhancedAnalyticsDashboard';
+import { CustomizableAnalyticsDashboard } from '@/components/analytics/CustomizableAnalyticsDashboard';
 import HomepageSectionsManager from '@/components/dashboard/HomepageSectionsManager';
 import { Settings, BarChart3, Users, MessageSquare, Crown, Layout, FileText, Edit, Palette, Tags } from 'lucide-react';
 
@@ -157,7 +157,7 @@ const EditPage = () => {
         </TabsContent>
         
         <TabsContent value="analytics">
-          <EnhancedAnalyticsDashboard />
+          <CustomizableAnalyticsDashboard />
         </TabsContent>
         
         <TabsContent value="system">
