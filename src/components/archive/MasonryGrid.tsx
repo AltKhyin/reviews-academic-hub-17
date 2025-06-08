@@ -1,4 +1,3 @@
-
 // ABOUTME: Pinterest-style masonry grid with dynamic heights, improved responsiveness and minimal spacing
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { IssueCard } from './IssueCard';
@@ -187,7 +186,6 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
                 left: `${left}px`,
                 top: `${layout.top}px`,
                 width: `${baseWidth}px`,
-                height: `${layout.height}px`,
                 transform: 'translateZ(0)', // Hardware acceleration
               }}
             >
@@ -195,7 +193,6 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
                 issue={issue}
                 onClick={onIssueClick}
                 tagMatches={issue.tagMatches}
-                height={layout.height}
               />
             </div>
           );
