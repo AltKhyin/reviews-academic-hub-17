@@ -77,6 +77,13 @@ export const useOptimizedArchiveData = (filters: ArchiveFilters = {}) => {
           ...issue,
           backend_tags: typeof issue.backend_tags === 'string' ? issue.backend_tags : JSON.stringify(issue.backend_tags || ''),
           year: issue.year || '',
+          pdf_url: issue.pdf_url || '',
+          specialty: issue.specialty || '',
+          published: issue.published || false,
+          created_at: issue.created_at || new Date().toISOString(),
+          updated_at: issue.updated_at || new Date().toISOString(),
+          review_type: (issue.review_type as 'pdf' | 'native' | 'hybrid') || 'pdf',
+          published_at: issue.published_at || null,
         }));
 
         // Get unique specialties and years for filters

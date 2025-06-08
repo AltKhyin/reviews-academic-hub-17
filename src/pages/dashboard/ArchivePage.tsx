@@ -5,6 +5,7 @@ import { ArchiveHeader } from '@/components/archive/ArchiveHeader';
 import { TagsPanel } from '@/components/archive/TagsPanel';
 import { ResultsGrid } from '@/components/archive/ResultsGrid';
 import { useArchiveData } from '@/hooks/useArchiveData';
+import { convertIssuesToArchiveIssues } from '@/utils/archiveHelpers';
 
 const ArchivePage = () => {
   const {
@@ -15,6 +16,11 @@ const ArchivePage = () => {
     selectTag,
     setSearchQuery
   } = useArchiveData();
+
+  // Convert Issues to ArchiveIssues for the grid
+  const archiveIssues = React.useMemo(() => {
+    return convertIssuesToArchiveIssues(issues);
+  }, [issues]);
 
   return (
     <div 
@@ -36,7 +42,7 @@ const ArchivePage = () => {
         />
         
         <ResultsGrid
-          issues={issues}
+          issues={archiveIssues}
           isLoading={isLoading}
           searchQuery={filterState.searchQuery}
           onSearchChange={setSearchQuery}

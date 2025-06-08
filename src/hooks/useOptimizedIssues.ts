@@ -26,7 +26,7 @@ export const useOptimizedIssues = (options: UseIssuesOptions = {}) => {
 
   // Determine what fields to select based on context
   const selectFields = select === '*' 
-    ? 'id, title, description, cover_image_url, published, featured, specialty, authors, search_title, search_description, year, design, score, created_at, updated_at'
+    ? 'id, title, description, cover_image_url, published, featured, specialty, authors, search_title, search_description, year, design, score, created_at, updated_at, pdf_url, review_type, published_at, backend_tags'
     : select;
 
   return useQuery({
@@ -68,6 +68,8 @@ export const useOptimizedIssues = (options: UseIssuesOptions = {}) => {
           published: issue.published || false,
           created_at: issue.created_at || new Date().toISOString(),
           updated_at: issue.updated_at || new Date().toISOString(),
+          review_type: (issue.review_type as 'pdf' | 'native' | 'hybrid') || 'pdf',
+          published_at: issue.published_at || null,
         }));
 
         return processedIssues;
@@ -103,6 +105,13 @@ export const useOptimizedIssue = (id: string) => {
         ...data,
         backend_tags: typeof data.backend_tags === 'string' ? data.backend_tags : JSON.stringify(data.backend_tags || ''),
         year: data.year || '',
+        pdf_url: data.pdf_url || '',
+        specialty: data.specialty || '',
+        published: data.published || false,
+        created_at: data.created_at || new Date().toISOString(),
+        updated_at: data.updated_at || new Date().toISOString(),
+        review_type: (data.review_type as 'pdf' | 'native' | 'hybrid') || 'pdf',
+        published_at: data.published_at || null,
       };
       
       return processedIssue;
@@ -119,7 +128,7 @@ export const useOptimizedFeaturedIssue = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('issues')
-        .select('id, title, description, cover_image_url, specialty, authors, search_title, search_description')
+        .select('id, title, description, cover_image_url, specialty, authors, search_title, search_description, published_at, pdf_url, published, created_at, updated_at, featured')
         .eq('published', true)
         .eq('featured', true)
         .single();
@@ -137,10 +146,13 @@ export const useOptimizedFeaturedIssue = () => {
         ...data,
         backend_tags: '',
         year: '',
-        pdf_url: '',
-        published: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        pdf_url: data.pdf_url || '',
+        specialty: data.specialty || '',
+        published: data.published || true,
+        created_at: data.created_at || new Date().toISOString(),
+        updated_at: data.updated_at || new Date().toISOString(),
+        review_type: 'pdf' as const,
+        published_at: data.published_at || null,
       };
       
       return processedIssue;
@@ -158,7 +170,7 @@ export const useIssuesBatch = () => {
     // Get published issues for public display
     published: useOptimizedIssues({ 
       includeUnpublished: false,
-      select: 'id, title, description, cover_image_url, specialty, authors, search_title'
+      select: 'id, title, description, cover_image_url, specialty, authors, search_title, published_at, pdf_url, published, created_at, updated_at'
     }),
     
     // Get featured issue
@@ -172,7 +184,7 @@ export const useIssuesBatch = () => {
     // Get recent issues for homepage
     recent: useOptimizedIssues({ 
       limit: 6,
-      select: 'id, title, cover_image_url, specialty, search_title'
+      select: 'id, title, cover_image_url, specialty, search_title, published_at, pdf_url, published, created_at, updated_at'
     }),
   };
 };
