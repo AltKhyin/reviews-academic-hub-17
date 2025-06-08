@@ -1,5 +1,5 @@
 
-// ABOUTME: Recommended issues section for the home page
+// ABOUTME: Recommended issues section for the home page - Monochromatic design compliant
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,12 +25,12 @@ export const RecommendedIssuesSection: React.FC = () => {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2 mb-6">
-          <Sparkles className="w-6 h-6 text-purple-600" />
-          <h2 className="text-2xl font-bold">Recomendadas Para Você</h2>
+          <Sparkles className="w-6 h-6 text-foreground" />
+          <h2 className="text-2xl font-bold text-foreground">Recomendadas Para Você</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-gray-200 animate-pulse rounded-lg h-64"></div>
+            <div key={i} className="bg-muted animate-pulse rounded-lg h-64"></div>
           ))}
         </div>
       </div>
@@ -47,15 +47,15 @@ export const RecommendedIssuesSection: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-6 h-6 text-purple-600" />
-          <h2 className="text-2xl font-bold">Recomendadas Para Você</h2>
+          <Sparkles className="w-6 h-6 text-foreground" />
+          <h2 className="text-2xl font-bold text-foreground">Recomendadas Para Você</h2>
           <Badge variant="secondary">Alto Score</Badge>
         </div>
         
         <Button 
           variant="outline" 
           onClick={() => navigate('/acervo')}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 border-border hover:bg-accent"
         >
           Ver todas
           <ArrowRight className="w-4 h-4" />

@@ -1,5 +1,5 @@
 
-// ABOUTME: Main home page component with optimized section rendering
+// ABOUTME: Main home page component with optimized section rendering - Monochromatic design compliant
 import React, { useMemo } from 'react';
 import { useHomeData } from '@/hooks/useHomeData';
 import { HomeHeader } from '@/components/home/HomeHeader';
@@ -34,17 +34,17 @@ export const HomePage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen bg-background">
         <HomeHeader />
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="space-y-12">
             {[...Array(6)].map((_, i) => (
               <div key={i} className="space-y-4">
-                <div className="h-8 bg-gray-300 animate-pulse rounded w-1/4"></div>
+                <div className="h-8 bg-muted animate-pulse rounded w-1/4"></div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {[...Array(3)].map((_, j) => (
-                    <div key={j} className="h-64 bg-gray-200 animate-pulse rounded-lg"></div>
+                    <div key={j} className="h-64 bg-muted/60 animate-pulse rounded-lg"></div>
                   ))}
                 </div>
               </div>
@@ -56,7 +56,7 @@ export const HomePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-background">
       <HomeHeader />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -72,10 +72,10 @@ export const HomePage: React.FC = () => {
           
           {orderedSections.length === 0 && (
             <div className="text-center py-16">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+              <h2 className="text-2xl font-bold text-foreground mb-4">
                 Bem-vindo à Central de Evidências
               </h2>
-              <p className="text-gray-600 dark:text-gray-300">
+              <p className="text-muted-foreground">
                 Configure as seções da página inicial no painel administrativo para começar.
               </p>
             </div>

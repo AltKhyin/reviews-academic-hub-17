@@ -1,5 +1,5 @@
 
-// ABOUTME: Popular issues section for the home page
+// ABOUTME: Popular issues section for the home page - Monochromatic design compliant
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,12 +25,12 @@ export const PopularIssuesSection: React.FC = () => {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2 mb-6">
-          <TrendingUp className="w-6 h-6 text-orange-600" />
-          <h2 className="text-2xl font-bold">Edições Populares</h2>
+          <TrendingUp className="w-6 h-6 text-foreground" />
+          <h2 className="text-2xl font-bold text-foreground">Edições Populares</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-gray-200 animate-pulse rounded-lg h-64"></div>
+            <div key={i} className="bg-muted animate-pulse rounded-lg h-64"></div>
           ))}
         </div>
       </div>
@@ -41,10 +41,10 @@ export const PopularIssuesSection: React.FC = () => {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2 mb-6">
-          <TrendingUp className="w-6 h-6 text-orange-600" />
-          <h2 className="text-2xl font-bold">Edições Populares</h2>
+          <TrendingUp className="w-6 h-6 text-foreground" />
+          <h2 className="text-2xl font-bold text-foreground">Edições Populares</h2>
         </div>
-        <div className="text-center py-8 text-gray-500">
+        <div className="text-center py-8 text-muted-foreground">
           <TrendingUp className="w-12 h-12 mx-auto mb-4 opacity-50" />
           <p>Dados de popularidade ainda sendo coletados...</p>
         </div>
@@ -59,15 +59,15 @@ export const PopularIssuesSection: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <TrendingUp className="w-6 h-6 text-orange-600" />
-          <h2 className="text-2xl font-bold">Edições Populares</h2>
+          <TrendingUp className="w-6 h-6 text-foreground" />
+          <h2 className="text-2xl font-bold text-foreground">Edições Populares</h2>
           <Badge variant="secondary">{periodText}</Badge>
         </div>
         
         <Button 
           variant="outline" 
           onClick={() => navigate('/acervo')}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 border-border hover:bg-accent"
         >
           Ver todas
           <ArrowRight className="w-4 h-4" />

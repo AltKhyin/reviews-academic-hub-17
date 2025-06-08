@@ -1,5 +1,5 @@
 
-// ABOUTME: Reusable issue card component for home page sections (matches /acervo style)
+// ABOUTME: Reusable issue card component for home page sections - Monochromatic design compliant
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -29,7 +29,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({
 
   return (
     <Card 
-      className={`group cursor-pointer hover:shadow-lg transition-all duration-300 h-full ${className}`}
+      className={`group cursor-pointer hover:shadow-lg transition-all duration-300 h-full border-border bg-card ${className}`}
       onClick={onClick}
     >
       <CardContent className="p-0 h-full">
@@ -40,16 +40,16 @@ export const IssueCard: React.FC<IssueCardProps> = ({
               alt={issue.title}
               className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-secondary/60 via-transparent to-transparent" />
             
             {isNew && (
-              <Badge className="absolute top-3 left-3 bg-green-500 text-white">
+              <Badge className="absolute top-3 left-3 bg-success text-background">
                 Novo
               </Badge>
             )}
             
             {showViewCount && 'view_count' in issue && (
-              <Badge variant="secondary" className="absolute top-3 right-3 bg-black/70 text-white">
+              <Badge variant="secondary" className="absolute top-3 right-3 bg-secondary/70 text-secondary-foreground">
                 <Eye className="w-3 h-3 mr-1" />
                 {issue.view_count}
               </Badge>
@@ -59,22 +59,22 @@ export const IssueCard: React.FC<IssueCardProps> = ({
         
         <div className="p-4 flex flex-col h-full">
           <div className="flex items-center gap-2 mb-3">
-            <Badge variant="outline" className="text-xs">
+            <Badge variant="outline" className="text-xs border-border text-muted-foreground">
               {issue.specialty}
             </Badge>
             {showViewCount && 'view_count' in issue && (
-              <Badge variant="secondary" className="text-xs">
+              <Badge variant="secondary" className="text-xs bg-secondary text-secondary-foreground">
                 <TrendingUp className="w-3 h-3 mr-1" />
                 Popular
               </Badge>
             )}
           </div>
           
-          <h3 className="font-semibold text-lg leading-tight mb-3 group-hover:text-blue-600 transition-colors line-clamp-2">
+          <h3 className="font-semibold text-lg leading-tight mb-3 group-hover:text-foreground transition-colors line-clamp-2 text-card-foreground">
             {issue.title}
           </h3>
           
-          <div className="mt-auto space-y-2 text-sm text-gray-500">
+          <div className="mt-auto space-y-2 text-sm text-muted-foreground">
             {issue.published_at && (
               <div className="flex items-center gap-1">
                 <Calendar className="w-4 h-4" />

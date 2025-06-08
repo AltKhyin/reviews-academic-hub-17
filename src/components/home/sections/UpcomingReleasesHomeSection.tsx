@@ -1,5 +1,5 @@
 
-// ABOUTME: Upcoming releases section for home page (shares settings with sidebar)
+// ABOUTME: Upcoming releases section for home page - Monochromatic design compliant
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -33,16 +33,16 @@ export const UpcomingReleasesHomeSection: React.FC = () => {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2 mb-6">
-          <Calendar className="w-6 h-6 text-blue-600" />
-          <h2 className="text-2xl font-bold">Próximas Edições</h2>
+          <Calendar className="w-6 h-6 text-foreground" />
+          <h2 className="text-2xl font-bold text-foreground">Próximas Edições</h2>
         </div>
-        <Card className="animate-pulse">
+        <Card className="animate-pulse border-border bg-card">
           <CardHeader>
-            <div className="h-6 bg-gray-300 rounded w-1/2"></div>
+            <div className="h-6 bg-muted rounded w-1/2"></div>
           </CardHeader>
           <CardContent>
-            <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+            <div className="h-4 bg-muted/60 rounded w-full mb-2"></div>
+            <div className="h-4 bg-muted/60 rounded w-3/4"></div>
           </CardContent>
         </Card>
       </div>
@@ -52,22 +52,22 @@ export const UpcomingReleasesHomeSection: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2 mb-6">
-        <Calendar className="w-6 h-6 text-blue-600" />
-        <h2 className="text-2xl font-bold">Próximas Edições</h2>
+        <Calendar className="w-6 h-6 text-foreground" />
+        <h2 className="text-2xl font-bold text-foreground">Próximas Edições</h2>
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {nextReleaseDate && timeRemaining ? (
-          <Card className="border-l-4 border-l-blue-500">
+          <Card className="border-l-4 border-l-accent bg-card">
             <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Clock className="w-5 h-5 text-blue-600" />
+              <CardTitle className="text-lg flex items-center gap-2 text-card-foreground">
+                <Clock className="w-5 h-5 text-foreground" />
                 Próxima Edição Programada
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   {nextReleaseDate.toLocaleString('pt-BR', { 
                     timeZone: 'America/Sao_Paulo',
                     weekday: 'long',
@@ -80,58 +80,58 @@ export const UpcomingReleasesHomeSection: React.FC = () => {
                 </p>
                 
                 <div className="grid grid-cols-3 gap-2">
-                  <div className="text-center p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">{timeRemaining.days}</div>
-                    <div className="text-xs text-gray-600">dias</div>
+                  <div className="text-center p-3 bg-secondary rounded-lg">
+                    <div className="text-2xl font-bold text-secondary-foreground">{timeRemaining.days}</div>
+                    <div className="text-xs text-muted-foreground">dias</div>
                   </div>
-                  <div className="text-center p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">{timeRemaining.hours}</div>
-                    <div className="text-xs text-gray-600">horas</div>
+                  <div className="text-center p-3 bg-secondary rounded-lg">
+                    <div className="text-2xl font-bold text-secondary-foreground">{timeRemaining.hours}</div>
+                    <div className="text-xs text-muted-foreground">horas</div>
                   </div>
-                  <div className="text-center p-3 bg-blue-50 dark:bg-blue-950 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">{timeRemaining.minutes}</div>
-                    <div className="text-xs text-gray-600">min</div>
+                  <div className="text-center p-3 bg-secondary rounded-lg">
+                    <div className="text-2xl font-bold text-secondary-foreground">{timeRemaining.minutes}</div>
+                    <div className="text-xs text-muted-foreground">min</div>
                   </div>
                 </div>
                 
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   Nova edição com análises e descobertas científicas atualizadas.
                 </p>
               </div>
             </CardContent>
           </Card>
         ) : (
-          <Card>
+          <Card className="bg-card border-border">
             <CardHeader>
-              <CardTitle className="text-lg">Nova Edição em Breve</CardTitle>
+              <CardTitle className="text-lg text-card-foreground">Nova Edição em Breve</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-600">
+              <p className="text-muted-foreground">
                 A próxima edição está sendo preparada. Fique atento para novos conteúdos e análises.
               </p>
             </CardContent>
           </Card>
         )}
         
-        <Card className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950">
+        <Card className="bg-gradient-to-br from-secondary to-accent bg-card border-border">
           <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Bell className="w-5 h-5 text-purple-600" />
+            <CardTitle className="text-lg flex items-center gap-2 text-card-foreground">
+              <Bell className="w-5 h-5 text-foreground" />
               Como Participar
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <p className="text-gray-700 dark:text-gray-300">
+              <p className="text-muted-foreground">
                 Envie suas sugestões de artigos e temas para as próximas edições.
               </p>
               
               <div className="flex flex-wrap gap-2">
-                <Badge variant="outline">Sugestões Abertas</Badge>
-                <Badge variant="outline">Feedback Welcome</Badge>
+                <Badge variant="outline" className="border-border text-muted-foreground">Sugestões Abertas</Badge>
+                <Badge variant="outline" className="border-border text-muted-foreground">Feedback Welcome</Badge>
               </div>
               
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 Sua participação ajuda a moldar o conteúdo mais relevante para a comunidade científica.
               </p>
             </div>
