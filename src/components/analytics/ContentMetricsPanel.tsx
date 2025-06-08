@@ -11,7 +11,7 @@ interface ContentMetricsData {
   featuredIssues: number;
   mostViewedIssues: { id: string; title: string; views: number }[];
   issuesBySpecialty: { specialty: string; count: number }[];
-  recentPublications: { date: string; count: number }[];
+  recentPublications: { title: string; publishedAt: string; id: string }[];
 }
 
 interface ContentMetricsPanelProps {
@@ -77,40 +77,25 @@ export const ContentMetricsPanel: React.FC<ContentMetricsPanelProps> = ({ data }
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
             <TrendingUp className="w-5 h-5" />
-            Publicações Recentes (7 dias)
+            Publicações Recentes
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={data.recentPublications}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-              <XAxis 
-                dataKey="date" 
-                stroke="#888"
-                fontSize={12}
-                tickFormatter={(value) => new Date(value).toLocaleDateString('pt-BR', { 
-                  month: 'short', 
-                  day: 'numeric' 
-                })}
-              />
-              <YAxis stroke="#888" fontSize={12} />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: '#1a1a1a', 
-                  border: '1px solid #3a3a3a',
-                  borderRadius: '8px'
-                }}
-                labelStyle={{ color: '#fff' }}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="count" 
-                stroke="#10b981" 
-                strokeWidth={2}
-                dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          <div className="space-y-3">
+            {data.recentPublications.map((publication, index) => (
+              <div key={publication.id} className="flex items-center justify-between">
+                <div className="flex items-center space-x-2 flex-1 min-w-0">
+                  <span className="text-sm text-gray-400">#{index + 1}</span>
+                  <span className="text-white font-medium truncate" title={publication.title}>
+                    {publication.title.length > 30 ? `${publication.title.substring(0, 30)}...` : publication.title}
+                  </span>
+                </div>
+                <span className="text-blue-400 text-sm ml-2">
+                  {new Date(publication.publishedAt).toLocaleDateString('pt-BR')}
+                </span>
+              </div>
+            ))}
+          </div>
         </CardContent>
       </Card>
 

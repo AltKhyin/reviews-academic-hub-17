@@ -9,9 +9,11 @@ interface CommunityActivityData {
   totalPosts: number;
   totalComments: number;
   activeDiscussions: number;
+  totalVotes: number;
+  postsThisWeek: number;
+  commentsThisWeek: number;
   topContributors: { name: string; contributions: number }[];
-  postsThisWeek: { date: string; count: number }[];
-  commentsThisWeek: { date: string; count: number }[];
+  activityTrend: { date: string; posts: number; comments: number; votes: number }[];
 }
 
 interface CommunityActivityPanelProps {
@@ -19,13 +21,6 @@ interface CommunityActivityPanelProps {
 }
 
 export const CommunityActivityPanel: React.FC<CommunityActivityPanelProps> = ({ data }) => {
-  // Combine posts and comments data for comparison
-  const combinedWeeklyData = data.postsThisWeek.map((post, index) => ({
-    date: post.date,
-    posts: post.count,
-    comments: data.commentsThisWeek[index]?.count || 0
-  }));
-
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Activity Overview */}
@@ -66,11 +61,15 @@ export const CommunityActivityPanel: React.FC<CommunityActivityPanelProps> = ({ 
           
           <div className="pt-2 border-t border-gray-600">
             <div className="flex items-center justify-between">
-              <span className="text-gray-300">Comentários por Post</span>
+              <span className="text-gray-300">Posts esta semana</span>
               <span className="text-lg font-semibold text-blue-400">
-                {data.totalPosts > 0 ? 
-                  (data.totalComments / data.totalPosts).toFixed(1) 
-                  : 0}
+                {data.postsThisWeek}
+              </span>
+            </div>
+            <div className="flex items-center justify-between mt-2">
+              <span className="text-gray-300">Comentários esta semana</span>
+              <span className="text-lg font-semibold text-green-400">
+                {data.commentsThisWeek}
               </span>
             </div>
           </div>
@@ -84,7 +83,7 @@ export const CommunityActivityPanel: React.FC<CommunityActivityPanelProps> = ({ 
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={combinedWeeklyData}>
+            <BarChart data={data.activityTrend}>
               <CartesianGrid strokeDasharray="3 3" stroke="#444" />
               <XAxis 
                 dataKey="date" 

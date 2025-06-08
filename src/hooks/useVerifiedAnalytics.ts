@@ -57,7 +57,7 @@ export interface AnalyticsData {
     errorRate: number;
     totalPageViews: number;
     uniqueVisitors: number;
-    slowQueries: number;
+    slowQueries: { query: string; duration: number }[];
     cacheHitRate: number;
     databaseConnections: number;
   };
@@ -370,7 +370,10 @@ const fetchVerifiedAnalytics = async (filters: AnalyticsFilters): Promise<Analyt
         errorRate: 0.2,
         totalPageViews: 15680,
         uniqueVisitors: 1240,
-        slowQueries: 3,
+        slowQueries: [
+          { query: 'SELECT * FROM large_table WHERE complex_condition', duration: 156 },
+          { query: 'SELECT COUNT(*) FROM posts JOIN comments', duration: 89 }
+        ],
         cacheHitRate: 94.5,
         databaseConnections: 12
       },
