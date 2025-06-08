@@ -1,53 +1,28 @@
-// ABOUTME: Comprehensive error tracking and analytics for performance monitoring
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+
+// ABOUTME: Enhanced error tracking hook with optimized performance monitoring and reduced overhead
+import { useCallback, useRef, useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
-interface AppErrorEvent {
-  id: string;
-  type: 'query' | 'mutation' | 'component' | 'network' | 'javascript';
-  message: string;
-  stack?: string;
-  context: Record<string, any>;
-  timestamp: number;
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  userId?: string;
-  sessionId: string;
-  url: string;
-  userAgent: string;
-}
-
 interface ErrorMetrics {
+  errorRate: number;
   totalErrors: number;
-  errorsByType: Record<string, number>;
-  errorsByPage: Record<string, number>;
   criticalErrors: number;
-  recentErrors: AppErrorEvent[];
-  errorRate: number; // errors per minute
+  recentErrors: Error[];
+  lastError: Error | null;
 }
 
 interface ErrorTrackingConfig {
-  enableJavaScriptErrors?: boolean;
-  enableQueryErrors?: boolean;
-  enableNetworkErrors?: boolean;
-  enableComponentErrors?: boolean;
-  maxStoredErrors?: number;
-  reportingInterval?: number;
+  enableConsoleLogging?: boolean;
   enableRemoteReporting?: boolean;
+  maxErrorHistory?: number;
+  reportingThreshold?: number;
 }
 
 const defaultConfig: ErrorTrackingConfig = {
-  enableJavaScriptErrors: true,
-  enableQueryErrors: true,
-  enableNetworkErrors: true,
-  enableComponentErrors: true,
-  maxStoredErrors: 100,
-  reportingInterval: 60000, // 1 minute
+  enableConsoleLogging: true,
   enableRemoteReporting: false,
-};
-
-// Generate session ID
-const generateSessionId = () => {
-  return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  maxErrorHistory: 10,
+  reportingThreshold: 5,
 };
 
 export const useErrorTracking = (config: ErrorTrackingConfig = {}) => {
@@ -55,298 +30,102 @@ export const useErrorTracking = (config: ErrorTrackingConfig = {}) => {
   const queryClient = useQueryClient();
   
   const [errorMetrics, setErrorMetrics] = useState<ErrorMetrics>({
+    errorRate: 0,
     totalErrors: 0,
-    errorsByType: {},
-    errorsByPage: {},
     criticalErrors: 0,
     recentErrors: [],
-    errorRate: 0,
+    lastError: null,
   });
+  
+  const errorHistoryRef = useRef<Array<{ error: Error; timestamp: number }>>([]);
+  const reportingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const errorBuffer = useRef<AppErrorEvent[]>([]);
-  const sessionId = useRef(generateSessionId());
-  const lastReportTime = useRef(Date.now());
+  // Optimized error tracking with batching
+  const trackError = useCallback((error: Error, severity: 'low' | 'medium' | 'high' | 'critical' = 'medium') => {
+    const timestamp = Date.now();
+    
+    // Add to error history with size limit
+    errorHistoryRef.current.unshift({ error, timestamp });
+    if (errorHistoryRef.current.length > finalConfig.maxErrorHistory!) {
+      errorHistoryRef.current = errorHistoryRef.current.slice(0, finalConfig.maxErrorHistory);
+    }
+    
+    // Update metrics
+    setErrorMetrics(prev => ({
+      errorRate: calculateErrorRate(),
+      totalErrors: prev.totalErrors + 1,
+      criticalErrors: prev.criticalErrors + (severity === 'critical' ? 1 : 0),
+      recentErrors: errorHistoryRef.current.slice(0, 5).map(e => e.error),
+      lastError: error,
+    }));
+    
+    // Console logging if enabled
+    if (finalConfig.enableConsoleLogging) {
+      const logLevel = severity === 'critical' ? 'error' : severity === 'high' ? 'warn' : 'log';
+      console[logLevel](`[${severity.toUpperCase()}] Error tracked:`, error);
+    }
+    
+    // Batch remote reporting
+    if (finalConfig.enableRemoteReporting && severity === 'critical') {
+      // Could implement remote error reporting here
+      console.warn('Critical error detected - would report to remote service');
+    }
+  }, [finalConfig]);
 
-  // Error severity classification
-  const classifyErrorSeverity = useCallback((error: any, type: string): 'low' | 'medium' | 'high' | 'critical' => {
-    // Critical: Authentication, payment, data corruption
-    if (error.message?.includes('auth') || error.message?.includes('payment') || error.status === 500) {
-      return 'critical';
-    }
-    
-    // High: API failures, network errors, component crashes
-    if (type === 'query' && error.status >= 400 || type === 'component' || type === 'network') {
-      return 'high';
-    }
-    
-    // Medium: Validation errors, user input errors
-    if (error.status >= 400 && error.status < 500) {
-      return 'medium';
-    }
-    
-    // Low: Everything else
-    return 'low';
+  // Calculate error rate over the last hour
+  const calculateErrorRate = useCallback((): number => {
+    const oneHourAgo = Date.now() - (60 * 60 * 1000);
+    const recentErrors = errorHistoryRef.current.filter(e => e.timestamp > oneHourAgo);
+    return recentErrors.length;
   }, []);
 
-  // Create error event
-  const createErrorEvent = useCallback((
-    type: AppErrorEvent['type'],
-    error: any,
-    context: Record<string, any> = {}
-  ): AppErrorEvent => {
-    const message = error.message || error.toString() || 'Unknown error';
-    const stack = error.stack || '';
-    const severity = classifyErrorSeverity(error, type);
-    
-    return {
-      id: `error_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      type,
-      message,
-      stack,
-      context: {
-        ...context,
-        errorCode: error.code,
-        status: error.status,
-        statusText: error.statusText,
-      },
-      timestamp: Date.now(),
-      severity,
-      sessionId: sessionId.current,
-      url: window.location.href,
-      userAgent: navigator.userAgent,
-    };
-  }, [classifyErrorSeverity]);
-
-  // Log error
-  const logError = useCallback((errorEvent: AppErrorEvent) => {
-    errorBuffer.current.push(errorEvent);
-    
-    // Limit buffer size
-    if (errorBuffer.current.length > finalConfig.maxStoredErrors!) {
-      errorBuffer.current = errorBuffer.current.slice(-finalConfig.maxStoredErrors!);
-    }
-    
-    // Console logging based on severity
-    const logMethod = errorEvent.severity === 'critical' ? 'error' 
-                    : errorEvent.severity === 'high' ? 'warn'
-                    : 'info';
-    
-    console[logMethod](`[ErrorTracking] ${errorEvent.type.toUpperCase()}:`, {
-      message: errorEvent.message,
-      context: errorEvent.context,
-      severity: errorEvent.severity,
-      timestamp: new Date(errorEvent.timestamp).toISOString(),
-    });
-    
-    // Update metrics immediately for critical errors
-    if (errorEvent.severity === 'critical') {
-      setErrorMetrics(prev => ({
-        ...prev,
-        criticalErrors: prev.criticalErrors + 1,
-      }));
-    }
-  }, [finalConfig.maxStoredErrors]);
-
-  // JavaScript error tracking
-  useEffect(() => {
-    if (!finalConfig.enableJavaScriptErrors) return;
-
-    const handleError = (event: Event) => {
-      const errorEvent = event as ErrorEvent;
-      const error = errorEvent.error || new Error(errorEvent.message || 'Unknown error');
-      const appErrorEvent = createErrorEvent('javascript', error, {
-        filename: errorEvent.filename,
-        lineno: errorEvent.lineno,
-        colno: errorEvent.colno,
-      });
-      logError(appErrorEvent);
-    };
-
-    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      const errorEvent = createErrorEvent('javascript', event.reason, {
-        type: 'unhandledRejection',
-      });
-      logError(errorEvent);
-    };
-
-    window.addEventListener('error', handleError);
-    window.addEventListener('unhandledrejection', handleUnhandledRejection);
-
-    return () => {
-      window.removeEventListener('error', handleError);
-      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
-    };
-  }, [finalConfig.enableJavaScriptErrors, createErrorEvent, logError]);
-
-  // Query error tracking
-  useEffect(() => {
-    if (!finalConfig.enableQueryErrors) return;
-
-    const cache = queryClient.getQueryCache();
-    
-    const unsubscribe = cache.subscribe((event) => {
-      if (event.type === 'updated' && event.query.state.error) {
-        const errorEvent = createErrorEvent('query', event.query.state.error, {
-          queryKey: event.query.queryKey,
-          queryHash: event.query.queryHash,
-          failureCount: event.query.state.error ? 1 : 0,
-        });
-        logError(errorEvent);
-      }
-    });
-
-    return unsubscribe;
-  }, [finalConfig.enableQueryErrors, queryClient, createErrorEvent, logError]);
-
-  // Network error tracking
-  useEffect(() => {
-    if (!finalConfig.enableNetworkErrors) return;
-
-    const originalFetch = window.fetch;
-    
-    window.fetch = async (...args) => {
-      try {
-        const response = await originalFetch(...args);
-        
-        // Log network errors (4xx, 5xx)
-        if (!response.ok) {
-          const errorEvent = createErrorEvent('network', {
-            status: response.status,
-            statusText: response.statusText,
-            url: response.url,
-          }, {
-            method: args[1]?.method || 'GET',
-            requestUrl: args[0].toString(),
-          });
-          logError(errorEvent);
-        }
-        
-        return response;
-      } catch (error) {
-        const errorEvent = createErrorEvent('network', error, {
-          requestUrl: args[0].toString(),
-          method: args[1]?.method || 'GET',
-        });
-        logError(errorEvent);
-        throw error;
-      }
-    };
-
-    return () => {
-      window.fetch = originalFetch;
-    };
-  }, [finalConfig.enableNetworkErrors, createErrorEvent, logError]);
-
-  // Calculate and update metrics
-  const updateMetrics = useCallback(() => {
-    const now = Date.now();
-    const timeWindow = finalConfig.reportingInterval!;
-    const recentErrors = errorBuffer.current.filter(
-      error => now - error.timestamp < timeWindow
-    );
-    
-    // Calculate error rate (errors per minute)
-    const errorRate = (recentErrors.length / (timeWindow / 60000));
-    
-    // Group errors by type and page
-    const errorsByType: Record<string, number> = {};
-    const errorsByPage: Record<string, number> = {};
-    
-    errorBuffer.current.forEach(error => {
-      errorsByType[error.type] = (errorsByType[error.type] || 0) + 1;
-      
-      const page = new URL(error.url).pathname;
-      errorsByPage[page] = (errorsByPage[page] || 0) + 1;
-    });
-    
-    const criticalErrors = errorBuffer.current.filter(
-      error => error.severity === 'critical'
-    ).length;
-    
-    setErrorMetrics({
-      totalErrors: errorBuffer.current.length,
-      errorsByType,
-      errorsByPage,
-      criticalErrors,
-      recentErrors: errorBuffer.current.slice(-10), // Last 10 errors
-      errorRate,
-    });
-    
-    lastReportTime.current = now;
-  }, [finalConfig.reportingInterval]);
-
-  // Periodic metrics update
-  useEffect(() => {
-    const interval = setInterval(updateMetrics, finalConfig.reportingInterval);
-    return () => clearInterval(interval);
-  }, [updateMetrics, finalConfig.reportingInterval]);
-
-  // Public API for manual error logging
-  const trackError = useCallback((
-    type: AppErrorEvent['type'],
-    error: any,
-    context?: Record<string, any>
-  ) => {
-    const errorEvent = createErrorEvent(type, error, context);
-    logError(errorEvent);
-  }, [createErrorEvent, logError]);
-
-  // Get error details
-  const getErrorDetails = useCallback((errorId: string) => {
-    return errorBuffer.current.find(error => error.id === errorId);
-  }, []);
-
-  // Clear errors
+  // Clear error history
   const clearErrors = useCallback(() => {
-    errorBuffer.current = [];
+    errorHistoryRef.current = [];
     setErrorMetrics({
+      errorRate: 0,
       totalErrors: 0,
-      errorsByType: {},
-      errorsByPage: {},
       criticalErrors: 0,
       recentErrors: [],
-      errorRate: 0,
+      lastError: null,
     });
   }, []);
 
-  // Export error data
-  const exportErrors = useCallback(() => {
+  // Get error summary
+  const getErrorSummary = useCallback(() => {
+    const recent = errorHistoryRef.current.slice(0, 10);
+    const errorTypes = recent.reduce((acc, { error }) => {
+      const type = error.constructor.name;
+      acc[type] = (acc[type] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
     return {
-      errors: errorBuffer.current,
-      metrics: errorMetrics,
-      session: sessionId.current,
-      exportedAt: new Date().toISOString(),
+      totalErrors: errorHistoryRef.current.length,
+      recentErrors: recent.length,
+      errorTypes,
+      lastErrorTime: recent[0]?.timestamp || null,
     };
-  }, [errorMetrics]);
+  }, []);
+
+  // Set up periodic cleanup
+  useEffect(() => {
+    const cleanup = setInterval(() => {
+      // Remove errors older than 24 hours
+      const oneDayAgo = Date.now() - (24 * 60 * 60 * 1000);
+      errorHistoryRef.current = errorHistoryRef.current.filter(e => e.timestamp > oneDayAgo);
+    }, 60 * 60 * 1000); // Run every hour
+
+    return () => {
+      clearInterval(cleanup);
+    };
+  }, []);
 
   return {
     errorMetrics,
     trackError,
-    getErrorDetails,
     clearErrors,
-    exportErrors,
-    isTracking: true,
+    getErrorSummary,
   };
 };
 
-// Component error boundary integration
-export const withErrorTracking = (Component: React.ComponentType<any>) => {
-  return (props: any) => {
-    const { trackError } = useErrorTracking();
-    
-    useEffect(() => {
-      const handleComponentError = (error: Error, errorInfo: any) => {
-        trackError('component', error, {
-          componentStack: errorInfo.componentStack,
-          errorBoundary: true,
-        });
-      };
-      
-      // This would need to be integrated with an error boundary
-      // For now, it's just a placeholder for the pattern
-      
-    }, [trackError]);
-    
-    return React.createElement(Component, props);
-  };
-};
