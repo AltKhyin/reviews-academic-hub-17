@@ -1,6 +1,6 @@
 
 // ABOUTME: Comprehensive error tracking and analytics for performance monitoring
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
 interface AppErrorEvent {
@@ -153,7 +153,7 @@ export const useErrorTracking = (config: ErrorTrackingConfig = {}) => {
     if (!finalConfig.enableJavaScriptErrors) return;
 
     const handleError = (event: Event) => {
-      const errorEvent = event as any; // Cast to access error properties
+      const errorEvent = event as ErrorEvent;
       const error = errorEvent.error || new Error(errorEvent.message || 'Unknown error');
       const appErrorEvent = createErrorEvent('javascript', error, {
         filename: errorEvent.filename,
@@ -190,7 +190,7 @@ export const useErrorTracking = (config: ErrorTrackingConfig = {}) => {
         const errorEvent = createErrorEvent('query', event.query.state.error, {
           queryKey: event.query.queryKey,
           queryHash: event.query.queryHash,
-          failureCount: event.query.state.failureReason ? 1 : 0,
+          failureCount: event.query.state.error ? 1 : 0,
         });
         logError(errorEvent);
       }

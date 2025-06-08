@@ -172,7 +172,7 @@ export const usePerformanceMonitoring = (config: PerformanceMonitoringConfig = {
       // Track slow queries (simplified approximation)
       if (query.state.error || query.state.fetchStatus === 'fetching') {
         // This is a rough approximation - in production you'd want more precise timing
-        if (query.state.failureReason) {
+        if (query.state.error) {
           slowQueries++;
         }
       }
