@@ -20,19 +20,19 @@ initializeBackgroundOptimization();
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
-      <AdvancedPerformanceProvider
-        enableDashboard={process.env.NODE_ENV === 'development'}
-        enableAdvancedMonitoring={true}
-        enableMemoryLeakDetection={true}
-        enableBudgetEnforcement={true}
-      >
-        <BrowserRouter>
+      <BrowserRouter>
+        <AdvancedPerformanceProvider
+          enableDashboard={process.env.NODE_ENV === 'development'}
+          enableAdvancedMonitoring={true}
+          enableMemoryLeakDetection={true}
+          enableBudgetEnforcement={true}
+        >
           <AuthProvider>
             <App />
             <Toaster />
           </AuthProvider>
-        </BrowserRouter>
-      </AdvancedPerformanceProvider>
+        </AdvancedPerformanceProvider>
+      </BrowserRouter>
     </QueryClientProvider>
   </React.StrictMode>,
 )

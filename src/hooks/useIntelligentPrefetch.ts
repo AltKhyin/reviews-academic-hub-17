@@ -1,4 +1,3 @@
-
 // ABOUTME: Intelligent prefetching system that learns user behavior and preloads likely-needed data
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -23,8 +22,20 @@ const MAX_STORED_PATTERNS = 100;
 
 export const useIntelligentPrefetch = () => {
   const queryClient = useQueryClient();
-  const location = useLocation();
-  const navigate = useNavigate();
+  
+  // Add safety checks for router context
+  let location;
+  let navigate;
+  
+  try {
+    location = useLocation();
+    navigate = useNavigate();
+  } catch (error) {
+    // Router context not available, provide fallback
+    console.warn('Router context not available for intelligent prefetch:', error);
+    location = { pathname: '/' };
+    navigate = () => {};
+  }
   
   const [behaviorPatterns, setBehaviorPatterns] = useState<UserBehaviorPattern[]>([]);
   const [prefetchRules, setPrefetchRules] = useState<PrefetchRule[]>([]);
@@ -162,8 +173,10 @@ export const useIntelligentPrefetch = () => {
     }
   }, [prefetchRules, queryClient]);
 
-  // Track route changes
+  // Track route changes with safety check
   useEffect(() => {
+    if (!location) return;
+    
     const now = Date.now();
     const duration = now - routeStartTime.current;
     
@@ -189,7 +202,7 @@ export const useIntelligentPrefetch = () => {
     
     // Execute prefetch for current route
     executePrefetch(location.pathname);
-  }, [location.pathname, saveBehaviorPatterns, executePrefetch]);
+  }, [location?.pathname, saveBehaviorPatterns, executePrefetch]);
 
   // Update prefetch rules when patterns change
   useEffect(() => {
@@ -213,6 +226,6 @@ export const useIntelligentPrefetch = () => {
     prefetchForRoute,
     behaviorPatterns,
     prefetchRules,
-    currentConfidence: prefetchRules.find(r => r.triggerRoute === location.pathname)?.probability || 0,
+    currentConfidence: prefetchRules.find(r => r.triggerRoute === (location?.pathname || '/'))?.probability || 0,
   };
 };
