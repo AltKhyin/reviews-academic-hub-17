@@ -11,13 +11,15 @@ interface IssueCardProps {
   onClick: (issueId: string) => void;
   tagMatches?: number;
   height?: number; // Dynamic height support for masonry layout
+  className?: string; // Added className prop
 }
 
 export const IssueCard: React.FC<IssueCardProps> = ({
   issue,
   onClick,
   tagMatches = 0,
-  height
+  height,
+  className = ""
 }) => {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
@@ -49,7 +51,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({
 
   return (
     <Card 
-      className={`group cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-card border-border overflow-hidden ${aspectRatioClass} relative w-full`}
+      className={`group cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-card border-border overflow-hidden ${aspectRatioClass} relative w-full ${className}`}
       style={cardStyle}
       onClick={() => onClick(issue.id)}
     >
