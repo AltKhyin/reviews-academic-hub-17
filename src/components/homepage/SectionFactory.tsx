@@ -1,17 +1,17 @@
 
-// ABOUTME: Section factory component for dynamic homepage section rendering
-// Maps section IDs to their corresponding components with simplified interface
+// ABOUTME: Enhanced section factory with lazy loading and performance optimizations
+import React, { Suspense, memo } from 'react';
 
-import React from 'react';
-import { HeroSection } from './sections/HeroSection';
-import { ArticlesGridSection } from './sections/ArticlesGridSection';
-import { ReviewsSection } from './sections/ReviewsSection';
-import { ReviewerNotesSection } from './sections/ReviewerNotesSection';
-import { FeaturedSection } from './sections/FeaturedSection';
-import { UpcomingSection } from './sections/UpcomingSection';
-import { RecentSection } from './sections/RecentSection';
-import { RecommendedSection } from './sections/RecommendedSection';
-import { TrendingSection } from './sections/TrendingSection';
+// Lazy load all sections for better performance
+const HeroSection = React.lazy(() => import('./sections/HeroSection').then(module => ({ default: module.HeroSection })));
+const ArticlesGridSection = React.lazy(() => import('./sections/ArticlesGridSection').then(module => ({ default: module.ArticlesGridSection })));
+const ReviewsSection = React.lazy(() => import('./sections/ReviewsSection').then(module => ({ default: module.ReviewsSection })));
+const ReviewerNotesSection = React.lazy(() => import('./sections/ReviewerNotesSection').then(module => ({ default: module.ReviewerNotesSection })));
+const FeaturedSection = React.lazy(() => import('./sections/FeaturedSection').then(module => ({ default: module.FeaturedSection })));
+const UpcomingSection = React.lazy(() => import('./sections/UpcomingSection').then(module => ({ default: module.UpcomingSection })));
+const RecentSection = React.lazy(() => import('./sections/RecentSection').then(module => ({ default: module.RecentSection })));
+const RecommendedSection = React.lazy(() => import('./sections/RecommendedSection').then(module => ({ default: module.RecommendedSection })));
+const TrendingSection = React.lazy(() => import('./sections/TrendingSection').then(module => ({ default: module.TrendingSection })));
 
 interface SectionFactoryProps {
   sectionId: string;
@@ -34,7 +34,56 @@ const SECTION_COMPONENTS = {
   trending: TrendingSection,
 } as const;
 
-export const SectionFactory: React.FC<SectionFactoryProps> = ({ 
+// Loading skeleton component
+const SectionSkeleton = ({ sectionId }: { sectionId: string }) => (
+  <div className={`w-full ${sectionId === 'hero' ? 'bg-white shadow-sm' : ''}`}>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="animate-pulse">
+        <div className="h-8 bg-gray-300 rounded w-1/3 mb-6"></div>
+        <div className="space-y-4">
+          <div className="h-4 bg-gray-200 rounded w-full"></div>
+          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+// Error boundary component for individual sections
+const SectionErrorBoundary = ({ children, sectionId }: { children: React.ReactNode; sectionId: string }) => {
+  const [hasError, setHasError] = React.useState(false);
+
+  React.useEffect(() => {
+    setHasError(false);
+  }, [sectionId]);
+
+  if (hasError) {
+    return (
+      <div className="w-full">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <h3 className="text-red-800 font-medium">Erro ao carregar seção</h3>
+            <p className="text-red-600 text-sm mt-1">
+              A seção "{sectionId}" não pôde ser carregada. Tente recarregar a página.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <React.ErrorBoundary
+      onError={() => setHasError(true)}
+      fallback={null}
+    >
+      {children}
+    </React.ErrorBoundary>
+  );
+};
+
+export const SectionFactory: React.FC<SectionFactoryProps> = memo(({ 
   sectionId, 
   sectionConfig 
 }) => {
@@ -53,14 +102,20 @@ export const SectionFactory: React.FC<SectionFactoryProps> = ({
   console.log(`Rendering section: ${sectionId} (${sectionConfig.title})`);
 
   return (
-    <div 
-      className={`w-full ${sectionId === 'hero' ? 'bg-white shadow-sm' : ''}`}
-      data-section-id={sectionId}
-      data-section-order={sectionConfig.order}
-    >
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <SectionComponent />
+    <SectionErrorBoundary sectionId={sectionId}>
+      <div 
+        className={`w-full ${sectionId === 'hero' ? 'bg-white shadow-sm' : ''}`}
+        data-section-id={sectionId}
+        data-section-order={sectionConfig.order}
+      >
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <Suspense fallback={<SectionSkeleton sectionId={sectionId} />}>
+            <SectionComponent />
+          </Suspense>
+        </div>
       </div>
-    </div>
+    </SectionErrorBoundary>
   );
-};
+});
+
+SectionFactory.displayName = 'SectionFactory';

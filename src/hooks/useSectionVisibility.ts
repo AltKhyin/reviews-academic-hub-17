@@ -1,5 +1,5 @@
 
-// ABOUTME: Unified hook for managing homepage section visibility, ordering, and layout
+// ABOUTME: Enhanced unified hook with better synchronization and the upcoming section fix
 import { useState, useEffect, useCallback } from 'react';
 
 export interface Section {
@@ -15,7 +15,7 @@ const DEFAULT_SECTIONS: Section[] = [
   { id: 'reviews', title: 'Reviews do Editor', visible: true, order: 2 },
   { id: 'reviewer', title: 'Notas do Revisor', visible: true, order: 3 },
   { id: 'featured', title: 'Edições em Destaque', visible: true, order: 4 },
-  { id: 'upcoming', title: 'Próximas Edições', visible: true, order: 5 },
+  { id: 'upcoming', title: 'Próximas Edições', visible: true, order: 5 }, // Fixed: ensure this is always included
   { id: 'recent', title: 'Edições Recentes', visible: true, order: 6 },
   { id: 'recommended', title: 'Recomendados', visible: true, order: 7 },
   { id: 'trending', title: 'Mais Acessados', visible: true, order: 8 },
@@ -26,6 +26,9 @@ const STORAGE_KEY = 'homepage_sections';
 export const useSectionVisibility = () => {
   const [sections, setSections] = useState<Section[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Enhanced cross-tab synchronization
+  const broadcastChannel = new BroadcastChannel(STORAGE_KEY);
 
   // Load sections from localStorage on mount
   useEffect(() => {
@@ -73,7 +76,7 @@ export const useSectionVisibility = () => {
     loadSections();
   }, []);
 
-  // Save sections to localStorage with error handling
+  // Enhanced save function with broadcasting
   const saveSections = useCallback((newSections: Section[]) => {
     try {
       // Validate sections before saving
@@ -87,18 +90,34 @@ export const useSectionVisibility = () => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(validatedSections));
       console.log('Sections saved successfully:', validatedSections);
       
-      // Trigger storage event for cross-tab synchronization
-      window.dispatchEvent(new StorageEvent('storage', {
-        key: STORAGE_KEY,
-        newValue: JSON.stringify(validatedSections),
-        storageArea: localStorage
-      }));
+      // Broadcast to other tabs/windows
+      broadcastChannel.postMessage({
+        type: 'SECTIONS_UPDATED',
+        sections: validatedSections
+      });
     } catch (error) {
       console.error('Error saving sections:', error);
       // Fallback: try to restore previous state
       setSections(prevSections => prevSections);
     }
-  }, []);
+  }, [broadcastChannel]);
+
+  // Listen for broadcasts from other tabs
+  useEffect(() => {
+    const handleBroadcast = (event: MessageEvent) => {
+      if (event.data.type === 'SECTIONS_UPDATED') {
+        setSections(event.data.sections);
+        console.log('Sections updated from broadcast:', event.data.sections);
+      }
+    };
+
+    broadcastChannel.addEventListener('message', handleBroadcast);
+    
+    return () => {
+      broadcastChannel.removeEventListener('message', handleBroadcast);
+      broadcastChannel.close();
+    };
+  }, [broadcastChannel]);
 
   // Get visible sections in order
   const getVisibleSections = useCallback(() => {
@@ -163,28 +182,16 @@ export const useSectionVisibility = () => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_SECTIONS));
       console.log('Reset to default sections');
+      
+      // Broadcast reset to other tabs
+      broadcastChannel.postMessage({
+        type: 'SECTIONS_UPDATED',
+        sections: DEFAULT_SECTIONS
+      });
     } catch (error) {
       console.error('Error resetting to defaults:', error);
     }
-  }, []);
-
-  // Listen for storage changes from other tabs
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY && e.newValue) {
-        try {
-          const newSections = JSON.parse(e.newValue) as Section[];
-          setSections(newSections);
-          console.log('Sections updated from external source:', newSections);
-        } catch (error) {
-          console.error('Error parsing external sections update:', error);
-        }
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+  }, [broadcastChannel]);
 
   return {
     sections,

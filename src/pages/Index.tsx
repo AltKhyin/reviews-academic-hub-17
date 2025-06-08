@@ -1,13 +1,28 @@
 
-// ABOUTME: Landing page with dynamic section rendering system
-// Uses unified section visibility system for homepage layout control
-
-import React from 'react';
+// ABOUTME: Optimized landing page with dynamic section rendering and enhanced performance
+import React, { useMemo } from 'react';
 import { useSectionVisibility } from '@/hooks/useSectionVisibility';
 import { SectionFactory } from '@/components/homepage/SectionFactory';
 
 const Index = () => {
   const { getVisibleSections, isLoading } = useSectionVisibility();
+
+  // Memoize visible sections to prevent unnecessary re-renders
+  const visibleSections = useMemo(() => {
+    return getVisibleSections();
+  }, [getVisibleSections]);
+
+  // Memoize section configs to prevent object recreation
+  const sectionConfigs = useMemo(() => {
+    return visibleSections.map((section) => ({
+      id: section.id,
+      config: {
+        visible: section.visible,
+        order: section.order,
+        title: section.title
+      }
+    }));
+  }, [visibleSections]);
 
   if (isLoading) {
     return (
@@ -20,26 +35,20 @@ const Index = () => {
     );
   }
 
-  const visibleSections = getVisibleSections();
-
   console.log('Index page render - Visible sections:', visibleSections.map(s => `${s.id} (order: ${s.order}, visible: ${s.visible})`));
 
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="max-w-7xl mx-auto">
-        {visibleSections.map((section) => (
+        {sectionConfigs.map(({ id, config }) => (
           <SectionFactory
-            key={section.id}
-            sectionId={section.id}
-            sectionConfig={{
-              visible: section.visible,
-              order: section.order,
-              title: section.title
-            }}
+            key={id}
+            sectionId={id}
+            sectionConfig={config}
           />
         ))}
         
-        {visibleSections.length === 0 && (
+        {sectionConfigs.length === 0 && (
           <div className="flex items-center justify-center min-h-screen">
             <div className="text-center">
               <h1 className="text-2xl font-bold mb-4">Nenhuma seção visível</h1>

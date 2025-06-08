@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { Clock } from 'lucide-react';
-import { useSidebarStore } from '@/stores/sidebarStore';
+import { useUpcomingReleaseSettings } from '@/hooks/useUpcomingReleaseSettings';
 
 export const NextReviewCountdown: React.FC = () => {
-  const { config, isLoadingConfig } = useSidebarStore();
+  const { getNextReleaseDate, isLoading } = useUpcomingReleaseSettings();
   const [timeRemaining, setTimeRemaining] = useState<{
     days: number;
     hours: number;
@@ -12,12 +12,12 @@ export const NextReviewCountdown: React.FC = () => {
   } | null>(null);
 
   useEffect(() => {
-    if (!config?.nextReviewTs) return;
+    const nextReleaseDate = getNextReleaseDate();
+    if (!nextReleaseDate) return;
 
     const updateCountdown = () => {
       const now = new Date();
-      const target = new Date(config.nextReviewTs);
-      const diff = target.getTime() - now.getTime();
+      const diff = nextReleaseDate.getTime() - now.getTime();
 
       if (diff <= 0) {
         setTimeRemaining(null);
@@ -35,9 +35,9 @@ export const NextReviewCountdown: React.FC = () => {
     const interval = setInterval(updateCountdown, 60000); // Update every minute
 
     return () => clearInterval(interval);
-  }, [config?.nextReviewTs]);
+  }, [getNextReleaseDate]);
 
-  if (isLoadingConfig) {
+  if (isLoading) {
     return (
       <div className="space-y-3">
         <div className="h-4 bg-muted/30 rounded w-32 animate-pulse" />
@@ -72,8 +72,6 @@ export const NextReviewCountdown: React.FC = () => {
             <div className="text-xs text-muted-foreground/70">min</div>
           </div>
         </div>
-        
-        <p className="text-xs text-muted-foreground/70 text-center">restantes</p>
       </div>
     </div>
   );

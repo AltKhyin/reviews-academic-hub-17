@@ -8,12 +8,10 @@ import { SidebarConfigPanel } from '@/components/admin/SidebarConfigPanel';
 import { UserManagementPanel } from '@/components/admin/UserManagementPanel';
 import { IssuesManagementPanel } from '@/components/admin/IssuesManagementPanel';
 import { CommentReportsPanel } from '@/components/dashboard/CommentReportsPanel';
-import { ReviewerCommentsManager } from '@/components/admin/ReviewerCommentsManager';
-import { LayoutCustomizationPanel } from '@/components/admin/LayoutCustomizationPanel';
 import { TagManagementPanel } from '@/components/admin/TagManagementPanel';
 import { EnhancedAnalyticsDashboard } from '@/components/analytics/EnhancedAnalyticsDashboard';
-import HomepageSectionsManager from '@/components/dashboard/HomepageSectionsManager';
-import { Settings, BarChart3, Users, MessageSquare, Crown, Layout, FileText, Edit, Palette, Tags } from 'lucide-react';
+import { HomepageManager } from '@/components/admin/HomepageManager';
+import { Settings, BarChart3, Users, MessageSquare, Crown, FileText, Edit, Tags, Home } from 'lucide-react';
 
 const EditPage = () => {
   const { isAdmin, isEditor, isLoading, user, profile } = useAuth();
@@ -77,7 +75,7 @@ const EditPage = () => {
       </div>
       
       <Tabs defaultValue="issues" className="w-full">
-        <TabsList className="grid w-full grid-cols-10" style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
+        <TabsList className="grid w-full grid-cols-8" style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
           <TabsTrigger value="issues" className="flex items-center gap-2">
             <FileText className="w-4 h-4" />
             Issues
@@ -86,17 +84,9 @@ const EditPage = () => {
             <Tags className="w-4 h-4" />
             Tags
           </TabsTrigger>
-          <TabsTrigger value="sections" className="flex items-center gap-2">
-            <Layout className="w-4 h-4" />
-            Seções
-          </TabsTrigger>
-          <TabsTrigger value="layout" className="flex items-center gap-2">
-            <Palette className="w-4 h-4" />
-            Layout
-          </TabsTrigger>
-          <TabsTrigger value="reviewer" className="flex items-center gap-2">
-            <Edit className="w-4 h-4" />
-            Notas do Revisor
+          <TabsTrigger value="homepage" className="flex items-center gap-2">
+            <Home className="w-4 h-4" />
+            Homepage
           </TabsTrigger>
           {hasAdminAccess && (
             <TabsTrigger value="users" className="flex items-center gap-2">
@@ -130,16 +120,8 @@ const EditPage = () => {
           <TagManagementPanel />
         </TabsContent>
         
-        <TabsContent value="sections">
-          <HomepageSectionsManager />
-        </TabsContent>
-        
-        <TabsContent value="layout">
-          <LayoutCustomizationPanel />
-        </TabsContent>
-        
-        <TabsContent value="reviewer">
-          <ReviewerCommentsManager />
+        <TabsContent value="homepage">
+          <HomepageManager />
         </TabsContent>
         
         {hasAdminAccess && (
