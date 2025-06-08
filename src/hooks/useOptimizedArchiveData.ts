@@ -25,7 +25,7 @@ export const useOptimizedArchiveData = (filters: ArchiveFilters = {}) => {
   const { search, tags, specialty, year, sortBy = 'newest' } = filters;
 
   return useQuery({
-    queryKey: queryKeys.archiveData(search, tags).concat([specialty, year, sortBy]),
+    queryKey: [...queryKeys.archiveData(search, tags), specialty, year, sortBy],
     queryFn: async (): Promise<ArchiveData> => {
       try {
         // Build the query with filters
@@ -46,7 +46,7 @@ export const useOptimizedArchiveData = (filters: ArchiveFilters = {}) => {
 
         // Apply year filter
         if (year) {
-          query = query.eq('year', year);
+          query = query.eq('year', year.toString());
         }
 
         // Apply sorting
@@ -61,7 +61,7 @@ export const useOptimizedArchiveData = (filters: ArchiveFilters = {}) => {
             query = query.order('title', { ascending: true });
             break;
           case 'score':
-            query = query.order('score', { ascending: false, nullsLast: true });
+            query = query.order('score', { ascending: false, nullsFirst: false });
             break;
         }
 
@@ -72,16 +72,23 @@ export const useOptimizedArchiveData = (filters: ArchiveFilters = {}) => {
           throw error;
         }
 
+        // Process issues to ensure proper typing
+        const processedIssues: Issue[] = (issues || []).map(issue => ({
+          ...issue,
+          backend_tags: typeof issue.backend_tags === 'string' ? issue.backend_tags : JSON.stringify(issue.backend_tags || ''),
+          year: issue.year || '',
+        }));
+
         // Get unique specialties and years for filters
-        const specialties = [...new Set(issues?.map(issue => issue.specialty).filter(Boolean))] as string[];
-        const years = [...new Set(issues?.map(issue => issue.year).filter(Boolean))] as number[];
+        const specialties = [...new Set(processedIssues.map(issue => issue.specialty).filter(Boolean))] as string[];
+        const years = [...new Set(processedIssues.map(issue => issue.year).filter(Boolean).map(y => parseInt(y)).filter(y => !isNaN(y)))] as number[];
         
         // For now, return empty tags array - this would need to be implemented based on your tag system
         const availableTags: string[] = [];
 
         return {
-          issues: issues || [],
-          totalCount: issues?.length || 0,
+          issues: processedIssues,
+          totalCount: processedIssues.length,
           specialties: specialties.sort(),
           years: years.sort((a, b) => b - a), // Most recent first
           availableTags,

@@ -58,10 +58,22 @@ export const useOptimizedIssues = (options: UseIssuesOptions = {}) => {
           throw error;
         }
         
-        return (data || []) as Issue[];
+        // Process the data to ensure proper typing
+        const processedIssues: Issue[] = (data || []).map(issue => ({
+          ...issue,
+          backend_tags: typeof issue.backend_tags === 'string' ? issue.backend_tags : JSON.stringify(issue.backend_tags || ''),
+          year: issue.year || '',
+          pdf_url: issue.pdf_url || '',
+          specialty: issue.specialty || '',
+          published: issue.published || false,
+          created_at: issue.created_at || new Date().toISOString(),
+          updated_at: issue.updated_at || new Date().toISOString(),
+        }));
+
+        return processedIssues;
       } catch (error: any) {
         console.error("Error in useOptimizedIssues hook:", error);
-        return []; // Return empty array instead of throwing to prevent UI crashes
+        throw error; // Re-throw to let React Query handle it properly
       }
     },
     ...queryConfigs.static, // Use static config since issues don't change frequently
@@ -85,7 +97,15 @@ export const useOptimizedIssue = (id: string) => {
         .single();
       
       if (error) throw error;
-      return data as Issue;
+      
+      // Process the data to ensure proper typing
+      const processedIssue: Issue = {
+        ...data,
+        backend_tags: typeof data.backend_tags === 'string' ? data.backend_tags : JSON.stringify(data.backend_tags || ''),
+        year: data.year || '',
+      };
+      
+      return processedIssue;
     },
     ...queryConfigs.static,
     enabled: !!id,
@@ -111,7 +131,19 @@ export const useOptimizedFeaturedIssue = () => {
         }
         throw error;
       }
-      return data as Issue;
+      
+      // Process the data to ensure proper typing
+      const processedIssue: Issue = {
+        ...data,
+        backend_tags: '',
+        year: '',
+        pdf_url: '',
+        published: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      
+      return processedIssue;
     },
     ...queryConfigs.static,
     staleTime: 30 * 60 * 1000, // 30 minutes since featured issues change rarely

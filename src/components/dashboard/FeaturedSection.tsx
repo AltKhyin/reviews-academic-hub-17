@@ -37,8 +37,8 @@ export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ issues }) => {
       <div className="max-w-4xl mx-auto">
         <ArticleCard
           issue={displayIssue}
-          featured={true}
           variant="featured"
+          featured={true}
           className="w-full"
         />
       </div>
