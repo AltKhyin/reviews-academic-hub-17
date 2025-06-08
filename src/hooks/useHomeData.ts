@@ -2,7 +2,7 @@
 // ABOUTME: Optimized data management hook for the home page system
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { HomeSettings, ReviewerNote, PopularIssue, HomeIssue } from '@/types/home';
+import { HomeSettings, ReviewerNote, PopularIssue, HomeIssue, isHomeSettings } from '@/types/home';
 
 export const useHomeData = () => {
   const queryClient = useQueryClient();
@@ -14,10 +14,10 @@ export const useHomeData = () => {
       const { data, error } = await supabase.rpc('get_home_settings');
       if (error) throw error;
       
-      // Safe JSON parsing with fallback
-      try {
-        return data as HomeSettings;
-      } catch {
+      // Safe JSON parsing with type guard
+      if (isHomeSettings(data)) {
+        return data;
+      } else {
         return getDefaultHomeSettings();
       }
     },

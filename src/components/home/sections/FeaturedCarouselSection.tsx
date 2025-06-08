@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { ChevronLeft, ChevronRight, Star, Calendar, User } from 'lucide-react';
 import { useHomeData } from '@/hooks/useHomeData';
 import { useNavigate } from 'react-router-dom';
-import { Issue } from '@/types/issue';
+import { HomeIssue } from '@/types/home';
 
 export const FeaturedCarouselSection: React.FC = () => {
   const { featuredIssues, isLoading, trackIssueView } = useHomeData();
@@ -25,7 +25,7 @@ export const FeaturedCarouselSection: React.FC = () => {
     return () => clearInterval(interval);
   }, [featuredIssues]);
 
-  const handleIssueClick = async (issue: Issue) => {
+  const handleIssueClick = async (issue: HomeIssue) => {
     try {
       await trackIssueView({ issueId: issue.id });
     } catch (error) {

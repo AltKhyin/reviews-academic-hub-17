@@ -27,6 +27,7 @@ export interface PopularIssuesSectionConfig extends HomeSectionConfig {
   period: string;
 }
 
+// Use a flexible approach for sections instead of strict intersection types
 export interface HomeSettings {
   sections: {
     reviewer_notes: HomeSectionConfig;
@@ -78,4 +79,20 @@ export interface IssueView {
   viewed_at: string;
   ip_address?: string;
   user_agent?: string;
+}
+
+// Type guard for HomeSettings
+export function isHomeSettings(value: any): value is HomeSettings {
+  return (
+    value &&
+    typeof value === 'object' &&
+    value.sections &&
+    typeof value.sections === 'object' &&
+    value.recent_issues &&
+    typeof value.recent_issues === 'object' &&
+    value.popular_issues &&
+    typeof value.popular_issues === 'object' &&
+    value.recommended_issues &&
+    typeof value.recommended_issues === 'object'
+  );
 }

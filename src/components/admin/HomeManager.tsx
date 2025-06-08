@@ -1,3 +1,4 @@
+
 // ABOUTME: Home page management interface for admins
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,7 +16,9 @@ import { useHomeData } from '@/hooks/useHomeData';
 import { useReviewerNotes } from '@/hooks/useReviewerNotes';
 import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { HomeSettings, HomeSectionConfig } from '@/types/home';
+import { HomeSettings } from '@/types/home';
+
+type SectionKey = keyof HomeSettings['sections'];
 
 export const HomeManager = () => {
   const { 
@@ -61,7 +64,7 @@ export const HomeManager = () => {
     setEditingNote(null);
   };
 
-  const handleSectionToggle = (sectionId: keyof HomeSettings['sections']) => {
+  const handleSectionToggle = (sectionId: SectionKey) => {
     if (!localSettings) return;
     
     const updatedSettings = {
@@ -78,7 +81,7 @@ export const HomeManager = () => {
     setLocalSettings(updatedSettings);
   };
 
-  const handleSectionReorder = (sectionId: keyof HomeSettings['sections'], direction: 'up' | 'down') => {
+  const handleSectionReorder = (sectionId: SectionKey, direction: 'up' | 'down') => {
     if (!localSettings) return;
 
     const sections = Object.entries(localSettings.sections);
@@ -97,7 +100,7 @@ export const HomeManager = () => {
     // Swap orders
     const newSections = { ...localSettings.sections };
     const currentOrder = newSections[sectionId].order;
-    const targetSectionId = sections[targetIndex][0] as keyof HomeSettings['sections'];
+    const targetSectionId = sections[targetIndex][0] as SectionKey;
     const targetOrder = newSections[targetSectionId].order;
     
     newSections[sectionId] = {
@@ -291,7 +294,7 @@ export const HomeManager = () => {
                 >
                   <div className="flex items-center gap-3">
                     <span className="font-medium">
-                      {sectionLabels[sectionId as keyof typeof sectionLabels]}
+                      {sectionLabels[sectionId as SectionKey]}
                     </span>
                     <Badge variant={config.visible ? "default" : "outline"}>
                       {config.visible ? "Visível" : "Oculta"}
@@ -304,13 +307,13 @@ export const HomeManager = () => {
                   <div className="flex items-center gap-2">
                     <Switch
                       checked={config.visible}
-                      onCheckedChange={() => handleSectionToggle(sectionId)}
+                      onCheckedChange={() => handleSectionToggle(sectionId as SectionKey)}
                     />
                     
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => handleSectionReorder(sectionId, 'up')}
+                      onClick={() => handleSectionReorder(sectionId as SectionKey, 'up')}
                       disabled={index === 0}
                       title="Mover para cima"
                       className="h-8 w-8"
@@ -321,7 +324,7 @@ export const HomeManager = () => {
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => handleSectionReorder(sectionId, 'down')}
+                      onClick={() => handleSectionReorder(sectionId as SectionKey, 'down')}
                       disabled={index === orderedSections.length - 1}
                       title="Mover para baixo"
                       className="h-8 w-8"
