@@ -1,5 +1,5 @@
 
-// ABOUTME: Verified analytics hook with accurate metric calculations and detailed explanations
+// ABOUTME: Fixed analytics hook with proper database relationships and error handling
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { subDays, format, startOfDay, endOfDay } from 'date-fns';
@@ -86,18 +86,25 @@ const fetchVerifiedAnalytics = async (filters: AnalyticsFilters): Promise<Analyt
   const { startDate, endDate, excludeAdminData } = filters;
   
   try {
-    // Fetch user metrics with verified calculations
+    console.log('Starting analytics fetch with filters:', filters);
+
+    // Fetch user metrics with proper error handling
     const { data: totalUsersData, error: usersError } = await supabase
       .from('profiles')
       .select('id, created_at, role')
       .gte('created_at', startDate.toISOString())
       .lte('created_at', endDate.toISOString());
 
-    if (usersError) throw usersError;
+    if (usersError) {
+      console.error('Users query error:', usersError);
+      throw usersError;
+    }
 
     const filteredUsers = excludeAdminData 
       ? totalUsersData?.filter(user => user.role !== 'admin') || []
       : totalUsersData || [];
+
+    console.log('Fetched users:', filteredUsers.length);
 
     // Calculate new users this week
     const weekAgo = subDays(new Date(), 7);
@@ -105,64 +112,76 @@ const fetchVerifiedAnalytics = async (filters: AnalyticsFilters): Promise<Analyt
       new Date(user.created_at) >= weekAgo
     ).length;
 
-    // Fetch issue metrics
+    // Fetch issue metrics with error handling
     const { data: issuesData, error: issuesError } = await supabase
       .from('issues')
       .select('id, title, published, created_at, updated_at, featured, specialty, published_at')
       .gte('created_at', startDate.toISOString())
       .lte('created_at', endDate.toISOString());
 
-    if (issuesError) throw issuesError;
+    if (issuesError) {
+      console.error('Issues query error:', issuesError);
+      throw issuesError;
+    }
 
     const publishedIssues = issuesData?.filter(issue => issue.published).length || 0;
     const draftIssues = issuesData?.filter(issue => !issue.published).length || 0;
     const featuredIssues = issuesData?.filter(issue => issue.featured).length || 0;
     const totalIssues = issuesData?.length || 0;
 
-    // Fetch comments with proper joins
+    console.log('Fetched issues:', { total: totalIssues, published: publishedIssues });
+
+    // Fetch comments without explicit joins to avoid relationship errors
     const { data: commentsData, error: commentsError } = await supabase
       .from('comments')
-      .select(`
-        id, 
-        created_at, 
-        issue_id,
-        user_id,
-        profiles!inner(role)
-      `)
+      .select('id, created_at, issue_id, user_id')
       .gte('created_at', startDate.toISOString())
       .lte('created_at', endDate.toISOString());
 
-    if (commentsError) throw commentsError;
+    if (commentsError) {
+      console.error('Comments query error:', commentsError);
+      throw commentsError;
+    }
 
-    const filteredComments = excludeAdminData 
-      ? commentsData?.filter(comment => {
-          const profile = comment.profiles as any;
-          return profile?.role !== 'admin';
-        }) || []
-      : commentsData || [];
+    // Filter admin comments if needed by checking user IDs against profiles
+    let filteredComments = commentsData || [];
+    if (excludeAdminData && filteredComments.length > 0) {
+      const adminUserIds = totalUsersData
+        ?.filter(user => user.role === 'admin')
+        .map(user => user.id) || [];
+      
+      filteredComments = filteredComments.filter(comment => 
+        !adminUserIds.includes(comment.user_id)
+      );
+    }
 
-    // Fetch posts data
+    console.log('Fetched comments:', filteredComments.length);
+
+    // Fetch posts data without explicit joins
     const { data: postsData, error: postsError } = await supabase
       .from('posts')
-      .select(`
-        id, 
-        title, 
-        created_at, 
-        score,
-        user_id,
-        profiles!inner(role)
-      `)
+      .select('id, title, created_at, score, user_id')
       .gte('created_at', startDate.toISOString())
       .lte('created_at', endDate.toISOString());
 
-    if (postsError) throw postsError;
+    if (postsError) {
+      console.error('Posts query error:', postsError);
+      throw postsError;
+    }
 
-    const filteredPosts = excludeAdminData 
-      ? postsData?.filter(post => {
-          const profile = post.profiles as any;
-          return profile?.role !== 'admin';
-        }) || []
-      : postsData || [];
+    // Filter admin posts if needed
+    let filteredPosts = postsData || [];
+    if (excludeAdminData && filteredPosts.length > 0) {
+      const adminUserIds = totalUsersData
+        ?.filter(user => user.role === 'admin')
+        .map(user => user.id) || [];
+      
+      filteredPosts = filteredPosts.filter(post => 
+        !adminUserIds.includes(post.user_id)
+      );
+    }
+
+    console.log('Fetched posts:', filteredPosts.length);
 
     // Calculate posts and comments this week
     const postsThisWeek = filteredPosts.filter(post => 
@@ -173,7 +192,7 @@ const fetchVerifiedAnalytics = async (filters: AnalyticsFilters): Promise<Analyt
       new Date(comment.created_at) >= weekAgo
     ).length;
 
-    // Calculate daily active users (simplified - users who created content)
+    // Calculate daily active users (users who created content)
     const dailyActiveUsers = [];
     for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
       const dayStart = startOfDay(d);
@@ -278,6 +297,18 @@ const fetchVerifiedAnalytics = async (filters: AnalyticsFilters): Promise<Analyt
       });
     }
 
+    // Calculate recent activity for content metrics
+    const recentActivity = activityTrend.map(day => ({
+      date: day.date,
+      issues: issuesData?.filter(i => {
+        const createdAt = new Date(i.created_at);
+        const dayStart = startOfDay(new Date(day.date));
+        const dayEnd = endOfDay(new Date(day.date));
+        return createdAt >= dayStart && createdAt <= dayEnd;
+      }).length || 0,
+      comments: day.comments
+    }));
+
     // Build comprehensive analytics response
     const analyticsData: AnalyticsData = {
       overview: [
@@ -341,16 +372,7 @@ const fetchVerifiedAnalytics = async (filters: AnalyticsFilters): Promise<Analyt
           { title: 'Mock Issue 2', views: 980, id: 'mock-2' }
         ], // Mock data - would need view tracking
         issuesBySpecialty,
-        recentActivity: activityTrend.map(day => ({
-          date: day.date,
-          issues: issuesData?.filter(i => {
-            const createdAt = new Date(i.created_at);
-            const dayStart = startOfDay(new Date(day.date));
-            const dayEnd = endOfDay(new Date(day.date));
-            return createdAt >= dayStart && createdAt <= dayEnd;
-          }).length || 0,
-          comments: day.comments
-        })),
+        recentActivity,
         recentPublications
       },
       communityActivity: {
@@ -408,6 +430,7 @@ const fetchVerifiedAnalytics = async (filters: AnalyticsFilters): Promise<Analyt
       ]
     };
 
+    console.log('Analytics data compiled successfully');
     return analyticsData;
 
   } catch (error) {

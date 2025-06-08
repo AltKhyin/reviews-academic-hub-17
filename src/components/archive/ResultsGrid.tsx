@@ -1,5 +1,5 @@
 
-// ABOUTME: Clean results grid with Pinterest-style masonry layout and discrete search integration
+// ABOUTME: Clean results grid without filtering descriptors to prevent content displacement
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
@@ -78,14 +78,10 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({
 
   return (
     <div className="space-y-8">
-      {/* Clean header with discrete search */}
+      {/* Clean header with discrete search - no filtering count displays */}
       <div className="flex justify-between items-center">
-        <div className="text-sm text-muted-foreground">
-          <span className="font-semibold text-foreground text-lg">{issues.length}</span>
-          <span className="ml-1">
-            edição{issues.length !== 1 ? 'ões' : ''} encontrada{issues.length !== 1 ? 's' : ''}
-          </span>
-        </div>
+        {/* Removed the count display that shows "X edições encontradas" */}
+        <div></div>
         
         {/* Discrete search */}
         <div className="relative w-72">

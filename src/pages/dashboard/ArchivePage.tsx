@@ -1,5 +1,5 @@
 
-// ABOUTME: Updated archive page using optimized search with hierarchical backend_tags and scoring-based ordering
+// ABOUTME: Updated archive page with clean UI - removed filtering descriptors to prevent content displacement
 import React from 'react';
 import { ArchiveHeader } from '@/components/archive/ArchiveHeader';
 import { TagsPanel } from '@/components/archive/TagsPanel';
@@ -12,7 +12,7 @@ const ArchivePage = () => {
     selectedTags: [] as string[],
     specialty: undefined as string | undefined,
     year: undefined as number | undefined,
-    sortBy: 'score' as const, // Changed default to score-based sorting
+    sortBy: 'score' as const,
   });
 
   // Use optimized search with hierarchical backend_tags and scoring
@@ -61,18 +61,7 @@ const ArchivePage = () => {
           onTagSelect={selectTag}
         />
         
-        {/* Performance metrics display in development */}
-        {process.env.NODE_ENV === 'development' && hasActiveFilters && (
-          <div className="mb-4 p-3 bg-muted/20 rounded-lg text-sm text-muted-foreground">
-            <div className="flex gap-6">
-              <span>Total: {totalCount}</span>
-              <span>Showing: {filteredCount}</span>
-              {searchMetrics.titleMatches > 0 && <span>Title matches: {searchMetrics.titleMatches}</span>}
-              {searchMetrics.authorMatches > 0 && <span>Author matches: {searchMetrics.authorMatches}</span>}
-              {searchMetrics.tagMatches > 0 && <span>Tag matches: {searchMetrics.tagMatches}</span>}
-            </div>
-          </div>
-        )}
+        {/* Performance metrics and filtering status removed to prevent content displacement */}
         
         <ResultsGrid
           issues={issues}

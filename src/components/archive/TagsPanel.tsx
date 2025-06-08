@@ -1,5 +1,5 @@
 
-// ABOUTME: Monochromatic tags panel with clean visual hierarchy
+// ABOUTME: Clean tags panel without filtering status indicators to prevent content displacement
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { TagHierarchy } from '@/types/archive';
@@ -44,8 +44,8 @@ export const TagsPanel: React.FC<TagsPanelProps> = ({
 
   return (
     <div className="mb-10">
-      {/* Tags without background container */}
-      <div className="flex flex-wrap gap-3 mb-6">
+      {/* Tags without background container and without status indicators */}
+      <div className="flex flex-wrap gap-3">
         {displayTags.map((tag) => {
           const selected = isTagSelected(tag);
           const contextual = isContextualTag(tag);
@@ -72,22 +72,7 @@ export const TagsPanel: React.FC<TagsPanelProps> = ({
         })}
       </div>
       
-      {/* Status indicator with subtle styling */}
-      {selectedTags.length > 0 && (
-        <div className="border-l-2 border-foreground pl-4 py-2">
-          <div className="text-sm text-foreground font-medium">
-            {selectedTags.length === 1 
-              ? `Filtrando por "${selectedTags[0]}"`
-              : `${selectedTags.length} especialidades selecionadas`
-            }
-            {contextualTags.length > 0 && (
-              <span className="ml-3 text-muted-foreground font-normal">
-                • {contextualTags.length} sugestões relacionadas
-              </span>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Status indicator completely removed to prevent content displacement */}
     </div>
   );
 };
