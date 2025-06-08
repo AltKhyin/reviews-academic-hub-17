@@ -1,5 +1,6 @@
 
-import { useState, useEffect } from 'react';
+// ABOUTME: Hook for managing homepage section visibility and ordering
+import { useState, useEffect, useCallback } from 'react';
 
 export interface Section {
   id: string;
@@ -8,103 +9,79 @@ export interface Section {
   order: number;
 }
 
-export const useSectionVisibility = () => {
-  const defaultSections: Section[] = [
-    { id: "reviews", title: "Reviews do Editor", visible: true, order: 0 },
-    { id: "reviewer", title: "Notas do Revisor", visible: true, order: 1 },
-    { id: "featured", title: "Edições em Destaque", visible: true, order: 2 },
-    { id: "upcoming", title: "Próximas Edições", visible: true, order: 3 },
-    { id: "recent", title: "Edições Recentes", visible: true, order: 4 },
-    { id: "recommended", title: "Recomendados", visible: true, order: 5 },
-    { id: "trending", title: "Mais Acessados", visible: true, order: 6 }
-  ];
+const DEFAULT_SECTIONS: Section[] = [
+  { id: 'hero', title: 'Hero Section', visible: true, order: 0 },
+  { id: 'articles', title: 'Articles Grid', visible: true, order: 1 },
+  { id: 'reviews', title: 'Reviews do Editor', visible: true, order: 2 },
+  { id: 'reviewer', title: 'Notas do Revisor', visible: true, order: 3 },
+  { id: 'featured', title: 'Edições em Destaque', visible: true, order: 4 },
+  { id: 'upcoming', title: 'Próximas Edições', visible: true, order: 5 },
+  { id: 'recent', title: 'Edições Recentes', visible: true, order: 6 },
+  { id: 'recommended', title: 'Recomendados', visible: true, order: 7 },
+  { id: 'trending', title: 'Mais Acessados', visible: true, order: 8 },
+];
 
+const STORAGE_KEY = 'homepage_sections';
+
+export const useSectionVisibility = () => {
   const [sections, setSections] = useState<Section[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Load sections from localStorage on mount
   useEffect(() => {
-    const loadSections = () => {
-      try {
-        const savedSections = localStorage.getItem('homepage_sections');
-        if (savedSections) {
-          const parsed = JSON.parse(savedSections);
-          
-          // Ensure all default sections exist, especially "reviews"
-          const updatedSections = [...defaultSections];
-          
-          // Update with saved preferences while preserving all sections
-          parsed.forEach((savedSection: Section) => {
-            const existingIndex = updatedSections.findIndex(s => s.id === savedSection.id);
-            if (existingIndex !== -1) {
-              updatedSections[existingIndex] = { ...savedSection };
-            }
-          });
-          
-          // Sort by order
-          updatedSections.sort((a, b) => a.order - b.order);
-          
-          localStorage.setItem('homepage_sections', JSON.stringify(updatedSections));
-          setSections(updatedSections);
-        } else {
-          setSections(defaultSections);
-          localStorage.setItem('homepage_sections', JSON.stringify(defaultSections));
-        }
-      } catch (error) {
-        console.error('Error loading section visibility:', error);
-        setSections(defaultSections);
-        localStorage.setItem('homepage_sections', JSON.stringify(defaultSections));
-      } finally {
-        setIsLoading(false);
+    try {
+      const savedSections = localStorage.getItem(STORAGE_KEY);
+      if (savedSections) {
+        const parsed = JSON.parse(savedSections) as Section[];
+        
+        // Ensure all default sections exist, merge with saved data
+        const mergedSections = DEFAULT_SECTIONS.map(defaultSection => {
+          const savedSection = parsed.find(s => s.id === defaultSection.id);
+          return savedSection ? { ...defaultSection, ...savedSection } : defaultSection;
+        });
+        
+        setSections(mergedSections.sort((a, b) => a.order - b.order));
+      } else {
+        setSections(DEFAULT_SECTIONS);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_SECTIONS));
       }
-    };
-    
-    loadSections();
+    } catch (error) {
+      console.error('Error loading section visibility:', error);
+      setSections(DEFAULT_SECTIONS);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const saveSections = (updatedSections: Section[]) => {
+  // Save sections to localStorage
+  const saveSections = useCallback((newSections: Section[]) => {
     try {
-      localStorage.setItem('homepage_sections', JSON.stringify(updatedSections));
-      setSections(updatedSections);
+      setSections(newSections);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newSections));
+      console.log('Sections saved successfully:', newSections);
     } catch (error) {
-      console.error('Error saving section visibility:', error);
+      console.error('Error saving sections:', error);
     }
-  };
+  }, []);
 
-  const isSectionVisible = (sectionId: string): boolean => {
-    if (!sections || sections.length === 0) return true;
-    const section = sections.find(s => s.id === sectionId);
-    return section ? section.visible : true;
-  };
-
-  const getSectionOrder = (sectionId: string): number => {
-    if (!sections || sections.length === 0) {
-      const defaultSection = defaultSections.find(s => s.id === sectionId);
-      return defaultSection ? defaultSection.order : 999;
-    }
-    const section = sections.find(s => s.id === sectionId);
-    return section ? section.order : 999;
-  };
-
-  const getSortedVisibleSectionIds = (): string[] => {
-    if (!sections || sections.length === 0) {
-      return defaultSections
-        .filter(s => s.visible)
-        .sort((a, b) => a.order - b.order)
-        .map(s => s.id);
-    }
-    
+  // Get visible sections in order
+  const getVisibleSections = useCallback(() => {
     return sections
-      .filter(s => s.visible)
-      .sort((a, b) => a.order - b.order)
-      .map(s => s.id);
-  };
+      .filter(section => section.visible)
+      .sort((a, b) => a.order - b.order);
+  }, [sections]);
+
+  // Check if a specific section is visible
+  const isSectionVisible = useCallback((sectionId: string) => {
+    const section = sections.find(s => s.id === sectionId);
+    return section?.visible ?? false;
+  }, [sections]);
 
   return {
     sections,
     isLoading,
     saveSections,
+    getVisibleSections,
     isSectionVisible,
-    getSectionOrder,
-    getSortedVisibleSectionIds
   };
 };

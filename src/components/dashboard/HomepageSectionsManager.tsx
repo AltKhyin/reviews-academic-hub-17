@@ -14,7 +14,7 @@ const HomepageSectionsManager = () => {
   // Initialize local state with sections from the hook
   useEffect(() => {
     if (sections && sections.length > 0) {
-      setLocalSections([...sections]);
+      setLocalSections([...sections].sort((a, b) => a.order - b.order));
     }
   }, [sections]);
 
@@ -46,7 +46,7 @@ const HomepageSectionsManager = () => {
     
     toast({
       title: "Seções atualizadas",
-      description: "As alterações foram salvas com sucesso."
+      description: "A ordem das seções foi alterada com sucesso.",
     });
   };
 
@@ -60,9 +60,11 @@ const HomepageSectionsManager = () => {
     setLocalSections(updatedSections);
     saveSections(updatedSections);
     
+    const toggledSection = updatedSections.find(s => s.id === sectionId);
+    
     toast({
-      title: "Seções atualizadas",
-      description: "As alterações foram salvas com sucesso."
+      title: "Seção atualizada",
+      description: `Seção "${toggledSection?.title}" ${toggledSection?.visible ? 'mostrada' : 'ocultada'} com sucesso.`,
     });
   };
 
@@ -85,10 +87,13 @@ const HomepageSectionsManager = () => {
     <Card className="border-white/10 bg-white/5">
       <CardHeader>
         <CardTitle>Gerenciar Seções da Página Inicial</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Configure a visibilidade e ordem das seções da página inicial
+        </p>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {localSections.map((section) => (
+          {localSections.map((section, index) => (
             <div 
               key={section.id}
               className="flex items-center justify-between p-4 bg-secondary/5 rounded-lg border border-white/10"
@@ -111,6 +116,7 @@ const HomepageSectionsManager = () => {
                   size="icon"
                   onClick={() => toggleVisibility(section.id)}
                   title={section.visible ? "Ocultar seção" : "Mostrar seção"}
+                  className="h-8 w-8"
                 >
                   {section.visible ? (
                     <Eye className="h-4 w-4" />
@@ -123,8 +129,9 @@ const HomepageSectionsManager = () => {
                   variant="outline"
                   size="icon"
                   onClick={() => moveSection(section.id, 'up')}
-                  disabled={section.order === 0}
+                  disabled={index === 0}
                   title="Mover para cima"
+                  className="h-8 w-8"
                 >
                   <ChevronUp className="h-4 w-4" />
                 </Button>
@@ -133,14 +140,21 @@ const HomepageSectionsManager = () => {
                   variant="outline"
                   size="icon"
                   onClick={() => moveSection(section.id, 'down')}
-                  disabled={section.order === localSections.length - 1}
+                  disabled={index === localSections.length - 1}
                   title="Mover para baixo"
+                  className="h-8 w-8"
                 >
                   <ChevronDown className="h-4 w-4" />
                 </Button>
               </div>
             </div>
           ))}
+          
+          {localSections.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              Nenhuma seção configurada
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

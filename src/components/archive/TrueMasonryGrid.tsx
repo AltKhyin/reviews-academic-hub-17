@@ -10,9 +10,9 @@ interface TrueMasonryGridProps {
   isLoading: boolean;
 }
 
-// Enhanced grid calculation for 4-column responsive layout
+// Enhanced grid calculation for 4-column responsive layout with 4px gaps
 const calculateOptimalGridLayout = (containerWidth: number) => {
-  if (containerWidth <= 0) return { columns: 1, columnWidth: 300, gap: 16 };
+  if (containerWidth <= 0) return { columns: 1, columnWidth: 300, gap: 4 };
   
   // Define breakpoints for responsive behavior
   const breakpoints = {
@@ -23,31 +23,27 @@ const calculateOptimalGridLayout = (containerWidth: number) => {
   };
   
   let targetColumns = 4; // Default to 4 columns
-  let gap = 20;
+  const gap = 4; // Fixed 4px gap as requested
   
   // Responsive column calculation
   if (containerWidth < breakpoints.mobile) {
     targetColumns = 1;
-    gap = 16;
   } else if (containerWidth < breakpoints.tablet) {
     targetColumns = 2;
-    gap = 18;
   } else if (containerWidth < breakpoints.desktop) {
     targetColumns = 3;
-    gap = 20;
   } else {
     targetColumns = 4;
-    gap = 20;
   }
   
-  // Calculate optimal column width
+  // Calculate optimal column width - maximize card size while maintaining 4px gaps
   const totalGapWidth = gap * (targetColumns - 1);
-  const availableWidth = containerWidth - totalGapWidth - 32;
+  const availableWidth = containerWidth - totalGapWidth - 32; // 32px for container padding
   const columnWidth = Math.floor(availableWidth / targetColumns);
   
   return {
     columns: targetColumns,
-    columnWidth: Math.max(columnWidth, 280),
+    columnWidth: Math.max(columnWidth, 280), // Minimum card width
     gap
   };
 };
@@ -59,7 +55,7 @@ export const TrueMasonryGrid = React.memo<TrueMasonryGridProps>(({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
-  const [gridLayout, setGridLayout] = useState({ columns: 4, columnWidth: 300, gap: 20 });
+  const [gridLayout, setGridLayout] = useState({ columns: 4, columnWidth: 300, gap: 4 });
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
 
   // Debounced resize handling for better performance
@@ -154,9 +150,10 @@ export const TrueMasonryGrid = React.memo<TrueMasonryGridProps>(({
     return (
       <div className="w-full">
         <div 
-          className="grid gap-5"
+          className="grid"
           style={{
-            gridTemplateColumns: `repeat(${Math.min(gridLayout.columns, 4)}, 1fr)`
+            gridTemplateColumns: `repeat(${Math.min(gridLayout.columns, 4)}, 1fr)`,
+            gap: `${gridLayout.gap}px`
           }}
         >
           {Array.from({ length: 8 }).map((_, i) => (
@@ -187,7 +184,7 @@ export const TrueMasonryGrid = React.memo<TrueMasonryGridProps>(({
       className="w-full px-4"
       style={{ minHeight: '400px' }}
     >
-      {/* Centered masonry grid container */}
+      {/* Centered masonry grid container with 4px gaps */}
       <div 
         className="flex justify-center items-start mx-auto"
         style={{ 

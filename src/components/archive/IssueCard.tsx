@@ -33,6 +33,14 @@ export const IssueCard: React.FC<IssueCardProps> = ({
     return match ? `#${match[1]}` : `#${issue.id.slice(-3)}`;
   };
 
+  // Smart text truncation based on available content
+  const getTruncatedDescription = (text: string, maxLength: number = 120) => {
+    if (!text || text.length <= maxLength) return text;
+    const truncated = text.substring(0, maxLength);
+    const lastSpace = truncated.lastIndexOf(' ');
+    return lastSpace > 0 ? truncated.substring(0, lastSpace) + '...' : truncated + '...';
+  };
+
   // Placeholder covers for visual appeal
   const placeholderCovers = [
     'https://images.unsplash.com/photo-1649972904349-6e44c42644a7',
@@ -120,50 +128,53 @@ export const IssueCard: React.FC<IssueCardProps> = ({
         </div>
       </div>
 
-      {/* Detailed Information - Revealed on Hover */}
-      <div className="absolute inset-0 bg-black/90 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4 flex flex-col justify-center z-20">
-        <div className="space-y-4">
+      {/* Detailed Information - Revealed on Hover - Improved Content Management */}
+      <div className="absolute inset-0 bg-black/90 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4 flex flex-col justify-between z-20">
+        <div className="flex-1 space-y-3 overflow-hidden">
           {/* Title */}
-          <h3 className="text-white font-semibold text-xl leading-tight">
+          <h3 className="text-white font-semibold text-xl leading-tight line-clamp-3">
             {issue.search_title || issue.title}
           </h3>
           
-          {/* Description */}
+          {/* Description with smart truncation */}
           {(issue.search_description || issue.description) && (
-            <p className="text-white/90 text-sm leading-relaxed line-clamp-4">
-              {issue.search_description || issue.description}
+            <p className="text-white/90 text-sm leading-relaxed flex-1 overflow-hidden">
+              {getTruncatedDescription(issue.search_description || issue.description || '', 100)}
             </p>
           )}
           
           {/* Authors */}
           {issue.authors && (
             <div className="flex items-center space-x-2 text-white/80 text-sm">
-              <User className="w-3 h-3" />
-              <span>{issue.authors.split(',')[0].trim()}</span>
+              <User className="w-3 h-3 flex-shrink-0" />
+              <span className="truncate">{issue.authors.split(',')[0].trim()}</span>
               {issue.authors.split(',').length > 1 && (
-                <span className="text-white/60">+{issue.authors.split(',').length - 1}</span>
+                <span className="text-white/60 flex-shrink-0">+{issue.authors.split(',').length - 1}</span>
               )}
             </div>
           )}
-          
+        </div>
+        
+        {/* Bottom section with tags and details */}
+        <div className="space-y-2 pt-2">
           {/* Specialty Tags */}
           {issue.specialty && (
             <div className="flex flex-wrap gap-1">
-              {issue.specialty.split(',').slice(0, 3).map((tag, index) => (
+              {issue.specialty.split(',').slice(0, 2).map((tag, index) => (
                 <Badge 
                   key={index}
                   variant="outline" 
-                  className="text-xs bg-white/10 text-white/90 border-white/30"
+                  className="text-xs bg-white/10 text-white/90 border-white/30 truncate max-w-20"
                 >
                   {tag.trim()}
                 </Badge>
               ))}
-              {issue.specialty.split(',').length > 3 && (
+              {issue.specialty.split(',').length > 2 && (
                 <Badge 
                   variant="outline" 
                   className="text-xs bg-white/10 text-white/60 border-white/20"
                 >
-                  +{issue.specialty.split(',').length - 3}
+                  +{issue.specialty.split(',').length - 2}
                 </Badge>
               )}
             </div>
@@ -171,7 +182,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({
           
           {/* Study Details */}
           {issue.year && (
-            <div className="text-xs text-white/70 pt-2 border-t border-white/20">
+            <div className="text-xs text-white/70 border-t border-white/20 pt-2 truncate">
               Estudo de {issue.year}
               {issue.design && ` • ${issue.design}`}
             </div>
