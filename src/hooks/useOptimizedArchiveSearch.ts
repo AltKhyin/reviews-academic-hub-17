@@ -1,5 +1,5 @@
 
-// ABOUTME: Optimized archive search with hierarchical backend_tags and client-side scoring (no filtering)
+// ABOUTME: Optimized archive search with hierarchical backend_tags and client-side scoring (fixed tag matching)
 import { useMemo } from 'react';
 import { useOptimizedArchiveData } from './useOptimizedArchiveData';
 import { Issue } from '@/types/issue';
@@ -85,7 +85,7 @@ const calculateSearchScore = (issue: Issue, searchQuery: string, selectedTags: s
   return score;
 };
 
-// Hierarchical tag matching algorithm
+// Improved hierarchical tag matching algorithm
 const calculateTagMatches = (issue: Issue, selectedTags: string[]): number => {
   if (!selectedTags.length) return 0;
   
@@ -105,9 +105,16 @@ const calculateTagMatches = (issue: Issue, selectedTags: string[]): number => {
           ? JSON.parse(issue.backend_tags) 
           : issue.backend_tags;
         
-        if (typeof tags === 'object') {
-          // Check hierarchical tags
-          Object.values(tags).forEach(tagList => {
+        if (typeof tags === 'object' && tags !== null) {
+          // Check hierarchical tags - both categories and subcategories
+          Object.entries(tags).forEach(([category, tagList]) => {
+            // Check if selected tag matches the category
+            if (category.toLowerCase() === selectedTag.toLowerCase()) {
+              matches++;
+              return;
+            }
+            
+            // Check if selected tag matches any subcategory
             if (Array.isArray(tagList)) {
               tagList.forEach(tag => {
                 if (typeof tag === 'string' && 
@@ -134,7 +141,7 @@ const calculateTagMatches = (issue: Issue, selectedTags: string[]): number => {
   return matches;
 };
 
-// Get contextual tags based on selected tags and search query
+// Improved contextual tags based on selected tags and search query
 const getContextualTags = (
   issues: Issue[],
   selectedTags: string[],
@@ -143,23 +150,43 @@ const getContextualTags = (
 ): string[] => {
   const contextualTags = new Set<string>();
   
-  // If no tags selected, show popular tags based on search
+  // If no tags selected, show popular categories and some subcategories
   if (selectedTags.length === 0) {
+    // Add all main categories
+    Object.keys(tagConfig).forEach(category => {
+      contextualTags.add(category);
+    });
+    
+    // Add some popular subcategories if search query exists
     if (searchQuery.trim()) {
-      const allTags = Object.values(tagConfig).flat();
-      allTags.forEach(tag => {
-        if (tag.toLowerCase().includes(searchQuery.toLowerCase())) {
+      const query = searchQuery.toLowerCase();
+      Object.values(tagConfig).flat().forEach(tag => {
+        if (tag.toLowerCase().includes(query)) {
           contextualTags.add(tag);
         }
       });
     }
-    return Array.from(contextualTags).slice(0, 5);
+    
+    return Array.from(contextualTags).slice(0, 12);
   }
   
   // Find related tags from the same categories as selected tags
   selectedTags.forEach(selectedTag => {
     Object.entries(tagConfig).forEach(([category, tags]) => {
-      if (tags.includes(selectedTag)) {
+      // If selected tag is a category, show its subcategories
+      if (category === selectedTag) {
+        tags.forEach(tag => {
+          if (!selectedTags.includes(tag)) {
+            contextualTags.add(tag);
+          }
+        });
+      }
+      // If selected tag is a subcategory, show other subcategories from same category
+      else if (tags.includes(selectedTag)) {
+        // Add the category itself if not selected
+        if (!selectedTags.includes(category)) {
+          contextualTags.add(category);
+        }
         // Add other tags from the same category
         tags.forEach(tag => {
           if (tag !== selectedTag && !selectedTags.includes(tag)) {
@@ -182,8 +209,14 @@ const getContextualTags = (
           ? JSON.parse(issue.backend_tags) 
           : issue.backend_tags;
         
-        if (typeof tags === 'object') {
-          Object.values(tags).forEach(tagList => {
+        if (typeof tags === 'object' && tags !== null) {
+          Object.entries(tags).forEach(([category, tagList]) => {
+            // Add category if not selected
+            if (!selectedTags.includes(category)) {
+              contextualTags.add(category);
+            }
+            
+            // Add subcategories
             if (Array.isArray(tagList)) {
               tagList.forEach(tag => {
                 if (typeof tag === 'string' && 
@@ -201,7 +234,7 @@ const getContextualTags = (
     }
   });
   
-  return Array.from(contextualTags).slice(0, 8);
+  return Array.from(contextualTags).slice(0, 10);
 };
 
 // Score-based sorting instead of filtering
@@ -311,6 +344,13 @@ export const useOptimizedArchiveSearch = (filters: SearchFilters) => {
       filters.searchQuery,
       data.tagConfig || {}
     );
+    
+    console.log('Tag processing debug:', {
+      selectedTags: filters.selectedTags,
+      tagConfig: data.tagConfig,
+      contextualTags,
+      issuesCount: sorted.length
+    });
     
     return {
       issues: archiveIssues,

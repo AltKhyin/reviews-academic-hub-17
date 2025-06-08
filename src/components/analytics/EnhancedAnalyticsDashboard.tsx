@@ -1,5 +1,5 @@
 
-// ABOUTME: Enhanced analytics dashboard with verified metrics, customizable charts, and playground
+// ABOUTME: Enhanced analytics dashboard with improved playground layout and actual chart rendering
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -16,6 +16,8 @@ import { ContentMetricsPanel } from './ContentMetricsPanel';
 import { CommunityActivityPanel } from './CommunityActivityPanel';
 import { PerformancePanel } from './PerformancePanel';
 import { SystemHealthPanel } from './SystemHealthPanel';
+import { PlaygroundSidebar } from './playground/PlaygroundSidebar';
+import { ChartRenderer } from './playground/ChartRenderer';
 import { 
   Users, 
   FileText, 
@@ -52,16 +54,30 @@ export const EnhancedAnalyticsDashboard: React.FC = () => {
   
   // Playground state
   const [playgroundCharts, setPlaygroundCharts] = useState<PlaygroundChart[]>([]);
-  const [newChart, setNewChart] = useState<Partial<PlaygroundChart>>({
-    chartType: 'line',
-    events: []
-  });
+  const [selectedChart, setSelectedChart] = useState<string | null>(null);
 
   const { data: analytics, isLoading, error } = useVerifiedAnalytics({
     startDate: dateRange.startDate,
     endDate: dateRange.endDate,
     excludeAdminData
   });
+
+  // Playground chart management
+  const createPlaygroundChart = (chartData: Omit<PlaygroundChart, 'id'>) => {
+    const chart: PlaygroundChart = {
+      id: Date.now().toString(),
+      ...chartData
+    };
+    setPlaygroundCharts(prev => [...prev, chart]);
+    setSelectedChart(chart.id);
+  };
+
+  const deletePlaygroundChart = (chartId: string) => {
+    setPlaygroundCharts(prev => prev.filter(c => c.id !== chartId));
+    if (selectedChart === chartId) {
+      setSelectedChart(null);
+    }
+  };
 
   // Metric card component with tooltip
   const MetricCard: React.FC<{ metric: AnalyticsMetric }> = ({ metric }) => (
@@ -118,22 +134,6 @@ export const EnhancedAnalyticsDashboard: React.FC = () => {
       </Tooltip>
     </TooltipProvider>
   );
-
-  // Create new playground chart
-  const createPlaygroundChart = () => {
-    if (newChart.name && newChart.xAxis && newChart.yAxis && newChart.events?.length) {
-      const chart: PlaygroundChart = {
-        id: Date.now().toString(),
-        name: newChart.name,
-        xAxis: newChart.xAxis,
-        yAxis: newChart.yAxis,
-        chartType: newChart.chartType || 'line',
-        events: newChart.events
-      };
-      setPlaygroundCharts(prev => [...prev, chart]);
-      setNewChart({ chartType: 'line', events: [] });
-    }
-  };
 
   if (isLoading) {
     return (
@@ -366,154 +366,21 @@ export const EnhancedAnalyticsDashboard: React.FC = () => {
             </TabsContent>
 
             <TabsContent value="playground" className="mt-6">
-              <div className="space-y-6">
-                {/* Chart Creator */}
-                <Card style={{ backgroundColor: '#2a2a2a', borderColor: '#3a3a3a' }}>
-                  <CardHeader>
-                    <CardTitle className="text-white">Criar Gráfico Personalizado</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      <div>
-                        <Label className="text-gray-300">Nome do Gráfico</Label>
-                        <input
-                          type="text"
-                          value={newChart.name || ''}
-                          onChange={(e) => setNewChart(prev => ({ ...prev, name: e.target.value }))}
-                          className="w-full p-2 mt-1 bg-gray-800 border border-gray-600 rounded text-white"
-                          placeholder="Ex: Atividade Mensal"
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label className="text-gray-300">Tipo de Gráfico</Label>
-                        <Select
-                          value={newChart.chartType}
-                          onValueChange={(value: any) => setNewChart(prev => ({ ...prev, chartType: value }))}
-                        >
-                          <SelectTrigger className="mt-1 bg-gray-800 border-gray-600">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="line">Linha</SelectItem>
-                            <SelectItem value="bar">Barras</SelectItem>
-                            <SelectItem value="area">Área</SelectItem>
-                            <SelectItem value="pie">Pizza</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label className="text-gray-300">Eixo X</Label>
-                        <Select
-                          value={newChart.xAxis}
-                          onValueChange={(value) => setNewChart(prev => ({ ...prev, xAxis: value }))}
-                        >
-                          <SelectTrigger className="mt-1 bg-gray-800 border-gray-600">
-                            <SelectValue placeholder="Selecionar eixo X" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="date">Data</SelectItem>
-                            <SelectItem value="user_type">Tipo de Usuário</SelectItem>
-                            <SelectItem value="content_type">Tipo de Conteúdo</SelectItem>
-                            <SelectItem value="category">Categoria</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label className="text-gray-300">Eixo Y</Label>
-                        <Select
-                          value={newChart.yAxis}
-                          onValueChange={(value) => setNewChart(prev => ({ ...prev, yAxis: value }))}
-                        >
-                          <SelectTrigger className="mt-1 bg-gray-800 border-gray-600">
-                            <SelectValue placeholder="Selecionar eixo Y" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="count">Contagem</SelectItem>
-                            <SelectItem value="percentage">Porcentagem</SelectItem>
-                            <SelectItem value="average">Média</SelectItem>
-                            <SelectItem value="total">Total</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label className="text-gray-300">Eventos para Analisar</Label>
-                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mt-2">
-                        {analytics.availableEvents.map(event => (
-                          <label key={event} className="flex items-center space-x-2 p-2 bg-gray-800 rounded cursor-pointer hover:bg-gray-700">
-                            <input
-                              type="checkbox"
-                              checked={newChart.events?.includes(event) || false}
-                              onChange={(e) => {
-                                const events = newChart.events || [];
-                                if (e.target.checked) {
-                                  setNewChart(prev => ({ 
-                                    ...prev, 
-                                    events: [...events, event] 
-                                  }));
-                                } else {
-                                  setNewChart(prev => ({ 
-                                    ...prev, 
-                                    events: events.filter(e => e !== event) 
-                                  }));
-                                }
-                              }}
-                              className="rounded"
-                            />
-                            <span className="text-sm text-gray-300">{event.replace(/_/g, ' ')}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    <Button 
-                      onClick={createPlaygroundChart}
-                      disabled={!newChart.name || !newChart.xAxis || !newChart.yAxis || !newChart.events?.length}
-                      className="bg-blue-600 hover:bg-blue-700"
-                    >
-                      Criar Gráfico
-                    </Button>
-                  </CardContent>
-                </Card>
-
-                {/* Created Charts */}
-                {playgroundCharts.length > 0 && (
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-semibold text-white">Gráficos Personalizados</h3>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      {playgroundCharts.map(chart => (
-                        <Card key={chart.id} style={{ backgroundColor: '#2a2a2a', borderColor: '#3a3a3a' }}>
-                          <CardHeader className="flex flex-row items-center justify-between">
-                            <CardTitle className="text-white text-base">{chart.name}</CardTitle>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setPlaygroundCharts(prev => prev.filter(c => c.id !== chart.id))}
-                              className="text-red-400 border-red-400 hover:bg-red-400/10"
-                            >
-                              Remover
-                            </Button>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="text-sm text-gray-400 space-y-1">
-                              <p><strong>Tipo:</strong> {chart.chartType}</p>
-                              <p><strong>X:</strong> {chart.xAxis}</p>
-                              <p><strong>Y:</strong> {chart.yAxis}</p>
-                              <p><strong>Eventos:</strong> {chart.events.join(', ')}</p>
-                            </div>
-                            <div className="mt-4 h-48 bg-gray-800/50 rounded flex items-center justify-center text-gray-500">
-                              Gráfico seria renderizado aqui
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </div>
-                )}
+              <div className="h-[600px] flex bg-gray-900/30 rounded-lg overflow-hidden">
+                <PlaygroundSidebar
+                  availableEvents={analytics.availableEvents}
+                  onCreateChart={createPlaygroundChart}
+                  onDeleteChart={deletePlaygroundChart}
+                  existingCharts={playgroundCharts}
+                  selectedChart={selectedChart}
+                  onSelectChart={setSelectedChart}
+                />
+                <div className="flex-1">
+                  <ChartRenderer
+                    chart={playgroundCharts.find(c => c.id === selectedChart) || null}
+                    analyticsData={analytics}
+                  />
+                </div>
               </div>
             </TabsContent>
           </Tabs>
