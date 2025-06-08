@@ -1,5 +1,5 @@
 
-// ABOUTME: Enhanced archive page with proper tag hierarchy, search integration, and responsive masonry grid
+// ABOUTME: Enhanced archive page with proper tag hierarchy, search integration, and true masonry grid
 import React from 'react';
 import { ArchiveHeader } from '@/components/archive/ArchiveHeader';
 import { TagsPanel } from '@/components/archive/TagsPanel';
@@ -15,7 +15,7 @@ const ArchivePage = () => {
     sortBy: 'score' as const,
   });
 
-  // Use optimized search with enhanced tag hierarchy and filtering
+  // Use optimized search with enhanced tag hierarchy and reordering
   const {
     issues,
     totalCount,
@@ -101,12 +101,11 @@ const ArchivePage = () => {
           onTagSelect={selectTag}
         />
         
-        {/* Results counter for user feedback */}
-        {(filterState.searchQuery || filterState.selectedTags.length > 0) && (
+        {/* Results counter - only show for search queries, not for tag selections */}
+        {filterState.searchQuery.trim() && (
           <div className="mb-6 text-center">
             <p className="text-muted-foreground">
-              {filteredCount} edições encontradas
-              {filterState.searchQuery && ` para "${filterState.searchQuery}"`}
+              {filteredCount} edições encontradas para "{filterState.searchQuery}"
               {filterState.selectedTags.length > 0 && 
                 ` em ${filterState.selectedTags.join(', ')}`
               }

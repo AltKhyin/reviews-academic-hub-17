@@ -1,5 +1,5 @@
 
-// ABOUTME: Optimized archive search with hierarchical backend_tags and client-side scoring (fixed tag matching)
+// ABOUTME: Optimized archive search with hierarchical backend_tags and tag-based reordering (no filtering for tags)
 import { useMemo } from 'react';
 import { useOptimizedArchiveData } from './useOptimizedArchiveData';
 import { Issue } from '@/types/issue';
@@ -26,7 +26,7 @@ interface SearchResult {
   };
 }
 
-// Enhanced search scoring algorithm with tag relevance boosting
+// Enhanced search scoring algorithm with tag-based reordering
 const calculateSearchScore = (issue: Issue, searchQuery: string, selectedTags: string[]): number => {
   let score = 0;
   
@@ -66,21 +66,21 @@ const calculateSearchScore = (issue: Issue, searchQuery: string, selectedTags: s
     }
   }
   
-  // Tag relevance boosting (key change - this boosts instead of filters)
+  // Tag relevance boosting (for reordering, not filtering)
   if (selectedTags.length > 0) {
     const tagMatches = calculateTagMatches(issue, selectedTags);
-    // Each tag match significantly boosts the score
-    score += tagMatches * 15;
+    // Significant boost for tag matches to prioritize matching issues
+    score += tagMatches * 20;
     
     // Additional boost for specialty exact matches
     if (selectedTags.includes(issue.specialty)) {
-      score += 25;
+      score += 30;
     }
   }
   
-  // Base recency score to ensure all items have some ordering
+  // Base recency score to ensure consistent ordering
   const daysSinceCreated = (Date.now() - new Date(issue.created_at).getTime()) / (1000 * 60 * 60 * 24);
-  score += Math.max(0, 100 - daysSinceCreated * 0.1); // Slight recency bonus
+  score += Math.max(0, 100 - daysSinceCreated * 0.1);
   
   return score;
 };
@@ -108,9 +108,9 @@ const calculateTagMatches = (issue: Issue, selectedTags: string[]): number => {
         if (typeof tags === 'object' && tags !== null) {
           // Check hierarchical tags - both categories and subcategories
           Object.entries(tags).forEach(([category, tagList]) => {
-            // Check if selected tag matches the category
+            // Check if selected tag matches the category (parent)
             if (category.toLowerCase() === selectedTag.toLowerCase()) {
-              matches++;
+              matches += 2; // Higher weight for parent category matches
               return;
             }
             
@@ -150,23 +150,11 @@ const getContextualTags = (
 ): string[] => {
   const contextualTags = new Set<string>();
   
-  // If no tags selected, show popular categories and some subcategories
+  // If no tags selected, show only parent categories initially
   if (selectedTags.length === 0) {
-    // Add all main categories
     Object.keys(tagConfig).forEach(category => {
       contextualTags.add(category);
     });
-    
-    // Add some popular subcategories if search query exists
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      Object.values(tagConfig).flat().forEach(tag => {
-        if (tag.toLowerCase().includes(query)) {
-          contextualTags.add(tag);
-        }
-      });
-    }
-    
     return Array.from(contextualTags).slice(0, 12);
   }
   
@@ -197,47 +185,10 @@ const getContextualTags = (
     });
   });
   
-  // Also find tags that commonly appear with selected tags in issues
-  const issuesWithSelectedTags = issues.filter(issue => 
-    calculateTagMatches(issue, selectedTags) > 0
-  );
-  
-  issuesWithSelectedTags.forEach(issue => {
-    if (issue.backend_tags) {
-      try {
-        const tags = typeof issue.backend_tags === 'string' 
-          ? JSON.parse(issue.backend_tags) 
-          : issue.backend_tags;
-        
-        if (typeof tags === 'object' && tags !== null) {
-          Object.entries(tags).forEach(([category, tagList]) => {
-            // Add category if not selected
-            if (!selectedTags.includes(category)) {
-              contextualTags.add(category);
-            }
-            
-            // Add subcategories
-            if (Array.isArray(tagList)) {
-              tagList.forEach(tag => {
-                if (typeof tag === 'string' && 
-                    !selectedTags.includes(tag) &&
-                    !contextualTags.has(tag)) {
-                  contextualTags.add(tag);
-                }
-              });
-            }
-          });
-        }
-      } catch (e) {
-        // Skip parsing errors
-      }
-    }
-  });
-  
   return Array.from(contextualTags).slice(0, 10);
 };
 
-// Score-based sorting instead of filtering
+// Score-based reordering with filtering only for search queries
 const scoreAndSortIssues = (
   issues: Issue[],
   filters: SearchFilters
@@ -251,16 +202,37 @@ const scoreAndSortIssues = (
     tagMatches: 0,
   };
   
-  // Apply hard filters only for specialty and year (these are structural filters)
+  // Apply hard filters only for search query, specialty and year
   let filteredIssues = issues;
+  
+  // Filter by search query (if provided)
+  if (searchQuery.trim()) {
+    const query = searchQuery.toLowerCase();
+    filteredIssues = filteredIssues.filter(issue => {
+      const searchableText = [
+        issue.title,
+        issue.description,
+        issue.specialty,
+        issue.authors,
+        issue.search_title,
+        issue.search_description
+      ].filter(Boolean).join(' ').toLowerCase();
+      
+      return searchableText.includes(query);
+    });
+  }
+  
+  // Filter by specialty (if provided)
   if (specialty) {
     filteredIssues = filteredIssues.filter(issue => issue.specialty === specialty);
   }
+  
+  // Filter by year (if provided)
   if (year) {
     filteredIssues = filteredIssues.filter(issue => issue.year === year.toString());
   }
   
-  // Calculate scores for all remaining issues
+  // Calculate scores for all remaining issues (tags are used for reordering, not filtering)
   const scoredIssues = filteredIssues.map(issue => {
     const score = calculateSearchScore(issue, searchQuery, selectedTags);
     
@@ -296,7 +268,7 @@ const scoreAndSortIssues = (
       case 'score':
         return b.searchScore - a.searchScore;
       case 'newest':
-        if (Math.abs(b.searchScore - a.searchScore) < 5) { // Similar scores
+        if (Math.abs(b.searchScore - a.searchScore) < 5) {
           return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         }
         return b.searchScore - a.searchScore;
@@ -344,13 +316,6 @@ export const useOptimizedArchiveSearch = (filters: SearchFilters) => {
       filters.searchQuery,
       data.tagConfig || {}
     );
-    
-    console.log('Tag processing debug:', {
-      selectedTags: filters.selectedTags,
-      tagConfig: data.tagConfig,
-      contextualTags,
-      issuesCount: sorted.length
-    });
     
     return {
       issues: archiveIssues,
