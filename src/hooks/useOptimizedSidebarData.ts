@@ -84,29 +84,27 @@ const fetchSidebarStats = async (): Promise<SidebarStats> => {
   }
 };
 
-// Optimized online users fetching with limit
+// Optimized online users fetching with limit - fixed column name
 const fetchOnlineUsers = async (): Promise<OnlineUser[]> => {
   try {
     const { data, error } = await supabase
       .from('online_users')
       .select(`
         id,
-        profiles!inner(
-          full_name,
-          avatar_url
-        ),
-        last_seen
+        full_name,
+        avatar_url,
+        last_active
       `)
-      .order('last_seen', { ascending: false })
+      .order('last_active', { ascending: false })
       .limit(12); // Reduced from 20 to 12 for better performance
 
     if (error) throw error;
 
     return (data || []).map(user => ({
       id: user.id,
-      full_name: user.profiles?.full_name || null,
-      avatar_url: user.profiles?.avatar_url || null,
-      last_seen: user.last_seen,
+      full_name: user.full_name || null,
+      avatar_url: user.avatar_url || null,
+      last_seen: user.last_active, // Map last_active to last_seen for interface compatibility
     }));
   } catch (error) {
     console.error('Error fetching online users:', error);

@@ -50,19 +50,6 @@ export const queryClient = new QueryClient({
       
       // Optimized retry delay with exponential backoff
       retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-      
-      // Performance monitoring
-      onSettled: (data, error, variables, context) => {
-        // Track query performance
-        const endTime = Date.now();
-        const startTime = (context as any)?.startTime || endTime;
-        const duration = endTime - startTime;
-        
-        if (variables && typeof variables === 'object' && 'queryKey' in variables) {
-          const queryKey = JSON.stringify((variables as any).queryKey);
-          queryPerformanceMonitor.trackQuery(queryKey, duration);
-        }
-      },
     },
     mutations: {
       // Optimized mutation settings
