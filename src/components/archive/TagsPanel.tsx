@@ -1,9 +1,7 @@
 
-// ABOUTME: Backend tag selection panel with parent/subtag hierarchy and three visual states
+// ABOUTME: Simplified backend tag selection panel with visual state-based ordering and minimal UI
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { X } from 'lucide-react';
 
 interface TagsPanelProps {
   parentCategories: string[];
@@ -29,7 +27,7 @@ export const TagsPanel: React.FC<TagsPanelProps> = ({
   if (isLoading) {
     return (
       <div className="mb-8">
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-2">
           {/* Loading skeleton */}
           {Array.from({ length: 8 }).map((_, index) => (
             <div
@@ -55,84 +53,74 @@ export const TagsPanel: React.FC<TagsPanelProps> = ({
       case 'highlighted':
         return `${baseClasses} bg-transparent text-white border-white/60 hover:bg-white/10 hover:border-white/80`;
       case 'unselected':
-        return `${baseClasses} bg-transparent text-white/60 border-transparent hover:bg-white/5 hover:text-white/80`;
+        return `${baseClasses} bg-transparent text-white border-white/30 hover:bg-white/5 hover:border-white/50`;
     }
   };
 
+  // Sort tags by selection state: selected first, then highlighted, then unselected
+  const sortTagsByState = (tags: string[]) => {
+    return [...tags].sort((a, b) => {
+      const stateA = getTagState(a);
+      const stateB = getTagState(b);
+      
+      // Define priority order: selected (0), highlighted (1), unselected (2)
+      const getPriority = (state: string) => {
+        switch (state) {
+          case 'selected': return 0;
+          case 'highlighted': return 1;
+          case 'unselected': return 2;
+          default: return 3;
+        }
+      };
+      
+      const priorityA = getPriority(stateA);
+      const priorityB = getPriority(stateB);
+      
+      // If same priority, maintain alphabetical order for consistency
+      if (priorityA === priorityB) {
+        return a.localeCompare(b);
+      }
+      
+      return priorityA - priorityB;
+    });
+  };
+
+  // Sort parent categories and subtags by their selection state
+  const sortedParentCategories = sortTagsByState(parentCategories);
+  const sortedVisibleSubtags = sortTagsByState(visibleSubtags);
+
   return (
     <div className="mb-8">
-      <div className="space-y-4">
-        {/* Clear all button - only show when tags are selected */}
-        {hasActiveTagSelection && (
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              {selectedTags.length} {selectedTags.length === 1 ? 'categoria selecionada' : 'categorias selecionadas'}
-            </p>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClearAllTags}
-              className="text-muted-foreground hover:text-foreground h-8 px-2"
+      <div className="flex flex-wrap gap-2">
+        {/* Parent categories - sorted by selection state */}
+        {sortedParentCategories.map(category => {
+          const state = getTagState(category);
+          return (
+            <Badge
+              key={category}
+              variant="outline"
+              className={getTagStyleClasses(state)}
+              onClick={() => onTagSelect(category)}
             >
-              <X className="w-4 h-4 mr-1" />
-              Limpar seleção
-            </Button>
-          </div>
-        )}
+              {category}
+            </Badge>
+          );
+        })}
 
-        {/* Tags container */}
-        <div className="flex flex-wrap gap-3">
-          {/* Parent categories - always visible */}
-          {parentCategories.map(category => {
-            const state = getTagState(category);
-            return (
-              <Badge
-                key={category}
-                variant="outline"
-                className={getTagStyleClasses(state)}
-                onClick={() => onTagSelect(category)}
-              >
-                {category}
-              </Badge>
-            );
-          })}
-
-          {/* Subtags - only visible when parent is selected */}
-          {visibleSubtags.length > 0 && (
-            <>
-              {/* Visual separator */}
-              <div className="w-full flex items-center my-2">
-                <div className="flex-1 h-px bg-border"></div>
-                <span className="px-3 text-xs text-muted-foreground bg-background">
-                  Subtemas
-                </span>
-                <div className="flex-1 h-px bg-border"></div>
-              </div>
-
-              {/* Subtag badges with indentation */}
-              {visibleSubtags.map(subtag => {
-                const state = getTagState(subtag);
-                return (
-                  <Badge
-                    key={subtag}
-                    variant="outline"
-                    className={`ml-6 ${getTagStyleClasses(state)}`}
-                    onClick={() => onTagSelect(subtag)}
-                  >
-                    {subtag}
-                  </Badge>
-                );
-              })}
-            </>
-          )}
-        </div>
-
-        {/* Help text */}
-        {!hasActiveTagSelection && parentCategories.length > 0 && (
-          <p className="text-xs text-muted-foreground mt-2">
-            Selecione categorias para reordenar as edições por relevância
-          </p>
-        )}
+        {/* Subtags - only visible when parent is selected, sorted by state */}
+        {sortedVisibleSubtags.map(subtag => {
+          const state = getTagState(subtag);
+          return (
+            <Badge
+              key={subtag}
+              variant="outline"
+              className={`ml-4 ${getTagStyleClasses(state)}`}
+              onClick={() => onTagSelect(subtag)}
+            >
+              {subtag}
+            </Badge>
+          );
+        })}
       </div>
     </div>
   );

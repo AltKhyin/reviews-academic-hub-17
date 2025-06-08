@@ -36,14 +36,10 @@ const ArchivePage = () => {
 
   const isLoading = isSearchLoading || isTagsLoading;
 
-  // Results counter text based on active filters
+  // Results counter text - only show for search queries, not for tag selections
   const getResultsText = () => {
-    if (searchQuery.trim() && hasActiveTagSelection) {
-      return `${reorderedIssues.length} edições encontradas para "${searchQuery}" com ${selectedTags.length} ${selectedTags.length === 1 ? 'categoria' : 'categorias'} selecionadas`;
-    } else if (searchQuery.trim()) {
+    if (searchQuery.trim()) {
       return `${filteredCount} edições encontradas para "${searchQuery}"`;
-    } else if (hasActiveTagSelection) {
-      return `${reorderedIssues.length} edições ordenadas por relevância (${tagMatchCount} com correspondências)`;
     }
     return null;
   };
@@ -69,7 +65,7 @@ const ArchivePage = () => {
           getTagState={getTagState}
         />
         
-        {/* Results counter - show for search queries or tag selections */}
+        {/* Results counter - only show for search queries */}
         {resultsText && (
           <div className="mb-6 text-center">
             <p className="text-muted-foreground">
