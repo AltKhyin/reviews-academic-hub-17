@@ -1,5 +1,5 @@
 
-// ABOUTME: Clean, monochromatic issue card with dynamic height support and natural content flow
+// ABOUTME: Clean, monochromatic issue card with stable hover states and dynamic height support
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,13 +10,15 @@ interface IssueCardProps {
   issue: ArchiveIssue;
   onClick: (issueId: string) => void;
   tagMatches?: number;
-  className?: string;
+  height?: number; // Dynamic height support for masonry layout
+  className?: string; // Added className prop
 }
 
 export const IssueCard: React.FC<IssueCardProps> = ({
   issue,
   onClick,
   tagMatches = 0,
+  height,
   className = ""
 }) => {
   const formatDate = (dateString: string) => {
@@ -43,55 +45,18 @@ export const IssueCard: React.FC<IssueCardProps> = ({
   const coverImage = issue.cover_image_url || 
     placeholderCovers[parseInt(issue.id.slice(-1)) % placeholderCovers.length];
 
-  // Generate dynamic height based on content factors
-  const generateDynamicHeight = () => {
-    const baseHeight = 380;
-    const titleLength = (issue.search_title || issue.title).length;
-    const descriptionLength = (issue.search_description || issue.description || '').length;
-    const authorsCount = issue.authors ? issue.authors.split(',').length : 0;
-    
-    // Content complexity factor (0.85 to 1.6 multiplier)
-    let heightMultiplier = 0.85;
-    
-    // Title impact (longer titles need more space)
-    if (titleLength > 60) heightMultiplier += 0.15;
-    else if (titleLength > 40) heightMultiplier += 0.1;
-    else if (titleLength > 20) heightMultiplier += 0.05;
-    
-    // Description impact
-    if (descriptionLength > 200) heightMultiplier += 0.25;
-    else if (descriptionLength > 100) heightMultiplier += 0.15;
-    else if (descriptionLength > 50) heightMultiplier += 0.1;
-    
-    // Authors impact
-    if (authorsCount > 3) heightMultiplier += 0.1;
-    else if (authorsCount > 1) heightMultiplier += 0.05;
-    
-    // Specialty tags impact
-    const specialtyCount = issue.specialty ? issue.specialty.split(',').length : 0;
-    if (specialtyCount > 3) heightMultiplier += 0.1;
-    else if (specialtyCount > 1) heightMultiplier += 0.05;
-    
-    // Add some controlled randomness for visual variety
-    const randomFactor = (parseInt(issue.id.slice(-2)) % 20) / 100; // 0 to 0.19
-    heightMultiplier += randomFactor;
-    
-    // Clamp to acceptable range
-    heightMultiplier = Math.max(0.85, Math.min(1.6, heightMultiplier));
-    
-    return Math.floor(baseHeight * heightMultiplier);
-  };
-
-  const dynamicHeight = generateDynamicHeight();
+  // Dynamic styling based on height prop
+  const cardStyle = height ? { height: `${height}px` } : {};
+  const aspectRatioClass = height ? '' : 'aspect-[3/4]';
 
   return (
     <Card 
-      className={`group cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-card border-border overflow-hidden relative w-full ${className}`}
-      style={{ height: `${dynamicHeight}px` }}
+      className={`group cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-card border-border overflow-hidden ${aspectRatioClass} relative w-full ${className}`}
+      style={cardStyle}
       onClick={() => onClick(issue.id)}
     >
-      {/* Cover Image - Dynamic Height Based on Content */}
-      <div className="relative w-full" style={{ height: `${Math.floor(dynamicHeight * 0.6)}px` }}>
+      {/* Cover Image - Primary Visual Element */}
+      <div className="absolute inset-0">
         <img
           src={coverImage}
           alt={issue.search_title || issue.title}
@@ -104,42 +69,42 @@ export const IssueCard: React.FC<IssueCardProps> = ({
         
         {/* Enhanced Gradient Overlay for Better Text Readability */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-        
-        {/* Edition Badge - Top Corner */}
-        <div className="absolute top-3 left-3 z-10">
-          <Badge 
-            variant="outline" 
-            className="bg-black/60 backdrop-blur-sm text-white border-white/30 text-xs font-medium"
-          >
-            {getEditionNumber()}
-          </Badge>
-        </div>
-
-        {/* Tag Matches Indicator */}
-        {tagMatches > 0 && (
-          <div className="absolute top-3 right-3 z-10">
-            <Badge 
-              variant="outline" 
-              className="bg-white/20 backdrop-blur-sm text-white border-white/40 text-xs font-medium"
-            >
-              {tagMatches} match{tagMatches > 1 ? 'es' : ''}
-            </Badge>
-          </div>
-        )}
       </div>
 
-      {/* Content Section - Flexible Height */}
+      {/* Edition Badge - Top Corner */}
+      <div className="absolute top-3 left-3 z-10">
+        <Badge 
+          variant="outline" 
+          className="bg-black/60 backdrop-blur-sm text-white border-white/30 text-xs font-medium"
+        >
+          {getEditionNumber()}
+        </Badge>
+      </div>
+
+      {/* Tag Matches Indicator */}
+      {tagMatches > 0 && (
+        <div className="absolute top-3 right-3 z-10">
+          <Badge 
+            variant="outline" 
+            className="bg-white/20 backdrop-blur-sm text-white border-white/40 text-xs font-medium"
+          >
+            {tagMatches} match{tagMatches > 1 ? 'es' : ''}
+          </Badge>
+        </div>
+      )}
+
+      {/* Content Overlay - Always Visible with Enhanced Shadow */}
       <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
-        {/* Title - Flexible Line Height */}
-        <h3 className="text-white font-semibold text-base leading-tight mb-2 line-clamp-3" 
+        {/* Title - Secondary Element with Enhanced Shadow */}
+        <h3 className="text-white font-semibold text-lg leading-tight mb-3 line-clamp-2" 
             style={{ 
               textShadow: '0 2px 8px rgba(0,0,0,0.8), 0 1px 3px rgba(0,0,0,0.9)' 
             }}>
           {issue.search_title || issue.title}
         </h3>
         
-        {/* Micro Information - Always Visible */}
-        <div className="flex items-center justify-between text-white/80 text-xs"
+        {/* Micro Information - Tertiary Elements with Enhanced Shadow */}
+        <div className="flex items-center justify-between text-white/80 text-sm"
              style={{ 
                textShadow: '0 1px 4px rgba(0,0,0,0.8)' 
              }}>
@@ -157,13 +122,13 @@ export const IssueCard: React.FC<IssueCardProps> = ({
 
       {/* Detailed Information - Revealed on Hover */}
       <div className="absolute inset-0 bg-black/90 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4 flex flex-col justify-center z-20">
-        <div className="space-y-3">
+        <div className="space-y-4">
           {/* Title */}
-          <h3 className="text-white font-semibold text-lg leading-tight">
+          <h3 className="text-white font-semibold text-xl leading-tight">
             {issue.search_title || issue.title}
           </h3>
           
-          {/* Description - Variable Content */}
+          {/* Description */}
           {(issue.search_description || issue.description) && (
             <p className="text-white/90 text-sm leading-relaxed line-clamp-4">
               {issue.search_description || issue.description}
@@ -181,10 +146,10 @@ export const IssueCard: React.FC<IssueCardProps> = ({
             </div>
           )}
           
-          {/* Specialty Tags - Variable Count */}
+          {/* Specialty Tags */}
           {issue.specialty && (
             <div className="flex flex-wrap gap-1">
-              {issue.specialty.split(',').slice(0, 4).map((tag, index) => (
+              {issue.specialty.split(',').slice(0, 3).map((tag, index) => (
                 <Badge 
                   key={index}
                   variant="outline" 
@@ -193,18 +158,18 @@ export const IssueCard: React.FC<IssueCardProps> = ({
                   {tag.trim()}
                 </Badge>
               ))}
-              {issue.specialty.split(',').length > 4 && (
+              {issue.specialty.split(',').length > 3 && (
                 <Badge 
                   variant="outline" 
                   className="text-xs bg-white/10 text-white/60 border-white/20"
                 >
-                  +{issue.specialty.split(',').length - 4}
+                  +{issue.specialty.split(',').length - 3}
                 </Badge>
               )}
             </div>
           )}
           
-          {/* Study Details - Additional Height Factor */}
+          {/* Study Details */}
           {issue.year && (
             <div className="text-xs text-white/70 pt-2 border-t border-white/20">
               Estudo de {issue.year}
