@@ -1,5 +1,5 @@
 
-// ABOUTME: Optimized query hook with intelligent caching and deduplication
+// ABOUTME: Fixed TypeScript errors in optimized query hook
 import { useQuery, UseQueryOptions, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -101,9 +101,10 @@ export function useOptimizedQuery<T>(
     const cachedData = queryClient.getQueryData<T>(queryKey);
     const queryState = queryClient.getQueryState(queryKey);
     
-    // Return cached data if fresh enough
+    // Return cached data if fresh enough - convert staleTime to number for comparison
+    const staleTimeMs = typeof options?.staleTime === 'number' ? options.staleTime : defaultQueryConfig.staleTime!;
     if (cachedData && queryState && 
-        (Date.now() - (queryState.dataUpdatedAt || 0)) < (options?.staleTime || defaultQueryConfig.staleTime!)) {
+        (Date.now() - (queryState.dataUpdatedAt || 0)) < staleTimeMs) {
       return cachedData;
     }
     
@@ -148,4 +149,3 @@ export function useBatchQueries<T extends Record<string, any>>(
   
   return results;
 }
-

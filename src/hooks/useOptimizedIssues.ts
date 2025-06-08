@@ -1,5 +1,5 @@
 
-// ABOUTME: Optimized issues hook with selective loading and intelligent caching
+// ABOUTME: Fixed TypeScript errors in optimized issues hook
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useOptimizedAuth } from './useOptimizedAuth';
@@ -30,7 +30,7 @@ export const useOptimizedIssues = (options: UseIssuesOptions = {}) => {
     : select;
 
   return useQuery({
-    queryKey: queryKeys.issues().concat([includeUnpublished, featured, limit, select]),
+    queryKey: [...queryKeys.issues(), includeUnpublished, featured, limit, select],
     queryFn: async (): Promise<Issue[]> => {
       try {
         let query = supabase
@@ -58,7 +58,7 @@ export const useOptimizedIssues = (options: UseIssuesOptions = {}) => {
           throw error;
         }
         
-        return (data as Issue[]) || [];
+        return (data || []) as Issue[];
       } catch (error: any) {
         console.error("Error in useOptimizedIssues hook:", error);
         return []; // Return empty array instead of throwing to prevent UI crashes
@@ -134,8 +134,7 @@ export const useIssuesBatch = () => {
     
     // Get all issues for admin (only if admin)
     all: useOptimizedIssues({ 
-      includeUnpublished: canEdit,
-      enabled: canEdit
+      includeUnpublished: canEdit
     }),
     
     // Get recent issues for homepage
@@ -145,4 +144,3 @@ export const useIssuesBatch = () => {
     }),
   };
 };
-

@@ -1,4 +1,5 @@
-// ABOUTME: Optimized React Query client configuration with intelligent defaults
+
+// ABOUTME: Fixed TypeScript errors in query client configuration
 import { QueryClient } from '@tanstack/react-query';
 
 // Global query client with optimized defaults
@@ -18,7 +19,7 @@ export const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       
       // Only refetch on mount if data is stale
-      refetchOnMount: 'stale',
+      refetchOnMount: false,
       
       // Refetch on reconnect for critical data only
       refetchOnReconnect: 'always',

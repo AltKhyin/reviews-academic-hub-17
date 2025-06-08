@@ -1,11 +1,10 @@
 
-// Updated App.tsx with Archive route
+// ABOUTME: Updated App.tsx with corrected router structure - removed duplicate BrowserRouter
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 
 // Components
@@ -21,20 +20,6 @@ import Edit from "./pages/dashboard/Edit";
 import IssueEditor from "./pages/dashboard/IssueEditor";
 import NotFound from "./pages/NotFound";
 import PolicyPage from "./pages/PolicyPage";
-
-// Create the query client outside the component function
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 2,
-      refetchOnWindowFocus: false,
-      staleTime: 30000,
-      meta: {
-        errorMessage: "An error occurred while fetching data"
-      }
-    },
-  },
-});
 
 const App = () => {
   // Enable dark mode by default and optimize for native editor experience
@@ -54,38 +39,34 @@ const App = () => {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AuthProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              {/* Public routes that don't require authentication */}
-              <Route path="/auth" element={<AuthPage />} />
-              <Route path="/policy" element={<PolicyPage />} />
-              
-              {/* Protected routes that require authentication */}
-              <Route path="/" element={<DashboardLayout />}>
-                <Route path="homepage" element={<Dashboard />} />
-                <Route path="article/:id" element={<ArticleViewer />} />
-                <Route path="acervo" element={<ArchivePage />} />
-                <Route path="search" element={<SearchPage />} />
-                <Route path="community" element={<Community />} />
-                <Route path="articles" element={<Dashboard />} />
-                <Route path="profile" element={<Profile />} />
-                <Route path="edit" element={<Edit />} />
-                <Route path="edit/issue/:id" element={<IssueEditor />} />
-                <Route path="edit/issue/new" element={<IssueEditor />} />
-                <Route index element={<Navigate to="/homepage" replace />} />
-              </Route>
+    <TooltipProvider>
+      <AuthProvider>
+        <Toaster />
+        <Sonner />
+        <Routes>
+          {/* Public routes that don't require authentication */}
+          <Route path="/auth" element={<AuthPage />} />
+          <Route path="/policy" element={<PolicyPage />} />
+          
+          {/* Protected routes that require authentication */}
+          <Route path="/" element={<DashboardLayout />}>
+            <Route path="homepage" element={<Dashboard />} />
+            <Route path="article/:id" element={<ArticleViewer />} />
+            <Route path="acervo" element={<ArchivePage />} />
+            <Route path="search" element={<SearchPage />} />
+            <Route path="community" element={<Community />} />
+            <Route path="articles" element={<Dashboard />} />
+            <Route path="profile" element={<Profile />} />
+            <Route path="edit" element={<Edit />} />
+            <Route path="edit/issue/:id" element={<IssueEditor />} />
+            <Route path="edit/issue/new" element={<IssueEditor />} />
+            <Route index element={<Navigate to="/homepage" replace />} />
+          </Route>
 
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </AuthProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </AuthProvider>
+    </TooltipProvider>
   );
 };
 
