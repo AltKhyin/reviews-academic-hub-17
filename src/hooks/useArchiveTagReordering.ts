@@ -31,7 +31,26 @@ const fetchActiveTagConfiguration = async (): Promise<TagHierarchy> => {
     return {};
   }
 
-  return data?.tag_data || {};
+  // Properly handle the Json type from Supabase
+  const tagData = data?.tag_data;
+  
+  // Type guard to ensure we have a valid TagHierarchy
+  if (!tagData || typeof tagData !== 'object' || Array.isArray(tagData)) {
+    console.warn('Invalid tag_data format, using empty hierarchy');
+    return {};
+  }
+
+  // Additional validation to ensure all values are string arrays
+  const validatedHierarchy: TagHierarchy = {};
+  for (const [key, value] of Object.entries(tagData)) {
+    if (Array.isArray(value) && value.every(item => typeof item === 'string')) {
+      validatedHierarchy[key] = value as string[];
+    } else {
+      console.warn(`Invalid subtags for category "${key}", skipping`);
+    }
+  }
+
+  return validatedHierarchy;
 };
 
 // Calculate relevance score for an issue based on selected tags
