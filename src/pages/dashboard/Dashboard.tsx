@@ -15,7 +15,6 @@ const Dashboard = () => {
   const { 
     issues, 
     sectionVisibility, 
-    reviewerComments, 
     featuredIssue, 
     isLoading: dataLoading, 
     errors,
@@ -114,7 +113,7 @@ const Dashboard = () => {
         return (
           <DataErrorBoundary key={`reviews-${index}`} context="reviewer comments">
             <div className={isFollowedByFeatured ? 'mb-4' : ''}>
-              <ReviewerCommentsDisplay comments={reviewerComments} />
+              <ReviewerCommentsDisplay />
             </div>
           </DataErrorBoundary>
         );
