@@ -1,5 +1,5 @@
 
-// ABOUTME: Heavily optimized sidebar data hook with intelligent caching and minimal database queries
+// ABOUTME: Optimized sidebar data hooks using new database functions for better performance
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { queryKeys, queryConfigs } from './useOptimizedQuery';
@@ -8,171 +8,132 @@ interface SidebarStats {
   totalUsers: number;
   onlineUsers: number;
   totalIssues: number;
-  featuredIssues: number;
+  totalPosts: number;
+  totalComments: number;
 }
 
-interface HighlightComment {
-  id: string;
-  author_name: string;
-  author_avatar: string;
-  body: string;
-  votes: number;
-  created_at: string;
-  thread_id: string;
-}
-
-interface TopThread {
-  id: string;
-  title: string;
-  comments: number;
-  votes: number;
-  created_at: string;
-  thread_type: string;
-}
-
-interface SidebarData {
-  stats: SidebarStats;
-  topThreads: TopThread[];
-  highlightComments: HighlightComment[];
-  isLoading: boolean;
-  error: Error | null;
-}
-
-// Optimized stats fetching with single query
-const fetchSidebarStats = async (): Promise<SidebarStats> => {
-  try {
-    // Use Promise.allSettled for better error handling and parallel execution
-    const [usersResult, onlineResult, issuesResult] = await Promise.allSettled([
-      supabase.from('profiles').select('id', { count: 'exact', head: true }),
-      supabase.from('online_users').select('id', { count: 'exact', head: true }),
-      supabase.from('issues').select('id, featured', { count: 'exact' }).eq('published', true)
-    ]);
-
-    // Extract results with fallbacks
-    const totalUsers = usersResult.status === 'fulfilled' ? (usersResult.value.count || 0) : 0;
-    const onlineUsers = onlineResult.status === 'fulfilled' ? (onlineResult.value.count || 0) : 0;
-    const totalIssues = issuesResult.status === 'fulfilled' ? (issuesResult.value.count || 0) : 0;
-    
-    // Count featured issues from the data
-    let featuredIssues = 0;
-    if (issuesResult.status === 'fulfilled' && issuesResult.value.data) {
-      featuredIssues = issuesResult.value.data.filter(issue => issue.featured).length;
-    }
-
-    return {
-      totalUsers,
-      onlineUsers,
-      totalIssues,
-      featuredIssues,
-    };
-  } catch (error) {
-    console.error('Error fetching sidebar stats:', error);
-    // Return default values instead of throwing
-    return {
-      totalUsers: 0,
-      onlineUsers: 0,
-      totalIssues: 0,
-      featuredIssues: 0,
-    };
-  }
-};
-
-// Optimized top threads fetching using database function
-const fetchTopThreads = async (): Promise<TopThread[]> => {
-  try {
-    const { data, error } = await supabase.rpc('get_top_threads', { min_comments: 3 });
-    
-    if (error) {
-      console.error('Error fetching top threads:', error);
-      return [];
-    }
-
-    return (data || []).map((thread: any) => ({
-      id: thread.id,
-      title: thread.title || 'Untitled Thread',
-      comments: Number(thread.comments) || 0,
-      votes: Number(thread.votes) || 0,
-      created_at: thread.created_at,
-      thread_type: thread.thread_type || 'post',
-    }));
-  } catch (error) {
-    console.error('Error in fetchTopThreads:', error);
-    return [];
-  }
-};
-
-// Optimized highlight comments fetching
-const fetchHighlightComments = async (): Promise<HighlightComment[]> => {
-  try {
-    const { data, error } = await supabase
-      .from('comments_highlight')
-      .select('id, author_name, author_avatar, body, votes, created_at, thread_id')
-      .order('votes', { ascending: false })
-      .limit(3);
-
-    if (error) {
-      console.error('Error fetching highlight comments:', error);
-      return [];
-    }
-
-    return (data || []).map(comment => ({
-      id: comment.id || '',
-      author_name: comment.author_name || 'Anonymous',
-      author_avatar: comment.author_avatar || '',
-      body: comment.body || '',
-      votes: Number(comment.votes) || 0,
-      created_at: comment.created_at || new Date().toISOString(),
-      thread_id: comment.thread_id || '',
-    }));
-  } catch (error) {
-    console.error('Error in fetchHighlightComments:', error);
-    return [];
-  }
-};
-
-export const useOptimizedSidebarData = (): SidebarData => {
-  // Stats query with aggressive caching
-  const { data: stats = { totalUsers: 0, onlineUsers: 0, totalIssues: 0, featuredIssues: 0 }, isLoading: statsLoading, error: statsError } = useQuery({
+export const useOptimizedSidebarStats = () => {
+  return useQuery({
     queryKey: queryKeys.sidebarStats(),
-    queryFn: fetchSidebarStats,
-    staleTime: 5 * 60 * 1000, // 5 minutes - stats don't change frequently
-    gcTime: 15 * 60 * 1000, // 15 minutes cache
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    retry: 1, // Limited retries for stats
-  });
+    queryFn: async (): Promise<SidebarStats> => {
+      try {
+        // Use our optimized database function
+        const { data, error } = await supabase.rpc('get_sidebar_stats');
+        
+        if (error) {
+          console.error('Error fetching sidebar stats:', error);
+          throw error;
+        }
 
-  // Top threads query with moderate caching
-  const { data: topThreads = [], isLoading: threadsLoading, error: threadsError } = useQuery({
-    queryKey: ['sidebar-top-threads'],
-    queryFn: fetchTopThreads,
-    staleTime: 3 * 60 * 1000, // 3 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes cache
-    refetchOnWindowFocus: false,
-    retry: 1,
+        return {
+          totalUsers: data?.totalUsers || 0,
+          onlineUsers: data?.onlineUsers || 0,
+          totalIssues: data?.totalIssues || 0,
+          totalPosts: data?.totalPosts || 0,
+          totalComments: data?.totalComments || 0,
+        };
+      } catch (error) {
+        console.error('Sidebar stats fetch error:', error);
+        // Return default values on error
+        return {
+          totalUsers: 0,
+          onlineUsers: 0,
+          totalIssues: 0,
+          totalPosts: 0,
+          totalComments: 0,
+        };
+      }
+    },
+    ...queryConfigs.realtime,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
   });
+};
 
-  // Highlight comments query with moderate caching
-  const { data: highlightComments = [], isLoading: commentsLoading, error: commentsError } = useQuery({
-    queryKey: ['sidebar-highlight-comments'],
-    queryFn: fetchHighlightComments,
-    staleTime: 4 * 60 * 1000, // 4 minutes
-    gcTime: 12 * 60 * 1000, // 12 minutes cache
-    refetchOnWindowFocus: false,
-    retry: 1,
+// Optimized hook for reviewer comments with better caching
+export const useOptimizedReviewerComments = () => {
+  return useQuery({
+    queryKey: ['parallel-reviewer-comments'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('reviewer_comments')
+        .select('id, reviewer_name, reviewer_avatar, comment, created_at')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) {
+        console.error('Error fetching reviewer comments:', error);
+        throw error;
+      }
+
+      return data || [];
+    },
+    ...queryConfigs.static,
+    staleTime: 10 * 60 * 1000, // 10 minutes
   });
+};
 
-  const isLoading = statsLoading || threadsLoading || commentsLoading;
-  const error = statsError || threadsError || commentsError || null;
+// Optimized hook for top threads with reduced data transfer
+export const useOptimizedTopThreads = () => {
+  return useQuery({
+    queryKey: ['top-threads'],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase.rpc('get_top_threads', { min_comments: 3 });
+        
+        if (error) {
+          console.error('Error fetching top threads:', error);
+          throw error;
+        }
+
+        return data || [];
+      } catch (error) {
+        console.error('Top threads fetch error:', error);
+        // Fallback to regular posts query
+        const { data: fallbackData } = await supabase
+          .from('posts')
+          .select('id, title, score as votes, created_at')
+          .eq('published', true)
+          .order('score', { ascending: false })
+          .limit(3);
+        
+        return fallbackData?.map(post => ({
+          ...post,
+          comments: 0,
+          thread_type: 'post'
+        })) || [];
+      }
+    },
+    ...queryConfigs.static,
+    staleTime: 15 * 60 * 1000, // 15 minutes
+  });
+};
+
+// Consolidated sidebar data hook for efficient loading
+export const useOptimizedSidebarData = () => {
+  const stats = useOptimizedSidebarStats();
+  const reviewerComments = useOptimizedReviewerComments();
+  const topThreads = useOptimizedTopThreads();
 
   return {
-    stats,
-    topThreads,
-    highlightComments,
-    isLoading,
-    error: error as Error | null,
+    stats: {
+      data: stats.data,
+      isLoading: stats.isLoading,
+      error: stats.error,
+    },
+    reviewerComments: {
+      data: reviewerComments.data,
+      isLoading: reviewerComments.isLoading,
+      error: reviewerComments.error,
+    },
+    topThreads: {
+      data: topThreads.data,
+      isLoading: topThreads.isLoading,
+      error: topThreads.error,
+    },
+    // Overall loading state
+    isLoading: stats.isLoading || reviewerComments.isLoading || topThreads.isLoading,
+    // Check if any critical data failed to load
+    hasError: stats.error || reviewerComments.error || topThreads.error,
   };
 };
-
-// Backward compatibility export
-export const useSidebarData = useOptimizedSidebarData;

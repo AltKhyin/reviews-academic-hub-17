@@ -1,123 +1,130 @@
 
-// ABOUTME: Optimized authentication hook with combined admin/editor logic and reduced database calls
-import { useQuery } from '@tanstack/react-query';
+// ABOUTME: Optimized authentication hook with reduced query count and intelligent caching
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { queryKeys, queryConfigs } from './useOptimizedQuery';
+import { supabase } from '@/integrations/supabase/client';
 
-interface OptimizedUserData {
-  id: string;
-  email: string;
-  role: 'user' | 'admin'; // Simplified since editor = admin
-  profile: {
-    full_name: string | null;
-    avatar_url: string | null;
-    specialty: string | null;
-    bio: string | null;
-    institution: string | null;
-  };
-  permissions: {
-    isAdmin: boolean;
-    isEditor: boolean; // Will always equal isAdmin
-    canEdit: boolean;
-    canManageUsers: boolean;
-  };
+interface OptimizedAuthData {
+  user: any | null;
+  profile: any | null;
+  isAuthenticated: boolean;
+  isAdmin: boolean;
+  isEditor: boolean;
+  canEdit: boolean;
+  role: string | null;
 }
 
 export const useOptimizedAuth = () => {
-  const { user, session } = useAuth();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-  // Single query to get all user data including permissions
-  const { data: userData, isLoading, error } = useQuery({
-    queryKey: queryKeys.userPermissions(user?.id || ''),
-    queryFn: async (): Promise<OptimizedUserData | null> => {
-      if (!user) return null;
+  // Consolidated auth query that fetches user permissions in one go
+  const { data: authData, isLoading } = useQuery({
+    queryKey: queryKeys.userPermissions(user?.id || 'anonymous'),
+    queryFn: async (): Promise<OptimizedAuthData> => {
+      if (!user) {
+        return {
+          user: null,
+          profile: null,
+          isAuthenticated: false,
+          isAdmin: false,
+          isEditor: false,
+          canEdit: false,
+          role: null,
+        };
+      }
 
       try {
-        // Single query to get profile with role
-        const { data: profile, error: profileError } = await supabase
+        // Fetch profile data with role information
+        const { data: profile, error } = await supabase
           .from('profiles')
-          .select('id, full_name, avatar_url, role, specialty, bio, institution')
+          .select('id, role, full_name, avatar_url, specialty, bio, institution')
           .eq('id', user.id)
           .single();
 
-        if (profileError) {
-          console.error('Profile fetch error:', profileError);
-          // Return minimal user data if profile fetch fails
-          return {
-            id: user.id,
-            email: user.email || '',
-            role: 'user',
-            profile: {
-              full_name: null,
-              avatar_url: null,
-              specialty: null,
-              bio: null,
-              institution: null,
-            },
-            permissions: {
-              isAdmin: false,
-              isEditor: false,
-              canEdit: false,
-              canManageUsers: false,
-            },
-          };
+        if (error && error.code !== 'PGRST116') {
+          console.warn('Profile fetch error:', error);
         }
 
-        // Determine permissions based on role
-        const isAdmin = profile.role === 'admin';
-        
+        const role = profile?.role || 'user';
+        const isAdmin = role === 'admin';
+        const isEditor = role === 'editor' || isAdmin;
+        const canEdit = isEditor;
+
         return {
-          id: user.id,
-          email: user.email || '',
-          role: profile.role as 'user' | 'admin',
-          profile: {
-            full_name: profile.full_name,
-            avatar_url: profile.avatar_url,
-            specialty: profile.specialty,
-            bio: profile.bio,
-            institution: profile.institution,
-          },
-          permissions: {
-            isAdmin,
-            isEditor: isAdmin, // Since editor = admin
-            canEdit: isAdmin,
-            canManageUsers: isAdmin,
-          },
+          user,
+          profile,
+          isAuthenticated: true,
+          isAdmin,
+          isEditor,
+          canEdit,
+          role,
         };
       } catch (error) {
-        console.error('Error fetching user data:', error);
-        return null;
+        console.error('Auth optimization error:', error);
+        return {
+          user,
+          profile: null,
+          isAuthenticated: true,
+          isAdmin: false,
+          isEditor: false,
+          canEdit: false,
+          role: 'user',
+        };
       }
     },
     ...queryConfigs.user,
-    enabled: !!user && !!session,
+    enabled: true, // Always enabled to handle both authenticated and anonymous states
+    staleTime: user ? 10 * 60 * 1000 : 60 * 60 * 1000, // 10 minutes for auth users, 1 hour for anonymous
   });
 
+  // Provide default values while loading
+  const defaultAuthData: OptimizedAuthData = {
+    user: null,
+    profile: null,
+    isAuthenticated: false,
+    isAdmin: false,
+    isEditor: false,
+    canEdit: false,
+    role: null,
+  };
+
   return {
-    user: userData,
+    ...((authData || defaultAuthData) as OptimizedAuthData),
     isLoading,
-    error,
-    // Convenience getters with proper null checks
-    isAuthenticated: !!userData,
-    isAdmin: userData?.permissions?.isAdmin || false,
-    isEditor: userData?.permissions?.isEditor || false,
-    canEdit: userData?.permissions?.canEdit || false,
-    canManageUsers: userData?.permissions?.canManageUsers || false,
-    profile: userData?.profile || null,
+    // Utility functions for permission checking
+    hasPermission: (permission: 'read' | 'write' | 'admin') => {
+      if (!authData) return false;
+      switch (permission) {
+        case 'read':
+          return authData.isAuthenticated;
+        case 'write':
+          return authData.canEdit;
+        case 'admin':
+          return authData.isAdmin;
+        default:
+          return false;
+      }
+    },
+    // Force refresh auth data
+    refreshAuth: () => {
+      queryClient.invalidateQueries({ 
+        queryKey: queryKeys.userPermissions(user?.id || 'anonymous') 
+      });
+    },
   };
 };
 
-// Optimized permission check hook for specific actions
-export const usePermissions = () => {
-  const { user } = useOptimizedAuth();
+// Stable auth hook for components that need consistent auth state
+export const useStableAuth = () => {
+  const authData = useOptimizedAuth();
   
+  // Use React Query's built-in state management for stability
   return {
-    canEditIssues: user?.permissions?.canEdit || false,
-    canManageUsers: user?.permissions?.canManageUsers || false,
-    canAccessAdmin: user?.permissions?.isAdmin || false,
-    canModerateComments: user?.permissions?.isAdmin || false,
-    canCreatePosts: !!user, // All authenticated users can create posts
-    canVote: !!user, // All authenticated users can vote
+    ...authData,
+    // Provide stable loading state to prevent UI flashing
+    isLoading: authData.isLoading,
+    isReady: !authData.isLoading,
   };
 };

@@ -9,4 +9,3 @@ export const useIssues = () => {
 
 // Export optimized versions for specific use cases
 export { useOptimizedIssues, useOptimizedFeaturedIssue, useIssuesBatch } from './useOptimizedIssues';
-

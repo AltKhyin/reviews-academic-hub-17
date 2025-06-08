@@ -1476,12 +1476,72 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_featured_issue: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          title: string
+          cover_image_url: string
+          specialty: string
+          published_at: string
+          featured: boolean
+          description: string
+          authors: string
+          year: string
+          score: number
+        }[]
+      }
+      get_issues_batch: {
+        Args: { p_issue_ids: string[] }
+        Returns: {
+          id: string
+          title: string
+          cover_image_url: string
+          specialty: string
+          published_at: string
+          created_at: string
+          featured: boolean
+          published: boolean
+          score: number
+        }[]
+      }
       get_online_users_count: {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      get_optimized_issues: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_specialty?: string
+          p_featured_only?: boolean
+          p_include_unpublished?: boolean
+        }
+        Returns: {
+          id: string
+          title: string
+          cover_image_url: string
+          specialty: string
+          published_at: string
+          created_at: string
+          featured: boolean
+          published: boolean
+          score: number
+          description: string
+          authors: string
+          year: string
+        }[]
+      }
+      get_query_performance_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       get_review_with_blocks: {
         Args: { review_id: string }
+        Returns: Json
+      }
+      get_sidebar_stats: {
+        Args: Record<PropertyKey, never>
         Returns: Json
       }
       get_top_threads: {

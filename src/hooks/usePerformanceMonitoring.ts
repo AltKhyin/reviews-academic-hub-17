@@ -1,149 +1,106 @@
 
-// ABOUTME: Advanced performance monitoring hook for Core Web Vitals and query performance tracking
-import { useEffect, useRef, useState, useCallback } from 'react';
+// ABOUTME: Comprehensive performance monitoring system for detecting bottlenecks and optimization opportunities
+import { useEffect, useCallback, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
 interface PerformanceMetrics {
-  // Core Web Vitals
-  lcp: number | null; // Largest Contentful Paint
-  fid: number | null; // First Input Delay
-  cls: number | null; // Cumulative Layout Shift
-  
-  // Custom Metrics
+  lcp?: number; // Largest Contentful Paint
+  fid?: number; // First Input Delay
+  cls?: number; // Cumulative Layout Shift
+  pageLoadTime?: number;
   queryPerformance: {
     averageQueryTime: number;
     slowQueries: number;
-    failedQueries: number;
-    cacheHitRate: number;
+    totalQueries: number;
   };
-  
-  // Resource Metrics
-  memoryUsage: number | null;
-  bundleSize: number | null;
-  networkLatency: number | null;
-  
-  // User Experience
-  timeToInteractive: number | null;
-  pageLoadTime: number | null;
+  memoryUsage?: number;
+  networkLatency?: number;
 }
 
-interface PerformanceMonitoringConfig {
+interface PerformanceConfig {
   enableCoreWebVitals?: boolean;
   enableQueryTracking?: boolean;
   enableResourceTracking?: boolean;
   reportingInterval?: number;
-  slowQueryThreshold?: number;
 }
 
-const defaultConfig: PerformanceMonitoringConfig = {
+const defaultConfig: PerformanceConfig = {
   enableCoreWebVitals: true,
   enableQueryTracking: true,
   enableResourceTracking: true,
   reportingInterval: 30000, // 30 seconds
-  slowQueryThreshold: 1000, // 1 second
 };
 
-export const usePerformanceMonitoring = (config: PerformanceMonitoringConfig = {}) => {
+export const usePerformanceMonitoring = (config: PerformanceConfig = {}) => {
   const finalConfig = { ...defaultConfig, ...config };
   const queryClient = useQueryClient();
-  
   const [metrics, setMetrics] = useState<PerformanceMetrics>({
-    lcp: null,
-    fid: null,
-    cls: null,
     queryPerformance: {
       averageQueryTime: 0,
       slowQueries: 0,
-      failedQueries: 0,
-      cacheHitRate: 0,
+      totalQueries: 0,
     },
-    memoryUsage: null,
-    bundleSize: null,
-    networkLatency: null,
-    timeToInteractive: null,
-    pageLoadTime: null,
   });
+  
+  const metricsRef = useRef<PerformanceMetrics>(metrics);
+  const queryTimesRef = useRef<number[]>([]);
+  const reportingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const performanceBuffer = useRef<{
-    queryTimes: number[];
-    queryErrors: number;
-    cacheHits: number;
-    cacheMisses: number;
-    lastReportTime: number;
-  }>({
-    queryTimes: [],
-    queryErrors: 0,
-    cacheHits: 0,
-    cacheMisses: 0,
-    lastReportTime: Date.now(),
-  });
-
-  // Core Web Vitals monitoring
-  const measureCoreWebVitals = useCallback(() => {
+  // Core Web Vitals tracking
+  const trackCoreWebVitals = useCallback(() => {
     if (!finalConfig.enableCoreWebVitals) return;
 
-    // Use Performance Observer API for accurate measurements
+    // Track LCP (Largest Contentful Paint)
     if ('PerformanceObserver' in window) {
-      // Largest Contentful Paint
       try {
         const lcpObserver = new PerformanceObserver((list) => {
           const entries = list.getEntries();
           const lastEntry = entries[entries.length - 1] as any;
-          if (lastEntry) {
-            setMetrics(prev => ({ ...prev, lcp: lastEntry.startTime }));
-          }
+          
+          setMetrics(prev => ({ 
+            ...prev, 
+            lcp: lastEntry.startTime 
+          }));
         });
         lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
-      } catch (error) {
-        console.warn('LCP measurement not supported:', error);
-      }
 
-      // First Input Delay
-      try {
+        // Track FID (First Input Delay)
         const fidObserver = new PerformanceObserver((list) => {
           const entries = list.getEntries();
           entries.forEach((entry: any) => {
-            if (entry.processingStart && entry.startTime) {
-              const fid = entry.processingStart - entry.startTime;
-              setMetrics(prev => ({ ...prev, fid }));
-            }
+            setMetrics(prev => ({ 
+              ...prev, 
+              fid: entry.processingStart - entry.startTime 
+            }));
           });
         });
         fidObserver.observe({ entryTypes: ['first-input'] });
-      } catch (error) {
-        console.warn('FID measurement not supported:', error);
-      }
 
-      // Cumulative Layout Shift
-      try {
-        let clsValue = 0;
+        // Track CLS (Cumulative Layout Shift)
         const clsObserver = new PerformanceObserver((list) => {
-          for (const entry of list.getEntries() as any[]) {
+          let cls = 0;
+          list.getEntries().forEach((entry: any) => {
             if (!entry.hadRecentInput) {
-              clsValue += entry.value;
-              setMetrics(prev => ({ ...prev, cls: clsValue }));
+              cls += entry.value;
             }
-          }
+          });
+          
+          setMetrics(prev => ({ 
+            ...prev, 
+            cls: prev.cls ? prev.cls + cls : cls 
+          }));
         });
         clsObserver.observe({ entryTypes: ['layout-shift'] });
+
       } catch (error) {
-        console.warn('CLS measurement not supported:', error);
+        console.warn('Performance Observer not fully supported:', error);
       }
     }
 
-    // Navigation Timing API for page load metrics
-    if ('performance' in window && 'getEntriesByType' in performance) {
-      const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
-      if (navigation) {
-        const pageLoadTime = navigation.loadEventEnd - navigation.fetchStart;
-        const timeToInteractive = navigation.domInteractive - navigation.fetchStart;
-        
-        setMetrics(prev => ({
-          ...prev,
-          pageLoadTime,
-          timeToInteractive,
-        }));
-      }
+    // Track page load time
+    if (performance.timing) {
+      const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
+      setMetrics(prev => ({ ...prev, pageLoadTime: loadTime }));
     }
   }, [finalConfig.enableCoreWebVitals]);
 
@@ -154,176 +111,154 @@ export const usePerformanceMonitoring = (config: PerformanceMonitoringConfig = {
     const cache = queryClient.getQueryCache();
     const queries = cache.getAll();
     
-    let totalQueries = 0;
-    let cacheHits = 0;
+    let totalTime = 0;
     let slowQueries = 0;
+    const validQueries = queries.filter(q => q.state.dataUpdatedAt > 0);
     
-    queries.forEach(query => {
-      totalQueries++;
-      
-      // Check if query was served from cache
-      const timeSinceLastFetch = Date.now() - query.state.dataUpdatedAt;
-      const staleTime = 5 * 60 * 1000; // Default 5 minutes
-      
-      if (timeSinceLastFetch < staleTime) {
-        cacheHits++;
-      }
-      
-      // Track slow queries (simplified approximation)
-      if (query.state.error || query.state.fetchStatus === 'fetching') {
-        // This is a rough approximation - in production you'd want more precise timing
-        if (query.state.error) {
+    validQueries.forEach(query => {
+      const queryTime = query.state.dataUpdatedAt - (query.state.fetchFailureTime || query.state.dataUpdatedAt);
+      if (queryTime > 0) {
+        totalTime += queryTime;
+        if (queryTime > 2000) { // Consider queries > 2s as slow
           slowQueries++;
         }
       }
     });
-    
-    const cacheHitRate = totalQueries > 0 ? (cacheHits / totalQueries) * 100 : 0;
+
+    const averageQueryTime = validQueries.length > 0 ? totalTime / validQueries.length : 0;
     
     setMetrics(prev => ({
       ...prev,
       queryPerformance: {
-        ...prev.queryPerformance,
-        cacheHitRate,
+        averageQueryTime,
         slowQueries,
+        totalQueries: validQueries.length,
       },
     }));
-  }, [finalConfig.enableQueryTracking, queryClient, finalConfig.slowQueryThreshold]);
+  }, [finalConfig.enableQueryTracking, queryClient]);
 
   // Resource monitoring
-  const measureResourceMetrics = useCallback(() => {
+  const trackResourceMetrics = useCallback(() => {
     if (!finalConfig.enableResourceTracking) return;
 
     // Memory usage (if available)
     if ('memory' in performance) {
       const memory = (performance as any).memory;
-      const memoryUsage = memory.usedJSHeapSize / (1024 * 1024); // MB
-      setMetrics(prev => ({ ...prev, memoryUsage }));
+      setMetrics(prev => ({
+        ...prev,
+        memoryUsage: memory.usedJSHeapSize / (1024 * 1024), // Convert to MB
+      }));
     }
 
-    // Bundle size estimation from resource timing
-    if ('getEntriesByType' in performance) {
-      const resources = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
-      let totalBundleSize = 0;
-      
-      resources.forEach(resource => {
-        if (resource.name.includes('.js') || resource.name.includes('.css')) {
-          totalBundleSize += resource.transferSize || 0;
-        }
-      });
-      
-      if (totalBundleSize > 0) {
-        const bundleSizeMB = totalBundleSize / (1024 * 1024);
-        setMetrics(prev => ({ ...prev, bundleSize: bundleSizeMB }));
+    // Network timing
+    if (performance.getEntriesByType) {
+      const navigationEntries = performance.getEntriesByType('navigation') as any[];
+      if (navigationEntries.length > 0) {
+        const navEntry = navigationEntries[0];
+        const networkLatency = navEntry.responseStart - navEntry.requestStart;
+        setMetrics(prev => ({
+          ...prev,
+          networkLatency,
+        }));
       }
-    }
-
-    // Network latency estimation
-    const connection = (navigator as any).connection;
-    if (connection && connection.rtt) {
-      setMetrics(prev => ({ ...prev, networkLatency: connection.rtt }));
     }
   }, [finalConfig.enableResourceTracking]);
 
-  // Performance reporting
-  const reportMetrics = useCallback(() => {
-    const currentTime = Date.now();
-    const timeSinceLastReport = currentTime - performanceBuffer.current.lastReportTime;
-    
-    if (timeSinceLastReport >= finalConfig.reportingInterval!) {
-      // Calculate averages from buffer
-      const { queryTimes, queryErrors } = performanceBuffer.current;
-      
-      const averageQueryTime = queryTimes.length > 0 
-        ? queryTimes.reduce((sum, time) => sum + time, 0) / queryTimes.length 
-        : 0;
-      
-      setMetrics(prev => ({
-        ...prev,
-        queryPerformance: {
-          ...prev.queryPerformance,
-          averageQueryTime,
-          failedQueries: queryErrors,
-        },
-      }));
-      
-      // Reset buffer
-      performanceBuffer.current = {
-        queryTimes: [],
-        queryErrors: 0,
-        cacheHits: 0,
-        cacheMisses: 0,
-        lastReportTime: currentTime,
-      };
-      
-      // Log performance report (in development)
-      if (process.env.NODE_ENV === 'development') {
-        console.group('🔍 Performance Report');
-        console.log('Core Web Vitals:', {
-          LCP: metrics.lcp ? `${metrics.lcp.toFixed(2)}ms` : 'N/A',
-          FID: metrics.fid ? `${metrics.fid.toFixed(2)}ms` : 'N/A',
-          CLS: metrics.cls ? metrics.cls.toFixed(3) : 'N/A',
-        });
-        console.log('Query Performance:', {
-          'Avg Query Time': `${averageQueryTime.toFixed(2)}ms`,
-          'Cache Hit Rate': `${metrics.queryPerformance.cacheHitRate.toFixed(1)}%`,
-          'Slow Queries': metrics.queryPerformance.slowQueries,
-          'Failed Queries': queryErrors,
-        });
-        console.log('Resource Metrics:', {
-          'Memory Usage': metrics.memoryUsage ? `${metrics.memoryUsage.toFixed(2)}MB` : 'N/A',
-          'Bundle Size': metrics.bundleSize ? `${metrics.bundleSize.toFixed(2)}MB` : 'N/A',
-          'Network Latency': metrics.networkLatency ? `${metrics.networkLatency}ms` : 'N/A',
-        });
-        console.groupEnd();
-      }
-    }
-  }, [finalConfig.reportingInterval, metrics]);
-
-  // Initialize monitoring
+  // Initialize performance tracking
   useEffect(() => {
-    measureCoreWebVitals();
-    
-    const measurementInterval = setInterval(() => {
-      trackQueryPerformance();
-      measureResourceMetrics();
-      reportMetrics();
-    }, 5000); // Measure every 5 seconds
-    
-    return () => clearInterval(measurementInterval);
-  }, [measureCoreWebVitals, trackQueryPerformance, measureResourceMetrics, reportMetrics]);
-
-  // Public API for manual measurements
-  const measureNow = useCallback(() => {
-    measureCoreWebVitals();
+    trackCoreWebVitals();
     trackQueryPerformance();
-    measureResourceMetrics();
-  }, [measureCoreWebVitals, trackQueryPerformance, measureResourceMetrics]);
+    trackResourceMetrics();
 
+    // Set up periodic reporting
+    if (finalConfig.reportingInterval && finalConfig.reportingInterval > 0) {
+      reportingIntervalRef.current = setInterval(() => {
+        trackQueryPerformance();
+        trackResourceMetrics();
+      }, finalConfig.reportingInterval);
+    }
+
+    return () => {
+      if (reportingIntervalRef.current) {
+        clearInterval(reportingIntervalRef.current);
+      }
+    };
+  }, [trackCoreWebVitals, trackQueryPerformance, trackResourceMetrics, finalConfig.reportingInterval]);
+
+  // Update metrics ref
+  useEffect(() => {
+    metricsRef.current = metrics;
+  }, [metrics]);
+
+  // Performance score calculation
   const getPerformanceScore = useCallback(() => {
     let score = 100;
     
-    // Deduct points based on Core Web Vitals
-    if (metrics.lcp && metrics.lcp > 2500) score -= 20;
-    if (metrics.fid && metrics.fid > 100) score -= 15;
-    if (metrics.cls && metrics.cls > 0.1) score -= 15;
+    // LCP scoring (0-100 based on thresholds)
+    if (metrics.lcp) {
+      if (metrics.lcp > 4000) score -= 25;
+      else if (metrics.lcp > 2500) score -= 15;
+      else if (metrics.lcp > 1200) score -= 5;
+    }
     
-    // Deduct points for query performance
-    if (metrics.queryPerformance.cacheHitRate < 80) score -= 10;
-    if (metrics.queryPerformance.slowQueries > 5) score -= 10;
-    if (metrics.queryPerformance.averageQueryTime > 500) score -= 10;
+    // FID scoring
+    if (metrics.fid) {
+      if (metrics.fid > 300) score -= 20;
+      else if (metrics.fid > 100) score -= 10;
+      else if (metrics.fid > 50) score -= 5;
+    }
     
-    // Deduct points for resource usage
-    if (metrics.memoryUsage && metrics.memoryUsage > 100) score -= 10;
-    if (metrics.bundleSize && metrics.bundleSize > 5) score -= 10;
+    // CLS scoring
+    if (metrics.cls) {
+      if (metrics.cls > 0.25) score -= 20;
+      else if (metrics.cls > 0.1) score -= 10;
+      else if (metrics.cls > 0.05) score -= 5;
+    }
+    
+    // Query performance scoring
+    if (metrics.queryPerformance.averageQueryTime > 3000) score -= 15;
+    else if (metrics.queryPerformance.averageQueryTime > 1000) score -= 8;
+    
+    if (metrics.queryPerformance.slowQueries > 3) score -= 10;
+    
+    // Memory usage scoring
+    if (metrics.memoryUsage && metrics.memoryUsage > 150) score -= 10;
     
     return Math.max(0, score);
   }, [metrics]);
 
+  // Performance alerts
+  const getPerformanceAlerts = useCallback(() => {
+    const alerts = [];
+    
+    if (metrics.lcp && metrics.lcp > 4000) {
+      alerts.push('LCP is over 4 seconds - consider optimizing images and reducing render-blocking resources');
+    }
+    
+    if (metrics.fid && metrics.fid > 300) {
+      alerts.push('FID is high - consider reducing JavaScript execution time');
+    }
+    
+    if (metrics.cls && metrics.cls > 0.25) {
+      alerts.push('CLS is high - ensure images and ads have dimensions specified');
+    }
+    
+    if (metrics.queryPerformance.slowQueries > 5) {
+      alerts.push(`${metrics.queryPerformance.slowQueries} slow queries detected - consider query optimization`);
+    }
+    
+    if (metrics.memoryUsage && metrics.memoryUsage > 200) {
+      alerts.push('High memory usage detected - check for memory leaks');
+    }
+    
+    return alerts;
+  }, [metrics]);
+
   return {
     metrics,
-    measureNow,
     getPerformanceScore,
-    isMonitoring: true,
+    getPerformanceAlerts,
+    trackQueryPerformance,
+    trackResourceMetrics,
   };
 };
