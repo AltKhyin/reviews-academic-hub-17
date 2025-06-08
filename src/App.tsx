@@ -12,7 +12,6 @@ import { QueryOptimizationProvider } from "./components/optimization/QueryOptimi
 import { DashboardLayout } from "./layouts/DashboardLayout";
 import AuthPage from "./pages/auth/AuthPage";
 import Dashboard from "./pages/dashboard/Dashboard";
-import Home from "./pages/dashboard/Home";
 import ArticleViewer from "./pages/dashboard/ArticleViewer";
 import SearchPage from "./pages/dashboard/SearchPage";
 import ArchivePage from "./pages/dashboard/ArchivePage";
@@ -56,7 +55,6 @@ const App = () => {
             {/* Protected routes that require authentication */}
             <Route path="/" element={<DashboardLayout />}>
               <Route path="homepage" element={<Dashboard />} />
-              <Route path="home" element={<Home />} />
               <Route path="article/:id" element={<ArticleViewer />} />
               <Route path="acervo" element={<ArchivePage />} />
               <Route path="search" element={<SearchPage />} />
