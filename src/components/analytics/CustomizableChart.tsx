@@ -20,7 +20,7 @@ import {
 } from 'recharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { format } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
 import { EnhancedAnalyticsData } from '@/hooks/useEnhancedAnalytics';
 
 interface ChartConfig {
@@ -116,12 +116,41 @@ export const CustomizableChart: React.FC<CustomizableChartProps> = ({
   };
 
   const formatAxisLabel = (value: any, key: string) => {
+    // Check if the key suggests this should be a date
     if (key.includes('date') || key.includes('Date')) {
-      return format(new Date(value), 'dd/MM');
+      try {
+        // Try to parse the value as a date
+        let dateValue: Date;
+        
+        if (typeof value === 'string') {
+          // Try parsing as ISO string first, then as regular date
+          dateValue = value.includes('T') ? parseISO(value) : new Date(value);
+        } else if (value instanceof Date) {
+          dateValue = value;
+        } else {
+          // If it's not a string or Date, return as-is
+          return value;
+        }
+        
+        // Validate the date before formatting
+        if (isValid(dateValue)) {
+          return format(dateValue, 'dd/MM');
+        } else {
+          // If date is invalid, return the original value
+          return value;
+        }
+      } catch (error) {
+        // If any error occurs during date parsing/formatting, return original value
+        console.warn('Date formatting error for value:', value, error);
+        return value;
+      }
     }
+    
+    // Handle large numbers
     if (typeof value === 'number' && value > 1000) {
       return `${(value / 1000).toFixed(1)}k`;
     }
+    
     return value;
   };
 
