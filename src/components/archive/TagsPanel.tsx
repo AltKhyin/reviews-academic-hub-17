@@ -1,5 +1,5 @@
 
-// ABOUTME: Enhanced tags panel with contextual tag highlighting and improved UX
+// ABOUTME: Monochromatic tags panel with clean visual hierarchy
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { TagHierarchy } from '@/types/archive';
@@ -31,25 +31,12 @@ export const TagsPanel: React.FC<TagsPanelProps> = ({
   };
 
   const initialTags = getInitialTags();
-  
-  // Enhanced display logic: show selected + contextual + initial tags
-  const displayTags = React.useMemo(() => {
-    const allTags = new Set<string>();
-    
-    // Always include selected tags first
-    selectedTags.forEach(tag => allTags.add(tag));
-    
-    // Add contextual tags (related/suggested tags)
-    contextualTags.forEach(tag => allTags.add(tag));
-    
-    // Fill remaining space with initial tags
-    initialTags.forEach(tag => allTags.add(tag));
-    
-    return Array.from(allTags);
-  }, [selectedTags, contextualTags, initialTags]);
+  const displayTags = selectedTags.length > 0 
+    ? [...new Set([...selectedTags, ...contextualTags, ...initialTags])]
+    : initialTags;
 
   const isTagSelected = (tag: string) => selectedTags.includes(tag);
-  const isContextualTag = (tag: string) => contextualTags.includes(tag) && !selectedTags.includes(tag);
+  const isContextualTag = (tag: string) => contextualTags.includes(tag);
 
   if (displayTags.length === 0) {
     return null;
@@ -57,7 +44,7 @@ export const TagsPanel: React.FC<TagsPanelProps> = ({
 
   return (
     <div className="mb-10">
-      {/* Enhanced tags display with contextual highlighting */}
+      {/* Tags without background container */}
       <div className="flex flex-wrap gap-3 mb-6">
         {displayTags.map((tag) => {
           const selected = isTagSelected(tag);
@@ -69,55 +56,36 @@ export const TagsPanel: React.FC<TagsPanelProps> = ({
               variant="outline"
               className={`
                 cursor-pointer transition-all duration-200 text-sm py-2 px-4 font-medium
-                border-2 hover:shadow-sm relative
+                border-2 hover:shadow-sm
                 ${selected 
-                  ? 'bg-foreground text-background border-foreground hover:bg-foreground/90 shadow-md' 
+                  ? 'bg-foreground text-background border-foreground hover:bg-foreground/90' 
                   : contextual
-                    ? 'bg-foreground/5 text-foreground border-foreground/40 hover:bg-foreground/10 hover:border-foreground/60 shadow-sm'
+                    ? 'bg-transparent text-foreground border-foreground/60 hover:bg-foreground/10'
                     : 'bg-transparent text-muted-foreground border-border hover:bg-muted/20 hover:text-foreground hover:border-muted'
                 }
               `}
               onClick={() => onTagSelect(tag)}
             >
               {tag}
-              {contextual && (
-                <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full opacity-60" />
-              )}
             </Badge>
           );
         })}
       </div>
       
-      {/* Enhanced status indicator */}
-      {(selectedTags.length > 0 || contextualTags.length > 0) && (
+      {/* Status indicator with subtle styling */}
+      {selectedTags.length > 0 && (
         <div className="border-l-2 border-foreground pl-4 py-2">
           <div className="text-sm text-foreground font-medium">
-            {selectedTags.length === 0 ? (
-              <span className="text-muted-foreground">
-                Navegue pelos temas acima para personalizar a ordem dos artigos
-              </span>
-            ) : selectedTags.length === 1 ? (
-              <span>
-                Priorizando conteúdo sobre "{selectedTags[0]}"
-              </span>
-            ) : (
-              <span>
-                Priorizando {selectedTags.length} temas selecionados
-              </span>
-            )}
-            
+            {selectedTags.length === 1 
+              ? `Filtrando por "${selectedTags[0]}"`
+              : `${selectedTags.length} especialidades selecionadas`
+            }
             {contextualTags.length > 0 && (
               <span className="ml-3 text-muted-foreground font-normal">
-                • {contextualTags.length} temas relacionados em destaque
+                • {contextualTags.length} sugestões relacionadas
               </span>
             )}
           </div>
-          
-          {selectedTags.length > 0 && (
-            <div className="text-xs text-muted-foreground mt-1">
-              Os artigos estão ordenados por relevância aos temas selecionados
-            </div>
-          )}
         </div>
       )}
     </div>

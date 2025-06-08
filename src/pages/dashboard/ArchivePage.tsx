@@ -1,5 +1,5 @@
 
-// ABOUTME: Updated archive page with enhanced tag-based ranking system
+// ABOUTME: Updated archive page using optimized search with hierarchical backend_tags
 import React from 'react';
 import { ArchiveHeader } from '@/components/archive/ArchiveHeader';
 import { TagsPanel } from '@/components/archive/TagsPanel';
@@ -12,10 +12,10 @@ const ArchivePage = () => {
     selectedTags: [] as string[],
     specialty: undefined as string | undefined,
     year: undefined as number | undefined,
-    sortBy: 'relevance' as const, // Changed default to relevance for better tag-based ordering
+    sortBy: 'newest' as const,
   });
 
-  // Use optimized search with enhanced ranking system
+  // Use optimized search with hierarchical backend_tags
   const {
     issues,
     totalCount,
@@ -26,7 +26,6 @@ const ArchivePage = () => {
     specialties,
     years,
     tagConfig,
-    contextualTags, // New contextual tags from the hook
   } = useOptimizedArchiveSearch(filterState);
 
   const setSearchQuery = (query: string) => {
@@ -42,12 +41,23 @@ const ArchivePage = () => {
     }));
   };
 
+  // Contextual tags based on current search and hierarchical structure
+  const contextualTags = React.useMemo(() => {
+    if (!filterState.searchQuery.trim()) return [];
+    
+    const allTags = Object.values(tagConfig).flat();
+    
+    return allTags.filter(tag => 
+      tag.toLowerCase().includes(filterState.searchQuery.toLowerCase())
+    ).slice(0, 5);
+  }, [filterState.searchQuery, tagConfig]);
+
   return (
     <div 
       className="min-h-screen bg-background"
       style={{ backgroundColor: 'hsl(var(--background))' }}
     >
-      {/* Expanded container width to properly fit responsive columns */}
+      {/* Expanded container width to properly fit 4 columns with margins */}
       <div className="max-w-7xl mx-auto px-6 lg:px-8 py-8">
         <ArchiveHeader
           searchQuery={filterState.searchQuery}
@@ -57,7 +67,7 @@ const ArchivePage = () => {
         <TagsPanel
           tagConfig={tagConfig}
           selectedTags={filterState.selectedTags}
-          contextualTags={contextualTags} // Pass contextual tags from hook
+          contextualTags={contextualTags}
           onTagSelect={selectTag}
         />
         
@@ -66,13 +76,10 @@ const ArchivePage = () => {
           <div className="mb-4 p-3 bg-muted/20 rounded-lg text-sm text-muted-foreground">
             <div className="flex gap-6">
               <span>Total: {totalCount}</span>
-              <span>Mostrando: {filteredCount}</span>
-              {searchMetrics.titleMatches > 0 && <span>Títulos: {searchMetrics.titleMatches}</span>}
-              {searchMetrics.authorMatches > 0 && <span>Autores: {searchMetrics.authorMatches}</span>}
-              {searchMetrics.tagMatches > 0 && <span>Tags relevantes: {searchMetrics.tagMatches}</span>}
-              {filterState.selectedTags.length > 0 && (
-                <span className="font-medium">Ordenação: Por relevância aos temas</span>
-              )}
+              <span>Filtered: {filteredCount}</span>
+              {searchMetrics.titleMatches > 0 && <span>Title matches: {searchMetrics.titleMatches}</span>}
+              {searchMetrics.authorMatches > 0 && <span>Author matches: {searchMetrics.authorMatches}</span>}
+              {searchMetrics.tagMatches > 0 && <span>Tag matches: {searchMetrics.tagMatches}</span>}
             </div>
           </div>
         )}

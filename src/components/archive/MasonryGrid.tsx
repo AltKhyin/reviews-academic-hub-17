@@ -1,5 +1,5 @@
 
-// ABOUTME: Pinterest-style masonry grid with enhanced responsive behavior and minimal spacing
+// ABOUTME: Pinterest-style masonry grid with dynamic heights and smooth transitions
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { IssueCard } from './IssueCard';
 import { ArchiveIssue } from '@/types/archive';
@@ -25,81 +25,55 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
   const [layouts, setLayouts] = useState<CardLayout[]>([]);
   const [columns, setColumns] = useState(4);
   const [containerHeight, setContainerHeight] = useState(0);
-  const resizeTimeoutRef = useRef<NodeJS.Timeout>();
 
-  // Base card dimensions with minimal spacing
-  const baseWidth = 280;
-  const baseHeight = 374;
-  const gap = 8; // Reduced from 20 to 8 for minimal spacing
+  // Base card dimensions - keeping current proportions
+  const baseWidth = 280; // Fixed width for all cards
+  const baseHeight = 374; // Current aspect-[3/4] height (280 * 4/3)
+  const gap = 20; // Fixed gap between cards
 
-  // Height variants for visual variety
+  // Height variants (0.85x to 1.6x of base height)
   const heightVariants = [
-    baseHeight * 0.85,
-    baseHeight * 1.0,
-    baseHeight * 1.2,
-    baseHeight * 1.4,
-    baseHeight * 1.6
+    baseHeight * 0.85,  // Short cards
+    baseHeight * 1.0,   // Standard cards
+    baseHeight * 1.2,   // Medium cards
+    baseHeight * 1.4,   // Tall cards
+    baseHeight * 1.6    // Very tall cards
   ];
 
-  // Enhanced responsive column calculation
+  // Determine number of columns based on container width
   const updateColumns = useCallback(() => {
     if (!containerRef.current) return;
     
     const containerWidth = containerRef.current.offsetWidth;
     const cardWithGap = baseWidth + gap;
     
-    // Calculate optimal columns based on container width
-    const maxPossibleColumns = Math.floor((containerWidth + gap) / cardWithGap);
+    // Calculate how many columns can fit
+    const maxColumns = Math.floor((containerWidth + gap) / cardWithGap);
     
-    // Responsive breakpoints with better mobile support
-    let newColumns = 4; // Default
-    
-    if (containerWidth < 400) {
-      newColumns = 1; // Mobile portrait
-    } else if (containerWidth < 680) {
-      newColumns = 2; // Mobile landscape / small tablet
-    } else if (containerWidth < 1024) {
-      newColumns = 3; // Tablet
-    } else if (containerWidth < 1400) {
-      newColumns = 4; // Desktop
-    } else {
-      newColumns = Math.min(5, maxPossibleColumns); // Large desktop, max 5 columns
+    // Default to 4 columns, but adjust based on available space
+    let newColumns = 4;
+    if (maxColumns < 4) {
+      newColumns = Math.max(1, maxColumns);
+    } else if (maxColumns >= 5) {
+      newColumns = 5;
     }
-    
-    // Ensure we don't exceed what fits
-    newColumns = Math.min(newColumns, maxPossibleColumns);
-    newColumns = Math.max(1, newColumns); // Minimum 1 column
     
     if (newColumns !== columns) {
       setColumns(newColumns);
     }
   }, [columns, baseWidth, gap]);
 
-  // Debounced resize handler for better performance
-  const handleResize = useCallback(() => {
-    if (resizeTimeoutRef.current) {
-      clearTimeout(resizeTimeoutRef.current);
-    }
-    
-    resizeTimeoutRef.current = setTimeout(() => {
-      updateColumns();
-    }, 100); // 100ms debounce
-  }, [updateColumns]);
-
   // Get deterministic height variant for each issue
   const getCardHeight = useCallback((issueId: string, index: number): number => {
+    // Use issue ID hash + index for deterministic but varied heights
     const hash = issueId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
     const variantIndex = (hash + index) % heightVariants.length;
     return heightVariants[variantIndex];
   }, [heightVariants]);
 
-  // Enhanced layout calculation with better performance
+  // Calculate masonry layout
   const calculateLayout = useCallback(() => {
-    if (!issues.length || columns === 0) {
-      setLayouts([]);
-      setContainerHeight(0);
-      return;
-    }
+    if (!issues.length || columns === 0) return;
 
     const columnHeights = new Array(columns).fill(0);
     const newLayouts: CardLayout[] = [];
@@ -131,53 +105,34 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
     calculateLayout();
   }, [calculateLayout]);
 
-  // Enhanced resize handling with proper cleanup
+  // Handle window resize
   useEffect(() => {
-    // Initial calculation
     updateColumns();
     
-    // Add resize listener with debouncing
+    const handleResize = () => updateColumns();
     window.addEventListener('resize', handleResize);
-    
-    // Also listen for orientation changes on mobile
-    window.addEventListener('orientationchange', handleResize);
-    
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('orientationchange', handleResize);
-      if (resizeTimeoutRef.current) {
-        clearTimeout(resizeTimeoutRef.current);
-      }
-    };
-  }, [handleResize, updateColumns]);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [updateColumns]);
 
-  // Force recalculation when container becomes visible
+  // Initial column calculation
   useEffect(() => {
-    const observer = new ResizeObserver(() => {
-      handleResize();
-    });
-    
-    if (containerRef.current) {
-      observer.observe(containerRef.current);
-    }
-    
-    return () => observer.disconnect();
-  }, [handleResize]);
+    const timer = setTimeout(updateColumns, 100);
+    return () => clearTimeout(timer);
+  }, [updateColumns]);
 
   if (!issues.length) return null;
 
-  // Calculate the total width needed for centered grid
+  // Calculate the total width needed for the grid
   const gridWidth = columns * baseWidth + (columns - 1) * gap;
 
   return (
     <div className="flex justify-center w-full">
       <div 
         ref={containerRef}
-        className="relative transition-all duration-300 ease-out"
+        className="relative"
         style={{ 
           height: containerHeight,
-          width: Math.min(gridWidth, window.innerWidth - 32), // Account for page padding
-          maxWidth: '100%'
+          width: gridWidth
         }}
       >
         {issues.map((issue, index) => {
@@ -198,7 +153,6 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
                 width: `${baseWidth}px`,
                 height: `${layout.height}px`,
                 transform: 'translateZ(0)', // Hardware acceleration
-                willChange: 'transform, opacity', // Optimize for animations
               }}
             >
               <IssueCard
