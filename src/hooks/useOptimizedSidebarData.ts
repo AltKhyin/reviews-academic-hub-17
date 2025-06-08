@@ -137,6 +137,6 @@ export const useOptimizedSidebarData = () => {
     // Overall loading state
     isLoading: stats.isLoading || reviewerComments.isLoading || topThreads.isLoading,
     // Check if any critical data failed to load
-    hasError: !!(stats.error || reviewerComments.error || topThreads.error),
+    hasError: Boolean(stats.error || reviewerComments.error || topThreads.error),
   };
 };
