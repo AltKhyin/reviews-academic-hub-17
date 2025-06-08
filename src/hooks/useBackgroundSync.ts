@@ -22,19 +22,36 @@ const defaultOptions: BackgroundSyncOptions = {
   networkAware: true,
 };
 
-// Network condition detection
-const getNetworkCondition = () => {
+interface NetworkCondition {
+  effectiveType?: string;
+  downlink?: number;
+  saveData?: boolean;
+  isSlowConnection: boolean;
+  isFastConnection: boolean;
+}
+
+// Network condition detection with proper typing
+const getNetworkCondition = (): NetworkCondition => {
   const connection = (navigator as any).connection;
-  if (!connection) return 'unknown';
+  if (!connection) {
+    return {
+      isSlowConnection: false,
+      isFastConnection: false
+    };
+  }
+  
+  const effectiveType = connection.effectiveType;
+  const downlink = connection.downlink;
+  const saveData = connection.saveData;
   
   return {
-    effectiveType: connection.effectiveType,
-    downlink: connection.downlink,
-    saveData: connection.saveData,
-    isSlowConnection: connection.effectiveType === 'slow-2g' || 
-                     connection.effectiveType === '2g' ||
-                     connection.saveData,
-    isFastConnection: connection.effectiveType === '4g' && connection.downlink > 2
+    effectiveType,
+    downlink,
+    saveData,
+    isSlowConnection: effectiveType === 'slow-2g' || 
+                     effectiveType === '2g' ||
+                     saveData === true,
+    isFastConnection: effectiveType === '4g' && downlink > 2
   };
 };
 
@@ -49,7 +66,7 @@ export const useBackgroundSync = (options: BackgroundSyncOptions = {}) => {
   const prefetchCriticalData = useCallback(async (force: boolean = false) => {
     if (!opts.prefetchCriticalData && !force) return;
     
-    const networkCondition = opts.networkAware ? getNetworkCondition() : { isSlowConnection: false };
+    const networkCondition = opts.networkAware ? getNetworkCondition() : { isSlowConnection: false, isFastConnection: false };
     
     if (networkCondition.isSlowConnection && !force) {
       console.log('Skipping prefetch on slow connection');
@@ -134,14 +151,14 @@ export const useBackgroundSync = (options: BackgroundSyncOptions = {}) => {
     if (!opts.enablePeriodicSync) return;
     
     const startPeriodicSync = () => {
-      const networkCondition = opts.networkAware ? getNetworkCondition() : { isSlowConnection: false };
+      const networkCondition = opts.networkAware ? getNetworkCondition() : { isSlowConnection: false, isFastConnection: false };
       
       // Adjust sync frequency based on network conditions
       let interval = 15 * 60 * 1000; // 15 minutes default
       
       if (networkCondition.isSlowConnection) {
         interval = 30 * 60 * 1000; // 30 minutes on slow connections
-      } else if ((networkCondition as any).isFastConnection) {
+      } else if (networkCondition.isFastConnection) {
         interval = 10 * 60 * 1000; // 10 minutes on fast connections
       }
       
