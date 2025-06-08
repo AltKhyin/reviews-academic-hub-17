@@ -1,6 +1,5 @@
-
 // ABOUTME: Comprehensive error tracking and analytics for performance monitoring
-import { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
 interface AppErrorEvent {
