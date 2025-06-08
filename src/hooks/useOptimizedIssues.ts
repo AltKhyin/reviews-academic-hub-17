@@ -58,8 +58,12 @@ export const useOptimizedIssues = (options: UseIssuesOptions = {}) => {
           throw error;
         }
         
-        // Process the data to ensure proper typing
-        const processedIssues: Issue[] = (data || []).map(issue => ({
+        // Process the data to ensure proper typing - check if data exists and is an array
+        if (!data || !Array.isArray(data)) {
+          return [];
+        }
+
+        const processedIssues: Issue[] = data.map(issue => ({
           ...issue,
           backend_tags: typeof issue.backend_tags === 'string' ? issue.backend_tags : JSON.stringify(issue.backend_tags || ''),
           year: issue.year || '',
