@@ -2,33 +2,45 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Eye, EyeOff, ChevronUp, ChevronDown } from 'lucide-react';
+import { Eye, EyeOff, ChevronUp, ChevronDown, RotateCcw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { useSectionVisibility, Section } from '@/hooks/useSectionVisibility';
 
 const HomepageSectionsManager = () => {
-  const { sections, isLoading, saveSections } = useSectionVisibility();
+  const { 
+    sections, 
+    isLoading, 
+    updateSection, 
+    reorderSections, 
+    toggleSectionVisibility,
+    resetToDefaults,
+    getAllSections 
+  } = useSectionVisibility();
+  
   const [localSections, setLocalSections] = useState<Section[]>([]);
 
   // Initialize local state with sections from the hook
   useEffect(() => {
     if (sections && sections.length > 0) {
-      setLocalSections([...sections].sort((a, b) => a.order - b.order));
+      const sortedSections = getAllSections();
+      setLocalSections([...sortedSections]);
+      console.log('HomepageSectionsManager: Loaded sections', sortedSections);
     }
-  }, [sections]);
+  }, [sections, getAllSections]);
 
   const moveSection = (sectionId: string, direction: 'up' | 'down') => {
-    const newSections = [...localSections];
-    const currentIndex = newSections.findIndex(s => s.id === sectionId);
+    const currentIndex = localSections.findIndex(s => s.id === sectionId);
     
     if (
       (direction === 'up' && currentIndex === 0) || 
-      (direction === 'down' && currentIndex === newSections.length - 1)
+      (direction === 'down' && currentIndex === localSections.length - 1) ||
+      currentIndex === -1
     ) {
       return;
     }
 
+    const newSections = [...localSections];
     const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
     
     // Swap positions
@@ -42,23 +54,31 @@ const HomepageSectionsManager = () => {
     }));
     
     setLocalSections(updatedSections);
-    saveSections(updatedSections);
+    
+    // Save the new order
+    const newOrder = updatedSections.map(s => s.id);
+    reorderSections(newOrder);
     
     toast({
       title: "Seções atualizadas",
       description: "A ordem das seções foi alterada com sucesso.",
     });
+
+    console.log('HomepageSectionsManager: Reordered sections', updatedSections);
   };
 
-  const toggleVisibility = (sectionId: string) => {
-    const updatedSections = localSections.map(section => 
-      section.id === sectionId 
-        ? { ...section, visible: !section.visible }
-        : section
+  const handleToggleVisibility = (sectionId: string) => {
+    const section = localSections.find(s => s.id === sectionId);
+    if (!section) return;
+
+    const updatedSections = localSections.map(s => 
+      s.id === sectionId 
+        ? { ...s, visible: !s.visible }
+        : s
     );
     
     setLocalSections(updatedSections);
-    saveSections(updatedSections);
+    toggleSectionVisibility(sectionId);
     
     const toggledSection = updatedSections.find(s => s.id === sectionId);
     
@@ -66,6 +86,17 @@ const HomepageSectionsManager = () => {
       title: "Seção atualizada",
       description: `Seção "${toggledSection?.title}" ${toggledSection?.visible ? 'mostrada' : 'ocultada'} com sucesso.`,
     });
+
+    console.log('HomepageSectionsManager: Toggled visibility for', sectionId, 'to', toggledSection?.visible);
+  };
+
+  const handleReset = () => {
+    resetToDefaults();
+    toast({
+      title: "Configurações restauradas",
+      description: "As seções foram restauradas para a configuração padrão.",
+    });
+    console.log('HomepageSectionsManager: Reset to defaults');
   };
 
   if (isLoading) {
@@ -85,11 +116,22 @@ const HomepageSectionsManager = () => {
 
   return (
     <Card className="border-white/10 bg-white/5">
-      <CardHeader>
-        <CardTitle>Gerenciar Seções da Página Inicial</CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Configure a visibilidade e ordem das seções da página inicial
-        </p>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>Gerenciar Seções da Página Inicial</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Configure a visibilidade e ordem das seções da página inicial
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleReset}
+          className="flex items-center gap-2"
+        >
+          <RotateCcw className="h-4 w-4" />
+          Restaurar Padrão
+        </Button>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
@@ -108,13 +150,16 @@ const HomepageSectionsManager = () => {
                     Admin/Editor
                   </Badge>
                 )}
+                <Badge variant="secondary" className="text-xs">
+                  Ordem: {section.order}
+                </Badge>
               </div>
               
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={() => toggleVisibility(section.id)}
+                  onClick={() => handleToggleVisibility(section.id)}
                   title={section.visible ? "Ocultar seção" : "Mostrar seção"}
                   className="h-8 w-8"
                 >

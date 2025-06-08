@@ -1,5 +1,5 @@
 
-// ABOUTME: Hook for managing homepage section visibility and ordering
+// ABOUTME: Unified hook for managing homepage section visibility, ordering, and layout
 import { useState, useEffect, useCallback } from 'react';
 
 export interface Section {
@@ -29,38 +29,74 @@ export const useSectionVisibility = () => {
 
   // Load sections from localStorage on mount
   useEffect(() => {
-    try {
-      const savedSections = localStorage.getItem(STORAGE_KEY);
-      if (savedSections) {
-        const parsed = JSON.parse(savedSections) as Section[];
-        
-        // Ensure all default sections exist, merge with saved data
-        const mergedSections = DEFAULT_SECTIONS.map(defaultSection => {
-          const savedSection = parsed.find(s => s.id === defaultSection.id);
-          return savedSection ? { ...defaultSection, ...savedSection } : defaultSection;
-        });
-        
-        setSections(mergedSections.sort((a, b) => a.order - b.order));
-      } else {
+    const loadSections = () => {
+      try {
+        const savedSections = localStorage.getItem(STORAGE_KEY);
+        if (savedSections) {
+          const parsed = JSON.parse(savedSections) as Section[];
+          
+          // Ensure all default sections exist, merge with saved data
+          const mergedSections = DEFAULT_SECTIONS.map(defaultSection => {
+            const savedSection = parsed.find(s => s.id === defaultSection.id);
+            return savedSection ? { ...defaultSection, ...savedSection } : defaultSection;
+          });
+          
+          // Add any saved sections that don't exist in defaults (for extensibility)
+          const savedOnlySections = parsed.filter(saved => 
+            !DEFAULT_SECTIONS.find(def => def.id === saved.id)
+          );
+          
+          const allSections = [...mergedSections, ...savedOnlySections]
+            .sort((a, b) => a.order - b.order);
+          
+          setSections(allSections);
+          console.log('Loaded sections from localStorage:', allSections);
+        } else {
+          setSections(DEFAULT_SECTIONS);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_SECTIONS));
+          console.log('Initialized with default sections:', DEFAULT_SECTIONS);
+        }
+      } catch (error) {
+        console.error('Error loading section visibility:', error);
         setSections(DEFAULT_SECTIONS);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_SECTIONS));
+        // Try to save defaults in case of corrupted data
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_SECTIONS));
+        } catch (saveError) {
+          console.error('Failed to save default sections:', saveError);
+        }
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Error loading section visibility:', error);
-      setSections(DEFAULT_SECTIONS);
-    } finally {
-      setIsLoading(false);
-    }
+    };
+
+    loadSections();
   }, []);
 
-  // Save sections to localStorage
+  // Save sections to localStorage with error handling
   const saveSections = useCallback((newSections: Section[]) => {
     try {
-      setSections(newSections);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newSections));
-      console.log('Sections saved successfully:', newSections);
+      // Validate sections before saving
+      const validatedSections = newSections.map(section => ({
+        ...section,
+        order: typeof section.order === 'number' ? section.order : 0,
+        visible: typeof section.visible === 'boolean' ? section.visible : true
+      }));
+
+      setSections(validatedSections);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(validatedSections));
+      console.log('Sections saved successfully:', validatedSections);
+      
+      // Trigger storage event for cross-tab synchronization
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: STORAGE_KEY,
+        newValue: JSON.stringify(validatedSections),
+        storageArea: localStorage
+      }));
     } catch (error) {
       console.error('Error saving sections:', error);
+      // Fallback: try to restore previous state
+      setSections(prevSections => prevSections);
     }
   }, []);
 
@@ -71,17 +107,96 @@ export const useSectionVisibility = () => {
       .sort((a, b) => a.order - b.order);
   }, [sections]);
 
+  // Get all sections in order (including hidden ones)
+  const getAllSections = useCallback(() => {
+    return sections.sort((a, b) => a.order - b.order);
+  }, [sections]);
+
   // Check if a specific section is visible
   const isSectionVisible = useCallback((sectionId: string) => {
     const section = sections.find(s => s.id === sectionId);
     return section?.visible ?? false;
   }, [sections]);
 
+  // Get section by ID
+  const getSection = useCallback((sectionId: string) => {
+    return sections.find(s => s.id === sectionId);
+  }, [sections]);
+
+  // Update specific section
+  const updateSection = useCallback((sectionId: string, updates: Partial<Section>) => {
+    const updatedSections = sections.map(section =>
+      section.id === sectionId ? { ...section, ...updates } : section
+    );
+    saveSections(updatedSections);
+  }, [sections, saveSections]);
+
+  // Toggle section visibility
+  const toggleSectionVisibility = useCallback((sectionId: string) => {
+    const section = sections.find(s => s.id === sectionId);
+    if (section) {
+      updateSection(sectionId, { visible: !section.visible });
+    }
+  }, [sections, updateSection]);
+
+  // Reorder sections
+  const reorderSections = useCallback((newOrder: string[]) => {
+    const reorderedSections = newOrder.map((id, index) => {
+      const section = sections.find(s => s.id === id);
+      return section ? { ...section, order: index } : null;
+    }).filter(Boolean) as Section[];
+
+    // Add any sections not included in the new order at the end
+    const includedIds = new Set(newOrder);
+    const remainingSections = sections.filter(s => !includedIds.has(s.id));
+    const allSections = [...reorderedSections, ...remainingSections.map((s, index) => ({
+      ...s,
+      order: reorderedSections.length + index
+    }))];
+
+    saveSections(allSections);
+  }, [sections, saveSections]);
+
+  // Reset to default configuration
+  const resetToDefaults = useCallback(() => {
+    setSections(DEFAULT_SECTIONS);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_SECTIONS));
+      console.log('Reset to default sections');
+    } catch (error) {
+      console.error('Error resetting to defaults:', error);
+    }
+  }, []);
+
+  // Listen for storage changes from other tabs
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY && e.newValue) {
+        try {
+          const newSections = JSON.parse(e.newValue) as Section[];
+          setSections(newSections);
+          console.log('Sections updated from external source:', newSections);
+        } catch (error) {
+          console.error('Error parsing external sections update:', error);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   return {
     sections,
     isLoading,
     saveSections,
     getVisibleSections,
+    getAllSections,
     isSectionVisible,
+    getSection,
+    updateSection,
+    toggleSectionVisibility,
+    reorderSections,
+    resetToDefaults,
   };
 };

@@ -1,10 +1,8 @@
 
 // ABOUTME: Section factory component for dynamic homepage section rendering
-// Maps section IDs to their corresponding components
+// Maps section IDs to their corresponding components with simplified interface
 
 import React from 'react';
-import { SectionLayoutConfig } from '@/types/layout';
-import { LayoutContainer } from '@/components/layout/LayoutContainer';
 import { HeroSection } from './sections/HeroSection';
 import { ArticlesGridSection } from './sections/ArticlesGridSection';
 import { ReviewsSection } from './sections/ReviewsSection';
@@ -16,7 +14,12 @@ import { RecommendedSection } from './sections/RecommendedSection';
 import { TrendingSection } from './sections/TrendingSection';
 
 interface SectionFactoryProps {
-  section: SectionLayoutConfig;
+  sectionId: string;
+  sectionConfig: {
+    visible: boolean;
+    order: number;
+    title: string;
+  };
 }
 
 const SECTION_COMPONENTS = {
@@ -31,24 +34,33 @@ const SECTION_COMPONENTS = {
   trending: TrendingSection,
 } as const;
 
-export const SectionFactory: React.FC<SectionFactoryProps> = ({ section }) => {
-  const SectionComponent = SECTION_COMPONENTS[section.id as keyof typeof SECTION_COMPONENTS];
+export const SectionFactory: React.FC<SectionFactoryProps> = ({ 
+  sectionId, 
+  sectionConfig 
+}) => {
+  const SectionComponent = SECTION_COMPONENTS[sectionId as keyof typeof SECTION_COMPONENTS];
 
   if (!SectionComponent) {
-    console.warn(`No component found for section: ${section.id}`);
+    console.warn(`No component found for section: ${sectionId}`);
     return null;
   }
 
+  if (!sectionConfig.visible) {
+    console.log(`Section ${sectionId} is hidden, skipping render`);
+    return null;
+  }
+
+  console.log(`Rendering section: ${sectionId} (${sectionConfig.title})`);
+
   return (
-    <LayoutContainer
-      sectionId={section.id}
-      padding={section.padding}
-      margin={section.margin}
-      size={section.size}
-      centerContent={true}
-      className={section.id === 'hero' ? 'bg-white shadow-sm' : ''}
+    <div 
+      className={`w-full ${sectionId === 'hero' ? 'bg-white shadow-sm' : ''}`}
+      data-section-id={sectionId}
+      data-section-order={sectionConfig.order}
     >
-      <SectionComponent />
-    </LayoutContainer>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <SectionComponent />
+      </div>
+    </div>
   );
 };

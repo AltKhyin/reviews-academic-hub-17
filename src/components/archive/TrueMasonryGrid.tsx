@@ -1,4 +1,3 @@
-
 // ABOUTME: Simple masonry grid without tag filtering functionality
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { IssueCard } from './IssueCard';
@@ -10,9 +9,9 @@ interface TrueMasonryGridProps {
   isLoading: boolean;
 }
 
-// Enhanced grid calculation for 4-column responsive layout with 4px gaps
+// Enhanced grid calculation for responsive layout with dynamic column width (235px-289px) and 4px gaps
 const calculateOptimalGridLayout = (containerWidth: number) => {
-  if (containerWidth <= 0) return { columns: 1, columnWidth: 300, gap: 4 };
+  if (containerWidth <= 0) return { columns: 1, columnWidth: 289, gap: 4 };
   
   // Define breakpoints for responsive behavior
   const breakpoints = {
@@ -22,28 +21,41 @@ const calculateOptimalGridLayout = (containerWidth: number) => {
     wide: 1280,
   };
   
-  let targetColumns = 4; // Default to 4 columns
-  const gap = 4; // Fixed 4px gap as requested
+  const gap = 4; // Fixed 4px gap
+  const minColumnWidth = 235; // Minimum column width
+  const maxColumnWidth = 289; // Maximum column width
   
-  // Responsive column calculation
+  // Calculate maximum possible columns within container
+  const availableWidth = containerWidth - 32; // 32px for container padding
+  
+  // Start with maximum columns possible at minimum width
+  let maxPossibleColumns = Math.floor((availableWidth + gap) / (minColumnWidth + gap));
+  
+  // Apply responsive constraints
   if (containerWidth < breakpoints.mobile) {
-    targetColumns = 1;
+    maxPossibleColumns = Math.min(maxPossibleColumns, 1);
   } else if (containerWidth < breakpoints.tablet) {
-    targetColumns = 2;
+    maxPossibleColumns = Math.min(maxPossibleColumns, 2);
   } else if (containerWidth < breakpoints.desktop) {
-    targetColumns = 3;
+    maxPossibleColumns = Math.min(maxPossibleColumns, 3);
   } else {
-    targetColumns = 4;
+    maxPossibleColumns = Math.min(maxPossibleColumns, 4);
   }
   
-  // Calculate optimal column width - maximize card size while maintaining 4px gaps
+  // Ensure at least 1 column
+  const targetColumns = Math.max(1, maxPossibleColumns);
+  
+  // Calculate optimal column width - prefer larger cards when possible
   const totalGapWidth = gap * (targetColumns - 1);
-  const availableWidth = containerWidth - totalGapWidth - 32; // 32px for container padding
-  const columnWidth = Math.floor(availableWidth / targetColumns);
+  const availableForColumns = availableWidth - totalGapWidth;
+  let columnWidth = Math.floor(availableForColumns / targetColumns);
+  
+  // Clamp column width between min and max
+  columnWidth = Math.min(Math.max(columnWidth, minColumnWidth), maxColumnWidth);
   
   return {
     columns: targetColumns,
-    columnWidth: Math.max(columnWidth, 280), // Minimum card width
+    columnWidth,
     gap
   };
 };
@@ -55,7 +67,7 @@ export const TrueMasonryGrid = React.memo<TrueMasonryGridProps>(({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
-  const [gridLayout, setGridLayout] = useState({ columns: 4, columnWidth: 300, gap: 4 });
+  const [gridLayout, setGridLayout] = useState({ columns: 4, columnWidth: 289, gap: 4 });
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
 
   // Debounced resize handling for better performance
