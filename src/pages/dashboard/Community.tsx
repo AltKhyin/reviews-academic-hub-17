@@ -1,4 +1,5 @@
 
+// ABOUTME: Community page with integrated sidebar using optimized data bridge
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,6 +12,7 @@ import { PostsList } from '@/components/community/PostsList';
 import { useCommunityPosts, usePostFlairs } from '@/hooks/useCommunityPosts';
 import { CommunityHeader } from '@/components/community/CommunityHeader';
 import { RightSidebar } from '@/components/sidebar/RightSidebar';
+import { useSidebarDataBridge } from '@/hooks/useSidebarDataBridge';
 import { Search } from 'lucide-react';
 
 const Community = () => {
@@ -20,6 +22,9 @@ const Community = () => {
   const [isNewPostModalOpen, setIsNewPostModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('latest');
+
+  // Initialize sidebar data bridge
+  useSidebarDataBridge(user?.id);
 
   const { data: flairs } = usePostFlairs();
   const { data: posts, refetch: refetchPosts, isLoading, error } = useCommunityPosts(activeTab, searchTerm);

@@ -1,14 +1,18 @@
 
+// ABOUTME: Poll voting functionality for sidebar weekly polls
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { useOptimizedAuth } from './useOptimizedAuth';
 import { useSidebarStore } from '@/stores/sidebarStore';
-import { toast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
+import { useToast } from './use-toast';
 
 export const usePollVoting = () => {
   const [isVoting, setIsVoting] = useState(false);
-  const { user } = useAuth();
-  const { setUserVote, setPoll } = useSidebarStore();
+  const { user } = useOptimizedAuth();
+  const { setUserVote } = useSidebarStore();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const vote = async (pollId: string, optionIndex: number) => {
     if (!user || isVoting) return;
@@ -16,49 +20,42 @@ export const usePollVoting = () => {
     setIsVoting(true);
     
     try {
-      // First, record the user's vote
-      const { error: voteError } = await supabase
+      // Delete any existing vote by this user for this poll
+      await supabase
         .from('poll_user_votes')
-        .upsert({
+        .delete()
+        .eq('user_id', user.id)
+        .eq('poll_id', pollId);
+
+      // Insert new vote
+      const { error } = await supabase
+        .from('poll_user_votes')
+        .insert({
           poll_id: pollId,
           user_id: user.id,
           option_index: optionIndex
         });
 
-      if (voteError) throw voteError;
+      if (error) throw error;
 
       // Update local state
       setUserVote(optionIndex);
 
-      // Fetch updated poll data to get new vote counts
-      const { data: updatedPoll, error: pollError } = await supabase
-        .from('polls')
-        .select('*')
-        .eq('id', pollId)
-        .single();
-
-      if (pollError) throw pollError;
-
-      if (updatedPoll) {
-        const poll = {
-          ...updatedPoll,
-          options: Array.isArray(updatedPoll.options) ? updatedPoll.options as string[] : [],
-          votes: (updatedPoll.votes as number[]).map(v => v ?? 0)
-        };
-        setPoll(poll);
-      }
+      // Invalidate related queries to refresh vote counts
+      queryClient.invalidateQueries({ queryKey: ['weeklyPoll'] });
+      queryClient.invalidateQueries({ queryKey: ['userPollVote', user.id, pollId] });
 
       toast({
-        title: 'Voto registrado',
-        description: 'Seu voto foi registrado com sucesso!',
+        title: "Voto registrado",
+        description: "Seu voto foi registrado com sucesso!",
       });
 
     } catch (error) {
       console.error('Error voting:', error);
       toast({
-        title: 'Erro ao votar',
-        description: 'Não foi possível registrar seu voto. Tente novamente.',
-        variant: 'destructive',
+        title: "Erro ao votar",
+        description: "Não foi possível registrar seu voto. Tente novamente.",
+        variant: "destructive",
       });
     } finally {
       setIsVoting(false);

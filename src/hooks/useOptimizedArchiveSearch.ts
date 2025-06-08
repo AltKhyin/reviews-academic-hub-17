@@ -1,5 +1,5 @@
 
-// ABOUTME: Optimized archive search with client-side filtering and intelligent caching
+// ABOUTME: Optimized archive search with hierarchical backend_tags and client-side filtering
 import { useMemo } from 'react';
 import { useOptimizedArchiveData } from './useOptimizedArchiveData';
 import { Issue } from '@/types/issue';
@@ -48,21 +48,68 @@ const calculateSearchScore = (issue: Issue, searchQuery: string): number => {
   if (issue.specialty?.toLowerCase().includes(query)) score += 5;
   
   // Backend tags matches
-  if (issue.backend_tags?.toLowerCase().includes(query)) score += 2;
+  if (issue.backend_tags) {
+    try {
+      const tags = typeof issue.backend_tags === 'string' 
+        ? JSON.parse(issue.backend_tags) 
+        : issue.backend_tags;
+      
+      const tagString = JSON.stringify(tags).toLowerCase();
+      if (tagString.includes(query)) score += 3;
+    } catch (e) {
+      if (typeof issue.backend_tags === 'string' && 
+          issue.backend_tags.toLowerCase().includes(query)) {
+        score += 3;
+      }
+    }
+  }
   
   return score;
 };
 
-// Tag matching algorithm
+// Hierarchical tag matching algorithm
 const calculateTagMatches = (issue: Issue, selectedTags: string[]): number => {
   if (!selectedTags.length) return 0;
   
   let matches = 0;
-  const issueData = `${issue.specialty} ${issue.backend_tags}`.toLowerCase();
   
-  selectedTags.forEach(tag => {
-    if (issueData.includes(tag.toLowerCase())) {
+  selectedTags.forEach(selectedTag => {
+    // Check specialty match
+    if (issue.specialty?.toLowerCase() === selectedTag.toLowerCase()) {
       matches++;
+      return;
+    }
+    
+    // Check backend_tags match
+    if (issue.backend_tags) {
+      try {
+        const tags = typeof issue.backend_tags === 'string' 
+          ? JSON.parse(issue.backend_tags) 
+          : issue.backend_tags;
+        
+        if (typeof tags === 'object') {
+          // Check hierarchical tags
+          Object.values(tags).forEach(tagList => {
+            if (Array.isArray(tagList)) {
+              tagList.forEach(tag => {
+                if (typeof tag === 'string' && 
+                    tag.toLowerCase() === selectedTag.toLowerCase()) {
+                  matches++;
+                }
+              });
+            }
+          });
+        } else if (typeof tags === 'string' && 
+                   tags.toLowerCase() === selectedTag.toLowerCase()) {
+          matches++;
+        }
+      } catch (e) {
+        // If parsing fails, treat as string
+        if (typeof issue.backend_tags === 'string' && 
+            issue.backend_tags.toLowerCase() === selectedTag.toLowerCase()) {
+          matches++;
+        }
+      }
     }
   });
   
@@ -90,7 +137,7 @@ const filterAndSortIssues = (
     // Year filter
     if (year && issue.year !== year.toString()) return false;
     
-    // Tag filter
+    // Tag filter (hierarchical)
     if (selectedTags.length > 0) {
       const tagMatches = calculateTagMatches(issue, selectedTags);
       if (tagMatches === 0) return false;
@@ -100,27 +147,55 @@ const filterAndSortIssues = (
     // Search query filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      const hasMatch = 
-        issue.title?.toLowerCase().includes(query) ||
-        issue.search_title?.toLowerCase().includes(query) ||
-        issue.authors?.toLowerCase().includes(query) ||
-        issue.description?.toLowerCase().includes(query) ||
-        issue.search_description?.toLowerCase().includes(query) ||
-        issue.specialty?.toLowerCase().includes(query) ||
-        issue.backend_tags?.toLowerCase().includes(query);
+      let hasMatch = false;
       
-      if (!hasMatch) return false;
-      
-      // Count metrics
-      if (issue.title?.toLowerCase().includes(query) || issue.search_title?.toLowerCase().includes(query)) {
+      // Title match
+      if (issue.title?.toLowerCase().includes(query) || 
+          issue.search_title?.toLowerCase().includes(query)) {
+        hasMatch = true;
         metrics.titleMatches++;
       }
-      if (issue.description?.toLowerCase().includes(query) || issue.search_description?.toLowerCase().includes(query)) {
+      
+      // Description match
+      if (issue.description?.toLowerCase().includes(query) || 
+          issue.search_description?.toLowerCase().includes(query)) {
+        hasMatch = true;
         metrics.descriptionMatches++;
       }
+      
+      // Author match
       if (issue.authors?.toLowerCase().includes(query)) {
+        hasMatch = true;
         metrics.authorMatches++;
       }
+      
+      // Specialty match
+      if (issue.specialty?.toLowerCase().includes(query)) {
+        hasMatch = true;
+      }
+      
+      // Backend tags match
+      if (issue.backend_tags) {
+        try {
+          const tags = typeof issue.backend_tags === 'string' 
+            ? JSON.parse(issue.backend_tags) 
+            : issue.backend_tags;
+          
+          const tagString = JSON.stringify(tags).toLowerCase();
+          if (tagString.includes(query)) {
+            hasMatch = true;
+            metrics.tagMatches++;
+          }
+        } catch (e) {
+          if (typeof issue.backend_tags === 'string' && 
+              issue.backend_tags.toLowerCase().includes(query)) {
+            hasMatch = true;
+            metrics.tagMatches++;
+          }
+        }
+      }
+      
+      if (!hasMatch) return false;
     }
     
     return true;
@@ -152,9 +227,7 @@ const filterAndSortIssues = (
 
 export const useOptimizedArchiveSearch = (filters: SearchFilters) => {
   // Fetch all data once with aggressive caching
-  const { data, isLoading, error } = useOptimizedArchiveData({
-    // Don't pass search/filters to backend - we'll handle client-side
-  });
+  const { data, isLoading, error } = useOptimizedArchiveData();
   
   // Memoized filtering and sorting
   const searchResult = useMemo((): SearchResult => {
@@ -182,9 +255,10 @@ export const useOptimizedArchiveSearch = (filters: SearchFilters) => {
     ...searchResult,
     isLoading,
     error,
-    // Additional utilities
+    // Additional utilities with proper tag config
     hasActiveFilters: !!(filters.searchQuery.trim() || filters.selectedTags.length || filters.specialty || filters.year),
     specialties: data?.specialties || [],
     years: data?.years || [],
+    tagConfig: data?.tagConfig || {},
   };
 };

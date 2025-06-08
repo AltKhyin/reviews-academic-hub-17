@@ -1,123 +1,157 @@
 
-// ABOUTME: Optimized archive data hook with intelligent filtering and caching
-import { useQuery } from '@tanstack/react-query';
+// ABOUTME: Optimized archive data fetching with hierarchical backend_tags support
+import { useOptimizedQuery, queryKeys, queryConfigs } from './useOptimizedQuery';
 import { supabase } from '@/integrations/supabase/client';
-import { queryKeys, queryConfigs } from './useOptimizedQuery';
-import { Issue } from '@/types/issue';
 
-interface ArchiveFilters {
-  search?: string;
-  tags?: string[];
-  specialty?: string;
-  year?: number;
-  sortBy?: 'newest' | 'oldest' | 'title' | 'score';
-}
-
-interface ArchiveData {
-  issues: Issue[];
+export interface ArchiveDataResult {
+  issues: any[];
   totalCount: number;
   specialties: string[];
-  years: number[];
-  availableTags: string[];
+  years: string[];
+  tagConfig: Record<string, string[]>;
 }
 
-export const useOptimizedArchiveData = (filters: ArchiveFilters = {}) => {
-  const { search, tags, specialty, year, sortBy = 'newest' } = filters;
+const fetchArchiveData = async (): Promise<ArchiveDataResult> => {
+  try {
+    // Fetch all published issues with backend_tags
+    const { data: issues, error: issuesError } = await supabase
+      .from('issues')
+      .select(`
+        id,
+        title,
+        authors,
+        description,
+        specialty,
+        backend_tags,
+        published_at,
+        created_at,
+        score,
+        cover_image_url,
+        pdf_url,
+        year,
+        design,
+        population,
+        search_title,
+        search_description,
+        featured
+      `)
+      .eq('published', true)
+      .order('created_at', { ascending: false });
 
-  return useQuery({
-    queryKey: [...queryKeys.archiveData(search, tags), specialty, year, sortBy],
-    queryFn: async (): Promise<ArchiveData> => {
-      try {
-        // Build the query with filters
-        let query = supabase
-          .from('issues')
-          .select('*')
-          .eq('published', true);
+    if (issuesError) throw issuesError;
 
-        // Apply search filter
-        if (search && search.trim()) {
-          query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%,authors.ilike.%${search}%,search_title.ilike.%${search}%,search_description.ilike.%${search}%`);
+    const allIssues = issues || [];
+
+    // Extract unique specialties and years
+    const specialties = [...new Set(allIssues.map(issue => issue.specialty).filter(Boolean))];
+    const years = [...new Set(allIssues.map(issue => issue.year).filter(Boolean))];
+
+    // Get active tag configuration
+    const { data: tagConfigData, error: tagConfigError } = await supabase
+      .from('tag_configurations')
+      .select('tag_data')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    let tagConfig: Record<string, string[]> = {};
+    
+    if (!tagConfigError && tagConfigData?.tag_data) {
+      tagConfig = tagConfigData.tag_data as Record<string, string[]>;
+    } else {
+      // Build tag config from existing backend_tags
+      const backendTagsSet = new Set<string>();
+      
+      allIssues.forEach(issue => {
+        if (issue.backend_tags) {
+          try {
+            const tags = typeof issue.backend_tags === 'string' 
+              ? JSON.parse(issue.backend_tags) 
+              : issue.backend_tags;
+            
+            if (typeof tags === 'object') {
+              Object.entries(tags).forEach(([category, tagList]) => {
+                if (Array.isArray(tagList)) {
+                  tagList.forEach(tag => backendTagsSet.add(tag));
+                }
+              });
+            }
+          } catch (e) {
+            // If parsing fails, treat as string
+            if (typeof issue.backend_tags === 'string') {
+              backendTagsSet.add(issue.backend_tags);
+            }
+          }
         }
-
-        // Apply specialty filter
-        if (specialty) {
-          query = query.eq('specialty', specialty);
-        }
-
-        // Apply year filter
-        if (year) {
-          query = query.eq('year', year.toString());
-        }
-
-        // Apply sorting
-        switch (sortBy) {
-          case 'newest':
-            query = query.order('created_at', { ascending: false });
-            break;
-          case 'oldest':
-            query = query.order('created_at', { ascending: true });
-            break;
-          case 'title':
-            query = query.order('title', { ascending: true });
-            break;
-          case 'score':
-            query = query.order('score', { ascending: false, nullsFirst: false });
-            break;
-        }
-
-        const { data: issues, error } = await query;
-
-        if (error) {
-          console.error('Error fetching archive data:', error);
-          throw error;
-        }
-
-        // Process issues to ensure proper typing
-        const processedIssues: Issue[] = (issues || []).map(issue => ({
-          ...issue,
-          backend_tags: typeof issue.backend_tags === 'string' ? issue.backend_tags : JSON.stringify(issue.backend_tags || ''),
-          year: issue.year || '',
-          pdf_url: issue.pdf_url || '',
-          specialty: issue.specialty || '',
-          published: issue.published || false,
-          created_at: issue.created_at || new Date().toISOString(),
-          updated_at: issue.updated_at || new Date().toISOString(),
-          review_type: (issue.review_type as 'pdf' | 'native' | 'hybrid') || 'pdf',
-          published_at: issue.published_at || null,
-        }));
-
-        // Get unique specialties and years for filters
-        const specialties = [...new Set(processedIssues.map(issue => issue.specialty).filter(Boolean))] as string[];
-        const years = [...new Set(processedIssues.map(issue => issue.year).filter(Boolean).map(y => parseInt(y)).filter(y => !isNaN(y)))] as number[];
         
-        // For now, return empty tags array - this would need to be implemented based on your tag system
-        const availableTags: string[] = [];
+        // Also include specialty as a tag category
+        if (issue.specialty) {
+          backendTagsSet.add(issue.specialty);
+        }
+      });
 
-        return {
-          issues: processedIssues,
-          totalCount: processedIssues.length,
-          specialties: specialties.sort(),
-          years: years.sort((a, b) => b - a), // Most recent first
-          availableTags,
-        };
-      } catch (error) {
-        console.error('Error in useOptimizedArchiveData:', error);
-        return {
-          issues: [],
-          totalCount: 0,
-          specialties: [],
-          years: [],
-          availableTags: [],
-        };
-      }
-    },
-    ...queryConfigs.static,
-    // Cache longer for archive data since it doesn't change frequently
-    staleTime: 10 * 60 * 1000, // 10 minutes
-    // Enable the query
-    enabled: true,
-  });
+      // Organize tags by category
+      tagConfig = {
+        'Especialidades': specialties,
+        'Metodologia': Array.from(backendTagsSet).filter(tag => 
+          tag.toLowerCase().includes('estudo') || 
+          tag.toLowerCase().includes('análise') ||
+          tag.toLowerCase().includes('revisão') ||
+          tag.toLowerCase().includes('meta') ||
+          tag.toLowerCase().includes('randomizado')
+        ),
+        'População': Array.from(backendTagsSet).filter(tag => 
+          tag.toLowerCase().includes('adulto') || 
+          tag.toLowerCase().includes('criança') ||
+          tag.toLowerCase().includes('idoso') ||
+          tag.toLowerCase().includes('pediatria') ||
+          tag.toLowerCase().includes('geriatria')
+        ),
+        'Outros': Array.from(backendTagsSet).filter(tag => 
+          !specialties.includes(tag) &&
+          !tag.toLowerCase().includes('estudo') &&
+          !tag.toLowerCase().includes('análise') &&
+          !tag.toLowerCase().includes('revisão') &&
+          !tag.toLowerCase().includes('meta') &&
+          !tag.toLowerCase().includes('randomizado') &&
+          !tag.toLowerCase().includes('adulto') &&
+          !tag.toLowerCase().includes('criança') &&
+          !tag.toLowerCase().includes('idoso') &&
+          !tag.toLowerCase().includes('pediatria') &&
+          !tag.toLowerCase().includes('geriatria')
+        )
+      };
+    }
+
+    return {
+      issues: allIssues,
+      totalCount: allIssues.length,
+      specialties,
+      years,
+      tagConfig
+    };
+
+  } catch (error) {
+    console.error('Error fetching archive data:', error);
+    return {
+      issues: [],
+      totalCount: 0,
+      specialties: [],
+      years: [],
+      tagConfig: {}
+    };
+  }
 };
 
-// Simplified hook for backward compatibility
-export const useArchiveData = useOptimizedArchiveData;
+export const useOptimizedArchiveData = (filters?: any) => {
+  return useOptimizedQuery(
+    queryKeys.archiveData(),
+    fetchArchiveData,
+    {
+      ...queryConfigs.static,
+      staleTime: 15 * 60 * 1000, // 15 minutes - archive data doesn't change frequently
+      gcTime: 30 * 60 * 1000, // 30 minutes
+    }
+  );
+};

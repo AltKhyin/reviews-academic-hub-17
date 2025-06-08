@@ -1,151 +1,111 @@
 
-// ABOUTME: Fixed TypeScript errors in optimized query hook
-import { useQuery, UseQueryOptions, useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '@/contexts/AuthContext';
-
-// Global request deduplication map
-const pendingRequests = new Map<string, Promise<any>>();
+// ABOUTME: Optimized React Query wrapper with standardized keys and intelligent caching
+import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 
 // Standardized query key factory
 export const queryKeys = {
   // User-related queries
-  profile: (userId?: string) => ['profile', userId] as const,
-  userRole: (userId?: string) => ['userRole', userId] as const,
-  userPermissions: (userId?: string) => ['userPermissions', userId] as const,
+  profile: (userId: string) => ['profile', userId] as const,
+  userReactions: (userId: string) => ['userReactions', userId] as const,
+  userBookmarks: (userId: string) => ['userBookmarks', userId] as const,
+  userPermissions: (userId: string) => ['userPermissions', userId] as const,
   
   // Issues and content
-  issues: () => ['issues'] as const,
+  issues: (filters?: any) => ['issues', filters] as const,
   issue: (id: string) => ['issue', id] as const,
   featuredIssue: () => ['featuredIssue'] as const,
   
   // Archive and search
-  archiveData: (searchQuery?: string, tags?: string[]) => ['archiveData', searchQuery, tags] as const,
+  archiveData: (filters?: any) => ['archiveData', filters] as const,
   
-  // Community
-  posts: (filters?: Record<string, any>) => ['posts', filters] as const,
-  comments: (postId?: string, issueId?: string) => ['comments', postId, issueId] as const,
-  
-  // Admin/Editor data (combined since they're the same role)
-  adminData: () => ['adminData'] as const,
-  users: () => ['users'] as const,
-  
-  // Sidebar data (heavily optimized)
-  sidebarConfig: () => ['sidebarConfig'] as const,
+  // Sidebar data
   sidebarStats: () => ['sidebarStats'] as const,
+  sidebarConfig: () => ['sidebarConfig'] as const,
   onlineUsers: () => ['onlineUsers'] as const,
   
-  // Reactions and bookmarks (user-specific with longer cache)
-  userReactions: (userId: string) => ['userReactions', userId] as const,
-  userBookmarks: (userId: string) => ['userBookmarks', userId] as const,
+  // Community
+  posts: (filters?: any) => ['posts', filters] as const,
+  comments: (filters?: any) => ['comments', filters] as const,
+  
+  // Analytics
+  analytics: () => ['analytics'] as const,
+  userEngagement: () => ['analytics', 'userEngagement'] as const,
+  contentMetrics: () => ['analytics', 'contentMetrics'] as const,
+  communityActivity: () => ['analytics', 'communityActivity'] as const,
+  performance: () => ['analytics', 'performance'] as const,
+  systemHealth: () => ['analytics', 'systemHealth'] as const,
 } as const;
 
-// Optimized query defaults
-const defaultQueryConfig = {
-  staleTime: 5 * 60 * 1000, // 5 minutes default
-  gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
-  retry: 1, // Reduced from default 3
-  refetchOnWindowFocus: false, // Disabled to reduce unnecessary requests
-  refetchOnMount: false, // Only refetch if data is stale
-  refetchOnReconnect: 'always' as const,
-} satisfies Partial<UseQueryOptions>;
-
-// Specific optimizations for different data types
+// Query configuration presets
 export const queryConfigs = {
-  // Rarely changing data - cache aggressively
+  // For static data that rarely changes
   static: {
-    ...defaultQueryConfig,
-    staleTime: 30 * 60 * 1000, // 30 minutes
-    gcTime: 60 * 60 * 1000, // 1 hour
-  },
-  
-  // User profile data - moderate caching
-  profile: {
-    ...defaultQueryConfig,
-    staleTime: 10 * 60 * 1000, // 10 minutes
-  },
-  
-  // Real-time data - minimal caching but smart refresh
-  realtime: {
-    ...defaultQueryConfig,
-    staleTime: 30 * 1000, // 30 seconds
-    gcTime: 2 * 60 * 1000, // 2 minutes
-  },
-  
-  // Admin data - longer cache since fewer changes
-  admin: {
-    ...defaultQueryConfig,
     staleTime: 15 * 60 * 1000, // 15 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+  },
+  
+  // For dynamic data that changes frequently
+  realtime: {
+    staleTime: 30 * 1000, // 30 seconds
+    gcTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
+  },
+  
+  // For user-specific data
+  user: {
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 15 * 60 * 1000, // 15 minutes
+    refetchOnWindowFocus: false,
+    refetchOnMount: 'always' as const,
+  },
+  
+  // For analytics data
+  analytics: {
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   },
 } as const;
 
-// Request deduplication wrapper
-export function useOptimizedQuery<T>(
+// Request deduplication map
+const activeRequests = new Map<string, Promise<any>>();
+
+// Optimized query hook with deduplication and intelligent caching
+export const useOptimizedQuery = <TData = unknown, TError = Error>(
   queryKey: readonly unknown[],
-  queryFn: () => Promise<T>,
-  options?: Partial<UseQueryOptions<T>>
-) {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
+  queryFn: () => Promise<TData>,
+  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+) => {
+  // Create a unique key for request deduplication
+  const requestKey = JSON.stringify(queryKey);
   
-  // Generate unique key for deduplication
-  const dedupeKey = JSON.stringify(queryKey);
-  
-  // Enhanced query function with deduplication
-  const optimizedQueryFn = async (): Promise<T> => {
-    // Check if same request is already pending
-    if (pendingRequests.has(dedupeKey)) {
-      return pendingRequests.get(dedupeKey);
+  const enhancedQueryFn = async (): Promise<TData> => {
+    // Check if this request is already in flight
+    if (activeRequests.has(requestKey)) {
+      return activeRequests.get(requestKey);
     }
     
-    // Check cache first
-    const cachedData = queryClient.getQueryData<T>(queryKey);
-    const queryState = queryClient.getQueryState(queryKey);
-    
-    // Return cached data if fresh enough - convert staleTime to number for comparison
-    const staleTimeMs = typeof options?.staleTime === 'number' ? options.staleTime : defaultQueryConfig.staleTime!;
-    if (cachedData && queryState && 
-        (Date.now() - (queryState.dataUpdatedAt || 0)) < staleTimeMs) {
-      return cachedData;
-    }
-    
-    // Execute request and store promise for deduplication
-    const requestPromise = queryFn();
-    pendingRequests.set(dedupeKey, requestPromise);
+    // Start new request and store promise
+    const promise = queryFn();
+    activeRequests.set(requestKey, promise);
     
     try {
-      const result = await requestPromise;
+      const result = await promise;
+      activeRequests.delete(requestKey);
       return result;
-    } finally {
-      // Clean up pending request
-      pendingRequests.delete(dedupeKey);
+    } catch (error) {
+      activeRequests.delete(requestKey);
+      throw error;
     }
   };
-  
+
   return useQuery({
     queryKey,
-    queryFn: optimizedQueryFn,
-    ...defaultQueryConfig,
+    queryFn: enhancedQueryFn,
     ...options,
-    // Add user dependency for user-specific queries
-    enabled: options?.enabled !== false && (
-      queryKey.includes('user') ? !!user : true
-    ),
   });
-}
-
-// Batch query utility for related requests
-export function useBatchQueries<T extends Record<string, any>>(
-  queries: T,
-  options?: { enabled?: boolean }
-): { [K in keyof T]: ReturnType<typeof useQuery> } {
-  const results = {} as any;
-  
-  for (const [key, query] of Object.entries(queries)) {
-    results[key] = useQuery({
-      ...query,
-      enabled: options?.enabled !== false && query.enabled !== false,
-    });
-  }
-  
-  return results;
-}
+};

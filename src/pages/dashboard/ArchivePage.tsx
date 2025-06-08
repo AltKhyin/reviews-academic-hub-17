@@ -1,5 +1,5 @@
 
-// ABOUTME: Updated archive page using optimized search with client-side filtering for maximum performance
+// ABOUTME: Updated archive page using optimized search with hierarchical backend_tags
 import React from 'react';
 import { ArchiveHeader } from '@/components/archive/ArchiveHeader';
 import { TagsPanel } from '@/components/archive/TagsPanel';
@@ -15,7 +15,7 @@ const ArchivePage = () => {
     sortBy: 'newest' as const,
   });
 
-  // Use optimized search with client-side filtering
+  // Use optimized search with hierarchical backend_tags
   const {
     issues,
     totalCount,
@@ -25,6 +25,7 @@ const ArchivePage = () => {
     hasActiveFilters,
     specialties,
     years,
+    tagConfig,
   } = useOptimizedArchiveSearch(filterState);
 
   const setSearchQuery = (query: string) => {
@@ -40,27 +41,16 @@ const ArchivePage = () => {
     }));
   };
 
-  // Mock tag configuration - in a real app this would come from the optimized hook
-  const tagConfig = React.useMemo(() => {
-    const config: Record<string, string[]> = {};
-    
-    // Convert specialties to tag configuration
-    specialties.forEach(specialty => {
-      config[specialty] = [specialty]; // Simplified for now
-    });
-    
-    return config;
-  }, [specialties]);
-
-  // Contextual tags based on current search
+  // Contextual tags based on current search and hierarchical structure
   const contextualTags = React.useMemo(() => {
     if (!filterState.searchQuery.trim()) return [];
     
-    // Extract potential tags from search metrics and available specialties
-    return specialties.filter(specialty => 
-      specialty.toLowerCase().includes(filterState.searchQuery.toLowerCase())
+    const allTags = Object.values(tagConfig).flat();
+    
+    return allTags.filter(tag => 
+      tag.toLowerCase().includes(filterState.searchQuery.toLowerCase())
     ).slice(0, 5);
-  }, [filterState.searchQuery, specialties]);
+  }, [filterState.searchQuery, tagConfig]);
 
   return (
     <div 

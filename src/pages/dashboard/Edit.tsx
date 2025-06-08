@@ -1,5 +1,5 @@
 
-// Updated Edit page with Tags tab
+// ABOUTME: Updated Edit page with comprehensive analytics dashboard
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,6 +11,7 @@ import { CommentReportsPanel } from '@/components/dashboard/CommentReportsPanel'
 import { ReviewerCommentsManager } from '@/components/admin/ReviewerCommentsManager';
 import { LayoutCustomizationPanel } from '@/components/admin/LayoutCustomizationPanel';
 import { TagManagementPanel } from '@/components/admin/TagManagementPanel';
+import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
 import HomepageSectionsManager from '@/components/dashboard/HomepageSectionsManager';
 import { Settings, BarChart3, Users, MessageSquare, Crown, Layout, FileText, Edit, Palette, Tags } from 'lucide-react';
 
@@ -156,14 +157,7 @@ const EditPage = () => {
         </TabsContent>
         
         <TabsContent value="analytics">
-          <Card style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
-            <CardHeader>
-              <CardTitle className="text-white">Analytics</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-400">Funcionalidade de analytics em desenvolvimento...</p>
-            </CardContent>
-          </Card>
+          <AnalyticsDashboard />
         </TabsContent>
         
         <TabsContent value="system">
