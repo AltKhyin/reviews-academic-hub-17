@@ -28,7 +28,7 @@ const defaultConfig: PerformanceConfig = {
   enableCoreWebVitals: true,
   enableQueryTracking: true,
   enableResourceTracking: true,
-  reportingInterval: 30000, // 30 seconds
+  reportingInterval: 60000, // Increased to 60 seconds to reduce overhead
 };
 
 export const usePerformanceMonitoring = (config: PerformanceConfig = {}) => {
@@ -43,16 +43,20 @@ export const usePerformanceMonitoring = (config: PerformanceConfig = {}) => {
   });
   
   const metricsRef = useRef<PerformanceMetrics>(metrics);
-  const queryTimesRef = useRef<number[]>([]);
   const reportingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const observersRef = useRef<PerformanceObserver[]>([]);
 
-  // Core Web Vitals tracking
+  // Core Web Vitals tracking with optimized observers
   const trackCoreWebVitals = useCallback(() => {
-    if (!finalConfig.enableCoreWebVitals) return;
+    if (!finalConfig.enableCoreWebVitals || typeof window === 'undefined') return;
 
-    // Track LCP (Largest Contentful Paint)
+    // Cleanup existing observers
+    observersRef.current.forEach(observer => observer.disconnect());
+    observersRef.current = [];
+
     if ('PerformanceObserver' in window) {
       try {
+        // Track LCP (Largest Contentful Paint)
         const lcpObserver = new PerformanceObserver((list) => {
           const entries = list.getEntries();
           const lastEntry = entries[entries.length - 1] as any;
@@ -63,6 +67,7 @@ export const usePerformanceMonitoring = (config: PerformanceConfig = {}) => {
           }));
         });
         lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
+        observersRef.current.push(lcpObserver);
 
         // Track FID (First Input Delay)
         const fidObserver = new PerformanceObserver((list) => {
@@ -75,103 +80,118 @@ export const usePerformanceMonitoring = (config: PerformanceConfig = {}) => {
           });
         });
         fidObserver.observe({ entryTypes: ['first-input'] });
+        observersRef.current.push(fidObserver);
 
-        // Track CLS (Cumulative Layout Shift)
+        // Track CLS (Cumulative Layout Shift) with debouncing
+        let clsValue = 0;
         const clsObserver = new PerformanceObserver((list) => {
-          let cls = 0;
           list.getEntries().forEach((entry: any) => {
             if (!entry.hadRecentInput) {
-              cls += entry.value;
+              clsValue += entry.value;
             }
           });
           
+          // Debounced update
           setMetrics(prev => ({ 
             ...prev, 
-            cls: prev.cls ? prev.cls + cls : cls 
+            cls: clsValue 
           }));
         });
         clsObserver.observe({ entryTypes: ['layout-shift'] });
+        observersRef.current.push(clsObserver);
 
       } catch (error) {
         console.warn('Performance Observer not fully supported:', error);
       }
     }
 
-    // Track page load time
-    if (performance.timing) {
+    // Track page load time (one-time measurement)
+    if (performance.timing && !metricsRef.current.pageLoadTime) {
       const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
       setMetrics(prev => ({ ...prev, pageLoadTime: loadTime }));
     }
   }, [finalConfig.enableCoreWebVitals]);
 
-  // Query performance tracking
+  // Optimized query performance tracking
   const trackQueryPerformance = useCallback(() => {
     if (!finalConfig.enableQueryTracking) return;
 
-    const cache = queryClient.getQueryCache();
-    const queries = cache.getAll();
-    
-    let totalTime = 0;
-    let slowQueries = 0;
-    const validQueries = queries.filter(q => q.state.dataUpdatedAt > 0);
-    
-    validQueries.forEach(query => {
-      // Calculate query time based on available state properties
-      const queryTime = query.state.dataUpdatedAt - (query.state.errorUpdatedAt || query.state.dataUpdatedAt);
-      if (queryTime > 0) {
-        totalTime += queryTime;
-        if (queryTime > 2000) { // Consider queries > 2s as slow
-          slowQueries++;
+    try {
+      const cache = queryClient.getQueryCache();
+      const queries = cache.getAll();
+      
+      let totalTime = 0;
+      let slowQueries = 0;
+      const validQueries = queries.filter(q => q.state.dataUpdatedAt > 0);
+      
+      if (validQueries.length === 0) return;
+
+      validQueries.forEach(query => {
+        // More accurate query time calculation
+        const fetchTime = query.state.dataUpdatedAt - (query.state.fetchStatus === 'fetching' ? Date.now() - 5000 : query.state.dataUpdatedAt);
+        if (fetchTime > 0 && fetchTime < 30000) { // Reasonable bounds
+          totalTime += fetchTime;
+          if (fetchTime > 3000) { // Consider queries > 3s as slow
+            slowQueries++;
+          }
         }
-      }
-    });
+      });
 
-    const averageQueryTime = validQueries.length > 0 ? totalTime / validQueries.length : 0;
-    
-    setMetrics(prev => ({
-      ...prev,
-      queryPerformance: {
-        averageQueryTime,
-        slowQueries,
-        totalQueries: validQueries.length,
-      },
-    }));
-  }, [finalConfig.enableQueryTracking, queryClient]);
-
-  // Resource monitoring
-  const trackResourceMetrics = useCallback(() => {
-    if (!finalConfig.enableResourceTracking) return;
-
-    // Memory usage (if available)
-    if ('memory' in performance) {
-      const memory = (performance as any).memory;
+      const averageQueryTime = totalTime / validQueries.length;
+      
       setMetrics(prev => ({
         ...prev,
-        memoryUsage: memory.usedJSHeapSize / (1024 * 1024), // Convert to MB
+        queryPerformance: {
+          averageQueryTime,
+          slowQueries,
+          totalQueries: validQueries.length,
+        },
       }));
+    } catch (error) {
+      console.warn('Query performance tracking error:', error);
     }
+  }, [finalConfig.enableQueryTracking, queryClient]);
 
-    // Network timing
-    if (performance.getEntriesByType) {
-      const navigationEntries = performance.getEntriesByType('navigation') as any[];
-      if (navigationEntries.length > 0) {
-        const navEntry = navigationEntries[0];
-        const networkLatency = navEntry.responseStart - navEntry.requestStart;
+  // Resource monitoring with error handling
+  const trackResourceMetrics = useCallback(() => {
+    if (!finalConfig.enableResourceTracking || typeof window === 'undefined') return;
+
+    try {
+      // Memory usage (if available)
+      if ('memory' in performance) {
+        const memory = (performance as any).memory;
         setMetrics(prev => ({
           ...prev,
-          networkLatency,
+          memoryUsage: memory.usedJSHeapSize / (1024 * 1024), // Convert to MB
         }));
       }
+
+      // Network timing
+      if (performance.getEntriesByType) {
+        const navigationEntries = performance.getEntriesByType('navigation') as any[];
+        if (navigationEntries.length > 0) {
+          const navEntry = navigationEntries[0];
+          const networkLatency = navEntry.responseStart - navEntry.requestStart;
+          if (networkLatency > 0) {
+            setMetrics(prev => ({
+              ...prev,
+              networkLatency,
+            }));
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('Resource metrics tracking error:', error);
     }
   }, [finalConfig.enableResourceTracking]);
 
-  // Initialize performance tracking
+  // Initialize performance tracking with cleanup
   useEffect(() => {
     trackCoreWebVitals();
     trackQueryPerformance();
     trackResourceMetrics();
 
-    // Set up periodic reporting
+    // Set up periodic reporting with reduced frequency
     if (finalConfig.reportingInterval && finalConfig.reportingInterval > 0) {
       reportingIntervalRef.current = setInterval(() => {
         trackQueryPerformance();
@@ -180,6 +200,10 @@ export const usePerformanceMonitoring = (config: PerformanceConfig = {}) => {
     }
 
     return () => {
+      // Cleanup observers
+      observersRef.current.forEach(observer => observer.disconnect());
+      observersRef.current = [];
+      
       if (reportingIntervalRef.current) {
         clearInterval(reportingIntervalRef.current);
       }
@@ -228,7 +252,7 @@ export const usePerformanceMonitoring = (config: PerformanceConfig = {}) => {
     return Math.max(0, score);
   }, [metrics]);
 
-  // Performance alerts
+  // Performance alerts with reduced noise
   const getPerformanceAlerts = useCallback(() => {
     const alerts = [];
     

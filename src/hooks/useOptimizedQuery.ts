@@ -2,7 +2,7 @@
 // ABOUTME: Optimized React Query wrapper with standardized keys and intelligent caching
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 
-// Standardized query key factory
+// Standardized query key factory with better organization
 export const queryKeys = {
   // User-related queries
   profile: (userId: string) => ['profile', userId] as const,
@@ -18,7 +18,7 @@ export const queryKeys = {
   // Archive and search
   archiveData: (filters?: any) => ['archiveData', filters] as const,
   
-  // Sidebar data
+  // Sidebar data - optimized keys
   sidebarStats: () => ['sidebarStats'] as const,
   sidebarConfig: () => ['sidebarConfig'] as const,
   onlineUsers: () => ['onlineUsers'] as const,
@@ -36,7 +36,7 @@ export const queryKeys = {
   systemHealth: () => ['analytics', 'systemHealth'] as const,
 } as const;
 
-// Query configuration presets
+// Optimized query configuration presets
 export const queryConfigs = {
   // For static data that rarely changes
   static: {
@@ -44,14 +44,16 @@ export const queryConfigs = {
     gcTime: 30 * 60 * 1000, // 30 minutes
     refetchOnWindowFocus: false,
     refetchOnMount: false,
+    refetchInterval: false, // Disable automatic polling for static data
   },
   
   // For dynamic data that changes frequently
   realtime: {
-    staleTime: 30 * 1000, // 30 seconds
-    gcTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: true,
-    refetchOnMount: true,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    refetchOnWindowFocus: false, // Prevent excessive refetching
+    refetchOnMount: 'always' as const,
+    refetchInterval: 5 * 60 * 1000, // 5 minutes polling
   },
   
   // For user-specific data
@@ -60,6 +62,7 @@ export const queryConfigs = {
     gcTime: 15 * 60 * 1000, // 15 minutes
     refetchOnWindowFocus: false,
     refetchOnMount: 'always' as const,
+    refetchInterval: false, // No polling for user data
   },
   
   // For analytics data
@@ -68,11 +71,29 @@ export const queryConfigs = {
     gcTime: 30 * 60 * 1000, // 30 minutes
     refetchOnWindowFocus: false,
     refetchOnMount: false,
+    refetchInterval: false, // Analytics don't need real-time updates
   },
 } as const;
 
-// Request deduplication map
+// Enhanced request deduplication with cleanup
 const activeRequests = new Map<string, Promise<any>>();
+
+// Cleanup function to prevent memory leaks
+const cleanupStaleRequests = () => {
+  const now = Date.now();
+  const CLEANUP_THRESHOLD = 5 * 60 * 1000; // 5 minutes
+  
+  // Store request timestamps
+  if (!cleanupStaleRequests.lastCleanup) {
+    cleanupStaleRequests.lastCleanup = now;
+  }
+  
+  // Only cleanup every 5 minutes
+  if (now - cleanupStaleRequests.lastCleanup > CLEANUP_THRESHOLD) {
+    activeRequests.clear();
+    cleanupStaleRequests.lastCleanup = now;
+  }
+};
 
 // Optimized query hook with deduplication and intelligent caching
 export const useOptimizedQuery = <TData = unknown, TError = Error>(
@@ -80,6 +101,9 @@ export const useOptimizedQuery = <TData = unknown, TError = Error>(
   queryFn: () => Promise<TData>,
   options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
 ) => {
+  // Cleanup stale requests periodically
+  cleanupStaleRequests();
+  
   // Create a unique key for request deduplication
   const requestKey = JSON.stringify(queryKey);
   
@@ -90,17 +114,13 @@ export const useOptimizedQuery = <TData = unknown, TError = Error>(
     }
     
     // Start new request and store promise
-    const promise = queryFn();
-    activeRequests.set(requestKey, promise);
+    const promise = queryFn().finally(() => {
+      // Clean up completed request
+      activeRequests.delete(requestKey);
+    });
     
-    try {
-      const result = await promise;
-      activeRequests.delete(requestKey);
-      return result;
-    } catch (error) {
-      activeRequests.delete(requestKey);
-      throw error;
-    }
+    activeRequests.set(requestKey, promise);
+    return promise;
   };
 
   return useQuery({
@@ -109,3 +129,10 @@ export const useOptimizedQuery = <TData = unknown, TError = Error>(
     ...options,
   });
 };
+
+// Add static property for cleanup tracking
+declare global {
+  interface Function {
+    lastCleanup?: number;
+  }
+}

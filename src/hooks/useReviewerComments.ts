@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -15,27 +16,36 @@ export interface ReviewerComment {
 
 export const useReviewerComments = () => {
   const queryClient = useQueryClient();
+  const location = useLocation();
+  
+  // Only fetch on homepage or when explicitly needed
+  const shouldFetch = location.pathname === '/homepage' || location.pathname === '/';
 
   const { data: comments = [], isLoading } = useQuery({
     queryKey: ['reviewer-comments'],
     queryFn: async () => {
-      console.log("Fetching reviewer comments...");
+      // Only log when actually fetching, not on every hook call
+      console.log("Fetching reviewer comments for homepage...");
       
       const { data, error } = await supabase
         .from('reviewer_comments')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(5); // Limit to reduce data transfer
 
       if (error) {
         console.error("Error fetching reviewer comments:", error);
         throw error;
       }
 
-      console.log("Fetched reviewer comments:", data);
       return data as ReviewerComment[];
     },
-    refetchInterval: 30000, // Refetch every 30 seconds
-    staleTime: 10000, // Consider data stale after 10 seconds
+    enabled: shouldFetch,
+    staleTime: 10 * 60 * 1000, // 10 minutes - comments don't change frequently
+    gcTime: 30 * 60 * 1000, // 30 minutes cache
+    refetchOnWindowFocus: false, // Disable refetch on focus
+    refetchOnMount: false, // Don't refetch on every mount
+    refetchInterval: false, // Disable polling - comments are updated weekly
   });
 
   const addComment = useMutation({
@@ -48,8 +58,6 @@ export const useReviewerComments = () => {
       reviewerName: string; 
       reviewerAvatar: string; 
     }) => {
-      console.log("Adding reviewer comment:", { comment, reviewerName, reviewerAvatar });
-      
       const { data, error } = await supabase
         .from('reviewer_comments')
         .insert({
@@ -66,7 +74,6 @@ export const useReviewerComments = () => {
         throw error;
       }
 
-      console.log("Added reviewer comment:", data);
       return data;
     },
     onSuccess: () => {
@@ -88,8 +95,6 @@ export const useReviewerComments = () => {
 
   const deleteComment = useMutation({
     mutationFn: async (commentId: string) => {
-      console.log("Deleting reviewer comment:", commentId);
-      
       const { error } = await supabase
         .from('reviewer_comments')
         .delete()
@@ -100,7 +105,6 @@ export const useReviewerComments = () => {
         throw error;
       }
 
-      console.log("Deleted reviewer comment:", commentId);
       return commentId;
     },
     onSuccess: () => {
@@ -125,7 +129,7 @@ export const useReviewerComments = () => {
   return {
     comments,
     hasComments,
-    isLoading,
+    isLoading: shouldFetch ? isLoading : false,
     addComment,
     deleteComment
   };

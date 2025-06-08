@@ -1,15 +1,15 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import { useReviewerComments } from '@/hooks/useReviewerComments';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, MessageSquare, Trash2 } from 'lucide-react';
+import { CheckCircle2, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAuth } from '@/contexts/AuthContext';
 
-export const ReviewerCommentsDisplay = () => {
+export const ReviewerCommentsDisplay = memo(() => {
   const { comments, hasComments, isLoading, deleteComment } = useReviewerComments();
   const { isAdmin, isEditor } = useAuth();
 
@@ -79,4 +79,6 @@ export const ReviewerCommentsDisplay = () => {
       </Card>
     </section>
   );
-};
+});
+
+ReviewerCommentsDisplay.displayName = 'ReviewerCommentsDisplay';
