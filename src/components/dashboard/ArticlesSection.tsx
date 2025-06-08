@@ -50,13 +50,15 @@ export const ArticlesSection: React.FC<ArticlesSectionProps> = ({
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2" style={{ gap: '8px' }}>
           {filteredIssues.map((issue) => (
-            <ArticleCard
-              key={issue.id}
-              issue={issue}
-              variant="default"
-            />
+            <div key={issue.id} style={{ width: 'calc(100% * 1.2)' }} className="min-w-0">
+              <ArticleCard
+                issue={issue}
+                variant="default"
+                className="w-full h-full"
+              />
+            </div>
           ))}
         </div>
       )}

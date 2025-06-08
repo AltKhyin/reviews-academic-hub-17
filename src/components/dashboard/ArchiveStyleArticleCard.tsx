@@ -1,4 +1,5 @@
 
+// ABOUTME: Archive-styled article card adapted for homepage with fixed positioning constraints
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -7,7 +8,7 @@ import { Issue } from '@/types/issue';
 import { useOptimizedUserInteractions } from '@/hooks/useOptimizedUserInteractions';
 import { useNavigate } from 'react-router-dom';
 
-interface ArticleCardProps {
+interface ArchiveStyleArticleCardProps {
   issue: Issue;
   onClick?: () => void;
   variant?: 'default' | 'featured';
@@ -15,7 +16,7 @@ interface ArticleCardProps {
   className?: string;
 }
 
-export const ArticleCard: React.FC<ArticleCardProps> = ({ 
+export const ArchiveStyleArticleCard: React.FC<ArchiveStyleArticleCardProps> = ({ 
   issue, 
   onClick, 
   variant = 'default', 
@@ -60,7 +61,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   const hasWantMoreReaction = hasReaction(issue.id, 'want_more');
   const isIssueBookmarked = isBookmarked(issue.id);
 
-  // Archive styling with homepage positioning constraints - 20% wider cards with 8px gap
+  // Archive styling with homepage positioning constraints
   const cardClasses = variant === 'featured' 
     ? `group cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-2 hover:scale-[1.02] bg-card border-border overflow-hidden h-96 ${className}`
     : `group cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:scale-[1.02] bg-card border-border overflow-hidden ${className}`;
@@ -105,8 +106,8 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
         )}
       </div>
       
-      {/* Action buttons with Archive styling - repositioned to avoid overlap */}
-      <div className="absolute top-12 right-3 flex gap-2 z-10">
+      {/* Action buttons with Archive styling */}
+      <div className="absolute top-3 right-3 flex gap-2 z-10">
         <button
           onClick={handleBookmarkClick}
           disabled={isUpdatingBookmark}
