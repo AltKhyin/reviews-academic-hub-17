@@ -1,11 +1,12 @@
 
-// ABOUTME: Updated App.tsx with corrected router structure - removed duplicate BrowserRouter
+// ABOUTME: Updated App.tsx with query optimization integration and performance monitoring
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
+import { QueryOptimizationProvider } from "./components/optimization/QueryOptimizationProvider";
 
 // Components
 import { DashboardLayout } from "./layouts/DashboardLayout";
@@ -38,33 +39,37 @@ const App = () => {
     };
   }, []);
 
+  const isDevelopment = process.env.NODE_ENV === 'development';
+
   return (
     <TooltipProvider>
       <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <Routes>
-          {/* Public routes that don't require authentication */}
-          <Route path="/auth" element={<AuthPage />} />
-          <Route path="/policy" element={<PolicyPage />} />
-          
-          {/* Protected routes that require authentication */}
-          <Route path="/" element={<DashboardLayout />}>
-            <Route path="homepage" element={<Dashboard />} />
-            <Route path="article/:id" element={<ArticleViewer />} />
-            <Route path="acervo" element={<ArchivePage />} />
-            <Route path="search" element={<SearchPage />} />
-            <Route path="community" element={<Community />} />
-            <Route path="articles" element={<Dashboard />} />
-            <Route path="profile" element={<Profile />} />
-            <Route path="edit" element={<Edit />} />
-            <Route path="edit/issue/:id" element={<IssueEditor />} />
-            <Route path="edit/issue/new" element={<IssueEditor />} />
-            <Route index element={<Navigate to="/homepage" replace />} />
-          </Route>
+        <QueryOptimizationProvider enableDebugLogging={isDevelopment}>
+          <Toaster />
+          <Sonner />
+          <Routes>
+            {/* Public routes that don't require authentication */}
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/policy" element={<PolicyPage />} />
+            
+            {/* Protected routes that require authentication */}
+            <Route path="/" element={<DashboardLayout />}>
+              <Route path="homepage" element={<Dashboard />} />
+              <Route path="article/:id" element={<ArticleViewer />} />
+              <Route path="acervo" element={<ArchivePage />} />
+              <Route path="search" element={<SearchPage />} />
+              <Route path="community" element={<Community />} />
+              <Route path="articles" element={<Dashboard />} />
+              <Route path="profile" element={<Profile />} />
+              <Route path="edit" element={<Edit />} />
+              <Route path="edit/issue/:id" element={<IssueEditor />} />
+              <Route path="edit/issue/new" element={<IssueEditor />} />
+              <Route index element={<Navigate to="/homepage" replace />} />
+            </Route>
 
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </QueryOptimizationProvider>
       </AuthProvider>
     </TooltipProvider>
   );

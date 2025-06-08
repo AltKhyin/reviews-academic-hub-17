@@ -1,175 +1,217 @@
 
-// ABOUTME: Optimized sidebar data fetching with reduced polling and intelligent caching
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+// ABOUTME: Optimized sidebar data hook with reduced polling and intelligent caching
+import { useOptimizedQuery, queryKeys, queryConfigs } from './useOptimizedQuery';
 import { supabase } from '@/integrations/supabase/client';
-import { queryKeys, queryConfigs } from './useOptimizedQuery';
-import { useSidebarStore } from '@/stores/sidebarStore';
-import { OnlineUser, CommentHighlight, TopThread, Poll, SidebarConfig, SiteStats } from '@/types/sidebar';
+import { useOptimizedAuth } from './useOptimizedAuth';
 
-export const useOptimizedSidebarData = () => {
-  const queryClient = useQueryClient();
-  const {
-    setConfig,
-    setStats,
-    setOnlineUsers,
-    setComments,
-    setThreads,
-    setPoll,
-    setUserVote,
-  } = useSidebarStore();
+interface SidebarStats {
+  totalUsers: number;
+  onlineUsers: number;
+  totalIssues: number;
+  featuredIssues: number;
+}
 
-  // SSR safety check
-  const isClient = typeof window !== 'undefined';
+interface OnlineUser {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+  last_seen: string;
+}
 
-  // Batch all sidebar queries with optimized refresh intervals
-  const sidebarQueries = {
-    // Static config - cache aggressively
-    config: useQuery({
-      queryKey: queryKeys.sidebarConfig(),
-      queryFn: async () => {
-        const { data, error } = await supabase
-          .from('site_meta')
-          .select('value')
-          .eq('key', 'sidebar_config')
-          .single();
-        
-        if (error) throw error;
-        const config = data.value as unknown as SidebarConfig;
-        setConfig(config);
-        return config;
-      },
-      ...queryConfigs.static,
-      enabled: isClient,
-    }),
+interface TopThread {
+  id: string;
+  title: string;
+  comments: number;
+  votes: number;
+  created_at: string;
+  thread_type: string;
+}
 
-    // Stats - moderate refresh (reduced from 1 minute to 5 minutes)
-    stats: useQuery({
-      queryKey: queryKeys.sidebarStats(),
-      queryFn: async () => {
-        const [
-          { data: totalUsers },
-          { data: onlineUsers }
-        ] = await Promise.all([
-          supabase.rpc('get_total_users'),
-          supabase.rpc('get_online_users_count')
-        ]);
-        
-        const stats = {
-          totalUsers: totalUsers || 0,
-          onlineUsers: onlineUsers || 0
-        };
-        setStats(stats);
-        return stats;
-      },
-      staleTime: 5 * 60 * 1000, // 5 minutes instead of 30 seconds
-      gcTime: 10 * 60 * 1000,
-      refetchInterval: 5 * 60 * 1000, // 5 minutes instead of 1 minute
-      enabled: isClient,
-    }),
+interface RecentComment {
+  id: string;
+  content: string;
+  created_at: string;
+  profiles?: {
+    full_name: string | null;
+    avatar_url: string | null;
+  } | null;
+  issue_id?: string;
+  post_id?: string;
+}
 
-    // Online users - reduced refresh frequency
-    onlineUsers: useQuery({
-      queryKey: queryKeys.onlineUsers(),
-      queryFn: async () => {
-        const { data, error } = await supabase
-          .from('online_users')
-          .select('*')
-          .order('last_seen', { ascending: false })
-          .limit(12); // Reduced from 20 to 12
-        
-        if (error) throw error;
-        const users = data as OnlineUser[];
-        setOnlineUsers(users);
-        return users;
-      },
-      staleTime: 2 * 60 * 1000, // 2 minutes instead of 15 seconds
-      refetchInterval: 2 * 60 * 1000, // 2 minutes instead of 30 seconds
-      enabled: isClient,
-    }),
+interface SidebarData {
+  stats: SidebarStats;
+  onlineUsers: OnlineUser[];
+  topThreads: TopThread[];
+  recentComments: RecentComment[];
+  isLoading: boolean;
+  error: any;
+}
 
-    // Comments - much less frequent refresh
-    comments: useQuery({
-      queryKey: ['sidebar-comments'],
-      queryFn: async () => {
-        const { data, error } = await supabase
-          .from('comments_highlight')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(6); // Reduced from 8 to 6
-        
-        if (error) throw error;
-        const comments = data as CommentHighlight[];
-        setComments(comments);
-        return comments;
-      },
-      staleTime: 10 * 60 * 1000, // 10 minutes instead of 2 minutes
-      refetchInterval: 15 * 60 * 1000, // 15 minutes instead of 5 minutes
-      enabled: isClient,
-    }),
+// Optimized stats fetching with single query
+const fetchSidebarStats = async (): Promise<SidebarStats> => {
+  try {
+    // Use existing database functions for efficiency
+    const [totalUsersResult, onlineUsersResult, issuesStatsResult] = await Promise.all([
+      supabase.rpc('get_total_users'),
+      supabase.rpc('get_online_users_count'),
+      supabase
+        .from('issues')
+        .select('id, featured, published')
+        .eq('published', true)
+    ]);
 
-    // Threads - reduced frequency
-    threads: useQuery({
-      queryKey: ['sidebar-threads'],
-      queryFn: async () => {
-        const { data, error } = await supabase.rpc('get_top_threads', { min_comments: 1 }); // Reduced from 2
-        
-        if (error) throw error;
-        const threads = data as TopThread[];
-        setThreads(threads);
-        return threads;
-      },
-      staleTime: 5 * 60 * 1000, // 5 minutes instead of 90 seconds
-      refetchInterval: 10 * 60 * 1000, // 10 minutes instead of 3 minutes
-      enabled: isClient,
-    }),
+    const totalUsers = totalUsersResult.data || 0;
+    const onlineUsers = onlineUsersResult.data || 0;
+    const issues = issuesStatsResult.data || [];
+    const totalIssues = issues.length;
+    const featuredIssues = issues.filter(issue => issue.featured).length;
 
-    // Poll - moderate refresh for voting
-    poll: useQuery({
-      queryKey: ['sidebar-poll'],
-      queryFn: async () => {
-        const { data, error } = await supabase
-          .from('polls')
-          .select('*')
-          .eq('active', true)
-          .gte('closes_at', new Date().toISOString())
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        
-        if (error) throw error;
-        
-        const poll = data ? {
-          ...data,
-          votes: (data.votes as number[]).map(v => v ?? 0)
-        } as Poll : null;
-        
-        setPoll(poll);
-        return poll;
-      },
-      staleTime: 5 * 60 * 1000, // 5 minutes instead of 1 minute
-      refetchInterval: 5 * 60 * 1000, // 5 minutes instead of 2 minutes
-      enabled: isClient,
-    }),
-  };
-
-  // Return optimized data with loading states
-  return {
-    config: sidebarQueries.config.data,
-    stats: sidebarQueries.stats.data,
-    onlineUsers: sidebarQueries.onlineUsers.data,
-    comments: sidebarQueries.comments.data,
-    threads: sidebarQueries.threads.data,
-    poll: sidebarQueries.poll.data,
-    isLoading: Object.values(sidebarQueries).some(query => query.isLoading),
-    
-    // Manual refresh function for critical updates
-    refreshAll: () => {
-      queryClient.invalidateQueries({ queryKey: ['sidebar'] });
-    },
-    
-    // Selective refresh functions
-    refreshStats: () => sidebarQueries.stats.refetch(),
-    refreshPoll: () => sidebarQueries.poll.refetch(),
-  };
+    return {
+      totalUsers,
+      onlineUsers,
+      totalIssues,
+      featuredIssues,
+    };
+  } catch (error) {
+    console.error('Error fetching sidebar stats:', error);
+    return {
+      totalUsers: 0,
+      onlineUsers: 0,
+      totalIssues: 0,
+      featuredIssues: 0,
+    };
+  }
 };
 
+// Optimized online users fetching with limit
+const fetchOnlineUsers = async (): Promise<OnlineUser[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('online_users')
+      .select(`
+        id,
+        profiles!inner(
+          full_name,
+          avatar_url
+        ),
+        last_seen
+      `)
+      .order('last_seen', { ascending: false })
+      .limit(12); // Reduced from 20 to 12 for better performance
+
+    if (error) throw error;
+
+    return (data || []).map(user => ({
+      id: user.id,
+      full_name: user.profiles?.full_name || null,
+      avatar_url: user.profiles?.avatar_url || null,
+      last_seen: user.last_seen,
+    }));
+  } catch (error) {
+    console.error('Error fetching online users:', error);
+    return [];
+  }
+};
+
+// Optimized top threads using existing function
+const fetchTopThreads = async (): Promise<TopThread[]> => {
+  try {
+    const { data, error } = await supabase.rpc('get_top_threads', { min_comments: 3 });
+    
+    if (error) throw error;
+    
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching top threads:', error);
+    return [];
+  }
+};
+
+// Optimized recent comments with fewer results
+const fetchRecentComments = async (): Promise<RecentComment[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('comments')
+      .select(`
+        id,
+        content,
+        created_at,
+        issue_id,
+        post_id,
+        profiles(
+          full_name,
+          avatar_url
+        )
+      `)
+      .order('created_at', { ascending: false })
+      .limit(8); // Reduced from default to 8
+
+    if (error) throw error;
+
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching recent comments:', error);
+    return [];
+  }
+};
+
+export const useOptimizedSidebarData = (): SidebarData => {
+  const { user } = useOptimizedAuth();
+
+  // Fetch stats with longer cache time (5 minutes)
+  const { data: stats, isLoading: statsLoading, error: statsError } = useOptimizedQuery(
+    queryKeys.sidebarStats(),
+    fetchSidebarStats,
+    {
+      ...queryConfigs.static,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
+    }
+  );
+
+  // Fetch online users with medium cache time (2 minutes)
+  const { data: onlineUsers, isLoading: onlineLoading, error: onlineError } = useOptimizedQuery(
+    queryKeys.onlineUsers(),
+    fetchOnlineUsers,
+    {
+      ...queryConfigs.realtime,
+      staleTime: 2 * 60 * 1000, // 2 minutes - reduced from 30 seconds
+      gcTime: 5 * 60 * 1000, // 5 minutes
+    }
+  );
+
+  // Fetch top threads with longer cache time (10 minutes)
+  const { data: topThreads, isLoading: threadsLoading, error: threadsError } = useOptimizedQuery(
+    queryKeys.posts({ top: true }),
+    fetchTopThreads,
+    {
+      ...queryConfigs.static,
+      staleTime: 10 * 60 * 1000, // 10 minutes - increased from 3 minutes
+      gcTime: 20 * 60 * 1000, // 20 minutes
+    }
+  );
+
+  // Fetch recent comments with longer cache time (15 minutes)
+  const { data: recentComments, isLoading: commentsLoading, error: commentsError } = useOptimizedQuery(
+    queryKeys.comments(),
+    fetchRecentComments,
+    {
+      ...queryConfigs.static,
+      staleTime: 15 * 60 * 1000, // 15 minutes - increased from 5 minutes
+      gcTime: 30 * 60 * 1000, // 30 minutes
+    }
+  );
+
+  const isLoading = statsLoading || onlineLoading || threadsLoading || commentsLoading;
+  const error = statsError || onlineError || threadsError || commentsError;
+
+  return {
+    stats: stats || { totalUsers: 0, onlineUsers: 0, totalIssues: 0, featuredIssues: 0 },
+    onlineUsers: onlineUsers || [],
+    topThreads: topThreads || [],
+    recentComments: recentComments || [],
+    isLoading,
+    error,
+  };
+};
