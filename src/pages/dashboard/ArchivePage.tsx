@@ -1,5 +1,5 @@
 
-// ABOUTME: Updated archive page with clean UI - removed filtering descriptors to prevent content displacement
+// ABOUTME: Enhanced archive page with proper tag hierarchy, search integration, and responsive masonry grid
 import React from 'react';
 import { ArchiveHeader } from '@/components/archive/ArchiveHeader';
 import { TagsPanel } from '@/components/archive/TagsPanel';
@@ -15,7 +15,7 @@ const ArchivePage = () => {
     sortBy: 'score' as const,
   });
 
-  // Use optimized search with hierarchical backend_tags and scoring
+  // Use optimized search with enhanced tag hierarchy and filtering
   const {
     issues,
     totalCount,
@@ -34,12 +34,53 @@ const ArchivePage = () => {
   };
 
   const selectTag = (tag: string) => {
-    setFilterState(prev => ({
-      ...prev,
-      selectedTags: prev.selectedTags.includes(tag)
-        ? prev.selectedTags.filter(t => t !== tag)
-        : [...prev.selectedTags, tag]
-    }));
+    setFilterState(prev => {
+      const isCurrentlySelected = prev.selectedTags.includes(tag);
+      const rootCategories = Object.keys(tagConfig);
+      
+      if (isCurrentlySelected) {
+        // Deselecting a tag
+        if (rootCategories.includes(tag)) {
+          // If deselecting a root category, also remove its subcategories
+          const subcategories = tagConfig[tag] || [];
+          return {
+            ...prev,
+            selectedTags: prev.selectedTags.filter(t => 
+              t !== tag && !subcategories.includes(t)
+            )
+          };
+        } else {
+          // Just remove the subcategory
+          return {
+            ...prev,
+            selectedTags: prev.selectedTags.filter(t => t !== tag)
+          };
+        }
+      } else {
+        // Selecting a tag
+        if (rootCategories.includes(tag)) {
+          // If selecting a root category, clear other root categories and their subcategories
+          const otherRootCategories = rootCategories.filter(r => r !== tag);
+          const subcategoriesToRemove = otherRootCategories.flatMap(root => tagConfig[root] || []);
+          
+          return {
+            ...prev,
+            selectedTags: [
+              ...prev.selectedTags.filter(t => 
+                !otherRootCategories.includes(t) && !subcategoriesToRemove.includes(t)
+              ),
+              tag
+            ]
+          };
+        } else {
+          // Selecting a subcategory
+          return {
+            ...prev,
+            selectedTags: [...prev.selectedTags, tag]
+          };
+        }
+      }
+    });
   };
 
   return (
@@ -47,7 +88,6 @@ const ArchivePage = () => {
       className="min-h-screen bg-background"
       style={{ backgroundColor: 'hsl(var(--background))' }}
     >
-      {/* Expanded container width to properly fit columns with minimal spacing */}
       <div className="max-w-7xl mx-auto px-4 lg:px-6 py-8">
         <ArchiveHeader
           searchQuery={filterState.searchQuery}
@@ -61,7 +101,18 @@ const ArchivePage = () => {
           onTagSelect={selectTag}
         />
         
-        {/* Performance metrics and filtering status removed to prevent content displacement */}
+        {/* Results counter for user feedback */}
+        {(filterState.searchQuery || filterState.selectedTags.length > 0) && (
+          <div className="mb-6 text-center">
+            <p className="text-muted-foreground">
+              {filteredCount} edições encontradas
+              {filterState.searchQuery && ` para "${filterState.searchQuery}"`}
+              {filterState.selectedTags.length > 0 && 
+                ` em ${filterState.selectedTags.join(', ')}`
+              }
+            </p>
+          </div>
+        )}
         
         <ResultsGrid
           issues={issues}

@@ -1,5 +1,5 @@
 
-// ABOUTME: Clean tags panel without filtering status indicators to prevent content displacement
+// ABOUTME: Enhanced tags panel with proper root/branch hierarchy display and state management
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { TagHierarchy } from '@/types/archive';
@@ -19,36 +19,77 @@ export const TagsPanel: React.FC<TagsPanelProps> = ({
   onTagSelect,
   maxInitialTags = 20
 }) => {
-  // Get initial tags to display (mix of categories and popular subcategories)
-  const getInitialTags = (): string[] => {
-    const categories = Object.keys(tagConfig);
-    const popularSubcategories = Object.values(tagConfig)
-      .flat()
-      .filter(tag => tag.length > 0)
-      .slice(0, Math.max(0, maxInitialTags - categories.length));
-    
-    return [...categories, ...popularSubcategories].slice(0, maxInitialTags);
+  // Get root categories (main tag categories)
+  const rootCategories = Object.keys(tagConfig);
+  
+  // Determine which root categories are selected
+  const selectedRootCategories = selectedTags.filter(tag => rootCategories.includes(tag));
+  
+  // Get subcategories for selected root categories
+  const getSubcategoriesForSelected = (): string[] => {
+    const subcategories: string[] = [];
+    selectedRootCategories.forEach(rootTag => {
+      const subs = tagConfig[rootTag] || [];
+      subcategories.push(...subs);
+    });
+    return subcategories;
   };
 
-  const initialTags = getInitialTags();
-  const displayTags = selectedTags.length > 0 
-    ? [...new Set([...selectedTags, ...contextualTags, ...initialTags])]
-    : initialTags;
+  // Determine display tags based on selection state
+  const getDisplayTags = (): { tag: string; type: 'root' | 'subcategory' }[] => {
+    const displayTags: { tag: string; type: 'root' | 'subcategory' }[] = [];
+    
+    if (selectedRootCategories.length === 0) {
+      // No root categories selected - show only root categories
+      rootCategories.forEach(root => {
+        displayTags.push({ tag: root, type: 'root' });
+      });
+    } else {
+      // Some root categories selected - show selected roots + their subcategories
+      selectedRootCategories.forEach(root => {
+        displayTags.push({ tag: root, type: 'root' });
+        const subcategories = tagConfig[root] || [];
+        subcategories.forEach(sub => {
+          displayTags.push({ tag: sub, type: 'subcategory' });
+        });
+      });
+      
+      // Also show unselected root categories
+      rootCategories.forEach(root => {
+        if (!selectedRootCategories.includes(root)) {
+          displayTags.push({ tag: root, type: 'root' });
+        }
+      });
+    }
+    
+    return displayTags;
+  };
 
-  const isTagSelected = (tag: string) => selectedTags.includes(tag);
-  const isContextualTag = (tag: string) => contextualTags.includes(tag);
+  const displayTags = getDisplayTags();
+  const subcategoriesForSelected = getSubcategoriesForSelected();
+
+  const getTagState = (tag: string, type: 'root' | 'subcategory') => {
+    if (selectedTags.includes(tag)) {
+      return 'selected';
+    }
+    
+    if (type === 'subcategory' && selectedRootCategories.length > 0) {
+      // Subcategory is highlighted if its parent root is selected
+      return 'highlighted';
+    }
+    
+    return 'unselected';
+  };
 
   if (displayTags.length === 0) {
     return null;
   }
 
   return (
-    <div className="mb-10">
-      {/* Tags without background container and without status indicators */}
+    <div className="mb-8">
       <div className="flex flex-wrap gap-3">
-        {displayTags.map((tag) => {
-          const selected = isTagSelected(tag);
-          const contextual = isContextualTag(tag);
+        {displayTags.map(({ tag, type }) => {
+          const state = getTagState(tag, type);
           
           return (
             <Badge
@@ -57,12 +98,13 @@ export const TagsPanel: React.FC<TagsPanelProps> = ({
               className={`
                 cursor-pointer transition-all duration-200 text-sm py-2 px-4 font-medium
                 border-2 hover:shadow-sm
-                ${selected 
+                ${state === 'selected'
                   ? 'bg-foreground text-background border-foreground hover:bg-foreground/90' 
-                  : contextual
+                  : state === 'highlighted'
                     ? 'bg-transparent text-foreground border-foreground/60 hover:bg-foreground/10'
                     : 'bg-transparent text-muted-foreground border-border hover:bg-muted/20 hover:text-foreground hover:border-muted'
                 }
+                ${type === 'subcategory' ? 'ml-4' : ''}
               `}
               onClick={() => onTagSelect(tag)}
             >
@@ -71,8 +113,6 @@ export const TagsPanel: React.FC<TagsPanelProps> = ({
           );
         })}
       </div>
-      
-      {/* Status indicator completely removed to prevent content displacement */}
     </div>
   );
 };
