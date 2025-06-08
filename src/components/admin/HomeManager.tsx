@@ -97,18 +97,22 @@ export const HomeManager = () => {
 
     const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
     
-    // Swap orders
+    // Create a new sections object with swapped orders
     const newSections = { ...localSettings.sections };
-    const currentOrder = newSections[sectionId].order;
+    const currentSection = newSections[sectionId];
     const targetSectionId = sections[targetIndex][0] as SectionKey;
-    const targetOrder = newSections[targetSectionId].order;
+    const targetSection = newSections[targetSectionId];
+    
+    // Swap the order values
+    const currentOrder = currentSection.order;
+    const targetOrder = targetSection.order;
     
     newSections[sectionId] = {
-      ...newSections[sectionId],
+      ...currentSection,
       order: targetOrder
     };
     newSections[targetSectionId] = {
-      ...newSections[targetSectionId],
+      ...targetSection,
       order: currentOrder
     };
 
