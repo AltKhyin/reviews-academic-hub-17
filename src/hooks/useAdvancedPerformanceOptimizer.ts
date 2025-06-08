@@ -6,7 +6,7 @@ import { useErrorTracking } from './useErrorTracking';
 import { useOptimizedQueryClient } from './useOptimizedQueryClient';
 import { usePerformanceBudget } from './usePerformanceBudget';
 import { useIntelligentCache } from './useIntelligentCache';
-import { MemoryLeakDetector, QueryOptimizer, ResourceLoadingOptimizer, PerformanceProfiler } from '@/utils/performanceHelpers';
+import { MemoryLeakDetector, QueryOptimizerInstance, ResourceLoadingOptimizerInstance, PerformanceProfilerInstance } from '@/utils/performanceHelpers';
 
 interface AdvancedPerformanceMetrics {
   // Existing metrics
@@ -91,10 +91,10 @@ export const useAdvancedPerformanceOptimizer = () => {
       : memoryLeakDetection.severity === 'medium' ? 50 : 25
       : 0;
 
-    const queryOptimizationRecommendations = QueryOptimizer.getOptimizationRecommendations();
+    const queryOptimizationRecommendations = QueryOptimizerInstance.getOptimizationRecommendations();
     const queryComplexityScore = Math.max(0, 100 - (queryOptimizationRecommendations.length * 10));
 
-    const resourceMetrics = ResourceLoadingOptimizer.analyzeResourceLoading();
+    const resourceMetrics = ResourceLoadingOptimizerInstance.analyzeResourceLoading();
     const resourceOptimizationScore = Math.max(0, 100 - resourceMetrics.optimizationOpportunities.length * 5);
 
     const budgetCompliance = budgetStatus.score;
@@ -217,7 +217,7 @@ export const useAdvancedPerformanceOptimizer = () => {
         priority: 'medium',
         description: 'Optimize resource loading and implement preloading',
         action: async () => {
-          ResourceLoadingOptimizer.preloadCriticalResources();
+          ResourceLoadingOptimizerInstance.preloadCriticalResources();
         },
         estimatedImpact: 30,
       });
@@ -270,9 +270,9 @@ export const useAdvancedPerformanceOptimizer = () => {
         activeOptimizations: [...prev.activeOptimizations, action.description],
       }));
 
-      PerformanceProfiler.startMeasurement(`optimization-${action.type}`);
+      PerformanceProfilerInstance.startMeasurement(`optimization-${action.type}`);
       await action.action();
-      PerformanceProfiler.endMeasurement(`optimization-${action.type}`);
+      PerformanceProfilerInstance.endMeasurement(`optimization-${action.type}`);
 
       setOptimizationState(prev => ({
         ...prev,
@@ -370,7 +370,7 @@ export const useAdvancedPerformanceOptimizer = () => {
   // Generate comprehensive performance report
   const generatePerformanceReport = useCallback(() => {
     const metrics = calculateAdvancedMetrics();
-    const performanceReport = PerformanceProfiler.getPerformanceReport();
+    const performanceReport = PerformanceProfilerInstance.getPerformanceReport();
     
     return {
       timestamp: new Date().toISOString(),

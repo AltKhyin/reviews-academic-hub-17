@@ -1,11 +1,10 @@
-
 // ABOUTME: Advanced performance provider that coordinates all enhanced performance systems
 import React, { useEffect, useState } from 'react';
 import { useAdvancedPerformanceOptimizer } from '@/hooks/useAdvancedPerformanceOptimizer';
 import { usePerformanceBudget } from '@/hooks/usePerformanceBudget';
 import { useIntelligentCache } from '@/hooks/useIntelligentCache';
 import { PerformanceDashboard } from '@/components/performance/PerformanceDashboard';
-import { MemoryLeakDetector, QueryOptimizer, ResourceLoadingOptimizer } from '@/utils/performanceHelpers';
+import { MemoryLeakDetector, QueryOptimizerInstance, ResourceLoadingOptimizerInstance } from '@/utils/performanceHelpers';
 
 interface AdvancedPerformanceProviderProps {
   children: React.ReactNode;
@@ -52,7 +51,7 @@ export const AdvancedPerformanceProvider: React.FC<AdvancedPerformanceProviderPr
         }
 
         // Initialize resource optimization
-        ResourceLoadingOptimizer.preloadCriticalResources();
+        ResourceLoadingOptimizerInstance.preloadCriticalResources();
         console.log('✅ Resource optimization initialized');
         
         // Perform initial cache warming

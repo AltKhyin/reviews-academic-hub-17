@@ -1,10 +1,9 @@
-
 // ABOUTME: Global performance provider that initializes all performance optimization systems
 import React, { useEffect } from 'react';
 import { usePerformanceOptimizer } from '@/hooks/usePerformanceOptimizer';
 import { useIntelligentPrefetch } from '@/hooks/useIntelligentPrefetch';
 import { PerformanceDashboard } from '@/components/performance/PerformanceDashboard';
-import { MemoryLeakDetector, PerformanceProfiler } from '@/utils/performanceHelpers';
+import { MemoryLeakDetector, PerformanceProfilerInstance } from '@/utils/performanceHelpers';
 
 interface PerformanceProviderProps {
   children: React.ReactNode;
@@ -29,10 +28,10 @@ export const PerformanceProvider: React.FC<PerformanceProviderProps> = ({
     }
 
     // Start performance profiling
-    PerformanceProfiler.startMeasurement('app-initialization');
+    PerformanceProfilerInstance.startMeasurement('app-initialization');
     
     return () => {
-      PerformanceProfiler.endMeasurement('app-initialization');
+      PerformanceProfilerInstance.endMeasurement('app-initialization');
     };
   }, [enableMemoryLeakDetection]);
 
@@ -40,7 +39,7 @@ export const PerformanceProvider: React.FC<PerformanceProviderProps> = ({
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
       const interval = setInterval(() => {
-        const report = PerformanceProfiler.getPerformanceReport();
+        const report = PerformanceProfilerInstance.getPerformanceReport();
         if (Object.keys(report).length > 0) {
           console.group('📊 Performance Report');
           Object.entries(report).forEach(([operation, data]) => {

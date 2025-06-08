@@ -1,6 +1,6 @@
 // ABOUTME: Performance budget monitoring and enforcement system
 import { useEffect, useCallback, useRef, useState } from 'react';
-import { MemoryLeakDetector, ResourceLoadingOptimizer, PerformanceProfiler } from '@/utils/performanceHelpers';
+import { MemoryLeakDetector, ResourceLoadingOptimizerInstance, PerformanceProfilerInstance } from '@/utils/performanceHelpers';
 
 interface PerformanceBudget {
   maxBundleSize: number; // KB
@@ -119,7 +119,7 @@ export const usePerformanceBudget = (customBudget?: Partial<PerformanceBudget>) 
     }
     
     // Check bundle size
-    const resourceMetrics = ResourceLoadingOptimizer.analyzeResourceLoading();
+    const resourceMetrics = ResourceLoadingOptimizerInstance.analyzeResourceLoading();
     const bundleSizeKB = resourceMetrics.totalSize / 1024;
     trackMetric('bundleSize', bundleSizeKB);
     trends.bundleSize = calculateTrend('bundleSize');
