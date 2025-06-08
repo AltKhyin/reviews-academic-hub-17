@@ -1,5 +1,5 @@
 
-// ABOUTME: Optimized sidebar data hooks using new database functions for better performance
+// ABOUTME: Optimized sidebar data hooks with fixed TypeScript errors
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { queryKeys, queryConfigs } from './useOptimizedQuery';
@@ -25,15 +25,18 @@ export const useOptimizedSidebarStats = () => {
           throw error;
         }
 
-        // Type assertion since we know the structure from our database function
-        const stats = data as any;
+        // Safe type assertion with validation
+        const statsData = data as any;
+        if (!statsData || typeof statsData !== 'object') {
+          throw new Error('Invalid stats data format');
+        }
 
         return {
-          totalUsers: stats?.totalUsers || 0,
-          onlineUsers: stats?.onlineUsers || 0,
-          totalIssues: stats?.totalIssues || 0,
-          totalPosts: stats?.totalPosts || 0,
-          totalComments: stats?.totalComments || 0,
+          totalUsers: Number(statsData.totalUsers) || 0,
+          onlineUsers: Number(statsData.onlineUsers) || 0,
+          totalIssues: Number(statsData.totalIssues) || 0,
+          totalPosts: Number(statsData.totalPosts) || 0,
+          totalComments: Number(statsData.totalComments) || 0,
         };
       } catch (error) {
         console.error('Sidebar stats fetch error:', error);
@@ -137,6 +140,6 @@ export const useOptimizedSidebarData = () => {
     // Overall loading state
     isLoading: stats.isLoading || reviewerComments.isLoading || topThreads.isLoading,
     // Check if any critical data failed to load
-    hasError: !!(stats.error || reviewerComments.error || topThreads.error),
+    hasError: Boolean(stats.error || reviewerComments.error || topThreads.error),
   };
 };

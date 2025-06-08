@@ -1,7 +1,7 @@
 
-// ABOUTME: Updated results grid component using the optimized masonry grid
+// ABOUTME: Updated results grid component using the responsive grid
 import React from 'react';
-import { OptimizedMasonryGrid } from './OptimizedMasonryGrid';
+import { ResponsiveGrid } from './ResponsiveGrid';
 import { ArchiveIssue } from '@/types/archive';
 
 interface ResultsGridProps {
@@ -19,7 +19,7 @@ export const ResultsGrid: React.FC<ResultsGridProps> = ({
 }) => {
   return (
     <div className="w-full">
-      <OptimizedMasonryGrid
+      <ResponsiveGrid
         issues={issues}
         searchQuery={searchQuery}
         selectedTags={selectedTags}

@@ -1,5 +1,5 @@
 
-// ABOUTME: Optimized archive search with hierarchical backend_tags and client-side scoring (fixed tag matching)
+// ABOUTME: Optimized archive search with proper hierarchical tag handling
 import { useMemo } from 'react';
 import { useOptimizedArchiveData } from './useOptimizedArchiveData';
 import { Issue } from '@/types/issue';
@@ -66,10 +66,9 @@ const calculateSearchScore = (issue: Issue, searchQuery: string, selectedTags: s
     }
   }
   
-  // Tag relevance boosting (key change - this boosts instead of filters)
+  // Tag relevance boosting
   if (selectedTags.length > 0) {
-    const tagMatches = calculateTagMatches(issue, selectedTags);
-    // Each tag match significantly boosts the score
+    const tagMatches = calculateHierarchicalTagMatches(issue, selectedTags);
     score += tagMatches * 15;
     
     // Additional boost for specialty exact matches
@@ -78,15 +77,15 @@ const calculateSearchScore = (issue: Issue, searchQuery: string, selectedTags: s
     }
   }
   
-  // Base recency score to ensure all items have some ordering
+  // Base recency score
   const daysSinceCreated = (Date.now() - new Date(issue.created_at).getTime()) / (1000 * 60 * 60 * 24);
-  score += Math.max(0, 100 - daysSinceCreated * 0.1); // Slight recency bonus
+  score += Math.max(0, 100 - daysSinceCreated * 0.1);
   
   return score;
 };
 
 // Improved hierarchical tag matching algorithm
-const calculateTagMatches = (issue: Issue, selectedTags: string[]): number => {
+const calculateHierarchicalTagMatches = (issue: Issue, selectedTags: string[]): number => {
   if (!selectedTags.length) return 0;
   
   let matches = 0;
@@ -98,7 +97,7 @@ const calculateTagMatches = (issue: Issue, selectedTags: string[]): number => {
       return;
     }
     
-    // Check backend_tags match
+    // Check backend_tags match with hierarchical support
     if (issue.backend_tags) {
       try {
         const tags = typeof issue.backend_tags === 'string' 
@@ -141,103 +140,55 @@ const calculateTagMatches = (issue: Issue, selectedTags: string[]): number => {
   return matches;
 };
 
-// Improved contextual tags based on selected tags and search query
-const getContextualTags = (
+// Improved contextual tags based on hierarchical selection
+const getHierarchicalContextualTags = (
   issues: Issue[],
   selectedTags: string[],
   searchQuery: string,
   tagConfig: Record<string, string[]>
 ): string[] => {
   const contextualTags = new Set<string>();
+  const rootCategories = Object.keys(tagConfig);
   
-  // If no tags selected, show popular categories and some subcategories
+  // If no tags selected, show only root categories
   if (selectedTags.length === 0) {
-    // Add all main categories
-    Object.keys(tagConfig).forEach(category => {
+    rootCategories.forEach(category => {
       contextualTags.add(category);
     });
-    
-    // Add some popular subcategories if search query exists
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      Object.values(tagConfig).flat().forEach(tag => {
-        if (tag.toLowerCase().includes(query)) {
-          contextualTags.add(tag);
-        }
-      });
-    }
-    
     return Array.from(contextualTags).slice(0, 12);
   }
   
-  // Find related tags from the same categories as selected tags
-  selectedTags.forEach(selectedTag => {
-    Object.entries(tagConfig).forEach(([category, tags]) => {
-      // If selected tag is a category, show its subcategories
-      if (category === selectedTag) {
-        tags.forEach(tag => {
-          if (!selectedTags.includes(tag)) {
-            contextualTags.add(tag);
-          }
-        });
-      }
-      // If selected tag is a subcategory, show other subcategories from same category
-      else if (tags.includes(selectedTag)) {
-        // Add the category itself if not selected
-        if (!selectedTags.includes(category)) {
-          contextualTags.add(category);
+  // Check if any selected tags are root categories
+  const selectedRootCategories = selectedTags.filter(tag => rootCategories.includes(tag));
+  
+  if (selectedRootCategories.length > 0) {
+    // Show subcategories of selected root categories
+    selectedRootCategories.forEach(rootCategory => {
+      const subcategories = tagConfig[rootCategory] || [];
+      subcategories.forEach(sub => {
+        if (!selectedTags.includes(sub)) {
+          contextualTags.add(sub);
         }
-        // Add other tags from the same category
-        tags.forEach(tag => {
-          if (tag !== selectedTag && !selectedTags.includes(tag)) {
-            contextualTags.add(tag);
-          }
-        });
+      });
+    });
+    
+    // Also show other root categories
+    rootCategories.forEach(category => {
+      if (!selectedTags.includes(category)) {
+        contextualTags.add(category);
       }
     });
-  });
-  
-  // Also find tags that commonly appear with selected tags in issues
-  const issuesWithSelectedTags = issues.filter(issue => 
-    calculateTagMatches(issue, selectedTags) > 0
-  );
-  
-  issuesWithSelectedTags.forEach(issue => {
-    if (issue.backend_tags) {
-      try {
-        const tags = typeof issue.backend_tags === 'string' 
-          ? JSON.parse(issue.backend_tags) 
-          : issue.backend_tags;
-        
-        if (typeof tags === 'object' && tags !== null) {
-          Object.entries(tags).forEach(([category, tagList]) => {
-            // Add category if not selected
-            if (!selectedTags.includes(category)) {
-              contextualTags.add(category);
-            }
-            
-            // Add subcategories
-            if (Array.isArray(tagList)) {
-              tagList.forEach(tag => {
-                if (typeof tag === 'string' && 
-                    !selectedTags.includes(tag) &&
-                    !contextualTags.has(tag)) {
-                  contextualTags.add(tag);
-                }
-              });
-            }
-          });
-        }
-      } catch (e) {
-        // Skip parsing errors
-      }
-    }
-  });
+  } else {
+    // No root categories selected, show all root categories
+    rootCategories.forEach(category => {
+      contextualTags.add(category);
+    });
+  }
   
   return Array.from(contextualTags).slice(0, 10);
 };
 
-// Score-based sorting instead of filtering
+// Score-based sorting with hierarchical tag support
 const scoreAndSortIssues = (
   issues: Issue[],
   filters: SearchFilters
@@ -251,7 +202,7 @@ const scoreAndSortIssues = (
     tagMatches: 0,
   };
   
-  // Apply hard filters only for specialty and year (these are structural filters)
+  // Apply hard filters for specialty and year
   let filteredIssues = issues;
   if (specialty) {
     filteredIssues = filteredIssues.filter(issue => issue.specialty === specialty);
@@ -281,7 +232,7 @@ const scoreAndSortIssues = (
     }
     
     if (selectedTags.length > 0) {
-      const tagMatches = calculateTagMatches(issue, selectedTags);
+      const tagMatches = calculateHierarchicalTagMatches(issue, selectedTags);
       if (tagMatches > 0) {
         metrics.tagMatches += tagMatches;
       }
@@ -296,7 +247,7 @@ const scoreAndSortIssues = (
       case 'score':
         return b.searchScore - a.searchScore;
       case 'newest':
-        if (Math.abs(b.searchScore - a.searchScore) < 5) { // Similar scores
+        if (Math.abs(b.searchScore - a.searchScore) < 5) {
           return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         }
         return b.searchScore - a.searchScore;
@@ -322,7 +273,7 @@ export const useOptimizedArchiveSearch = (filters: SearchFilters) => {
   // Fetch all data once with aggressive caching
   const { data, isLoading, error } = useOptimizedArchiveData();
   
-  // Memoized scoring and sorting
+  // Memoized scoring and sorting with hierarchical tag support
   const searchResult = useMemo((): SearchResult & { contextualTags: string[] } => {
     if (!data?.issues) {
       return {
@@ -337,15 +288,15 @@ export const useOptimizedArchiveSearch = (filters: SearchFilters) => {
     const { sorted, metrics } = scoreAndSortIssues(data.issues, filters);
     const archiveIssues = convertIssuesToArchiveIssues(sorted);
     
-    // Calculate contextual tags
-    const contextualTags = getContextualTags(
+    // Calculate hierarchical contextual tags
+    const contextualTags = getHierarchicalContextualTags(
       data.issues, 
       filters.selectedTags, 
       filters.searchQuery,
       data.tagConfig || {}
     );
     
-    console.log('Tag processing debug:', {
+    console.log('Hierarchical tag processing:', {
       selectedTags: filters.selectedTags,
       tagConfig: data.tagConfig,
       contextualTags,
