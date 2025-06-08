@@ -1,9 +1,9 @@
 
 // ABOUTME: Comprehensive error tracking and analytics for performance monitoring
-import { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
-interface ErrorEvent {
+interface AppErrorEvent {
   id: string;
   type: 'query' | 'mutation' | 'component' | 'network' | 'javascript';
   message: string;
@@ -22,7 +22,7 @@ interface ErrorMetrics {
   errorsByType: Record<string, number>;
   errorsByPage: Record<string, number>;
   criticalErrors: number;
-  recentErrors: ErrorEvent[];
+  recentErrors: AppErrorEvent[];
   errorRate: number; // errors per minute
 }
 
@@ -64,7 +64,7 @@ export const useErrorTracking = (config: ErrorTrackingConfig = {}) => {
     errorRate: 0,
   });
 
-  const errorBuffer = useRef<ErrorEvent[]>([]);
+  const errorBuffer = useRef<AppErrorEvent[]>([]);
   const sessionId = useRef(generateSessionId());
   const lastReportTime = useRef(Date.now());
 
@@ -91,10 +91,10 @@ export const useErrorTracking = (config: ErrorTrackingConfig = {}) => {
 
   // Create error event
   const createErrorEvent = useCallback((
-    type: ErrorEvent['type'],
+    type: AppErrorEvent['type'],
     error: any,
     context: Record<string, any> = {}
-  ): ErrorEvent => {
+  ): AppErrorEvent => {
     const message = error.message || error.toString() || 'Unknown error';
     const stack = error.stack || '';
     const severity = classifyErrorSeverity(error, type);
@@ -119,7 +119,7 @@ export const useErrorTracking = (config: ErrorTrackingConfig = {}) => {
   }, [classifyErrorSeverity]);
 
   // Log error
-  const logError = useCallback((errorEvent: ErrorEvent) => {
+  const logError = useCallback((errorEvent: AppErrorEvent) => {
     errorBuffer.current.push(errorEvent);
     
     // Limit buffer size
@@ -152,13 +152,15 @@ export const useErrorTracking = (config: ErrorTrackingConfig = {}) => {
   useEffect(() => {
     if (!finalConfig.enableJavaScriptErrors) return;
 
-    const handleError = (event: ErrorEvent) => {
-      const errorEvent = createErrorEvent('javascript', event.error || new Error(event.message), {
-        filename: event.filename,
-        lineno: event.lineno,
-        colno: event.colno,
+    const handleError = (event: Event) => {
+      const errorEvent = event as any; // Cast to access error properties
+      const error = errorEvent.error || new Error(errorEvent.message || 'Unknown error');
+      const appErrorEvent = createErrorEvent('javascript', error, {
+        filename: errorEvent.filename,
+        lineno: errorEvent.lineno,
+        colno: errorEvent.colno,
       });
-      logError(errorEvent);
+      logError(appErrorEvent);
     };
 
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
@@ -188,7 +190,7 @@ export const useErrorTracking = (config: ErrorTrackingConfig = {}) => {
         const errorEvent = createErrorEvent('query', event.query.state.error, {
           queryKey: event.query.queryKey,
           queryHash: event.query.queryHash,
-          failureCount: event.query.state.failureCount,
+          failureCount: event.query.state.failureReason ? 1 : 0,
         });
         logError(errorEvent);
       }
@@ -282,7 +284,7 @@ export const useErrorTracking = (config: ErrorTrackingConfig = {}) => {
 
   // Public API for manual error logging
   const trackError = useCallback((
-    type: ErrorEvent['type'],
+    type: AppErrorEvent['type'],
     error: any,
     context?: Record<string, any>
   ) => {

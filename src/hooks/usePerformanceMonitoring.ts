@@ -163,7 +163,7 @@ export const usePerformanceMonitoring = (config: PerformanceMonitoringConfig = {
       
       // Check if query was served from cache
       const timeSinceLastFetch = Date.now() - query.state.dataUpdatedAt;
-      const staleTime = query.options.staleTime || 0;
+      const staleTime = 5 * 60 * 1000; // Default 5 minutes
       
       if (timeSinceLastFetch < staleTime) {
         cacheHits++;
@@ -172,7 +172,7 @@ export const usePerformanceMonitoring = (config: PerformanceMonitoringConfig = {
       // Track slow queries (simplified approximation)
       if (query.state.error || query.state.fetchStatus === 'fetching') {
         // This is a rough approximation - in production you'd want more precise timing
-        if (query.state.fetchFailureCount > 0) {
+        if (query.state.failureReason) {
           slowQueries++;
         }
       }

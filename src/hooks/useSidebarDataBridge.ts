@@ -183,11 +183,13 @@ export const useSidebarDataBridge = (userId?: string) => {
   }, [optimizedData.stats, setStats]); // Removed sidebarStore.stats from deps to prevent loop
 
   useEffect(() => {
-    if (optimizedData.onlineUsers && optimizedData.onlineUsers.length > 0) {
-      // Map last_seen to last_active for type compatibility
-      const mappedUsers = optimizedData.onlineUsers.map(user => ({
-        ...user,
-        last_active: user.last_seen
+    if (optimizedData.highlightComments && optimizedData.highlightComments.length > 0) {
+      // Map highlight comments to online users format for compatibility
+      const mappedUsers = optimizedData.highlightComments.map(comment => ({
+        id: comment.id,
+        full_name: comment.author_name,
+        avatar_url: comment.author_avatar,
+        last_active: comment.created_at
       }));
       
       // Only update if the data has actually changed
@@ -195,7 +197,7 @@ export const useSidebarDataBridge = (userId?: string) => {
         setOnlineUsers(mappedUsers);
       }
     }
-  }, [optimizedData.onlineUsers, setOnlineUsers]); // Removed sidebarStore.onlineUsers from deps
+  }, [optimizedData.highlightComments, setOnlineUsers]); // Removed sidebarStore.onlineUsers from deps
 
   useEffect(() => {
     if (optimizedData.topThreads && JSON.stringify(optimizedData.topThreads) !== JSON.stringify(sidebarStore.threads)) {

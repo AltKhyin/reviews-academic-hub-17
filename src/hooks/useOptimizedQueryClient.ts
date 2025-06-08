@@ -127,7 +127,7 @@ export const useOptimizedQueryClient = (config: QueryClientConfig = {}) => {
     const totalQueries = queries.length;
     const activeQueries = queries.filter(q => q.getObserversCount() > 0).length;
     const staleQueries = queries.filter(q => {
-      const staleTime = q.options.staleTime || finalConfig.defaultStaleTime!;
+      const staleTime = finalConfig.defaultStaleTime!;
       return now - q.state.dataUpdatedAt > staleTime;
     }).length;
     
@@ -174,7 +174,7 @@ export const useOptimizedQueryClient = (config: QueryClientConfig = {}) => {
     queries.forEach(query => {
       const hasObservers = query.getObserversCount() > 0;
       const timeSinceUpdate = now - query.state.dataUpdatedAt;
-      const gcTime = query.options.gcTime || finalConfig.defaultGcTime!;
+      const gcTime = finalConfig.defaultGcTime!;
       
       // Remove queries that are old and inactive
       if (!hasObservers && timeSinceUpdate > gcTime) {
@@ -183,11 +183,8 @@ export const useOptimizedQueryClient = (config: QueryClientConfig = {}) => {
       }
       
       // Refresh critical stale data that has observers
-      else if (hasObservers && query.state.isStale && !query.state.isFetching) {
-        const staleTime = query.options.staleTime || finalConfig.defaultStaleTime!;
-        if (timeSinceUpdate > staleTime * 2) { // Only if very stale
-          queryClient.invalidateQueries({ queryKey: query.queryKey });
-        }
+      else if (hasObservers && timeSinceUpdate > finalConfig.defaultStaleTime! * 2) {
+        queryClient.invalidateQueries({ queryKey: query.queryKey });
       }
     });
     
@@ -248,8 +245,6 @@ export const useOptimizedQueryClient = (config: QueryClientConfig = {}) => {
   const getQueryDetails = useCallback((queryKey: unknown[]) => {
     const query = queryClient.getQueryCache().find({ queryKey });
     return query ? {
-      isStale: query.state.isStale,
-      isFetching: query.state.isFetching,
       hasData: !!query.state.data,
       lastUpdated: query.state.dataUpdatedAt,
       observers: query.getObserversCount(),
