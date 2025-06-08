@@ -10,7 +10,7 @@ import { ptBR } from 'date-fns/locale';
 import { useAuth } from '@/contexts/AuthContext';
 
 export const ReviewerCommentsDisplay = () => {
-  const { comments, hasComments, isLoading, deleteComment } = useReviewerComments(true); // Explicitly enable fetching
+  const { comments, hasComments, isLoading, deleteComment } = useReviewerComments();
   const { isAdmin, isEditor } = useAuth();
 
   if (isLoading) {

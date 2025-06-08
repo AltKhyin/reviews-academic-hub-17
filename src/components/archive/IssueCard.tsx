@@ -1,5 +1,5 @@
 
-// ABOUTME: Clean, monochromatic issue card with natural dynamic height and content flow
+// ABOUTME: Clean, monochromatic issue card with dynamic height support and natural content flow
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -43,8 +43,9 @@ export const IssueCard: React.FC<IssueCardProps> = ({
   const coverImage = issue.cover_image_url || 
     placeholderCovers[parseInt(issue.id.slice(-1)) % placeholderCovers.length];
 
-  // Generate dynamic height multiplier based on content factors
-  const generateHeightMultiplier = () => {
+  // Generate dynamic height based on content factors
+  const generateDynamicHeight = () => {
+    const baseHeight = 380;
     const titleLength = (issue.search_title || issue.title).length;
     const descriptionLength = (issue.search_description || issue.description || '').length;
     const authorsCount = issue.authors ? issue.authors.split(',').length : 0;
@@ -78,26 +79,23 @@ export const IssueCard: React.FC<IssueCardProps> = ({
     // Clamp to acceptable range
     heightMultiplier = Math.max(0.85, Math.min(1.6, heightMultiplier));
     
-    return heightMultiplier;
+    return Math.floor(baseHeight * heightMultiplier);
   };
 
-  const heightMultiplier = generateHeightMultiplier();
-  const baseImageHeight = 240; // Base height for image
-  const imageHeight = Math.floor(baseImageHeight * heightMultiplier);
+  const dynamicHeight = generateDynamicHeight();
 
   return (
     <Card 
       className={`group cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-card border-border overflow-hidden relative w-full ${className}`}
+      style={{ height: `${dynamicHeight}px` }}
       onClick={() => onClick(issue.id)}
-      style={{ height: 'auto' }} // Ensure natural height
     >
       {/* Cover Image - Dynamic Height Based on Content */}
-      <div className="relative w-full" style={{ height: `${imageHeight}px` }}>
+      <div className="relative w-full" style={{ height: `${Math.floor(dynamicHeight * 0.6)}px` }}>
         <img
           src={coverImage}
           alt={issue.search_title || issue.title}
           className="w-full h-full object-cover"
-          loading="lazy"
           onError={(e) => {
             const img = e.target as HTMLImageElement;
             img.src = 'https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7';
@@ -130,9 +128,9 @@ export const IssueCard: React.FC<IssueCardProps> = ({
         )}
       </div>
 
-      {/* Content Section - Natural Flow */}
+      {/* Content Section - Flexible Height */}
       <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
-        {/* Title - Natural Line Height */}
+        {/* Title - Flexible Line Height */}
         <h3 className="text-white font-semibold text-base leading-tight mb-2 line-clamp-3" 
             style={{ 
               textShadow: '0 2px 8px rgba(0,0,0,0.8), 0 1px 3px rgba(0,0,0,0.9)' 
@@ -206,7 +204,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({
             </div>
           )}
           
-          {/* Study Details - Additional Content */}
+          {/* Study Details - Additional Height Factor */}
           {issue.year && (
             <div className="text-xs text-white/70 pt-2 border-t border-white/20">
               Estudo de {issue.year}

@@ -3,7 +3,6 @@ import { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { useLocation } from 'react-router-dom';
 
 export interface ReviewerComment {
   id: string;
@@ -14,17 +13,13 @@ export interface ReviewerComment {
   created_at: string;
 }
 
-export const useReviewerComments = (enableFetching: boolean = false) => {
+export const useReviewerComments = () => {
   const queryClient = useQueryClient();
-  const location = useLocation();
-  
-  // Only enable fetching on homepage or when explicitly requested
-  const shouldFetch = enableFetching || location.pathname === '/';
 
   const { data: comments = [], isLoading } = useQuery({
     queryKey: ['reviewer-comments'],
     queryFn: async () => {
-      console.log("Fetching reviewer comments for:", location.pathname);
+      console.log("Fetching reviewer comments...");
       
       const { data, error } = await supabase
         .from('reviewer_comments')
@@ -36,13 +31,11 @@ export const useReviewerComments = (enableFetching: boolean = false) => {
         throw error;
       }
 
-      console.log("Fetched reviewer comments:", data?.length || 0, "comments");
+      console.log("Fetched reviewer comments:", data);
       return data as ReviewerComment[];
     },
-    enabled: shouldFetch,
-    refetchInterval: shouldFetch ? 5 * 60 * 1000 : false, // 5 minutes instead of 30 seconds, only when enabled
-    staleTime: 10 * 60 * 1000, // 10 minutes - comments don't change frequently
-    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
+    refetchInterval: 30000, // Refetch every 30 seconds
+    staleTime: 10000, // Consider data stale after 10 seconds
   });
 
   const addComment = useMutation({
@@ -132,7 +125,7 @@ export const useReviewerComments = (enableFetching: boolean = false) => {
   return {
     comments,
     hasComments,
-    isLoading: shouldFetch ? isLoading : false,
+    isLoading,
     addComment,
     deleteComment
   };

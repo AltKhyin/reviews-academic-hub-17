@@ -8,7 +8,6 @@ import { useBookmarkData } from '@/hooks/comments/useBookmarkData';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Badge } from '@/components/ui/badge';
 
 interface CarouselArticleCardProps {
   issue: Issue;
@@ -64,11 +63,6 @@ export const CarouselArticleCard: React.FC<CarouselArticleCardProps> = ({
     });
   };
 
-  const getEditionNumber = () => {
-    const match = issue.title.match(/#(\d+)/);
-    return match ? `#${match[1]}` : `#${issue.id.slice(-3)}`;
-  };
-
   return (
     <TooltipProvider>
       <a 
@@ -85,41 +79,25 @@ export const CarouselArticleCard: React.FC<CarouselArticleCardProps> = ({
           <img 
             src={issue.cover_image_url || '/placeholder.svg'} 
             alt={issue.title}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105 hover:brightness-75"
             onError={(e) => {
               e.currentTarget.src = '/placeholder.svg';
             }}
           />
           
-          {/* Enhanced Archive-style Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-          
-          {/* Edition Badge - Archive Style */}
-          <div className="absolute top-3 left-3 z-10">
-            <Badge 
-              variant="outline" 
-              className="bg-black/60 backdrop-blur-sm text-white border-white/30 text-xs font-medium"
-            >
-              {getEditionNumber()}
-            </Badge>
-          </div>
-
-          {/* Specialty tag - with archive styling, hide when hovered and actions are shown */}
+          {/* Specialty tag - hide when hovered and actions are shown */}
           <div className={`absolute bottom-4 left-4 transition-opacity duration-300 ${isHovered ? 'opacity-0' : 'opacity-100'}`}>
-            <Badge 
-              variant="outline" 
-              className="bg-black/60 backdrop-blur-sm text-white border-white/30 text-xs font-medium"
-            >
+            <span className="text-xs font-medium text-white bg-black/60 px-2 py-1 rounded">
               {issue.specialty || ''}
-            </Badge>
+            </span>
           </div>
 
-          {/* Bookmark button - appears on hover at top right with archive styling */}
-          <div className={`absolute top-3 right-3 transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+          {/* Bookmark button - appears on hover at top right */}
+          <div className={`absolute top-4 right-4 transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
             <Tooltip>
               <TooltipTrigger asChild>
                 <button 
-                  className="bg-black/60 backdrop-blur-sm rounded-full p-1.5 hover:bg-black/80 transition-colors text-white"
+                  className="bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors text-white"
                   onClick={(e) => handleActionClick(e, 'bookmark')}
                   disabled={bookmarkMutation.isPending}
                 >
@@ -132,12 +110,12 @@ export const CarouselArticleCard: React.FC<CarouselArticleCardProps> = ({
             </Tooltip>
           </div>
 
-          {/* Action buttons - appear on hover at bottom right with archive styling */}
+          {/* Action buttons - appear on hover at bottom right */}
           <div className={`absolute bottom-4 right-4 transition-opacity duration-300 flex gap-2 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
             <Tooltip>
               <TooltipTrigger asChild>
                 <button 
-                  className="bg-black/60 backdrop-blur-sm rounded-full p-1.5 hover:bg-black/80 transition-colors text-white"
+                  className="bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors text-white"
                   onClick={(e) => handleActionClick(e, 'heart')}
                   disabled={reactionMutation.isPending}
                 >
@@ -152,7 +130,7 @@ export const CarouselArticleCard: React.FC<CarouselArticleCardProps> = ({
             <Tooltip>
               <TooltipTrigger asChild>
                 <button 
-                  className="bg-black/60 backdrop-blur-sm rounded-full p-1.5 hover:bg-black/80 transition-colors text-white"
+                  className="bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors text-white"
                   onClick={(e) => handleActionClick(e, 'thumbs-up')}
                   disabled={reactionMutation.isPending}
                 >
@@ -167,7 +145,7 @@ export const CarouselArticleCard: React.FC<CarouselArticleCardProps> = ({
             <Tooltip>
               <TooltipTrigger asChild>
                 <button 
-                  className="bg-black/60 backdrop-blur-sm rounded-full p-1.5 hover:bg-black/80 transition-colors text-white"
+                  className="bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors text-white"
                   onClick={(e) => handleActionClick(e, 'thumbs-down')}
                   disabled={reactionMutation.isPending}
                 >
@@ -178,16 +156,6 @@ export const CarouselArticleCard: React.FC<CarouselArticleCardProps> = ({
                 <p>Não gostei</p>
               </TooltipContent>
             </Tooltip>
-          </div>
-
-          {/* Title overlay at bottom with archive styling and enhanced text shadow */}
-          <div className="absolute bottom-0 left-0 right-0 p-3 z-10">
-            <h3 className="text-white font-semibold text-sm leading-tight line-clamp-2"
-                style={{ 
-                  textShadow: '0 2px 8px rgba(0,0,0,0.8), 0 1px 3px rgba(0,0,0,0.9)' 
-                }}>
-              {issue.search_title || issue.title}
-            </h3>
           </div>
         </div>
       </a>
