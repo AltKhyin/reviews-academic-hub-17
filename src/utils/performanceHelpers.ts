@@ -52,26 +52,29 @@ class AdvancedMemoryLeakDetector {
     const originalClearTimeout = window.clearTimeout;
     const originalClearInterval = window.clearInterval;
     
-    window.setTimeout = (handler: TimerHandler, timeout?: number, ...args: any[]) => {
-      const id = originalSetTimeout(handler, timeout, ...args);
-      this.timers.add(id);
+    // Store originals and track timer IDs without overriding function signatures
+    const timerTracker = this;
+    
+    window.setTimeout = function(handler: TimerHandler, timeout?: number, ...args: any[]) {
+      const id = originalSetTimeout.call(window, handler, timeout, ...args);
+      timerTracker.timers.add(id);
       return id;
-    };
+    } as typeof setTimeout;
     
-    window.setInterval = (handler: TimerHandler, timeout?: number, ...args: any[]) => {
-      const id = originalSetInterval(handler, timeout, ...args);
-      this.timers.add(id);
+    window.setInterval = function(handler: TimerHandler, timeout?: number, ...args: any[]) {
+      const id = originalSetInterval.call(window, handler, timeout, ...args);
+      timerTracker.timers.add(id);
       return id;
+    } as typeof setInterval;
+    
+    window.clearTimeout = function(id: number) {
+      timerTracker.timers.delete(id);
+      return originalClearTimeout.call(window, id);
     };
     
-    window.clearTimeout = (id: number) => {
-      this.timers.delete(id);
-      return originalClearTimeout(id);
-    };
-    
-    window.clearInterval = (id: number) => {
-      this.timers.delete(id);
-      return originalClearInterval(id);
+    window.clearInterval = function(id: number) {
+      timerTracker.timers.delete(id);
+      return originalClearInterval.call(window, id);
     };
   }
 
@@ -161,8 +164,8 @@ class AdvancedMemoryLeakDetector {
   }
 
   forceGarbageCollection() {
-    if ('gc' in window && typeof window.gc === 'function') {
-      window.gc();
+    if ('gc' in window && typeof (window as any).gc === 'function') {
+      (window as any).gc();
       console.log('🗑️ Forced garbage collection executed');
     }
   }
@@ -466,13 +469,13 @@ class PerformanceProfiler {
 
 // Export singleton instances
 export const MemoryLeakDetector = new AdvancedMemoryLeakDetector();
-export const QueryOptimizer = new QueryOptimizer();
-export const ResourceLoadingOptimizer = new ResourceLoadingOptimizer();
-export const PerformanceProfiler = new PerformanceProfiler();
+export const QueryOptimizerInstance = new QueryOptimizer();
+export const ResourceLoadingOptimizerInstance = new ResourceLoadingOptimizer();
+export const PerformanceProfilerInstance = new PerformanceProfiler();
 
 // Initialize memory leak detection
 MemoryLeakDetector.trackEventListeners();
 MemoryLeakDetector.trackTimers();
 
 // Initialize resource loading optimization
-ResourceLoadingOptimizer.preloadCriticalResources();
+ResourceLoadingOptimizerInstance.preloadCriticalResources();
