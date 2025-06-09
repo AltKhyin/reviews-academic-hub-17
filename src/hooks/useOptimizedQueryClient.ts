@@ -7,9 +7,17 @@ interface CacheMetrics {
   hitRate: number;
   totalQueries: number;
   activeQueries: number;
+  cacheSize: number;
 }
 
-export const useOptimizedQueryClient = () => {
+interface OptimizedQueryClientOptions {
+  enableBackgroundRefetch?: boolean;
+  enableRetries?: boolean;
+  maxCacheSize?: number;
+  defaultStaleTime?: number;
+}
+
+export const useOptimizedQueryClient = (options: OptimizedQueryClientOptions = {}) => {
   const queryClient = useQueryClient();
 
   // Calculate cache metrics
@@ -22,11 +30,20 @@ export const useOptimizedQueryClient = () => {
     const cachedQueries = queries.filter(q => q.state.data !== undefined).length;
     
     const hitRate = totalQueries > 0 ? (cachedQueries / totalQueries) * 100 : 0;
+    
+    // Estimate cache size (simplified calculation)
+    const cacheSize = queries.reduce((size, query) => {
+      if (query.state.data) {
+        return size + JSON.stringify(query.state.data).length / 1024; // KB
+      }
+      return size;
+    }, 0) / 1024; // Convert to MB
 
     return {
       hitRate,
       totalQueries,
       activeQueries,
+      cacheSize,
     };
   }, [queryClient]);
 

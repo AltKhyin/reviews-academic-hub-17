@@ -2,7 +2,6 @@
 // ABOUTME: Query optimization provider for centralized performance management
 import React, { createContext, useContext, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
 interface QueryOptimizationConfig {
   enableDebugLogging: boolean;
@@ -82,12 +81,6 @@ export const QueryOptimizationProvider: React.FC<QueryOptimizationProviderProps>
     <QueryOptimizationContext.Provider value={config}>
       <QueryClientProvider client={queryClient}>
         {children}
-        {config.enableDebugLogging && (
-          <ReactQueryDevtools 
-            initialIsOpen={false} 
-            position="bottom-right"
-          />
-        )}
       </QueryClientProvider>
     </QueryOptimizationContext.Provider>
   );

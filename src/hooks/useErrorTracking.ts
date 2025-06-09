@@ -10,13 +10,22 @@ interface ErrorMetrics {
     source: string;
   }>;
   totalErrors: number;
+  criticalErrors: number;
 }
 
-export const useErrorTracking = () => {
+interface ErrorTrackingOptions {
+  enableConsoleLogging?: boolean;
+  enableRemoteReporting?: boolean;
+  maxErrorHistory?: number;
+  reportingThreshold?: number;
+}
+
+export const useErrorTracking = (options: ErrorTrackingOptions = {}) => {
   const [errorMetrics, setErrorMetrics] = useState<ErrorMetrics>({
     errorRate: 0,
     recentErrors: [],
     totalErrors: 0,
+    criticalErrors: 0,
   });
 
   const trackError = useCallback((error: Error, source: string) => {
@@ -29,12 +38,14 @@ export const useErrorTracking = () => {
 
       const recentErrors = [...prev.recentErrors, newError].slice(-10); // Keep last 10
       const totalErrors = prev.totalErrors + 1;
+      const criticalErrors = error.message.includes('Critical') ? prev.criticalErrors + 1 : prev.criticalErrors;
       const errorRate = Math.min(1, totalErrors / Math.max(1, totalErrors + 100)); // Simple rate calculation
 
       return {
         errorRate,
         recentErrors,
         totalErrors,
+        criticalErrors,
       };
     });
   }, []);
