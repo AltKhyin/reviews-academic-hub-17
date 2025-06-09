@@ -28,8 +28,17 @@ export const queryKeys = {
   userReactions: (userId: string) => ['user', 'reactions', userId],
 } as const;
 
+// Base configuration type
+interface QueryConfig {
+  staleTime: number;
+  gcTime: number;
+  refetchOnWindowFocus: boolean;
+  refetchOnMount?: boolean;
+  refetchInterval?: number;
+}
+
 // Optimized query configurations by data type
-export const queryConfigs = {
+export const queryConfigs: Record<string, QueryConfig> = {
   // Static/semi-static data - longer cache times
   static: {
     staleTime: 15 * 60 * 1000, // 15 minutes
@@ -60,7 +69,7 @@ export const queryConfigs = {
     refetchOnWindowFocus: false,
     refetchInterval: 2 * 60 * 1000, // 2 minutes
   }
-} as const;
+};
 
 // Generic optimized query hook with automatic config selection
 export const useOptimizedQuery = <TData = unknown>(
