@@ -1,6 +1,6 @@
 
 // ABOUTME: Optimized performance monitoring with adaptive intervals and RPC integration
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useOptimizedQuery, queryKeys, queryConfigs } from './useOptimizedQuery';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -77,7 +77,20 @@ export const usePerformanceMonitoring = (config: Partial<PerformanceConfig> = {}
           throw error;
         }
 
-        return data as QueryPerformanceData;
+        // Properly cast the data with type checking
+        const result = data as unknown;
+        if (typeof result === 'object' && result !== null && !Array.isArray(result)) {
+          const typedResult = result as QueryPerformanceData;
+          return typedResult;
+        }
+
+        // Fallback if data structure is unexpected
+        return {
+          active_connections: 0,
+          cache_hit_ratio: 0,
+          slow_queries_detected: false,
+          last_updated: new Date().toISOString(),
+        } as QueryPerformanceData;
       } catch (error) {
         console.error('Query performance fetch error:', error);
         return {

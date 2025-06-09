@@ -24,3 +24,7 @@ export const getQueryClient = () => {
 export const initializeBackgroundOptimization = () => {
   console.log('Background optimization initialized');
 };
+
+export const cleanupBackgroundOptimization = () => {
+  console.log('Background optimization cleaned up');
+};
