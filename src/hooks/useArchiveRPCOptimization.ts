@@ -1,5 +1,5 @@
 
-// ABOUTME: Archive-specific RPC optimization with materialized view support
+// ABOUTME: Archive-specific RPC optimization with proper type handling
 import { supabase } from '@/integrations/supabase/client';
 import { useOptimizedQuery, queryKeys, queryConfigs } from './useOptimizedQuery';
 import { Issue } from '@/types/issue';
@@ -19,7 +19,17 @@ interface ArchiveResponse {
   years: string[];
 }
 
-// Primary archive function using materialized views for performance
+// Map RPC response to Issue type
+const mapToIssue = (rpcIssue: any): Issue => ({
+  ...rpcIssue,
+  pdf_url: rpcIssue.pdf_url || '',
+  updated_at: rpcIssue.updated_at || rpcIssue.created_at,
+  backend_tags: typeof rpcIssue.backend_tags === 'string' 
+    ? rpcIssue.backend_tags 
+    : JSON.stringify(rpcIssue.backend_tags || ''),
+});
+
+// Primary archive function using optimized RPC
 export const useArchiveRPCOptimization = (params: ArchiveParams = {}) => {
   const {
     limit = 20,
@@ -33,7 +43,7 @@ export const useArchiveRPCOptimization = (params: ArchiveParams = {}) => {
     queryKeys.issues({ ...params, type: 'archive-rpc' }),
     async (): Promise<ArchiveResponse> => {
       try {
-        // First try the optimized RPC function
+        // Use the existing get_optimized_issues RPC function
         const { data: rpcData, error: rpcError } = await supabase.rpc('get_optimized_issues', {
           p_limit: limit,
           p_offset: offset,
@@ -44,7 +54,6 @@ export const useArchiveRPCOptimization = (params: ArchiveParams = {}) => {
 
         if (rpcError) {
           console.warn('RPC fallback triggered:', rpcError);
-          // Fallback to direct query if RPC fails
           return await fallbackArchiveQuery(params);
         }
 
@@ -63,9 +72,12 @@ export const useArchiveRPCOptimization = (params: ArchiveParams = {}) => {
         const specialties = [...new Set((specialtiesResult.data || []).map(i => i.specialty))];
         const years = [...new Set((yearsResult.data || []).map(i => i.year))];
 
+        // Map RPC data to Issue type with proper defaults
+        const mappedIssues = (rpcData || []).map(mapToIssue);
+
         return {
-          issues: rpcData || [],
-          total_count: rpcData?.length || 0,
+          issues: mappedIssues,
+          total_count: mappedIssues.length,
           specialties,
           years,
         };
@@ -100,9 +112,12 @@ const fallbackArchiveQuery = async (params: ArchiveParams): Promise<ArchiveRespo
 
   if (error) throw error;
 
+  // Map database data to Issue type
+  const mappedIssues = (data || []).map(mapToIssue);
+
   return {
-    issues: data || [],
-    total_count: data?.length || 0,
+    issues: mappedIssues,
+    total_count: mappedIssues.length,
     specialties: [],
     years: [],
   };

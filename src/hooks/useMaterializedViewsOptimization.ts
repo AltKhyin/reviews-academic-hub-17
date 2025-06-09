@@ -1,7 +1,7 @@
 
-// ABOUTME: Materialized views optimization for high-frequency data access
+// ABOUTME: Simplified materialized views optimization without non-existent RPC functions
 import { supabase } from '@/integrations/supabase/client';
-import { useOptimizedQuery, queryKeys, queryConfigs } from './useOptimizedQuery';
+import { useOptimizedQuery, queryConfigs } from './useOptimizedQuery';
 import { useCallback, useEffect } from 'react';
 
 interface MaterializedViewHealth {
@@ -11,55 +11,28 @@ interface MaterializedViewHealth {
   is_stale: boolean;
 }
 
-// Hook to create and manage materialized views
+// Hook to manage materialized views (simplified version)
 export const useMaterializedViewsOptimization = () => {
-  // Create materialized views on first use
+  // Note: Since the RPC functions don't exist in the database yet,
+  // we'll implement a simplified version that uses existing functionality
+  
   const initializeMaterializedViews = useCallback(async () => {
     try {
-      // Archive performance view (30s refresh cycle)
-      await supabase.rpc('create_materialized_view_if_not_exists', {
-        view_name: 'mv_published_issues_archive',
-        view_definition: `
-          SELECT 
-            id, title, cover_image_url, specialty, authors, year, 
-            published_at, score, description, featured, created_at
-          FROM issues 
-          WHERE published = true
-          ORDER BY created_at DESC
-        `
-      });
-
-      // Community stats view (1min refresh cycle)
-      await supabase.rpc('create_materialized_view_if_not_exists', {
-        view_name: 'mv_community_stats',
-        view_definition: `
-          SELECT 
-            (SELECT COUNT(*) FROM profiles) as total_users,
-            (SELECT COUNT(*) FROM posts WHERE published = true) as total_posts,
-            (SELECT COUNT(*) FROM comments) as total_comments,
-            (SELECT COUNT(*) FROM issues WHERE published = true) as total_issues,
-            NOW() as last_updated
-        `
-      });
-
-      console.log('Materialized views initialized successfully');
+      // For now, just log that this would create materialized views
+      console.log('Materialized views would be initialized here');
+      // In a real implementation, this would call the create_materialized_view_if_not_exists RPC
     } catch (error) {
       console.warn('Materialized views initialization failed:', error);
     }
   }, []);
 
-  // Monitor materialized view health
+  // Monitor materialized view health (simplified)
   const { data: viewHealth } = useOptimizedQuery(
     ['materialized-views-health'],
     async (): Promise<MaterializedViewHealth[]> => {
-      const { data, error } = await supabase.rpc('get_materialized_view_health');
-      
-      if (error) {
-        console.warn('Unable to fetch materialized view health:', error);
-        return [];
-      }
-
-      return data || [];
+      // For now, return empty array since the RPC doesn't exist
+      console.log('Would fetch materialized view health here');
+      return [];
     },
     {
       ...queryConfigs.performance,
@@ -67,13 +40,13 @@ export const useMaterializedViewsOptimization = () => {
     }
   );
 
-  // Automatic refresh strategy
+  // Simplified refresh strategy
   useEffect(() => {
     const refreshInterval = setInterval(async () => {
       try {
-        // Refresh materialized views concurrently
-        await supabase.rpc('refresh_materialized_views');
-        console.log('Materialized views refreshed');
+        // For now, just log the refresh attempt
+        console.log('Would refresh materialized views here');
+        // In a real implementation: await supabase.rpc('refresh_materialized_views');
       } catch (error) {
         console.warn('Materialized view refresh failed:', error);
       }
@@ -88,22 +61,33 @@ export const useMaterializedViewsOptimization = () => {
   }, [initializeMaterializedViews]);
 
   return {
-    viewHealth,
+    viewHealth: viewHealth || [],
     initializeMaterializedViews,
   };
 };
 
-// Hook for using materialized view data
+// Hook for using materialized view data (simplified)
 export const useMaterializedViewData = (viewName: string) => {
   return useOptimizedQuery(
     ['materialized-view', viewName],
     async () => {
-      const { data, error } = await supabase
-        .from(viewName)
-        .select('*');
-
-      if (error) throw error;
-      return data;
+      // For now, fallback to regular table queries
+      console.log(`Would query materialized view ${viewName} here`);
+      
+      // Simple fallback to issues table for archive view
+      if (viewName === 'mv_published_issues_archive') {
+        const { data, error } = await supabase
+          .from('issues')
+          .select('*')
+          .eq('published', true)
+          .order('created_at', { ascending: false })
+          .limit(50);
+        
+        if (error) throw error;
+        return data;
+      }
+      
+      return [];
     },
     {
       ...queryConfigs.static,

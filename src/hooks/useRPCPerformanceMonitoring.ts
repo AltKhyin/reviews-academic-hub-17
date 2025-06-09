@@ -1,5 +1,5 @@
 
-// ABOUTME: RPC performance monitoring and analytics for optimization tracking
+// ABOUTME: RPC performance monitoring with existing functions only
 import { useState, useEffect, useCallback } from 'react';
 import { useOptimizedQuery, queryKeys, queryConfigs } from './useOptimizedQuery';
 import { supabase } from '@/integrations/supabase/client';
@@ -52,7 +52,7 @@ export const useRPCPerformanceMonitoring = () => {
     });
   }, []);
 
-  // Monitor database query performance
+  // Monitor database query performance using existing function
   const { data: queryPerformanceData } = useOptimizedQuery(
     queryKeys.queryPerformance(),
     async () => {
@@ -73,9 +73,23 @@ export const useRPCPerformanceMonitoring = () => {
 
   // Compare RPC vs legacy query performance
   const comparePerformance = useCallback(async (rpcFunction: string, legacyQuery: () => Promise<any>) => {
+    // Only compare with existing RPC functions
+    const validRPCFunctions = [
+      'get_optimized_issues',
+      'get_review_with_blocks', 
+      'get_sidebar_stats',
+      'get_featured_issue',
+      'get_issues_batch'
+    ];
+
+    if (!validRPCFunctions.includes(rpcFunction)) {
+      console.warn(`RPC function ${rpcFunction} not available for comparison`);
+      return null;
+    }
+
     const rpcStart = performance.now();
     try {
-      await supabase.rpc(rpcFunction);
+      await supabase.rpc(rpcFunction as any);
       const rpcEnd = performance.now();
       const rpcTime = rpcEnd - rpcStart;
 
