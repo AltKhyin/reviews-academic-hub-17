@@ -1,102 +1,60 @@
 
-// ABOUTME: Query optimization provider for centralized performance management
-import React, { createContext, useContext, useEffect } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-
-interface QueryOptimizationConfig {
-  enableDebugLogging: boolean;
-  defaultStaleTime?: number;
-  defaultGcTime?: number;
-}
-
-const QueryOptimizationContext = createContext<QueryOptimizationConfig | null>(null);
-
-// Create optimized query client with performance settings
-const createOptimizedQueryClient = (config: QueryOptimizationConfig) => {
-  return new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: config.defaultStaleTime || 5 * 60 * 1000, // 5 minutes
-        gcTime: config.defaultGcTime || 10 * 60 * 1000, // 10 minutes
-        refetchOnWindowFocus: false,
-        retry: (failureCount, error) => {
-          // Don't retry on 4xx errors
-          if (error && typeof error === 'object' && 'status' in error) {
-            const status = (error as any).status;
-            if (status >= 400 && status < 500) return false;
-          }
-          return failureCount < 3;
-        },
-      },
-      mutations: {
-        retry: 1,
-      },
-    },
-  });
-};
+// ABOUTME: Query optimization provider that integrates all performance enhancements
+import React, { useEffect } from 'react';
+import { useBackgroundSync } from '@/hooks/useBackgroundSync';
+import { initializeBackgroundOptimization, cleanupBackgroundOptimization } from '@/lib/queryClient';
 
 interface QueryOptimizationProviderProps {
   children: React.ReactNode;
   enableDebugLogging?: boolean;
-  defaultStaleTime?: number;
-  defaultGcTime?: number;
 }
 
 export const QueryOptimizationProvider: React.FC<QueryOptimizationProviderProps> = ({
   children,
-  enableDebugLogging = false,
-  defaultStaleTime,
-  defaultGcTime,
+  enableDebugLogging = false
 }) => {
-  const config: QueryOptimizationConfig = {
-    enableDebugLogging,
-    defaultStaleTime,
-    defaultGcTime,
-  };
+  // Initialize background sync
+  const { triggerSync, isEnabled } = useBackgroundSync({
+    enablePrefetch: true,
+    enablePeriodicSync: true,
+    enableVisibilitySync: true,
+    prefetchCriticalData: true,
+  });
 
-  const queryClient = React.useMemo(
-    () => createOptimizedQueryClient(config),
-    [config.defaultStaleTime, config.defaultGcTime]
-  );
-
-  // Performance logging in development
+  // Initialize optimization systems
   useEffect(() => {
-    if (config.enableDebugLogging) {
-      console.log('🚀 Query optimization enabled');
-      
-      // Log query cache statistics periodically
-      const logInterval = setInterval(() => {
-        const cache = queryClient.getQueryCache();
-        const queries = cache.getAll();
-        const activeQueries = queries.filter(q => q.state.fetchStatus === 'fetching');
-        
-        console.log(`📊 Query Stats: ${queries.length} total, ${activeQueries.length} active`);
-      }, 60000); // Every minute
-      
-      return () => clearInterval(logInterval);
+    // Start background optimization
+    initializeBackgroundOptimization();
+    
+    if (enableDebugLogging) {
+      console.log('Query optimization provider initialized');
+      console.log('Background sync enabled:', isEnabled);
     }
-  }, [config.enableDebugLogging, queryClient]);
+    
+    // Cleanup on unmount
+    return () => {
+      cleanupBackgroundOptimization();
+      if (enableDebugLogging) {
+        console.log('Query optimization provider cleaned up');
+      }
+    };
+  }, [isEnabled, enableDebugLogging]);
 
-  return (
-    <QueryOptimizationContext.Provider value={config}>
-      <QueryClientProvider client={queryClient}>
-        {children}
-        {config.enableDebugLogging && (
-          <ReactQueryDevtools 
-            initialIsOpen={false} 
-            position="bottom-right"
-          />
-        )}
-      </QueryClientProvider>
-    </QueryOptimizationContext.Provider>
-  );
-};
+  // Performance monitoring in development
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development' && enableDebugLogging) {
+      const logPerformance = () => {
+        console.group('Query Performance Report');
+        console.log('Background sync enabled:', isEnabled);
+        console.log('Manual sync available via triggerSync()');
+        console.groupEnd();
+      };
+      
+      const performanceInterval = setInterval(logPerformance, 60000); // Every minute
+      
+      return () => clearInterval(performanceInterval);
+    }
+  }, [isEnabled, triggerSync, enableDebugLogging]);
 
-export const useQueryOptimization = () => {
-  const context = useContext(QueryOptimizationContext);
-  if (!context) {
-    throw new Error('useQueryOptimization must be used within QueryOptimizationProvider');
-  }
-  return context;
+  return <>{children}</>;
 };
