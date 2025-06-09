@@ -7,6 +7,13 @@ import { useRPCPerformanceMonitoring } from '@/hooks/useRPCPerformanceMonitoring
 import { useMaterializedViewsOptimization } from '@/hooks/useMaterializedViewsOptimization';
 import { Activity, Database, Zap, Clock } from 'lucide-react';
 
+interface QueryPerformanceData {
+  cache_hit_ratio?: number;
+  active_connections?: number;
+  slow_queries_detected?: boolean;
+  last_updated?: string;
+}
+
 export const PerformanceMonitor: React.FC = () => {
   const { 
     rpcMetrics, 
@@ -18,6 +25,9 @@ export const PerformanceMonitor: React.FC = () => {
   const { viewHealth } = useMaterializedViewsOptimization();
 
   const report = generatePerformanceReport();
+
+  // Type guard for query performance data
+  const typedQueryData = queryPerformanceData as QueryPerformanceData | null;
 
   // Only show in development mode
   if (process.env.NODE_ENV === 'production') {
@@ -91,19 +101,19 @@ export const PerformanceMonitor: React.FC = () => {
           )}
 
           {/* Database Stats */}
-          {queryPerformanceData && (
+          {typedQueryData && (
             <div>
               <h4 className="text-xs font-medium mb-1">Database</h4>
               <div className="text-xs space-y-1">
                 <div className="flex justify-between">
                   <span>Cache Hit Ratio</span>
                   <Badge variant="secondary">
-                    {queryPerformanceData.cache_hit_ratio || 0}%
+                    {typedQueryData.cache_hit_ratio || 0}%
                   </Badge>
                 </div>
                 <div className="flex justify-between">
                   <span>Active Connections</span>
-                  <span>{queryPerformanceData.active_connections || 0}</span>
+                  <span>{typedQueryData.active_connections || 0}</span>
                 </div>
               </div>
             </div>

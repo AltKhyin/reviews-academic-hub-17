@@ -14,6 +14,14 @@ interface SidebarStats {
   totalComments: number;
 }
 
+interface CommunityStatsData {
+  total_users: number;
+  online_users: number;
+  total_issues: number;
+  total_posts: number;
+  total_comments: number;
+}
+
 export const useOptimizedSidebarStats = () => {
   const location = useLocation();
   
@@ -26,14 +34,15 @@ export const useOptimizedSidebarStats = () => {
   return useQuery({
     queryKey: queryKeys.sidebarStats(),
     queryFn: async (): Promise<SidebarStats> => {
-      // Use materialized view if available
-      if (mvStats) {
+      // Use materialized view if available and properly typed
+      if (mvStats && typeof mvStats === 'object' && 'total_users' in mvStats) {
+        const stats = mvStats as CommunityStatsData;
         return {
-          totalUsers: mvStats.total_users || 0,
-          onlineUsers: mvStats.online_users || 0,
-          totalIssues: mvStats.total_issues || 0,
-          totalPosts: mvStats.total_posts || 0,
-          totalComments: mvStats.total_comments || 0,
+          totalUsers: stats.total_users || 0,
+          onlineUsers: stats.online_users || 0,
+          totalIssues: stats.total_issues || 0,
+          totalPosts: stats.total_posts || 0,
+          totalComments: stats.total_comments || 0,
         };
       }
 

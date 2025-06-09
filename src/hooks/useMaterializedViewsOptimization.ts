@@ -71,11 +71,14 @@ export const useMaterializedViewData = (viewName: string) => {
   return useOptimizedQuery(
     ['materialized-view', viewName],
     async () => {
-      // Query materialized views directly for faster access
+      // For now, return empty data as materialized views need to be accessible via regular table queries
+      // This is a placeholder for when the views are properly integrated
       if (viewName === 'mv_published_issues_archive') {
+        // Fallback to regular issues query
         const { data, error } = await supabase
-          .from('mv_published_issues_archive' as any)
+          .from('issues')
           .select('*')
+          .eq('published', true)
           .order('created_at', { ascending: false })
           .limit(50);
         
@@ -84,11 +87,8 @@ export const useMaterializedViewData = (viewName: string) => {
       }
       
       if (viewName === 'mv_community_stats') {
-        const { data, error } = await supabase
-          .from('mv_community_stats' as any)
-          .select('*')
-          .single();
-        
+        // Fallback to RPC function
+        const { data, error } = await supabase.rpc('get_sidebar_stats');
         if (error) throw error;
         return data;
       }
