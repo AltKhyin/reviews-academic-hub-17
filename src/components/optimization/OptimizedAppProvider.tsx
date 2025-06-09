@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useOptimizedQueryClient } from '@/hooks/useOptimizedQueryClient';
 import { usePerformanceMonitoring } from '@/hooks/usePerformanceMonitoring';
 import { useErrorTracking } from '@/hooks/useErrorTracking';
-import { useBackgroundSync } from '@/hooks/useBackgroundSync';
 
 interface OptimizedAppProviderProps {
   children: React.ReactNode;
@@ -30,10 +29,8 @@ export const OptimizedAppProvider: React.FC<OptimizedAppProviderProps> = ({
 
   // Initialize performance monitoring
   const { metrics: performanceMetrics, getPerformanceScore } = usePerformanceMonitoring({
-    enableCoreWebVitals: enablePerformanceMonitoring,
-    enableQueryTracking: enablePerformanceMonitoring,
-    enableResourceTracking: enablePerformanceMonitoring,
-    reportingInterval: 30000, // 30 seconds
+    enableMonitoring: enablePerformanceMonitoring,
+    intervalMs: 30000, // 30 seconds
   });
 
   // Initialize error tracking with correct configuration properties
@@ -42,14 +39,6 @@ export const OptimizedAppProvider: React.FC<OptimizedAppProviderProps> = ({
     enableRemoteReporting: enableErrorTracking,
     maxErrorHistory: 50,
     reportingThreshold: 5,
-  });
-
-  // Initialize background sync
-  const { triggerSync } = useBackgroundSync({
-    enablePrefetch: enableBackgroundSync,
-    enablePeriodicSync: enableBackgroundSync,
-    enableVisibilitySync: enableBackgroundSync,
-    prefetchCriticalData: enableBackgroundSync,
   });
 
   // Global performance monitoring
@@ -97,9 +86,8 @@ export const OptimizedAppProvider: React.FC<OptimizedAppProviderProps> = ({
     
     if (cacheMetrics.hitRate < 70) {
       console.warn('⚠️ Low cache hit rate:', cacheMetrics.hitRate);
-      triggerSync(true); // Force sync to improve cache
     }
-  }, [errorMetrics.criticalErrors, performanceMetrics.lcp, cacheMetrics.hitRate, triggerSync]);
+  }, [errorMetrics.criticalErrors, performanceMetrics.lcp, cacheMetrics.hitRate]);
 
   return (
     <QueryClientProvider client={queryClient}>

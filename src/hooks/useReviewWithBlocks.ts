@@ -24,7 +24,14 @@ export const useReviewWithBlocks = (reviewId?: string) => {
         throw error;
       }
 
-      return data || null;
+      // Type assertion to handle Supabase JSON response
+      const result = data as any;
+      
+      return result ? {
+        issue: result.issue || null,
+        blocks: Array.isArray(result.blocks) ? result.blocks : [],
+        polls: Array.isArray(result.polls) ? result.polls : [],
+      } : null;
     },
     {
       enabled: !!reviewId,

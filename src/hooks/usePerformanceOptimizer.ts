@@ -59,7 +59,7 @@ export const usePerformanceOptimizer = (config: OptimizationConfig = {}) => {
   // Calculate composite performance metrics
   const calculateMetrics = useCallback((): PerformanceMetrics => {
     const cacheEfficiency = cacheMetrics.hitRate || 0;
-    const queryPerformance = Math.max(0, 100 - (performanceMetrics.queryPerformance.averageQueryTime / 10));
+    const queryPerformance = Math.max(0, 100 - ((performanceMetrics.queryPerformance?.averageQueryTime || 100) / 10));
     const errorRate = errorMetrics.errorRate || 0;
     const memoryUsage = performanceMetrics.memoryUsage || 0;
     const networkLatency = performanceMetrics.networkLatency || 0;

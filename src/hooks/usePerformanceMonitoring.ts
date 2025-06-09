@@ -1,6 +1,6 @@
 
 // ABOUTME: Optimized performance monitoring with adaptive intervals and RPC integration
-import { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useOptimizedQuery, queryKeys, queryConfigs } from './useOptimizedQuery';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -11,8 +11,16 @@ interface PerformanceMetrics {
     activeConnections: number;
     cacheHitRatio: number;
     slowQueriesDetected: boolean;
+    averageQueryTime?: number;
   };
   lastUpdated: Date;
+  // Core Web Vitals
+  lcp?: number;
+  fid?: number;
+  cls?: number;
+  pageLoadTime?: number;
+  networkLatency: number;
+  userExperience: number;
 }
 
 interface PerformanceConfig {
@@ -20,6 +28,13 @@ interface PerformanceConfig {
   intervalMs: number;
   memoryThreshold: number;
   enableAdaptiveInterval: boolean;
+}
+
+interface QueryPerformanceData {
+  active_connections: number;
+  cache_hit_ratio: number;
+  slow_queries_detected: boolean;
+  last_updated: string;
 }
 
 // Adaptive interval calculation based on performance score
@@ -62,7 +77,7 @@ export const usePerformanceMonitoring = (config: Partial<PerformanceConfig> = {}
           throw error;
         }
 
-        return data;
+        return data as QueryPerformanceData;
       } catch (error) {
         console.error('Query performance fetch error:', error);
         return {
@@ -70,7 +85,7 @@ export const usePerformanceMonitoring = (config: Partial<PerformanceConfig> = {}
           cache_hit_ratio: 0,
           slow_queries_detected: false,
           last_updated: new Date().toISOString(),
-        };
+        } as QueryPerformanceData;
       }
     },
     {
@@ -90,6 +105,28 @@ export const usePerformanceMonitoring = (config: Partial<PerformanceConfig> = {}
     }
     return 0;
   }, []);
+
+  // Calculate performance score
+  const getPerformanceScore = useCallback(() => {
+    if (!metrics) return 80; // Default score
+    
+    let score = 100;
+    
+    // Memory usage impact
+    if (metrics.memoryUsage > 150) score -= 20;
+    else if (metrics.memoryUsage > 100) score -= 10;
+    
+    // Cache efficiency impact
+    if (metrics.queryPerformance.cacheHitRatio < 70) score -= 15;
+    else if (metrics.queryPerformance.cacheHitRatio < 85) score -= 5;
+    
+    // Core Web Vitals impact
+    if (metrics.lcp && metrics.lcp > 4000) score -= 20;
+    if (metrics.fid && metrics.fid > 300) score -= 15;
+    if (metrics.cls && metrics.cls > 0.25) score -= 10;
+    
+    return Math.max(0, Math.min(100, score));
+  }, [metrics]);
 
   // Track user activity for adaptive intervals
   useEffect(() => {
@@ -125,7 +162,17 @@ export const usePerformanceMonitoring = (config: Partial<PerformanceConfig> = {}
     if (!finalConfig.enableMonitoring) return;
 
     const memoryUsage = measureMemoryUsage();
-    const renderCount = React.version ? 1 : 0; // Simplified render tracking
+    const renderCount = 1; // Simplified render tracking
+
+    // Get Core Web Vitals if available
+    let lcp, fid, cls, pageLoadTime;
+    
+    if ('getEntriesByType' in performance) {
+      const navigationEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
+      if (navigationEntries.length > 0) {
+        pageLoadTime = navigationEntries[0].loadEventEnd - navigationEntries[0].loadEventStart;
+      }
+    }
 
     const newMetrics: PerformanceMetrics = {
       memoryUsage,
@@ -134,8 +181,15 @@ export const usePerformanceMonitoring = (config: Partial<PerformanceConfig> = {}
         activeConnections: queryPerformanceData?.active_connections || 0,
         cacheHitRatio: queryPerformanceData?.cache_hit_ratio || 0,
         slowQueriesDetected: queryPerformanceData?.slow_queries_detected || false,
+        averageQueryTime: 100, // Default value
       },
       lastUpdated: new Date(),
+      lcp,
+      fid,
+      cls,
+      pageLoadTime,
+      networkLatency: 0, // Default value
+      userExperience: 85, // Default value
     };
 
     setMetrics(newMetrics);
@@ -167,9 +221,17 @@ export const usePerformanceMonitoring = (config: Partial<PerformanceConfig> = {}
   }, [collectMetrics, finalConfig, userActivity, metrics?.queryPerformance.cacheHitRatio]);
 
   return {
-    metrics,
+    metrics: metrics || {
+      memoryUsage: 0,
+      renderCount: 0,
+      queryPerformance: { activeConnections: 0, cacheHitRatio: 0, slowQueriesDetected: false },
+      lastUpdated: new Date(),
+      networkLatency: 0,
+      userExperience: 85,
+    },
     isLoading: queryPerfLoading,
     userActivity,
     config: finalConfig,
+    getPerformanceScore,
   };
 };

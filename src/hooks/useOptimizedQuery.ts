@@ -22,6 +22,10 @@ export const queryKeys = {
   // Settings
   homeSettings: () => ['settings', 'home'],
   sidebarConfig: () => ['config', 'sidebar'],
+  
+  // User data
+  userPermissions: (userId: string) => ['user', 'permissions', userId],
+  userReactions: (userId: string) => ['user', 'reactions', userId],
 } as const;
 
 // Optimized query configurations by data type
@@ -53,6 +57,7 @@ export const queryConfigs = {
   performance: {
     staleTime: 1 * 60 * 1000, // 1 minute
     gcTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
     refetchInterval: 2 * 60 * 1000, // 2 minutes
   }
 } as const;
