@@ -1,4 +1,3 @@
-
 // ABOUTME: Optimized sidebar data hooks using new RPC functions for better performance
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
@@ -14,14 +13,6 @@ interface SidebarStats {
   totalComments: number;
 }
 
-interface CommunityStatsData {
-  total_users: number;
-  online_users: number;
-  total_issues: number;
-  total_posts: number;
-  total_comments: number;
-}
-
 export const useOptimizedSidebarStats = () => {
   const location = useLocation();
   
@@ -34,16 +25,19 @@ export const useOptimizedSidebarStats = () => {
   return useQuery({
     queryKey: queryKeys.sidebarStats(),
     queryFn: async (): Promise<SidebarStats> => {
-      // Use materialized view if available and properly typed
-      if (mvStats && typeof mvStats === 'object' && 'total_users' in mvStats) {
-        const stats = mvStats as CommunityStatsData;
-        return {
-          totalUsers: stats.total_users || 0,
-          onlineUsers: stats.online_users || 0,
-          totalIssues: stats.total_issues || 0,
-          totalPosts: stats.total_posts || 0,
-          totalComments: stats.total_comments || 0,
-        };
+      // Use materialized view if available and properly structured
+      if (mvStats && typeof mvStats === 'object' && mvStats !== null) {
+        const stats = mvStats as Record<string, any>;
+        // Check if all required properties exist
+        if ('total_users' in stats && 'online_users' in stats && 'total_issues' in stats) {
+          return {
+            totalUsers: Number(stats.total_users) || 0,
+            onlineUsers: Number(stats.online_users) || 0,
+            totalIssues: Number(stats.total_issues) || 0,
+            totalPosts: Number(stats.total_posts) || 0,
+            totalComments: Number(stats.total_comments) || 0,
+          };
+        }
       }
 
       // Fallback to RPC function
