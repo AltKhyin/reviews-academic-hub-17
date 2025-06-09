@@ -681,12 +681,6 @@ const { data, error } = await supabase
   });
 ```
 
-### Privacy by Design
-- **Data minimization**: Collect only necessary information
-- **Purpose limitation**: Data used only for stated purposes
-- **Transparency**: Clear privacy policy and data usage
-- **User control**: Account settings and data export options
-
 ### Content Moderation
 - **Community guidelines**: Clear, enforced standards
 - **Reporting system**: User-initiated content reporting
