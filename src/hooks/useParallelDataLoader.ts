@@ -1,11 +1,11 @@
 
 // ABOUTME: Parallel data loading hook with integrated section visibility management
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { Issue } from '@/types/issue';
+import { useOptimizedIssues, useOptimizedFeaturedIssue } from './useOptimizedIssues';
+import { useOptimizedSidebarData } from './useOptimizedSidebarData';
 import { useStableAuth } from './useStableAuth';
 import { useSectionVisibility } from './useSectionVisibility';
+import { Issue } from '@/types/issue';
 
 interface SectionVisibilityConfig {
   id: string;
@@ -24,69 +24,6 @@ interface ParallelDataState {
   retryFailed: () => void;
 }
 
-// Optimized issues query with minimal fields for initial load
-const fetchMinimalIssues = async (): Promise<Issue[]> => {
-  const { data, error } = await supabase
-    .from('issues')
-    .select(`
-      id,
-      title,
-      cover_image_url,
-      specialty,
-      published,
-      featured,
-      created_at,
-      published_at,
-      score
-    `)
-    .eq('published', true)
-    .order('created_at', { ascending: false })
-    .limit(20);
-
-  if (error) throw error;
-
-  return (data || []).map(issue => ({
-    id: issue.id,
-    title: issue.title || '',
-    cover_image_url: issue.cover_image_url,
-    specialty: issue.specialty || '',
-    published: true,
-    featured: Boolean(issue.featured),
-    created_at: issue.created_at,
-    published_at: issue.published_at,
-    score: issue.score || 0,
-    // Default values for fields not fetched initially
-    description: null,
-    authors: null,
-    search_title: null,
-    search_description: null,
-    year: null,
-    design: null,
-    pdf_url: '',
-    review_type: 'pdf' as const,
-    backend_tags: '',
-    updated_at: issue.created_at,
-    population: null,
-    article_pdf_url: null,
-    real_title: null,
-    real_title_ptbr: null,
-    review_content: null,
-    toc_data: null,
-  }));
-};
-
-// Minimal reviewer comments for quick load
-const fetchMinimalReviewerComments = async () => {
-  const { data, error } = await supabase
-    .from('reviewer_comments')
-    .select('id, reviewer_name, comment, created_at, reviewer_avatar')
-    .order('created_at', { ascending: false })
-    .limit(3);
-
-  if (error) throw error;
-  return data || [];
-};
-
 // Section ID mapping between different parts of the system
 const mapSectionVisibilityToConfig = (sections: any[]): SectionVisibilityConfig[] => {
   return sections.map(section => ({
@@ -104,20 +41,24 @@ export const useParallelDataLoader = (): ParallelDataState => {
   const retryCountRef = useRef(0);
   const maxRetries = 2;
 
-  // Issues query - runs immediately, doesn't wait for auth
+  // Use optimized issues query
   const { 
     data: issues = [], 
     isLoading: issuesLoading, 
     error: issuesError,
     refetch: refetchIssues
-  } = useQuery({
-    queryKey: ['parallel-issues'],
-    queryFn: fetchMinimalIssues,
-    staleTime: 10 * 60 * 1000, // 10 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes
-    retry: (failureCount) => failureCount < maxRetries,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-  });
+  } = useOptimizedIssues({ limit: 20 });
+
+  // Use optimized featured issue query
+  const {
+    data: featuredIssue,
+    isLoading: featuredLoading,
+    error: featuredError,
+    refetch: refetchFeatured
+  } = useOptimizedFeaturedIssue();
+
+  // Use optimized sidebar data
+  const optimizedSidebar = useOptimizedSidebarData();
 
   // Section visibility - now properly integrated with actual settings
   const [sectionVisibility, setSectionVisibility] = useState<SectionVisibilityConfig[]>([]);
@@ -132,32 +73,16 @@ export const useParallelDataLoader = (): ParallelDataState => {
     }
   }, [sections, sectionsLoading, getVisibleSections]);
 
-  // Reviewer comments query - runs in parallel
-  const { 
-    data: reviewerComments = [], 
-    isLoading: commentsLoading, 
-    error: commentsError,
-    refetch: refetchComments
-  } = useQuery({
-    queryKey: ['parallel-reviewer-comments'],
-    queryFn: fetchMinimalReviewerComments,
-    staleTime: 15 * 60 * 1000, // 15 minutes
-    gcTime: 45 * 60 * 1000, // 45 minutes
-    retry: (failureCount) => failureCount < maxRetries,
-  });
-
-  // Featured issue - derived from issues data
-  const featuredIssue = issues.find(issue => issue.featured) || issues[0] || null;
-
   // Error management
   useEffect(() => {
     const newErrors: Record<string, Error> = {};
     
     if (issuesError) newErrors.issues = issuesError as Error;
-    if (commentsError) newErrors.comments = commentsError as Error;
+    if (featuredError) newErrors.featured = featuredError as Error;
+    if (optimizedSidebar.hasError) newErrors.sidebar = new Error('Sidebar data error');
     
     setErrors(newErrors);
-  }, [issuesError, commentsError]);
+  }, [issuesError, featuredError, optimizedSidebar.hasError]);
 
   // Retry mechanism for failed requests
   const retryFailed = useCallback(() => {
@@ -165,27 +90,27 @@ export const useParallelDataLoader = (): ParallelDataState => {
       retryCountRef.current++;
       
       if (issuesError) refetchIssues();
-      if (commentsError) refetchComments();
+      if (featuredError) refetchFeatured();
       
       // Clear errors temporarily to show loading state
       setErrors({});
     }
-  }, [issuesError, commentsError, refetchIssues, refetchComments]);
+  }, [issuesError, featuredError, refetchIssues, refetchFeatured]);
 
   // Reset retry count on successful loads
   useEffect(() => {
-    if (!issuesError && !commentsError) {
+    if (!issuesError && !featuredError && !optimizedSidebar.hasError) {
       retryCountRef.current = 0;
     }
-  }, [issuesError, commentsError]);
+  }, [issuesError, featuredError, optimizedSidebar.hasError]);
 
-  const isLoading = authLoading || sectionsLoading || (issuesLoading && issues.length === 0);
+  const isLoading = authLoading || sectionsLoading || (issuesLoading && issues.length === 0) || featuredLoading;
 
   return {
     issues,
     sectionVisibility,
-    reviewerComments,
-    featuredIssue,
+    reviewerComments: optimizedSidebar.reviewerComments.data || [],
+    featuredIssue: featuredIssue || null,
     isLoading,
     errors,
     retryFailed,

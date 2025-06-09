@@ -1,5 +1,5 @@
 
-// ABOUTME: Optimized sidebar data hooks using new database functions for better performance
+// ABOUTME: Optimized sidebar data hooks using new RPC functions for better performance
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,7 +23,7 @@ export const useOptimizedSidebarStats = () => {
     queryKey: queryKeys.sidebarStats(),
     queryFn: async (): Promise<SidebarStats> => {
       try {
-        // Use our optimized database function
+        // Use our optimized RPC function
         const { data, error } = await supabase.rpc('get_sidebar_stats');
         
         if (error) {
@@ -31,7 +31,7 @@ export const useOptimizedSidebarStats = () => {
           throw error;
         }
 
-        // Type assertion since we know the structure from our database function
+        // Type assertion since we know the structure from our RPC function
         const stats = data as any;
 
         return {
@@ -54,10 +54,8 @@ export const useOptimizedSidebarStats = () => {
       }
     },
     enabled: shouldFetch,
-    staleTime: 5 * 60 * 1000, // 5 minutes - stats don't change rapidly
-    gcTime: 15 * 60 * 1000, // 15 minutes cache
+    ...queryConfigs.performance,
     refetchInterval: shouldFetch ? 10 * 60 * 1000 : false, // Only poll when needed, every 10 minutes
-    refetchOnWindowFocus: false,
   });
 };
 
@@ -83,20 +81,19 @@ export const useOptimizedReviewerComments = () => {
       return data || [];
     },
     enabled: shouldFetch,
+    ...queryConfigs.static,
     staleTime: 15 * 60 * 1000, // 15 minutes - comments are updated weekly
-    gcTime: 30 * 60 * 1000, // 30 minutes cache
-    refetchOnWindowFocus: false,
     refetchInterval: false, // No polling for comments
   });
 };
 
-// Optimized hook for top threads with reduced data transfer
+// Optimized hook for top threads using RPC function
 export const useOptimizedTopThreads = () => {
   const location = useLocation();
   const shouldFetch = ['/homepage', '/', '/community'].includes(location.pathname);
 
   return useQuery({
-    queryKey: ['top-threads'],
+    queryKey: queryKeys.topThreads(2),
     queryFn: async () => {
       try {
         const { data, error } = await supabase.rpc('get_top_threads', { min_comments: 2 });
@@ -128,9 +125,8 @@ export const useOptimizedTopThreads = () => {
       }
     },
     enabled: shouldFetch,
+    ...queryConfigs.realtime,
     staleTime: 10 * 60 * 1000, // 10 minutes
-    gcTime: 20 * 60 * 1000, // 20 minutes cache
-    refetchOnWindowFocus: false,
     refetchInterval: false, // No polling
   });
 };

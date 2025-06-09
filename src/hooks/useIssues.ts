@@ -1,6 +1,6 @@
 
 // ABOUTME: Updated issues hook to use optimized version with intelligent caching
-import { useOptimizedIssues, useOptimizedFeaturedIssue } from './useOptimizedIssues';
+import { useOptimizedIssues, useOptimizedFeaturedIssue, useIssuesBatch } from './useOptimizedIssues';
 
 // Maintain backward compatibility for the main useIssues hook
 export const useIssues = () => {
@@ -8,4 +8,4 @@ export const useIssues = () => {
 };
 
 // Export optimized versions for specific use cases
-export { useOptimizedIssues, useOptimizedFeaturedIssue, useIssuesBatch } from './useOptimizedIssues';
+export { useOptimizedIssues, useOptimizedFeaturedIssue, useIssuesBatch };

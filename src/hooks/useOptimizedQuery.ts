@@ -1,138 +1,84 @@
 
-// ABOUTME: Optimized React Query wrapper with standardized keys and intelligent caching
+// ABOUTME: Centralized query optimization utilities for consistent caching and key management
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 
-// Standardized query key factory with better organization
+// Centralized query key factory for consistency
 export const queryKeys = {
-  // User-related queries
-  profile: (userId: string) => ['profile', userId] as const,
-  userReactions: (userId: string) => ['userReactions', userId] as const,
-  userBookmarks: (userId: string) => ['userBookmarks', userId] as const,
-  userPermissions: (userId: string) => ['userPermissions', userId] as const,
+  // Issues queries
+  issues: (filters?: Record<string, any>) => ['issues', filters].filter(Boolean),
+  issuesBatch: (ids: string[]) => ['issues', 'batch', ids],
+  featuredIssue: () => ['issues', 'featured'],
+  reviewWithBlocks: (id: string) => ['review', 'blocks', id],
   
-  // Issues and content
-  issues: (filters?: any) => ['issues', filters] as const,
-  issue: (id: string) => ['issue', id] as const,
-  featuredIssue: () => ['featuredIssue'] as const,
-  
-  // Archive and search
-  archiveData: (filters?: any) => ['archiveData', filters] as const,
-  
-  // Sidebar data - optimized keys
-  sidebarStats: () => ['sidebarStats'] as const,
-  sidebarConfig: () => ['sidebarConfig'] as const,
-  onlineUsers: () => ['onlineUsers'] as const,
+  // Analytics and stats
+  analytics: () => ['analytics'],
+  sidebarStats: () => ['sidebar', 'stats'],
+  queryPerformance: () => ['query', 'performance'],
   
   // Community
-  posts: (filters?: any) => ['posts', filters] as const,
-  comments: (filters?: any) => ['comments', filters] as const,
+  topThreads: (minComments?: number) => ['threads', 'top', minComments],
+  popularIssues: (period?: number, limit?: number) => ['issues', 'popular', period, limit],
   
-  // Analytics
-  analytics: () => ['analytics'] as const,
-  userEngagement: () => ['analytics', 'userEngagement'] as const,
-  contentMetrics: () => ['analytics', 'contentMetrics'] as const,
-  communityActivity: () => ['analytics', 'communityActivity'] as const,
-  performance: () => ['analytics', 'performance'] as const,
-  systemHealth: () => ['analytics', 'systemHealth'] as const,
+  // Settings
+  homeSettings: () => ['settings', 'home'],
+  sidebarConfig: () => ['config', 'sidebar'],
 } as const;
 
-// Optimized query configuration presets
+// Optimized query configurations by data type
 export const queryConfigs = {
-  // For static data that rarely changes
+  // Static/semi-static data - longer cache times
   static: {
     staleTime: 15 * 60 * 1000, // 15 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes
     refetchOnWindowFocus: false,
     refetchOnMount: false,
-    refetchInterval: false, // Disable automatic polling for static data
   },
   
-  // For dynamic data that changes frequently
+  // Real-time data - shorter cache times
   realtime: {
     staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
-    refetchOnWindowFocus: false, // Prevent excessive refetching
-    refetchOnMount: 'always' as const,
-    refetchInterval: 5 * 60 * 1000, // 5 minutes polling
+    refetchOnWindowFocus: true,
+    refetchInterval: 5 * 60 * 1000, // 5 minutes
   },
   
-  // For user-specific data
+  // User-specific data - medium cache times
   user: {
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 15 * 60 * 1000, // 15 minutes
     refetchOnWindowFocus: false,
-    refetchOnMount: 'always' as const,
-    refetchInterval: false, // No polling for user data
   },
   
-  // For analytics data
-  analytics: {
-    staleTime: 10 * 60 * 1000, // 10 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    refetchInterval: false, // Analytics don't need real-time updates
-  },
+  // Performance monitoring - adaptive intervals
+  performance: {
+    staleTime: 1 * 60 * 1000, // 1 minute
+    gcTime: 5 * 60 * 1000, // 5 minutes
+    refetchInterval: 2 * 60 * 1000, // 2 minutes
+  }
 } as const;
 
-// Enhanced request deduplication with cleanup
-const activeRequests = new Map<string, Promise<any>>();
-
-// Cleanup function to prevent memory leaks
-const cleanupStaleRequests = () => {
-  const now = Date.now();
-  const CLEANUP_THRESHOLD = 5 * 60 * 1000; // 5 minutes
-  
-  // Store request timestamps
-  if (!cleanupStaleRequests.lastCleanup) {
-    cleanupStaleRequests.lastCleanup = now;
-  }
-  
-  // Only cleanup every 5 minutes
-  if (now - cleanupStaleRequests.lastCleanup > CLEANUP_THRESHOLD) {
-    activeRequests.clear();
-    cleanupStaleRequests.lastCleanup = now;
-  }
-};
-
-// Optimized query hook with deduplication and intelligent caching
-export const useOptimizedQuery = <TData = unknown, TError = Error>(
+// Generic optimized query hook with automatic config selection
+export const useOptimizedQuery = <TData = unknown>(
   queryKey: readonly unknown[],
   queryFn: () => Promise<TData>,
-  options?: Omit<UseQueryOptions<TData, TError>, 'queryKey' | 'queryFn'>
+  options?: Partial<UseQueryOptions<TData>>
 ) => {
-  // Cleanup stale requests periodically
-  cleanupStaleRequests();
+  // Auto-select config based on query key pattern
+  let config = queryConfigs.user; // default
   
-  // Create a unique key for request deduplication
-  const requestKey = JSON.stringify(queryKey);
-  
-  const enhancedQueryFn = async (): Promise<TData> => {
-    // Check if this request is already in flight
-    if (activeRequests.has(requestKey)) {
-      return activeRequests.get(requestKey);
-    }
-    
-    // Start new request and store promise
-    const promise = queryFn().finally(() => {
-      // Clean up completed request
-      activeRequests.delete(requestKey);
-    });
-    
-    activeRequests.set(requestKey, promise);
-    return promise;
-  };
+  const keyString = JSON.stringify(queryKey);
+  if (keyString.includes('stats') || keyString.includes('analytics')) {
+    config = queryConfigs.performance;
+  } else if (keyString.includes('settings') || keyString.includes('config')) {
+    config = queryConfigs.static;
+  } else if (keyString.includes('threads') || keyString.includes('comments')) {
+    config = queryConfigs.realtime;
+  }
 
   return useQuery({
     queryKey,
-    queryFn: enhancedQueryFn,
+    queryFn,
+    ...config,
     ...options,
   });
 };
-
-// Add static property for cleanup tracking
-declare global {
-  interface Function {
-    lastCleanup?: number;
-  }
-}
