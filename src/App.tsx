@@ -4,6 +4,7 @@ import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { QueryOptimizationProvider } from "./components/optimization/QueryOptimizationProvider";
@@ -21,6 +22,21 @@ import Edit from "./pages/dashboard/Edit";
 import IssueEditor from "./pages/dashboard/IssueEditor";
 import NotFound from "./pages/NotFound";
 import PolicyPage from "./pages/PolicyPage";
+
+// Create optimized query client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 30 * 60 * 1000, // 30 minutes
+      retry: 2,
+      refetchOnWindowFocus: false,
+    },
+    mutations: {
+      retry: 1,
+    },
+  },
+});
 
 const App = () => {
   // Enable dark mode by default and optimize for native editor experience
@@ -42,36 +58,38 @@ const App = () => {
   const isDevelopment = process.env.NODE_ENV === 'development';
 
   return (
-    <TooltipProvider>
-      <AuthProvider>
-        <QueryOptimizationProvider enableDebugLogging={isDevelopment}>
-          <Toaster />
-          <Sonner />
-          <Routes>
-            {/* Public routes that don't require authentication */}
-            <Route path="/auth" element={<AuthPage />} />
-            <Route path="/policy" element={<PolicyPage />} />
-            
-            {/* Protected routes that require authentication */}
-            <Route path="/" element={<DashboardLayout />}>
-              <Route path="homepage" element={<Dashboard />} />
-              <Route path="article/:id" element={<ArticleViewer />} />
-              <Route path="acervo" element={<ArchivePage />} />
-              <Route path="search" element={<SearchPage />} />
-              <Route path="community" element={<Community />} />
-              <Route path="articles" element={<Dashboard />} />
-              <Route path="profile" element={<Profile />} />
-              <Route path="edit" element={<Edit />} />
-              <Route path="edit/issue/:id" element={<IssueEditor />} />
-              <Route path="edit/issue/new" element={<IssueEditor />} />
-              <Route index element={<Navigate to="/homepage" replace />} />
-            </Route>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AuthProvider>
+          <QueryOptimizationProvider enableDebugLogging={isDevelopment}>
+            <Toaster />
+            <Sonner />
+            <Routes>
+              {/* Public routes that don't require authentication */}
+              <Route path="/auth" element={<AuthPage />} />
+              <Route path="/policy" element={<PolicyPage />} />
+              
+              {/* Protected routes that require authentication */}
+              <Route path="/" element={<DashboardLayout />}>
+                <Route path="homepage" element={<Dashboard />} />
+                <Route path="article/:id" element={<ArticleViewer />} />
+                <Route path="acervo" element={<ArchivePage />} />
+                <Route path="search" element={<SearchPage />} />
+                <Route path="community" element={<Community />} />
+                <Route path="articles" element={<Dashboard />} />
+                <Route path="profile" element={<Profile />} />
+                <Route path="edit" element={<Edit />} />
+                <Route path="edit/issue/:id" element={<IssueEditor />} />
+                <Route path="edit/issue/new" element={<IssueEditor />} />
+                <Route index element={<Navigate to="/homepage" replace />} />
+              </Route>
 
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </QueryOptimizationProvider>
-      </AuthProvider>
-    </TooltipProvider>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </QueryOptimizationProvider>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
   );
 };
 

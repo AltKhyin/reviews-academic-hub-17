@@ -1,237 +1,102 @@
 
-// ABOUTME: Client-side backend tag reordering system with scoring algorithm and graceful fallback handling
-import { useState, useMemo, useCallback } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { ArchiveIssue, TagHierarchy } from '@/types/archive';
+// ABOUTME: Archive tag-based reordering system for enhanced content discovery
+import { useState, useEffect, useMemo } from 'react';
+import { Issue } from '@/types/issue';
 
-interface TagReorderingState {
-  selectedTags: string[];
-  tagHierarchy: TagHierarchy;
-  isLoading: boolean;
-  error: Error | null;
+interface TagState {
+  selected: boolean;
+  count: number;
 }
 
-interface ScoredIssue extends ArchiveIssue {
-  tagScore: number;
+interface ParentCategory {
+  id: string;
+  name: string;
+  count: number;
+  subtags: string[];
 }
 
-// Fetch active tag configuration from database
-const fetchActiveTagConfiguration = async (): Promise<TagHierarchy> => {
-  const { data, error } = await supabase
-    .from('tag_configurations')
-    .select('tag_data')
-    .eq('is_active', true)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single();
+export const useArchiveTagReordering = (issues: Issue[]) => {
+  const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
+  const [isLoading] = useState(false);
+  const [error] = useState<string | null>(null);
 
-  if (error) {
-    console.warn('No active tag configuration found, using empty hierarchy:', error);
-    return {};
-  }
-
-  // Properly handle the Json type from Supabase
-  const tagData = data?.tag_data;
-  
-  // Type guard to ensure we have a valid TagHierarchy
-  if (!tagData || typeof tagData !== 'object' || Array.isArray(tagData)) {
-    console.warn('Invalid tag_data format, using empty hierarchy');
-    return {};
-  }
-
-  // Additional validation to ensure all values are string arrays
-  const validatedHierarchy: TagHierarchy = {};
-  for (const [key, value] of Object.entries(tagData)) {
-    if (Array.isArray(value) && value.every(item => typeof item === 'string')) {
-      validatedHierarchy[key] = value as string[];
-    } else {
-      console.warn(`Invalid subtags for category "${key}", skipping`);
-    }
-  }
-
-  return validatedHierarchy;
-};
-
-// Calculate relevance score for an issue based on selected tags
-const calculateIssueTagScore = (issue: ArchiveIssue, selectedTags: string[]): number => {
-  if (selectedTags.length === 0) return 0;
-
-  let score = 0;
-  
-  // Handle null or invalid backend_tags gracefully
-  let backendTags: TagHierarchy = {};
-  
-  if (issue.backend_tags) {
-    try {
-      if (typeof issue.backend_tags === 'string') {
-        backendTags = JSON.parse(issue.backend_tags);
-      } else if (typeof issue.backend_tags === 'object') {
-        backendTags = issue.backend_tags as TagHierarchy;
+  // Extract categories from issues (simplified approach)
+  const parentCategories = useMemo((): ParentCategory[] => {
+    const specialtyMap = new Map<string, number>();
+    
+    issues.forEach(issue => {
+      if (issue.specialty) {
+        specialtyMap.set(issue.specialty, (specialtyMap.get(issue.specialty) || 0) + 1);
       }
-    } catch (error) {
-      console.warn('Invalid backend_tags format for issue:', issue.id, error);
-      return 0;
-    }
-  }
-
-  // Score calculation: parent match = +2, subtag match = +1
-  for (const selectedTag of selectedTags) {
-    for (const [parentTag, subtags] of Object.entries(backendTags)) {
-      // Parent tag exact match
-      if (selectedTag === parentTag) {
-        score += 2;
-      }
-      
-      // Subtag match
-      if (Array.isArray(subtags) && subtags.includes(selectedTag)) {
-        score += 1;
-      }
-    }
-  }
-
-  return score;
-};
-
-// Get all parent categories from tag hierarchy
-const getParentCategories = (tagHierarchy: TagHierarchy): string[] => {
-  return Object.keys(tagHierarchy).sort();
-};
-
-// Get subtags for selected parent categories
-const getSubtagsForSelectedParents = (tagHierarchy: TagHierarchy, selectedParents: string[]): string[] => {
-  const subtags: string[] = [];
-  
-  selectedParents.forEach(parent => {
-    const parentSubtags = tagHierarchy[parent] || [];
-    subtags.push(...parentSubtags);
-  });
-  
-  return [...new Set(subtags)].sort(); // Remove duplicates and sort
-};
-
-export const useArchiveTagReordering = (issues: ArchiveIssue[]) => {
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-
-  // Fetch tag configuration
-  const { data: tagHierarchy = {}, isLoading, error } = useQuery({
-    queryKey: ['active-tag-configuration'],
-    queryFn: fetchActiveTagConfiguration,
-    staleTime: 10 * 60 * 1000, // 10 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes
-    retry: 1,
-  });
-
-  // Memoized parent categories (always visible)
-  const parentCategories = useMemo(() => 
-    getParentCategories(tagHierarchy), 
-    [tagHierarchy]
-  );
-
-  // Memoized selected parent categories
-  const selectedParents = useMemo(() => 
-    selectedTags.filter(tag => parentCategories.includes(tag)), 
-    [selectedTags, parentCategories]
-  );
-
-  // Memoized subtags for selected parents (conditionally visible)
-  const visibleSubtags = useMemo(() => 
-    getSubtagsForSelectedParents(tagHierarchy, selectedParents), 
-    [tagHierarchy, selectedParents]
-  );
-
-  // Memoized reordered issues based on tag scores
-  const reorderedIssues = useMemo((): ScoredIssue[] => {
-    if (selectedTags.length === 0) {
-      // No tags selected: return original order with zero scores
-      return issues.map(issue => ({ ...issue, tagScore: 0 }));
-    }
-
-    // Calculate scores and sort by relevance
-    const scoredIssues = issues.map(issue => ({
-      ...issue,
-      tagScore: calculateIssueTagScore(issue, selectedTags)
+    });
+    
+    return Array.from(specialtyMap.entries()).map(([specialty, count]) => ({
+      id: specialty,
+      name: specialty,
+      count,
+      subtags: [], // Simplified - no subtags for now
     }));
+  }, [issues]);
 
-    // Sort by score (descending), then by creation date (descending) for tie-breaking
-    return scoredIssues.sort((a, b) => {
-      if (b.tagScore !== a.tagScore) {
-        return b.tagScore - a.tagScore;
-      }
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-    });
-  }, [issues, selectedTags]);
+  // Visible subtags (empty for simplified approach)
+  const visibleSubtags = useMemo(() => [], []);
 
-  // Tag selection handlers
-  const handleTagSelect = useCallback((tag: string) => {
+  // Check if any tags are selected
+  const hasActiveTagSelection = selectedTags.size > 0;
+
+  // Reorder issues based on selected tags
+  const reorderedIssues = useMemo(() => {
+    if (!hasActiveTagSelection) {
+      return issues;
+    }
+    
+    // Filter issues by selected specialties
+    return issues.filter(issue => 
+      issue.specialty && selectedTags.has(issue.specialty)
+    );
+  }, [issues, selectedTags, hasActiveTagSelection]);
+
+  // Handle tag selection
+  const handleTagSelect = (tagId: string) => {
     setSelectedTags(prev => {
-      const isCurrentlySelected = prev.includes(tag);
-      
-      if (isCurrentlySelected) {
-        // Deselecting a tag
-        if (parentCategories.includes(tag)) {
-          // If deselecting a parent, also remove all its subtags
-          const parentSubtags = tagHierarchy[tag] || [];
-          return prev.filter(selectedTag => 
-            selectedTag !== tag && !parentSubtags.includes(selectedTag)
-          );
-        } else {
-          // Just remove the subtag
-          return prev.filter(selectedTag => selectedTag !== tag);
-        }
+      const newSet = new Set(prev);
+      if (newSet.has(tagId)) {
+        newSet.delete(tagId);
       } else {
-        // Selecting a new tag
-        return [...prev, tag];
+        newSet.add(tagId);
       }
+      return newSet;
     });
-  }, [parentCategories, tagHierarchy]);
+  };
 
-  const clearAllTags = useCallback(() => {
-    setSelectedTags([]);
-  }, []);
+  // Clear all selected tags
+  const clearAllTags = () => {
+    setSelectedTags(new Set());
+  };
 
-  // Determine tag visual states for UI
-  const getTagState = useCallback((tag: string): 'selected' | 'highlighted' | 'unselected' => {
-    if (selectedTags.includes(tag)) {
-      return 'selected';
-    }
-    
-    // Check if this is a subtag of a selected parent (highlighted state)
-    if (!parentCategories.includes(tag)) {
-      const isSubtagOfSelectedParent = selectedParents.some(parent => {
-        const parentSubtags = tagHierarchy[parent] || [];
-        return parentSubtags.includes(tag);
-      });
-      
-      if (isSubtagOfSelectedParent) {
-        return 'highlighted';
-      }
-    }
-    
-    return 'unselected';
-  }, [selectedTags, parentCategories, selectedParents, tagHierarchy]);
+  // Get tag state for a specific tag
+  const getTagState = (tagId: string): TagState => {
+    const category = parentCategories.find(cat => cat.id === tagId);
+    return {
+      selected: selectedTags.has(tagId),
+      count: category?.count || 0,
+    };
+  };
+
+  // Get count of issues matching selected tags
+  const tagMatchCount = reorderedIssues.length;
 
   return {
-    // Data
     reorderedIssues,
-    tagHierarchy,
-    selectedTags,
-    
-    // UI State
     parentCategories,
     visibleSubtags,
-    hasActiveTagSelection: selectedTags.length > 0,
-    
-    // Loading States
+    selectedTags,
+    hasActiveTagSelection,
     isLoading,
     error,
-    
-    // Actions
     handleTagSelect,
     clearAllTags,
     getTagState,
-    
-    // Statistics
-    tagMatchCount: reorderedIssues.filter(issue => issue.tagScore > 0).length,
+    tagMatchCount,
   };
 };
