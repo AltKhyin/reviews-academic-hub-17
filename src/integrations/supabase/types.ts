@@ -294,6 +294,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "comments_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "mv_published_issues_archive"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "comments_parent_id_fkey"
             columns: ["parent_id"]
             isOneToOne: false
@@ -444,6 +451,13 @@ export type Database = {
             referencedRelation: "issues"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "external_lectures_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "mv_published_issues_archive"
+            referencedColumns: ["id"]
+          },
         ]
       }
       issue_discussion_settings: {
@@ -482,6 +496,13 @@ export type Database = {
             referencedRelation: "issues"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "issue_discussion_settings_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: true
+            referencedRelation: "mv_published_issues_archive"
+            referencedColumns: ["id"]
+          },
         ]
       }
       issue_views: {
@@ -518,6 +539,13 @@ export type Database = {
             columns: ["issue_id"]
             isOneToOne: false
             referencedRelation: "issues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "issue_views_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "mv_published_issues_archive"
             referencedColumns: ["id"]
           },
           {
@@ -949,6 +977,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "posts_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "mv_published_issues_archive"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "posts_poll_id_fkey"
             columns: ["poll_id"]
             isOneToOne: false
@@ -1042,6 +1077,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "review_analytics_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "mv_published_issues_archive"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "review_analytics_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -1099,6 +1141,13 @@ export type Database = {
             referencedRelation: "issues"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "review_blocks_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "mv_published_issues_archive"
+            referencedColumns: ["id"]
+          },
         ]
       }
       review_polls: {
@@ -1154,6 +1203,13 @@ export type Database = {
             columns: ["issue_id"]
             isOneToOne: false
             referencedRelation: "issues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_polls_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "mv_published_issues_archive"
             referencedColumns: ["id"]
           },
         ]
@@ -1373,6 +1429,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "user_article_reactions_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "mv_published_issues_archive"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "user_article_reactions_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -1426,6 +1489,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "user_article_views_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "mv_published_issues_archive"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "user_article_views_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -1476,6 +1546,13 @@ export type Database = {
             columns: ["issue_id"]
             isOneToOne: false
             referencedRelation: "issues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_bookmarks_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "mv_published_issues_archive"
             referencedColumns: ["id"]
           },
           {
@@ -1537,6 +1614,33 @@ export type Database = {
         }
         Relationships: []
       }
+      mv_community_stats: {
+        Row: {
+          last_updated: string | null
+          online_users: number | null
+          total_comments: number | null
+          total_issues: number | null
+          total_posts: number | null
+          total_users: number | null
+        }
+        Relationships: []
+      }
+      mv_published_issues_archive: {
+        Row: {
+          authors: string | null
+          cover_image_url: string | null
+          created_at: string | null
+          description: string | null
+          featured: boolean | null
+          id: string | null
+          published_at: string | null
+          score: number | null
+          specialty: string | null
+          title: string | null
+          year: string | null
+        }
+        Relationships: []
+      }
       online_users: {
         Row: {
           avatar_url: string | null
@@ -1565,6 +1669,10 @@ export type Database = {
       }
       _ltree_gist_options: {
         Args: { "": unknown }
+        Returns: undefined
+      }
+      create_materialized_view_if_not_exists: {
+        Args: Record<PropertyKey, never>
         Returns: undefined
       }
       get_active_tag_config: {
@@ -1610,6 +1718,15 @@ export type Database = {
           featured: boolean
           published: boolean
           score: number
+        }[]
+      }
+      get_materialized_view_health: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          view_name: string
+          size: string
+          last_refresh: string
+          is_stale: boolean
         }[]
       }
       get_online_users_count: {
@@ -1792,6 +1909,10 @@ export type Database = {
       nlevel: {
         Args: { "": unknown }
         Returns: number
+      }
+      refresh_materialized_views: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       text2ltree: {
         Args: { "": string }

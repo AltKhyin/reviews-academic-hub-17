@@ -1,5 +1,5 @@
 
-// ABOUTME: RPC performance monitoring with existing functions only
+// ABOUTME: RPC performance monitoring with real database functions
 import { useState, useEffect, useCallback } from 'react';
 import { useOptimizedQuery, queryKeys, queryConfigs } from './useOptimizedQuery';
 import { supabase } from '@/integrations/supabase/client';
@@ -73,13 +73,15 @@ export const useRPCPerformanceMonitoring = () => {
 
   // Compare RPC vs legacy query performance
   const comparePerformance = useCallback(async (rpcFunction: string, legacyQuery: () => Promise<any>) => {
-    // Only compare with existing RPC functions
+    // Valid RPC functions that exist in our database
     const validRPCFunctions = [
       'get_optimized_issues',
       'get_review_with_blocks', 
       'get_sidebar_stats',
       'get_featured_issue',
-      'get_issues_batch'
+      'get_issues_batch',
+      'get_top_threads',
+      'get_popular_issues'
     ];
 
     if (!validRPCFunctions.includes(rpcFunction)) {

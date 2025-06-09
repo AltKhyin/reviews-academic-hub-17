@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { queryKeys, queryConfigs } from './useOptimizedQuery';
+import { useMaterializedViewData } from './useMaterializedViewsOptimization';
 
 interface SidebarStats {
   totalUsers: number;
@@ -19,11 +20,25 @@ export const useOptimizedSidebarStats = () => {
   // Only fetch stats on specific routes where sidebar is visible
   const shouldFetch = ['/homepage', '/', '/community', '/archive', '/acervo'].includes(location.pathname);
 
+  // Try materialized view first, fallback to RPC
+  const { data: mvStats } = useMaterializedViewData('mv_community_stats');
+
   return useQuery({
     queryKey: queryKeys.sidebarStats(),
     queryFn: async (): Promise<SidebarStats> => {
+      // Use materialized view if available
+      if (mvStats) {
+        return {
+          totalUsers: mvStats.total_users || 0,
+          onlineUsers: mvStats.online_users || 0,
+          totalIssues: mvStats.total_issues || 0,
+          totalPosts: mvStats.total_posts || 0,
+          totalComments: mvStats.total_comments || 0,
+        };
+      }
+
+      // Fallback to RPC function
       try {
-        // Use our optimized RPC function
         const { data, error } = await supabase.rpc('get_sidebar_stats');
         
         if (error) {
@@ -31,7 +46,6 @@ export const useOptimizedSidebarStats = () => {
           throw error;
         }
 
-        // Type assertion since we know the structure from our RPC function
         const stats = data as any;
 
         return {
