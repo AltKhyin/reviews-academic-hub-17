@@ -13,8 +13,8 @@ const Dashboard = () => {
   // Initialize section visibility store with default state
   const { getSectionConfig } = useSectionVisibilityStore();
   
-  // Use parallel data loader which returns the full state
-  const parallelDataState = useParallelDataLoader();
+  // Use optimized data loading hooks
+  const { data: parallelData, isLoading: isParallelLoading } = useParallelDataLoader();
   
   // Fetch optimized issues data
   const { data: issuesData, isLoading: isIssuesLoading } = useOptimizedIssues({ 
@@ -26,7 +26,7 @@ const Dashboard = () => {
   const sidebarData = useOptimizedSidebarData();
 
   // Combine all loading states
-  const isLoading = parallelDataState.isLoading || isIssuesLoading || sidebarData.isLoading;
+  const isLoading = isParallelLoading || isIssuesLoading || sidebarData.isLoading;
 
   // Get section visibility configuration
   const sectionsConfig = getSectionConfig();
@@ -38,7 +38,7 @@ const Dashboard = () => {
         
         <HomepageLayoutEngine 
           isLoading={isLoading}
-          parallelData={parallelDataState}
+          parallelData={parallelData}
           issuesData={issuesData || []}
           sidebarData={sidebarData}
           sectionsConfig={sectionsConfig}
