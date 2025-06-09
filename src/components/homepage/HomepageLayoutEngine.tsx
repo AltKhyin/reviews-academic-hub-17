@@ -40,11 +40,11 @@ export const HomepageLayoutEngine: React.FC<HomepageLayoutEngineProps> = ({
       {enabledSections.map(section => (
         <SectionFactory
           key={section.id}
-          sectionType={section.id}
-          data={{
-            issues: issuesData,
-            sidebarData,
-            parallelData,
+          sectionId={section.id}
+          sectionConfig={{
+            visible: section.enabled,
+            order: section.order,
+            title: section.name
           }}
         />
       ))}

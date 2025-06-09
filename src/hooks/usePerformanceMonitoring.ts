@@ -36,9 +36,9 @@ export const usePerformanceMonitoring = (options: PerformanceMonitoringOptions =
     const networkLatency = navigationTiming ? 
       navigationTiming.responseStart - navigationTiming.requestStart : 0;
 
-    // Page load time
+    // Page load time - fix the property name
     const pageLoadTime = navigationTiming ? 
-      navigationTiming.loadEventEnd - navigationTiming.navigationStart : 0;
+      navigationTiming.loadEventEnd - navigationTiming.fetchStart : 0;
 
     setMetrics(prev => ({
       ...prev,
