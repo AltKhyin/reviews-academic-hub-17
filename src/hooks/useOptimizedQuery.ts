@@ -1,5 +1,5 @@
 
-// ABOUTME: Centralized query optimization utilities for consistent caching and key management
+// ABOUTME: Centralized query optimization utilities with flexible type system
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 
 // Centralized query key factory for consistency
@@ -26,19 +26,19 @@ export const queryKeys = {
   // User data
   userPermissions: (userId: string) => ['user', 'permissions', userId],
   userReactions: (userId: string) => ['user', 'reactions', userId],
-} as const;
+};
 
-// Base configuration type with flexible refetch settings
-interface QueryConfig {
+// Flexible base configuration interface
+interface BaseQueryConfig {
   staleTime: number;
   gcTime: number;
-  refetchOnWindowFocus: boolean;
+  refetchOnWindowFocus?: boolean;
   refetchOnMount?: boolean;
-  refetchInterval?: number;
+  refetchInterval?: number | false;
 }
 
-// Optimized query configurations by data type
-export const queryConfigs: Record<string, QueryConfig> = {
+// Optimized query configurations by data type with flexible boolean handling
+export const queryConfigs: Record<string, BaseQueryConfig> = {
   // Static/semi-static data - longer cache times
   static: {
     staleTime: 15 * 60 * 1000, // 15 minutes
