@@ -28,7 +28,7 @@ export const queryKeys = {
   userReactions: (userId: string) => ['user', 'reactions', userId],
 } as const;
 
-// Base configuration type
+// Base configuration type with flexible refetch settings
 interface QueryConfig {
   staleTime: number;
   gcTime: number;
