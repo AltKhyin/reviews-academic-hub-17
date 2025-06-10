@@ -19,7 +19,16 @@ interface ReviewerComment {
   created_at: string;
 }
 
-interface OptimizedSidebarData {
+interface TopThread {
+  id: string;
+  title: string;
+  comments: number;
+  votes: number;
+  created_at: string;
+  thread_type: string;
+}
+
+export interface OptimizedSidebarData {
   stats: {
     data: SidebarStats | null;
     isLoading: boolean;
@@ -30,7 +39,13 @@ interface OptimizedSidebarData {
     isLoading: boolean;
     error: any;
   };
+  topThreads: {
+    data: TopThread[];
+    isLoading: boolean;
+    error: any;
+  };
   hasError: boolean;
+  isLoading: boolean;
 }
 
 export const useOptimizedSidebarData = (): OptimizedSidebarData => {
@@ -46,7 +61,25 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
       
       if (error) throw error;
       
-      return data as SidebarStats;
+      // Type-safe conversion with fallback
+      if (data && typeof data === 'object') {
+        return {
+          totalUsers: data.totalUsers || 0,
+          onlineUsers: data.onlineUsers || 0,
+          totalIssues: data.totalIssues || 0,
+          totalPosts: data.totalPosts || 0,
+          totalComments: data.totalComments || 0,
+        } as SidebarStats;
+      }
+      
+      // Fallback default stats
+      return {
+        totalUsers: 0,
+        onlineUsers: 0,
+        totalIssues: 0,
+        totalPosts: 0,
+        totalComments: 0,
+      };
     },
     {
       ...queryConfigs.realtime,
@@ -78,6 +111,40 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
     }
   );
 
+  // Fetch top threads
+  const { 
+    data: threadsData = [], 
+    isLoading: threadsLoading, 
+    error: threadsError 
+  } = useOptimizedQuery(
+    ['top-threads'],
+    async (): Promise<TopThread[]> => {
+      const { data, error } = await supabase
+        .from('threads_top')
+        .select('id, title, comments, votes, created_at, thread_type')
+        .order('votes', { ascending: false })
+        .limit(5);
+      
+      if (error) throw error;
+      
+      return (data || []).map(thread => ({
+        id: thread.id || '',
+        title: thread.title || '',
+        comments: Number(thread.comments) || 0,
+        votes: thread.votes || 0,
+        created_at: thread.created_at || '',
+        thread_type: thread.thread_type || 'discussion',
+      }));
+    },
+    {
+      ...queryConfigs.static,
+      staleTime: 5 * 60 * 1000, // 5 minutes for top threads
+    }
+  );
+
+  const isLoading = statsLoading || commentsLoading || threadsLoading;
+  const hasError = Boolean(statsError || commentsError || threadsError);
+
   return {
     stats: {
       data: statsData || null,
@@ -89,6 +156,12 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
       isLoading: commentsLoading,
       error: commentsError,
     },
-    hasError: Boolean(statsError || commentsError),
+    topThreads: {
+      data: threadsData,
+      isLoading: threadsLoading,
+      error: threadsError,
+    },
+    hasError,
+    isLoading,
   };
 };

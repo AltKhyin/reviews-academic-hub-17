@@ -46,6 +46,24 @@ const ArchivePage = () => {
 
   const resultsText = getResultsText();
 
+  // Convert ParentCategory to string array for ArchiveHeader
+  const categoryNames = parentCategories.map(cat => cat.name);
+  
+  // Convert Set to Array for selectedTags
+  const selectedTagsArray = Array.from(selectedTags);
+  
+  // Convert getTagState to match expected signature
+  const getTagStateForHeader = (tag: string): "selected" | "highlighted" | "unselected" => {
+    const state = getTagState(tag);
+    return state.selected ? "selected" : "unselected";
+  };
+
+  // Convert Issue[] to ArchiveIssue[] by ensuring published_at is present
+  const archiveIssues = reorderedIssues.map(issue => ({
+    ...issue,
+    published_at: issue.published_at || issue.created_at || new Date().toISOString()
+  }));
+
   return (
     <div 
       className="min-h-screen bg-background"
@@ -55,14 +73,14 @@ const ArchivePage = () => {
         <ArchiveHeader
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          parentCategories={parentCategories}
+          parentCategories={categoryNames}
           visibleSubtags={visibleSubtags}
-          selectedTags={selectedTags}
+          selectedTags={selectedTagsArray}
           hasActiveTagSelection={hasActiveTagSelection}
           isTagsLoading={isTagsLoading}
           onTagSelect={handleTagSelect}
           onClearAllTags={clearAllTags}
-          getTagState={getTagState}
+          getTagState={getTagStateForHeader}
         />
         
         {/* Results counter - only show for search queries */}
@@ -80,7 +98,7 @@ const ArchivePage = () => {
         )}
         
         <ResultsGrid
-          issues={reorderedIssues}
+          issues={archiveIssues}
           isLoading={isLoading}
           searchQuery={searchQuery}
         />

@@ -230,13 +230,15 @@ export const useSidebarDataBridge = (userId?: string) => {
   useEffect(() => {
     setLoading('Config', configLoading);
     setLoading('Poll', pollLoading);
-    setLoading('Stats', optimizedData.isLoading);
-    setLoading('Users', optimizedData.isLoading);
-    setLoading('Threads', optimizedData.isLoading);
+    setLoading('Stats', optimizedData.stats.isLoading);
+    setLoading('Users', optimizedData.reviewerComments.isLoading);
+    setLoading('Threads', optimizedData.topThreads.isLoading);
   }, [
     configLoading,
     pollLoading,
-    optimizedData.isLoading,
+    optimizedData.stats.isLoading,
+    optimizedData.reviewerComments.isLoading,
+    optimizedData.topThreads.isLoading,
     setLoading
   ]);
 
