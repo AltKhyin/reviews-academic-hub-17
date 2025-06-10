@@ -119,18 +119,15 @@ const fetchUserPollVote = async (userId: string, pollId: string) => {
 
 export const useSidebarDataBridge = (userId?: string) => {
   const optimizedData = useOptimizedSidebarData();
-  const sidebarStore = useSidebarStore();
-
-  // Memoize store setters to prevent unnecessary re-renders
-  const storeSetters = useMemo(() => ({
-    setConfig: (config: SidebarConfig | null) => sidebarStore.setConfig(config),
-    setStats: (stats: any) => sidebarStore.setStats(stats),
-    setOnlineUsers: (users: any[]) => sidebarStore.setOnlineUsers(users),
-    setThreads: (threads: any[]) => sidebarStore.setThreads(threads),
-    setPoll: (poll: Poll | null) => sidebarStore.setPoll(poll),
-    setUserVote: (vote: number | null) => sidebarStore.setUserVote(vote),
-    setLoading: (section: string, loading: boolean) => sidebarStore.setLoading(section as any, loading),
-  }), [sidebarStore]);
+  
+  // Extract store setters as stable callbacks to prevent infinite loops
+  const setConfig = useSidebarStore(state => state.setConfig);
+  const setStats = useSidebarStore(state => state.setStats);
+  const setOnlineUsers = useSidebarStore(state => state.setOnlineUsers);
+  const setThreads = useSidebarStore(state => state.setThreads);
+  const setPoll = useSidebarStore(state => state.setPoll);
+  const setUserVote = useSidebarStore(state => state.setUserVote);
+  const setLoading = useSidebarStore(state => state.setLoading);
 
   // Fetch sidebar configuration
   const { data: config, isLoading: configLoading } = useQuery({
@@ -157,78 +154,93 @@ export const useSidebarDataBridge = (userId?: string) => {
     gcTime: 15 * 60 * 1000, // 15 minutes
   });
 
-  // Memoize data comparisons to prevent unnecessary updates
-  const memoizedData = useMemo(() => ({
-    stats: optimizedData.stats.data,
-    reviewerComments: optimizedData.reviewerComments.data,
-    topThreads: optimizedData.topThreads.data,
-    config,
-    poll,
-    userVote
-  }), [optimizedData.stats.data, optimizedData.reviewerComments.data, optimizedData.topThreads.data, config, poll, userVote]);
-
-  // Update store when optimized data changes - with memoized comparisons
-  useEffect(() => {
-    if (memoizedData.stats) {
-      storeSetters.setStats(memoizedData.stats);
+  // Stable callbacks for setting store data - prevent infinite loops
+  const updateStats = useCallback((stats: any) => {
+    if (stats) {
+      setStats(stats);
     }
-  }, [memoizedData.stats, storeSetters.setStats]);
+  }, [setStats]);
 
-  useEffect(() => {
-    if (memoizedData.reviewerComments && memoizedData.reviewerComments.length > 0) {
+  const updateOnlineUsers = useCallback((reviewerComments: any[]) => {
+    if (reviewerComments && reviewerComments.length > 0) {
       // Map reviewer comments to online users format for compatibility
-      const mappedUsers = memoizedData.reviewerComments.map(comment => ({
+      const mappedUsers = reviewerComments.map(comment => ({
         id: comment.id,
         full_name: comment.reviewer_name,
         avatar_url: comment.reviewer_avatar,
         last_active: comment.created_at
       }));
       
-      storeSetters.setOnlineUsers(mappedUsers);
+      setOnlineUsers(mappedUsers);
     }
-  }, [memoizedData.reviewerComments, storeSetters.setOnlineUsers]);
+  }, [setOnlineUsers]);
+
+  const updateThreads = useCallback((threads: any[]) => {
+    if (threads) {
+      setThreads(threads);
+    }
+  }, [setThreads]);
+
+  const updateConfig = useCallback((configData: SidebarConfig | null) => {
+    if (configData) {
+      setConfig(configData);
+    }
+  }, [setConfig]);
+
+  const updatePoll = useCallback((pollData: Poll | null) => {
+    if (pollData) {
+      setPoll(pollData);
+    }
+  }, [setPoll]);
+
+  const updateUserVote = useCallback((vote: number | null) => {
+    if (vote !== undefined) {
+      setUserVote(vote);
+    }
+  }, [setUserVote]);
+
+  // Update store when optimized data changes - with stable dependencies
+  useEffect(() => {
+    updateStats(optimizedData.stats.data);
+  }, [optimizedData.stats.data, updateStats]);
 
   useEffect(() => {
-    if (memoizedData.topThreads) {
-      storeSetters.setThreads(memoizedData.topThreads);
-    }
-  }, [memoizedData.topThreads, storeSetters.setThreads]);
+    updateOnlineUsers(optimizedData.reviewerComments.data);
+  }, [optimizedData.reviewerComments.data, updateOnlineUsers]);
+
+  useEffect(() => {
+    updateThreads(optimizedData.topThreads.data);
+  }, [optimizedData.topThreads.data, updateThreads]);
 
   // Update store when configuration loads
   useEffect(() => {
-    if (memoizedData.config) {
-      storeSetters.setConfig(memoizedData.config);
-    }
-  }, [memoizedData.config, storeSetters.setConfig]);
+    updateConfig(config);
+  }, [config, updateConfig]);
 
   // Update store when poll data loads
   useEffect(() => {
-    if (memoizedData.poll) {
-      storeSetters.setPoll(memoizedData.poll);
-    }
-  }, [memoizedData.poll, storeSetters.setPoll]);
+    updatePoll(poll);
+  }, [poll, updatePoll]);
 
   // Update store when user vote loads
   useEffect(() => {
-    if (memoizedData.userVote !== undefined) {
-      storeSetters.setUserVote(memoizedData.userVote);
-    }
-  }, [memoizedData.userVote, storeSetters.setUserVote]);
+    updateUserVote(userVote);
+  }, [userVote, updateUserVote]);
 
-  // Update loading states
+  // Update loading states with stable setLoading reference
   useEffect(() => {
-    storeSetters.setLoading('Config', configLoading);
-    storeSetters.setLoading('Poll', pollLoading);
-    storeSetters.setLoading('Stats', optimizedData.stats.isLoading);
-    storeSetters.setLoading('Users', optimizedData.reviewerComments.isLoading);
-    storeSetters.setLoading('Threads', optimizedData.topThreads.isLoading);
+    setLoading('Config', configLoading);
+    setLoading('Poll', pollLoading);
+    setLoading('Stats', optimizedData.stats.isLoading);
+    setLoading('Users', optimizedData.reviewerComments.isLoading);
+    setLoading('Threads', optimizedData.topThreads.isLoading);
   }, [
     configLoading,
     pollLoading,
     optimizedData.stats.isLoading,
     optimizedData.reviewerComments.isLoading,
     optimizedData.topThreads.isLoading,
-    storeSetters.setLoading
+    setLoading
   ]);
 
   return {
