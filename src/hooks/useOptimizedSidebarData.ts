@@ -61,15 +61,16 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
       
       if (error) throw error;
       
-      // Type-safe conversion with fallback
-      if (data && typeof data === 'object') {
+      // Type-safe conversion with proper validation
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        const statsData = data as Record<string, any>;
         return {
-          totalUsers: data.totalUsers || 0,
-          onlineUsers: data.onlineUsers || 0,
-          totalIssues: data.totalIssues || 0,
-          totalPosts: data.totalPosts || 0,
-          totalComments: data.totalComments || 0,
-        } as SidebarStats;
+          totalUsers: Number(statsData.totalUsers) || 0,
+          onlineUsers: Number(statsData.onlineUsers) || 0,
+          totalIssues: Number(statsData.totalIssues) || 0,
+          totalPosts: Number(statsData.totalPosts) || 0,
+          totalComments: Number(statsData.totalComments) || 0,
+        };
       }
       
       // Fallback default stats

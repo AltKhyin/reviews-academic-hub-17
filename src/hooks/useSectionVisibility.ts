@@ -39,8 +39,8 @@ export const useSectionVisibility = () => {
         if (error) throw error;
         
         // Parse the home settings and extract section configuration
-        if (data && typeof data === 'object' && data !== null) {
-          const settings = data as any;
+        if (data && typeof data === 'object' && !Array.isArray(data)) {
+          const settings = data as Record<string, any>;
           if (settings.sections && typeof settings.sections === 'object') {
             return Object.entries(settings.sections).map(([id, config]: [string, any]) => ({
               id,
@@ -89,13 +89,28 @@ export const useSectionVisibility = () => {
     );
 
     try {
-      // Save to database
-      const { error } = await supabase.rpc('update_home_settings', {
-        section_id: sectionId,
-        visible: !section.visible
-      });
-      
-      if (error) throw error;
+      // Use direct table update since RPC functions don't exist
+      const currentSettings = await supabase.rpc('get_home_settings');
+      if (currentSettings.data && typeof currentSettings.data === 'object') {
+        const settings = currentSettings.data as Record<string, any>;
+        const updatedSections = { ...settings.sections };
+        
+        if (updatedSections[sectionId]) {
+          updatedSections[sectionId].visible = !section.visible;
+        } else {
+          updatedSections[sectionId] = { visible: !section.visible, order: section.order };
+        }
+
+        // Update site_meta directly
+        const { error } = await supabase
+          .from('site_meta')
+          .upsert({
+            key: 'home_settings',
+            value: { ...settings, sections: updatedSections }
+          });
+        
+        if (error) throw error;
+      }
     } catch (error) {
       console.error('Failed to toggle section visibility:', error);
       // Revert local state on error
@@ -111,11 +126,30 @@ export const useSectionVisibility = () => {
 
   const reorderSections = useCallback(async (newOrder: string[]) => {
     try {
-      const { error } = await supabase.rpc('reorder_home_sections', {
-        section_order: newOrder
-      });
-      
-      if (error) throw error;
+      // Use direct table update since RPC functions don't exist
+      const currentSettings = await supabase.rpc('get_home_settings');
+      if (currentSettings.data && typeof currentSettings.data === 'object') {
+        const settings = currentSettings.data as Record<string, any>;
+        const updatedSections = { ...settings.sections };
+        
+        newOrder.forEach((sectionId, index) => {
+          if (updatedSections[sectionId]) {
+            updatedSections[sectionId].order = index;
+          } else {
+            updatedSections[sectionId] = { visible: true, order: index };
+          }
+        });
+
+        // Update site_meta directly
+        const { error } = await supabase
+          .from('site_meta')
+          .upsert({
+            key: 'home_settings',
+            value: { ...settings, sections: updatedSections }
+          });
+        
+        if (error) throw error;
+      }
     } catch (error) {
       console.error('Failed to reorder sections:', error);
     }
@@ -123,12 +157,24 @@ export const useSectionVisibility = () => {
 
   const updateSection = useCallback(async (sectionId: string, updates: Partial<SectionConfig>) => {
     try {
-      const { error } = await supabase.rpc('update_home_section', {
-        section_id: sectionId,
-        updates: updates
-      });
-      
-      if (error) throw error;
+      // Use direct table update since RPC functions don't exist
+      const currentSettings = await supabase.rpc('get_home_settings');
+      if (currentSettings.data && typeof currentSettings.data === 'object') {
+        const settings = currentSettings.data as Record<string, any>;
+        const updatedSections = { ...settings.sections };
+        
+        updatedSections[sectionId] = { ...updatedSections[sectionId], ...updates };
+
+        // Update site_meta directly
+        const { error } = await supabase
+          .from('site_meta')
+          .upsert({
+            key: 'home_settings',
+            value: { ...settings, sections: updatedSections }
+          });
+        
+        if (error) throw error;
+      }
     } catch (error) {
       console.error('Failed to update section:', error);
     }
@@ -136,7 +182,20 @@ export const useSectionVisibility = () => {
 
   const resetToDefaults = useCallback(async () => {
     try {
-      const { error } = await supabase.rpc('reset_home_settings_to_defaults');
+      // Reset to default configuration by updating site_meta directly
+      const defaultSettings = {
+        sections: defaultSections.reduce((acc, section) => {
+          acc[section.id] = { visible: section.visible, order: section.order };
+          return acc;
+        }, {} as Record<string, any>)
+      };
+
+      const { error } = await supabase
+        .from('site_meta')
+        .upsert({
+          key: 'home_settings',
+          value: defaultSettings
+        });
       
       if (error) throw error;
       
