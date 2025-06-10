@@ -1,5 +1,5 @@
 
-// ABOUTME: Updated App.tsx with query optimization integration and performance monitoring
+// ABOUTME: Updated App.tsx with corrected homepage routing and performance monitoring
 import React from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";

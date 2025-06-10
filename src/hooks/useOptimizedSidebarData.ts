@@ -63,7 +63,7 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
       
       // Type-safe conversion with proper validation
       if (data && typeof data === 'object' && !Array.isArray(data)) {
-        const statsData = data as Record<string, any>;
+        const statsData = data as any;
         return {
           totalUsers: Number(statsData.totalUsers) || 0,
           onlineUsers: Number(statsData.onlineUsers) || 0,

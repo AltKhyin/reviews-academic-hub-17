@@ -89,10 +89,11 @@ export const useSectionVisibility = () => {
     );
 
     try {
-      // Use direct table update since RPC functions don't exist
-      const currentSettings = await supabase.rpc('get_home_settings');
-      if (currentSettings.data && typeof currentSettings.data === 'object') {
-        const settings = currentSettings.data as Record<string, any>;
+      // Get current settings first
+      const { data: currentSettings } = await supabase.rpc('get_home_settings');
+      
+      if (currentSettings && typeof currentSettings === 'object') {
+        const settings = currentSettings as Record<string, any>;
         const updatedSections = { ...settings.sections };
         
         if (updatedSections[sectionId]) {
@@ -126,10 +127,11 @@ export const useSectionVisibility = () => {
 
   const reorderSections = useCallback(async (newOrder: string[]) => {
     try {
-      // Use direct table update since RPC functions don't exist
-      const currentSettings = await supabase.rpc('get_home_settings');
-      if (currentSettings.data && typeof currentSettings.data === 'object') {
-        const settings = currentSettings.data as Record<string, any>;
+      // Get current settings first
+      const { data: currentSettings } = await supabase.rpc('get_home_settings');
+      
+      if (currentSettings && typeof currentSettings === 'object') {
+        const settings = currentSettings as Record<string, any>;
         const updatedSections = { ...settings.sections };
         
         newOrder.forEach((sectionId, index) => {
@@ -157,10 +159,11 @@ export const useSectionVisibility = () => {
 
   const updateSection = useCallback(async (sectionId: string, updates: Partial<SectionConfig>) => {
     try {
-      // Use direct table update since RPC functions don't exist
-      const currentSettings = await supabase.rpc('get_home_settings');
-      if (currentSettings.data && typeof currentSettings.data === 'object') {
-        const settings = currentSettings.data as Record<string, any>;
+      // Get current settings first
+      const { data: currentSettings } = await supabase.rpc('get_home_settings');
+      
+      if (currentSettings && typeof currentSettings === 'object') {
+        const settings = currentSettings as Record<string, any>;
         const updatedSections = { ...settings.sections };
         
         updatedSections[sectionId] = { ...updatedSections[sectionId], ...updates };
