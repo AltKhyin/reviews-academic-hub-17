@@ -4,6 +4,7 @@ import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface Props {
   children: ReactNode;
+  sectionId?: string;
 }
 
 interface State {
@@ -22,7 +23,7 @@ export class SidebarErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Sidebar Error Boundary caught an error:', error, errorInfo);
+    console.error(`Sidebar Error Boundary caught an error in section ${this.props.sectionId}:`, error, errorInfo);
   }
 
   handleRetry = () => {
@@ -36,7 +37,7 @@ export class SidebarErrorBoundary extends Component<Props, State> {
           <div className="text-center">
             <AlertTriangle className="w-8 h-8 text-red-400 mx-auto mb-2" />
             <h3 className="text-sm font-medium text-red-400 mb-1">
-              Erro na Barra Lateral
+              Erro na Seção {this.props.sectionId || 'Sidebar'}
             </h3>
             <p className="text-xs text-gray-400 mb-3">
               Ocorreu um erro ao carregar o conteúdo

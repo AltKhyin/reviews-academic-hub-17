@@ -49,6 +49,14 @@ export interface OptimizedSidebarData {
   isLoading: boolean;
 }
 
+const getDefaultStats = (): SidebarStats => ({
+  totalUsers: 0,
+  onlineUsers: 0,
+  totalIssues: 0,
+  totalPosts: 0,
+  totalComments: 0,
+});
+
 export const useOptimizedSidebarData = (): OptimizedSidebarData => {
   // Fetch sidebar stats with extended caching
   const { 
@@ -76,22 +84,10 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
         }
         
         // Fallback default stats
-        return {
-          totalUsers: 0,
-          onlineUsers: 0,
-          totalIssues: 0,
-          totalPosts: 0,
-          totalComments: 0,
-        };
+        return getDefaultStats();
       } catch (error) {
         console.warn('Sidebar stats error:', error);
-        return {
-          totalUsers: 0,
-          onlineUsers: 0,
-          totalIssues: 0,
-          totalPosts: 0,
-          totalComments: 0,
-        };
+        return getDefaultStats();
       }
     },
     {
@@ -102,7 +98,7 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
 
   // Fetch reviewer comments with extended caching
   const { 
-    data: commentsData = [], 
+    data: commentsData, 
     isLoading: commentsLoading, 
     error: commentsError 
   } = useOptimizedQuery(
@@ -131,7 +127,7 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
 
   // Fetch top threads with extended caching
   const { 
-    data: threadsData = [], 
+    data: threadsData, 
     isLoading: threadsLoading, 
     error: threadsError 
   } = useOptimizedQuery(
@@ -183,12 +179,12 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
       error: statsError,
     },
     reviewerComments: {
-      data: commentsData,
+      data: commentsData || [],
       isLoading: commentsLoading,
       error: commentsError,
     },
     topThreads: {
-      data: threadsData,
+      data: threadsData || [],
       isLoading: threadsLoading,
       error: threadsError,
     },

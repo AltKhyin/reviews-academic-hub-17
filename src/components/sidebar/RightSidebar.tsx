@@ -21,6 +21,13 @@ interface RightSidebarProps {
   isMobile?: boolean;
 }
 
+interface SidebarSection {
+  id: string;
+  name: string;
+  enabled: boolean;
+  order: number;
+}
+
 const SECTION_COMPONENTS = {
   'community-header': CommunityHeader,
   'active-avatars': ActiveAvatars,
@@ -32,7 +39,7 @@ const SECTION_COMPONENTS = {
   'mini-changelog': MiniChangelog,
 };
 
-const DEFAULT_SECTIONS = [
+const DEFAULT_SECTIONS: SidebarSection[] = [
   { id: 'community-header', name: 'Cabeçalho da Comunidade', enabled: true, order: 0 },
   { id: 'active-avatars', name: 'Avatares Ativos', enabled: true, order: 1 },
   { id: 'top-threads', name: 'Discussões em Alta', enabled: true, order: 2 },
@@ -42,6 +49,16 @@ const DEFAULT_SECTIONS = [
   { id: 'rules-accordion', name: 'Regras da Comunidade', enabled: true, order: 6 },
   { id: 'mini-changelog', name: 'Changelog', enabled: true, order: 7 },
 ];
+
+const isSidebarSectionsArray = (sections: unknown): sections is SidebarSection[] => {
+  return Array.isArray(sections) && sections.every(section => 
+    section && 
+    typeof section === 'object' && 
+    'id' in section && 
+    'enabled' in section && 
+    'order' in section
+  );
+};
 
 export const RightSidebar = React.memo<RightSidebarProps>(({
   className = '',
@@ -77,13 +94,15 @@ export const RightSidebar = React.memo<RightSidebarProps>(({
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isMobile, isMobileDrawerOpen, toggleMobileDrawer]);
 
-  // Get enabled sections from config or use defaults
+  // Get enabled sections from config or use defaults with proper type checking
   const enabledSections = useMemo(() => {
-    if (!config || !config.sections) return DEFAULT_SECTIONS;
+    if (!config || !config.sections || !isSidebarSectionsArray(config.sections)) {
+      return DEFAULT_SECTIONS;
+    }
     
     return config.sections
-      .filter((section: any) => section.enabled)
-      .sort((a: any, b: any) => a.order - b.order);
+      .filter((section: SidebarSection) => section.enabled)
+      .sort((a: SidebarSection, b: SidebarSection) => a.order - b.order);
   }, [config]);
 
   // Mobile drawer overlay and sidebar
@@ -118,7 +137,7 @@ export const RightSidebar = React.memo<RightSidebarProps>(({
           
           <div className="p-4 overflow-y-auto h-full">
             <div className="space-y-6">
-              {enabledSections.map((section: any) => {
+              {enabledSections.map((section: SidebarSection) => {
                 const SectionComponent = SECTION_COMPONENTS[section.id as keyof typeof SECTION_COMPONENTS];
                 if (!SectionComponent) return null;
                 
@@ -141,7 +160,7 @@ export const RightSidebar = React.memo<RightSidebarProps>(({
   return (
     <div className={`w-full ${className}`}>
       <div className="space-y-6">
-        {enabledSections.map((section: any) => {
+        {enabledSections.map((section: SidebarSection) => {
           const SectionComponent = SECTION_COMPONENTS[section.id as keyof typeof SECTION_COMPONENTS];
           if (!SectionComponent) return null;
           

@@ -24,13 +24,25 @@ interface ParallelDataState {
   retryFailed: () => void;
 }
 
+// Type guard for Issue array
+const isIssueArray = (data: unknown): data is Issue[] => {
+  return Array.isArray(data);
+};
+
+// Type guard for sections array
+const isSectionsArray = (data: unknown): data is any[] => {
+  return Array.isArray(data);
+};
+
 // Section ID mapping between different parts of the system
 const mapSectionVisibilityToConfig = (sections: any[]): SectionVisibilityConfig[] => {
+  if (!Array.isArray(sections)) return [];
+  
   return sections.map(section => ({
-    id: section.id,
-    name: section.title,
-    enabled: section.visible,
-    order: section.order
+    id: section.id || '',
+    name: section.title || section.name || '',
+    enabled: section.visible !== false,
+    order: section.order || 0
   }));
 };
 
@@ -43,7 +55,7 @@ export const useParallelDataLoader = (): ParallelDataState => {
 
   // Use optimized issues query with enhanced error handling
   const { 
-    data: issues = [], 
+    data: issuesData, 
     isLoading: issuesLoading, 
     error: issuesError,
     refetch: refetchIssues
@@ -51,7 +63,7 @@ export const useParallelDataLoader = (): ParallelDataState => {
 
   // Use optimized featured issue query with enhanced error handling
   const {
-    data: featuredIssue,
+    data: featuredIssueData,
     isLoading: featuredLoading,
     error: featuredError,
     refetch: refetchFeatured
@@ -60,9 +72,19 @@ export const useParallelDataLoader = (): ParallelDataState => {
   // Use optimized sidebar data
   const optimizedSidebar = useOptimizedSidebarData();
 
+  // Safely get issues array with type checking
+  const issues = useMemo(() => {
+    return isIssueArray(issuesData) ? issuesData : [];
+  }, [issuesData]);
+
+  // Safely get featured issue with type checking
+  const featuredIssue = useMemo(() => {
+    return featuredIssueData && typeof featuredIssueData === 'object' ? featuredIssueData as Issue : null;
+  }, [featuredIssueData]);
+
   // Memoize section visibility with improved caching
   const sectionVisibility = useMemo(() => {
-    if (!sectionsLoading && sections.length > 0) {
+    if (!sectionsLoading && isSectionsArray(sections) && sections.length > 0) {
       const visibleSections = getVisibleSections();
       const mappedSections = mapSectionVisibilityToConfig(visibleSections);
       console.log('ParallelDataLoader: Cached section visibility:', mappedSections.length, 'sections');
@@ -152,7 +174,7 @@ export const useParallelDataLoader = (): ParallelDataState => {
     issues,
     sectionVisibility,
     reviewerComments: optimizedSidebar.reviewerComments.data || [],
-    featuredIssue: featuredIssue || null,
+    featuredIssue,
     isLoading,
     errors,
     retryFailed,
