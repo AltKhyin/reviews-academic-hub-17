@@ -1,8 +1,19 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+
+// ABOUTME: Optimized authentication context with request deduplication and caching
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Session, User } from '@supabase/supabase-js';
 import { toast } from '@/hooks/use-toast';
-import { UserProfile } from '@/types/issue';
+
+interface UserProfile {
+  id: string;
+  role: 'user' | 'admin';
+  full_name: string | null;
+  avatar_url: string | null;
+  specialty: string | null;
+  bio: string | null;
+  institution: string | null;
+}
 
 interface AuthContextProps {
   session: Session | null;
@@ -20,198 +31,150 @@ interface AuthContextProps {
 
 const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
+// Global cache for auth-related data to prevent duplicate requests
+const authCache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+const pendingRequests = new Map<string, Promise<any>>();
+
+const CACHE_TTL = {
+  PROFILE: 5 * 60 * 1000, // 5 minutes
+  ADMIN_CHECK: 10 * 60 * 1000, // 10 minutes
+  EDITOR_CHECK: 10 * 60 * 1000, // 10 minutes
+};
+
+// Cache helper functions
+const getCachedData = (key: string) => {
+  const cached = authCache.get(key);
+  if (cached && Date.now() - cached.timestamp < cached.ttl) {
+    return cached.data;
+  }
+  authCache.delete(key);
+  return null;
+};
+
+const setCachedData = (key: string, data: any, ttl: number) => {
+  authCache.set(key, { data, timestamp: Date.now(), ttl });
+};
+
+const clearUserCache = (userId: string) => {
+  const keysToDelete = [];
+  for (const [key] of authCache) {
+    if (key.startsWith(`user_${userId}_`)) {
+      keysToDelete.push(key);
+    }
+  }
+  keysToDelete.forEach(key => authCache.delete(key));
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isEditor, setIsEditor] = useState(false);
 
-  const checkAdminStatus = async (userId: string): Promise<boolean> => {
-    try {
-      console.log("Checking admin status for user:", userId);
-      
-      // Use the fixed database function that checks profiles table
-      const { data: adminCheck, error: adminError } = await supabase
-        .rpc('is_current_user_admin');
-      
-      console.log("Admin check result:", { adminCheck, adminError });
-      
-      if (adminError) {
-        console.error("Admin check error:", adminError);
-        return false;
-      }
-      
-      return adminCheck === true;
-    } catch (error) {
-      console.error("Exception in admin check:", error);
-      return false;
-    }
-  };
+  // Memoized admin/editor checks with caching
+  const isAdmin = profile?.role === 'admin';
+  const isEditor = isAdmin; // Since admin = editor in this system
 
-  const checkEditorStatus = async (userId: string, userRole: string): Promise<boolean> => {
-    try {
-      console.log("Checking editor status for user:", userId, "with role:", userRole);
-      
-      // Use the fixed database function that checks profiles table
-      const { data: editorCheck, error: editorError } = await supabase
-        .rpc('is_current_user_editor_or_admin');
-      
-      console.log("Editor check result:", { editorCheck, editorError });
-      
-      if (editorError) {
-        console.error("Editor check error:", editorError);
-        // Fallback to role-based check
-        return userRole === 'editor' || userRole === 'admin';
-      }
-      
-      return editorCheck === true;
-    } catch (error) {
-      console.error("Exception in editor check:", error);
-      // Fallback to role-based check
-      return userRole === 'editor' || userRole === 'admin';
-    }
-  };
-
-  const fetchProfile = async (userId: string, retryCount = 0) => {
-    const maxRetries = 3;
+  // Deduplicated profile fetch with caching
+  const fetchProfile = useCallback(async (userId: string): Promise<UserProfile | null> => {
+    const cacheKey = `user_${userId}_profile`;
     
-    try {
-      console.log(`Fetching profile for user: ${userId} (attempt ${retryCount + 1})`);
-      
-      // Fetch user profile first
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-      
-      console.log("Profile fetch result:", { profileData, profileError });
-      
-      if (profileError) {
-        throw profileError;
-      }
-      
-      let userProfile: UserProfile;
-      
-      if (profileData) {
-        // Ensure role is properly typed
-        const validRole = (['user', 'editor', 'admin'].includes(profileData.role)) 
-          ? profileData.role as 'user' | 'editor' | 'admin'
-          : 'user';
-          
-        userProfile = {
-          ...profileData,
-          role: validRole
-        };
-        
-        setProfile(userProfile);
-      } else {
-        console.log("No profile found, creating default");
-        userProfile = {
-          id: userId,
-          role: 'user',
-          full_name: null,
-          avatar_url: null
-        };
-        
-        // Try to create profile if it doesn't exist
-        const { error: insertError } = await supabase
-          .from('profiles')
-          .insert(userProfile);
-          
-        if (insertError) {
-          console.error("Error creating default profile:", insertError);
-        }
-          
-        setProfile(userProfile);
-      }
-      
-      // Check admin and editor status after profile is set
-      const [isUserAdmin, isUserEditor] = await Promise.all([
-        checkAdminStatus(userId),
-        checkEditorStatus(userId, userProfile.role)
-      ]);
-      
-      console.log("Final role flags:", { 
-        isAdmin: isUserAdmin, 
-        isEditor: isUserEditor, 
-        profileRole: userProfile.role,
-        userId 
-      });
-      
-      setIsAdmin(isUserAdmin);
-      setIsEditor(isUserEditor);
-      
-    } catch (error: any) {
-      console.error(`Error in profile handling (attempt ${retryCount + 1}):`, error);
-      
-      // Retry logic for transient errors
-      if (retryCount < maxRetries && error.code !== '42P17') {
-        console.log(`Retrying profile fetch in 2 seconds...`);
-        setTimeout(() => {
-          fetchProfile(userId, retryCount + 1);
-        }, 2000);
-        return;
-      }
-      
-      // Set a basic profile in case of persistent error
-      const fallbackProfile: UserProfile = {
-        id: userId,
-        role: 'user',
-        full_name: null,
-        avatar_url: null
-      };
-      
-      setProfile(fallbackProfile);
-      setIsAdmin(false);
-      setIsEditor(false);
-      
-      // Only show toast for non-RLS errors
-      if (error.code !== '42P17') {
-        toast({
-          title: "Profile Loading Error",
-          description: "Some features may not work correctly. Please refresh the page.",
-          variant: "destructive"
-        });
-      }
-    } finally {
-      setIsLoading(false);
+    // Check cache first
+    const cached = getCachedData(cacheKey);
+    if (cached) {
+      return cached;
     }
-  };
 
-  const refreshProfile = async () => {
+    // Check for pending request
+    if (pendingRequests.has(cacheKey)) {
+      return pendingRequests.get(cacheKey);
+    }
+
+    // Create new request
+    const profilePromise = (async () => {
+      try {
+        const { data: profileData, error } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url, role, specialty, bio, institution')
+          .eq('id', userId)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Profile fetch error:', error);
+          return null;
+        }
+
+        const userProfile: UserProfile = {
+          id: profileData?.id || userId,
+          role: profileData?.role === 'admin' ? 'admin' : 'user',
+          full_name: profileData?.full_name || null,
+          avatar_url: profileData?.avatar_url || null,
+          specialty: profileData?.specialty || null,
+          bio: profileData?.bio || null,
+          institution: profileData?.institution || null,
+        };
+
+        // Cache the result
+        setCachedData(cacheKey, userProfile, CACHE_TTL.PROFILE);
+        return userProfile;
+      } catch (error: any) {
+        console.error('Error fetching profile:', error);
+        return null;
+      } finally {
+        // Remove from pending requests
+        pendingRequests.delete(cacheKey);
+      }
+    })();
+
+    // Store the promise to prevent duplicate requests
+    pendingRequests.set(cacheKey, profilePromise);
+    return profilePromise;
+  }, []);
+
+  const refreshProfile = useCallback(async () => {
     if (!user) return;
-    setIsLoading(true);
-    await fetchProfile(user.id);
-  };
+    
+    // Clear cache for this user
+    clearUserCache(user.id);
+    
+    // Fetch fresh profile
+    const freshProfile = await fetchProfile(user.id);
+    setProfile(freshProfile);
+  }, [user, fetchProfile]);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
-      console.log("Auth state change:", event, currentSession?.user?.email);
+      console.log("Auth state change:", event);
       setSession(currentSession);
       setUser(currentSession?.user || null);
       
       if (event === 'SIGNED_IN' && currentSession?.user) {
         // Defer profile fetch to avoid auth deadlocks
-        setTimeout(() => {
-          fetchProfile(currentSession.user.id);
+        setTimeout(async () => {
+          const userProfile = await fetchProfile(currentSession.user.id);
+          setProfile(userProfile);
+          setIsLoading(false);
         }, 100);
       } else if (event === 'SIGNED_OUT') {
         setProfile(null);
-        setIsAdmin(false);
-        setIsEditor(false);
+        // Clear all cached data on signout
+        authCache.clear();
+        pendingRequests.clear();
+        setIsLoading(false);
+      } else {
         setIsLoading(false);
       }
     });
 
+    // Initial session check
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
-      console.log("Initial session check:", currentSession?.user?.email || "No session");
       setSession(currentSession);
       setUser(currentSession?.user || null);
       if (currentSession?.user) {
-        fetchProfile(currentSession.user.id);
+        fetchProfile(currentSession.user.id).then(userProfile => {
+          setProfile(userProfile);
+          setIsLoading(false);
+        });
       } else {
         setIsLoading(false);
       }
@@ -220,9 +183,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [fetchProfile]);
 
-  const signIn = async (email: string, password: string): Promise<void> => {
+  const signIn = useCallback(async (email: string, password: string): Promise<void> => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -231,16 +194,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) throw error;
       
-      setSession(data.session);
-      setUser(data.user);
+      // Session will be updated automatically via onAuthStateChange
     } catch (error: any) {
       console.error('Error signing in:', error.message);
       throw error;
     }
-  };
+  }, []);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     try {
+      // Clear cache before signing out
+      authCache.clear();
+      pendingRequests.clear();
+      
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
@@ -253,9 +219,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         variant: "destructive"
       });
     }
-  };
+  }, []);
 
-  const signUp = async (email: string, password: string, metadata?: { full_name?: string }) => {
+  const signUp = useCallback(async (email: string, password: string, metadata?: { full_name?: string }) => {
     try {
       const { error } = await supabase.auth.signUp({ 
         email, 
@@ -279,16 +245,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       throw error;
     }
-  };
+  }, []);
 
-  const updateProfile = async (data: Partial<UserProfile>) => {
+  const updateProfile = useCallback(async (data: Partial<UserProfile>) => {
     if (!user || !profile) return;
     
     try {
-      const updateData = { ...data };
-      if (!updateData.id) {
-        updateData.id = profile.id;
-      }
+      const updateData = { ...data, id: profile.id };
       
       const { error } = await supabase
         .from('profiles')
@@ -297,7 +260,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error) throw error;
       
-      setProfile(prev => prev ? { ...prev, ...data } : null);
+      // Update local state
+      const updatedProfile = { ...profile, ...data };
+      setProfile(updatedProfile);
+      
+      // Update cache
+      setCachedData(`user_${user.id}_profile`, updatedProfile, CACHE_TTL.PROFILE);
       
       toast({
         title: "Profile updated",
@@ -310,7 +278,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         variant: "destructive"
       });
     }
-  };
+  }, [user, profile]);
 
   return (
     <AuthContext.Provider value={{
@@ -338,5 +306,3 @@ export const useAuth = () => {
   }
   return context;
 };
-
-export default AuthContext;

@@ -57,6 +57,10 @@ const getDefaultStats = (): SidebarStats => ({
   totalComments: 0,
 });
 
+const getDefaultComments = (): ReviewerComment[] => [];
+
+const getDefaultThreads = (): TopThread[] => [];
+
 export const useOptimizedSidebarData = (): OptimizedSidebarData => {
   // Fetch sidebar stats with extended caching
   const { 
@@ -113,10 +117,10 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
         
         if (error) throw error;
         
-        return data || [];
+        return data || getDefaultComments();
       } catch (error) {
         console.warn('Reviewer comments error:', error);
-        return [];
+        return getDefaultComments();
       }
     },
     {
@@ -152,7 +156,7 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
         }));
       } catch (error) {
         console.warn('Top threads error:', error);
-        return [];
+        return getDefaultThreads();
       }
     },
     {
@@ -179,12 +183,12 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
       error: statsError,
     },
     reviewerComments: {
-      data: commentsData || [],
+      data: commentsData || getDefaultComments(),
       isLoading: commentsLoading,
       error: commentsError,
     },
     topThreads: {
-      data: threadsData || [],
+      data: threadsData || getDefaultThreads(),
       isLoading: threadsLoading,
       error: threadsError,
     },

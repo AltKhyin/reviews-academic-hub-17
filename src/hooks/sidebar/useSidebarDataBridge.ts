@@ -1,6 +1,6 @@
 
 // ABOUTME: Optimized bridge hook with strict dependency control and request deduplication
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useCallback } from 'react';
 import { useOptimizedSidebarData } from '../useOptimizedSidebarData';
 import { useSidebarConfig } from './useSidebarConfig';
 import { useWeeklyPoll, useUserPollVote } from './usePollData';
@@ -12,15 +12,16 @@ export const useSidebarDataBridge = (userId?: string) => {
   const { data: poll, isLoading: pollLoading, error: pollError } = useWeeklyPoll();
   const { data: userVote, isLoading: userVoteLoading, error: userVoteError } = useUserPollVote(userId, poll?.id);
   
-  // Track previous values to prevent unnecessary updates
-  const prevValuesRef = useRef({
-    config: null,
-    poll: null,
-    userVote: null,
-    stats: null,
-    onlineUsers: null,
-    threads: null,
-  });
+  // Track processing state to prevent loops
+  const processingRef = useRef(false);
+  const lastUpdateRef = useRef<{
+    configHash?: string;
+    pollHash?: string;
+    userVoteHash?: string;
+    statsHash?: string;
+    usersHash?: string;
+    threadsHash?: string;
+  }>({});
 
   const {
     setConfig,
@@ -59,51 +60,95 @@ export const useSidebarDataBridge = (userId?: string) => {
     );
   }, [configError, pollError, userVoteError, optimizedData.hasError]);
 
-  // Update store only when data actually changes
-  useEffect(() => {
-    if (optimizedData.stats.data && 
-        JSON.stringify(optimizedData.stats.data) !== JSON.stringify(prevValuesRef.current.stats)) {
-      prevValuesRef.current.stats = optimizedData.stats.data;
-      setStats(optimizedData.stats.data);
-    }
-  }, [optimizedData.stats.data, setStats]);
+  // Hash function for change detection
+  const createHash = useCallback((data: any): string => {
+    return JSON.stringify(data);
+  }, []);
 
+  // Debounced store updates with change detection
   useEffect(() => {
-    if (optimizedData.reviewerComments.data && 
-        JSON.stringify(optimizedData.reviewerComments.data) !== JSON.stringify(prevValuesRef.current.onlineUsers)) {
-      prevValuesRef.current.onlineUsers = optimizedData.reviewerComments.data;
-      setOnlineUsers(optimizedData.reviewerComments.data);
-    }
-  }, [optimizedData.reviewerComments.data, setOnlineUsers]);
+    if (processingRef.current) return;
+    
+    const updateStore = () => {
+      processingRef.current = true;
+      
+      try {
+        // Update stats only if changed
+        if (optimizedData.stats.data) {
+          const statsHash = createHash(optimizedData.stats.data);
+          if (statsHash !== lastUpdateRef.current.statsHash) {
+            lastUpdateRef.current.statsHash = statsHash;
+            setStats(optimizedData.stats.data);
+          }
+        }
 
-  useEffect(() => {
-    if (optimizedData.topThreads.data && 
-        JSON.stringify(optimizedData.topThreads.data) !== JSON.stringify(prevValuesRef.current.threads)) {
-      prevValuesRef.current.threads = optimizedData.topThreads.data;
-      setThreads(optimizedData.topThreads.data);
-    }
-  }, [optimizedData.topThreads.data, setThreads]);
+        // Update users only if changed
+        if (optimizedData.reviewerComments.data) {
+          const usersHash = createHash(optimizedData.reviewerComments.data);
+          if (usersHash !== lastUpdateRef.current.usersHash) {
+            lastUpdateRef.current.usersHash = usersHash;
+            setOnlineUsers(optimizedData.reviewerComments.data);
+          }
+        }
 
-  useEffect(() => {
-    if (config && JSON.stringify(config) !== JSON.stringify(prevValuesRef.current.config)) {
-      prevValuesRef.current.config = config;
-      setConfig(config);
-    }
-  }, [config, setConfig]);
+        // Update threads only if changed
+        if (optimizedData.topThreads.data) {
+          const threadsHash = createHash(optimizedData.topThreads.data);
+          if (threadsHash !== lastUpdateRef.current.threadsHash) {
+            lastUpdateRef.current.threadsHash = threadsHash;
+            setThreads(optimizedData.topThreads.data);
+          }
+        }
 
-  useEffect(() => {
-    if (poll && JSON.stringify(poll) !== JSON.stringify(prevValuesRef.current.poll)) {
-      prevValuesRef.current.poll = poll;
-      setPoll(poll);
-    }
-  }, [poll, setPoll]);
+        // Update config only if changed
+        if (config) {
+          const configHash = createHash(config);
+          if (configHash !== lastUpdateRef.current.configHash) {
+            lastUpdateRef.current.configHash = configHash;
+            setConfig(config);
+          }
+        }
 
-  useEffect(() => {
-    if (userVote !== undefined && userVote !== prevValuesRef.current.userVote) {
-      prevValuesRef.current.userVote = userVote;
-      setUserVote(userVote);
-    }
-  }, [userVote, setUserVote]);
+        // Update poll only if changed
+        if (poll) {
+          const pollHash = createHash(poll);
+          if (pollHash !== lastUpdateRef.current.pollHash) {
+            lastUpdateRef.current.pollHash = pollHash;
+            setPoll(poll);
+          }
+        }
+
+        // Update user vote only if changed
+        if (userVote !== undefined) {
+          const userVoteHash = createHash(userVote);
+          if (userVoteHash !== lastUpdateRef.current.userVoteHash) {
+            lastUpdateRef.current.userVoteHash = userVoteHash;
+            setUserVote(userVote);
+          }
+        }
+      } finally {
+        processingRef.current = false;
+      }
+    };
+
+    // Debounce updates to prevent rapid firing
+    const timeoutId = setTimeout(updateStore, 50);
+    return () => clearTimeout(timeoutId);
+  }, [
+    optimizedData.stats.data,
+    optimizedData.reviewerComments.data,
+    optimizedData.topThreads.data,
+    config,
+    poll,
+    userVote,
+    setConfig,
+    setStats,
+    setOnlineUsers,
+    setThreads,
+    setPoll,
+    setUserVote,
+    createHash
+  ]);
 
   // Debounced loading state updates
   useEffect(() => {
@@ -113,7 +158,7 @@ export const useSidebarDataBridge = (userId?: string) => {
       setLoading('Stats', loadingStates.stats);
       setLoading('Users', loadingStates.users);
       setLoading('Threads', loadingStates.threads);
-    }, 50); // 50ms debounce
+    }, 100); // Increased debounce for loading states
 
     return () => clearTimeout(timeoutId);
   }, [

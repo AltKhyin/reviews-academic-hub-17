@@ -14,6 +14,25 @@ interface SidebarStoreSync {
   setLoading: (section: string, loading: boolean) => void;
 }
 
+// Deep equality check for complex objects
+const deepEqual = (obj1: any, obj2: any): boolean => {
+  if (obj1 === obj2) return true;
+  if (!obj1 || !obj2) return obj1 === obj2;
+  if (typeof obj1 !== 'object' || typeof obj2 !== 'object') return obj1 === obj2;
+  
+  const keys1 = Object.keys(obj1);
+  const keys2 = Object.keys(obj2);
+  
+  if (keys1.length !== keys2.length) return false;
+  
+  for (const key of keys1) {
+    if (!keys2.includes(key)) return false;
+    if (!deepEqual(obj1[key], obj2[key])) return false;
+  }
+  
+  return true;
+};
+
 export const useSidebarStoreSync = (): SidebarStoreSync => {
   // Extract store setters as stable references
   const setConfigStore = useSidebarStore(state => state.setConfig);
@@ -34,23 +53,23 @@ export const useSidebarStoreSync = (): SidebarStoreSync => {
     userVote?: number | null;
   }>({});
 
-  // Optimized callbacks with value comparison to prevent unnecessary updates
+  // Optimized callbacks with deep value comparison to prevent unnecessary updates
   const setConfig = useCallback((config: SidebarConfig | null) => {
-    if (config && JSON.stringify(config) !== JSON.stringify(prevValuesRef.current.config)) {
+    if (!deepEqual(config, prevValuesRef.current.config)) {
       prevValuesRef.current.config = config;
       setConfigStore(config);
     }
   }, [setConfigStore]);
 
   const setStats = useCallback((stats: any) => {
-    if (stats && JSON.stringify(stats) !== JSON.stringify(prevValuesRef.current.stats)) {
+    if (!deepEqual(stats, prevValuesRef.current.stats)) {
       prevValuesRef.current.stats = stats;
       setStatsStore(stats);
     }
   }, [setStatsStore]);
 
   const setOnlineUsers = useCallback((reviewerComments: any[]) => {
-    if (reviewerComments && reviewerComments.length > 0) {
+    if (reviewerComments && reviewerComments.length >= 0) {
       // Map reviewer comments to online users format for compatibility
       const mappedUsers = reviewerComments.map(comment => ({
         id: comment.id,
@@ -59,10 +78,7 @@ export const useSidebarStoreSync = (): SidebarStoreSync => {
         last_active: comment.created_at
       }));
       
-      const currentUsersKey = JSON.stringify(mappedUsers);
-      const prevUsersKey = JSON.stringify(prevValuesRef.current.onlineUsers);
-      
-      if (currentUsersKey !== prevUsersKey) {
+      if (!deepEqual(mappedUsers, prevValuesRef.current.onlineUsers)) {
         prevValuesRef.current.onlineUsers = mappedUsers;
         setOnlineUsersStore(mappedUsers);
       }
@@ -70,26 +86,21 @@ export const useSidebarStoreSync = (): SidebarStoreSync => {
   }, [setOnlineUsersStore]);
 
   const setThreads = useCallback((threads: any[]) => {
-    if (threads) {
-      const currentThreadsKey = JSON.stringify(threads);
-      const prevThreadsKey = JSON.stringify(prevValuesRef.current.threads);
-      
-      if (currentThreadsKey !== prevThreadsKey) {
-        prevValuesRef.current.threads = threads;
-        setThreadsStore(threads);
-      }
+    if (threads && !deepEqual(threads, prevValuesRef.current.threads)) {
+      prevValuesRef.current.threads = threads;
+      setThreadsStore(threads);
     }
   }, [setThreadsStore]);
 
   const setPoll = useCallback((poll: Poll | null) => {
-    if (poll && JSON.stringify(poll) !== JSON.stringify(prevValuesRef.current.poll)) {
+    if (!deepEqual(poll, prevValuesRef.current.poll)) {
       prevValuesRef.current.poll = poll;
       setPollStore(poll);
     }
   }, [setPollStore]);
 
   const setUserVote = useCallback((vote: number | null) => {
-    if (vote !== undefined && vote !== prevValuesRef.current.userVote) {
+    if (vote !== prevValuesRef.current.userVote) {
       prevValuesRef.current.userVote = vote;
       setUserVoteStore(vote);
     }
