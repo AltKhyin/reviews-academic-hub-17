@@ -1,3 +1,4 @@
+
 // ABOUTME: Section visibility management hook for dashboard layout configuration
 import { useOptimizedQuery, queryKeys, queryConfigs } from './useOptimizedQuery';
 import { supabase } from '@/integrations/supabase/client';
@@ -97,7 +98,7 @@ export const useSectionVisibility = () => {
     }
   );
 
-  // Safely access sections with type guard
+  // Safely access sections with type guard and fallback
   const safeSections = isSectionConfigArray(sections) ? sections : defaultSections;
 
   const getVisibleSections = useCallback(() => {
@@ -265,9 +266,9 @@ export const useSectionVisibility = () => {
     getVisibleSections,
     getSectionById,
     getAllSections,
-    toggleSectionVisibility: () => {}, // Placeholder
-    reorderSections: () => {}, // Placeholder
-    updateSection: () => {}, // Placeholder
-    resetToDefaults: () => {}, // Placeholder
+    toggleSectionVisibility,
+    reorderSections,
+    updateSection,
+    resetToDefaults,
   };
 };
