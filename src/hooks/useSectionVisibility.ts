@@ -14,6 +14,21 @@ export interface SectionConfig {
 // Export Section type alias for backward compatibility
 export type Section = SectionConfig;
 
+// Database to Dashboard section ID mapping
+const SECTION_ID_MAPPING: Record<string, string> = {
+  'reviewer_notes': 'reviews',
+  'featured_carousel': 'featured', 
+  'recent_issues': 'recent',
+  'popular_issues': 'trending',
+  'recommended_issues': 'recommended',
+  'upcoming_releases': 'upcoming'
+};
+
+// Reverse mapping for updates
+const DASHBOARD_TO_DB_MAPPING: Record<string, string> = Object.fromEntries(
+  Object.entries(SECTION_ID_MAPPING).map(([db, dash]) => [dash, db])
+);
+
 const defaultSections: SectionConfig[] = [
   { id: 'reviews', title: 'Reviewer Comments', visible: true, order: 0 },
   { id: 'featured', title: 'Featured Content', visible: true, order: 1 },
@@ -42,15 +57,23 @@ export const useSectionVisibility = () => {
         if (data && typeof data === 'object' && !Array.isArray(data)) {
           const settings = data as Record<string, any>;
           if (settings.sections && typeof settings.sections === 'object') {
-            return Object.entries(settings.sections).map(([id, config]: [string, any]) => ({
-              id,
-              title: config?.title || id.replace('_', ' '),
-              visible: config?.visible !== false,
-              order: config?.order || 0,
-            }));
+            // Convert database section IDs to dashboard section IDs
+            const mappedSections = Object.entries(settings.sections).map(([dbId, config]: [string, any]) => {
+              const dashboardId = SECTION_ID_MAPPING[dbId] || dbId;
+              return {
+                id: dashboardId,
+                title: config?.title || dashboardId.replace('_', ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()),
+                visible: config?.visible !== false,
+                order: config?.order || 0,
+              };
+            });
+            
+            console.log('useSectionVisibility: Mapped sections from DB:', mappedSections);
+            return mappedSections;
           }
         }
         
+        console.log('useSectionVisibility: Using default sections');
         return defaultSections;
       } catch (error) {
         console.warn('Failed to load section visibility settings:', error);
@@ -64,7 +87,9 @@ export const useSectionVisibility = () => {
   );
 
   const getVisibleSections = useCallback(() => {
-    return sections.filter(section => section.visible).sort((a, b) => a.order - b.order);
+    const visibleSections = sections.filter(section => section.visible).sort((a, b) => a.order - b.order);
+    console.log('useSectionVisibility: getVisibleSections returning:', visibleSections.map(s => `${s.id} (order: ${s.order})`));
+    return visibleSections;
   }, [sections]);
 
   const getSectionById = useCallback((id: string) => {
@@ -96,10 +121,13 @@ export const useSectionVisibility = () => {
         const settings = currentSettings as Record<string, any>;
         const updatedSections = { ...settings.sections };
         
-        if (updatedSections[sectionId]) {
-          updatedSections[sectionId].visible = !section.visible;
+        // Convert dashboard ID to database ID for storage
+        const dbSectionId = DASHBOARD_TO_DB_MAPPING[sectionId] || sectionId;
+        
+        if (updatedSections[dbSectionId]) {
+          updatedSections[dbSectionId].visible = !section.visible;
         } else {
-          updatedSections[sectionId] = { visible: !section.visible, order: section.order };
+          updatedSections[dbSectionId] = { visible: !section.visible, order: section.order };
         }
 
         // Update site_meta directly
@@ -135,10 +163,13 @@ export const useSectionVisibility = () => {
         const updatedSections = { ...settings.sections };
         
         newOrder.forEach((sectionId, index) => {
-          if (updatedSections[sectionId]) {
-            updatedSections[sectionId].order = index;
+          // Convert dashboard ID to database ID for storage
+          const dbSectionId = DASHBOARD_TO_DB_MAPPING[sectionId] || sectionId;
+          
+          if (updatedSections[dbSectionId]) {
+            updatedSections[dbSectionId].order = index;
           } else {
-            updatedSections[sectionId] = { visible: true, order: index };
+            updatedSections[dbSectionId] = { visible: true, order: index };
           }
         });
 
@@ -166,7 +197,10 @@ export const useSectionVisibility = () => {
         const settings = currentSettings as Record<string, any>;
         const updatedSections = { ...settings.sections };
         
-        updatedSections[sectionId] = { ...updatedSections[sectionId], ...updates };
+        // Convert dashboard ID to database ID for storage
+        const dbSectionId = DASHBOARD_TO_DB_MAPPING[sectionId] || sectionId;
+        
+        updatedSections[dbSectionId] = { ...updatedSections[dbSectionId], ...updates };
 
         // Update site_meta directly
         const { error } = await supabase
@@ -187,10 +221,12 @@ export const useSectionVisibility = () => {
     try {
       // Reset to default configuration by updating site_meta directly
       const defaultSettings = {
-        sections: defaultSections.reduce((acc, section) => {
-          acc[section.id] = { visible: section.visible, order: section.order };
-          return acc;
-        }, {} as Record<string, any>)
+        sections: Object.fromEntries(
+          defaultSections.map(section => {
+            const dbSectionId = DASHBOARD_TO_DB_MAPPING[section.id] || section.id;
+            return [dbSectionId, { visible: section.visible, order: section.order }];
+          })
+        )
       };
 
       const { error } = await supabase

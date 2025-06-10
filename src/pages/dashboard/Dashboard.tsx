@@ -109,6 +109,8 @@ const Dashboard = () => {
     const nextSection = enabledSections[index + 1];
     const isFollowedByFeatured = nextSection?.id === 'featured';
     
+    console.log(`Dashboard: Rendering section ${sectionId}`);
+    
     switch (sectionId) {
       case 'reviews':
         return (
@@ -130,7 +132,10 @@ const Dashboard = () => {
         );
         
       case 'featured':
-        if (!featuredIssue) return null;
+        if (!featuredIssue) {
+          console.log('Dashboard: No featured issue available for featured section');
+          return null;
+        }
         return (
           <DataErrorBoundary key={`featured-${featuredIssue.id}-${index}`} context="featured issue">
             <HeroSection featuredIssue={featuredIssue} />
@@ -145,7 +150,10 @@ const Dashboard = () => {
         );
         
       case 'recent':
-        if (recentIssues.length === 0) return null;
+        if (recentIssues.length === 0) {
+          console.log('Dashboard: No recent issues available');
+          return null;
+        }
         return (
           <DataErrorBoundary key={`recent-${index}`} context="recent issues">
             <ArticleRow title="Edições Recentes" articles={recentIssues} />
@@ -153,7 +161,10 @@ const Dashboard = () => {
         );
         
       case 'recommended':
-        if (recommendedIssues.length === 0) return null;
+        if (recommendedIssues.length === 0) {
+          console.log('Dashboard: No recommended issues available');
+          return null;
+        }
         return (
           <DataErrorBoundary key={`recommended-${index}`} context="recommended issues">
             <ArticleRow title="Recomendados para você" articles={recommendedIssues} />
@@ -161,7 +172,10 @@ const Dashboard = () => {
         );
         
       case 'trending':
-        if (trendingIssues.length === 0) return null;
+        if (trendingIssues.length === 0) {
+          console.log('Dashboard: No trending issues available');
+          return null;
+        }
         return (
           <DataErrorBoundary key={`trending-${index}`} context="trending issues">
             <ArticleRow title="Mais acessados" articles={trendingIssues} />
@@ -170,7 +184,13 @@ const Dashboard = () => {
         
       default:
         console.warn(`Dashboard: Unknown section ID: ${sectionId}`);
-        return null;
+        return (
+          <div key={`unknown-${sectionId}-${index}`} className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 mb-4">
+            <p className="text-red-400">
+              Seção desconhecida: {sectionId}. Verifique a configuração.
+            </p>
+          </div>
+        );
     }
   };
 
@@ -179,12 +199,21 @@ const Dashboard = () => {
       <div className="w-full min-h-screen" style={{ backgroundColor: '#121212' }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="space-y-8">
-            {enabledSections.map((section, index) => {
-              const sectionElement = renderSection(section, index);
-              // Only render if we have a valid element
-              if (!sectionElement) return null;
-              return sectionElement;
-            })}
+            {enabledSections.length === 0 ? (
+              <div className="text-center py-16">
+                <h2 className="text-2xl font-bold mb-4 text-white">Nenhuma seção configurada</h2>
+                <p className="text-gray-400">
+                  Configure as seções da página inicial no painel administrativo.
+                </p>
+              </div>
+            ) : (
+              enabledSections.map((section, index) => {
+                const sectionElement = renderSection(section, index);
+                // Only render if we have a valid element
+                if (!sectionElement) return null;
+                return sectionElement;
+              })
+            )}
           </div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 
 // ABOUTME: Parallel data loading hook with integrated section visibility management
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useOptimizedIssues, useOptimizedFeaturedIssue } from './useOptimizedIssues';
 import { useOptimizedSidebarData } from './useOptimizedSidebarData';
 import { useStableAuth } from './useStableAuth';
@@ -60,34 +60,44 @@ export const useParallelDataLoader = (): ParallelDataState => {
   // Use optimized sidebar data
   const optimizedSidebar = useOptimizedSidebarData();
 
-  // Section visibility - now properly integrated with actual settings
-  const [sectionVisibility, setSectionVisibility] = useState<SectionVisibilityConfig[]>([]);
-
-  // Update section visibility when sections change
-  useEffect(() => {
+  // Memoize section visibility to prevent unnecessary recalculations
+  const sectionVisibility = useMemo(() => {
     if (!sectionsLoading && sections.length > 0) {
       const visibleSections = getVisibleSections();
       const mappedSections = mapSectionVisibilityToConfig(visibleSections);
-      setSectionVisibility(mappedSections);
-      console.log('ParallelDataLoader: Updated section visibility from hook:', mappedSections);
+      console.log('ParallelDataLoader: Memoized section visibility:', mappedSections);
+      return mappedSections;
     }
+    return [];
   }, [sections, sectionsLoading, getVisibleSections]);
 
-  // Error management
-  useEffect(() => {
+  // Stable error management with memoization
+  const currentErrors = useMemo(() => {
     const newErrors: Record<string, Error> = {};
     
     if (issuesError) newErrors.issues = issuesError as Error;
     if (featuredError) newErrors.featured = featuredError as Error;
     if (optimizedSidebar.hasError) newErrors.sidebar = new Error('Sidebar data error');
     
-    setErrors(newErrors);
+    return newErrors;
   }, [issuesError, featuredError, optimizedSidebar.hasError]);
 
-  // Retry mechanism for failed requests
+  // Update errors only when they actually change
+  useEffect(() => {
+    const errorKeys = Object.keys(currentErrors);
+    const existingErrorKeys = Object.keys(errors);
+    
+    if (errorKeys.length !== existingErrorKeys.length || 
+        errorKeys.some(key => !errors[key] || errors[key].message !== currentErrors[key].message)) {
+      setErrors(currentErrors);
+    }
+  }, [currentErrors, errors]);
+
+  // Stable retry mechanism
   const retryFailed = useCallback(() => {
     if (retryCountRef.current < maxRetries) {
       retryCountRef.current++;
+      console.log(`ParallelDataLoader: Retrying failed requests (attempt ${retryCountRef.current})`);
       
       if (issuesError) refetchIssues();
       if (featuredError) refetchFeatured();
