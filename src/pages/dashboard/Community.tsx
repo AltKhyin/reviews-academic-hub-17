@@ -1,4 +1,3 @@
-
 // ABOUTME: Community page with integrated sidebar using optimized data bridge
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -12,7 +11,7 @@ import { PostsList } from '@/components/community/PostsList';
 import { useCommunityPosts, usePostFlairs } from '@/hooks/useCommunityPosts';
 import { CommunityHeader } from '@/components/community/CommunityHeader';
 import { RightSidebar } from '@/components/sidebar/RightSidebar';
-import { useSidebarDataBridge } from '@/hooks/useSidebarDataBridge';
+import { useSidebarDataBridge } from '@/hooks/sidebar/useSidebarDataBridge';
 import { Search } from 'lucide-react';
 
 const Community = () => {
