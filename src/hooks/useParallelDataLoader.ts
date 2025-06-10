@@ -1,5 +1,5 @@
 
-// ABOUTME: Parallel data loading hook with integrated section visibility management
+// ABOUTME: Enhanced parallel data loading hook with optimized caching and error handling
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useOptimizedIssues, useOptimizedFeaturedIssue } from './useOptimizedIssues';
 import { useOptimizedSidebarData } from './useOptimizedSidebarData';
@@ -41,7 +41,7 @@ export const useParallelDataLoader = (): ParallelDataState => {
   const retryCountRef = useRef(0);
   const maxRetries = 2;
 
-  // Use optimized issues query
+  // Use optimized issues query with enhanced error handling
   const { 
     data: issues = [], 
     isLoading: issuesLoading, 
@@ -49,7 +49,7 @@ export const useParallelDataLoader = (): ParallelDataState => {
     refetch: refetchIssues
   } = useOptimizedIssues({ limit: 20 });
 
-  // Use optimized featured issue query
+  // Use optimized featured issue query with enhanced error handling
   const {
     data: featuredIssue,
     isLoading: featuredLoading,
@@ -60,50 +60,78 @@ export const useParallelDataLoader = (): ParallelDataState => {
   // Use optimized sidebar data
   const optimizedSidebar = useOptimizedSidebarData();
 
-  // Memoize section visibility to prevent unnecessary recalculations
+  // Memoize section visibility with improved caching
   const sectionVisibility = useMemo(() => {
     if (!sectionsLoading && sections.length > 0) {
       const visibleSections = getVisibleSections();
       const mappedSections = mapSectionVisibilityToConfig(visibleSections);
-      console.log('ParallelDataLoader: Memoized section visibility:', mappedSections);
+      console.log('ParallelDataLoader: Cached section visibility:', mappedSections.length, 'sections');
       return mappedSections;
     }
     return [];
   }, [sections, sectionsLoading, getVisibleSections]);
 
-  // Stable error management with memoization
+  // Enhanced error management with debouncing
   const currentErrors = useMemo(() => {
     const newErrors: Record<string, Error> = {};
     
-    if (issuesError) newErrors.issues = issuesError as Error;
-    if (featuredError) newErrors.featured = featuredError as Error;
-    if (optimizedSidebar.hasError) newErrors.sidebar = new Error('Sidebar data error');
+    if (issuesError) {
+      newErrors.issues = issuesError as Error;
+      console.warn('ParallelDataLoader: Issues error:', issuesError);
+    }
+    if (featuredError) {
+      newErrors.featured = featuredError as Error;
+      console.warn('ParallelDataLoader: Featured issue error:', featuredError);
+    }
+    if (optimizedSidebar.hasError) {
+      newErrors.sidebar = new Error('Sidebar data error');
+      console.warn('ParallelDataLoader: Sidebar error detected');
+    }
     
     return newErrors;
   }, [issuesError, featuredError, optimizedSidebar.hasError]);
 
-  // Update errors only when they actually change
+  // Debounced error updates to prevent excessive re-renders
   useEffect(() => {
     const errorKeys = Object.keys(currentErrors);
     const existingErrorKeys = Object.keys(errors);
     
-    if (errorKeys.length !== existingErrorKeys.length || 
-        errorKeys.some(key => !errors[key] || errors[key].message !== currentErrors[key].message)) {
-      setErrors(currentErrors);
+    const hasErrorChanges = errorKeys.length !== existingErrorKeys.length || 
+      errorKeys.some(key => !errors[key] || errors[key].message !== currentErrors[key].message);
+    
+    if (hasErrorChanges) {
+      // Debounce error updates
+      const timeoutId = setTimeout(() => {
+        setErrors(currentErrors);
+      }, 100);
+      
+      return () => clearTimeout(timeoutId);
     }
   }, [currentErrors, errors]);
 
-  // Stable retry mechanism
+  // Enhanced retry mechanism with exponential backoff
   const retryFailed = useCallback(() => {
     if (retryCountRef.current < maxRetries) {
       retryCountRef.current++;
-      console.log(`ParallelDataLoader: Retrying failed requests (attempt ${retryCountRef.current})`);
+      const backoffDelay = Math.min(1000 * Math.pow(2, retryCountRef.current - 1), 5000);
       
-      if (issuesError) refetchIssues();
-      if (featuredError) refetchFeatured();
+      console.log(`ParallelDataLoader: Retrying failed requests (attempt ${retryCountRef.current}) with ${backoffDelay}ms delay`);
       
-      // Clear errors temporarily to show loading state
-      setErrors({});
+      setTimeout(() => {
+        if (issuesError) {
+          console.log('ParallelDataLoader: Retrying issues fetch');
+          refetchIssues();
+        }
+        if (featuredError) {
+          console.log('ParallelDataLoader: Retrying featured issue fetch');
+          refetchFeatured();
+        }
+        
+        // Clear errors temporarily to show loading state
+        setErrors({});
+      }, backoffDelay);
+    } else {
+      console.warn('ParallelDataLoader: Max retries reached, stopping retry attempts');
     }
   }, [issuesError, featuredError, refetchIssues, refetchFeatured]);
 
@@ -114,9 +142,13 @@ export const useParallelDataLoader = (): ParallelDataState => {
     }
   }, [issuesError, featuredError, optimizedSidebar.hasError]);
 
-  const isLoading = authLoading || sectionsLoading || (issuesLoading && issues.length === 0) || featuredLoading;
+  // Optimized loading state calculation
+  const isLoading = useMemo(() => {
+    return authLoading || sectionsLoading || (issuesLoading && issues.length === 0) || featuredLoading;
+  }, [authLoading, sectionsLoading, issuesLoading, issues.length, featuredLoading]);
 
-  return {
+  // Memoize return value to prevent unnecessary re-renders
+  return useMemo(() => ({
     issues,
     sectionVisibility,
     reviewerComments: optimizedSidebar.reviewerComments.data || [],
@@ -124,5 +156,13 @@ export const useParallelDataLoader = (): ParallelDataState => {
     isLoading,
     errors,
     retryFailed,
-  };
+  }), [
+    issues,
+    sectionVisibility,
+    optimizedSidebar.reviewerComments.data,
+    featuredIssue,
+    isLoading,
+    errors,
+    retryFailed
+  ]);
 };

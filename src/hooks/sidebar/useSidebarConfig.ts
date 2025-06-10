@@ -1,5 +1,5 @@
 
-// ABOUTME: Hook for managing sidebar configuration data from site_meta table
+// ABOUTME: Enhanced hook for managing sidebar configuration data from site_meta table
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { SidebarConfig } from '@/types/sidebar';
@@ -58,20 +58,31 @@ const getDefaultSidebarConfig = (): SidebarConfig => ({
   ]
 });
 
-// Fetch sidebar configuration from site_meta table
+// Fetch sidebar configuration from site_meta table with enhanced error handling
 const fetchSidebarConfig = async (): Promise<SidebarConfig> => {
-  const { data, error } = await supabase
-    .from('site_meta')
-    .select('value')
-    .eq('key', 'sidebar_config')
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from('site_meta')
+      .select('value')
+      .eq('key', 'sidebar_config')
+      .single();
 
-  if (error || !data) {
+    if (error) {
+      console.warn('Error fetching sidebar config:', error.message);
+      return getDefaultSidebarConfig();
+    }
+
+    if (!data || !data.value) {
+      console.log('No sidebar config found, using defaults');
+      return getDefaultSidebarConfig();
+    }
+
+    // Use the validation helper instead of direct casting
+    return validateSidebarConfig(data.value);
+  } catch (error) {
+    console.error('Unexpected error in fetchSidebarConfig:', error);
     return getDefaultSidebarConfig();
   }
-
-  // Use the validation helper instead of direct casting
-  return validateSidebarConfig(data.value);
 };
 
 export const useSidebarConfig = () => {
@@ -80,5 +91,7 @@ export const useSidebarConfig = () => {
     queryFn: fetchSidebarConfig,
     staleTime: 30 * 60 * 1000, // 30 minutes
     gcTime: 60 * 60 * 1000, // 1 hour
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 };
