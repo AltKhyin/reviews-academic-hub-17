@@ -1,9 +1,10 @@
 
-// ABOUTME: Optimized authentication hook with reduced query count and intelligent caching
+// ABOUTME: Optimized authentication hook with aggressive caching and request deduplication
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { queryKeys, queryConfigs } from './useOptimizedQuery';
 import { supabase } from '@/integrations/supabase/client';
+import { useRef, useCallback } from 'react';
 
 interface OptimizedAuthData {
   user: any | null;
@@ -15,31 +16,54 @@ interface OptimizedAuthData {
   role: string | null;
 }
 
+// Global cache to prevent duplicate auth requests
+const authCache = new Map();
+const pendingAuthRequests = new Map();
+
 export const useOptimizedAuth = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const lastUserIdRef = useRef<string | null>(null);
 
-  // Consolidated auth query that fetches user permissions in one go
-  const { data: authData, isLoading } = useQuery({
-    queryKey: queryKeys.userPermissions(user?.id || 'anonymous'),
-    queryFn: async (): Promise<OptimizedAuthData> => {
-      if (!user) {
-        return {
-          user: null,
-          profile: null,
-          isAuthenticated: false,
-          isAdmin: false,
-          isEditor: false,
-          canEdit: false,
-          role: null,
-        };
+  // Deduplicate auth requests using cache key
+  const cacheKey = user?.id || 'anonymous';
+  
+  // Check if request is already pending to prevent duplicates
+  const fetchAuthData = useCallback(async (): Promise<OptimizedAuthData> => {
+    // Return cached data if available and fresh
+    if (authCache.has(cacheKey)) {
+      const cached = authCache.get(cacheKey);
+      if (Date.now() - cached.timestamp < 300000) { // 5 minutes cache
+        return cached.data;
       }
+    }
 
+    // Check for pending request to prevent duplication
+    if (pendingAuthRequests.has(cacheKey)) {
+      return pendingAuthRequests.get(cacheKey);
+    }
+
+    if (!user) {
+      const defaultData = {
+        user: null,
+        profile: null,
+        isAuthenticated: false,
+        isAdmin: false,
+        isEditor: false,
+        canEdit: false,
+        role: null,
+      };
+      authCache.set(cacheKey, { data: defaultData, timestamp: Date.now() });
+      return defaultData;
+    }
+
+    // Create and cache the promise to prevent duplicate requests
+    const authPromise = (async () => {
       try {
-        // Fetch profile data with role information
+        // Single optimized query with minimal fields
         const { data: profile, error } = await supabase
           .from('profiles')
-          .select('id, role, full_name, avatar_url, specialty, bio, institution')
+          .select('id, role, full_name, avatar_url')
           .eq('id', user.id)
           .single();
 
@@ -52,7 +76,7 @@ export const useOptimizedAuth = () => {
         const isEditor = role === 'editor' || isAdmin;
         const canEdit = isEditor;
 
-        return {
+        const authData = {
           user,
           profile,
           isAuthenticated: true,
@@ -61,9 +85,13 @@ export const useOptimizedAuth = () => {
           canEdit,
           role,
         };
+
+        // Cache the result
+        authCache.set(cacheKey, { data: authData, timestamp: Date.now() });
+        return authData;
       } catch (error) {
         console.error('Auth optimization error:', error);
-        return {
+        const fallbackData = {
           user,
           profile: null,
           isAuthenticated: true,
@@ -72,11 +100,34 @@ export const useOptimizedAuth = () => {
           canEdit: false,
           role: 'user',
         };
+        authCache.set(cacheKey, { data: fallbackData, timestamp: Date.now() });
+        return fallbackData;
+      } finally {
+        // Remove from pending requests
+        pendingAuthRequests.delete(cacheKey);
       }
-    },
-    ...queryConfigs.user,
-    enabled: true, // Always enabled to handle both authenticated and anonymous states
-    staleTime: user ? 10 * 60 * 1000 : 60 * 60 * 1000, // 10 minutes for auth users, 1 hour for anonymous
+    })();
+
+    // Cache the promise to prevent duplicate requests
+    pendingAuthRequests.set(cacheKey, authPromise);
+    return authPromise;
+  }, [user, cacheKey]);
+
+  // Clear cache when user changes
+  if (lastUserIdRef.current !== (user?.id || null)) {
+    lastUserIdRef.current = user?.id || null;
+    authCache.clear();
+    pendingAuthRequests.clear();
+  }
+
+  const { data: authData, isLoading } = useQuery({
+    queryKey: queryKeys.userPermissions(cacheKey),
+    queryFn: fetchAuthData,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    retry: 1,
   });
 
   // Provide default values while loading
@@ -93,7 +144,6 @@ export const useOptimizedAuth = () => {
   return {
     ...((authData || defaultAuthData) as OptimizedAuthData),
     isLoading,
-    // Utility functions for permission checking
     hasPermission: (permission: 'read' | 'write' | 'admin') => {
       if (!authData) return false;
       switch (permission) {
@@ -107,24 +157,11 @@ export const useOptimizedAuth = () => {
           return false;
       }
     },
-    // Force refresh auth data
     refreshAuth: () => {
+      authCache.delete(cacheKey);
       queryClient.invalidateQueries({ 
-        queryKey: queryKeys.userPermissions(user?.id || 'anonymous') 
+        queryKey: queryKeys.userPermissions(cacheKey) 
       });
     },
-  };
-};
-
-// Stable auth hook for components that need consistent auth state
-export const useStableAuth = () => {
-  const authData = useOptimizedAuth();
-  
-  // Use React Query's built-in state management for stability
-  return {
-    ...authData,
-    // Provide stable loading state to prevent UI flashing
-    isLoading: authData.isLoading,
-    isReady: !authData.isLoading,
   };
 };

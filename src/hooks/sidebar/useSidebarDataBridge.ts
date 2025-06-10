@@ -1,6 +1,6 @@
 
-// ABOUTME: Optimized bridge hook that connects sidebar data with the sidebar store
-import { useEffect, useMemo } from 'react';
+// ABOUTME: Optimized bridge hook with strict dependency control and request deduplication
+import { useEffect, useMemo, useRef } from 'react';
 import { useOptimizedSidebarData } from '../useOptimizedSidebarData';
 import { useSidebarConfig } from './useSidebarConfig';
 import { useWeeklyPoll, useUserPollVote } from './usePollData';
@@ -12,6 +12,16 @@ export const useSidebarDataBridge = (userId?: string) => {
   const { data: poll, isLoading: pollLoading, error: pollError } = useWeeklyPoll();
   const { data: userVote, isLoading: userVoteLoading, error: userVoteError } = useUserPollVote(userId, poll?.id);
   
+  // Track previous values to prevent unnecessary updates
+  const prevValuesRef = useRef({
+    config: null,
+    poll: null,
+    userVote: null,
+    stats: null,
+    onlineUsers: null,
+    threads: null,
+  });
+
   const {
     setConfig,
     setStats,
@@ -49,53 +59,63 @@ export const useSidebarDataBridge = (userId?: string) => {
     );
   }, [configError, pollError, userVoteError, optimizedData.hasError]);
 
-  // Update store when optimized data changes
+  // Update store only when data actually changes
   useEffect(() => {
-    if (optimizedData.stats.data) {
+    if (optimizedData.stats.data && 
+        JSON.stringify(optimizedData.stats.data) !== JSON.stringify(prevValuesRef.current.stats)) {
+      prevValuesRef.current.stats = optimizedData.stats.data;
       setStats(optimizedData.stats.data);
     }
   }, [optimizedData.stats.data, setStats]);
 
   useEffect(() => {
-    if (optimizedData.reviewerComments.data) {
+    if (optimizedData.reviewerComments.data && 
+        JSON.stringify(optimizedData.reviewerComments.data) !== JSON.stringify(prevValuesRef.current.onlineUsers)) {
+      prevValuesRef.current.onlineUsers = optimizedData.reviewerComments.data;
       setOnlineUsers(optimizedData.reviewerComments.data);
     }
   }, [optimizedData.reviewerComments.data, setOnlineUsers]);
 
   useEffect(() => {
-    if (optimizedData.topThreads.data) {
+    if (optimizedData.topThreads.data && 
+        JSON.stringify(optimizedData.topThreads.data) !== JSON.stringify(prevValuesRef.current.threads)) {
+      prevValuesRef.current.threads = optimizedData.topThreads.data;
       setThreads(optimizedData.topThreads.data);
     }
   }, [optimizedData.topThreads.data, setThreads]);
 
-  // Update store when configuration loads
   useEffect(() => {
-    if (config) {
+    if (config && JSON.stringify(config) !== JSON.stringify(prevValuesRef.current.config)) {
+      prevValuesRef.current.config = config;
       setConfig(config);
     }
   }, [config, setConfig]);
 
-  // Update store when poll data loads
   useEffect(() => {
-    if (poll) {
+    if (poll && JSON.stringify(poll) !== JSON.stringify(prevValuesRef.current.poll)) {
+      prevValuesRef.current.poll = poll;
       setPoll(poll);
     }
   }, [poll, setPoll]);
 
-  // Update store when user vote loads
   useEffect(() => {
-    if (userVote !== undefined) {
+    if (userVote !== undefined && userVote !== prevValuesRef.current.userVote) {
+      prevValuesRef.current.userVote = userVote;
       setUserVote(userVote);
     }
   }, [userVote, setUserVote]);
 
-  // Update loading states efficiently
+  // Debounced loading state updates
   useEffect(() => {
-    setLoading('Config', loadingStates.config);
-    setLoading('Poll', loadingStates.poll);
-    setLoading('Stats', loadingStates.stats);
-    setLoading('Users', loadingStates.users);
-    setLoading('Threads', loadingStates.threads);
+    const timeoutId = setTimeout(() => {
+      setLoading('Config', loadingStates.config);
+      setLoading('Poll', loadingStates.poll);
+      setLoading('Stats', loadingStates.stats);
+      setLoading('Users', loadingStates.users);
+      setLoading('Threads', loadingStates.threads);
+    }, 50); // 50ms debounce
+
+    return () => clearTimeout(timeoutId);
   }, [
     loadingStates.config,
     loadingStates.poll,

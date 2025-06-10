@@ -1,8 +1,6 @@
 
-// ABOUTME: Right sidebar component with page-level scrolling integration
-// Now uses seamless background integration with no visual boundaries
-
-import React, { useEffect } from 'react';
+// ABOUTME: Right sidebar component with optimized rendering and minimal re-renders
+import React, { useEffect, useMemo } from 'react';
 import { X } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { useSidebarStore } from '@/stores/sidebarStore';
@@ -45,7 +43,7 @@ const DEFAULT_SECTIONS = [
   { id: 'mini-changelog', name: 'Changelog', enabled: true, order: 7 },
 ];
 
-export const RightSidebar: React.FC<RightSidebarProps> = ({
+export const RightSidebar = React.memo<RightSidebarProps>(({
   className = '',
   isMobile = false
 }) => {
@@ -53,8 +51,11 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
   const { isMobileDrawerOpen, toggleMobileDrawer, config } = useSidebarStore();
   const focusTrapRef = useFocusTrap(isMobile && isMobileDrawerOpen);
   
-  // Only show sidebar in community routes (this component should only be mounted in community now)
-  const shouldShowSidebar = location.pathname.startsWith('/community');
+  // Only show sidebar in community routes
+  const shouldShowSidebar = useMemo(() => 
+    location.pathname.startsWith('/community'), 
+    [location.pathname]
+  );
   
   // Initialize data fetching only when sidebar should be visible
   const shouldFetchData = shouldShowSidebar;
@@ -76,92 +77,83 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isMobile, isMobileDrawerOpen, toggleMobileDrawer]);
 
-  // Don't render sidebar if not in community routes (defensive check)
-  if (!shouldShowSidebar) {
-    return null;
-  }
+  // Get enabled sections from config or use defaults
+  const enabledSections = useMemo(() => {
+    if (!config || !config.sections) return DEFAULT_SECTIONS;
+    
+    return config.sections
+      .filter((section: any) => section.enabled)
+      .sort((a: any, b: any) => a.order - b.order);
+  }, [config]);
 
-  // Get enabled sections in order - use default sections if config doesn't have sections yet
-  const enabledSections = (config?.sections || DEFAULT_SECTIONS)
-    .filter(section => section.enabled)
-    .sort((a, b) => a.order - b.order);
-
-  const content = (
-    <SidebarErrorBoundary>
-      <div 
-        className="w-full h-full"
-        role="complementary"
-        aria-label="Barra lateral da comunidade"
-      >
-        <div className="space-y-0">
-          {enabledSections.map((section, index) => {
-            const Component = SECTION_COMPONENTS[section.id as keyof typeof SECTION_COMPONENTS];
-            
-            if (!Component) return null;
-            
-            return (
-              <React.Fragment key={section.id}>
-                {/* Section Content */}
-                <div className="py-4 px-5">
-                  <Component />
-                </div>
-                
-                {/* Module Divider - subtle and clean hierarchy separator */}
-                {index < enabledSections.length - 1 && (
-                  <div className="border-t border-muted/30 mx-4"></div>
-                )}
-              </React.Fragment>
-            );
-          })}
-        </div>
-      </div>
-    </SidebarErrorBoundary>
-  );
-
+  // Mobile drawer overlay and sidebar
   if (isMobile) {
     return (
       <>
-        {/* Mobile Drawer Overlay */}
         {isMobileDrawerOpen && (
           <div 
-            className="fixed inset-0 bg-black/50 z-40"
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
             onClick={toggleMobileDrawer}
-            aria-hidden="true"
           />
         )}
         
-        {/* Mobile Drawer - still uses w-80 for mobile overlay */}
         <div 
           ref={focusTrapRef}
           className={`
-            fixed top-0 right-0 h-full w-80 bg-gray-900 border-l border-gray-700/30 z-50
-            transform transition-transform duration-300 ease-in-out overflow-y-auto
+            fixed top-0 right-0 h-full w-80 z-50 lg:hidden
+            transform transition-transform duration-300 ease-in-out
             ${isMobileDrawerOpen ? 'translate-x-0' : 'translate-x-full'}
           `}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="mobile-sidebar-title"
+          style={{ backgroundColor: '#121212' }}
         >
-          <div className="flex items-center justify-between p-4 border-b border-gray-700/30">
-            <h2 id="mobile-sidebar-title" className="text-lg font-semibold text-white">Comunidade</h2>
+          <div className="flex items-center justify-between p-4 border-b border-gray-700">
+            <h2 className="text-lg font-semibold text-white">Comunidade</h2>
             <button
               onClick={toggleMobileDrawer}
-              className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
-              aria-label="Fechar barra lateral"
+              className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
             >
-              <X className="w-5 h-5 text-gray-400" />
+              <X className="h-5 w-5 text-gray-300" />
             </button>
           </div>
-          {content}
+          
+          <div className="p-4 overflow-y-auto h-full">
+            <div className="space-y-6">
+              {enabledSections.map((section: any) => {
+                const SectionComponent = SECTION_COMPONENTS[section.id as keyof typeof SECTION_COMPONENTS];
+                if (!SectionComponent) return null;
+                
+                return (
+                  <SidebarErrorBoundary key={section.id} sectionId={section.id}>
+                    <SectionComponent />
+                  </SidebarErrorBoundary>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </>
     );
   }
 
-  // Desktop version - now uses completely transparent background for seamless integration
+  // Desktop sidebar
+  if (!shouldShowSidebar) return null;
+
   return (
-    <div className={`w-full bg-transparent h-full overflow-y-auto ${className}`}>
-      {content}
+    <div className={`w-full ${className}`}>
+      <div className="space-y-6">
+        {enabledSections.map((section: any) => {
+          const SectionComponent = SECTION_COMPONENTS[section.id as keyof typeof SECTION_COMPONENTS];
+          if (!SectionComponent) return null;
+          
+          return (
+            <SidebarErrorBoundary key={section.id} sectionId={section.id}>
+              <SectionComponent />
+            </SidebarErrorBoundary>
+          );
+        })}
+      </div>
     </div>
   );
-};
+});
+
+RightSidebar.displayName = 'RightSidebar';

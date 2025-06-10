@@ -1,6 +1,10 @@
 
-// ABOUTME: Centralized query optimization utilities with flexible type system
+// ABOUTME: Centralized query optimization with request deduplication and aggressive caching
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
+
+// Global request deduplication cache
+const requestCache = new Map();
+const pendingRequests = new Map();
 
 // Centralized query key factory for consistency
 export const queryKeys = {
@@ -28,55 +32,87 @@ export const queryKeys = {
   userReactions: (userId: string) => ['user', 'reactions', userId],
 };
 
-// Flexible base configuration interface
-interface BaseQueryConfig {
-  staleTime: number;
-  gcTime: number;
-  refetchOnWindowFocus?: boolean;
-  refetchOnMount?: boolean;
-  refetchInterval?: number | false;
-}
-
-// Optimized query configurations by data type with flexible boolean handling
-export const queryConfigs: Record<string, BaseQueryConfig> = {
-  // Static/semi-static data - longer cache times
+// Optimized query configurations with aggressive caching
+export const queryConfigs: Record<string, any> = {
+  // Static/semi-static data - very long cache times
   static: {
+    staleTime: 30 * 60 * 1000, // 30 minutes
+    gcTime: 60 * 60 * 1000, // 60 minutes
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    retry: 1,
+  },
+  
+  // Real-time data - moderate cache times with careful refresh
+  realtime: {
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 15 * 60 * 1000, // 15 minutes
+    refetchOnWindowFocus: false,
+    refetchInterval: false, // Disable auto-refresh
+    retry: 1,
+  },
+  
+  // User-specific data - long cache times
+  user: {
     staleTime: 15 * 60 * 1000, // 15 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes
     refetchOnWindowFocus: false,
     refetchOnMount: false,
+    retry: 1,
   },
   
-  // Real-time data - shorter cache times
-  realtime: {
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
-    refetchOnWindowFocus: true,
-    refetchInterval: 5 * 60 * 1000, // 5 minutes
-  },
-  
-  // User-specific data - medium cache times
-  user: {
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 15 * 60 * 1000, // 15 minutes
-    refetchOnWindowFocus: false,
-  },
-  
-  // Performance monitoring - adaptive intervals
+  // Performance monitoring - minimal refresh
   performance: {
-    staleTime: 1 * 60 * 1000, // 1 minute
-    gcTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 20 * 60 * 1000, // 20 minutes
     refetchOnWindowFocus: false,
-    refetchInterval: 2 * 60 * 1000, // 2 minutes
+    refetchInterval: false,
+    retry: 1,
   }
 };
 
-// Generic optimized query hook with automatic config selection
+// Generic optimized query hook with request deduplication
 export const useOptimizedQuery = <TData = unknown>(
   queryKey: readonly unknown[],
   queryFn: () => Promise<TData>,
   options?: Partial<UseQueryOptions<TData>>
 ) => {
+  // Create cache key for deduplication
+  const cacheKey = JSON.stringify(queryKey);
+  
+  // Wrap query function with deduplication
+  const deduplicatedQueryFn = async (): Promise<TData> => {
+    // Check if request is already pending
+    if (pendingRequests.has(cacheKey)) {
+      return pendingRequests.get(cacheKey);
+    }
+
+    // Check cache first
+    if (requestCache.has(cacheKey)) {
+      const cached = requestCache.get(cacheKey);
+      if (Date.now() - cached.timestamp < 30000) { // 30 second cache
+        return cached.data;
+      }
+    }
+
+    // Create and cache the promise
+    const promise = queryFn().then(data => {
+      // Cache the result
+      requestCache.set(cacheKey, { data, timestamp: Date.now() });
+      // Remove from pending
+      pendingRequests.delete(cacheKey);
+      return data;
+    }).catch(error => {
+      // Remove from pending on error
+      pendingRequests.delete(cacheKey);
+      throw error;
+    });
+
+    // Cache the promise to prevent duplicate requests
+    pendingRequests.set(cacheKey, promise);
+    return promise;
+  };
+
   // Auto-select config based on query key pattern
   let config = queryConfigs.user; // default
   
@@ -91,7 +127,7 @@ export const useOptimizedQuery = <TData = unknown>(
 
   return useQuery({
     queryKey,
-    queryFn,
+    queryFn: deduplicatedQueryFn,
     ...config,
     ...options,
   });
