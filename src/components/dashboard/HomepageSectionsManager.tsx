@@ -18,14 +18,17 @@ const HomepageSectionsManager = () => {
     getAllSections 
   } = useSectionVisibility();
   
+  // Ensure sections is always an array
+  const safeSections = Array.isArray(sections) ? sections : [];
   const [localSections, setLocalSections] = useState<Section[]>([]);
 
   // Initialize local state with sections from the hook
   useEffect(() => {
-    if (sections && sections.length > 0) {
+    if (Array.isArray(sections) && sections.length > 0) {
       const sortedSections = getAllSections();
-      setLocalSections([...sortedSections]);
-      console.log('HomepageSectionsManager: Loaded sections', sortedSections);
+      const safeSortedSections = Array.isArray(sortedSections) ? sortedSections : [];
+      setLocalSections([...safeSortedSections]);
+      console.log('HomepageSectionsManager: Loaded sections', safeSortedSections);
     }
   }, [sections, getAllSections]);
 

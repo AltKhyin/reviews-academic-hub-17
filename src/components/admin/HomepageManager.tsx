@@ -1,3 +1,4 @@
+
 // ABOUTME: Comprehensive homepage management interface with unified section schema
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -40,7 +41,9 @@ export const HomepageManager = () => {
     getNextReleaseDate
   } = useUpcomingReleaseSettings();
   
-  const [localSections, setLocalSections] = useState(sections);
+  // Ensure sections is always an array
+  const safeSections = Array.isArray(sections) ? sections : [];
+  const [localSections, setLocalSections] = useState(safeSections);
   const [releaseSettings, setReleaseSettings] = useState<LocalReleaseSettings>({
     customDate: '',
     customTime: '',
@@ -53,10 +56,11 @@ export const HomepageManager = () => {
 
   // Initialize local state
   useEffect(() => {
-    if (sections && sections.length > 0) {
+    if (Array.isArray(sections) && sections.length > 0) {
       const sortedSections = getAllSections();
-      setLocalSections([...sortedSections]);
-      console.log('HomepageManager: Loaded sections from hook:', sortedSections);
+      const safeSortedSections = Array.isArray(sortedSections) ? sortedSections : [];
+      setLocalSections([...safeSortedSections]);
+      console.log('HomepageManager: Loaded sections from hook:', safeSortedSections);
     }
   }, [sections, getAllSections]);
 
@@ -77,17 +81,18 @@ export const HomepageManager = () => {
   }, [settings]);
 
   const moveSection = (sectionId: string, direction: 'up' | 'down') => {
-    const currentIndex = localSections.findIndex(s => s.id === sectionId);
+    const safeLocalSections = Array.isArray(localSections) ? localSections : [];
+    const currentIndex = safeLocalSections.findIndex(s => s.id === sectionId);
     
     if (
       (direction === 'up' && currentIndex === 0) || 
-      (direction === 'down' && currentIndex === localSections.length - 1) ||
+      (direction === 'down' && currentIndex === safeLocalSections.length - 1) ||
       currentIndex === -1
     ) {
       return;
     }
 
-    const newSections = [...localSections];
+    const newSections = [...safeLocalSections];
     const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
     
     [newSections[currentIndex], newSections[targetIndex]] = 
@@ -112,7 +117,8 @@ export const HomepageManager = () => {
   };
 
   const handleToggleVisibility = (sectionId: string) => {
-    const updatedSections = localSections.map(s => 
+    const safeLocalSections = Array.isArray(localSections) ? localSections : [];
+    const updatedSections = safeLocalSections.map(s => 
       s.id === sectionId 
         ? { ...s, visible: !s.visible }
         : s
@@ -166,6 +172,7 @@ export const HomepageManager = () => {
   };
 
   const nextReleaseDate = getNextReleaseDate();
+  const safeLocalSections = Array.isArray(localSections) ? localSections : [];
 
   if (isLoading || settingsLoading) {
     return (
@@ -213,7 +220,7 @@ export const HomepageManager = () => {
             </div>
             
             <div className="space-y-4">
-              {localSections.map((section, index) => (
+              {safeLocalSections.map((section, index) => (
                 <div 
                   key={section.id}
                   className="flex items-center justify-between p-4 bg-secondary/5 rounded-lg border border-white/10"
@@ -258,7 +265,7 @@ export const HomepageManager = () => {
                       variant="outline"
                       size="icon"
                       onClick={() => moveSection(section.id, 'down')}
-                      disabled={index === localSections.length - 1}
+                      disabled={index === safeLocalSections.length - 1}
                       title="Mover para baixo"
                       className="h-8 w-8"
                     >

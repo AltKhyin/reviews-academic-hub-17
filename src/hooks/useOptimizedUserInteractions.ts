@@ -1,4 +1,3 @@
-
 // ABOUTME: Optimized user interactions hook with batched operations and intelligent caching
 import { useCallback, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -27,6 +26,14 @@ interface BatchedInteractions {
   pendingReactions: Set<string>;
   pendingBookmarks: Set<string>;
 }
+
+// Type guard for interactions data
+const isBatchedInteractions = (data: unknown): data is BatchedInteractions => {
+  return data !== null && 
+         typeof data === 'object' && 
+         'reactions' in data && 
+         'bookmarks' in data;
+};
 
 export const useOptimizedUserInteractions = () => {
   const { user, isAuthenticated } = useOptimizedAuth();
@@ -94,17 +101,23 @@ export const useOptimizedUserInteractions = () => {
     staleTime: 10 * 60 * 1000, // 10 minutes - user interactions don't change frequently
   });
 
+  // Safely access userInteractions with type guard
+  const safeUserInteractions = isBatchedInteractions(userInteractions) ? userInteractions : {
+    reactions: {},
+    bookmarks: {},
+    pendingReactions: new Set(),
+    pendingBookmarks: new Set(),
+  };
+
   // Memoized helper functions
   const hasReaction = useCallback((issueId: string, reactionType: string): boolean => {
-    if (!userInteractions) return false;
     const key = `${issueId}-${reactionType}`;
-    return key in userInteractions.reactions;
-  }, [userInteractions]);
+    return key in safeUserInteractions.reactions;
+  }, [safeUserInteractions.reactions]);
 
   const isBookmarked = useCallback((issueId: string): boolean => {
-    if (!userInteractions) return false;
-    return issueId in userInteractions.bookmarks;
-  }, [userInteractions]);
+    return issueId in safeUserInteractions.bookmarks;
+  }, [safeUserInteractions.bookmarks]);
 
   // Optimized reaction toggle with optimistic updates
   const toggleReaction = useMutation({
@@ -303,4 +316,3 @@ export const useOptimizedUserInteractions = () => {
     isAuthenticated,
   ]);
 };
-

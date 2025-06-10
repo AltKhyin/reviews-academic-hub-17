@@ -28,6 +28,11 @@ export const PerformanceMonitor: React.FC = () => {
 
   // Type guard for query performance data
   const typedQueryData = queryPerformanceData as QueryPerformanceData | null;
+  
+  // Ensure arrays are properly typed
+  const safeRpcMetrics = Array.isArray(rpcMetrics) ? rpcMetrics : [];
+  const safeViewHealth = Array.isArray(viewHealth) ? viewHealth : [];
+  const safePerformanceComparisons = Array.isArray(performanceComparisons) ? performanceComparisons : [];
 
   // Only show in development mode
   if (process.env.NODE_ENV === 'production') {
@@ -51,7 +56,7 @@ export const PerformanceMonitor: React.FC = () => {
               RPC Functions
             </h4>
             <div className="space-y-1">
-              {rpcMetrics.slice(0, 3).map((metric) => (
+              {safeRpcMetrics.slice(0, 3).map((metric) => (
                 <div key={metric.functionName} className="flex justify-between text-xs">
                   <span className="truncate">{metric.functionName}</span>
                   <Badge variant={metric.averageExecutionTime > 1000 ? 'destructive' : 'secondary'}>
@@ -69,7 +74,7 @@ export const PerformanceMonitor: React.FC = () => {
               Materialized Views
             </h4>
             <div className="space-y-1">
-              {viewHealth.slice(0, 2).map((view) => (
+              {safeViewHealth.slice(0, 2).map((view) => (
                 <div key={view.view_name} className="flex justify-between text-xs">
                   <span className="truncate">{view.view_name.replace('mv_', '')}</span>
                   <Badge variant={view.is_stale ? 'destructive' : 'secondary'}>
@@ -81,14 +86,14 @@ export const PerformanceMonitor: React.FC = () => {
           </div>
 
           {/* Performance Comparisons */}
-          {performanceComparisons.length > 0 && (
+          {safePerformanceComparisons.length > 0 && (
             <div>
               <h4 className="text-xs font-medium mb-1 flex items-center gap-1">
                 <Clock className="w-3 h-3" />
                 Recent Comparisons
               </h4>
               <div className="space-y-1">
-                {performanceComparisons.slice(-2).map((comparison, index) => (
+                {safePerformanceComparisons.slice(-2).map((comparison, index) => (
                   <div key={index} className="flex justify-between text-xs">
                     <span>RPC vs Legacy</span>
                     <Badge variant={comparison.improvementPercentage > 0 ? 'secondary' : 'destructive'}>
