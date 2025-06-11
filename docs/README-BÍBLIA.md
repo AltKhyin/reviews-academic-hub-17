@@ -575,7 +575,5 @@ const metrics = {
 - Expanded admin and operational procedures
 - Added analytics and KPI tracking framework
 
-**Next Update:** Scheduled for v4.1.0 when native editor collaborative features are completed.
-
 ---
 *This document serves as the single source of truth for the Scientific Review Platform architecture. All information has been verified against the current codebase as of January 11, 2025.*
