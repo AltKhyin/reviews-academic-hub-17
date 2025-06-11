@@ -8,7 +8,7 @@ import { OnlineUser } from '@/types/sidebar';
 
 export function useSidebarDataBridge(userId?: string) {
   // Get store actions directly from the store
-  const { setSidebarData, setError, setLoading, setOnlineUsers } = useSidebarStore();
+  const { setStats, setComments, setThreads, setError, setLoading, setOnlineUsers } = useSidebarStore();
   
   // Ref to track if component is mounted
   const isMountedRef = useRef(true);
@@ -56,35 +56,33 @@ export function useSidebarDataBridge(userId?: string) {
     }
 
     if (!isLoading && stats.data && reviewerComments.data && topThreads.data) {
-      setSidebarData({
-        stats: {
-          totalUsers: stats.data.totalUsers || 0,
-          onlineUsers: stats.data.onlineUsers || 0,
-          totalIssues: stats.data.totalIssues || 0,
-          totalPosts: stats.data.totalPosts || 0,
-          totalComments: stats.data.totalComments || 0,
-        },
-        commentHighlights: reviewerComments.data.map(comment => ({
-          id: comment.id,
-          author_name: comment.reviewer_name,
-          author_avatar: comment.reviewer_avatar,
-          body: comment.comment,
-          votes: 0,
-          created_at: comment.created_at,
-          thread_id: `comment-${comment.id}`
-        })),
-        topThreads: topThreads.data.map(thread => ({
-          id: thread.id,
-          title: thread.title,
-          comments: Number(thread.comments) || 0,
-          votes: thread.votes || 0,
-          created_at: thread.created_at,
-          thread_type: thread.thread_type
-        })),
-        polls: [],
-        bookmarks: [],
-        changelog: []
+      // Update individual store sections
+      setStats({
+        totalUsers: stats.data.totalUsers || 0,
+        onlineUsers: stats.data.onlineUsers || 0,
+        totalIssues: stats.data.totalIssues || 0,
+        totalPosts: stats.data.totalPosts || 0,
+        totalComments: stats.data.totalComments || 0,
       });
+      
+      setComments(reviewerComments.data.map(comment => ({
+        id: comment.id,
+        author_name: comment.reviewer_name,
+        author_avatar: comment.reviewer_avatar,
+        body: comment.comment,
+        votes: 0,
+        created_at: comment.created_at,
+        thread_id: `comment-${comment.id}`
+      })));
+      
+      setThreads(topThreads.data.map(thread => ({
+        id: thread.id,
+        title: thread.title,
+        comments: Number(thread.comments) || 0,
+        votes: thread.votes || 0,
+        created_at: thread.created_at,
+        thread_type: thread.thread_type
+      })));
       
       setError(false);
     }
@@ -94,7 +92,9 @@ export function useSidebarDataBridge(userId?: string) {
     stats.data,
     reviewerComments.data,
     topThreads.data,
-    setSidebarData,
+    setStats,
+    setComments,
+    setThreads,
     setError,
     setLoading
   ]);

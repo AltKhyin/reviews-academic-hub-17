@@ -2,6 +2,15 @@
 import { create } from 'zustand';
 import { OnlineUser, CommentHighlight, TopThread, Poll, SidebarConfig, SiteStats } from '@/types/sidebar';
 
+interface SidebarData {
+  stats: SiteStats;
+  commentHighlights: CommentHighlight[];
+  topThreads: TopThread[];
+  polls: Poll[];
+  bookmarks: any[];
+  changelog: any[];
+}
+
 interface SidebarState {
   // Data state
   config: SidebarConfig | null;
@@ -12,7 +21,7 @@ interface SidebarState {
   poll: Poll | null;
   userVote: number | null;
   
-  // Loading states
+  // Loading and error states
   loadingStates: {
     Config: boolean;
     Stats: boolean;
@@ -36,7 +45,9 @@ interface SidebarState {
   setThreads: (threads: TopThread[]) => void;
   setPoll: (poll: Poll | null) => void;
   setUserVote: (vote: number | null) => void;
-  setLoading: (section: keyof SidebarState['loadingStates'], loading: boolean) => void;
+  setLoading: (loading: boolean) => void;
+  setError: (error: boolean) => void;
+  setSidebarData: (data: SidebarData) => void;
   setCommentCarouselIndex: (index: number) => void;
   toggleMobileDrawer: () => void;
   hideChangelog: () => void;
@@ -81,9 +92,15 @@ export const useSidebarStore = create<SidebarState>((set, get) => ({
   setThreads: (threads) => set({ threads }),
   setPoll: (poll) => set({ poll }),
   setUserVote: (userVote) => set({ userVote }),
-  setLoading: (section, loading) => set((state) => ({
-    loadingStates: { ...state.loadingStates, [section]: loading }
+  setLoading: (loading) => set((state) => ({
+    loadingStates: { ...state.loadingStates, Stats: loading }
   })),
+  setError: (error) => set({ /* Handle error state */ }),
+  setSidebarData: (data) => set({
+    stats: data.stats,
+    comments: data.commentHighlights,
+    threads: data.topThreads,
+  }),
   setCommentCarouselIndex: (commentCarouselIndex) => set({ commentCarouselIndex }),
   toggleMobileDrawer: () => set((state) => ({ 
     isMobileDrawerOpen: !state.isMobileDrawerOpen 
