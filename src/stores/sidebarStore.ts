@@ -96,7 +96,9 @@ export const useSidebarStore = create<SidebarState>((set, get) => ({
     loadingStates: { ...state.loadingStates, Stats: loading }
   })),
   setError: (error) => {
-    console.error('Sidebar error:', error);
+    if (error) {
+      console.error('Sidebar error:', error);
+    }
     // Handle error state appropriately
   },
   setSidebarData: (data) => set({

@@ -100,8 +100,8 @@ export const PostVoting: React.FC<PostVotingProps> = ({
     const currentVote = votingState.optimisticVote;
     const newVote = currentVote === value ? 0 : value;
     
-    // Calculate score delta for optimistic update
-    const scoreDelta = newVote - currentVote;
+    // Calculate score delta for optimistic update based on server state
+    const scoreDelta = newVote - votingState.serverVote;
     
     // Optimistic updates with separated state
     setVotingState(prev => ({
