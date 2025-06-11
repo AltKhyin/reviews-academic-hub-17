@@ -36,7 +36,7 @@ export const ActiveAvatars: React.FC = () => {
         <div className="flex items-center space-x-[-8px]">
           {displayUsers.map((user, index) => {
             // Fix: Get avatar URL from proper field with fallbacks
-            const avatarUrl = user.avatar_url || user.profiles?.avatar_url;
+            const avatarUrl = user.avatar_url;
             const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.full_name || 'User')}&background=6b7280&color=fff&size=32`;
             
             return (

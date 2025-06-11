@@ -24,7 +24,7 @@ export const ArticleHeader: React.FC<ArticleHeaderProps> = ({ article }) => {
       </div>
       
       <div className="mt-4 mb-6">
-        <ArticleActions articleId={article.id} />
+        <ArticleActions />
       </div>
     </div>
   );

@@ -1,4 +1,3 @@
-
 // ABOUTME: Enhanced article viewer with unified controls and structured sections
 // Implements the 4-section layout: Header, Review Content, Recommendations, Comments
 
@@ -292,8 +291,8 @@ const EnhancedArticleViewer: React.FC = () => {
               </div>
             )}
 
-            {/* Article Actions */}
-            <ArticleActions articleId={issue.id} entityType="issue" />
+            {/* Article Actions - Fix: Remove invalid props */}
+            <ArticleActions />
           </div>
         </div>
       </div>

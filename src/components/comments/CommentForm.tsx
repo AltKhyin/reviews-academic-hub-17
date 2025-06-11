@@ -142,7 +142,7 @@ export const CommentForm: React.FC<CommentFormProps> = ({
   }
 
   // Fix: Get avatar from proper source with fallbacks
-  const avatarUrl = user.user_metadata?.avatar_url || user.profile?.avatar_url;
+  const avatarUrl = user.user_metadata?.avatar_url;
   const userInitial = user.user_metadata?.full_name?.[0] || user.email?.[0]?.toUpperCase() || 'U';
 
   return (

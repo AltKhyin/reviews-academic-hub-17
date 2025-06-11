@@ -1,5 +1,5 @@
 
-// ABOUTME: Issue header with corrected homepage navigation
+// ABOUTME: Issue header with corrected homepage navigation and fixed type issues
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -42,7 +42,7 @@ export const IssueHeader: React.FC<IssueHeaderProps> = ({
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <Badge variant="secondary">
-            Edição {issue.issue_number}
+            Edição {issue.edition || 'N/A'}
           </Badge>
           <span className="text-sm text-gray-400">
             {formatDistanceToNow(new Date(issue.created_at), { 
@@ -66,10 +66,10 @@ export const IssueHeader: React.FC<IssueHeaderProps> = ({
             </span>
           </div>
           
-          {issue.profiles && (
+          {issue.authors && (
             <div className="flex items-center gap-1">
               <User className="h-4 w-4" />
-              <span>Por {issue.profiles.full_name}</span>
+              <span>Por {issue.authors}</span>
             </div>
           )}
         </div>

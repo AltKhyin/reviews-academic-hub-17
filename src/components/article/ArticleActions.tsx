@@ -1,5 +1,5 @@
 
-// ABOUTME: Article action buttons with corrected homepage navigation
+// ABOUTME: Article action buttons with corrected homepage navigation and fixed props
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, BookOpen, Calendar } from 'lucide-react';
@@ -9,6 +9,7 @@ interface ArticleActionsProps {
   onToggleBookmark?: () => void;
   isBookmarked?: boolean;
   showBackButton?: boolean;
+  // Remove articleId and entityType as they're not used in this component
 }
 
 export const ArticleActions: React.FC<ArticleActionsProps> = ({
