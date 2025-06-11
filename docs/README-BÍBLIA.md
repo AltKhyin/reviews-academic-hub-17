@@ -1,6 +1,6 @@
 
 # **Scientific Review Platform - README-BÍBLIA**
-## **Version 3.3.0** | **2025-06-11** | **Status: Performance Optimized**
+## **Version 3.4.0** | **2025-06-11** | **Status: Routing Architecture Fixed**
 
 ## **1. Purpose & Pitch** (≤30 lines)
 Brazilian medical research review platform enabling systematic evidence evaluation with community engagement. Transforms PDF studies into interactive reviews with voting, discussions, and curated content discovery.
@@ -242,6 +242,7 @@ users (1) ←→ (N) user_bookmarks, user_article_reactions
 
 | Version | Date | Changes | Author |
 |---------|------|---------|---------|
+| 3.4.0 | 2025-06-11 | Fixed routing architecture: removed duplicate BrowserRouter, corrected TypeScript errors in OptimizedAppProvider, ensured single router pattern | AI Assistant |
 | 3.3.0 | 2025-06-11 | Performance optimization implementation complete: RLS policies optimized, foreign key indexes added, route-based code splitting, standardized mutations | AI Assistant |
 | 3.2.0 | 2025-06-11 | Implementation phase documentation, performance monitoring systems | AI Assistant |
 | 3.1.0 | 2025-06-11 | Performance analysis and optimization planning | AI Assistant |

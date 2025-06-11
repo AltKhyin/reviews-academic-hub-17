@@ -13,53 +13,53 @@ interface OptimizedAppProviderProps {
   enableBackgroundSync?: boolean;
 }
 
+// Create optimized query client outside component to avoid recreation
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 10 * 60 * 1000, // 10 minutes
+      gcTime: 30 * 60 * 1000, // 30 minutes
+      retry: 2,
+      refetchOnWindowFocus: false,
+    },
+    mutations: {
+      retry: 1,
+    },
+  },
+});
+
 export const OptimizedAppProvider: React.FC<OptimizedAppProviderProps> = ({
   children,
   enablePerformanceMonitoring = true,
   enableErrorTracking = true,
   enableBackgroundSync = true,
 }) => {
-  // Initialize optimized query client
-  const { queryClient, cacheMetrics } = useOptimizedQueryClient({
-    enableBackgroundRefetch: true,
-    enableRetries: true,
+  // Initialize cache optimization
+  const { cacheMetrics, optimizeCache, prefetchCriticalData, calculateMetrics } = useOptimizedQueryClient({
     maxCacheSize: 150,
-    defaultStaleTime: 10 * 60 * 1000, // 10 minutes
+    cleanupInterval: 300000, // 5 minutes
+    staleCacheThreshold: 600000, // 10 minutes
   });
 
   // Initialize performance monitoring
-  const { metrics: performanceMetrics, getPerformanceScore } = usePerformanceMonitoring({
-    enableMonitoring: enablePerformanceMonitoring,
-    intervalMs: 30000, // 30 seconds
-  });
+  const { metrics: performanceMetrics } = usePerformanceMonitoring();
 
-  // Initialize error tracking with correct configuration properties
-  const { errorMetrics } = useErrorTracking({
-    enableConsoleLogging: enableErrorTracking,
-    enableRemoteReporting: enableErrorTracking,
-    maxErrorHistory: 50,
-    reportingThreshold: 5,
-  });
+  // Initialize error tracking
+  const { errorMetrics } = useErrorTracking();
 
   // Global performance monitoring
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
       // Enhanced development logging
       const logInterval = setInterval(() => {
-        const performanceScore = getPerformanceScore();
-        
         console.group('🚀 App Performance Report');
-        console.log('Performance Score:', `${performanceScore}/100`);
         console.log('Cache Metrics:', {
           'Total Queries': cacheMetrics.totalQueries,
           'Active Queries': cacheMetrics.activeQueries,
           'Cache Hit Rate': `${cacheMetrics.hitRate.toFixed(1)}%`,
-          'Cache Size': `${cacheMetrics.cacheSize.toFixed(2)}MB`,
+          'Cache Size': cacheMetrics.cacheSize,
         });
         console.log('Performance Metrics:', {
-          'LCP': performanceMetrics.lcp ? `${performanceMetrics.lcp.toFixed(2)}ms` : 'N/A',
-          'FID': performanceMetrics.fid ? `${performanceMetrics.fid.toFixed(2)}ms` : 'N/A',
-          'CLS': performanceMetrics.cls ? performanceMetrics.cls.toFixed(3) : 'N/A',
           'Page Load': performanceMetrics.pageLoadTime ? `${performanceMetrics.pageLoadTime.toFixed(2)}ms` : 'N/A',
         });
         console.log('Error Metrics:', {
@@ -72,7 +72,7 @@ export const OptimizedAppProvider: React.FC<OptimizedAppProviderProps> = ({
       
       return () => clearInterval(logInterval);
     }
-  }, [getPerformanceScore, cacheMetrics, performanceMetrics, errorMetrics]);
+  }, [cacheMetrics, performanceMetrics, errorMetrics]);
 
   // Performance alerts for critical issues
   useEffect(() => {
@@ -80,14 +80,10 @@ export const OptimizedAppProvider: React.FC<OptimizedAppProviderProps> = ({
       console.error('🚨 Critical errors detected:', errorMetrics.criticalErrors);
     }
     
-    if (performanceMetrics.lcp && performanceMetrics.lcp > 4000) {
-      console.warn('⚠️ Poor LCP performance detected:', performanceMetrics.lcp);
-    }
-    
     if (cacheMetrics.hitRate < 70) {
       console.warn('⚠️ Low cache hit rate:', cacheMetrics.hitRate);
     }
-  }, [errorMetrics.criticalErrors, performanceMetrics.lcp, cacheMetrics.hitRate]);
+  }, [errorMetrics.criticalErrors, cacheMetrics.hitRate]);
 
   return (
     <QueryClientProvider client={queryClient}>
