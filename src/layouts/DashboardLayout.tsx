@@ -1,46 +1,36 @@
 
-// ABOUTME: Fixed navigation routing from /dashboard to /homepage
+// ABOUTME: Main dashboard layout with authentication guard
+// Redirects unauthenticated users to auth page
+
 import React from 'react';
-import { Outlet, Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from '@/components/navigation/Sidebar';
+import { MobileSidebarToggle } from '@/components/sidebar/MobileSidebarToggle';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 
 export const DashboardLayout = () => {
-  const { user, isLoading } = useAuth();
   const location = useLocation();
 
-  // Show loading while checking authentication
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-[#121212]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white mx-auto"></div>
-          <p className="mt-4 text-white">Verificando autenticação...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Redirect unauthenticated users to auth page
-  if (!user) {
-    return <Navigate to="/auth" state={{ from: location }} replace />;
-  }
-
-  // Fix: Redirect /dashboard to /homepage
-  if (location.pathname === '/dashboard') {
-    return <Navigate to="/homepage" replace />;
-  }
-
   return (
-    <AuthGuard requireAuth={true}>
-      <div className="min-h-screen bg-[#121212] flex">
+    <AuthGuard requireAuth={true} fallbackPath="/auth">
+      <div className="flex h-screen bg-background">
+        {/* Left Navigation Sidebar */}
         <Sidebar />
-        <main className="flex-1 ml-64 transition-all duration-300">
-          <div className="h-full">
-            <Outlet />
+        
+        {/* Main Content Area - with left margin to account for sidebar */}
+        <div className="flex-1 flex flex-col overflow-hidden ml-64">
+          {/* Mobile Header with Sidebar Toggle */}
+          <div className="lg:hidden flex items-center justify-between p-4 border-b">
+            <MobileSidebarToggle />
           </div>
-        </main>
+          
+          {/* Main Content Container - simplified single column layout */}
+          <main className="flex-1 overflow-auto">
+            <div className="h-full">
+              <Outlet />
+            </div>
+          </main>
+        </div>
       </div>
     </AuthGuard>
   );

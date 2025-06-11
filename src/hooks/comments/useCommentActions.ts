@@ -1,121 +1,237 @@
 
-// ABOUTME: Fixed comment actions with proper error handling and entity validation
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { Comment, EntityType } from '@/types/commentTypes';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { EntityType } from '@/types/commentTypes';
 import { buildCommentData } from '@/utils/commentHelpers';
+import { useFileUpload } from '@/hooks/useFileUpload';
 
+/**
+ * Hook for comment actions (add, reply, delete, vote)
+ */
 export function useCommentActions(
-  entityId: string, 
-  entityType: EntityType,
-  fetchComments: () => Promise<void>
+  entityId?: string, 
+  entityType?: EntityType,
+  fetchComments?: () => Promise<void>
 ) {
   const { user } = useAuth();
   const { toast } = useToast();
-  
+  const { uploadFile } = useFileUpload();
   const [isAddingComment, setIsAddingComment] = useState(false);
   const [isDeletingComment, setIsDeletingComment] = useState(false);
   const [isReplying, setIsReplying] = useState(false);
 
-  const addComment = async (content: string): Promise<void> => {
-    if (!user) {
-      throw new Error('User must be authenticated to comment');
+  const addComment = async (content: string, imageUrl?: string): Promise<void> => {
+    if (!user || !entityId || !entityType) {
+      toast({
+        title: "Autenticação necessária",
+        description: "Faça login para comentar.",
+        variant: "destructive",
+      });
+      return;
     }
 
-    if (!entityId) {
-      throw new Error('Entity ID is required');
-    }
+    if (!content.trim()) return;
 
     setIsAddingComment(true);
     try {
-      // First verify the entity exists
-      const entityTable = entityType === 'article' ? 'articles' : 
-                         entityType === 'post' ? 'posts' : 'issues';
+      let finalImageUrl = imageUrl;
       
-      const { data: entityExists, error: entityError } = await supabase
-        .from(entityTable)
-        .select('id')
-        .eq('id', entityId)
-        .maybeSingle();
-
-      if (entityError) {
-        console.error(`Error checking entity existence:`, entityError);
-        throw new Error(`Failed to verify ${entityType} exists`);
+      // If imageUrl is a blob URL, upload it to storage
+      if (imageUrl && imageUrl.startsWith('blob:')) {
+        try {
+          const response = await fetch(imageUrl);
+          const blob = await response.blob();
+          const file = new File([blob], 'comment-image.jpg', { type: blob.type });
+          finalImageUrl = await uploadFile(file, 'community/comments');
+        } catch (uploadError) {
+          console.error('Error uploading image:', uploadError);
+          toast({
+            title: "Erro no upload",
+            description: "Não foi possível fazer upload da imagem.",
+            variant: "destructive",
+          });
+          // Continue without image instead of failing completely
+          finalImageUrl = undefined;
+        }
       }
-
-      if (!entityExists) {
-        throw new Error(`${entityType} not found`);
-      }
-
-      // Build comment data with proper entity field
-      const commentData = buildCommentData(content, user.id, entityType, entityId);
-
-      const { error: insertError } = await supabase
+      
+      // Create the data object with the right entity ID field
+      const commentData = {
+        ...buildCommentData(content, user.id, entityType, entityId),
+        image_url: finalImageUrl || null
+      };
+      
+      const { data: newComment, error } = await supabase
         .from('comments')
-        .insert(commentData);
+        .insert(commentData)
+        .select(`
+          *,
+          profiles:user_id (
+            id, 
+            full_name,
+            avatar_url
+          )
+        `)
+        .single();
 
-      if (insertError) {
-        console.error('Error inserting comment:', insertError);
-        throw insertError;
+      if (error) throw error;
+
+      // Auto-upvote the user's own comment
+      if (newComment) {
+        const { error: voteError } = await supabase
+          .from('comment_votes')
+          .insert({
+            comment_id: newComment.id,
+            user_id: user.id,
+            value: 1
+          });
+          
+        if (voteError) {
+          console.error('Error auto-upvoting comment:', voteError);
+        }
       }
 
-      // Refresh comments after successful insertion
-      await fetchComments();
+      // Refresh comments to update the view
+      if (fetchComments) await fetchComments();
     } catch (error) {
-      console.error('Error in addComment:', error);
-      throw error;
+      console.error('Error adding comment:', error);
+      toast({
+        title: "Erro ao adicionar comentário",
+        description: "Não foi possível adicionar seu comentário.",
+        variant: "destructive",
+      });
     } finally {
       setIsAddingComment(false);
     }
   };
 
-  const replyToComment = async ({ parentId, content }: { parentId: string; content: string }): Promise<void> => {
-    if (!user) {
-      throw new Error('User must be authenticated to reply');
+  const replyToComment = async ({ parentId, content, imageUrl }: { parentId: string; content: string; imageUrl?: string }): Promise<void> => {
+    if (!user || !entityId || !entityType) {
+      toast({
+        title: "Autenticação necessária",
+        description: "Faça login para responder aos comentários.",
+        variant: "destructive",
+      });
+      return;
     }
+
+    if (!content.trim()) return;
 
     setIsReplying(true);
     try {
-      const commentData = buildCommentData(content, user.id, entityType, entityId, parentId);
-
-      const { error } = await supabase
+      let finalImageUrl = imageUrl;
+      
+      // If imageUrl is a blob URL, upload it to storage
+      if (imageUrl && imageUrl.startsWith('blob:')) {
+        try {
+          const response = await fetch(imageUrl);
+          const blob = await response.blob();
+          const file = new File([blob], 'comment-reply-image.jpg', { type: blob.type });
+          finalImageUrl = await uploadFile(file, 'community/comments');
+        } catch (uploadError) {
+          console.error('Error uploading image:', uploadError);
+          toast({
+            title: "Erro no upload",
+            description: "Não foi possível fazer upload da imagem.",
+            variant: "destructive",
+          });
+          // Continue without image instead of failing completely
+          finalImageUrl = undefined;
+        }
+      }
+      
+      // Create comment data with parent_id
+      const commentData = {
+        ...buildCommentData(content, user.id, entityType, entityId),
+        parent_id: parentId,
+        image_url: finalImageUrl || null
+      };
+      
+      const { data: newReply, error } = await supabase
         .from('comments')
-        .insert(commentData);
+        .insert(commentData)
+        .select()
+        .single();
 
       if (error) throw error;
 
-      await fetchComments();
+      // Auto-upvote the user's own reply
+      if (newReply) {
+        const { error: voteError } = await supabase
+          .from('comment_votes')
+          .insert({
+            comment_id: newReply.id,
+            user_id: user.id,
+            value: 1
+          });
+          
+        if (voteError) {
+          console.error('Error auto-upvoting reply:', voteError);
+        }
+      }
+
+      // Refresh all comments to get the proper structure
+      if (fetchComments) await fetchComments();
     } catch (error) {
       console.error('Error replying to comment:', error);
-      throw error;
+      toast({
+        title: "Erro ao responder",
+        description: "Não foi possível adicionar sua resposta.",
+        variant: "destructive",
+      });
     } finally {
       setIsReplying(false);
     }
   };
 
-  const deleteComment = async (commentId: string): Promise<void> => {
-    if (!user) {
-      throw new Error('User must be authenticated to delete comments');
-    }
-
-    setIsDeletingComment(true);
+  const editComment = async (id: string, content: string): Promise<void> => {
+    if (!user) return;
+    
     try {
       const { error } = await supabase
         .from('comments')
+        .update({ content, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      
+      // Refresh comments to update the view
+      if (fetchComments) await fetchComments();
+    } catch (error) {
+      console.error('Error editing comment:', error);
+      toast({
+        title: "Erro ao editar",
+        description: "Não foi possível editar o comentário.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const deleteComment = async (id: string): Promise<void> => {
+    if (!user) return;
+
+    setIsDeletingComment(true);
+    try {
+      // Delete comment votes first
+      await supabase
+        .from('comment_votes')
         .delete()
-        .eq('id', commentId)
-        .eq('user_id', user.id); // Ensure user can only delete own comments
+        .eq('comment_id', id);
+        
+      // Then delete the comment
+      const { error } = await supabase
+        .from('comments')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
 
       if (error) throw error;
 
-      await fetchComments();
-      
-      toast({
-        title: "Comentário excluído",
-        description: "O comentário foi excluído com sucesso.",
-      });
+      // Refresh comments to update the view
+      if (fetchComments) await fetchComments();
     } catch (error) {
       console.error('Error deleting comment:', error);
       toast({
@@ -123,7 +239,6 @@ export function useCommentActions(
         description: "Não foi possível excluir o comentário.",
         variant: "destructive",
       });
-      throw error;
     } finally {
       setIsDeletingComment(false);
     }
@@ -132,6 +247,7 @@ export function useCommentActions(
   return {
     addComment,
     replyToComment,
+    editComment,
     deleteComment,
     isAddingComment,
     isDeletingComment,

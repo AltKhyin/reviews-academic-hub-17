@@ -1,98 +1,110 @@
 
-// ABOUTME: Fixed sidebar data bridge with proper cleanup and stable dependencies
-import { useEffect, useCallback, useRef } from 'react';
-import { useSidebarStore } from '@/stores/sidebarStore';
-import { useOptimizedSidebarData } from '@/hooks/useOptimizedSidebarData';
+// ABOUTME: Simplified sidebar data bridge with minimal re-renders
+import { useEffect, useMemo } from 'react';
+import { useOptimizedSidebarData } from '../useOptimizedSidebarData';
+import { useSidebarConfig } from './useSidebarConfig';
+import { useWeeklyPoll, useUserPollVote } from './usePollData';
+import { useSidebarStoreSync } from './useSidebarStoreSync';
 
-export function useSidebarDataBridge(userId?: string) {
-  const setSidebarData = useSidebarStore(state => state.setSidebarData);
-  const setError = useSidebarStore(state => state.setError);
-  const setLoading = useSidebarStore(state => state.setLoading);
+export const useSidebarDataBridge = (userId?: string) => {
+  const optimizedData = useOptimizedSidebarData();
+  const { data: config, isLoading: configLoading, error: configError } = useSidebarConfig();
+  const { data: poll, isLoading: pollLoading, error: pollError } = useWeeklyPoll();
+  const { data: userVote, isLoading: userVoteLoading, error: userVoteError } = useUserPollVote(userId, poll?.id);
   
-  // Ref to track if component is mounted
-  const isMountedRef = useRef(true);
-  
-  // Get sidebar data with optimized caching
   const {
-    stats,
-    reviewerComments,
-    topThreads,
-    hasError,
-    isLoading
-  } = useOptimizedSidebarData();
+    setConfig,
+    setStats,
+    setOnlineUsers,
+    setThreads,
+    setPoll,
+    setUserVote,
+    setLoading
+  } = useSidebarStoreSync();
 
-  // Memoized update function to prevent unnecessary re-renders
-  const updateSidebarStore = useCallback(() => {
-    if (!isMountedRef.current) return;
+  // Memoize loading states
+  const loadingStates = useMemo(() => ({
+    config: configLoading,
+    poll: pollLoading,
+    userVote: userVoteLoading,
+    stats: optimizedData.stats.isLoading,
+    users: optimizedData.reviewerComments.isLoading,
+    threads: optimizedData.topThreads.isLoading,
+  }), [
+    configLoading,
+    pollLoading,
+    userVoteLoading,
+    optimizedData.stats.isLoading,
+    optimizedData.reviewerComments.isLoading,
+    optimizedData.topThreads.isLoading,
+  ]);
 
-    setLoading(isLoading);
-    
-    if (hasError) {
-      setError(true);
-      return;
+  // Memoize error states
+  const hasErrors = useMemo(() => {
+    return Boolean(
+      configError || 
+      pollError || 
+      userVoteError || 
+      optimizedData.hasError
+    );
+  }, [configError, pollError, userVoteError, optimizedData.hasError]);
+
+  // Update store with data
+  useEffect(() => {
+    if (optimizedData.stats.data) {
+      setStats(optimizedData.stats.data);
     }
+  }, [optimizedData.stats.data, setStats]);
 
-    if (!isLoading && stats.data && reviewerComments.data && topThreads.data) {
-      setSidebarData({
-        stats: {
-          totalUsers: stats.data.totalUsers || 0,
-          onlineUsers: stats.data.onlineUsers || 0,
-          totalIssues: stats.data.totalIssues || 0,
-          totalPosts: stats.data.totalPosts || 0,
-          totalComments: stats.data.totalComments || 0,
-        },
-        onlineUsers: [], // Will be populated by separate hook
-        commentHighlights: reviewerComments.data.map(comment => ({
-          id: comment.id,
-          author_name: comment.reviewer_name,
-          author_avatar: comment.reviewer_avatar,
-          body: comment.comment,
-          votes: 0,
-          created_at: comment.created_at,
-          thread_id: `comment-${comment.id}`
-        })),
-        topThreads: topThreads.data.map(thread => ({
-          id: thread.id,
-          title: thread.title,
-          comments: Number(thread.comments) || 0,
-          votes: thread.votes || 0,
-          created_at: thread.created_at,
-          thread_type: thread.thread_type
-        })),
-        polls: [],
-        bookmarks: [],
-        changelog: []
-      });
-      
-      setError(false);
+  useEffect(() => {
+    if (optimizedData.reviewerComments.data) {
+      setOnlineUsers(optimizedData.reviewerComments.data);
     }
+  }, [optimizedData.reviewerComments.data, setOnlineUsers]);
+
+  useEffect(() => {
+    if (optimizedData.topThreads.data) {
+      setThreads(optimizedData.topThreads.data);
+    }
+  }, [optimizedData.topThreads.data, setThreads]);
+
+  useEffect(() => {
+    if (config) {
+      setConfig(config);
+    }
+  }, [config, setConfig]);
+
+  useEffect(() => {
+    if (poll) {
+      setPoll(poll);
+    }
+  }, [poll, setPoll]);
+
+  useEffect(() => {
+    if (userVote !== undefined) {
+      setUserVote(userVote);
+    }
+  }, [userVote, setUserVote]);
+
+  // Update loading states
+  useEffect(() => {
+    setLoading('Config', loadingStates.config);
+    setLoading('Poll', loadingStates.poll);
+    setLoading('Stats', loadingStates.stats);
+    setLoading('Users', loadingStates.users);
+    setLoading('Threads', loadingStates.threads);
   }, [
-    isLoading,
-    hasError,
-    stats.data,
-    reviewerComments.data,
-    topThreads.data,
-    setSidebarData,
-    setError,
+    loadingStates.config,
+    loadingStates.poll,
+    loadingStates.stats,
+    loadingStates.users,
+    loadingStates.threads,
     setLoading
   ]);
 
-  // Effect with stable dependencies
-  useEffect(() => {
-    updateSidebarStore();
-  }, [updateSidebarStore]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
-
-  // Return bridge status for debugging
-  return {
-    isActive: !hasError && !isLoading,
-    hasData: !!stats.data && !!reviewerComments.data && !!topThreads.data,
-    error: hasError
-  };
-}
+  // Return simplified state
+  return useMemo(() => ({
+    isLoading: optimizedData.isLoading || configLoading || pollLoading,
+    error: hasErrors
+  }), [optimizedData.isLoading, configLoading, pollLoading, hasErrors]);
+};
