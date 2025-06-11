@@ -1,3 +1,4 @@
+
 // ABOUTME: Optimized sidebar data hook with aggressive caching and minimal requests
 import { useOptimizedQuery, queryKeys, queryConfigs } from './useOptimizedQuery';
 import { supabase } from '@/integrations/supabase/client';
