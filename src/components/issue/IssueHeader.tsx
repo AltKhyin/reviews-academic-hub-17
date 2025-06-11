@@ -42,7 +42,7 @@ export const IssueHeader: React.FC<IssueHeaderProps> = ({
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <Badge variant="secondary">
-            Edição {issue.edition || 'N/A'}
+            Edição {issue.year || 'N/A'}
           </Badge>
           <span className="text-sm text-gray-400">
             {formatDistanceToNow(new Date(issue.created_at), { 
