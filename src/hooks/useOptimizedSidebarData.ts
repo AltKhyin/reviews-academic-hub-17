@@ -90,7 +90,6 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
           };
         }
         
-        // Return null instead of default stats for better error handling
         return null;
       } catch (error) {
         console.warn('Sidebar stats error:', error);
@@ -187,17 +186,17 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
 
   return useMemo(() => ({
     stats: {
-      data: statsData as SidebarStats | null, // Explicitly cast to ensure proper typing
+      data: statsData,
       isLoading: statsLoading,
       error: statsError,
     },
     reviewerComments: {
-      data: commentsData as ReviewerComment[], // Explicitly cast to ensure proper typing
+      data: commentsData || [],
       isLoading: commentsLoading,
       error: commentsError,
     },
     topThreads: {
-      data: threadsData as TopThread[], // Explicitly cast to ensure proper typing
+      data: threadsData || [],
       isLoading: threadsLoading,
       error: threadsError,
     },
