@@ -11,7 +11,7 @@ interface SidebarStoreSync {
   setThreads: (threads: any[]) => void;
   setPoll: (poll: Poll | null) => void;
   setUserVote: (vote: number | null) => void;
-  setLoading: (section: string, loading: boolean) => void;
+  setLoading: (loading: boolean) => void;
 }
 
 // Deep equality check for complex objects
@@ -106,8 +106,8 @@ export const useSidebarStoreSync = (): SidebarStoreSync => {
     }
   }, [setUserVoteStore]);
 
-  const setLoading = useCallback((section: string, loading: boolean) => {
-    setLoadingStore(section as any, loading);
+  const setLoading = useCallback((loading: boolean) => {
+    setLoadingStore(loading);
   }, [setLoadingStore]);
 
   return {
