@@ -1,5 +1,5 @@
 
-// ABOUTME: Fixed sidebar data bridge with proper cleanup and stable dependencies
+// ABOUTME: Fixed sidebar data bridge with proper cleanup, stable dependencies, and error handling
 import { useEffect, useCallback, useRef } from 'react';
 import { useSidebarStore } from '@/stores/sidebarStore';
 import { useOptimizedSidebarData } from '@/hooks/useOptimizedSidebarData';
@@ -22,7 +22,7 @@ export function useSidebarDataBridge(userId?: string) {
     isLoading
   } = useOptimizedSidebarData();
 
-  // Fetch online users
+  // Fetch online users with proper error handling
   const fetchOnlineUsers = useCallback(async () => {
     if (!isMountedRef.current) return;
     
@@ -33,15 +33,30 @@ export function useSidebarDataBridge(userId?: string) {
         .order('last_active', { ascending: false })
         .limit(15);
       
-      if (error) throw error;
+      if (error) {
+        console.warn('Error fetching online users:', error);
+        // Don't throw, just log and continue with empty array
+        if (isMountedRef.current) {
+          setOnlineUsers([]);
+        }
+        return;
+      }
       
       if (isMountedRef.current) {
-        // Update store with online users
-        setOnlineUsers(data as OnlineUser[] || []);
+        // Ensure data has proper structure for OnlineUser type
+        const validUsers = (data || []).map(user => ({
+          id: user.id || '',
+          full_name: user.full_name || 'Usuário',
+          avatar_url: user.avatar_url || null,
+          last_active: user.last_active || new Date().toISOString()
+        })) as OnlineUser[];
+        
+        setOnlineUsers(validUsers);
       }
     } catch (err) {
-      console.error('Error fetching online users:', err);
+      console.error('Unexpected error fetching online users:', err);
       if (isMountedRef.current) {
+        setOnlineUsers([]);
         setError(err);
       }
     }
@@ -58,34 +73,42 @@ export function useSidebarDataBridge(userId?: string) {
       return;
     }
 
-    if (!isLoading && stats.data && reviewerComments.data && topThreads.data) {
-      // Update individual store sections
-      setStats({
-        totalUsers: stats.data.totalUsers || 0,
-        onlineUsers: stats.data.onlineUsers || 0,
-        totalIssues: stats.data.totalIssues || 0,
-        totalPosts: stats.data.totalPosts || 0,
-        totalComments: stats.data.totalComments || 0,
-      });
+    if (!isLoading) {
+      // Update stats with fallback values
+      if (stats.data) {
+        setStats({
+          totalUsers: stats.data.totalUsers || 0,
+          onlineUsers: stats.data.onlineUsers || 0,
+          totalIssues: stats.data.totalIssues || 0,
+          totalPosts: stats.data.totalPosts || 0,
+          totalComments: stats.data.totalComments || 0,
+        });
+      }
       
-      setComments(reviewerComments.data.map(comment => ({
-        id: comment.id,
-        author_name: comment.reviewer_name,
-        author_avatar: comment.reviewer_avatar,
-        body: comment.comment,
-        votes: 0,
-        created_at: comment.created_at,
-        thread_id: `comment-${comment.id}`
-      })));
+      // Update comments with proper transformation
+      if (reviewerComments.data && Array.isArray(reviewerComments.data)) {
+        setComments(reviewerComments.data.map(comment => ({
+          id: comment.id,
+          author_name: comment.reviewer_name || 'Reviewer',
+          author_avatar: comment.reviewer_avatar || null,
+          body: comment.comment || '',
+          votes: 0,
+          created_at: comment.created_at,
+          thread_id: `comment-${comment.id}`
+        })));
+      }
       
-      setThreads(topThreads.data.map(thread => ({
-        id: thread.id,
-        title: thread.title,
-        comments: Number(thread.comments) || 0,
-        votes: thread.votes || 0,
-        created_at: thread.created_at,
-        thread_type: thread.thread_type
-      })));
+      // Update threads with proper transformation
+      if (topThreads.data && Array.isArray(topThreads.data)) {
+        setThreads(topThreads.data.map(thread => ({
+          id: thread.id,
+          title: thread.title || 'Discussão',
+          comments: Number(thread.comments) || 0,
+          votes: thread.votes || 0,
+          created_at: thread.created_at,
+          thread_type: thread.thread_type || 'post'
+        })));
+      }
       
       setError(null);
     }
@@ -102,7 +125,7 @@ export function useSidebarDataBridge(userId?: string) {
     setLoading
   ]);
 
-  // Effect with stable dependencies
+  // Effect with stable dependencies and proper cleanup
   useEffect(() => {
     updateSidebarStore();
     fetchOnlineUsers();
@@ -115,6 +138,13 @@ export function useSidebarDataBridge(userId?: string) {
       clearInterval(intervalId);
     };
   }, [updateSidebarStore, fetchOnlineUsers]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Return bridge status for debugging
   return {

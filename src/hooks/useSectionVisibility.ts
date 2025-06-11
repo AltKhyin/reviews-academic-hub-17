@@ -1,5 +1,5 @@
 
-// ABOUTME: Section visibility management hook for dashboard layout configuration
+// ABOUTME: Section visibility management hook for dashboard layout configuration with conflict resolution
 import { useOptimizedQuery, queryKeys, queryConfigs } from './useOptimizedQuery';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useCallback } from 'react';
@@ -48,6 +48,35 @@ const isSectionConfigArray = (data: unknown): data is SectionConfig[] => {
     'visible' in item && 
     'order' in item
   );
+};
+
+// Helper function to safely update site_meta with conflict resolution
+const updateSiteMetaWithRetry = async (key: string, value: any, maxRetries = 3) => {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const { error } = await supabase
+        .from('site_meta')
+        .upsert({ key, value }, { onConflict: 'key' });
+      
+      if (!error) {
+        return { success: true };
+      }
+      
+      // If it's a unique constraint violation, wait and retry
+      if (error.message.includes('duplicate key value') || error.message.includes('unique constraint')) {
+        console.warn(`Attempt ${attempt + 1} failed due to conflict, retrying...`);
+        await new Promise(resolve => setTimeout(resolve, 100 * (attempt + 1))); // Exponential backoff
+        continue;
+      }
+      
+      // For other errors, throw immediately
+      throw error;
+    } catch (error) {
+      if (attempt === maxRetries - 1) {
+        throw error;
+      }
+    }
+  }
 };
 
 export const useSectionVisibility = () => {
@@ -145,15 +174,8 @@ export const useSectionVisibility = () => {
           updatedSections[dbSectionId] = { visible: !section.visible, order: section.order };
         }
 
-        // Update site_meta directly
-        const { error } = await supabase
-          .from('site_meta')
-          .upsert({
-            key: 'home_settings',
-            value: { ...settings, sections: updatedSections }
-          });
-        
-        if (error) throw error;
+        // Update site_meta with conflict resolution
+        await updateSiteMetaWithRetry('home_settings', { ...settings, sections: updatedSections });
       }
     } catch (error) {
       console.error('Failed to toggle section visibility:', error);
@@ -188,15 +210,8 @@ export const useSectionVisibility = () => {
           }
         });
 
-        // Update site_meta directly
-        const { error } = await supabase
-          .from('site_meta')
-          .upsert({
-            key: 'home_settings',
-            value: { ...settings, sections: updatedSections }
-          });
-        
-        if (error) throw error;
+        // Update site_meta with conflict resolution
+        await updateSiteMetaWithRetry('home_settings', { ...settings, sections: updatedSections });
       }
     } catch (error) {
       console.error('Failed to reorder sections:', error);
@@ -217,15 +232,8 @@ export const useSectionVisibility = () => {
         
         updatedSections[dbSectionId] = { ...updatedSections[dbSectionId], ...updates };
 
-        // Update site_meta directly
-        const { error } = await supabase
-          .from('site_meta')
-          .upsert({
-            key: 'home_settings',
-            value: { ...settings, sections: updatedSections }
-          });
-        
-        if (error) throw error;
+        // Update site_meta with conflict resolution
+        await updateSiteMetaWithRetry('home_settings', { ...settings, sections: updatedSections });
       }
     } catch (error) {
       console.error('Failed to update section:', error);
@@ -234,7 +242,7 @@ export const useSectionVisibility = () => {
 
   const resetToDefaults = useCallback(async () => {
     try {
-      // Reset to default configuration by updating site_meta directly
+      // Reset to default configuration by updating site_meta with conflict resolution
       const defaultSettings = {
         sections: Object.fromEntries(
           defaultSections.map(section => {
@@ -244,14 +252,7 @@ export const useSectionVisibility = () => {
         )
       };
 
-      const { error } = await supabase
-        .from('site_meta')
-        .upsert({
-          key: 'home_settings',
-          value: defaultSettings
-        });
-      
-      if (error) throw error;
+      await updateSiteMetaWithRetry('home_settings', defaultSettings);
       
       setLocalSections(defaultSections);
     } catch (error) {

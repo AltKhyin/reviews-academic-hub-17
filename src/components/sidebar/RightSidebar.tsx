@@ -5,6 +5,7 @@ import { X } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { useSidebarStore } from '@/stores/sidebarStore';
 import { useSidebarData } from '@/hooks/useSidebarData';
+import { useSidebarDataBridge } from '@/hooks/sidebar/useSidebarDataBridge';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { SidebarErrorBoundary } from './components/SidebarErrorBoundary';
 import { CommunityHeader } from './components/CommunityHeader';
@@ -28,9 +29,9 @@ interface SidebarSection {
   order: number;
 }
 
+// Remove ActiveAvatars from SECTION_COMPONENTS to fix TypeScript error
 const SECTION_COMPONENTS = {
   'community-header': CommunityHeader,
-  'active-avatars': ActiveAvatars,
   'top-threads': TopThreads,
   'next-review': NextReviewCountdown,
   'weekly-poll': WeeklyPoll,
@@ -74,10 +75,11 @@ export const RightSidebar = React.memo<RightSidebarProps>(({
     [location.pathname]
   );
   
-  // Initialize data fetching only when sidebar should be visible
+  // Initialize data fetching and bridge when sidebar should be visible
   const shouldFetchData = shouldShowSidebar;
   if (shouldFetchData) {
     useSidebarData();
+    useSidebarDataBridge(); // Add the data bridge to connect query data to store
   }
 
   // Handle escape key to close mobile drawer
@@ -107,13 +109,14 @@ export const RightSidebar = React.memo<RightSidebarProps>(({
 
   // Helper function to render section components with proper props
   const renderSectionComponent = (sectionId: string) => {
-    switch(sectionId) {
-      case 'active-avatars':
-        return <ActiveAvatars users={onlineUsers || []} maxDisplay={8} />;
-      default:
-        const SectionComponent = SECTION_COMPONENTS[sectionId as keyof typeof SECTION_COMPONENTS];
-        return SectionComponent ? <SectionComponent /> : null;
+    // Handle ActiveAvatars separately to pass the required users prop
+    if (sectionId === 'active-avatars') {
+      return <ActiveAvatars users={onlineUsers || []} maxDisplay={8} />;
     }
+    
+    // Render other components from the mapping
+    const SectionComponent = SECTION_COMPONENTS[sectionId as keyof typeof SECTION_COMPONENTS];
+    return SectionComponent ? <SectionComponent /> : null;
   };
 
   // Mobile drawer overlay and sidebar
