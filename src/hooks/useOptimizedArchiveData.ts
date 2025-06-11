@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Issue } from '@/types/issue';
-import { useStableAuth } from './useStableAuth';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface ArchiveDataState {
   issues: Issue[];
@@ -81,12 +81,12 @@ const fetchArchiveMetadata = async (issues: Issue[]) => {
 };
 
 export const useOptimizedArchiveData = () => {
-  const { permissions } = useStableAuth();
+  const { isAdmin } = useAuth();
   
   // Main issues query
   const { data: issues = [], isLoading: issuesLoading, error: issuesError } = useQuery({
-    queryKey: ['archive-issues', permissions.isAdmin],
-    queryFn: () => fetchArchiveIssues(permissions.isAdmin),
+    queryKey: ['archive-issues', isAdmin],
+    queryFn: () => fetchArchiveIssues(isAdmin),
     staleTime: 10 * 60 * 1000, // 10 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes
     retry: 2,
