@@ -136,6 +136,11 @@ export const useSectionVisibility = () => {
     return [...sections].sort((a, b) => a.order - b.order);
   }, [sections]);
 
+  // Get visible sections only - ADD THIS MISSING METHOD
+  const getVisibleSections = useCallback(() => {
+    return sections.filter(section => section.visible).sort((a, b) => a.order - b.order);
+  }, [sections]);
+
   // Load sections on mount
   useEffect(() => {
     loadSections();
@@ -149,5 +154,6 @@ export const useSectionVisibility = () => {
     updateSection,
     resetToDefaults,
     getAllSections,
+    getVisibleSections, // Export the missing method
   };
 };

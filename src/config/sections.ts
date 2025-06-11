@@ -7,6 +7,7 @@ export interface SectionDefinition {
   defaultOrder: number;
   adminOnly?: boolean;
   description?: string;
+  component: string; // Add component property
 }
 
 export const SECTION_REGISTRY: SectionDefinition[] = [
@@ -15,42 +16,48 @@ export const SECTION_REGISTRY: SectionDefinition[] = [
     title: 'Comentários dos Revisores',
     defaultVisible: true,
     defaultOrder: 0,
-    description: 'Comentários e notas dos revisores'
+    description: 'Comentários e notas dos revisores',
+    component: 'ReviewerNotesSection'
   },
   {
     id: 'featured',
     title: 'Edição em Destaque',
     defaultVisible: true,
     defaultOrder: 1,
-    description: 'Edição principal em destaque na página'
+    description: 'Edição principal em destaque na página',
+    component: 'FeaturedSection'
   },
   {
     id: 'upcoming',
     title: 'Próximas Edições',
     defaultVisible: true,
     defaultOrder: 2,
-    description: 'Seção de próximas edições'
+    description: 'Seção de próximas edições',
+    component: 'UpcomingSection'
   },
   {
     id: 'recent',
     title: 'Edições Recentes',
     defaultVisible: true,
     defaultOrder: 3,
-    description: 'Edições publicadas recentemente'
+    description: 'Edições publicadas recentemente',
+    component: 'RecentSection'
   },
   {
     id: 'recommended',
     title: 'Recomendadas',
     defaultVisible: true,
     defaultOrder: 4,
-    description: 'Edições recomendadas para o usuário'
+    description: 'Edições recomendadas para o usuário',
+    component: 'RecommendedSection'
   },
   {
     id: 'trending',
     title: 'Mais Acessadas',
     defaultVisible: true,
     defaultOrder: 5,
-    description: 'Edições com mais visualizações'
+    description: 'Edições com mais visualizações',
+    component: 'TrendingSection'
   }
 ];
 
