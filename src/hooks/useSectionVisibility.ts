@@ -1,9 +1,11 @@
 
-// ABOUTME: Hook for managing section visibility configuration with caching
-import { useOptimizedQuery, queryKeys, queryConfigs } from './useOptimizedQuery';
+// ABOUTME: Hook for managing section visibility configuration with unified registry
+import { useUnifiedQuery } from './useUnifiedQuery';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
+import { SECTION_REGISTRY, getDefaultSectionConfig, getSectionById } from '@/config/sections';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface Section {
   id: string;
@@ -12,46 +14,41 @@ export interface Section {
   order: number;
 }
 
-interface SectionConfig {
-  id: string;
-  title: string;
-  visible: boolean;
-  order: number;
-}
-
 export const useSectionVisibility = () => {
   const queryClient = useQueryClient();
+  const { isAdmin } = useAuth();
   
   const { 
     data: sections, 
     isLoading, 
     error 
-  } = useOptimizedQuery<SectionConfig[]>(
-    ['home-sections'],
-    async (): Promise<SectionConfig[]> => {
+  } = useUnifiedQuery<Section[]>(
+    ['home-sections', isAdmin],
+    async (): Promise<Section[]> => {
       try {
         // Try to get home settings which might contain section configuration
         const { data, error } = await supabase.rpc('get_home_settings');
         
         if (error) {
           console.warn('Home settings error, using defaults:', error);
-          return getDefaultSections();
+          return getDefaultSectionConfig(isAdmin);
         }
 
         // If we have data, process it, otherwise use defaults
         if (data && typeof data === 'object' && 'sections' in data) {
-          return processSectionData(data.sections);
+          return processSectionData(data.sections, isAdmin);
         }
         
-        return getDefaultSections();
+        return getDefaultSectionConfig(isAdmin);
       } catch (error) {
         console.warn('Section visibility error, using defaults:', error);
-        return getDefaultSections();
+        return getDefaultSectionConfig(isAdmin);
       }
     },
     {
-      ...queryConfigs.static,
+      priority: 'critical',
       staleTime: 20 * 60 * 1000, // 20 minutes for section config
+      enableMonitoring: true,
     }
   );
 
@@ -75,7 +72,7 @@ export const useSectionVisibility = () => {
     );
     
     // Optimistically update cache
-    queryClient.setQueryData(['home-sections'], updatedSections);
+    queryClient.setQueryData(['home-sections', isAdmin], updatedSections);
     
     try {
       // Update in database
@@ -88,9 +85,9 @@ export const useSectionVisibility = () => {
     } catch (error) {
       console.error('Failed to update section visibility:', error);
       // Revert optimistic update
-      queryClient.setQueryData(['home-sections'], sections);
+      queryClient.setQueryData(['home-sections', isAdmin], sections);
     }
-  }, [sections, queryClient]);
+  }, [sections, queryClient, isAdmin]);
 
   const reorderSections = useCallback(async (newOrder: string[]) => {
     if (!Array.isArray(sections)) return;
@@ -98,10 +95,10 @@ export const useSectionVisibility = () => {
     const reorderedSections = newOrder.map((id, index) => {
       const section = sections.find(s => s.id === id);
       return section ? { ...section, order: index } : null;
-    }).filter(Boolean) as SectionConfig[];
+    }).filter(Boolean) as Section[];
     
     // Optimistically update cache
-    queryClient.setQueryData(['home-sections'], reorderedSections);
+    queryClient.setQueryData(['home-sections', isAdmin], reorderedSections);
     
     try {
       // Update in database
@@ -114,11 +111,11 @@ export const useSectionVisibility = () => {
     } catch (error) {
       console.error('Failed to reorder sections:', error);
       // Revert optimistic update
-      queryClient.setQueryData(['home-sections'], sections);
+      queryClient.setQueryData(['home-sections', isAdmin], sections);
     }
-  }, [sections, queryClient]);
+  }, [sections, queryClient, isAdmin]);
 
-  const updateSection = useCallback(async (sectionId: string, updates: Partial<SectionConfig>) => {
+  const updateSection = useCallback(async (sectionId: string, updates: Partial<Section>) => {
     if (!Array.isArray(sections)) return;
     
     const updatedSections = sections.map(section => 
@@ -128,7 +125,7 @@ export const useSectionVisibility = () => {
     );
     
     // Optimistically update cache
-    queryClient.setQueryData(['home-sections'], updatedSections);
+    queryClient.setQueryData(['home-sections', isAdmin], updatedSections);
     
     try {
       // Update in database
@@ -141,15 +138,15 @@ export const useSectionVisibility = () => {
     } catch (error) {
       console.error('Failed to update section:', error);
       // Revert optimistic update
-      queryClient.setQueryData(['home-sections'], sections);
+      queryClient.setQueryData(['home-sections', isAdmin], sections);
     }
-  }, [sections, queryClient]);
+  }, [sections, queryClient, isAdmin]);
 
   const resetToDefaults = useCallback(async () => {
-    const defaultSections = getDefaultSections();
+    const defaultSections = getDefaultSectionConfig(isAdmin);
     
     // Optimistically update cache
-    queryClient.setQueryData(['home-sections'], defaultSections);
+    queryClient.setQueryData(['home-sections', isAdmin], defaultSections);
     
     try {
       // Update in database
@@ -162,9 +159,9 @@ export const useSectionVisibility = () => {
     } catch (error) {
       console.error('Failed to reset sections:', error);
       // Revert optimistic update
-      queryClient.setQueryData(['home-sections'], sections);
+      queryClient.setQueryData(['home-sections', isAdmin], sections);
     }
-  }, [sections, queryClient]);
+  }, [sections, queryClient, isAdmin]);
 
   return {
     sections: Array.isArray(sections) ? sections : [],
@@ -179,24 +176,32 @@ export const useSectionVisibility = () => {
   };
 };
 
-// Default sections configuration
-const getDefaultSections = (): SectionConfig[] => [
-  { id: 'featured', title: 'Featured Issue', visible: true, order: 1 },
-  { id: 'recent', title: 'Recent Issues', visible: true, order: 2 },
-  { id: 'popular', title: 'Popular This Week', visible: true, order: 3 },
-  { id: 'discussions', title: 'Latest Discussions', visible: true, order: 4 },
-];
-
-// Process section data from database
-const processSectionData = (sectionsData: any): SectionConfig[] => {
+// Process section data from database using unified registry
+const processSectionData = (sectionsData: any, userIsAdmin: boolean = false): Section[] => {
   if (!Array.isArray(sectionsData)) {
-    return getDefaultSections();
+    return getDefaultSectionConfig(userIsAdmin);
   }
 
-  return sectionsData.map((section, index) => ({
-    id: section.id || `section-${index}`,
-    title: section.title || section.name || `Section ${index + 1}`,
-    visible: section.visible !== false,
-    order: section.order || index + 1,
-  }));
+  const processedSections = sectionsData.map((section, index) => {
+    const registrySection = getSectionById(section.id);
+    
+    return {
+      id: section.id || `section-${index}`,
+      title: registrySection?.title || section.title || section.name || `Section ${index + 1}`,
+      visible: section.visible !== false,
+      order: section.order !== undefined ? section.order : index + 1,
+    };
+  }).filter(section => {
+    // Filter out admin-only sections for non-admin users
+    const registrySection = getSectionById(section.id);
+    return !registrySection?.adminOnly || userIsAdmin;
+  });
+
+  // Ensure all available sections are included
+  const existingIds = new Set(processedSections.map(s => s.id));
+  const missingDefaultSections = getDefaultSectionConfig(userIsAdmin)
+    .filter(defaultSection => !existingIds.has(defaultSection.id));
+
+  return [...processedSections, ...missingDefaultSections]
+    .sort((a, b) => a.order - b.order);
 };

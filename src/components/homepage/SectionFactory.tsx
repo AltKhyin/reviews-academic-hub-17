@@ -1,7 +1,8 @@
 
-// ABOUTME: Enhanced section factory with lazy loading and performance optimizations
+// ABOUTME: Enhanced section factory with unified registry and performance optimizations
 import React, { Suspense, memo } from 'react';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
+import { SECTION_REGISTRY, getSectionById } from '@/config/sections';
 
 // Lazy load all sections for better performance
 const HeroSection = React.lazy(() => import('./sections/HeroSection').then(module => ({ default: module.HeroSection })));
@@ -23,16 +24,17 @@ interface SectionFactoryProps {
   };
 }
 
+// Component mapping using unified registry
 const SECTION_COMPONENTS = {
-  hero: HeroSection,
-  articles: ArticlesGridSection,
-  reviews: ReviewsSection,
-  reviewer: ReviewerNotesSection,
-  featured: FeaturedSection,
-  upcoming: UpcomingSection,
-  recent: RecentSection,
-  recommended: RecommendedSection,
-  trending: TrendingSection,
+  HeroSection,
+  ArticlesGridSection,
+  ReviewsSection,
+  ReviewerNotesSection,
+  FeaturedSection,
+  UpcomingSection,
+  RecentSection,
+  RecommendedSection,
+  TrendingSection,
 } as const;
 
 // Loading skeleton component
@@ -88,10 +90,19 @@ export const SectionFactory: React.FC<SectionFactoryProps> = memo(({
   sectionId, 
   sectionConfig 
 }) => {
-  const SectionComponent = SECTION_COMPONENTS[sectionId as keyof typeof SECTION_COMPONENTS];
+  // Get section definition from unified registry
+  const sectionDefinition = getSectionById(sectionId);
+  
+  if (!sectionDefinition) {
+    console.warn(`No section definition found for: ${sectionId}`);
+    return null;
+  }
+
+  // Get component from registry
+  const SectionComponent = SECTION_COMPONENTS[sectionDefinition.component as keyof typeof SECTION_COMPONENTS];
 
   if (!SectionComponent) {
-    console.warn(`No component found for section: ${sectionId}`);
+    console.warn(`No component found for section: ${sectionId} (${sectionDefinition.component})`);
     return null;
   }
 

@@ -6,6 +6,7 @@ import { Eye, EyeOff, ChevronUp, ChevronDown, RotateCcw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
 import { useSectionVisibility, Section } from '@/hooks/useSectionVisibility';
+import { SECTION_REGISTRY, getSectionById } from '@/config/sections';
 
 const HomepageSectionsManager = () => {
   const { 
@@ -138,65 +139,74 @@ const HomepageSectionsManager = () => {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {localSections.map((section, index) => (
-            <div 
-              key={section.id}
-              className="flex items-center justify-between p-4 bg-secondary/5 rounded-lg border border-white/10"
-            >
-              <div className="flex items-center gap-3">
-                <span className="font-medium">{section.title}</span>
-                <Badge variant={section.visible ? "default" : "outline"}>
-                  {section.visible ? "Visível" : "Oculta"}
-                </Badge>
-                {section.id === "reviews" && (
-                  <Badge variant="secondary" className="text-xs">
-                    Admin/Editor
+          {localSections.map((section, index) => {
+            const sectionDef = getSectionById(section.id);
+            
+            return (
+              <div 
+                key={section.id}
+                className="flex items-center justify-between p-4 bg-secondary/5 rounded-lg border border-white/10"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="font-medium">{section.title}</span>
+                  <Badge variant={section.visible ? "default" : "outline"}>
+                    {section.visible ? "Visível" : "Oculta"}
                   </Badge>
-                )}
-                <Badge variant="secondary" className="text-xs">
-                  Ordem: {section.order}
-                </Badge>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => handleToggleVisibility(section.id)}
-                  title={section.visible ? "Ocultar seção" : "Mostrar seção"}
-                  className="h-8 w-8"
-                >
-                  {section.visible ? (
-                    <Eye className="h-4 w-4" />
-                  ) : (
-                    <EyeOff className="h-4 w-4" />
+                  {sectionDef?.adminOnly && (
+                    <Badge variant="secondary" className="text-xs">
+                      Admin/Editor
+                    </Badge>
                   )}
-                </Button>
+                  <Badge variant="secondary" className="text-xs">
+                    Ordem: {section.order}
+                  </Badge>
+                  {sectionDef?.description && (
+                    <span className="text-xs text-muted-foreground" title={sectionDef.description}>
+                      ℹ️
+                    </span>
+                  )}
+                </div>
                 
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => moveSection(section.id, 'up')}
-                  disabled={index === 0}
-                  title="Mover para cima"
-                  className="h-8 w-8"
-                >
-                  <ChevronUp className="h-4 w-4" />
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => moveSection(section.id, 'down')}
-                  disabled={index === localSections.length - 1}
-                  title="Mover para baixo"
-                  className="h-8 w-8"
-                >
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => handleToggleVisibility(section.id)}
+                    title={section.visible ? "Ocultar seção" : "Mostrar seção"}
+                    className="h-8 w-8"
+                  >
+                    {section.visible ? (
+                      <Eye className="h-4 w-4" />
+                    ) : (
+                      <EyeOff className="h-4 w-4" />
+                    )}
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => moveSection(section.id, 'up')}
+                    disabled={index === 0}
+                    title="Mover para cima"
+                    className="h-8 w-8"
+                  >
+                    <ChevronUp className="h-4 w-4" />
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => moveSection(section.id, 'down')}
+                    disabled={index === localSections.length - 1}
+                    title="Mover para baixo"
+                    className="h-8 w-8"
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           
           {localSections.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
