@@ -1,81 +1,79 @@
 
-// ABOUTME: Enhanced active users avatar strip with tooltips and improved visual design
-// Shows recent community activity through user avatars with online indicators
-
+// ABOUTME: Fixed avatar display with proper fallbacks and error handling
 import React from 'react';
-import { Users, Circle } from 'lucide-react';
-import { useSidebarStore } from '@/stores/sidebarStore';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { OnlineUser } from '@/types/sidebar';
 
-export const ActiveAvatars: React.FC = () => {
-  const { onlineUsers, stats, isLoadingUsers, isLoadingStats } = useSidebarStore();
+interface ActiveAvatarsProps {
+  users: OnlineUser[];
+  maxDisplay?: number;
+}
 
-  if (isLoadingUsers || isLoadingStats) {
+export const ActiveAvatars: React.FC<ActiveAvatarsProps> = ({ 
+  users, 
+  maxDisplay = 8 
+}) => {
+  if (!users || users.length === 0) {
     return (
-      <div className="space-y-3">
-        <div className="h-4 bg-gray-700 rounded w-24 animate-pulse" />
-        <div className="flex items-center space-x-[-8px]">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="w-7 h-7 bg-gray-700 rounded-full animate-pulse" />
-          ))}
-        </div>
+      <div className="text-sm text-gray-400 py-2">
+        Nenhum usuário online no momento
       </div>
     );
   }
 
-  const displayUsers = onlineUsers.slice(0, 6);
-  const overflowCount = Math.max(0, onlineUsers.length - 6);
-  const totalOnline = stats?.onlineUsers || 0;
+  const displayUsers = users.slice(0, maxDisplay);
+  const remainingCount = users.length - maxDisplay;
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center space-x-2">
-        <Users className="w-4 h-4 text-green-400" />
-        <h3 className="text-xs font-medium text-gray-300 uppercase tracking-wide">Atividade Recente</h3>
-      </div>
-      
-      <div className="space-y-3">
-        {/* Avatar Strip */}
-        <div className="flex items-center space-x-[-8px]">
-          {displayUsers.map((user, index) => (
-            <div key={user.id} className="relative group">
-              <img
-                src={user.avatar_url || '/placeholder.svg'}
-                alt={user.full_name || 'Usuário'}
-                className="w-7 h-7 rounded-full border-2 border-gray-800 shadow-sm transition-transform group-hover:scale-110 group-hover:z-10"
-                onError={(e) => {
-                  const img = e.target as HTMLImageElement;
-                  img.src = '/placeholder.svg';
-                }}
-              />
+      <div className="flex flex-wrap gap-2">
+        {displayUsers.map((user) => {
+          // Fixed: Proper fallback logic for avatar and name
+          const displayName = user.full_name || 'Usuário';
+          const avatarUrl = user.avatar_url;
+          const initials = displayName.split(' ')
+            .map(n => n[0])
+            .join('')
+            .toUpperCase()
+            .slice(0, 2);
+
+          return (
+            <div key={user.id} className="flex items-center group">
+              <Avatar className="w-8 h-8 border-2 border-gray-600 hover:border-gray-400 transition-colors">
+                <AvatarImage 
+                  src={avatarUrl || undefined} 
+                  alt={displayName}
+                  onError={(e) => {
+                    // Handle image load errors gracefully
+                    console.warn(`Failed to load avatar for user: ${displayName}`);
+                  }}
+                />
+                <AvatarFallback className="bg-gray-600 text-white text-xs font-medium">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
               
-              {/* Online indicator for first 3 users */}
-              {index < 3 && (
-                <Circle className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 text-green-400 fill-green-400" />
-              )}
-              
-              {/* Tooltip */}
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-20">
-                {user.full_name || 'Usuário'}
-                <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-2 border-transparent border-t-gray-800"></div>
+              {/* Tooltip on hover */}
+              <div className="absolute z-10 hidden group-hover:block ml-10 -mt-2">
+                <div className="bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-lg border border-gray-600">
+                  {displayName}
+                </div>
               </div>
             </div>
-          ))}
-          
-          {/* Overflow indicator */}
-          {overflowCount > 0 && (
-            <div className="w-7 h-7 flex items-center justify-center text-xs bg-gray-700 text-gray-300 rounded-full border-2 border-gray-800 font-medium">
-              +{overflowCount}
-            </div>
-          )}
-        </div>
+          );
+        })}
         
-        {/* Stats */}
-        <div className="text-xs text-gray-400">
-          <div className="flex items-center space-x-1">
-            <Circle className="w-2 h-2 text-green-400 fill-green-400" />
-            <span>{totalOnline} online agora</span>
+        {remainingCount > 0 && (
+          <div className="flex items-center justify-center w-8 h-8 bg-gray-600 rounded-full border-2 border-gray-500">
+            <span className="text-xs font-medium text-white">
+              +{remainingCount}
+            </span>
           </div>
-        </div>
+        )}
+      </div>
+      
+      <div className="text-xs text-gray-400">
+        {users.length} usuário{users.length !== 1 ? 's' : ''} online
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 
-import React, { useState } from 'react';
+// ABOUTME: Fixed voting race conditions with optimistic updates and debouncing
+import React, { useState, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -20,11 +21,19 @@ export const PostVoting: React.FC<PostVotingProps> = ({
 }) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [isVoting, setIsVoting] = useState(false);
+  
+  // Local state for optimistic updates
   const [localScore, setLocalScore] = useState(initialScore);
   const [localUserVote, setLocalUserVote] = useState(initialUserVote);
+  const [isVoting, setIsVoting] = useState(false);
+  
+  // Refs for race condition prevention
+  const lastVoteRef = useRef<number>(initialUserVote);
+  const pendingVoteRef = useRef<boolean>(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleVote = async (value: number) => {
+  // Debounced vote handler to prevent rapid clicking issues
+  const handleVote = useCallback(async (value: number) => {
     if (!user) {
       toast({
         title: "Autenticação necessária",
@@ -34,74 +43,96 @@ export const PostVoting: React.FC<PostVotingProps> = ({
       return;
     }
 
-    try {
-      setIsVoting(true);
-      
-      const currentVote = localUserVote;
-      const newVote = currentVote === value ? 0 : value;
-      
-      let scoreDelta = 0;
-      
-      if (currentVote === newVote) {
-        scoreDelta = 0;
-      } else if (newVote === 0) {
-        scoreDelta = -currentVote;
-      } else if (currentVote === 0) {
-        scoreDelta = newVote;
-      } else {
-        scoreDelta = newVote - currentVote;
-      }
-      
-      setLocalUserVote(newVote);
-      setLocalScore(prevScore => prevScore + scoreDelta);
-      
-      const { data, error } = await supabase
-        .from('post_votes')
-        .select('value')
-        .eq('post_id', postId)
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (data) {
-        if (newVote === 0) {
-          await supabase
-            .from('post_votes')
-            .delete()
-            .eq('post_id', postId)
-            .eq('user_id', user.id);
-        } else {
-          await supabase
-            .from('post_votes')
-            .update({ value: newVote })
-            .eq('post_id', postId)
-            .eq('user_id', user.id);
-        }
-      } else if (newVote !== 0) {
-        await supabase
-          .from('post_votes')
-          .insert({ post_id: postId, user_id: user.id, value: newVote });
-      }
-
-      setTimeout(() => {
-        onVoteChange();
-      }, 300);
-    } catch (error) {
-      console.error('Error voting on post:', error);
-      
-      setLocalScore(initialScore);
-      setLocalUserVote(initialUserVote);
-      
-      toast({
-        title: "Erro ao votar",
-        description: "Não foi possível registrar seu voto.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsVoting(false);
+    // Prevent multiple simultaneous votes
+    if (pendingVoteRef.current) {
+      return;
     }
-  };
+
+    // Clear any pending timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    const currentVote = lastVoteRef.current;
+    const newVote = currentVote === value ? 0 : value;
+    
+    // Calculate score delta for optimistic update
+    const scoreDelta = newVote - currentVote;
+    
+    // Optimistic updates
+    setLocalUserVote(newVote);
+    setLocalScore(prevScore => prevScore + scoreDelta);
+    lastVoteRef.current = newVote;
+    
+    // Set pending flag and debounce
+    pendingVoteRef.current = true;
+    setIsVoting(true);
+
+    // Debounce the actual API call
+    timeoutRef.current = setTimeout(async () => {
+      try {
+        const { data: existingVote, error: checkError } = await supabase
+          .from('post_votes')
+          .select('value')
+          .eq('post_id', postId)
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (checkError) throw checkError;
+
+        if (existingVote) {
+          if (newVote === 0) {
+            // Remove vote
+            const { error: deleteError } = await supabase
+              .from('post_votes')
+              .delete()
+              .eq('post_id', postId)
+              .eq('user_id', user.id);
+
+            if (deleteError) throw deleteError;
+          } else {
+            // Update vote
+            const { error: updateError } = await supabase
+              .from('post_votes')
+              .update({ value: newVote })
+              .eq('post_id', postId)
+              .eq('user_id', user.id);
+
+            if (updateError) throw updateError;
+          }
+        } else if (newVote !== 0) {
+          // Insert new vote
+          const { error: insertError } = await supabase
+            .from('post_votes')
+            .insert({ post_id: postId, user_id: user.id, value: newVote });
+
+          if (insertError) throw insertError;
+        }
+
+        // Delay parent refresh to allow DB triggers to complete
+        setTimeout(() => {
+          onVoteChange();
+        }, 500);
+        
+      } catch (error) {
+        console.error('Error voting on post:', error);
+        
+        // Revert optimistic updates on error
+        setLocalScore(initialScore);
+        setLocalUserVote(initialUserVote);
+        lastVoteRef.current = initialUserVote;
+        
+        toast({
+          title: "Erro ao votar",
+          description: "Não foi possível registrar seu voto.",
+          variant: "destructive",
+        });
+      } finally {
+        pendingVoteRef.current = false;
+        setIsVoting(false);
+      }
+    }, 300); // 300ms debounce
+  }, [user, postId, initialScore, initialUserVote, onVoteChange, toast]);
 
   return (
     <div className="flex items-center space-x-1">

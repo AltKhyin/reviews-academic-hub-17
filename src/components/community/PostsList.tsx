@@ -1,86 +1,73 @@
 
-import React from 'react';
-import { Post } from '@/components/community/Post';
-import { EmptyState } from '@/components/community/EmptyState';
+// ABOUTME: PostsList component with fixed React Fragment key prop error and optimized rendering
+import React, { memo } from 'react';
+import { Post } from './Post';
 import { PostData } from '@/types/community';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { AlertTriangle } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Loader2 } from 'lucide-react';
 
 interface PostsListProps {
   posts: PostData[] | undefined;
   emptyMessage: string;
   onVoteChange: () => void;
   isLoading?: boolean;
-  error?: Error | null;
+  error?: any;
 }
 
-export const PostsList: React.FC<PostsListProps> = ({ 
+export const PostsList: React.FC<PostsListProps> = memo(({ 
   posts, 
   emptyMessage, 
-  onVoteChange,
-  isLoading,
-  error
+  onVoteChange, 
+  isLoading = false,
+  error 
 }) => {
+  // Loading state
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="py-6">
-            <div className="flex items-start space-x-4">
-              <div className="flex flex-col items-center">
-                <Skeleton className="h-6 w-6 rounded-full" />
-                <Skeleton className="h-4 w-4 mt-1" />
-                <Skeleton className="h-6 w-6 mt-1" />
-              </div>
-              <div className="flex-1">
-                <Skeleton className="h-4 w-32 mb-2" />
-                <Skeleton className="h-6 w-3/4 mb-4" />
-                <Skeleton className="h-24 w-full mb-4" />
-                <div className="flex space-x-2">
-                  <Skeleton className="h-8 w-8" />
-                  <Skeleton className="h-8 w-8" />
-                  <Skeleton className="h-8 w-8" />
-                </div>
-              </div>
-            </div>
-            <div className="mt-6 h-px bg-gradient-to-r from-transparent via-gray-700/30 to-transparent"></div>
-          </div>
-        ))}
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        <span className="ml-2 text-gray-400">Carregando publicações...</span>
       </div>
     );
   }
-  
+
+  // Error state
   if (error) {
     return (
-      <Card className="p-6 text-center bg-red-950/20">
-        <AlertTriangle className="mx-auto h-12 w-12 text-red-500 mb-4" />
-        <h3 className="text-lg font-medium mb-2">Erro ao carregar publicações</h3>
-        <p className="mb-4 text-gray-400">{error.message || 'Ocorreu um erro ao buscar as publicações. Por favor, tente novamente.'}</p>
-        <Button onClick={onVoteChange}>Tentar novamente</Button>
+      <Card className="border-red-500/20 bg-red-500/5">
+        <CardContent className="py-6">
+          <p className="text-center text-red-400">
+            Erro ao carregar publicações. Tente novamente.
+          </p>
+        </CardContent>
       </Card>
     );
   }
-  
-  if (!posts?.length) {
-    return <EmptyState message={emptyMessage} />;
+
+  // Empty state
+  if (!posts || posts.length === 0) {
+    return (
+      <Card className="border-gray-700/30 bg-gray-800/10">
+        <CardContent className="py-12">
+          <p className="text-center text-gray-400">{emptyMessage}</p>
+        </CardContent>
+      </Card>
+    );
   }
-  
+
+  // Posts list - Fixed: Remove React.Fragment with key prop
   return (
-    <div>
-      {posts.map((post, index) => (
-        <React.Fragment key={post.id}>
+    <div className="space-y-6">
+      {posts.map((post) => (
+        <div key={post.id} className="border-b border-gray-700/20 last:border-b-0">
           <Post 
             post={post} 
-            onVoteChange={onVoteChange} 
+            onVoteChange={onVoteChange}
           />
-          {/* No divider after the last post */}
-          {index !== posts.length - 1 && (
-            <div className="h-px bg-gradient-to-r from-transparent via-gray-700/30 to-transparent my-2"></div>
-          )}
-        </React.Fragment>
+        </div>
       ))}
     </div>
   );
-};
+});
+
+PostsList.displayName = 'PostsList';
