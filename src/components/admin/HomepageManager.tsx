@@ -88,7 +88,14 @@ export const HomepageManager: React.FC = () => {
       }
 
       if (data?.value) {
-        setSettings(data.value as HomeSettings);
+        // Properly validate and cast the JSON data
+        const parsedSettings = data.value as unknown;
+        if (parsedSettings && typeof parsedSettings === 'object' && 'sections' in parsedSettings) {
+          setSettings(parsedSettings as HomeSettings);
+        } else {
+          console.warn('Invalid settings format, using defaults');
+          setSettings(defaultSettings);
+        }
       }
     } catch (error: any) {
       console.error('Error loading homepage settings:', error);
@@ -106,11 +113,14 @@ export const HomepageManager: React.FC = () => {
     try {
       setSaving(true);
       
+      // Convert settings to a proper JSON object for Supabase
+      const settingsAsJson = JSON.parse(JSON.stringify(settings));
+      
       const { error } = await supabase
         .from('site_meta')
         .upsert({
           key: 'home_settings',
-          value: settings
+          value: settingsAsJson
         }, {
           onConflict: 'key'
         });
@@ -162,9 +172,9 @@ export const HomepageManager: React.FC = () => {
     );
   }
 
-  // Create array with unique keys for sections
+  // Create array with sections - using index as fallback for key
   const sectionEntries = Object.entries(settings.sections).map(([key, config], index) => ({
-    key: `section-${key}`,
+    key: `${key}-${index}`, // Use unique key combining name and index
     sectionKey: key as keyof HomeSettings['sections'],
     config,
     displayName: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
