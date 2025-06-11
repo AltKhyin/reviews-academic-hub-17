@@ -9,7 +9,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { PageLoader } from "@/components/ui/PageLoader";
 
 // Keep critical routes static for immediate loading
-import DashboardLayout from "@/pages/dashboard/DashboardLayout";
+import { DashboardLayout } from "@/layouts/DashboardLayout";
 import AuthPage from "@/pages/auth/AuthPage";
 import Dashboard from "@/pages/dashboard/Dashboard";
 
