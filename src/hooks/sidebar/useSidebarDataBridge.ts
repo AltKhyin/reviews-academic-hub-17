@@ -3,12 +3,11 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { useSidebarStore } from '@/stores/sidebarStore';
 import { useOptimizedSidebarData } from '@/hooks/useOptimizedSidebarData';
-import { supabase } from '@/integrations/supabase/client';
-import { OnlineUser } from '@/types/sidebar';
 
 export function useSidebarDataBridge(userId?: string) {
-  // Get store actions directly from the store
-  const { setStats, setComments, setThreads, setError, setLoading, setOnlineUsers } = useSidebarStore();
+  const setSidebarData = useSidebarStore(state => state.setSidebarData);
+  const setError = useSidebarStore(state => state.setError);
+  const setLoading = useSidebarStore(state => state.setLoading);
   
   // Ref to track if component is mounted
   const isMountedRef = useRef(true);
@@ -22,28 +21,6 @@ export function useSidebarDataBridge(userId?: string) {
     isLoading
   } = useOptimizedSidebarData();
 
-  // Fetch online users
-  const fetchOnlineUsers = useCallback(async () => {
-    if (!isMountedRef.current) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('online_users')
-        .select('id, full_name, avatar_url, last_active')
-        .order('last_active', { ascending: false })
-        .limit(15);
-      
-      if (error) throw error;
-      
-      if (isMountedRef.current) {
-        // Update store with online users
-        setOnlineUsers(data as OnlineUser[] || []);
-      }
-    } catch (err) {
-      console.error('Error fetching online users:', err);
-    }
-  }, [setOnlineUsers]);
-
   // Memoized update function to prevent unnecessary re-renders
   const updateSidebarStore = useCallback(() => {
     if (!isMountedRef.current) return;
@@ -56,33 +33,36 @@ export function useSidebarDataBridge(userId?: string) {
     }
 
     if (!isLoading && stats.data && reviewerComments.data && topThreads.data) {
-      // Update individual store sections
-      setStats({
-        totalUsers: stats.data.totalUsers || 0,
-        onlineUsers: stats.data.onlineUsers || 0,
-        totalIssues: stats.data.totalIssues || 0,
-        totalPosts: stats.data.totalPosts || 0,
-        totalComments: stats.data.totalComments || 0,
+      setSidebarData({
+        stats: {
+          totalUsers: stats.data.totalUsers || 0,
+          onlineUsers: stats.data.onlineUsers || 0,
+          totalIssues: stats.data.totalIssues || 0,
+          totalPosts: stats.data.totalPosts || 0,
+          totalComments: stats.data.totalComments || 0,
+        },
+        onlineUsers: [], // Will be populated by separate hook
+        commentHighlights: reviewerComments.data.map(comment => ({
+          id: comment.id,
+          author_name: comment.reviewer_name,
+          author_avatar: comment.reviewer_avatar,
+          body: comment.comment,
+          votes: 0,
+          created_at: comment.created_at,
+          thread_id: `comment-${comment.id}`
+        })),
+        topThreads: topThreads.data.map(thread => ({
+          id: thread.id,
+          title: thread.title,
+          comments: Number(thread.comments) || 0,
+          votes: thread.votes || 0,
+          created_at: thread.created_at,
+          thread_type: thread.thread_type
+        })),
+        polls: [],
+        bookmarks: [],
+        changelog: []
       });
-      
-      setComments(reviewerComments.data.map(comment => ({
-        id: comment.id,
-        author_name: comment.reviewer_name,
-        author_avatar: comment.reviewer_avatar,
-        body: comment.comment,
-        votes: 0,
-        created_at: comment.created_at,
-        thread_id: `comment-${comment.id}`
-      })));
-      
-      setThreads(topThreads.data.map(thread => ({
-        id: thread.id,
-        title: thread.title,
-        comments: Number(thread.comments) || 0,
-        votes: thread.votes || 0,
-        created_at: thread.created_at,
-        thread_type: thread.thread_type
-      })));
       
       setError(false);
     }
@@ -92,9 +72,7 @@ export function useSidebarDataBridge(userId?: string) {
     stats.data,
     reviewerComments.data,
     topThreads.data,
-    setStats,
-    setComments,
-    setThreads,
+    setSidebarData,
     setError,
     setLoading
   ]);
@@ -102,16 +80,14 @@ export function useSidebarDataBridge(userId?: string) {
   // Effect with stable dependencies
   useEffect(() => {
     updateSidebarStore();
-    fetchOnlineUsers();
-    
-    // Set up interval for refreshing online users
-    const intervalId = setInterval(fetchOnlineUsers, 60000); // Refresh every minute
-    
+  }, [updateSidebarStore]);
+
+  // Cleanup on unmount
+  useEffect(() => {
     return () => {
       isMountedRef.current = false;
-      clearInterval(intervalId);
     };
-  }, [updateSidebarStore, fetchOnlineUsers]);
+  }, []);
 
   // Return bridge status for debugging
   return {

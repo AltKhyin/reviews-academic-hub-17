@@ -65,7 +65,7 @@ export const RightSidebar = React.memo<RightSidebarProps>(({
   isMobile = false
 }) => {
   const location = useLocation();
-  const { isMobileDrawerOpen, toggleMobileDrawer, config, onlineUsers } = useSidebarStore();
+  const { isMobileDrawerOpen, toggleMobileDrawer, config } = useSidebarStore();
   const focusTrapRef = useFocusTrap(isMobile && isMobileDrawerOpen);
   
   // Only show sidebar in community routes
@@ -105,17 +105,6 @@ export const RightSidebar = React.memo<RightSidebarProps>(({
       .sort((a: SidebarSection, b: SidebarSection) => a.order - b.order);
   }, [config]);
 
-  // Helper function to render section components with proper props
-  const renderSectionComponent = (sectionId: string) => {
-    switch(sectionId) {
-      case 'active-avatars':
-        return <ActiveAvatars users={onlineUsers || []} maxDisplay={8} />;
-      default:
-        const SectionComponent = SECTION_COMPONENTS[sectionId as keyof typeof SECTION_COMPONENTS];
-        return SectionComponent ? <SectionComponent /> : null;
-    }
-  };
-
   // Mobile drawer overlay and sidebar
   if (isMobile) {
     return (
@@ -149,9 +138,12 @@ export const RightSidebar = React.memo<RightSidebarProps>(({
           <div className="p-4 overflow-y-auto h-full">
             <div className="space-y-6">
               {enabledSections.map((section: SidebarSection) => {
+                const SectionComponent = SECTION_COMPONENTS[section.id as keyof typeof SECTION_COMPONENTS];
+                if (!SectionComponent) return null;
+                
                 return (
                   <SidebarErrorBoundary key={section.id} sectionId={section.id}>
-                    {renderSectionComponent(section.id)}
+                    <SectionComponent />
                   </SidebarErrorBoundary>
                 );
               })}
@@ -169,9 +161,12 @@ export const RightSidebar = React.memo<RightSidebarProps>(({
     <div className={`w-full ${className}`}>
       <div className="space-y-6">
         {enabledSections.map((section: SidebarSection) => {
+          const SectionComponent = SECTION_COMPONENTS[section.id as keyof typeof SECTION_COMPONENTS];
+          if (!SectionComponent) return null;
+          
           return (
             <SidebarErrorBoundary key={section.id} sectionId={section.id}>
-              {renderSectionComponent(section.id)}
+              <SectionComponent />
             </SidebarErrorBoundary>
           );
         })}

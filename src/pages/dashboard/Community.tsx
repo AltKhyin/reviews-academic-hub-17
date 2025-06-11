@@ -1,4 +1,3 @@
-
 // ABOUTME: Community page with integrated sidebar using optimized data bridge
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -14,7 +13,6 @@ import { CommunityHeader } from '@/components/community/CommunityHeader';
 import { RightSidebar } from '@/components/sidebar/RightSidebar';
 import { useSidebarDataBridge } from '@/hooks/sidebar/useSidebarDataBridge';
 import { Search } from 'lucide-react';
-import { PostData } from '@/types/community';
 
 const Community = () => {
   const { user } = useAuth();
@@ -47,9 +45,6 @@ const Community = () => {
     e.preventDefault();
     refetchPosts();
   };
-
-  // Cast posts to PostData[] to ensure type safety
-  const typedPosts = posts as PostData[] | undefined;
 
   return (
     <div className="max-w-6xl mx-auto py-6 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: '#121212', minHeight: '100vh' }}>
@@ -104,7 +99,7 @@ const Community = () => {
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsContent value="latest" className="mt-0">
                   <PostsList 
-                    posts={typedPosts} 
+                    posts={posts} 
                     emptyMessage="Nenhuma publicação encontrada." 
                     onVoteChange={refetchPosts}
                     isLoading={isLoading}
@@ -114,7 +109,7 @@ const Community = () => {
 
                 <TabsContent value="popular" className="mt-0">
                   <PostsList 
-                    posts={typedPosts} 
+                    posts={posts} 
                     emptyMessage="Nenhuma publicação encontrada." 
                     onVoteChange={refetchPosts}
                     isLoading={isLoading}
@@ -124,7 +119,7 @@ const Community = () => {
 
                 <TabsContent value="oldest" className="mt-0">
                   <PostsList 
-                    posts={typedPosts} 
+                    posts={posts} 
                     emptyMessage="Nenhuma publicação encontrada." 
                     onVoteChange={refetchPosts}
                     isLoading={isLoading}
@@ -135,7 +130,7 @@ const Community = () => {
                 {user && (
                   <TabsContent value="my" className="mt-0">
                     <PostsList 
-                      posts={typedPosts} 
+                      posts={posts} 
                       emptyMessage="Você ainda não criou publicações." 
                       onVoteChange={refetchPosts}
                       isLoading={isLoading}

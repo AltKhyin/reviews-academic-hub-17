@@ -76,7 +76,4 @@ export interface SidebarConfig {
 export interface SiteStats {
   totalUsers: number;
   onlineUsers: number;
-  totalIssues: number;
-  totalPosts: number;
-  totalComments: number;
 }

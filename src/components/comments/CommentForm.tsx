@@ -12,18 +12,12 @@ interface CommentFormProps {
   onSubmit: (content: string) => Promise<void>;
   isSubmitting?: boolean;
   placeholder?: string;
-  buttonText?: string;
-  autoFocus?: boolean;
-  onCancel?: () => void;
 }
 
 export const CommentForm: React.FC<CommentFormProps> = ({ 
   onSubmit,
   isSubmitting = false,
-  placeholder = 'Compartilhe seus pensamentos...',
-  buttonText = 'Comentar',
-  autoFocus = false,
-  onCancel
+  placeholder = 'Compartilhe seus pensamentos...'
 }) => {
   const [comment, setComment] = useState('');
   const { user, profile } = useAuth();
@@ -97,7 +91,6 @@ export const CommentForm: React.FC<CommentFormProps> = ({
                 rows={4}
                 className="resize-none bg-gray-800/20 border-gray-700/30"
                 disabled={isSubmitting || !user}
-                autoFocus={autoFocus}
               />
               {!user && (
                 <p className="mt-2 text-sm text-yellow-400">
@@ -105,22 +98,12 @@ export const CommentForm: React.FC<CommentFormProps> = ({
                 </p>
               )}
               
-              <div className="flex justify-end mt-3 gap-2">
-                {onCancel && (
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    onClick={onCancel}
-                    disabled={isSubmitting}
-                  >
-                    Cancelar
-                  </Button>
-                )}
+              <div className="flex justify-end mt-3">
                 <Button 
                   type="submit" 
                   disabled={isSubmitting || !user || !comment.trim()}
                 >
-                  {isSubmitting ? 'Enviando...' : buttonText}
+                  {isSubmitting ? 'Enviando...' : 'Comentar'}
                 </Button>
               </div>
             </div>

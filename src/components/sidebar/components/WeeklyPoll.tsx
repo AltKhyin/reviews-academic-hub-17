@@ -1,88 +1,97 @@
 
-// ABOUTME: Weekly poll sidebar component with proper data handling
 import React from 'react';
-import { useSidebarStore } from '@/stores/sidebarStore';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart3 } from 'lucide-react';
+import { useSidebarStore } from '@/stores/sidebarStore';
+import { usePollVoting } from '@/hooks/usePollVoting';
 
 export const WeeklyPoll: React.FC = () => {
-  const { poll, isLoadingPoll } = useSidebarStore();
+  const { poll, userVote, isLoadingPoll } = useSidebarStore();
+  const { vote, isVoting } = usePollVoting();
 
   if (isLoadingPoll) {
     return (
-      <Card className="bg-gray-800/20 border-gray-700/30">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center text-sm font-medium">
-            <BarChart3 className="h-4 w-4 mr-2" />
-            Enquete da Semana
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="animate-pulse space-y-3">
-            <div className="h-4 bg-gray-700 rounded"></div>
-            <div className="space-y-2">
-              <div className="h-8 bg-gray-800 rounded"></div>
-              <div className="h-8 bg-gray-800 rounded"></div>
+      <div className="space-y-3">
+        <div className="h-4 bg-muted/30 rounded w-24 animate-pulse" />
+        <div className="space-y-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="space-y-1">
+              <div className="h-3 bg-muted/30 rounded animate-pulse" />
+              <div className="h-2 bg-muted/30 rounded animate-pulse" />
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          ))}
+        </div>
+      </div>
     );
   }
 
   if (!poll) {
-    return (
-      <Card className="bg-gray-800/20 border-gray-700/30">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center text-sm font-medium">
-            <BarChart3 className="h-4 w-4 mr-2" />
-            Enquete da Semana
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-gray-400">Nenhuma enquete ativa no momento</p>
-        </CardContent>
-      </Card>
-    );
+    return null;
   }
 
   const totalVotes = poll.votes.reduce((sum, count) => sum + count, 0);
 
+  const handleVote = async (optionIndex: number) => {
+    if (userVote === optionIndex) return;
+    await vote(poll.id, optionIndex);
+  };
+
   return (
-    <Card className="bg-gray-800/20 border-gray-700/30">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center text-sm font-medium">
-          <BarChart3 className="h-4 w-4 mr-2" />
-          Enquete da Semana
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <h4 className="text-sm font-medium">{poll.question}</h4>
+    <div className="space-y-3">
+      <div className="flex items-center space-x-2">
+        <BarChart3 className="w-4 h-4 text-muted-foreground/80" />
+        <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Enquete da Semana</h3>
+      </div>
+      
+      <div className="space-y-3">
+        <h4 className="text-sm font-medium text-foreground/80 leading-tight">{poll.question}</h4>
+        
         <div className="space-y-2">
           {poll.options.map((option, index) => {
             const votes = poll.votes[index] || 0;
             const percentage = totalVotes > 0 ? (votes / totalVotes) * 100 : 0;
+            const isSelected = userVote === index;
             
             return (
-              <div key={index} className="space-y-1">
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-300">{option}</span>
-                  <span className="text-gray-400">{votes}</span>
+              <button
+                key={index}
+                onClick={() => handleVote(index)}
+                disabled={isVoting}
+                className={`
+                  w-full text-left p-2 rounded transition-colors group
+                  ${isSelected 
+                    ? 'bg-muted/30 text-foreground/90' 
+                    : 'hover:bg-muted/20 text-muted-foreground'
+                  }
+                `}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-medium">{option}</span>
+                  <span className="text-xs text-muted-foreground/70">{percentage.toFixed(1)}%</span>
                 </div>
-                <div className="w-full bg-gray-700 rounded-full h-2">
+                
+                <div className="w-full bg-muted/20 rounded-full h-1.5">
                   <div 
-                    className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                      isSelected ? 'bg-muted-foreground/50' : 'bg-muted-foreground/30'
+                    }`}
                     style={{ width: `${percentage}%` }}
                   />
                 </div>
-              </div>
+                
+                <div className="text-xs text-muted-foreground/60 mt-1">
+                  {votes} {votes === 1 ? 'voto' : 'votos'}
+                </div>
+              </button>
             );
           })}
         </div>
-        <div className="text-xs text-gray-400 pt-1">
-          Total: {totalVotes} votos
-        </div>
-      </CardContent>
-    </Card>
+        
+        {totalVotes > 0 && (
+          <p className="text-xs text-muted-foreground/60 text-center">
+            {totalVotes} {totalVotes === 1 ? 'voto total' : 'votos totais'}
+          </p>
+        )}
+      </div>
+    </div>
   );
 };

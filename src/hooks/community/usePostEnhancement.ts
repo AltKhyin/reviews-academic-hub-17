@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { PostData } from '@/types/community';
 
-export async function enhancePostsWithDetails(posts: any[]): Promise<PostData[]> {
+export async function enhancePostsWithDetails(posts: any[]) {
   const { data: { user } } = await supabase.auth.getUser();
   
   if (!posts.length) return [];
@@ -46,16 +46,16 @@ export async function enhancePostsWithDetails(posts: any[]): Promise<PostData[]>
   const postsWithDetails = await Promise.all(
     posts.map(async (post) => {
       const profile = profiles?.find(p => p.id === post.user_id);
-      const postFlair = flairs.find((f: any) => f.id === post.flair_id);
+      const postFlair = flairs.find(f => f.id === post.flair_id);
       
-      const enhancedPost: PostData = {
+      const enhancedPost = {
         ...post,
         profiles: profile ? {
           full_name: profile.full_name,
           avatar_url: profile.avatar_url
         } : null,
         post_flairs: postFlair || null,
-        poll: null,
+        poll: null as any,
         userVote: userVotes[post.id] || 0
       };
       
@@ -97,14 +97,15 @@ export async function enhancePostsWithDetails(posts: any[]): Promise<PostData[]>
       
       const totalVotes = optionsWithVotes.reduce((sum, o) => sum + o.votes, 0);
       
-      enhancedPost.poll = {
-        id: post.poll_id,
-        options: optionsWithVotes,
-        total_votes: totalVotes,
-        user_vote: userVote
+      return {
+        ...enhancedPost,
+        poll: {
+          id: post.poll_id,
+          options: optionsWithVotes,
+          total_votes: totalVotes,
+          user_vote: userVote
+        }
       };
-      
-      return enhancedPost;
     })
   );
   
