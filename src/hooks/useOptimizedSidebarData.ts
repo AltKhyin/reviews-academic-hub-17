@@ -172,20 +172,20 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
     [statsError, commentsError, threadsError]
   );
 
-  // Return with proper typing and fallback values
+  // Return with proper typing and explicit type assertions
   return useMemo(() => ({
     stats: {
-      data: statsData ?? null,
+      data: (statsData as SidebarStats | null) || null,
       isLoading: statsLoading,
       error: statsError,
     },
     reviewerComments: {
-      data: commentsData ?? [],
+      data: (commentsData as ReviewerComment[]) || [],
       isLoading: commentsLoading,
       error: commentsError,
     },
     topThreads: {
-      data: threadsData ?? [],
+      data: (threadsData as TopThread[]) || [],
       isLoading: threadsLoading,
       error: threadsError,
     },
