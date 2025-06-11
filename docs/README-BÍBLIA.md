@@ -527,8 +527,6 @@ const metrics = {
 ## 14. TODO / Backlog
 
 ### High Priority (Current Sprint)
-- [ ] Complete native editor undo/redo functionality
-- [ ] Implement real-time collaborative editing features
 - [ ] Add email notification system for community engagement
 - [ ] Optimize mobile responsive design for editor interface
 
@@ -540,7 +538,6 @@ const metrics = {
 - [ ] Advanced analytics dashboard for administrators
 
 ### Low Priority (Future Releases)
-- [ ] Multi-language support and internationalization
 - [ ] PDF export functionality for issues and reviews
 - [ ] Integration with external reference management systems
 - [ ] Advanced role-based permissions with custom roles
