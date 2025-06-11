@@ -172,19 +172,20 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
     [statsError, commentsError, threadsError]
   );
 
+  // Return with proper typing - ensuring statsData matches SidebarStats | null
   return useMemo(() => ({
     stats: {
-      data: statsData || null,
+      data: statsData, // This is now properly typed as SidebarStats | null
       isLoading: statsLoading,
       error: statsError,
     },
     reviewerComments: {
-      data: commentsData || [],
+      data: commentsData || [], // This is properly typed as ReviewerComment[]
       isLoading: commentsLoading,
       error: commentsError,
     },
     topThreads: {
-      data: threadsData || [],
+      data: threadsData || [], // This is properly typed as TopThread[]
       isLoading: threadsLoading,
       error: threadsError,
     },
