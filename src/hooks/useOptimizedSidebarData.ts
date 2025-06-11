@@ -49,20 +49,8 @@ export interface OptimizedSidebarData {
   isLoading: boolean;
 }
 
-const getDefaultStats = (): SidebarStats => ({
-  totalUsers: 0,
-  onlineUsers: 0,
-  totalIssues: 0,
-  totalPosts: 0,
-  totalComments: 0,
-});
-
-const getDefaultComments = (): ReviewerComment[] => [];
-
-const getDefaultThreads = (): TopThread[] => [];
-
 export const useOptimizedSidebarData = (): OptimizedSidebarData => {
-  // Fetch sidebar stats with extended caching
+  // Fetch sidebar stats with extended caching - explicitly typed
   const { 
     data: statsData, 
     isLoading: statsLoading, 
@@ -102,7 +90,7 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
     }
   );
 
-  // Fetch reviewer comments with extended caching
+  // Fetch reviewer comments with extended caching - explicitly typed
   const { 
     data: commentsData, 
     isLoading: commentsLoading, 
@@ -134,7 +122,7 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
     }
   );
 
-  // Fetch top threads with extended caching
+  // Fetch top threads with extended caching - explicitly typed
   const { 
     data: threadsData, 
     isLoading: threadsLoading, 
@@ -186,17 +174,17 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
 
   return useMemo(() => ({
     stats: {
-      data: statsData,
+      data: statsData ?? null, // Explicit null coalescing
       isLoading: statsLoading,
       error: statsError,
     },
     reviewerComments: {
-      data: commentsData || [],
+      data: commentsData ?? [], // Explicit fallback to empty array
       isLoading: commentsLoading,
       error: commentsError,
     },
     topThreads: {
-      data: threadsData || [],
+      data: threadsData ?? [], // Explicit fallback to empty array
       isLoading: threadsLoading,
       error: threadsError,
     },
