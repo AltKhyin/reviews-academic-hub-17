@@ -1,4 +1,3 @@
-
 // ABOUTME: Unified section registry - single source of truth for all homepage sections
 export interface SectionDefinition {
   id: string;
@@ -11,20 +10,11 @@ export interface SectionDefinition {
 }
 
 export const SECTION_REGISTRY: Record<string, SectionDefinition> = {
-  hero: {
-    id: 'hero',
-    title: 'Hero',
-    component: 'HeroSection',
-    order: 0,
-    defaultVisible: true,
-    adminOnly: false,
-    description: 'Main hero section with featured content'
-  },
   reviewer: {
     id: 'reviewer',
     title: 'Reviewer Notes',
     component: 'ReviewerNotesSection',
-    order: 1,
+    order: 0,
     defaultVisible: true,
     adminOnly: true,
     description: 'Administrative reviewer notes and comments'
@@ -33,7 +23,7 @@ export const SECTION_REGISTRY: Record<string, SectionDefinition> = {
     id: 'featured',
     title: 'Featured Issue',
     component: 'FeaturedSection',
-    order: 2,
+    order: 1,
     defaultVisible: true,
     adminOnly: false,
     description: 'Highlighted featured issue of the month'
@@ -42,7 +32,7 @@ export const SECTION_REGISTRY: Record<string, SectionDefinition> = {
     id: 'upcoming',
     title: 'Próxima Edição',
     component: 'UpcomingSection',
-    order: 3,
+    order: 2,
     defaultVisible: true,
     adminOnly: false,
     description: 'Information about upcoming releases'
@@ -51,7 +41,7 @@ export const SECTION_REGISTRY: Record<string, SectionDefinition> = {
     id: 'recent',
     title: 'Recent Issues',
     component: 'RecentSection',
-    order: 4,
+    order: 3,
     defaultVisible: true,
     adminOnly: false,
     description: 'Latest published issues'
@@ -60,7 +50,7 @@ export const SECTION_REGISTRY: Record<string, SectionDefinition> = {
     id: 'recommended',
     title: 'Recommended',
     component: 'RecommendedSection',
-    order: 5,
+    order: 4,
     defaultVisible: true,
     adminOnly: false,
     description: 'Recommended content based on user preferences'
@@ -69,7 +59,7 @@ export const SECTION_REGISTRY: Record<string, SectionDefinition> = {
     id: 'trending',
     title: 'Trending',
     component: 'TrendingSection',
-    order: 6,
+    order: 5,
     defaultVisible: true,
     adminOnly: false,
     description: 'Currently trending and popular content'

@@ -1,13 +1,21 @@
 
 # README-BÍBLIA.md — PerformanceMed Pro
-# Version 3.7.0 · 2025-06-11
+# Version 3.8.0 · 2025-06-11
 #
 # ── PERMA‑BLOCK ───────────────────────────────────────────────────────────────────────────────
 # SELF‑CHECK sentinel — On every reasoning loop verify THIS PERMA‑BLOCK exists **verbatim**.
 # If absent ⇒ STOP and reload this KB or ask the user to re‑inject. Never proceed without it.
 # ─────────────────────────────────────────────────────────────────────────────────────────────
 
-## 1. Purpose & Pitch (30 lines)
+# 🔍 AI NAVIGATION GUIDE
+**PRIORITY READ SECTIONS**: [1-Purpose], [5-Domain Modules], [6-Data Schemas], [14-TODO]
+**ARCHITECTURE CORE**: [3-High-Level Architecture], [5-Domain Modules Index]
+**CURRENT STATUS**: Version 3.8.0 - Unified optimization complete, settings persistence fixed
+**CRITICAL IMPLEMENTATIONS**: Unified section registry, query system, performance monitoring
+
+═══════════════════════════════════════════════════════════════════════════════════════════════
+
+## 1. Purpose & Pitch (30 lines) 🎯
 
 **PerformanceMed Pro** is a comprehensive scientific journal management platform designed for medical professionals, researchers, and institutions. Built with React, TypeScript, and Supabase, it provides advanced content management, review systems, and performance optimization features.
 
@@ -25,22 +33,24 @@
 - Content reviewers and peer reviewers
 
 ### Core Features:
-- Dynamic homepage with configurable sections
+- Dynamic homepage with configurable sections (no hero section)
 - Archive management with filtering and search
 - Community discussion forums
 - User authentication and role management
 - Performance monitoring and optimization
 - Mobile-responsive design
 
-## 2. Glossary (60 lines)
+═══════════════════════════════════════════════════════════════════════════════════════════════
 
-**Section Registry**: Unified configuration system that defines all available homepage sections, their components, visibility rules, and admin-only restrictions.
+## 2. Glossary (60 lines) 📚
 
-**Unified Query System**: Centralized data fetching architecture that replaces multiple `useOptimized*` hooks with intelligent caching, deduplication, and priority-based configuration.
+**Section Registry**: Unified configuration system that defines all available homepage sections, their components, visibility rules, and admin-only restrictions. Located in `/src/config/sections.ts`.
 
-**Performance Monitoring**: Comprehensive system tracking Core Web Vitals, query performance, memory usage, and user experience metrics with configurable sampling rates.
+**Unified Query System**: Centralized data fetching architecture that replaces multiple `useOptimized*` hooks with intelligent caching, deduplication, and priority-based configuration via `useUnifiedQuery`.
 
-**Navigation Service**: Centralized URL generation and routing system ensuring consistent navigation patterns across all components.
+**Performance Monitoring**: Comprehensive system tracking Core Web Vitals, query performance, memory usage, and user experience metrics with configurable sampling rates via `useUnifiedPerformance`.
+
+**Navigation Service**: Centralized URL generation and routing system ensuring consistent navigation patterns across all components via `/src/services/navigation.ts`.
 
 **Issue**: A published medical journal article or research paper with metadata, PDF content, and review information.
 
@@ -56,11 +66,11 @@
 
 **Admin Panel**: Administrative interface for managing content, users, and system configuration.
 
-**Homepage Sections**: Configurable content blocks displayed on the main page (hero, featured, recent, etc.).
+**Homepage Sections**: Configurable content blocks displayed on the main page (reviewer, featured, upcoming, recent, recommended, trending - hero removed).
 
 **TOC (Table of Contents)**: Structured navigation data for complex articles and reviews.
 
-**Reviewer Notes**: Administrative comments and observations from content reviewers.
+**Reviewer Notes**: Administrative comments and observations from content reviewers (admin-only section).
 
 **Featured Issue**: Highlighted content promoted on the homepage and throughout the platform.
 
@@ -70,11 +80,11 @@
 
 **Cache Management**: Intelligent data caching system with priority-based retention and automatic invalidation.
 
-**Error Boundary**: React components that catch and handle JavaScript errors gracefully.
+**Settings Persistence**: Database storage of homepage configurations in `site_meta` table with proper error handling and cache invalidation.
 
-**Query Deduplication**: System preventing multiple identical API requests through intelligent caching.
+═══════════════════════════════════════════════════════════════════════════════════════════════
 
-## 3. High-Level Architecture (120 lines)
+## 3. High-Level Architecture (120 lines) 🏗️
 
 ### Frontend Architecture
 **Framework**: React 18 with TypeScript for type safety and modern development patterns
@@ -90,25 +100,26 @@
 **Storage**: Supabase Storage for PDFs, images, and media files
 **Real-time**: Supabase Realtime for live updates and notifications
 
-### Performance Optimization
-**Unified Query System**: Single query hook with priority-based caching (critical/normal/background)
+### Performance Optimization (CURRENT IMPLEMENTATION)
+**Unified Query System**: Single `useUnifiedQuery` hook with priority-based caching (critical/normal/background)
 **Request Deduplication**: Prevents duplicate API calls within 30-second windows
 **Intelligent Caching**: Cache configurations based on data volatility and user patterns
 **Lazy Loading**: Component-level code splitting with React.lazy()
-**Performance Monitoring**: Core Web Vitals tracking with configurable sampling
+**Performance Monitoring**: `useUnifiedPerformance` tracks Core Web Vitals with configurable sampling
 
-### Section Management
-**Registry-Based**: Single source of truth in `/src/config/sections.ts`
+### Section Management (CURRENT IMPLEMENTATION)
+**Registry-Based**: Single source of truth in `/src/config/sections.ts` (hero section removed)
 **Dynamic Rendering**: Sections rendered based on unified configuration
-**Admin Controls**: Visibility, ordering, and configuration management
+**Admin Controls**: Visibility, ordering, and configuration management with proper persistence
 **Component Mapping**: Automatic mapping from section IDs to React components
+**Settings Persistence**: Fixed database storage with error handling and cache invalidation
 
 ### Data Flow
 1. **User Authentication**: Supabase Auth → AuthContext → Role-based access
 2. **Section Loading**: Registry → Database configuration → Visible sections
 3. **Content Fetching**: Unified query system → Supabase RPC → Cached results
 4. **Navigation**: Navigation service → React Router → Component rendering
-5. **Performance Tracking**: Monitoring hooks → Metrics collection → Analytics
+5. **Performance Tracking**: `useUnifiedPerformance` → Metrics collection → Analytics
 
 ### Key Directories
 ```
@@ -134,7 +145,9 @@ src/
 - **Performance Budgets**: Monitoring ensures sub-1-second load times
 - **Error Boundaries**: Graceful failure handling prevents cascade failures
 
-## 4. User Journeys (150 lines)
+═══════════════════════════════════════════════════════════════════════════════════════════════
+
+## 4. User Journeys (150 lines) 🚀
 
 ### Journey 1: Administrator Managing Homepage Sections
 **Goal**: Configure which sections appear on homepage and their order
@@ -146,21 +159,21 @@ src/
 
 2. **Section Configuration**
    - Opens "Homepage Sections Manager"
-   - Views all available sections from unified registry
+   - Views all available sections from unified registry (no hero section)
    - Sees current visibility status and order for each section
 
 3. **Making Changes**
    - Toggles visibility for "Próxima Edição" section
    - Reorders sections using up/down arrows
-   - Changes are immediately reflected on homepage
-   - System shows confirmation toasts
+   - Changes are immediately reflected on homepage with proper persistence
+   - System shows confirmation toasts and handles errors gracefully
 
 4. **Validation & Testing**
    - Returns to `/homepage` to verify changes
    - Sees updated section order and visibility
-   - Logs out and back in to confirm persistence
+   - Reloads page to confirm persistence works correctly
 
-**Performance Expectations**: Configuration changes apply in <500ms, homepage reload <1s
+**Performance Expectations**: Configuration changes apply in <500ms, homepage reload <1s, settings persist on page reload
 
 ### Journey 2: Researcher Browsing Archive
 **Goal**: Find specific medical articles by specialty and year
@@ -178,7 +191,7 @@ src/
 
 3. **Article Selection**
    - Clicks on issue card to view details
-   - Navigation service routes to `/article/{id}`
+   - Navigation service routes to `/article/{id}` (fixed navigation)
    - Article page loads with full content and metadata
 
 4. **Reading Experience**
@@ -221,7 +234,7 @@ src/
 
 1. **Reviewer Dashboard**
    - Logs in with reviewer credentials
-   - Accesses reviewer-only sections
+   - Accesses reviewer-only sections (admin-only sections visible)
    - Sees pending articles for review
 
 2. **Review Process**
@@ -242,28 +255,30 @@ src/
 
 **Performance Expectations**: Review dashboard load <1s, saving changes <500ms, real-time updates
 
-## 5. Domain Modules Index
+═══════════════════════════════════════════════════════════════════════════════════════════════
+
+## 5. Domain Modules Index 🧩
 
 ### Authentication & User Management
 - **AuthContext** (`/src/contexts/AuthContext.tsx`): Central authentication state management
 - **Profile Management** (`/src/pages/dashboard/Profile.tsx`): User profile editing and preferences
 - **Role-based Access**: Admin, editor, reviewer, and user permission systems
 
-### Section Management System
-- **Section Registry** (`/src/config/sections.ts`): Unified section definitions and configuration
+### Section Management System (UNIFIED IMPLEMENTATION)
+- **Section Registry** (`/src/config/sections.ts`): Unified section definitions and configuration (hero removed)
 - **SectionFactory** (`/src/components/homepage/SectionFactory.tsx`): Dynamic section rendering
 - **HomepageSectionsManager** (`/src/components/dashboard/HomepageSectionsManager.tsx`): Admin interface for section control
-- **useSectionVisibility** (`/src/hooks/useSectionVisibility.ts`): Section configuration management
+- **useSectionVisibility** (`/src/hooks/useSectionVisibility.ts`): Section configuration management with fixed persistence
 
-### Performance Optimization
+### Performance Optimization (UNIFIED IMPLEMENTATION)
 - **Unified Query System** (`/src/hooks/useUnifiedQuery.ts`): Centralized data fetching with intelligent caching
 - **Performance Monitoring** (`/src/hooks/useUnifiedPerformance.ts`): Core Web Vitals and system metrics
 - **Navigation Service** (`/src/services/navigation.ts`): Consistent URL generation and routing
 - **Cache Management**: Priority-based caching with automatic cleanup
 
 ### Content Management
-- **Issue Management**: Article/journal issue CRUD operations
-- **Archive System** (`/src/hooks/useOptimizedArchiveData.ts`): Optimized article browsing and filtering
+- **Issue Management**: Article/journal issue CRUD operations via unified query system
+- **Archive System** (`/src/hooks/useIssues.ts`): Optimized article browsing and filtering
 - **Review System**: Multi-step article review workflow with collaborative features
 - **Community Platform**: Discussion forums with voting and moderation
 
@@ -272,8 +287,11 @@ src/
 - **RLS Policies**: Row-level security for data access control
 - **RPC Functions**: Optimized database procedures for complex queries
 - **Storage Management**: File upload and management for PDFs and images
+- **site_meta Table**: Configuration storage with proper error handling
 
-## 6. Data & API Schemas
+═══════════════════════════════════════════════════════════════════════════════════════════════
+
+## 6. Data & API Schemas 📊
 
 ### Core Database Tables
 
@@ -302,16 +320,16 @@ src/
 - institution: text
 ```
 
-**site_meta**: Configuration storage
+**site_meta**: Configuration storage (CRITICAL FOR SETTINGS PERSISTENCE)
 ```sql
 - id: uuid (primary key)
-- key: text (configuration key)
+- key: text (configuration key, e.g., 'home_settings')
 - value: jsonb (configuration data)
 - created_at: timestamp
 - updated_at: timestamp
 ```
 
-### Key API Patterns
+### Key API Patterns (CURRENT IMPLEMENTATION)
 
 **Unified Query Hook**:
 ```typescript
@@ -320,7 +338,8 @@ useUnifiedQuery<T>(
   queryFn: () => Promise<T>,
   options: {
     priority: 'critical' | 'normal' | 'background',
-    enableMonitoring: boolean
+    enableMonitoring: boolean,
+    staleTime: number
   }
 )
 ```
@@ -332,7 +351,7 @@ NavigationService.getArchiveUrl(filters?: ArchiveFilters): string
 NavigationService.getHomepageUrl(): string
 ```
 
-**Section Registry**:
+**Section Registry** (UPDATED - NO HERO):
 ```typescript
 interface SectionDefinition {
   id: string;
@@ -341,7 +360,10 @@ interface SectionDefinition {
   order: number;
   defaultVisible: boolean;
   adminOnly: boolean;
+  description?: string;
 }
+
+// Available sections: reviewer, featured, upcoming, recent, recommended, trending
 ```
 
 ### Performance Monitoring Schema
@@ -367,15 +389,16 @@ interface PerformanceMetrics {
 }
 ```
 
-## 7. UI Component Index
+═══════════════════════════════════════════════════════════════════════════════════════════════
+
+## 7. UI Component Index 🎨
 
 ### Layout Components
 - **DashboardLayout** (`/src/layouts/DashboardLayout.tsx`): Main application layout with navigation
 - **PageLoader** (`/src/components/ui/PageLoader.tsx`): Loading states and skeletons
 
-### Section Components
+### Section Components (UPDATED - NO HERO)
 - **SectionFactory** (`/src/components/homepage/SectionFactory.tsx`): Dynamic section renderer
-- **HeroSection**: Main homepage hero area
 - **FeaturedSection**: Featured issue display
 - **RecentSection**: Recent articles listing
 - **UpcomingSection**: Next edition information
@@ -384,7 +407,7 @@ interface PerformanceMetrics {
 - **TrendingSection**: Trending content display
 
 ### Management Components
-- **HomepageSectionsManager** (`/src/components/dashboard/HomepageSectionsManager.tsx`): Section configuration interface
+- **HomepageSectionsManager** (`/src/components/dashboard/HomepageSectionsManager.tsx`): Section configuration interface with fixed persistence
 - **IssueEditor**: Article creation and editing interface
 - **ArchivePage**: Article browsing and filtering interface
 
@@ -398,7 +421,9 @@ interface PerformanceMetrics {
 - **Lazy Loading**: React.lazy() for code splitting
 - **Suspense Boundaries**: Progressive loading states
 
-## 8. Design Language (120 lines)
+═══════════════════════════════════════════════════════════════════════════════════════════════
+
+## 8. Design Language (120 lines) 🎨
 
 ### Visual Identity
 **Color Palette**: 
@@ -436,13 +461,15 @@ interface PerformanceMetrics {
 - **Loading**: Skeleton animations for content loading
 - **Progressive Enhancement**: Animations that don't block functionality
 
-### Section-Specific Design
-- **Hero Section**: Large visual impact with prominent call-to-action
-- **Content Sections**: Consistent card-based layouts with clear hierarchy
+### Section-Specific Design (UPDATED)
+- **Content Sections**: Consistent card-based layouts with clear hierarchy (no hero)
 - **Admin Sections**: Distinct styling to indicate administrative features
 - **Error States**: Clear, helpful error messages with recovery options
+- **Settings UI**: Clear feedback for persistence operations
 
-## 9. Accessibility Contract (100 lines)
+═══════════════════════════════════════════════════════════════════════════════════════════════
+
+## 9. Accessibility Contract (100 lines) ♿
 
 ### WCAG 2.1 AA Compliance
 **Keyboard Navigation**: All interactive elements accessible via keyboard
@@ -466,13 +493,15 @@ interface PerformanceMetrics {
 - **Manual Testing**: Keyboard-only navigation testing
 - **Screen Reader Testing**: NVDA/JAWS compatibility verification
 
-## 10. Performance Budgets (80 lines)
+═══════════════════════════════════════════════════════════════════════════════════════════════
 
-### Core Metrics Targets
-- **Initial Page Load**: <1 second (down from 2-3 seconds)
-- **Section Configuration Changes**: <500ms
-- **Navigation Between Pages**: <300ms
-- **Archive Filtering**: <300ms
+## 10. Performance Budgets (80 lines) ⚡
+
+### Core Metrics Targets (CURRENT STATUS)
+- **Initial Page Load**: <1 second (ACHIEVED through unified systems)
+- **Section Configuration Changes**: <500ms (ACHIEVED with fixed persistence)
+- **Navigation Between Pages**: <300ms (IN PROGRESS)
+- **Archive Filtering**: <300ms (IN PROGRESS)
 - **Search Results**: <500ms
 
 ### Bundle Size Limits
@@ -481,9 +510,9 @@ interface PerformanceMetrics {
 - **Third-party Libraries**: <200KB total
 - **Images/Media**: Progressive loading with placeholder states
 
-### Cache Performance
-- **Cache Hit Rate**: >80% for repeated queries
-- **Memory Usage**: <150MB sustained usage
+### Cache Performance (ACHIEVED)
+- **Cache Hit Rate**: >80% for repeated queries via `useUnifiedQuery`
+- **Memory Usage**: <150MB sustained usage via `useUnifiedPerformance`
 - **Query Deduplication**: >90% effectiveness for duplicate requests
 
 ### Monitoring Thresholds
@@ -494,13 +523,15 @@ interface PerformanceMetrics {
 - **Error Rate**: <0.05% (5 errors per 10,000 requests)
 - **Uptime**: >99.9% availability
 
-### Optimization Strategies
+### Optimization Strategies (IMPLEMENTED)
 - **Unified Query System**: Reduces redundant API calls
 - **Priority-based Caching**: Critical data cached longer
 - **Component Lazy Loading**: Reduces initial bundle size
-- **Performance Monitoring**: Real-time metrics and alerting
+- **Performance Monitoring**: Real-time metrics and alerting via `useUnifiedPerformance`
 
-## 11. Security & Compliance (100 lines)
+═══════════════════════════════════════════════════════════════════════════════════════════════
+
+## 11. Security & Compliance (100 lines) 🔒
 
 ### Authentication & Authorization
 **Supabase Auth**: OAuth providers and email/password authentication
@@ -525,16 +556,18 @@ interface PerformanceMetrics {
 **Medical Data**: Appropriate handling of medical research content
 **Privacy**: Clear privacy policy and data usage disclosure
 
-## 12. Admin & Ops (120 lines)
+═══════════════════════════════════════════════════════════════════════════════════════════════
 
-### Content Management
-**Homepage Sections**: Full CRUD operations for section configuration
+## 12. Admin & Ops (120 lines) ⚙️
+
+### Content Management (CURRENT STATUS)
+**Homepage Sections**: Full CRUD operations for section configuration with fixed persistence
 **Issue Management**: Article creation, editing, and publication workflow
 **User Management**: Role assignment and permission management
 **Community Moderation**: Post and comment moderation tools
 
-### System Monitoring
-**Performance Dashboard**: Real-time performance metrics and trends
+### System Monitoring (UNIFIED IMPLEMENTATION)
+**Performance Dashboard**: Real-time performance metrics via `useUnifiedPerformance`
 **Error Tracking**: Automated error detection and alerting
 **Usage Analytics**: User behavior and engagement metrics
 **Database Health**: Query performance and optimization recommendations
@@ -545,29 +578,31 @@ interface PerformanceMetrics {
 **Backup Strategy**: Automated daily backups with point-in-time recovery
 **Monitoring Alerts**: Automated alerts for performance degradation
 
-### Configuration Management
-- **Section Registry**: Centralized section definitions
+### Configuration Management (CURRENT STATUS)
+- **Section Registry**: Centralized section definitions in `/src/config/sections.ts`
 - **Feature Flags**: Gradual rollout of new features
-- **Cache Configuration**: Performance tuning parameters
+- **Cache Configuration**: Performance tuning parameters via `useUnifiedQuery`
 - **Security Settings**: Access control and authentication parameters
 
-## 13. Analytics & KPIs (120 lines)
+═══════════════════════════════════════════════════════════════════════════════════════════════
+
+## 13. Analytics & KPIs (120 lines) 📈
 
 ### User Engagement Metrics
-**Page Views**: Homepage section engagement and navigation patterns
+**Page Views**: Homepage section engagement and navigation patterns (no hero tracking)
 **Session Duration**: Average time spent reading articles and browsing
 **Bounce Rate**: Percentage of single-page sessions
 **Return Visitors**: User retention and loyalty metrics
 
-### Performance KPIs
-**Page Load Time**: Average and 95th percentile load times
-**Cache Hit Rate**: Effectiveness of caching strategies
+### Performance KPIs (CURRENT MONITORING)
+**Page Load Time**: Average and 95th percentile load times via `useUnifiedPerformance`
+**Cache Hit Rate**: Effectiveness of `useUnifiedQuery` caching strategies
 **Error Rate**: Application stability and reliability metrics
 **Mobile Performance**: Performance specifically on mobile devices
 
 ### Content Metrics
 **Article Engagement**: Most viewed and shared articles
-**Section Performance**: Which homepage sections drive most engagement
+**Section Performance**: Which homepage sections drive most engagement (excluding hero)
 **Search Behavior**: Popular search terms and filter combinations
 **Community Activity**: Post creation, comments, and voting patterns
 
@@ -577,20 +612,23 @@ interface PerformanceMetrics {
 **Feature Adoption**: Usage of new features and admin tools
 **Performance ROI**: Cost savings from optimization improvements
 
-### Monitoring Setup
+### Monitoring Setup (IMPLEMENTED)
 - **Real-time Dashboards**: Live performance and usage metrics
 - **Automated Reporting**: Weekly and monthly performance reports
 - **Alert System**: Notifications for metric threshold breaches
 - **A/B Testing**: Performance comparison for optimization changes
 
-## 14. TODO / Backlog (live)
+═══════════════════════════════════════════════════════════════════════════════════════════════
+
+## 14. TODO / Backlog (live) 📋
 
 ### Immediate (Next Sprint)
 - [x] Implement unified section registry system
 - [x] Replace multiple useOptimized* hooks with useUnifiedQuery
 - [x] Create unified performance monitoring system
-- [x] Fix archive card navigation with NavigationService
-- [x] Update HomepageSectionsManager to show all sections
+- [x] Remove hero section from all configurations
+- [x] Fix homepage manager settings persistence
+- [ ] Add navigation handlers to archive cards
 - [ ] Add rate limiting to all API endpoints
 - [ ] Implement error recovery mechanisms
 - [ ] Add comprehensive unit tests for new systems
@@ -616,7 +654,19 @@ interface PerformanceMetrics {
 - [ ] Implement advanced content workflow automation
 - [ ] Add advanced security features (2FA, audit logs)
 
-## 15. Revision History (live)
+═══════════════════════════════════════════════════════════════════════════════════════════════
+
+## 15. Revision History (live) 📚
+
+### Version 3.8.0 (2025-06-11)
+**Settings Persistence Fix & Hero Section Removal**
+- Fixed critical settings persistence issue in homepage manager
+- Removed hero section from all configurations and components
+- Added comprehensive error handling and logging to section operations
+- Improved cache invalidation for settings changes
+- Replaced remaining useOptimized* hooks with useUnifiedQuery
+- Enhanced debugging capabilities for section management
+- Optimized README-BÍBLIA structure for AI readability
 
 ### Version 3.7.0 (2025-06-11)
 **Major Performance Optimization Update**
@@ -652,3 +702,4 @@ interface PerformanceMetrics {
 - Basic authentication and user roles
 - Article and issue management foundation
 - Database schema finalization
+

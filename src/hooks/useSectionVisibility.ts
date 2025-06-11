@@ -6,6 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import { SECTION_REGISTRY, getDefaultSectionConfig, getSectionById } from '@/config/sections';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from '@/hooks/use-toast';
 
 export interface Section {
   id: string;
@@ -26,22 +27,29 @@ export const useSectionVisibility = () => {
     ['home-sections', isAdmin],
     async (): Promise<Section[]> => {
       try {
-        // Try to get home settings which might contain section configuration
-        const { data, error } = await supabase.rpc('get_home_settings');
+        console.log('useSectionVisibility: Fetching home settings');
         
-        if (error) {
-          console.warn('Home settings error, using defaults:', error);
-          return getDefaultSectionConfig(isAdmin);
+        // First, try to get existing settings from site_meta
+        const { data: metaData, error: metaError } = await supabase
+          .from('site_meta')
+          .select('value')
+          .eq('key', 'home_settings')
+          .single();
+        
+        if (metaError && metaError.code !== 'PGRST116') { // PGRST116 = no rows returned
+          console.warn('useSectionVisibility: site_meta query error:', metaError);
         }
 
         // If we have data, process it, otherwise use defaults
-        if (data && typeof data === 'object' && 'sections' in data) {
-          return processSectionData(data.sections, isAdmin);
+        if (metaData?.value && typeof metaData.value === 'object' && 'sections' in metaData.value) {
+          console.log('useSectionVisibility: Found saved settings:', metaData.value);
+          return processSectionData(metaData.value.sections, isAdmin);
         }
         
+        console.log('useSectionVisibility: Using default configuration');
         return getDefaultSectionConfig(isAdmin);
       } catch (error) {
-        console.warn('Section visibility error, using defaults:', error);
+        console.error('useSectionVisibility: Error fetching settings:', error);
         return getDefaultSectionConfig(isAdmin);
       }
     },
@@ -75,17 +83,42 @@ export const useSectionVisibility = () => {
     queryClient.setQueryData(['home-sections', isAdmin], updatedSections);
     
     try {
-      // Update in database
-      await supabase
+      console.log('toggleSectionVisibility: Saving to database:', { sections: updatedSections });
+      
+      const { data, error } = await supabase
         .from('site_meta')
         .upsert({
           key: 'home_settings',
           value: { sections: updatedSections }
-        });
+        })
+        .select();
+      
+      if (error) {
+        console.error('toggleSectionVisibility: Database error:', error);
+        throw error;
+      }
+      
+      console.log('toggleSectionVisibility: Successfully saved:', data);
+      
+      // Force a refetch to ensure consistency
+      await queryClient.invalidateQueries({ queryKey: ['home-sections'] });
+      
+      toast({
+        title: "Configuração salva",
+        description: "A visibilidade da seção foi atualizada com sucesso.",
+      });
+      
     } catch (error) {
-      console.error('Failed to update section visibility:', error);
+      console.error('toggleSectionVisibility: Failed to update section visibility:', error);
+      
       // Revert optimistic update
       queryClient.setQueryData(['home-sections', isAdmin], sections);
+      
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar a configuração. Tente novamente.",
+        variant: "destructive",
+      });
     }
   }, [sections, queryClient, isAdmin]);
 
@@ -101,17 +134,42 @@ export const useSectionVisibility = () => {
     queryClient.setQueryData(['home-sections', isAdmin], reorderedSections);
     
     try {
-      // Update in database
-      await supabase
+      console.log('reorderSections: Saving to database:', { sections: reorderedSections });
+      
+      const { data, error } = await supabase
         .from('site_meta')
         .upsert({
           key: 'home_settings',
           value: { sections: reorderedSections }
-        });
+        })
+        .select();
+      
+      if (error) {
+        console.error('reorderSections: Database error:', error);
+        throw error;
+      }
+      
+      console.log('reorderSections: Successfully saved:', data);
+      
+      // Force a refetch to ensure consistency
+      await queryClient.invalidateQueries({ queryKey: ['home-sections'] });
+      
+      toast({
+        title: "Ordem atualizada",
+        description: "A ordem das seções foi alterada com sucesso.",
+      });
+      
     } catch (error) {
-      console.error('Failed to reorder sections:', error);
+      console.error('reorderSections: Failed to reorder sections:', error);
+      
       // Revert optimistic update
       queryClient.setQueryData(['home-sections', isAdmin], sections);
+      
+      toast({
+        title: "Erro ao reordenar",
+        description: "Não foi possível alterar a ordem das seções. Tente novamente.",
+        variant: "destructive",
+      });
     }
   }, [sections, queryClient, isAdmin]);
 
@@ -128,15 +186,29 @@ export const useSectionVisibility = () => {
     queryClient.setQueryData(['home-sections', isAdmin], updatedSections);
     
     try {
-      // Update in database
-      await supabase
+      console.log('updateSection: Saving to database:', { sections: updatedSections });
+      
+      const { data, error } = await supabase
         .from('site_meta')
         .upsert({
           key: 'home_settings',
           value: { sections: updatedSections }
-        });
+        })
+        .select();
+      
+      if (error) {
+        console.error('updateSection: Database error:', error);
+        throw error;
+      }
+      
+      console.log('updateSection: Successfully saved:', data);
+      
+      // Force a refetch to ensure consistency
+      await queryClient.invalidateQueries({ queryKey: ['home-sections'] });
+      
     } catch (error) {
-      console.error('Failed to update section:', error);
+      console.error('updateSection: Failed to update section:', error);
+      
       // Revert optimistic update
       queryClient.setQueryData(['home-sections', isAdmin], sections);
     }
@@ -149,17 +221,42 @@ export const useSectionVisibility = () => {
     queryClient.setQueryData(['home-sections', isAdmin], defaultSections);
     
     try {
-      // Update in database
-      await supabase
+      console.log('resetToDefaults: Saving to database:', { sections: defaultSections });
+      
+      const { data, error } = await supabase
         .from('site_meta')
         .upsert({
           key: 'home_settings',
           value: { sections: defaultSections }
-        });
+        })
+        .select();
+      
+      if (error) {
+        console.error('resetToDefaults: Database error:', error);
+        throw error;
+      }
+      
+      console.log('resetToDefaults: Successfully saved:', data);
+      
+      // Force a refetch to ensure consistency
+      await queryClient.invalidateQueries({ queryKey: ['home-sections'] });
+      
+      toast({
+        title: "Configuração restaurada",
+        description: "As seções foram restauradas para a configuração padrão.",
+      });
+      
     } catch (error) {
-      console.error('Failed to reset sections:', error);
+      console.error('resetToDefaults: Failed to reset sections:', error);
+      
       // Revert optimistic update
       queryClient.setQueryData(['home-sections', isAdmin], sections);
+      
+      toast({
+        title: "Erro ao restaurar",
+        description: "Não foi possível restaurar a configuração padrão. Tente novamente.",
+        variant: "destructive",
+      });
     }
   }, [sections, queryClient, isAdmin]);
 
@@ -179,6 +276,7 @@ export const useSectionVisibility = () => {
 // Process section data from database using unified registry
 const processSectionData = (sectionsData: any, userIsAdmin: boolean = false): Section[] => {
   if (!Array.isArray(sectionsData)) {
+    console.warn('processSectionData: Invalid sections data, using defaults');
     return getDefaultSectionConfig(userIsAdmin);
   }
 

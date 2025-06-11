@@ -1,11 +1,9 @@
-
 // ABOUTME: Enhanced section factory with unified registry and performance optimizations
 import React, { Suspense, memo } from 'react';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { SECTION_REGISTRY, getSectionById } from '@/config/sections';
 
-// Lazy load all sections for better performance
-const HeroSection = React.lazy(() => import('./sections/HeroSection').then(module => ({ default: module.HeroSection })));
+// Lazy load all sections for better performance (removed HeroSection)
 const ArticlesGridSection = React.lazy(() => import('./sections/ArticlesGridSection').then(module => ({ default: module.ArticlesGridSection })));
 const ReviewsSection = React.lazy(() => import('./sections/ReviewsSection').then(module => ({ default: module.ReviewsSection })));
 const ReviewerNotesSection = React.lazy(() => import('./sections/ReviewerNotesSection').then(module => ({ default: module.ReviewerNotesSection })));
@@ -24,9 +22,8 @@ interface SectionFactoryProps {
   };
 }
 
-// Component mapping using unified registry
+// Component mapping using unified registry (removed HeroSection)
 const SECTION_COMPONENTS = {
-  HeroSection,
   ArticlesGridSection,
   ReviewsSection,
   ReviewerNotesSection,
@@ -116,7 +113,7 @@ export const SectionFactory: React.FC<SectionFactoryProps> = memo(({
   return (
     <SectionErrorBoundary sectionId={sectionId}>
       <div 
-        className={`w-full ${sectionId === 'hero' ? 'bg-white shadow-sm' : ''}`}
+        className="w-full"
         data-section-id={sectionId}
         data-section-order={sectionConfig.order}
       >
