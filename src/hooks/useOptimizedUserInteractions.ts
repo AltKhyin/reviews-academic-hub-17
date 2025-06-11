@@ -1,3 +1,4 @@
+
 // ABOUTME: Optimized user interactions hook with batched operations and intelligent caching
 import { useCallback, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -36,8 +37,9 @@ const isBatchedInteractions = (data: unknown): data is BatchedInteractions => {
 };
 
 export const useOptimizedUserInteractions = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
+  const isAuthenticated = !!user;
 
   // Consolidated user interactions query
   const { data: userInteractions, isLoading } = useQuery({
