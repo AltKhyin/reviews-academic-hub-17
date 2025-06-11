@@ -67,7 +67,7 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
     data: statsData, 
     isLoading: statsLoading, 
     error: statsError 
-  } = useOptimizedQuery(
+  } = useOptimizedQuery<SidebarStats>(
     queryKeys.sidebarStats(),
     async (): Promise<SidebarStats> => {
       try {
@@ -108,7 +108,7 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
     data: commentsData, 
     isLoading: commentsLoading, 
     error: commentsError 
-  } = useOptimizedQuery(
+  } = useOptimizedQuery<ReviewerComment[]>(
     ['reviewer-comments'],
     async (): Promise<ReviewerComment[]> => {
       try {
@@ -140,7 +140,7 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
     data: threadsData, 
     isLoading: threadsLoading, 
     error: threadsError 
-  } = useOptimizedQuery(
+  } = useOptimizedQuery<TopThread[]>(
     ['top-threads'],
     async (): Promise<TopThread[]> => {
       try {
