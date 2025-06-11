@@ -1,579 +1,393 @@
 
-# README-BÍBLIA v4.0.0 — Scientific Review Platform
-*Complete context for AI agents and developers — 2min read*
+# Scientific Review Platform - README-BÍBLIA
+# Version 3.2.0 · 2025-01-11
 
-## 1. Purpose & Pitch
+## 1. Purpose & Pitch (≤30 lines)
+Scientific Review Platform is a comprehensive application for managing and reviewing academic content with community features. The platform enables users to view, comment on, and interact with scientific articles and reviews while providing administrative tools for content management.
 
-**Mission:** Advanced scientific literature review platform focused on medical/academic content analysis and community engagement.
+**Core Value Proposition:**
+- Advanced article review system with native and PDF viewing modes
+- Community-driven discussions and voting mechanisms  
+- Administrative content management interface
+- Performance-optimized database layer with RLS security
+- Real-time analytics and performance monitoring
 
-**Core Value Props:**
-- Native block-based review editor with modular content system
-- AI-enhanced review workflows with structured metadata
-- Community-driven discussion threads with voting and polls
-- Administrative content management with fine-grained permissions
-- Real-time collaboration features with live user presence
+**Current Phase:** Database Performance Optimization & Architecture Refinement
 
-**Target Users:** Medical researchers, academic reviewers, journal editors, scientific communities.
-
-**Tech Stack:** React 18 + TypeScript + Vite + Tailwind + shadcn/ui + Supabase + TanStack Query
-
-## 2. Glossary
-
+## 2. Glossary (60 lines)
 | Term | Definition |
 |------|------------|
-| **Issue** | Published scientific review containing multiple blocks (articles, analyses, etc.) |
-| **Review Block** | Modular content unit (text, image, poll, data visualization) within an issue |
-| **Native Editor** | Custom block-based WYSIWYG editor for creating/editing reviews |
-| **Post** | Community discussion thread with optional polls and media attachments |
-| **Profile** | User account with role-based permissions (user/admin) |
-| **Flair** | Categorization tags for posts with custom colors |
-| **Archive** | Historical view of all published issues with filtering capabilities |
-| **Sidebar Store** | Global state management for real-time user activity and stats |
-| **Section Visibility** | Configurable homepage layout system with drag-and-drop ordering |
-| **Block Management** | Editor state system handling block CRUD operations with undo/redo |
-| **Poll System** | Interactive voting components embedded in posts and review blocks |
-| **Comment Thread** | Hierarchical discussion system with voting and nested replies |
-| **RLS Policies** | Row-level security ensuring proper data access control |
-| **Supabase Functions** | Server-side logic for complex operations and data aggregation |
-| **TanStack Query** | Data fetching and caching layer with optimistic updates |
+| **Issue** | A scientific article/paper entry in the database with associated review content |
+| **Review Blocks** | Modular content components that make up a native review (text, images, polls, etc.) |
+| **RLS** | Row-Level Security - PostgreSQL security policies controlling data access |
+| **Native Review** | Custom-formatted review content using our block system vs PDF viewing |
+| **Enhanced Article Viewer** | Main component for displaying articles with multiple view modes |
+| **Performance Optimizer** | System for monitoring and optimizing database/frontend performance |
+| **TanStack Query** | React query library used for data fetching and caching |
+| **Supabase RPC** | Remote procedure calls to custom database functions |
+| **Auth Context** | React context managing user authentication and permissions |
+| **Query Keys** | Centralized factory for TanStack Query cache keys |
+| **Optimistic Updates** | UI updates before server confirmation for better UX |
+| **Code Splitting** | Breaking JavaScript bundles into smaller chunks for faster loading |
 
-## 3. High-Level Architecture
-
+## 3. High-Level Architecture (120 lines)
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                    FRONTEND LAYER (React/TS)                   │
+│                     FRONTEND LAYER                             │
 ├─────────────────────────────────────────────────────────────────┤
-│ Pages: Dashboard | Community | Archive | Edit | IssueView       │
-│ Layouts: DashboardLayout with Sidebar + Main Content           │
-│ Contexts: AuthContext (Supabase Auth integration)              │
+│ React Router → App.tsx → Layout → Page Components              │
+│                                                                 │
+│ Key Components:                                                 │
+│ • DashboardLayout (Shell)                                      │
+│ • EnhancedArticleViewer (Article display)                      │
+│ • Edit (Admin panel with 7 tabs)                              │
+│ • Dashboard (Homepage with dynamic sections)                   │
+│                                                                 │
+│ State Management:                                               │
+│ • AuthContext (User authentication & permissions)              │
+│ • TanStack Query (Data fetching & caching)                    │
+│ • Zustand (Real-time sidebar data)                            │
+│                                                                 │
+│ Performance Systems:                                            │
+│ • useOptimizedQuery (Request deduplication & caching)         │
+│ • usePerformanceMonitoring (Real-time metrics)                │
+│ • useRPCPerformanceMonitoring (Database call tracking)        │
 ├─────────────────────────────────────────────────────────────────┤
-│                    COMPONENT ARCHITECTURE                      │
+│                     API/BACKEND LAYER                          │
 ├─────────────────────────────────────────────────────────────────┤
-│ /editor: NativeEditor, BlockEditor, ReviewPreview              │
-│ /review: ReviewRenderer, BlockRenderer, ReviewActions          │
-│ /community: PostCard, PostContent, PollSection                 │
-│ /comments: CommentForm, CommentThread, CommentActions          │
-│ /navigation: Sidebar, TopNav with auth/role controls           │
-│ /admin: HomepageManager, UserManagement, ContentModeration     │
-│ /homepage: FeaturedCarousel, RecentIssues, UpcomingReleases    │
+│ Supabase Client → RLS Policies → Custom Functions             │
+│                                                                 │
+│ Key RPC Functions:                                              │
+│ • get_optimized_issues() - Main issue fetching                │
+│ • get_review_with_blocks() - Native review content            │
+│ • get_sidebar_stats() - Community statistics                  │
+│ • get_query_performance_stats() - Performance monitoring      │
+│                                                                 │
+│ Security Layer:                                                 │
+│ • Row-Level Security (RLS) policies on all tables            │
+│ • Role-based access control (admin, user)                     │
+│ • Function-level security with SECURITY DEFINER              │
 ├─────────────────────────────────────────────────────────────────┤
-│                    STATE MANAGEMENT                            │
+│                     DATABASE LAYER                             │
 ├─────────────────────────────────────────────────────────────────┤
-│ Global: Zustand sidebarStore (online users, stats)            │
-│ Local: useState, useReducer for component state               │
-│ Server: TanStack Query for API state with background sync     │
-│ Forms: React Hook Form with Zod validation                    │
-├─────────────────────────────────────────────────────────────────┤
-│                    API/DATA LAYER                              │
-├─────────────────────────────────────────────────────────────────┤
-│ Supabase Client: Real-time subscriptions + REST operations    │
-│ Database: PostgreSQL with RLS policies for multi-tenant       │
-│ Functions: Server-side aggregations and complex queries       │
-│ Auth: Supabase Auth with email/password + role-based access   │
+│ PostgreSQL + Supabase Extensions                               │
+│                                                                 │
+│ Core Tables:                                                    │
+│ • issues (articles/papers)                                     │
+│ • review_blocks (native review content)                       │
+│ • profiles (user data)                                         │
+│ • posts/comments (community features)                         │
+│ • review_analytics (performance tracking)                     │
+│                                                                 │
+│ Performance Features:                                           │
+│ • Materialized views for expensive queries                    │
+│ • Optimized indexes on foreign keys                           │
+│ • Custom aggregation functions                                 │
+│ • Query performance monitoring                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**Data Flow Pattern:**
-1. User action triggers React event → 2. Hook validates + calls Supabase → 3. RLS policies enforce access → 4. TanStack Query caches response → 5. UI updates reactively
+## 4. User Journeys (150 lines)
+### Primary User Flow: Article Reading
+```
+1. User visits homepage (/)
+   → Dashboard component loads
+   → useParallelDataLoader fetches multiple data sources
+   → Dynamic section rendering based on configuration
 
-## 4. User Journeys
+2. User clicks article
+   → Navigate to /article/:id
+   → EnhancedArticleViewer loads
+   → Fetch issue data + review blocks
+   → Display with view mode controls (native/pdf/dual)
 
-### Reviewer Journey (Primary)
-1. **Login** → Dashboard with recent activity overview
-2. **Create Review** → Native Editor with block-based content creation
-3. **Add Blocks** → Text, images, polls, data visualizations from palette
-4. **Preview/Edit** → Real-time split-view editor with live preview
-5. **Publish** → Issue becomes visible in archive and homepage
-6. **Monitor Engagement** → View comments, polls results, community feedback
+3. User interacts with content
+   → Reading mode controls (normal/browser-fullscreen/system-fullscreen)
+   → Analytics tracking via review_analytics table
+   → Comment system with voting
+```
 
-### Community Member Journey
-1. **Browse** → Homepage with featured content and recent issues
-2. **Read Reviews** → Full-screen issue view with interactive elements
-3. **Engage** → Comment threads, poll voting, bookmark content
-4. **Participate** → Create posts in community section with media/polls
-5. **Discover** → Archive browsing with specialty/year filters
+### Admin User Flow: Content Management
+```
+1. Admin access check
+   → AuthContext validates admin role
+   → Navigate to /edit
+   → 7-tab admin interface loads
 
-### Admin Journey
-1. **Content Management** → Review submissions, moderate discussions
-2. **User Management** → Role assignment, profile moderation
-3. **Homepage Config** → Section visibility, ordering, featured content
-4. **Analytics** → User engagement metrics, content performance
+2. Content management
+   → Issue creation/editing via IssueEditor
+   → Review block management
+   → User management panel
+   → Analytics dashboard
 
-## 5. Domain Modules Index
+3. Real-time updates
+   → Optimistic UI updates
+   → Database synchronization
+   → Performance monitoring
+```
 
-### Core Content System
-- `src/types/issue.ts` - Issue and review data structures
-- `src/types/review.ts` - Review block types and metadata schemas
-- `src/components/review/` - Review rendering and display components
-- `src/components/editor/` - Native block-based editor system
+### Performance-Critical Paths:
+- Homepage loading: Multiple parallel queries with aggressive caching
+- Article viewing: Single RPC call with joined data
+- Admin operations: Optimistic updates with rollback mechanisms
 
-### Community Platform
-- `src/types/community.ts` - Post, comment, poll data structures
-- `src/components/community/` - Post cards, content display, interactions
-- `src/components/comments/` - Threaded commenting system with voting
-- `src/hooks/comments/` - Comment CRUD operations and state management
+## 5. Domain Modules Index (∞)
+### Authentication & Authorization (`/src/hooks/`)
+- `AuthContext.tsx` - User authentication state management
+- Role-based access control with admin/user distinction
+- Integrated with Supabase auth system
 
-### User Management & Auth
-- `src/contexts/AuthContext.tsx` - Supabase auth integration and state
-- `src/types/auth.ts` - User profile and permission structures
-- `src/components/admin/` - Administrative interfaces and controls
+### Data Fetching & Performance (`/src/hooks/`)
+- `useOptimizedQuery.ts` - Central query optimization with deduplication
+- `usePerformanceMonitoring.ts` - Real-time performance metrics
+- `useRPCPerformanceMonitoring.ts` - Database call performance tracking
+- `usePerformanceOptimizer.ts` - Automated performance optimization
 
-### UI/UX Foundation
-- `src/components/ui/` - shadcn/ui component library integration
-- `src/components/navigation/` - Sidebar, navigation, layout components
-- `src/components/homepage/` - Landing page sections and carousels
+### Article Management (`/src/pages/dashboard/`)
+- `EnhancedArticleViewer.tsx` - Main article display component
+- `ArticleViewer.tsx` - Standard article viewer
+- Multiple view modes: native review, PDF, dual-pane
+- Reading mode controls with fullscreen support
 
-### Data & State Management
-- `src/stores/` - Zustand stores for global state (sidebar, user activity)
-- `src/hooks/` - Custom hooks for data fetching and business logic
-- `src/integrations/supabase/` - Database client and type definitions
+### Admin Interface (`/src/pages/dashboard/`)
+- `Edit.tsx` - Main admin panel with 7 specialized tabs
+- `IssueEditor.tsx` - Article creation and editing
+- Comprehensive content management tools
 
-## 6. Data & API Schemas
+### Community Features (`/src/components/`)
+- Post/comment system with voting mechanisms
+- Real-time user activity tracking
+- Community statistics and analytics
 
-### Core Tables Schema
-
-**issues** (Main review content)
+## 6. Data & API Schemas (∞)
+### Core Database Tables
 ```sql
-id: uuid PRIMARY KEY
-title: text NOT NULL
-content: text  
-cover_image_url: text
-specialty: text NOT NULL (medical field)
-authors: text
-year: text
-published: boolean DEFAULT false
-featured: boolean DEFAULT false
-score: integer DEFAULT 0
-review_type: text DEFAULT 'pdf'
+-- Issues (Articles/Papers)
+issues: {
+  id: uuid,
+  title: text,
+  description: text,
+  authors: text, -- NOTE: Schema flaw, should be FK to profiles
+  specialty: text,
+  published: boolean,
+  featured: boolean,
+  score: integer,
+  article_pdf_url: text,
+  review_content: jsonb
+}
+
+-- Review Blocks (Native Review Content)
+review_blocks: {
+  id: bigint,
+  issue_id: uuid,
+  type: text,
+  payload: jsonb,
+  sort_index: integer,
+  visible: boolean
+}
+
+-- User Profiles
+profiles: {
+  id: uuid,
+  full_name: text,
+  avatar_url: text,
+  role: text, -- 'admin' | 'user'
+  specialty: text,
+  bio: text,
+  institution: text
+}
 ```
 
-**review_blocks** (Modular content system)
+### Key RPC Functions
 ```sql
-id: bigint PRIMARY KEY
-issue_id: uuid → issues.id
-type: text NOT NULL (text|image|poll|data|heading)
-payload: jsonb NOT NULL (block-specific data)
-sort_index: integer NOT NULL
-visible: boolean DEFAULT true
-meta: jsonb DEFAULT '{}'
+-- Optimized issue fetching with caching
+get_optimized_issues(p_limit, p_offset, p_specialty, p_featured_only, p_include_unpublished)
+→ Returns paginated issues with performance optimization
+
+-- Review content with blocks
+get_review_with_blocks(review_id)
+→ Returns issue with associated review blocks and polls
+
+-- Performance monitoring
+get_query_performance_stats()
+→ Returns database performance metrics for monitoring
 ```
 
-**posts** (Community discussions)
-```sql
-id: uuid PRIMARY KEY
-user_id: uuid → profiles.id
-title: text NOT NULL
-content: text
-image_url: text
-video_url: text
-flair_id: uuid → post_flairs.id
-published: boolean DEFAULT false
-score: integer DEFAULT 0
-pinned: boolean DEFAULT false
-poll_id: uuid → polls.id
-```
-
-**comments** (Threaded discussions)
-```sql
-id: uuid PRIMARY KEY
-user_id: uuid → profiles.id
-content: text NOT NULL
-parent_id: uuid → comments.id (for threading)
-article_id: uuid → articles.id
-issue_id: uuid → issues.id  
-post_id: uuid → posts.id
-score: integer DEFAULT 0
-```
-
-**profiles** (User accounts)
-```sql
-id: uuid PRIMARY KEY → auth.users.id
-full_name: text
-avatar_url: text
-role: text DEFAULT 'user' (user|admin)
-specialty: text
-bio: text
-institution: text
-```
-
-### API Patterns
-
-**TanStack Query Integration**
-```typescript
-// Data fetching with caching
-const { data: issues } = useQuery({
-  queryKey: ['issues', specialty],
-  queryFn: () => supabase.from('issues').select('*')
-});
-
-// Optimistic updates
-const mutation = useMutation({
-  mutationFn: updateIssue,
-  onMutate: async (newData) => {
-    await queryClient.cancelQueries(['issues']);
-    queryClient.setQueryData(['issues'], old => [...old, newData]);
-  }
-});
-```
-
-**Supabase RLS Policy Pattern**
-```sql
--- Users can only modify their own content
-CREATE POLICY "Users manage own posts" ON posts
-  FOR ALL USING (auth.uid() = user_id);
-
--- Public read access for published content  
-CREATE POLICY "Public read published" ON issues
-  FOR SELECT USING (published = true);
-```
-
-## 7. UI Component Index
-
+## 7. UI Component Index (∞)
 ### Layout Components
-- `DashboardLayout.tsx` - Main application shell with sidebar + content
-- `Sidebar.tsx` - Navigation with user presence, stats, quick actions
-- `TopNav.tsx` - Header with auth controls and global actions
+- `DashboardLayout.tsx` - Main application shell
+- `Sidebar.tsx` - Navigation and real-time stats
+- `UnifiedViewerControls.tsx` - Article viewer controls
 
-### Editor Components
-- `NativeEditor.tsx` - Main editor container with split-view capability
-- `BlockEditor.tsx` - Block management and ordering interface
-- `BlockPalette.tsx` - Draggable block type selector
-- `ReviewPreview.tsx` - Real-time rendered preview of review content
-- `BlockRenderer.tsx` - Individual block rendering with type switching
+### Article Components
+- `EnhancedArticleViewer.tsx` - Main article display
+- `BlockRenderer.tsx` - Review block rendering
+- `ArticleActions.tsx` - Article interaction controls
+- `FloatingViewerControls.tsx` - Overlay controls
 
-### Content Display
-- `ReviewRenderer.tsx` - Full review display with navigation and metadata
-- `PostCard.tsx` - Community post display with media and poll support
-- `CommentThread.tsx` - Hierarchical comment display with voting
-- `IssueCard.tsx` - Issue preview cards for archive and homepage
+### Admin Components
+- `Edit.tsx` - Main admin interface
+- `HomepageManager.tsx` - Homepage configuration
+- `IssuesManagementPanel.tsx` - Issue management
+- `EnhancedAnalyticsDashboard.tsx` - Performance analytics
+
+### Performance Components
+- `PageLoader.tsx` - Loading states for code-split routes
+- `DataErrorBoundary.tsx` - Error handling for data fetching
+- `QueryOptimizationProvider.tsx` - Performance wrapper
+
+## 8. Design Language (120 lines)
+### Visual Design System
+- **Color Scheme:** Dark theme with blue accents (#3b82f6)
+- **Background:** Dark grays (#121212, #1a1a1a, #2a2a2a)
+- **Text:** White primary (#ffffff), light gray secondary (#d1d5db)
+- **Components:** Shadcn/ui with custom dark theme adaptations
+
+### Typography
+- **Headers:** Bold sans-serif, size scaling for hierarchy
+- **Body:** Regular sans-serif for readability
+- **Code:** Monospace for technical content
 
 ### Interactive Elements
-- `PollSection.tsx` - Poll voting interface with real-time results
-- `CommentForm.tsx` - Comment composition with formatting and media upload
-- `VotingControls.tsx` - Upvote/downvote buttons with score display
-- `BookmarkButton.tsx` - Save/unsave content functionality
+- **Buttons:** Consistent hover states and loading indicators
+- **Navigation:** Clear active states and smooth transitions
+- **Forms:** Proper validation states and error handling
 
-### Admin Interfaces
-- `HomepageManager.tsx` - Configure homepage sections and visibility
-- `UserManagement.tsx` - User role assignment and profile moderation
-- `ContentModeration.tsx` - Review flagged content and manage reports
+### Layout Principles
+- **Responsive:** Mobile-first approach with breakpoint optimization
+- **Grid:** Flexible layouts adapting to content
+- **Spacing:** Consistent padding/margins using Tailwind scale
+- **Focus:** Clear keyboard navigation and accessibility
 
-### Utility Components
-- `LoadingSpinner.tsx` - Consistent loading states across the app
-- `ErrorBoundary.tsx` - Error handling and fallback UI
-- `ConfirmDialog.tsx` - Confirmation modals for destructive actions
-- `Toast.tsx` - Success/error notification system
+### Component States
+- **Loading:** Skeleton states and spinners
+- **Error:** Clear error messages with retry options
+- **Empty:** Helpful empty states with action suggestions
 
-## 8. Design Language
+## 9. Accessibility Contract (100 lines)
+### Keyboard Navigation
+- All interactive elements accessible via keyboard
+- Proper focus management in modals and overlays
+- Tab order follows logical content flow
 
-### Color System
-**Primary Palette:**
-- `primary`: #3b82f6 (Blue-500) - Main brand color for CTAs and links
-- `secondary`: #64748b (Slate-500) - Secondary actions and muted elements  
-- `accent`: #10b981 (Emerald-500) - Success states and positive actions
-- `destructive`: #ef4444 (Red-500) - Error states and destructive actions
+### Screen Reader Support
+- Semantic HTML structure with proper headings
+- ARIA labels for complex components
+- Alt text for all meaningful images
 
-**Semantic Colors:**
-- `background`: #0f172a (Slate-900) - Main dark background
-- `surface`: #1e293b (Slate-800) - Cards and elevated surfaces
-- `border`: #334155 (Slate-700) - Subtle borders and dividers
-- `text-primary`: #f8fafc (Slate-50) - Primary text content
-- `text-secondary`: #94a3b8 (Slate-400) - Secondary text and metadata
+### Visual Accessibility
+- High contrast ratios meeting WCAG standards
+- Scalable text supporting zoom up to 200%
+- Clear visual focus indicators
 
-### Typography Scale
-```css
-/* Headings */
-h1: text-4xl font-bold (36px)
-h2: text-3xl font-semibold (30px)  
-h3: text-2xl font-semibold (24px)
-h4: text-xl font-medium (20px)
+### Motor Accessibility
+- Large touch targets (minimum 44px)
+- Generous spacing between interactive elements
+- Forgiving click/tap areas
 
-/* Body */
-body: text-base (16px) - Main content text
-small: text-sm (14px) - Metadata and secondary info
-caption: text-xs (12px) - Fine print and labels
-```
+## 10. Performance Budgets (80 lines)
+### Frontend Performance Targets
+- **Initial Bundle:** <500KB gzipped
+- **Route Chunks:** <200KB gzipped per route
+- **Time to Interactive:** <3 seconds on 3G
+- **Core Web Vitals:** LCP <2.5s, FID <100ms, CLS <0.1
 
-### Component Patterns
-**Cards:** Consistent `border border-white/10 bg-white/5` styling with subtle transparency
-**Buttons:** Primary uses brand blue, secondary uses transparent with border
-**Forms:** Dark backgrounds with focus states and clear validation feedback
-**Navigation:** Active states with subtle highlighting and smooth transitions
+### Database Performance Targets
+- **Query Response:** P95 <500ms for standard queries
+- **RLS Policy Evaluation:** <50ms per policy
+- **Index Usage:** >90% index scans vs table scans
+- **Connection Pool:** <80% utilization under normal load
 
-### Spacing System
-Based on Tailwind's rem-based scale: 4px, 8px, 12px, 16px, 24px, 32px, 48px, 64px
+### API Performance Targets
+- **Response Time:** P95 <1 second
+- **Error Rate:** <1% under normal conditions
+- **Throughput:** Support 1000+ concurrent users
+- **Cache Hit Rate:** >80% for cached queries
 
-### Animation Standards
-- **Micro-interactions:** 150ms ease-out for hover states
-- **Page transitions:** 300ms ease-in-out for route changes
-- **Loading states:** Subtle pulse animation for skeleton loading
-- **Success feedback:** Brief scale animation for completed actions
-
-## 9. Accessibility Contract
-
-### WCAG 2.1 AA Compliance
-- **Color Contrast:** All text meets 4.5:1 ratio minimum against backgrounds
-- **Keyboard Navigation:** Full tab order support with visible focus indicators
-- **Screen Readers:** Semantic HTML with proper ARIA labels and landmarks
-- **Alt Text:** All images have descriptive alternative text
-
-### Accessibility Features
-- **Focus Management:** Proper focus trapping in modals and dropdowns
-- **Error Handling:** Clear error messages with field association
-- **Loading States:** Screen reader announcements for async operations
-- **Form Validation:** Real-time feedback with clear error descriptions
-
-### Testing Standards
-- **Automated:** ESLint accessibility rules enforced in CI/CD
-- **Manual:** Keyboard-only navigation testing for all user flows
-- **Screen Reader:** VoiceOver/NVDA testing for critical paths
-- **Color Blindness:** Deuteranopia/Protanopia simulation testing
-
-### Semantic Structure
-```html
-<!-- Proper heading hierarchy -->
-<main aria-label="Issue content">
-  <h1>Issue Title</h1>
-  <section aria-labelledby="content-heading">
-    <h2 id="content-heading">Review Content</h2>
-  </section>
-</main>
-```
-
-## 10. Performance Budgets
-
-### Core Web Vitals Targets
-- **LCP (Largest Contentful Paint):** < 2.5s on 3G connection
-- **FID (First Input Delay):** < 100ms for interactive elements
-- **CLS (Cumulative Layout Shift):** < 0.1 for visual stability
-
-### Bundle Size Limits
-- **Initial Bundle:** < 250KB gzipped (currently ~180KB)
-- **Route Chunks:** < 50KB per lazy-loaded page component
-- **Dependencies:** Regular audit with `webpack-bundle-analyzer`
-
-### Optimization Strategies
-**Code Splitting:**
-```typescript
-// Route-based splitting
-const Community = lazy(() => import('./pages/dashboard/Community'));
-const ArchivePage = lazy(() => import('./pages/dashboard/ArchivePage'));
-
-// Component-based splitting for heavy editor
-const NativeEditor = lazy(() => import('./components/editor/NativeEditor'));
-```
-
-**Image Optimization:**
-- WebP format with fallbacks for browser compatibility
-- Responsive images with `srcset` for different viewport sizes
-- Lazy loading for below-the-fold content with Intersection Observer
-
-**Data Fetching:**
-- TanStack Query caching reduces redundant API calls
-- Background refetching for stale data synchronization
-- Optimistic updates for immediate UI feedback
-
-### Memory Management
-- Cleanup of event listeners and subscriptions in `useEffect`
-- Proper React key props for efficient list rendering
-- Image cleanup and garbage collection for media-heavy content
-
-## 11. Security & Compliance
-
+## 11. Security & Compliance (100 lines)
 ### Authentication & Authorization
-**Supabase Auth Integration:**
-- Email/password authentication with secure session management
-- Role-based access control (user/admin) with database-level enforcement
-- JWT token validation on all protected routes
-
-**Row-Level Security (RLS):**
-```sql
--- Example policy ensuring users only access their own data
-CREATE POLICY "Users access own content" ON posts
-  FOR ALL USING (auth.uid() = user_id);
-
--- Public read access for published content
-CREATE POLICY "Public read published" ON issues  
-  FOR SELECT USING (published = true);
-```
+- **User Authentication:** Supabase Auth with secure session management
+- **Role-Based Access:** Admin/user roles with proper permission checks
+- **Row-Level Security:** Comprehensive RLS policies on all user-facing tables
+- **API Security:** Rate limiting and input validation
 
 ### Data Protection
-**Input Validation:**
-- Client-side validation with Zod schemas for type safety
-- Server-side validation through Supabase constraints
-- SQL injection prevention through parameterized queries
+- **Data Encryption:** At rest and in transit
+- **Personal Data:** Minimal collection with user consent
+- **Data Retention:** Automated cleanup of expired sessions
+- **Backup Strategy:** Regular automated backups with testing
 
-**Content Security:**
-- XSS prevention through React's built-in escaping
-- Content sanitization for user-generated HTML in comments
-- File upload validation for allowed mime types and size limits
+### Security Monitoring
+- **Performance Monitoring:** Real-time database and application metrics
+- **Error Tracking:** Comprehensive error logging and alerting
+- **Audit Trails:** User action logging for administrative functions
+- **Vulnerability Scanning:** Regular dependency and code security checks
 
-**Privacy Controls:**
-- User data deletion capabilities (GDPR compliance)
-- Audit logging for administrative actions
-- Anonymization options for sensitive user data
+## 12. Admin & Ops (120 lines)
+### Database Operations
+- **Migration Strategy:** Version-controlled schema changes
+- **Performance Monitoring:** Real-time query performance tracking
+- **Index Management:** Automated index usage analysis
+- **Backup & Recovery:** Automated daily backups with point-in-time recovery
 
-### Infrastructure Security
-- HTTPS enforced for all communications
-- Environment variable management for sensitive configuration
-- Regular dependency updates for security patches
-- Rate limiting on API endpoints to prevent abuse
+### Application Monitoring
+- **Performance Metrics:** Real-time frontend and backend monitoring
+- **Error Tracking:** Comprehensive error collection and analysis
+- **User Analytics:** Usage patterns and performance impact analysis
+- **Alerting:** Automated alerts for performance degradation
 
-## 12. Admin & Ops
+### Deployment
+- **Environment Management:** Development, staging, production
+- **CI/CD Pipeline:** Automated testing and deployment
+- **Feature Flags:** Gradual rollout of new features
+- **Rollback Strategy:** Quick rollback procedures for issues
 
-### Content Management
-**Homepage Configuration:**
-- Section visibility toggles with drag-and-drop ordering
-- Featured content selection and carousel management
-- Upcoming releases scheduling with automated publishing
+## 13. Analytics & KPIs (120 lines)
+### Performance KPIs
+- **Database Performance:** Query execution times, connection pool usage
+- **Frontend Performance:** Bundle sizes, loading times, user experience metrics
+- **API Performance:** Response times, error rates, throughput
 
-**User Administration:**
-- Role assignment (user → admin) with immediate permission updates
-- Profile moderation and content flagging review
-- Bulk operations for user management tasks
+### User Engagement KPIs
+- **Content Consumption:** Article views, reading completion rates
+- **Community Engagement:** Comments, votes, user-generated content
+- **Admin Efficiency:** Content management workflow metrics
 
-**Content Moderation:**
-- Report handling workflow for inappropriate content
-- Comment and post moderation queue
-- Automated content filtering for spam detection
+### Business KPIs
+- **User Growth:** New registrations, active users, retention rates
+- **Content Quality:** User feedback, content rating distributions
+- **System Health:** Uptime, error rates, performance stability
 
-### System Administration
-**Database Management:**
-```sql
--- Health check queries
-SELECT * FROM get_sidebar_stats(); -- Real-time platform metrics
-SELECT * FROM get_popular_issues(7, 10); -- Trending content analysis
-```
+## 14. TODO / Backlog (live)
+### High Priority (Performance Optimization Phase)
+- [ ] Complete RLS policy optimization for all flagged policies
+- [ ] Implement missing foreign key indexes
+- [ ] Execute schema normalization for issues.authors field
+- [ ] Implement route-based code splitting
+- [ ] Optimize frontend API client singleton pattern
 
-**Performance Monitoring:**
-- TanStack Query DevTools for cache inspection
-- Supabase dashboard for database performance metrics
-- Error tracking and logging through browser console
+### Medium Priority
+- [ ] Enhanced error boundary implementation
+- [ ] Comprehensive test coverage for critical paths
+- [ ] Advanced caching strategies for static content
+- [ ] Mobile responsiveness improvements
 
-**Backup & Recovery:**
-- Automated Supabase backups with point-in-time recovery
-- Export functionality for content portability
-- Data migration scripts for schema updates
+### Low Priority  
+- [ ] Advanced analytics dashboard features
+- [ ] Real-time collaboration features
+- [ ] Advanced search and filtering capabilities
+- [ ] Integration with external academic databases
 
-### Operational Workflows
-**Content Publishing:**
-1. Admin creates/edits issue in Native Editor
-2. Preview and review process with collaborative editing
-3. Publication triggers homepage updates and notifications
-4. Community engagement monitoring and moderation
-
-**User Support:**
-- Error logging and debugging information collection
-- User feedback collection through integrated forms
-- Performance issue investigation and resolution
-
-## 13. Analytics & KPIs
-
-### User Engagement Metrics
-**Content Interaction:**
-- Issue view counts and time spent reading
-- Comment thread engagement and reply rates
-- Poll participation and voting patterns
-- Bookmark and sharing frequency
-
-**Community Activity:**
-- Daily/Monthly active users tracked in sidebar store
-- Post creation and engagement rates
-- User retention and return visit patterns
-- Search query analysis for content discovery
-
-### Content Performance
-**Issue Analytics:**
-- View-to-engagement conversion rates
-- Comment generation per issue type
-- Popular specialty areas and trending topics
-- Geographic distribution of readership
-
-**Editor Effectiveness:**
-- Block type usage patterns in Native Editor
-- Edit session duration and completion rates
-- Preview-to-publish conversion rates
-- Content creation workflow optimization
-
-### Technical Performance
-**System Health:**
-```typescript
-// Real-time metrics collection
-const sidebarStore = useSidebarStore();
-const metrics = {
-  onlineUsers: sidebarStore.onlineUsers,
-  totalUsers: sidebarStore.stats?.totalUsers,
-  systemLoad: await supabase.rpc('get_query_performance_stats')
-};
-```
-
-**Database Performance:**
-- Query execution time monitoring
-- Cache hit rates for frequently accessed content
-- Database connection pool utilization
-- Storage usage and growth patterns
-
-### Business Intelligence
-**Revenue Indicators:** (Future implementation)
-- User subscription conversion rates
-- Premium feature adoption
-- Content creator monetization metrics
-
-**Growth Metrics:**
-- User acquisition channels and conversion
-- Content creation velocity and quality
-- Community health and moderation efficiency
-
-## 14. TODO / Backlog
-
-### High Priority (Current Sprint)
-- [ ] Add email notification system for community engagement
-- [ ] Optimize mobile responsive design for editor interface
-
-### Medium Priority (Next Quarter)
-- [ ] Advanced search functionality with filters and faceted search
-- [ ] User profile customization and social features
-- [ ] Content recommendation algorithm based on reading history
-- [ ] API rate limiting and quota management system
-- [ ] Advanced analytics dashboard for administrators
-
-### Low Priority (Future Releases)
-- [ ] PDF export functionality for issues and reviews
-- [ ] Integration with external reference management systems
-- [ ] Advanced role-based permissions with custom roles
-- [ ] Real-time chat system for community discussions
-
-### Technical Debt
-- [ ] Refactor large component files (HomepageManager, CommentForm, NativeEditor)
-- [ ] Implement comprehensive error boundary system
-- [ ] Add comprehensive test coverage (currently minimal)
-- [ ] Optimize bundle size with better code splitting
-- [ ] Standardize component prop interfaces and documentation
-
-### Infrastructure Improvements
-- [ ] Implement CDN for static asset delivery
-- [ ] Add database query optimization and indexing review
-- [ ] Set up automated performance monitoring and alerting
-- [ ] Implement backup verification and disaster recovery testing
-
-## 15. Revision History
-
+## 15. Revision History (live)
 | Version | Date | Changes | Author |
-|---------|------|---------|--------|
-| 4.0.0 | 2025-01-11 | Complete architecture rewrite based on current codebase analysis | AI System |
-| 3.1.0 | 2024-12-XX | Added community features and native editor | Previous Team |
-| 2.0.0 | 2024-11-XX | Migrated to Supabase backend | Previous Team |
-| 1.0.0 | 2024-10-XX | Initial platform launch | Previous Team |
-
-**v4.0.0 Changes Summary:**
-- Completely rewrote all sections based on actual codebase examination
-- Added comprehensive component and data flow documentation
-- Updated all schemas to match current database structure
-- Documented native editor and block-based content system
-- Added real community features and polling system
-- Updated security and performance guidelines
-- Expanded admin and operational procedures
-- Added analytics and KPI tracking framework
+|---------|------|---------|---------|
+| 3.2.0 | 2025-01-11 | Added performance optimization implementation phase documentation | System |
+| 3.1.0 | 2025-01-09 | Enhanced architecture documentation, added performance monitoring systems | System |
+| 3.0.0 | 2025-01-07 | Complete architectural documentation rewrite with current codebase analysis | System |
+| 2.0.0 | 2025-01-05 | Major update with database schema and performance analysis | System |
+| 1.0.0 | 2025-01-01 | Initial documentation framework | System |
 
 ---
-*This document serves as the single source of truth for the Scientific Review Platform architecture. All information has been verified against the current codebase as of January 11, 2025.*
+**Last Updated:** 2025-01-11  
+**Next Review:** 2025-01-25 (Post-Performance Optimization Phase)
+
