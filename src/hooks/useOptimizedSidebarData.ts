@@ -67,15 +67,15 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
     data: statsData, 
     isLoading: statsLoading, 
     error: statsError 
-  } = useOptimizedQuery<SidebarStats>(
+  } = useOptimizedQuery<SidebarStats | null>(
     queryKeys.sidebarStats(),
-    async (): Promise<SidebarStats> => {
+    async (): Promise<SidebarStats | null> => {
       try {
         const { data, error } = await supabase.rpc('get_sidebar_stats');
         
         if (error) {
           console.warn('Sidebar stats error:', error);
-          return getDefaultStats();
+          return null;
         }
         
         // Type-safe conversion with validation
@@ -90,11 +90,11 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
           };
         }
         
-        // Fallback default stats
-        return getDefaultStats();
+        // Return null instead of default stats for better error handling
+        return null;
       } catch (error) {
         console.warn('Sidebar stats error:', error);
-        return getDefaultStats();
+        return null;
       }
     },
     {
@@ -187,7 +187,7 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
 
   return useMemo(() => ({
     stats: {
-      data: statsData ?? null, // Explicitly handle undefined case
+      data: statsData ?? null, // Now properly typed as SidebarStats | null
       isLoading: statsLoading,
       error: statsError,
     },
