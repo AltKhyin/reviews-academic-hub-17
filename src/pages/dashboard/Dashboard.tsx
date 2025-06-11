@@ -97,8 +97,9 @@ const Dashboard = () => {
     .slice(0, 10);
 
   // Get enabled sections in order from the integrated configuration
+  // Fix: Use 'visible' property instead of 'enabled'
   const enabledSections = sectionVisibility
-    .filter(section => section.enabled)
+    .filter(section => section.visible) 
     .sort((a, b) => a.order - b.order);
 
   console.log('Dashboard: Visible sections from integrated config:', enabledSections.map(s => `${s.id} (order: ${s.order})`));

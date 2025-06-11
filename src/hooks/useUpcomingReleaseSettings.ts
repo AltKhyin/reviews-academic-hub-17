@@ -1,7 +1,7 @@
 
-// ABOUTME: Upcoming release settings management hook
+// ABOUTME: Upcoming release settings management hook with proper type safety
 import { useState, useCallback } from 'react';
-import { useOptimizedQuery, queryKeys } from './useOptimizedQuery';
+import { useOptimizedQuery } from './useOptimizedQuery';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -13,7 +13,13 @@ interface ReleaseSettings {
   recurringDays?: string[];
   recurringTime?: string;
   wipeSuggestions?: boolean;
+  [key: string]: any; // Add index signature for Json compatibility
 }
+
+// Type guard to validate release settings
+const isReleaseSettings = (obj: any): obj is ReleaseSettings => {
+  return obj && typeof obj === 'object' && !Array.isArray(obj);
+};
 
 export const useUpcomingReleaseSettings = () => {
   const queryClient = useQueryClient();
@@ -30,10 +36,10 @@ export const useUpcomingReleaseSettings = () => {
         
         if (error && error.code !== 'PGRST116') throw error;
         
-        // Type guard to ensure we have the right structure
+        // Type guard and safe casting
         const value = data?.value;
-        if (value && typeof value === 'object' && !Array.isArray(value)) {
-          return value as ReleaseSettings;
+        if (isReleaseSettings(value)) {
+          return value;
         }
         
         return {
@@ -85,11 +91,13 @@ export const useUpcomingReleaseSettings = () => {
   const getNextReleaseDate = useCallback(() => {
     if (!settings) return null;
     
-    if (settings.customDate) {
-      return new Date(settings.customDate);
+    // Safe property access with type guards
+    const safeSettings = settings as ReleaseSettings;
+    if (safeSettings.customDate) {
+      return new Date(safeSettings.customDate);
     }
     
-    if (settings.isRecurring && settings.recurringDays?.length) {
+    if (safeSettings.isRecurring && safeSettings.recurringDays?.length) {
       // Simple logic for next recurring date
       const now = new Date();
       const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);

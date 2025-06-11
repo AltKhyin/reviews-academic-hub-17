@@ -1,93 +1,59 @@
-// ABOUTME: Unified section registry - single source of truth for all homepage sections
+
+// ABOUTME: Section registry configuration for homepage management
 export interface SectionDefinition {
   id: string;
   title: string;
-  component: string;
-  order: number;
   defaultVisible: boolean;
-  adminOnly: boolean;
+  defaultOrder: number;
+  adminOnly?: boolean;
   description?: string;
 }
 
-export const SECTION_REGISTRY: Record<string, SectionDefinition> = {
-  reviewer: {
+export const SECTION_REGISTRY: SectionDefinition[] = [
+  {
     id: 'reviewer',
-    title: 'Reviewer Notes',
-    component: 'ReviewerNotesSection',
-    order: 0,
+    title: 'Comentários dos Revisores',
     defaultVisible: true,
-    adminOnly: true,
-    description: 'Administrative reviewer notes and comments'
+    defaultOrder: 0,
+    description: 'Comentários e notas dos revisores'
   },
-  featured: {
+  {
     id: 'featured',
-    title: 'Featured Issue',
-    component: 'FeaturedSection',
-    order: 1,
+    title: 'Edição em Destaque',
     defaultVisible: true,
-    adminOnly: false,
-    description: 'Highlighted featured issue of the month'
+    defaultOrder: 1,
+    description: 'Edição principal em destaque na página'
   },
-  upcoming: {
+  {
     id: 'upcoming',
-    title: 'Próxima Edição',
-    component: 'UpcomingSection',
-    order: 2,
+    title: 'Próximas Edições',
     defaultVisible: true,
-    adminOnly: false,
-    description: 'Information about upcoming releases'
+    defaultOrder: 2,
+    description: 'Seção de próximas edições'
   },
-  recent: {
+  {
     id: 'recent',
-    title: 'Recent Issues',
-    component: 'RecentSection',
-    order: 3,
+    title: 'Edições Recentes',
     defaultVisible: true,
-    adminOnly: false,
-    description: 'Latest published issues'
+    defaultOrder: 3,
+    description: 'Edições publicadas recentemente'
   },
-  recommended: {
+  {
     id: 'recommended',
-    title: 'Recommended',
-    component: 'RecommendedSection',
-    order: 4,
+    title: 'Recomendadas',
     defaultVisible: true,
-    adminOnly: false,
-    description: 'Recommended content based on user preferences'
+    defaultOrder: 4,
+    description: 'Edições recomendadas para o usuário'
   },
-  trending: {
+  {
     id: 'trending',
-    title: 'Trending',
-    component: 'TrendingSection',
-    order: 5,
+    title: 'Mais Acessadas',
     defaultVisible: true,
-    adminOnly: false,
-    description: 'Currently trending and popular content'
+    defaultOrder: 5,
+    description: 'Edições com mais visualizações'
   }
-} as const;
+];
 
-export type SectionId = keyof typeof SECTION_REGISTRY;
-
-// Utility functions for section management
 export const getSectionById = (id: string): SectionDefinition | undefined => {
-  return SECTION_REGISTRY[id as SectionId];
-};
-
-export const getAllSections = (): SectionDefinition[] => {
-  return Object.values(SECTION_REGISTRY).sort((a, b) => a.order - b.order);
-};
-
-export const getVisibleSections = (userIsAdmin: boolean = false): SectionDefinition[] => {
-  return getAllSections().filter(section => 
-    section.defaultVisible && (!section.adminOnly || userIsAdmin)
-  );
-};
-
-export const getDefaultSectionConfig = (userIsAdmin: boolean = false) => {
-  return getVisibleSections(userIsAdmin).map(section => ({
-    id: section.id,
-    title: section.title,
-    visible: section.defaultVisible,
-    order: section.order,
-  }));
+  return SECTION_REGISTRY.find(section => section.id === id);
 };

@@ -4,14 +4,20 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from '@/hooks/use-toast';
-import { SECTION_REGISTRY } from '@/config/sections';
+import { SECTION_REGISTRY, getSectionById } from '@/config/sections';
 
 export interface Section {
   id: string;
   title: string;
   visible: boolean;
   order: number;
+  [key: string]: any; // Add index signature for Json compatibility
 }
+
+// Type guard for section configuration
+const isSectionConfig = (obj: any): obj is Record<string, any> => {
+  return obj && typeof obj === 'object' && !Array.isArray(obj);
+};
 
 export const useOptimizedSectionVisibility = () => {
   const [sections, setSections] = useState<Section[]>([]);
@@ -31,7 +37,13 @@ export const useOptimizedSectionVisibility = () => {
         throw error;
       }
 
-      let sectionsConfig = settings?.value?.sections || {};
+      let sectionsConfig: Record<string, any> = {};
+      
+      // Safe type checking and property access
+      if (settings?.value && isSectionConfig(settings.value)) {
+        const value = settings.value as any;
+        sectionsConfig = value.sections || {};
+      }
       
       // Initialize with registry defaults if no settings exist
       if (!settings || Object.keys(sectionsConfig).length === 0) {
@@ -175,6 +187,11 @@ export const useOptimizedSectionVisibility = () => {
     return [...sections].sort((a, b) => a.order - b.order);
   }, [sections]);
 
+  // Get visible sections (alias for compatibility)
+  const getVisibleSections = useCallback(() => {
+    return sections.filter(section => section.visible).sort((a, b) => a.order - b.order);
+  }, [sections]);
+
   useEffect(() => {
     loadSections();
   }, [loadSections]);
@@ -187,5 +204,6 @@ export const useOptimizedSectionVisibility = () => {
     toggleSectionVisibility,
     resetToDefaults,
     getAllSections,
+    getVisibleSections, // Add this method for compatibility
   };
 };

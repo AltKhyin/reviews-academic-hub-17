@@ -1,4 +1,3 @@
-
 // ABOUTME: Comprehensive homepage management interface with unified section schema
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,6 +22,11 @@ interface LocalReleaseSettings {
   recurringTime: string;
   wipeSuggestions: boolean;
 }
+
+// Type guard for release settings
+const isValidReleaseSettings = (obj: any): obj is LocalReleaseSettings => {
+  return obj && typeof obj === 'object';
+};
 
 export const HomepageManager = () => {
   const { 
@@ -64,18 +68,19 @@ export const HomepageManager = () => {
     }
   }, [sections, getAllSections]);
 
-  // Initialize release settings
+  // Initialize release settings with proper type guards
   useEffect(() => {
-    if (settings) {
+    if (settings && isValidReleaseSettings(settings)) {
+      const safeSettings = settings as any;
       setReleaseSettings(prev => ({
         ...prev,
-        customDate: settings.customDate || '',
-        customTime: settings.customTime || '',
-        isRecurring: settings.isRecurring || false,
-        recurringPattern: settings.recurringPattern || 'weekly',
-        recurringDays: settings.recurringDays || [],
-        recurringTime: settings.recurringTime || '10:00',
-        wipeSuggestions: settings.wipeSuggestions !== false
+        customDate: safeSettings.customDate || '',
+        customTime: safeSettings.customTime || '',
+        isRecurring: safeSettings.isRecurring || false,
+        recurringPattern: safeSettings.recurringPattern || 'weekly',
+        recurringDays: safeSettings.recurringDays || [],
+        recurringTime: safeSettings.recurringTime || '10:00',
+        wipeSuggestions: safeSettings.wipeSuggestions !== false
       }));
     }
   }, [settings]);

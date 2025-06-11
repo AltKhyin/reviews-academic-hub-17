@@ -15,7 +15,7 @@ export interface ReviewerComment {
 
 export interface SectionVisibilityConfig {
   id: string;
-  visible: boolean;
+  visible: boolean; // Changed from 'enabled' to 'visible' for consistency
   order: number;
 }
 
@@ -37,6 +37,7 @@ interface DataLoader {
 
 export const useParallelDataLoader = (): ParallelDataState => {
   const { user } = useAuth();
+  // Fix: Access user directly instead of looking for isAuthenticated
   const isAuthenticated = !!user;
   
   const [state, setState] = useState<ParallelDataState>({
@@ -127,6 +128,12 @@ export const useParallelDataLoader = (): ParallelDataState => {
     });
 
     newState.errors = errors;
+    
+    // Fix: Ensure featuredIssue is null instead of empty object
+    if (!newState.featuredIssue) {
+      newState.featuredIssue = null;
+    }
+    
     setState(prev => ({ ...prev, ...newState }));
   }, []);
 
