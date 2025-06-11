@@ -1679,7 +1679,15 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      get_archive_metadata: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       get_current_user_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_current_user_id_optimized: {
         Args: Record<PropertyKey, never>
         Returns: string
       }
@@ -1756,6 +1764,34 @@ export type Database = {
           year: string
         }[]
       }
+      get_optimized_issues_v2: {
+        Args: {
+          p_limit?: number
+          p_offset?: number
+          p_specialty?: string
+          p_featured_only?: boolean
+          p_include_unpublished?: boolean
+          p_include_content?: boolean
+        }
+        Returns: {
+          id: string
+          title: string
+          cover_image_url: string
+          specialty: string
+          published_at: string
+          created_at: string
+          featured: boolean
+          published: boolean
+          score: number
+          description: string
+          authors: string
+          year: string
+        }[]
+      }
+      get_performance_metrics: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       get_popular_issues: {
         Args: { period_days?: number; max_items?: number }
         Returns: {
@@ -1815,6 +1851,10 @@ export type Database = {
         Returns: boolean
       }
       is_current_user_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
+      is_current_user_admin_optimized: {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
@@ -1913,6 +1953,10 @@ export type Database = {
       refresh_materialized_views: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      test_rls_no_recursion: {
+        Args: { _rel: unknown }
+        Returns: boolean
       }
       text2ltree: {
         Args: { "": string }

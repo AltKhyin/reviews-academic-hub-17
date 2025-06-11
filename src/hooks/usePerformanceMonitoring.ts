@@ -1,264 +1,220 @@
-// ABOUTME: Optimized performance monitoring with adaptive intervals and RPC integration
+// ABOUTME: Comprehensive performance monitoring system with Core Web Vitals and query tracking
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useOptimizedQuery, queryKeys, queryConfigs } from './useOptimizedQuery';
+import { useOptimizedQuery } from './useOptimizedQuery';
 import { supabase } from '@/integrations/supabase/client';
 
 interface PerformanceMetrics {
-  memoryUsage: number;
-  renderCount: number;
-  queryPerformance: {
-    activeConnections: number;
-    cacheHitRatio: number;
-    slowQueriesDetected: boolean;
-    averageQueryTime?: number;
-  };
-  lastUpdated: Date;
   // Core Web Vitals
-  lcp?: number;
-  fid?: number;
-  cls?: number;
-  pageLoadTime?: number;
-  networkLatency: number;
-  userExperience: number;
-}
-
-interface PerformanceConfig {
-  enableMonitoring: boolean;
-  intervalMs: number;
-  memoryThreshold: number;
-  enableAdaptiveInterval: boolean;
-}
-
-interface QueryPerformanceData {
-  active_connections: number;
-  cache_hit_ratio: number;
-  slow_queries_detected: boolean;
-  last_updated: string;
-}
-
-// Type guard for query performance data
-const isQueryPerformanceData = (data: unknown): data is QueryPerformanceData => {
-  return data !== null && 
-         typeof data === 'object' && 
-         'active_connections' in data &&
-         'cache_hit_ratio' in data &&
-         'slow_queries_detected' in data;
-};
-
-// Adaptive interval calculation based on performance score
-const getAdaptiveInterval = (performanceScore: number, userActivity: 'idle' | 'active' | 'high-load') => {
-  if (performanceScore < 70) return 15000; // 15s for poor performance
-  if (performanceScore > 90) return 120000; // 2min for excellent performance
+  lcp?: number; // Largest Contentful Paint
+  fid?: number; // First Input Delay
+  cls?: number; // Cumulative Layout Shift
   
-  // Adjust based on user activity
-  switch (userActivity) {
-    case 'high-load': return 15000;
-    case 'active': return 30000;
-    case 'idle': return 60000;
-    default: return 60000; // 1min default
-  }
-};
-
-export const usePerformanceMonitoring = (config: Partial<PerformanceConfig> = {}) => {
-  const defaultConfig: PerformanceConfig = {
-    enableMonitoring: true,
-    intervalMs: 60000, // 1 minute default
-    memoryThreshold: 100, // 100MB
-    enableAdaptiveInterval: true,
+  // Custom metrics
+  pageLoadTime: number;
+  memoryUsage: number;
+  networkLatency: number;
+  queryPerformance: {
+    averageQueryTime: number;
+    slowQueries: number;
+    totalQueries: number;
   };
+}
 
-  const finalConfig = { ...defaultConfig, ...config };
-  const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
-  const [userActivity, setUserActivity] = useState<'idle' | 'active' | 'high-load'>('idle');
-  const lastActivityRef = useRef(Date.now());
-  const intervalRef = useRef<NodeJS.Timeout>();
+interface NavigationTiming {
+  dns: number;
+  tcp: number;
+  request: number;
+  response: number;
+  processing: number;
+  load: number;
+}
 
-  // Query performance data using RPC function
-  const { data: queryPerformanceData, isLoading: queryPerfLoading } = useOptimizedQuery(
-    queryKeys.queryPerformance(),
-    async () => {
-      try {
-        const { data, error } = await supabase.rpc('get_query_performance_stats');
-        
-        if (error) {
-          console.error('Error fetching query performance:', error);
-          throw error;
+export const usePerformanceMonitoring = () => {
+  const [metrics, setMetrics] = useState<PerformanceMetrics>({
+    pageLoadTime: 0,
+    memoryUsage: 0,
+    networkLatency: 0,
+    queryPerformance: {
+      averageQueryTime: 0,
+      slowQueries: 0,
+      totalQueries: 0,
+    },
+  });
+
+  const queryTimesRef = useRef<number[]>([]);
+  const performanceObserverRef = useRef<PerformanceObserver | null>(null);
+
+  // Monitor Core Web Vitals
+  const setupWebVitalsMonitoring = useCallback(() => {
+    if (typeof window === 'undefined' || !('PerformanceObserver' in window)) return;
+
+    // Clean up existing observer
+    if (performanceObserverRef.current) {
+      performanceObserverRef.current.disconnect();
+    }
+
+    performanceObserverRef.current = new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) {
+        switch (entry.entryType) {
+          case 'largest-contentful-paint':
+            setMetrics(prev => ({ ...prev, lcp: entry.startTime }));
+            break;
+          case 'first-input':
+            setMetrics(prev => ({ 
+              ...prev, 
+              fid: (entry as PerformanceEventTiming).processingStart - entry.startTime 
+            }));
+            break;
+          case 'layout-shift':
+            if (!(entry as any).hadRecentInput) {
+              setMetrics(prev => ({ 
+                ...prev, 
+                cls: (prev.cls || 0) + (entry as any).value 
+              }));
+            }
+            break;
         }
-
-        // Type guard for the data
-        if (isQueryPerformanceData(data)) {
-          return data;
-        }
-
-        // Fallback if data structure is unexpected
-        return {
-          active_connections: 0,
-          cache_hit_ratio: 0,
-          slow_queries_detected: false,
-          last_updated: new Date().toISOString(),
-        } as QueryPerformanceData;
-      } catch (error) {
-        console.error('Query performance fetch error:', error);
-        return {
-          active_connections: 0,
-          cache_hit_ratio: 0,
-          slow_queries_detected: false,
-          last_updated: new Date().toISOString(),
-        } as QueryPerformanceData;
       }
+    });
+
+    try {
+      performanceObserverRef.current.observe({ 
+        entryTypes: ['largest-contentful-paint', 'first-input', 'layout-shift'] 
+      });
+    } catch (error) {
+      console.warn('Performance observer setup failed:', error);
+    }
+  }, []);
+
+  // Get navigation timing metrics
+  const getNavigationTiming = useCallback((): NavigationTiming | null => {
+    if (typeof window === 'undefined' || !window.performance) return null;
+
+    const timing = window.performance.timing;
+    
+    return {
+      dns: timing.domainLookupEnd - timing.domainLookupStart,
+      tcp: timing.connectEnd - timing.connectStart,
+      request: timing.responseStart - timing.requestStart,
+      response: timing.responseEnd - timing.responseStart,
+      processing: timing.domContentLoadedEventStart - timing.responseEnd,
+      load: timing.loadEventEnd - timing.loadEventStart,
+    };
+  }, []);
+
+  // Track query performance
+  const trackQueryPerformance = useCallback((duration: number) => {
+    queryTimesRef.current.push(duration);
+    
+    // Keep only last 100 queries
+    if (queryTimesRef.current.length > 100) {
+      queryTimesRef.current = queryTimesRef.current.slice(-100);
+    }
+
+    const averageQueryTime = queryTimesRef.current.reduce((sum, time) => sum + time, 0) / queryTimesRef.current.length;
+    const slowQueries = queryTimesRef.current.filter(time => time > 1000).length;
+
+    setMetrics(prev => ({
+      ...prev,
+      queryPerformance: {
+        averageQueryTime,
+        slowQueries,
+        totalQueries: queryTimesRef.current.length,
+      },
+    }));
+  }, []);
+
+  // Get memory usage
+  const updateMemoryUsage = useCallback(() => {
+    if (typeof window === 'undefined') return;
+
+    const memory = (performance as any).memory;
+    if (memory) {
+      setMetrics(prev => ({
+        ...prev,
+        memoryUsage: memory.usedJSHeapSize / (1024 * 1024), // Convert to MB
+      }));
+    }
+  }, []);
+
+  // Calculate overall performance score
+  const getPerformanceScore = useCallback((): number => {
+    let score = 100;
+
+    // LCP scoring (good < 2.5s, poor > 4s)
+    if (metrics.lcp) {
+      if (metrics.lcp > 4000) score -= 25;
+      else if (metrics.lcp > 2500) score -= 15;
+    }
+
+    // FID scoring (good < 100ms, poor > 300ms)
+    if (metrics.fid) {
+      if (metrics.fid > 300) score -= 20;
+      else if (metrics.fid > 100) score -= 10;
+    }
+
+    // CLS scoring (good < 0.1, poor > 0.25)
+    if (metrics.cls) {
+      if (metrics.cls > 0.25) score -= 20;
+      else if (metrics.cls > 0.1) score -= 10;
+    }
+
+    // Query performance
+    if (metrics.queryPerformance.averageQueryTime > 2000) score -= 15;
+    else if (metrics.queryPerformance.averageQueryTime > 1000) score -= 10;
+
+    // Memory usage (penalize high usage)
+    if (metrics.memoryUsage > 200) score -= 10;
+    else if (metrics.memoryUsage > 100) score -= 5;
+
+    return Math.max(0, score);
+  }, [metrics]);
+
+  // Query database performance metrics
+  const { data: dbMetrics } = useOptimizedQuery(
+    ['performance-metrics'],
+    async () => {
+      const { data, error } = await supabase.rpc('get_performance_metrics');
+      if (error) throw error;
+      return data;
     },
     {
-      ...queryConfigs.performance,
-      enabled: finalConfig.enableMonitoring,
-      refetchInterval: finalConfig.enableAdaptiveInterval 
-        ? getAdaptiveInterval(80, userActivity) // Default score of 80
-        : finalConfig.intervalMs,
+      staleTime: 2 * 60 * 1000, // 2 minutes
+      refetchInterval: 5 * 60 * 1000, // 5 minutes
     }
   );
 
-  // Safely access query performance data
-  const safeQueryData = isQueryPerformanceData(queryPerformanceData) ? queryPerformanceData : {
-    active_connections: 0,
-    cache_hit_ratio: 0,
-    slow_queries_detected: false,
-    last_updated: new Date().toISOString(),
-  };
-
-  // Monitor memory usage
-  const measureMemoryUsage = useCallback(() => {
-    if ('memory' in performance) {
-      const memory = (performance as any).memory;
-      return memory.usedJSHeapSize / (1024 * 1024); // Convert to MB
-    }
-    return 0;
-  }, []);
-
-  // Calculate performance score
-  const getPerformanceScore = useCallback(() => {
-    if (!metrics) return 80; // Default score
-    
-    let score = 100;
-    
-    // Memory usage impact
-    if (metrics.memoryUsage > 150) score -= 20;
-    else if (metrics.memoryUsage > 100) score -= 10;
-    
-    // Cache efficiency impact
-    if (metrics.queryPerformance.cacheHitRatio < 70) score -= 15;
-    else if (metrics.queryPerformance.cacheHitRatio < 85) score -= 5;
-    
-    // Core Web Vitals impact
-    if (metrics.lcp && metrics.lcp > 4000) score -= 20;
-    if (metrics.fid && metrics.fid > 300) score -= 15;
-    if (metrics.cls && metrics.cls > 0.25) score -= 10;
-    
-    return Math.max(0, Math.min(100, score));
-  }, [metrics]);
-
-  // Track user activity for adaptive intervals
+  // Setup monitoring on mount
   useEffect(() => {
-    const updateActivity = () => {
-      const now = Date.now();
-      const timeSinceLastActivity = now - lastActivityRef.current;
-      
-      if (timeSinceLastActivity < 10000) { // 10 seconds
-        setUserActivity('high-load');
-      } else if (timeSinceLastActivity < 60000) { // 1 minute
-        setUserActivity('active');
-      } else {
-        setUserActivity('idle');
-      }
-      
-      lastActivityRef.current = now;
-    };
+    setupWebVitalsMonitoring();
+    updateMemoryUsage();
 
-    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
-    events.forEach(event => {
-      document.addEventListener(event, updateActivity, { passive: true });
-    });
+    // Update memory usage periodically
+    const memoryInterval = setInterval(updateMemoryUsage, 30000);
 
     return () => {
-      events.forEach(event => {
-        document.removeEventListener(event, updateActivity);
-      });
-    };
-  }, []);
-
-  // Collect performance metrics
-  const collectMetrics = useCallback(() => {
-    if (!finalConfig.enableMonitoring) return;
-
-    const memoryUsage = measureMemoryUsage();
-    const renderCount = 1; // Simplified render tracking
-
-    // Get Core Web Vitals if available
-    let lcp, fid, cls, pageLoadTime;
-    
-    if ('getEntriesByType' in performance) {
-      const navigationEntries = performance.getEntriesByType('navigation') as PerformanceNavigationTiming[];
-      if (navigationEntries.length > 0) {
-        pageLoadTime = navigationEntries[0].loadEventEnd - navigationEntries[0].loadEventStart;
+      if (performanceObserverRef.current) {
+        performanceObserverRef.current.disconnect();
       }
-    }
-
-    const newMetrics: PerformanceMetrics = {
-      memoryUsage,
-      renderCount,
-      queryPerformance: {
-        activeConnections: safeQueryData.active_connections,
-        cacheHitRatio: safeQueryData.cache_hit_ratio,
-        slowQueriesDetected: safeQueryData.slow_queries_detected,
-        averageQueryTime: 100, // Default value
-      },
-      lastUpdated: new Date(),
-      lcp,
-      fid,
-      cls,
-      pageLoadTime,
-      networkLatency: 0, // Default value
-      userExperience: 85, // Default value
+      clearInterval(memoryInterval);
     };
+  }, [setupWebVitalsMonitoring, updateMemoryUsage]);
 
-    setMetrics(newMetrics);
-
-    // Log memory warnings
-    if (memoryUsage > finalConfig.memoryThreshold) {
-      console.warn(`High memory usage detected: ${memoryUsage.toFixed(2)}MB`);
-    }
-  }, [finalConfig, measureMemoryUsage, safeQueryData]);
-
-  // Set up performance collection interval
+  // Update page load time
   useEffect(() => {
-    if (!finalConfig.enableMonitoring) return;
-
-    const interval = finalConfig.enableAdaptiveInterval
-      ? getAdaptiveInterval(metrics?.queryPerformance.cacheHitRatio || 80, userActivity)
-      : finalConfig.intervalMs;
-
-    intervalRef.current = setInterval(collectMetrics, interval);
-
-    // Initial collection
-    collectMetrics();
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [collectMetrics, finalConfig, userActivity, metrics?.queryPerformance.cacheHitRatio]);
+    if (typeof window !== 'undefined' && window.performance) {
+      setMetrics(prev => ({
+        ...prev,
+        pageLoadTime: performance.now(),
+      }));
+    }
+  }, []);
 
   return {
-    metrics: metrics || {
-      memoryUsage: 0,
-      renderCount: 0,
-      queryPerformance: { activeConnections: 0, cacheHitRatio: 0, slowQueriesDetected: false },
-      lastUpdated: new Date(),
-      networkLatency: 0,
-      userExperience: 85,
-    },
-    isLoading: queryPerfLoading,
-    userActivity,
-    config: finalConfig,
-    getPerformanceScore: () => 80, // Placeholder
+    metrics,
+    dbMetrics,
+    trackQueryPerformance,
+    getPerformanceScore,
+    getNavigationTiming,
   };
 };
