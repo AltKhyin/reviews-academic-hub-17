@@ -1,5 +1,5 @@
 
-// ABOUTME: Optimized comment section with reduced console logging
+// ABOUTME: Comment section with fixed entity validation and type resolution
 import React from 'react';
 import { useComments } from '@/hooks/comments';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,10 +17,11 @@ interface CommentSectionProps {
 export const CommentSection: React.FC<CommentSectionProps> = ({ postId, articleId, issueId }) => {
   const { user } = useAuth();
   
-  // Determine entity type and ID
+  // Determine entity type and ID with proper validation
   let entityId: string = '';
-  let entityType: 'article' | 'issue' | 'post' = 'issue'; // Default to 'issue'
+  let entityType: EntityType = 'issue'; // Default fallback
   
+  // Priority order: postId > articleId > issueId
   if (postId) {
     entityId = postId;
     entityType = 'post';
@@ -32,11 +33,19 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, articleI
     entityType = 'issue';
   }
   
-  // Fix: Reduce excessive console logging - only log on entity change, not on every render
+  // Early return if no valid entity ID is provided
+  if (!entityId) {
+    console.error('CommentSection: No valid entity ID provided', { postId, articleId, issueId });
+    return (
+      <div className="text-center p-4 text-gray-400 border border-dashed border-gray-700 rounded-md">
+        Erro: Identificador de entidade não encontrado para comentários
+      </div>
+    );
+  }
+  
+  // Log entity initialization only once when entity changes
   React.useEffect(() => {
-    if (entityId) {
-      console.log(`CommentSection initialized for ${entityType} with ID: ${entityId}`);
-    }
+    console.log(`CommentSection initialized for ${entityType} with ID: ${entityId}`);
   }, [entityId, entityType]);
   
   const {
@@ -52,25 +61,41 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, articleI
     isVoting
   } = useComments(entityId, entityType);
 
-  // Create wrapper functions to handle the type mismatches
-  const handleAddComment = async (content: string): Promise<void> => {
-    await addComment(content);
-    return;
+  // Wrapper functions to handle async operations properly
+  const handleAddComment = async (content: string, imageUrl?: string): Promise<void> => {
+    try {
+      await addComment(content, imageUrl);
+    } catch (error) {
+      console.error('Error in handleAddComment:', error);
+      throw error; // Re-throw to let the form handle the error display
+    }
   };
 
   const handleDeleteComment = async (id: string): Promise<void> => {
-    await deleteComment(id);
-    return;
+    try {
+      await deleteComment(id);
+    } catch (error) {
+      console.error('Error in handleDeleteComment:', error);
+      throw error;
+    }
   };
 
-  const handleReplyToComment = async (params: { parentId: string; content: string }): Promise<void> => {
-    await replyToComment(params);
-    return;
+  const handleReplyToComment = async (params: { parentId: string; content: string; imageUrl?: string }): Promise<void> => {
+    try {
+      await replyToComment(params);
+    } catch (error) {
+      console.error('Error in handleReplyToComment:', error);
+      throw error;
+    }
   };
 
   const handleVoteComment = async (params: { commentId: string; value: 1 | -1 | 0 }): Promise<void> => {
-    await voteComment(params);
-    return;
+    try {
+      await voteComment(params);
+    } catch (error) {
+      console.error('Error in handleVoteComment:', error);
+      throw error;
+    }
   };
 
   return (
@@ -80,10 +105,13 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, articleI
         isLoading={isLoading}
       />
       
-      <CommentForm 
-        onSubmit={handleAddComment}
-        isSubmitting={isAddingComment}
-      />
+      {user && (
+        <CommentForm 
+          onSubmit={handleAddComment}
+          isSubmitting={isAddingComment}
+          placeholder={`Adicione um comentário sobre ${entityType === 'post' ? 'esta publicação' : entityType === 'article' ? 'este artigo' : 'esta edição'}...`}
+        />
+      )}
 
       <CommentList 
         comments={comments}

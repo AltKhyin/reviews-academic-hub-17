@@ -1,5 +1,5 @@
 
-// ABOUTME: Fixed active users avatar strip with proper avatar URLs and improved loading
+// ABOUTME: Fixed active users avatar strip with proper avatar URLs and error handling
 import React from 'react';
 import { Users, Circle } from 'lucide-react';
 import { useSidebarStore } from '@/stores/sidebarStore';
@@ -35,24 +35,63 @@ export const ActiveAvatars: React.FC = () => {
         {/* Avatar Strip */}
         <div className="flex items-center space-x-[-8px]">
           {displayUsers.map((user, index) => {
-            // Fix: Get avatar URL from proper field with fallbacks
-            const avatarUrl = user.avatar_url;
-            const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(user.full_name || 'User')}&background=6b7280&color=fff&size=32`;
+            // Fixed avatar URL resolution with proper fallback chain
+            let avatarUrl: string | undefined;
+            let displayName = 'Usuário';
+            let userInitial = 'U';
+
+            // Get display name and initial first
+            if (user.full_name) {
+              displayName = user.full_name;
+              userInitial = displayName[0].toUpperCase();
+            } else if (user.email) {
+              displayName = user.email.split('@')[0];
+              userInitial = displayName[0].toUpperCase();
+            }
+
+            // Try to get avatar URL from user data
+            if (user.avatar_url) {
+              avatarUrl = user.avatar_url;
+            }
+
+            // Generate fallback URL if no avatar found
+            const fallbackUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=6b7280&color=fff&size=32&format=svg`;
             
             return (
-              <div key={user.id} className="relative group">
-                <img
-                  src={avatarUrl || fallbackUrl}
-                  alt={user.full_name || 'Usuário'}
-                  className="w-7 h-7 rounded-full border-2 border-gray-800 shadow-sm transition-transform group-hover:scale-110 group-hover:z-10"
-                  onError={(e) => {
-                    const img = e.target as HTMLImageElement;
-                    if (img.src !== fallbackUrl) {
-                      console.log('Avatar failed to load, using fallback:', img.src);
-                      img.src = fallbackUrl;
-                    }
-                  }}
-                />
+              <div key={user.id || index} className="relative group">
+                <div className="w-7 h-7 rounded-full border-2 border-gray-800 shadow-sm transition-transform group-hover:scale-110 group-hover:z-10 overflow-hidden bg-gray-700">
+                  {avatarUrl ? (
+                    <img
+                      src={avatarUrl}
+                      alt={displayName}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        console.log('Avatar failed to load, using fallback:', avatarUrl);
+                        const img = e.target as HTMLImageElement;
+                        img.src = fallbackUrl;
+                      }}
+                      onLoad={() => {
+                        console.log('Avatar loaded successfully:', avatarUrl);
+                      }}
+                    />
+                  ) : (
+                    <img
+                      src={fallbackUrl}
+                      alt={displayName}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        console.log('Fallback avatar failed, showing initials');
+                        const img = e.target as HTMLImageElement;
+                        img.style.display = 'none';
+                        // Show initials as backup
+                        const container = img.parentElement;
+                        if (container) {
+                          container.innerHTML = `<div class="w-full h-full flex items-center justify-center text-xs font-medium text-white bg-gray-600">${userInitial}</div>`;
+                        }
+                      }}
+                    />
+                  )}
+                </div>
                 
                 {/* Online indicator for first 3 users */}
                 {index < 3 && (
@@ -61,7 +100,7 @@ export const ActiveAvatars: React.FC = () => {
                 
                 {/* Tooltip */}
                 <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-20">
-                  {user.full_name || 'Usuário'}
+                  {displayName}
                   <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-2 border-transparent border-t-gray-800"></div>
                 </div>
               </div>

@@ -1,3 +1,5 @@
+
+// ABOUTME: Comment actions hook with fixed entity validation and improved error handling
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Comment, EntityType } from '@/types/commentTypes';
@@ -20,6 +22,29 @@ export function useCommentActions(
   const [isAddingComment, setIsAddingComment] = useState(false);
   const [isDeletingComment, setIsDeletingComment] = useState(false);
   const [isReplying, setIsReplying] = useState(false);
+
+  // Validate entity exists before attempting to add comment
+  const validateEntityExists = async (id: string, type: EntityType): Promise<boolean> => {
+    try {
+      const tableName = type === 'article' ? 'articles' : type === 'post' ? 'posts' : 'issues';
+      
+      const { data, error } = await supabase
+        .from(tableName)
+        .select('id')
+        .eq('id', id)
+        .maybeSingle();
+        
+      if (error) {
+        console.error(`Error validating ${type} exists:`, error);
+        return false;
+      }
+      
+      return !!data;
+    } catch (err) {
+      console.error(`Error in validateEntityExists for ${type}:`, err);
+      return false;
+    }
+  };
 
   const addComment = async (content: string, imageUrl?: string): Promise<void> => {
     if (!user || !entityId || !entityType) {
@@ -45,9 +70,15 @@ export function useCommentActions(
     console.log(`Adding comment for ${entityType} ${entityId}:`, content.substring(0, 50) + '...');
     
     try {
+      // Validate that the entity exists
+      const entityExists = await validateEntityExists(entityId, entityType);
+      if (!entityExists) {
+        throw new Error(`${entityType === 'article' ? 'Artigo' : entityType === 'post' ? 'Publicação' : 'Edição'} não encontrada`);
+      }
+
       let finalImageUrl = imageUrl;
       
-      // If imageUrl is a blob URL, upload it to storage
+      // Handle blob URL upload
       if (imageUrl && imageUrl.startsWith('blob:')) {
         try {
           const response = await fetch(imageUrl);
@@ -66,7 +97,7 @@ export function useCommentActions(
         }
       }
       
-      // Create the data object with the right entity ID field
+      // Build comment data with proper entity field
       const commentData = {
         ...buildCommentData(content, user.id, entityType, entityId),
         image_url: finalImageUrl || null
@@ -124,14 +155,14 @@ export function useCommentActions(
     } catch (error) {
       console.error('Error adding comment:', error);
       
-      // Provide more specific error messages based on the error type
+      // Provide more specific error messages
       let errorMessage = "Não foi possível adicionar seu comentário.";
       
       if (error?.message?.includes('violates row-level security')) {
         errorMessage = "Você não tem permissão para comentar neste item.";
       } else if (error?.message?.includes('duplicate key')) {
         errorMessage = "Este comentário já foi enviado.";
-      } else if (error?.message?.includes('not found')) {
+      } else if (error?.message?.includes('não encontrada') || error?.message?.includes('not found')) {
         errorMessage = "O item que você está tentando comentar não foi encontrado.";
       }
       
@@ -159,9 +190,15 @@ export function useCommentActions(
 
     setIsReplying(true);
     try {
+      // Validate entity exists
+      const entityExists = await validateEntityExists(entityId, entityType);
+      if (!entityExists) {
+        throw new Error(`${entityType === 'article' ? 'Artigo' : entityType === 'post' ? 'Publicação' : 'Edição'} não encontrada`);
+      }
+
       let finalImageUrl = imageUrl;
       
-      // If imageUrl is a blob URL, upload it to storage
+      // Handle blob URL upload
       if (imageUrl && imageUrl.startsWith('blob:')) {
         try {
           const response = await fetch(imageUrl);
@@ -175,7 +212,6 @@ export function useCommentActions(
             description: "Não foi possível fazer upload da imagem.",
             variant: "destructive",
           });
-          // Continue without image instead of failing completely
           finalImageUrl = undefined;
         }
       }
@@ -236,7 +272,6 @@ export function useCommentActions(
 
       if (error) throw error;
       
-      // Refresh comments to update the view
       if (fetchComments) await fetchComments();
     } catch (error) {
       console.error('Error editing comment:', error);
@@ -268,7 +303,6 @@ export function useCommentActions(
 
       if (error) throw error;
 
-      // Refresh comments to update the view
       if (fetchComments) await fetchComments();
     } catch (error) {
       console.error('Error deleting comment:', error);

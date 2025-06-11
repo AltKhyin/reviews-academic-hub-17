@@ -1,5 +1,5 @@
 
-// ABOUTME: Optimized posts hook with better query key stability and reduced polling
+// ABOUTME: Optimized posts hook with better performance and reduced API calls
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,15 +8,19 @@ import { PostData } from '@/types/community';
 export function usePosts(activeTab: string, searchTerm: string) {
   const { user } = useAuth();
   
-  // Fix: Create stable query key to prevent unnecessary refetches
-  const queryKey = ['community-posts', activeTab, searchTerm.trim(), user?.id];
+  // Create stable query key to prevent unnecessary refetches
+  const trimmedSearchTerm = searchTerm.trim();
+  const queryKey = ['community-posts', activeTab, trimmedSearchTerm, user?.id];
   
   return useQuery({
     queryKey,
     queryFn: async () => {
-      console.log(`Fetching posts for tab: ${activeTab}, search: "${searchTerm}"`);
+      console.log(`Fetching posts for tab: ${activeTab}, search: "${trimmedSearchTerm}"`);
       
-      await supabase.rpc('unpin_expired_posts');
+      // Only call unpin function when necessary (not for every query)
+      if (activeTab !== 'my') {
+        await supabase.rpc('unpin_expired_posts');
+      }
 
       let pinnedQuery = supabase
         .from('posts')
@@ -31,12 +35,13 @@ export function usePosts(activeTab: string, searchTerm: string) {
         .eq('published', true)
         .eq('pinned', false);
       
-      // Fix: Only apply search if term is not empty to avoid unnecessary filtering
-      if (searchTerm.trim()) {
-        pinnedQuery = pinnedQuery.ilike('title', `%${searchTerm.trim()}%`);
-        regularQuery = regularQuery.ilike('title', `%${searchTerm.trim()}%`);
+      // Apply search filter only if term is not empty
+      if (trimmedSearchTerm) {
+        pinnedQuery = pinnedQuery.ilike('title', `%${trimmedSearchTerm}%`);
+        regularQuery = regularQuery.ilike('title', `%${trimmedSearchTerm}%`);
       }
       
+      // Apply ordering based on active tab
       if (activeTab === 'popular') {
         regularQuery = regularQuery.order('score', { ascending: false });
       } else if (activeTab === 'oldest') {
@@ -45,11 +50,13 @@ export function usePosts(activeTab: string, searchTerm: string) {
         regularQuery = regularQuery.order('created_at', { ascending: false });
       }
 
+      // Apply user filter for 'my' tab
       if (activeTab === 'my' && user) {
         pinnedQuery = pinnedQuery.eq('user_id', user.id);
         regularQuery = regularQuery.eq('user_id', user.id);
       }
 
+      // Execute queries in parallel
       const [{ data: pinnedPosts, error: pinnedError }, { data: regularPosts, error: regularError }] = await Promise.all([
         pinnedQuery,
         regularQuery
@@ -71,10 +78,16 @@ export function usePosts(activeTab: string, searchTerm: string) {
       return allPosts;
     },
     enabled: true,
-    // Fix: Reduce unnecessary polling and improve performance
-    staleTime: 60000, // 1 minute instead of 30 seconds
-    refetchOnWindowFocus: false, // Prevent refetch on tab focus
-    refetchInterval: 120000, // Only auto-refetch every 2 minutes
-    refetchIntervalInBackground: false, // Don't refetch when tab is not visible
+    // Optimized caching and refresh intervals
+    staleTime: 2 * 60 * 1000, // 2 minutes - increased from 1 minute
+    gcTime: 10 * 60 * 1000, // 10 minutes - increased cache time
+    refetchOnWindowFocus: false, // Prevent unnecessary refetches
+    refetchInterval: false, // Disable automatic polling - only manual refresh
+    refetchIntervalInBackground: false,
+    // Add retry logic for failed requests
+    retry: (failureCount, error) => {
+      console.log('Posts query retry:', failureCount, error);
+      return failureCount < 2; // Only retry twice
+    },
   });
 }

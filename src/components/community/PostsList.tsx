@@ -1,4 +1,5 @@
 
+// ABOUTME: Posts list component with fixed React Fragment prop violations
 import React from 'react';
 import { Post } from '@/components/community/Post';
 import { EmptyState } from '@/components/community/EmptyState';
@@ -70,7 +71,7 @@ export const PostsList: React.FC<PostsListProps> = ({
   return (
     <div>
       {posts.map((post, index) => (
-        <React.Fragment key={post.id}>
+        <div key={post.id}>
           <Post 
             post={post} 
             onVoteChange={onVoteChange} 
@@ -79,7 +80,7 @@ export const PostsList: React.FC<PostsListProps> = ({
           {index !== posts.length - 1 && (
             <div className="h-px bg-gradient-to-r from-transparent via-gray-700/30 to-transparent my-2"></div>
           )}
-        </React.Fragment>
+        </div>
       ))}
     </div>
   );
