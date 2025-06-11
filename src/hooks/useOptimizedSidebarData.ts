@@ -119,13 +119,13 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
         
         if (error) {
           console.warn('Reviewer comments error:', error);
-          return getDefaultComments();
+          return [];
         }
         
-        return data || getDefaultComments();
+        return data || [];
       } catch (error) {
         console.warn('Reviewer comments error:', error);
-        return getDefaultComments();
+        return [];
       }
     },
     {
@@ -151,7 +151,7 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
         
         if (error) {
           console.warn('Top threads error:', error);
-          return getDefaultThreads();
+          return [];
         }
         
         return (data || []).map(thread => ({
@@ -164,7 +164,7 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
         }));
       } catch (error) {
         console.warn('Top threads error:', error);
-        return getDefaultThreads();
+        return [];
       }
     },
     {
