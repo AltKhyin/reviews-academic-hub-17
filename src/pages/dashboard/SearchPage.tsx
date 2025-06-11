@@ -58,7 +58,7 @@ const SearchPage: React.FC = () => {
         .from('issues')
         .select('*');
 
-      // Apply role-based filtering
+      // Apply role-based filtering - simplified to admin-only access
       const hasAdminAccess = isAdmin || profile?.role === 'admin';
       
       if (!hasAdminAccess) {

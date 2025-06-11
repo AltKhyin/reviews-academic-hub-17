@@ -174,17 +174,17 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
 
   return useMemo(() => ({
     stats: {
-      data: statsData ?? null, // Explicit null coalescing
+      data: statsData, // Remove explicit coalescing that was causing type issues
       isLoading: statsLoading,
       error: statsError,
     },
     reviewerComments: {
-      data: commentsData ?? [], // Explicit fallback to empty array
+      data: commentsData || [], // Keep simple fallback
       isLoading: commentsLoading,
       error: commentsError,
     },
     topThreads: {
-      data: threadsData ?? [], // Explicit fallback to empty array
+      data: threadsData || [], // Keep simple fallback
       isLoading: threadsLoading,
       error: threadsError,
     },

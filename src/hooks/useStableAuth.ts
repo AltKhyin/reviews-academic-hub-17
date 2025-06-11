@@ -10,13 +10,13 @@ export const useStableAuth = () => {
     profile: authData.profile,
     isAuthenticated: !!authData.user,
     isAdmin: authData.isAdmin,
-    canEdit: authData.isAdmin,
+    canEdit: authData.isAdmin, // Simplified: canEdit = isAdmin (no more editor role)
     role: authData.profile?.role || 'user',
     isLoading: authData.isLoading,
     isReady: !authData.isLoading,
     permissions: {
       isAdmin: authData.isAdmin,
-      canEdit: authData.isAdmin,
+      canEdit: authData.isAdmin, // Simplified: canEdit = isAdmin
     },
     hasPermission: (permission: 'read' | 'write' | 'admin') => {
       switch (permission) {
