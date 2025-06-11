@@ -66,7 +66,7 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
           return null;
         }
         
-        // Type-safe conversion with validation
+        // Type-safe conversion with validation and proper fallbacks
         if (data && typeof data === 'object' && !Array.isArray(data)) {
           const statsData = data as any;
           return {
@@ -161,7 +161,7 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
     }
   );
 
-  // Memoize computed values
+  // Memoize computed values to prevent unnecessary re-renders
   const isLoading = useMemo(() => 
     statsLoading || commentsLoading || threadsLoading, 
     [statsLoading, commentsLoading, threadsLoading]

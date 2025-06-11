@@ -47,7 +47,7 @@ export const Sidebar = () => {
       icon: <Search size={24} strokeWidth={1.5} className="w-6 h-6" />,
       path: '/search',
       active: isActive('/search'),
-      showToAdmin: true
+      adminOnly: true // Simplified: admin-only access
     },
     {
       name: 'Comunidade',
@@ -60,7 +60,7 @@ export const Sidebar = () => {
       icon: <FileText size={24} strokeWidth={1.5} className="w-6 h-6" />,
       path: '/edit',
       active: isActive('/edit'),
-      showToAdmin: true
+      adminOnly: true // Simplified: admin-only access
     },
     {
       name: 'Perfil',
@@ -87,7 +87,8 @@ export const Sidebar = () => {
         <div className="flex-grow p-4">
           <ul className="space-y-1">
             {menuItems.map((item, index) => {
-              if (item.showToAdmin && !isAdmin) {
+              // Show admin-only items only to admins
+              if (item.adminOnly && !isAdmin) {
                 return null;
               }
               return (

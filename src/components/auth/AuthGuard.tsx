@@ -43,7 +43,7 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
     return <Navigate to={fallbackPath} state={{ from: location }} replace />;
   }
 
-  // Check admin requirements
+  // Check admin requirements - simplified to admin-only
   if (requireAdmin) {
     const hasAdminAccess = isAdmin || profile?.role === 'admin';
     if (!hasAdminAccess) {

@@ -1,6 +1,6 @@
 
-// ABOUTME: Updated Edit page with enhanced analytics dashboard
-import React, { useState } from 'react';
+// ABOUTME: Updated Edit page with enhanced analytics dashboard - Admin access only
+import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,7 +11,7 @@ import { CommentReportsPanel } from '@/components/dashboard/CommentReportsPanel'
 import { TagManagementPanel } from '@/components/admin/TagManagementPanel';
 import { EnhancedAnalyticsDashboard } from '@/components/analytics/EnhancedAnalyticsDashboard';
 import { HomepageManager } from '@/components/admin/HomepageManager';
-import { Settings, BarChart3, Users, MessageSquare, Crown, FileText, Edit, Tags, Home } from 'lucide-react';
+import { Settings, BarChart3, Users, MessageSquare, Crown, FileText, Tags, Home } from 'lucide-react';
 
 const EditPage = () => {
   const { isAdmin, isLoading, user, profile } = useAuth();
@@ -29,6 +29,7 @@ const EditPage = () => {
     );
   }
 
+  // Simplified admin access check - only admin role allowed
   const hasAdminAccess = isAdmin || profile?.role === 'admin';
 
   console.log("Access check - HasAdminAccess:", hasAdminAccess);

@@ -1,4 +1,4 @@
-// ABOUTME: Search page with filters and results display
+// ABOUTME: Search page with filters and results display - Admin access only
 // Now uses optimal max-width containers for better content centering
 // RESTRICTED: Admin access only for advanced search functionality
 
