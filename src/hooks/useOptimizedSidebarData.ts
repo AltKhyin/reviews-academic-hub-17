@@ -55,9 +55,9 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
     data: statsData, 
     isLoading: statsLoading, 
     error: statsError 
-  } = useOptimizedQuery<SidebarStats | null>({
-    queryKey: queryKeys.sidebarStats(),
-    queryFn: async (): Promise<SidebarStats | null> => {
+  } = useOptimizedQuery<SidebarStats | null>(
+    queryKeys.sidebarStats(),
+    async (): Promise<SidebarStats | null> => {
       try {
         const { data, error } = await supabase.rpc('get_sidebar_stats');
         
@@ -84,18 +84,20 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
         return null;
       }
     },
-    ...queryConfigs.static,
-    staleTime: 15 * 60 * 1000, // 15 minutes
-  });
+    {
+      ...queryConfigs.static,
+      staleTime: 15 * 60 * 1000, // 15 minutes
+    }
+  );
 
   // Fetch reviewer comments with extended caching
   const { 
     data: commentsData, 
     isLoading: commentsLoading, 
     error: commentsError 
-  } = useOptimizedQuery<ReviewerComment[]>({
-    queryKey: ['reviewer-comments'],
-    queryFn: async (): Promise<ReviewerComment[]> => {
+  } = useOptimizedQuery<ReviewerComment[]>(
+    ['reviewer-comments'],
+    async (): Promise<ReviewerComment[]> => {
       try {
         const { data, error } = await supabase
           .from('reviewer_comments')
@@ -114,18 +116,20 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
         return [];
       }
     },
-    ...queryConfigs.static,
-    staleTime: 20 * 60 * 1000, // 20 minutes for comments
-  });
+    {
+      ...queryConfigs.static,
+      staleTime: 20 * 60 * 1000, // 20 minutes for comments
+    }
+  );
 
   // Fetch top threads with extended caching
   const { 
     data: threadsData, 
     isLoading: threadsLoading, 
     error: threadsError 
-  } = useOptimizedQuery<TopThread[]>({
-    queryKey: ['top-threads'],
-    queryFn: async (): Promise<TopThread[]> => {
+  } = useOptimizedQuery<TopThread[]>(
+    ['top-threads'],
+    async (): Promise<TopThread[]> => {
       try {
         const { data, error } = await supabase
           .from('threads_top')
@@ -151,9 +155,11 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
         return [];
       }
     },
-    ...queryConfigs.static,
-    staleTime: 10 * 60 * 1000, // 10 minutes for threads
-  });
+    {
+      ...queryConfigs.static,
+      staleTime: 10 * 60 * 1000, // 10 minutes for threads
+    }
+  );
 
   // Memoize computed values
   const isLoading = useMemo(() => 
