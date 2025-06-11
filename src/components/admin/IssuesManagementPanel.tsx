@@ -14,7 +14,7 @@ import { Plus, Search, Filter, RefreshCw } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
 export const IssuesManagementPanel = () => {
-  const { isAdmin, isEditor, user } = useAuth();
+  const { isAdmin, user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
@@ -57,7 +57,7 @@ export const IssuesManagementPanel = () => {
         throw error;
       }
     },
-    enabled: !!(isAdmin || isEditor), // Only fetch if user has permissions
+    enabled: !!isAdmin, // Only fetch if user has admin permissions
     staleTime: 0, // Always fetch fresh data for admin
     refetchOnMount: true,
   });
@@ -165,7 +165,7 @@ export const IssuesManagementPanel = () => {
     return matchesSearch && matchesStatus;
   });
 
-  if (!isAdmin && !isEditor) {
+  if (!isAdmin) {
     return (
       <Card>
         <CardContent className="p-6">

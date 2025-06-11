@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export const ReviewerCommentsDisplay = memo(() => {
   const { comments, hasComments, isLoading, deleteComment } = useReviewerComments();
-  const { isAdmin, isEditor } = useAuth();
+  const { isAdmin } = useAuth();
 
   if (isLoading) {
     return (
@@ -52,7 +52,7 @@ export const ReviewerCommentsDisplay = memo(() => {
                     <CheckCircle2 className="h-4 w-4 ml-1 text-blue-500" />
                   </div>
                   
-                  {(isAdmin || isEditor) && (
+                  {isAdmin && (
                     <Button 
                       variant="ghost" 
                       size="sm" 

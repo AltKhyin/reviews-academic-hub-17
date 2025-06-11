@@ -2,7 +2,7 @@
 import { useCallback, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useOptimizedAuth } from './useOptimizedAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { queryKeys, queryConfigs } from './useOptimizedQuery';
 import { toast } from '@/hooks/use-toast';
 
@@ -36,7 +36,7 @@ const isBatchedInteractions = (data: unknown): data is BatchedInteractions => {
 };
 
 export const useOptimizedUserInteractions = () => {
-  const { user, isAuthenticated } = useOptimizedAuth();
+  const { user, isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
 
   // Consolidated user interactions query

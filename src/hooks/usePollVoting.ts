@@ -2,14 +2,14 @@
 // ABOUTME: Poll voting functionality for sidebar weekly polls
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useOptimizedAuth } from './useOptimizedAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { useSidebarStore } from '@/stores/sidebarStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from './use-toast';
 
 export const usePollVoting = () => {
   const [isVoting, setIsVoting] = useState(false);
-  const { user } = useOptimizedAuth();
+  const { user } = useAuth();
   const { setUserVote } = useSidebarStore();
   const queryClient = useQueryClient();
   const { toast } = useToast();

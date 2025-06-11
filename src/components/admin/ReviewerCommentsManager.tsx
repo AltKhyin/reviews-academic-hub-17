@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useReviewerComments } from '@/hooks/useReviewerComments';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
@@ -19,7 +20,7 @@ const DEFAULT_REVIEWER = {
 };
 
 const ReviewerCommentItem = ({ comment }: { comment: ReviewerCommentType }) => {
-  const { isAdmin, isEditor } = useAuth();
+  const { isAdmin } = useAuth();
   const { deleteComment } = useReviewerComments();
   
   return (
@@ -38,7 +39,7 @@ const ReviewerCommentItem = ({ comment }: { comment: ReviewerCommentType }) => {
             <CheckCircle2 className="h-4 w-4 ml-1 text-blue-500" />
           </div>
           
-          {(isAdmin || isEditor) && (
+          {isAdmin && (
             <Button 
               variant="ghost" 
               size="sm" 
@@ -117,17 +118,17 @@ const CustomReviewerForm = ({
 
 export const ReviewerCommentsManager = () => {
   const { comments, hasComments, addComment, isLoading } = useReviewerComments();
-  const { isAdmin, isEditor } = useAuth();
+  const { isAdmin } = useAuth();
   const [newComment, setNewComment] = useState('');
   const [customReviewer, setCustomReviewer] = useState(DEFAULT_REVIEWER);
   const [isCustomizing, setIsCustomizing] = useState(false);
 
-  if (!isAdmin && !isEditor) {
+  if (!isAdmin) {
     return (
       <Card>
         <CardContent className="pt-6">
           <p className="text-center text-muted-foreground">
-            Acesso restrito a administradores e editores.
+            Acesso restrito a administradores.
           </p>
         </CardContent>
       </Card>
