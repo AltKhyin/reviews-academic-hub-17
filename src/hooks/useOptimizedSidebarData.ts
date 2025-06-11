@@ -187,17 +187,17 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
 
   return useMemo(() => ({
     stats: {
-      data: statsData || null,
+      data: statsData ?? null, // Explicitly handle undefined case
       isLoading: statsLoading,
       error: statsError,
     },
     reviewerComments: {
-      data: commentsData || getDefaultComments(),
+      data: commentsData ?? getDefaultComments(),
       isLoading: commentsLoading,
       error: commentsError,
     },
     topThreads: {
-      data: threadsData || getDefaultThreads(),
+      data: threadsData ?? getDefaultThreads(),
       isLoading: threadsLoading,
       error: threadsError,
     },
