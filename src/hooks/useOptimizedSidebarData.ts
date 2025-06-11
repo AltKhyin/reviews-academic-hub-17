@@ -55,7 +55,7 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
     data: statsData, 
     isLoading: statsLoading, 
     error: statsError 
-  } = useOptimizedQuery({
+  } = useOptimizedQuery<SidebarStats | null>({
     queryKey: queryKeys.sidebarStats(),
     queryFn: async (): Promise<SidebarStats | null> => {
       try {
@@ -93,7 +93,7 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
     data: commentsData, 
     isLoading: commentsLoading, 
     error: commentsError 
-  } = useOptimizedQuery({
+  } = useOptimizedQuery<ReviewerComment[]>({
     queryKey: ['reviewer-comments'],
     queryFn: async (): Promise<ReviewerComment[]> => {
       try {
@@ -123,7 +123,7 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
     data: threadsData, 
     isLoading: threadsLoading, 
     error: threadsError 
-  } = useOptimizedQuery({
+  } = useOptimizedQuery<TopThread[]>({
     queryKey: ['top-threads'],
     queryFn: async (): Promise<TopThread[]> => {
       try {
@@ -166,7 +166,7 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
     [statsError, commentsError, threadsError]
   );
 
-  // Return with proper typing
+  // Return with proper typing and fallback values
   return useMemo(() => ({
     stats: {
       data: statsData ?? null,
