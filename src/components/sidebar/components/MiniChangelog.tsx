@@ -1,51 +1,56 @@
 
-// ABOUTME: Mini changelog sidebar component with default entries
 import React from 'react';
+import { Megaphone, X } from 'lucide-react';
 import { useSidebarStore } from '@/stores/sidebarStore';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clock, X } from 'lucide-react';
 
 export const MiniChangelog: React.FC = () => {
-  const { config, changelogHidden, hideChangelog } = useSidebarStore();
-  
-  // Default changelog entries if none configured
-  const defaultEntries = [
-    { date: '2024-01-15', text: 'Melhorias na interface de comentários' },
-    { date: '2024-01-10', text: 'Novo sistema de votação implementado' },
-    { date: '2024-01-05', text: 'Correções de bugs e otimizações' },
-  ];
-  
-  const entries = config?.changelog?.entries || defaultEntries;
-  const showChangelog = config?.changelog?.show !== false && !changelogHidden;
+  const { config, isLoadingConfig, changelogHidden, hideChangelog } = useSidebarStore();
 
-  if (!showChangelog || entries.length === 0) {
+  if (isLoadingConfig) {
+    return (
+      <div className="space-y-3">
+        <div className="h-4 bg-muted/30 rounded w-24 animate-pulse" />
+        <div className="space-y-2">
+          <div className="h-4 bg-muted/30 rounded animate-pulse" />
+          <div className="h-4 bg-muted/30 rounded animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+
+  if (changelogHidden || !config?.changelog?.show || !config?.changelog?.entries?.length) {
     return null;
   }
 
+  const recentEntries = config.changelog.entries.slice(0, 3);
+
   return (
-    <Card className="bg-gray-800/20 border-gray-700/30">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center text-sm font-medium">
-            <Clock className="h-4 w-4 mr-2" />
-            Changelog
-          </CardTitle>
-          <button
-            onClick={hideChangelog}
-            className="p-1 hover:bg-gray-700/30 rounded"
-          >
-            <X className="h-3 w-3 text-gray-400" />
-          </button>
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <Megaphone className="w-4 h-4 text-amber-400/70" />
+          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Novidades</h3>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {entries.slice(0, 3).map((entry, index) => (
+        <button
+          onClick={hideChangelog}
+          className="p-1 hover:bg-muted/30 rounded transition-colors"
+          aria-label="Ocultar novidades"
+        >
+          <X className="w-3 h-3 text-muted-foreground/60" />
+        </button>
+      </div>
+      
+      <div className="space-y-2">
+        {recentEntries.map((entry, index) => (
           <div key={index} className="space-y-1">
-            <div className="text-xs text-gray-400">{entry.date}</div>
-            <p className="text-sm text-gray-300 leading-tight">{entry.text}</p>
+            <div className="text-xs text-muted-foreground/60">{entry.date}</div>
+            <p className="text-xs text-muted-foreground leading-relaxed">{entry.text}</p>
+            {index < recentEntries.length - 1 && (
+              <div className="border-t border-muted/20 mt-2" />
+            )}
           </div>
         ))}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 };
