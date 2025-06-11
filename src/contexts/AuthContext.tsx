@@ -7,7 +7,7 @@ import { toast } from '@/hooks/use-toast';
 
 interface UserProfile {
   id: string;
-  role: 'user' | 'admin'; // Simplified: removed 'editor'
+  role: 'user' | 'admin'; // Simplified: only admin or user
   full_name: string | null;
   avatar_url: string | null;
   specialty: string | null;
@@ -69,7 +69,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Simplified admin check - no more editor role
+  // Simplified admin check - only admin role
   const isAdmin = profile?.role === 'admin';
 
   // Deduplicated profile fetch with caching

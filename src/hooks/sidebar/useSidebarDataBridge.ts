@@ -1,6 +1,6 @@
 
-// ABOUTME: Optimized bridge hook with strict dependency control and request deduplication
-import { useEffect, useMemo, useRef, useCallback } from 'react';
+// ABOUTME: Simplified sidebar data bridge with minimal re-renders
+import { useEffect, useMemo } from 'react';
 import { useOptimizedSidebarData } from '../useOptimizedSidebarData';
 import { useSidebarConfig } from './useSidebarConfig';
 import { useWeeklyPoll, useUserPollVote } from './usePollData';
@@ -12,17 +12,6 @@ export const useSidebarDataBridge = (userId?: string) => {
   const { data: poll, isLoading: pollLoading, error: pollError } = useWeeklyPoll();
   const { data: userVote, isLoading: userVoteLoading, error: userVoteError } = useUserPollVote(userId, poll?.id);
   
-  // Track processing state to prevent loops
-  const processingRef = useRef(false);
-  const lastUpdateRef = useRef<{
-    configHash?: string;
-    pollHash?: string;
-    userVoteHash?: string;
-    statsHash?: string;
-    usersHash?: string;
-    threadsHash?: string;
-  }>({});
-
   const {
     setConfig,
     setStats,
@@ -33,7 +22,7 @@ export const useSidebarDataBridge = (userId?: string) => {
     setLoading
   } = useSidebarStoreSync();
 
-  // Memoize loading states to prevent unnecessary re-renders
+  // Memoize loading states
   const loadingStates = useMemo(() => ({
     config: configLoading,
     poll: pollLoading,
@@ -60,107 +49,50 @@ export const useSidebarDataBridge = (userId?: string) => {
     );
   }, [configError, pollError, userVoteError, optimizedData.hasError]);
 
-  // Hash function for change detection
-  const createHash = useCallback((data: any): string => {
-    return JSON.stringify(data);
-  }, []);
-
-  // Debounced store updates with change detection
+  // Update store with data
   useEffect(() => {
-    if (processingRef.current) return;
-    
-    const updateStore = () => {
-      processingRef.current = true;
-      
-      try {
-        // Update stats only if changed
-        if (optimizedData.stats.data) {
-          const statsHash = createHash(optimizedData.stats.data);
-          if (statsHash !== lastUpdateRef.current.statsHash) {
-            lastUpdateRef.current.statsHash = statsHash;
-            setStats(optimizedData.stats.data);
-          }
-        }
+    if (optimizedData.stats.data) {
+      setStats(optimizedData.stats.data);
+    }
+  }, [optimizedData.stats.data, setStats]);
 
-        // Update users only if changed
-        if (optimizedData.reviewerComments.data) {
-          const usersHash = createHash(optimizedData.reviewerComments.data);
-          if (usersHash !== lastUpdateRef.current.usersHash) {
-            lastUpdateRef.current.usersHash = usersHash;
-            setOnlineUsers(optimizedData.reviewerComments.data);
-          }
-        }
-
-        // Update threads only if changed
-        if (optimizedData.topThreads.data) {
-          const threadsHash = createHash(optimizedData.topThreads.data);
-          if (threadsHash !== lastUpdateRef.current.threadsHash) {
-            lastUpdateRef.current.threadsHash = threadsHash;
-            setThreads(optimizedData.topThreads.data);
-          }
-        }
-
-        // Update config only if changed
-        if (config) {
-          const configHash = createHash(config);
-          if (configHash !== lastUpdateRef.current.configHash) {
-            lastUpdateRef.current.configHash = configHash;
-            setConfig(config);
-          }
-        }
-
-        // Update poll only if changed
-        if (poll) {
-          const pollHash = createHash(poll);
-          if (pollHash !== lastUpdateRef.current.pollHash) {
-            lastUpdateRef.current.pollHash = pollHash;
-            setPoll(poll);
-          }
-        }
-
-        // Update user vote only if changed
-        if (userVote !== undefined) {
-          const userVoteHash = createHash(userVote);
-          if (userVoteHash !== lastUpdateRef.current.userVoteHash) {
-            lastUpdateRef.current.userVoteHash = userVoteHash;
-            setUserVote(userVote);
-          }
-        }
-      } finally {
-        processingRef.current = false;
-      }
-    };
-
-    // Debounce updates to prevent rapid firing
-    const timeoutId = setTimeout(updateStore, 50);
-    return () => clearTimeout(timeoutId);
-  }, [
-    optimizedData.stats.data,
-    optimizedData.reviewerComments.data,
-    optimizedData.topThreads.data,
-    config,
-    poll,
-    userVote,
-    setConfig,
-    setStats,
-    setOnlineUsers,
-    setThreads,
-    setPoll,
-    setUserVote,
-    createHash
-  ]);
-
-  // Debounced loading state updates
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      setLoading('Config', loadingStates.config);
-      setLoading('Poll', loadingStates.poll);
-      setLoading('Stats', loadingStates.stats);
-      setLoading('Users', loadingStates.users);
-      setLoading('Threads', loadingStates.threads);
-    }, 100); // Increased debounce for loading states
+    if (optimizedData.reviewerComments.data) {
+      setOnlineUsers(optimizedData.reviewerComments.data);
+    }
+  }, [optimizedData.reviewerComments.data, setOnlineUsers]);
 
-    return () => clearTimeout(timeoutId);
+  useEffect(() => {
+    if (optimizedData.topThreads.data) {
+      setThreads(optimizedData.topThreads.data);
+    }
+  }, [optimizedData.topThreads.data, setThreads]);
+
+  useEffect(() => {
+    if (config) {
+      setConfig(config);
+    }
+  }, [config, setConfig]);
+
+  useEffect(() => {
+    if (poll) {
+      setPoll(poll);
+    }
+  }, [poll, setPoll]);
+
+  useEffect(() => {
+    if (userVote !== undefined) {
+      setUserVote(userVote);
+    }
+  }, [userVote, setUserVote]);
+
+  // Update loading states
+  useEffect(() => {
+    setLoading('Config', loadingStates.config);
+    setLoading('Poll', loadingStates.poll);
+    setLoading('Stats', loadingStates.stats);
+    setLoading('Users', loadingStates.users);
+    setLoading('Threads', loadingStates.threads);
   }, [
     loadingStates.config,
     loadingStates.poll,
@@ -170,7 +102,7 @@ export const useSidebarDataBridge = (userId?: string) => {
     setLoading
   ]);
 
-  // Memoize return value to prevent unnecessary re-renders
+  // Return simplified state
   return useMemo(() => ({
     isLoading: optimizedData.isLoading || configLoading || pollLoading,
     error: hasErrors
