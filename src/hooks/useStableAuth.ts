@@ -1,26 +1,34 @@
 
 // ABOUTME: Stable authentication hook with consistent auth state and optimized caching
-import { useOptimizedAuth } from './useOptimizedAuth';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const useStableAuth = () => {
-  const authData = useOptimizedAuth();
+  const authData = useAuth();
   
   return {
     user: authData.user,
     profile: authData.profile,
-    isAuthenticated: authData.isAuthenticated,
+    isAuthenticated: !!authData.user,
     isAdmin: authData.isAdmin,
-    isEditor: authData.isEditor,
-    canEdit: authData.canEdit,
-    role: authData.role,
+    canEdit: authData.isAdmin,
+    role: authData.profile?.role || 'user',
     isLoading: authData.isLoading,
     isReady: !authData.isLoading,
     permissions: {
       isAdmin: authData.isAdmin,
-      isEditor: authData.isEditor,
-      canEdit: authData.canEdit,
+      canEdit: authData.isAdmin,
     },
-    hasPermission: authData.hasPermission,
-    refreshAuth: authData.refreshAuth,
+    hasPermission: (permission: 'read' | 'write' | 'admin') => {
+      switch (permission) {
+        case 'read':
+          return !!authData.user;
+        case 'write':
+        case 'admin':
+          return authData.isAdmin;
+        default:
+          return false;
+      }
+    },
+    refreshAuth: authData.refreshProfile,
   };
 };

@@ -3,12 +3,11 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Shield, Lock } from 'lucide-react';
+import { Loader2, Shield } from 'lucide-react';
 
 interface AuthGuardProps {
   children: React.ReactNode;
   requireAdmin?: boolean;
-  requireEditor?: boolean;
   requireAuth?: boolean;
   fallbackPath?: string;
 }
@@ -16,11 +15,10 @@ interface AuthGuardProps {
 export const AuthGuard: React.FC<AuthGuardProps> = ({
   children,
   requireAdmin = false,
-  requireEditor = false,
   requireAuth = true,
   fallbackPath = '/auth'
 }) => {
-  const { user, profile, isAdmin, isEditor, isLoading } = useAuth();
+  const { user, profile, isAdmin, isLoading } = useAuth();
   const location = useLocation();
 
   // Show loading state while authentication is being checked
@@ -66,37 +64,6 @@ export const AuthGuard: React.FC<AuthGuardProps> = ({
               <div className="text-xs text-muted-foreground space-y-1">
                 <p>Usuário: {user?.email || 'Não autenticado'}</p>
                 <p>Role: {profile?.role || 'Nenhuma'}</p>
-                <p>Admin: {isAdmin ? 'Sim' : 'Não'}</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      );
-    }
-  }
-
-  // Check editor requirements
-  if (requireEditor) {
-    const hasEditorAccess = isEditor || profile?.role === 'editor' || isAdmin || profile?.role === 'admin';
-    if (!hasEditorAccess) {
-      console.log("AuthGuard: Editor access required but user doesn't have it");
-      return (
-        <div className="flex items-center justify-center min-h-screen">
-          <Card className="w-96">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-center">
-                <Lock className="w-5 h-5 text-yellow-400" />
-                Acesso Negado
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-center space-y-4">
-              <p className="text-muted-foreground">
-                Esta página requer privilégios de editor ou administrador.
-              </p>
-              <div className="text-xs text-muted-foreground space-y-1">
-                <p>Usuário: {user?.email || 'Não autenticado'}</p>
-                <p>Role: {profile?.role || 'Nenhuma'}</p>
-                <p>Editor: {isEditor ? 'Sim' : 'Não'}</p>
                 <p>Admin: {isAdmin ? 'Sim' : 'Não'}</p>
               </div>
             </CardContent>

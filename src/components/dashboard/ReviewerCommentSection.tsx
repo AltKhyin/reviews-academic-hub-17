@@ -20,7 +20,7 @@ const DEFAULT_REVIEWER = {
 };
 
 const ReviewerCommentItem = ({ comment }: { comment: ReviewerCommentType }) => {
-  const { isAdmin, isEditor } = useAuth();
+  const { isAdmin } = useAuth();
   const { deleteComment } = useReviewerComments();
   
   return (
@@ -39,7 +39,7 @@ const ReviewerCommentItem = ({ comment }: { comment: ReviewerCommentType }) => {
             <CheckCircle2 className="h-4 w-4 ml-1 text-blue-500" />
           </div>
           
-          {(isAdmin || isEditor) && (
+          {isAdmin && (
             <Button 
               variant="ghost" 
               size="sm" 
@@ -118,13 +118,13 @@ const CustomReviewerForm = ({
 
 export const ReviewerCommentSection = () => {
   const { comments, hasComments, addComment } = useReviewerComments();
-  const { isAdmin, isEditor } = useAuth();
+  const { isAdmin } = useAuth();
   const [newComment, setNewComment] = useState('');
   const [customReviewer, setCustomReviewer] = useState(DEFAULT_REVIEWER);
   const [isCustomizing, setIsCustomizing] = useState(false);
 
-  // Only show this section for admin/editor users
-  if (!isAdmin && !isEditor) {
+  // Only show this section for admin users
+  if (!isAdmin) {
     return null;
   }
 

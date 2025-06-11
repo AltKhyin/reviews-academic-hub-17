@@ -15,7 +15,7 @@ import { Card } from '@/components/ui/card';
 import { Issue } from '@/types/issue';
 
 const SearchPage: React.FC = () => {
-  const { user, profile, isAdmin, isEditor } = useAuth();
+  const { user, profile, isAdmin } = useAuth();
   const [currentPage, setCurrentPage] = React.useState<number>(1);
   const [sortBy, setSortBy] = React.useState<'relevance' | 'recent' | 'popular'>('relevance');
   const [searchTags, setSearchTags] = React.useState<{ term: string; exclude: boolean }[]>([]);
@@ -60,9 +60,8 @@ const SearchPage: React.FC = () => {
 
       // Apply role-based filtering
       const hasAdminAccess = isAdmin || profile?.role === 'admin';
-      const hasEditorAccess = isEditor || profile?.role === 'editor' || hasAdminAccess;
       
-      if (!hasAdminAccess && !hasEditorAccess) {
+      if (!hasAdminAccess) {
         // Regular users only see published content
         query = query.eq('published', true);
       }

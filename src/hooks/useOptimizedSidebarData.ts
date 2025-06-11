@@ -73,7 +73,10 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
       try {
         const { data, error } = await supabase.rpc('get_sidebar_stats');
         
-        if (error) throw error;
+        if (error) {
+          console.warn('Sidebar stats error:', error);
+          return getDefaultStats();
+        }
         
         // Type-safe conversion with validation
         if (data && typeof data === 'object' && !Array.isArray(data)) {
@@ -115,7 +118,10 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
           .order('created_at', { ascending: false })
           .limit(10);
         
-        if (error) throw error;
+        if (error) {
+          console.warn('Reviewer comments error:', error);
+          return getDefaultComments();
+        }
         
         return data || getDefaultComments();
       } catch (error) {
@@ -144,7 +150,10 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
           .order('votes', { ascending: false })
           .limit(5);
         
-        if (error) throw error;
+        if (error) {
+          console.warn('Top threads error:', error);
+          return getDefaultThreads();
+        }
         
         return (data || []).map(thread => ({
           id: thread.id || '',
@@ -178,7 +187,7 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
 
   return useMemo(() => ({
     stats: {
-      data: statsData || null,
+      data: statsData || getDefaultStats(),
       isLoading: statsLoading,
       error: statsError,
     },

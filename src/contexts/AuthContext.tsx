@@ -25,7 +25,6 @@ interface AuthContextProps {
   signOut: () => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
   isAdmin: boolean;
-  isEditor: boolean;
   refreshProfile: () => Promise<void>;
 }
 
@@ -38,7 +37,6 @@ const pendingRequests = new Map<string, Promise<any>>();
 const CACHE_TTL = {
   PROFILE: 5 * 60 * 1000, // 5 minutes
   ADMIN_CHECK: 10 * 60 * 1000, // 10 minutes
-  EDITOR_CHECK: 10 * 60 * 1000, // 10 minutes
 };
 
 // Cache helper functions
@@ -71,9 +69,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Memoized admin/editor checks with caching
+  // Memoized admin check with caching
   const isAdmin = profile?.role === 'admin';
-  const isEditor = isAdmin; // Since admin = editor in this system
 
   // Deduplicated profile fetch with caching
   const fetchProfile = useCallback(async (userId: string): Promise<UserProfile | null> => {
@@ -291,7 +288,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       signOut,
       updateProfile,
       isAdmin,
-      isEditor,
       refreshProfile
     }}>
       {children}

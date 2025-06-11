@@ -8,7 +8,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Search, Crown, Shield, User, Plus, Trash2 } from 'lucide-react';
+import { Search, Crown, User, Plus, Trash2 } from 'lucide-react';
 
 interface UserData {
   id: string;
@@ -141,10 +141,6 @@ export const UserManagementPanel: React.FC = () => {
     try {
       setLoading(true);
       
-      // Try to find user by email in auth.users (this won't work directly)
-      // Instead, we'll search in profiles by email pattern in full_name or other fields
-      // For now, we'll show a message about how to add users
-      
       toast({
         title: 'Info',
         description: 'Users must sign up first before they can be promoted to admin. Search for existing users below.',
@@ -207,7 +203,7 @@ export const UserManagementPanel: React.FC = () => {
         </div>
 
         {/* Statistics */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <div className="text-center p-4 bg-muted/50 rounded-lg">
             <div className="text-2xl font-bold">{users.length}</div>
             <div className="text-sm text-muted-foreground">Total Users</div>
@@ -215,10 +211,6 @@ export const UserManagementPanel: React.FC = () => {
           <div className="text-center p-4 bg-muted/50 rounded-lg">
             <div className="text-2xl font-bold">{users.filter(u => u.is_admin).length}</div>
             <div className="text-sm text-muted-foreground">Admins</div>
-          </div>
-          <div className="text-center p-4 bg-muted/50 rounded-lg">
-            <div className="text-2xl font-bold">{users.filter(u => u.role === 'editor').length}</div>
-            <div className="text-sm text-muted-foreground">Editors</div>
           </div>
         </div>
 
@@ -262,14 +254,7 @@ export const UserManagementPanel: React.FC = () => {
                     </Badge>
                   )}
                   
-                  {userData.role === 'editor' && (
-                    <Badge variant="secondary" className="flex items-center gap-1">
-                      <Shield className="w-3 h-3" />
-                      Editor
-                    </Badge>
-                  )}
-                  
-                  {!userData.is_admin && userData.role !== 'editor' && (
+                  {!userData.is_admin && (
                     <Badge variant="outline" className="flex items-center gap-1">
                       <User className="w-3 h-3" />
                       User
