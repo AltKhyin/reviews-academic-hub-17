@@ -27,7 +27,7 @@ export const PostContent: React.FC<PostContentProps> = ({ post, onVoteChange }) 
           {shouldTruncate && (
             <button 
               onClick={toggleExpand} 
-              className="text-blue-500 hover:text-blue-400 text-sm mt-1 font-medium transition-colors"
+              className="text-blue-500 hover:text-blue-700 text-sm mt-1 font-medium"
             >
               Ler mais
             </button>

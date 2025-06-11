@@ -1,316 +1,425 @@
 
+// ABOUTME: Comprehensive homepage management interface with unified section schema
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, RotateCcw } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Eye, EyeOff, ChevronUp, ChevronDown, RotateCcw, Calendar, Clock, RefreshCw } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+import { useSectionVisibility } from '@/hooks/useSectionVisibility';
+import { useUpcomingReleaseSettings } from '@/hooks/useUpcomingReleaseSettings';
 
-interface SectionConfig {
-  visible: boolean;
-  order: number;
-  days_for_new_badge?: number;
-  max_items?: number;
-  period?: string;
+interface LocalReleaseSettings {
+  customDate: string;
+  customTime: string;
+  isRecurring: boolean;
+  recurringPattern: 'weekly' | 'biweekly';
+  recurringDays: string[];
+  recurringTime: string;
+  wipeSuggestions: boolean;
 }
 
-interface HomeSettings {
-  sections: {
-    reviewer_notes: SectionConfig;
-    featured_carousel: SectionConfig;
-    recent_issues: SectionConfig;
-    popular_issues: SectionConfig;
-    recommended_issues: SectionConfig;
-    upcoming_releases: SectionConfig;
-  };
-  recent_issues?: {
-    days_for_new_badge: number;
-    max_items: number;
-  };
-  popular_issues?: {
-    period: string;
-    max_items: number;
-  };
-  recommended_issues?: {
-    max_items: number;
-  };
-}
+export const HomepageManager = () => {
+  const { 
+    sections, 
+    isLoading, 
+    toggleSectionVisibility,
+    reorderSections, 
+    resetToDefaults,
+    getAllSections 
+  } = useSectionVisibility();
+  
+  const {
+    settings,
+    isLoading: settingsLoading,
+    updateSettings,
+    getNextReleaseDate
+  } = useUpcomingReleaseSettings();
+  
+  // Ensure sections is always an array
+  const safeSections = Array.isArray(sections) ? sections : [];
+  const [localSections, setLocalSections] = useState(safeSections);
+  const [releaseSettings, setReleaseSettings] = useState<LocalReleaseSettings>({
+    customDate: '',
+    customTime: '',
+    isRecurring: false,
+    recurringPattern: 'weekly',
+    recurringDays: [],
+    recurringTime: '10:00',
+    wipeSuggestions: true
+  });
 
-const defaultSettings: HomeSettings = {
-  sections: {
-    reviewer_notes: { visible: true, order: 0 },
-    featured_carousel: { visible: true, order: 1 },
-    recent_issues: { visible: true, order: 2, days_for_new_badge: 7, max_items: 10 },
-    popular_issues: { visible: true, order: 3, period: "week", max_items: 10 },
-    recommended_issues: { visible: true, order: 4, max_items: 10 },
-    upcoming_releases: { visible: true, order: 5 }
-  },
-  recent_issues: {
-    days_for_new_badge: 7,
-    max_items: 10
-  },
-  popular_issues: {
-    period: "week",
-    max_items: 10
-  },
-  recommended_issues: {
-    max_items: 10
-  }
-};
-
-export const HomepageManager: React.FC = () => {
-  const [settings, setSettings] = useState<HomeSettings>(defaultSettings);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const { toast } = useToast();
-
+  // Initialize local state
   useEffect(() => {
-    loadSettings();
-  }, []);
-
-  const loadSettings = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('site_meta')
-        .select('value')
-        .eq('key', 'home_settings')
-        .maybeSingle();
-
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
-
-      if (data?.value) {
-        // Properly validate and cast the JSON data
-        const parsedSettings = data.value as unknown;
-        if (parsedSettings && typeof parsedSettings === 'object' && 'sections' in parsedSettings) {
-          setSettings(parsedSettings as HomeSettings);
-        } else {
-          console.warn('Invalid settings format, using defaults');
-          setSettings(defaultSettings);
-        }
-      }
-    } catch (error: any) {
-      console.error('Error loading homepage settings:', error);
-      toast({
-        title: "Erro ao carregar configurações",
-        description: error.message || "Não foi possível carregar as configurações da página inicial.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+    if (Array.isArray(sections) && sections.length > 0) {
+      const sortedSections = getAllSections();
+      const safeSortedSections = Array.isArray(sortedSections) ? sortedSections : [];
+      setLocalSections([...safeSortedSections]);
+      console.log('HomepageManager: Loaded sections from hook:', safeSortedSections);
     }
+  }, [sections, getAllSections]);
+
+  // Initialize release settings
+  useEffect(() => {
+    if (settings) {
+      setReleaseSettings(prev => ({
+        ...prev,
+        customDate: settings.customDate || '',
+        customTime: settings.customTime || '',
+        isRecurring: settings.isRecurring || false,
+        recurringPattern: settings.recurringPattern || 'weekly',
+        recurringDays: settings.recurringDays || [],
+        recurringTime: settings.recurringTime || '10:00',
+        wipeSuggestions: settings.wipeSuggestions !== false
+      }));
+    }
+  }, [settings]);
+
+  const moveSection = (sectionId: string, direction: 'up' | 'down') => {
+    const safeLocalSections = Array.isArray(localSections) ? localSections : [];
+    const currentIndex = safeLocalSections.findIndex(s => s.id === sectionId);
+    
+    if (
+      (direction === 'up' && currentIndex === 0) || 
+      (direction === 'down' && currentIndex === safeLocalSections.length - 1) ||
+      currentIndex === -1
+    ) {
+      return;
+    }
+
+    const newSections = [...safeLocalSections];
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    
+    [newSections[currentIndex], newSections[targetIndex]] = 
+    [newSections[targetIndex], newSections[currentIndex]];
+
+    const updatedSections = newSections.map((section, index) => ({
+      ...section,
+      order: index
+    }));
+    
+    setLocalSections(updatedSections);
+    
+    const newOrder = updatedSections.map(s => s.id);
+    reorderSections(newOrder);
+    
+    toast({
+      title: "Seções atualizadas",
+      description: "A ordem das seções foi alterada com sucesso.",
+    });
+    
+    console.log('HomepageManager: Reordered sections to:', updatedSections.map(s => `${s.id} (order: ${s.order})`));
   };
 
-  const saveSettings = async () => {
+  const handleToggleVisibility = (sectionId: string) => {
+    const safeLocalSections = Array.isArray(localSections) ? localSections : [];
+    const updatedSections = safeLocalSections.map(s => 
+      s.id === sectionId 
+        ? { ...s, visible: !s.visible }
+        : s
+    );
+    
+    setLocalSections(updatedSections);
+    toggleSectionVisibility(sectionId);
+    
+    const toggledSection = updatedSections.find(s => s.id === sectionId);
+    
+    toast({
+      title: "Seção atualizada",
+      description: `Seção "${toggledSection?.title}" ${toggledSection?.visible ? 'mostrada' : 'ocultada'} com sucesso.`,
+    });
+    
+    console.log('HomepageManager: Toggled visibility for', sectionId, 'to', toggledSection?.visible);
+  };
+
+  const handleReset = () => {
+    resetToDefaults();
+    toast({
+      title: "Configurações restauradas",
+      description: "As seções foram restauradas para a configuração padrão.",
+    });
+    console.log('HomepageManager: Reset to defaults');
+  };
+
+  const handleSaveReleaseSettings = async () => {
     try {
-      setSaving(true);
-      
-      // Convert settings to a proper JSON object for Supabase
-      const settingsAsJson = JSON.parse(JSON.stringify(settings));
-      
-      const { error } = await supabase
-        .from('site_meta')
-        .upsert({
-          key: 'home_settings',
-          value: settingsAsJson
-        }, {
-          onConflict: 'key'
-        });
-
-      if (error) throw error;
-
+      await updateSettings(releaseSettings);
       toast({
         title: "Configurações salvas",
-        description: "As configurações da página inicial foram atualizadas com sucesso.",
+        description: "As configurações de próximas edições foram salvas com sucesso.",
       });
-    } catch (error: any) {
-      console.error('Error saving homepage settings:', error);
+    } catch (error) {
       toast({
-        title: "Erro ao salvar",
-        description: error.message || "Não foi possível salvar as configurações.",
+        title: "Erro",
+        description: "Erro ao salvar as configurações.",
         variant: "destructive",
       });
-    } finally {
-      setSaving(false);
     }
   };
 
-  const resetToDefaults = () => {
-    setSettings(defaultSettings);
-    toast({
-      title: "Configurações resetadas",
-      description: "As configurações foram restauradas para os valores padrão.",
-    });
-  };
-
-  const updateSectionConfig = (sectionKey: keyof HomeSettings['sections'], config: Partial<SectionConfig>) => {
-    setSettings(prev => ({
+  const handleRecurringDayToggle = (day: string) => {
+    setReleaseSettings(prev => ({
       ...prev,
-      sections: {
-        ...prev.sections,
-        [sectionKey]: {
-          ...prev.sections[sectionKey],
-          ...config
-        }
-      }
+      recurringDays: prev.recurringDays.includes(day)
+        ? prev.recurringDays.filter(d => d !== day)
+        : [...prev.recurringDays, day]
     }));
   };
 
-  if (loading) {
+  const nextReleaseDate = getNextReleaseDate();
+  const safeLocalSections = Array.isArray(localSections) ? localSections : [];
+
+  if (isLoading || settingsLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
+      <Card className="border-white/10 bg-white/5">
+        <CardHeader>
+          <CardTitle>Homepage Manager</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex justify-center py-6">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
-  // Create array with sections - using index as fallback for key
-  const sectionEntries = Object.entries(settings.sections).map(([key, config], index) => ({
-    key: `${key}-${index}`, // Use unique key combining name and index
-    sectionKey: key as keyof HomeSettings['sections'],
-    config,
-    displayName: key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-  }));
-
   return (
-    <div className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Gerenciar Página Inicial</h2>
-          <p className="text-muted-foreground mt-1">
-            Configure a visibilidade e ordem das seções da página inicial
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={resetToDefaults}>
-            <RotateCcw className="h-4 w-4 mr-2" />
-            Resetar
-          </Button>
-          <Button onClick={saveSettings} disabled={saving}>
-            {saving ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4 mr-2" />
-            )}
-            Salvar
-          </Button>
-        </div>
-      </div>
-
-      <Separator />
-
-      <div className="grid gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Configuração das Seções</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {sectionEntries.map(({ key, sectionKey, config, displayName }) => (
-              <div key={key} className="p-4 border rounded-lg space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-medium">{displayName}</h3>
+    <Card className="border-white/10 bg-white/5">
+      <CardHeader>
+        <CardTitle>Homepage Manager</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Configure seções, próximas edições e outros aspectos da página inicial
+        </p>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="sections" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="sections">Gerenciar Seções</TabsTrigger>
+            <TabsTrigger value="releases">Próximas Edições</TabsTrigger>
+            <TabsTrigger value="advanced">Avançado</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="sections" className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Seções da Homepage</h3>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleReset}
+                className="flex items-center gap-2"
+              >
+                <RotateCcw className="h-4 w-4" />
+                Restaurar Padrão
+              </Button>
+            </div>
+            
+            <div className="space-y-4">
+              {safeLocalSections.map((section, index) => (
+                <div 
+                  key={section.id}
+                  className="flex items-center justify-between p-4 bg-secondary/5 rounded-lg border border-white/10"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="font-medium">{section.title}</span>
+                    <Badge variant={section.visible ? "default" : "outline"}>
+                      {section.visible ? "Visível" : "Oculta"}
+                    </Badge>
+                    <Badge variant="secondary" className="text-xs">
+                      Ordem: {section.order}
+                    </Badge>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleToggleVisibility(section.id)}
+                      title={section.visible ? "Ocultar seção" : "Mostrar seção"}
+                      className="h-8 w-8"
+                    >
+                      {section.visible ? (
+                        <Eye className="h-4 w-4" />
+                      ) : (
+                        <EyeOff className="h-4 w-4" />
+                      )}
+                    </Button>
+                    
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => moveSection(section.id, 'up')}
+                      disabled={index === 0}
+                      title="Mover para cima"
+                      className="h-8 w-8"
+                    >
+                      <ChevronUp className="h-4 w-4" />
+                    </Button>
+                    
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => moveSection(section.id, 'down')}
+                      disabled={index === safeLocalSections.length - 1}
+                      title="Mover para baixo"
+                      className="h-8 w-8"
+                    >
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="releases" className="space-y-6">
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Configuração de Próximas Edições</h3>
+              
+              {nextReleaseDate && (
+                <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calendar className="h-4 w-4 text-blue-600" />
+                    <span className="font-medium text-blue-900 dark:text-blue-100">Próxima Edição Programada</span>
+                  </div>
+                  <p className="text-blue-800 dark:text-blue-200">
+                    {nextReleaseDate.toLocaleString('pt-BR', { 
+                      timeZone: 'America/Sao_Paulo',
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </p>
+                </div>
+              )}
+              
+              <div className="space-y-6">
+                <div className="flex items-center space-x-2">
                   <Switch
-                    checked={config.visible}
-                    onCheckedChange={(visible) => updateSectionConfig(sectionKey, { visible })}
+                    id="recurring"
+                    checked={releaseSettings.isRecurring}
+                    onCheckedChange={(checked) => 
+                      setReleaseSettings(prev => ({ ...prev, isRecurring: checked }))
+                    }
                   />
+                  <Label htmlFor="recurring">Edições Recorrentes</Label>
                 </div>
                 
-                {config.visible && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor={`${key}-order`}>Ordem</Label>
-                      <Input
-                        id={`${key}-order`}
-                        type="number"
-                        value={config.order}
-                        onChange={(e) => updateSectionConfig(sectionKey, { order: parseInt(e.target.value) || 0 })}
-                        min="0"
-                      />
-                    </div>
-
-                    {sectionKey === 'recent_issues' && (
-                      <>
-                        <div className="space-y-2">
-                          <Label htmlFor={`${key}-badge-days`}>Dias para badge "Novo"</Label>
-                          <Input
-                            id={`${key}-badge-days`}
-                            type="number"
-                            value={config.days_for_new_badge || 7}
-                            onChange={(e) => updateSectionConfig(sectionKey, { days_for_new_badge: parseInt(e.target.value) || 7 })}
-                            min="1"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor={`${key}-max-items`}>Máximo de itens</Label>
-                          <Input
-                            id={`${key}-max-items`}
-                            type="number"
-                            value={config.max_items || 10}
-                            onChange={(e) => updateSectionConfig(sectionKey, { max_items: parseInt(e.target.value) || 10 })}
-                            min="1"
-                          />
-                        </div>
-                      </>
-                    )}
-
-                    {sectionKey === 'popular_issues' && (
-                      <>
-                        <div className="space-y-2">
-                          <Label htmlFor={`${key}-period`}>Período</Label>
-                          <Select
-                            value={config.period || 'week'}
-                            onValueChange={(period) => updateSectionConfig(sectionKey, { period })}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="day">Dia</SelectItem>
-                              <SelectItem value="week">Semana</SelectItem>
-                              <SelectItem value="month">Mês</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor={`${key}-max-items-popular`}>Máximo de itens</Label>
-                          <Input
-                            id={`${key}-max-items-popular`}
-                            type="number"
-                            value={config.max_items || 10}
-                            onChange={(e) => updateSectionConfig(sectionKey, { max_items: parseInt(e.target.value) || 10 })}
-                            min="1"
-                          />
-                        </div>
-                      </>
-                    )}
-
-                    {sectionKey === 'recommended_issues' && (
-                      <div className="space-y-2">
-                        <Label htmlFor={`${key}-max-items-recommended`}>Máximo de itens</Label>
+                {!releaseSettings.isRecurring ? (
+                  <div className="space-y-4">
+                    <h4 className="font-medium">Data e Hora Específica</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="custom-date">Data</Label>
                         <Input
-                          id={`${key}-max-items-recommended`}
-                          type="number"
-                          value={config.max_items || 10}
-                          onChange={(e) => updateSectionConfig(sectionKey, { max_items: parseInt(e.target.value) || 10 })}
-                          min="1"
+                          id="custom-date"
+                          type="date"
+                          value={releaseSettings.customDate}
+                          onChange={(e) => 
+                            setReleaseSettings(prev => ({ ...prev, customDate: e.target.value }))
+                          }
                         />
                       </div>
-                    )}
+                      <div>
+                        <Label htmlFor="custom-time">Horário (São Paulo)</Label>
+                        <Input
+                          id="custom-time"
+                          type="time"
+                          value={releaseSettings.customTime}
+                          onChange={(e) => 
+                            setReleaseSettings(prev => ({ ...prev, customTime: e.target.value }))
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <h4 className="font-medium">Configuração Recorrente</h4>
+                    
+                    <div>
+                      <Label htmlFor="pattern">Padrão</Label>
+                      <Select
+                        value={releaseSettings.recurringPattern}
+                        onValueChange={(value: 'weekly' | 'biweekly') => 
+                          setReleaseSettings(prev => ({ ...prev, recurringPattern: value }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="weekly">Semanal</SelectItem>
+                          <SelectItem value="biweekly">Quinzenal</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label>Dias da Semana</Label>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {['segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado', 'domingo'].map((day) => (
+                          <Button
+                            key={day}
+                            variant={releaseSettings.recurringDays.includes(day) ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handleRecurringDayToggle(day)}
+                          >
+                            {day.charAt(0).toUpperCase() + day.slice(1)}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="recurring-time">Horário (São Paulo)</Label>
+                      <Input
+                        id="recurring-time"
+                        type="time"
+                        value={releaseSettings.recurringTime}
+                        onChange={(e) => 
+                          setReleaseSettings(prev => ({ ...prev, recurringTime: e.target.value }))
+                        }
+                      />
+                    </div>
                   </div>
                 )}
+                
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="wipe-suggestions"
+                    checked={releaseSettings.wipeSuggestions}
+                    onCheckedChange={(checked) => 
+                      setReleaseSettings(prev => ({ ...prev, wipeSuggestions: checked }))
+                    }
+                  />
+                  <Label htmlFor="wipe-suggestions">Limpar sugestões a cada nova edição</Label>
+                </div>
+                
+                <Button onClick={handleSaveReleaseSettings} className="w-full">
+                  <Clock className="h-4 w-4 mr-2" />
+                  Salvar Configurações
+                </Button>
               </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="advanced" className="space-y-4">
+            <h3 className="text-lg font-semibold">Configurações Avançadas</h3>
+            <p className="text-muted-foreground">
+              Configurações avançadas para personalização da homepage em desenvolvimento...
+            </p>
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
   );
 };
