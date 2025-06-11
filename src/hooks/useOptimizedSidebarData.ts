@@ -187,17 +187,17 @@ export const useOptimizedSidebarData = (): OptimizedSidebarData => {
 
   return useMemo(() => ({
     stats: {
-      data: statsData ?? null, // Now properly typed as SidebarStats | null
+      data: statsData as SidebarStats | null, // Explicitly cast to ensure proper typing
       isLoading: statsLoading,
       error: statsError,
     },
     reviewerComments: {
-      data: commentsData ?? getDefaultComments(),
+      data: commentsData as ReviewerComment[], // Explicitly cast to ensure proper typing
       isLoading: commentsLoading,
       error: commentsError,
     },
     topThreads: {
-      data: threadsData ?? getDefaultThreads(),
+      data: threadsData as TopThread[], // Explicitly cast to ensure proper typing
       isLoading: threadsLoading,
       error: threadsError,
     },
