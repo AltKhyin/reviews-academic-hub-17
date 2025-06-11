@@ -1,5 +1,5 @@
 
-// ABOUTME: Section visibility management hook with enhanced error handling and database debugging
+// ABOUTME: Section visibility management hook for dashboard layout configuration
 import { useOptimizedQuery, queryKeys, queryConfigs } from './useOptimizedQuery';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useCallback } from 'react';
@@ -11,8 +11,10 @@ export interface SectionConfig {
   order: number;
 }
 
+// Export Section type alias for backward compatibility
 export type Section = SectionConfig;
 
+// Database to Dashboard section ID mapping
 const SECTION_ID_MAPPING: Record<string, string> = {
   'reviewer_notes': 'reviews',
   'featured_carousel': 'featured', 
@@ -22,6 +24,7 @@ const SECTION_ID_MAPPING: Record<string, string> = {
   'upcoming_releases': 'upcoming'
 };
 
+// Reverse mapping for updates
 const DASHBOARD_TO_DB_MAPPING: Record<string, string> = Object.fromEntries(
   Object.entries(SECTION_ID_MAPPING).map(([db, dash]) => [dash, db])
 );
@@ -35,6 +38,7 @@ const defaultSections: SectionConfig[] = [
   { id: 'upcoming', title: 'Upcoming Releases', visible: true, order: 5 },
 ];
 
+// Type guard for sections array
 const isSectionConfigArray = (data: unknown): data is SectionConfig[] => {
   return Array.isArray(data) && data.every(item => 
     item && 
@@ -46,89 +50,26 @@ const isSectionConfigArray = (data: unknown): data is SectionConfig[] => {
   );
 };
 
-const updateSiteMetaWithRetry = async (key: string, value: any, maxRetries = 3) => {
-  console.log(`[useSectionVisibility] Attempting to update site_meta key: ${key}`, value);
-  
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    try {
-      // First check if the key exists
-      const { data: existing, error: checkError } = await supabase
-        .from('site_meta')
-        .select('id, key')
-        .eq('key', key)
-        .maybeSingle();
-      
-      if (checkError) {
-        console.error(`[useSectionVisibility] Error checking existing record (attempt ${attempt + 1}):`, checkError);
-        if (attempt === maxRetries - 1) throw checkError;
-        await new Promise(resolve => setTimeout(resolve, 100 * (attempt + 1)));
-        continue;
-      }
-
-      let result;
-      if (existing) {
-        // Update existing record
-        console.log(`[useSectionVisibility] Updating existing record with id: ${existing.id}`);
-        result = await supabase
-          .from('site_meta')
-          .update({ value, updated_at: new Date().toISOString() })
-          .eq('key', key)
-          .select();
-      } else {
-        // Insert new record
-        console.log(`[useSectionVisibility] Inserting new record for key: ${key}`);
-        result = await supabase
-          .from('site_meta')
-          .insert({ key, value })
-          .select();
-      }
-
-      if (result.error) {
-        console.error(`[useSectionVisibility] Database operation failed (attempt ${attempt + 1}):`, result.error);
-        if (result.error.message.includes('duplicate key value') || result.error.message.includes('unique constraint')) {
-          await new Promise(resolve => setTimeout(resolve, 100 * (attempt + 1)));
-          continue;
-        }
-        throw result.error;
-      }
-
-      console.log(`[useSectionVisibility] Successfully updated site_meta:`, result.data);
-      return { success: true, data: result.data };
-    } catch (error) {
-      console.error(`[useSectionVisibility] Attempt ${attempt + 1} failed:`, error);
-      if (attempt === maxRetries - 1) {
-        throw error;
-      }
-      await new Promise(resolve => setTimeout(resolve, 100 * (attempt + 1)));
-    }
-  }
-};
-
 export const useSectionVisibility = () => {
   const [localSections, setLocalSections] = useState<SectionConfig[]>(defaultSections);
 
   const { 
     data: sections, 
     isLoading,
-    error,
-    refetch
+    error 
   } = useOptimizedQuery(
     queryKeys.homeSettings(),
     async (): Promise<SectionConfig[]> => {
       try {
-        console.log('[useSectionVisibility] Fetching home settings from database...');
         const { data, error } = await supabase.rpc('get_home_settings');
         
-        if (error) {
-          console.error('[useSectionVisibility] Database error:', error);
-          throw error;
-        }
+        if (error) throw error;
         
-        console.log('[useSectionVisibility] Raw database response:', data);
-        
+        // Parse the home settings and extract section configuration
         if (data && typeof data === 'object' && !Array.isArray(data)) {
           const settings = data as Record<string, any>;
           if (settings.sections && typeof settings.sections === 'object') {
+            // Convert database section IDs to dashboard section IDs
             const mappedSections = Object.entries(settings.sections).map(([dbId, config]: [string, any]) => {
               const dashboardId = SECTION_ID_MAPPING[dbId] || dbId;
               return {
@@ -139,30 +80,30 @@ export const useSectionVisibility = () => {
               };
             });
             
-            console.log('[useSectionVisibility] Mapped sections from DB:', mappedSections);
+            console.log('useSectionVisibility: Mapped sections from DB:', mappedSections);
             return mappedSections;
           }
         }
         
-        console.log('[useSectionVisibility] Using default sections (no valid data found)');
+        console.log('useSectionVisibility: Using default sections');
         return defaultSections;
       } catch (error) {
-        console.error('[useSectionVisibility] Failed to load section visibility settings:', error);
+        console.warn('Failed to load section visibility settings:', error);
         return defaultSections;
       }
     },
     {
       ...queryConfigs.static,
-      staleTime: 15 * 60 * 1000,
-      retry: false,
+      staleTime: 15 * 60 * 1000, // 15 minutes for section config
     }
   );
 
+  // Safely access sections with type guard and fallback
   const safeSections = isSectionConfigArray(sections) ? sections : defaultSections;
 
   const getVisibleSections = useCallback(() => {
     const visibleSections = safeSections.filter(section => section.visible).sort((a, b) => a.order - b.order);
-    console.log('[useSectionVisibility] getVisibleSections returning:', visibleSections.map(s => `${s.id} (order: ${s.order})`));
+    console.log('useSectionVisibility: getVisibleSections returning:', visibleSections.map(s => `${s.id} (order: ${s.order})`));
     return visibleSections;
   }, [safeSections]);
 
@@ -176,13 +117,9 @@ export const useSectionVisibility = () => {
 
   const toggleSectionVisibility = useCallback(async (sectionId: string) => {
     const section = getSectionById(sectionId);
-    if (!section) {
-      console.error(`[useSectionVisibility] Section not found: ${sectionId}`);
-      return;
-    }
+    if (!section) return;
 
-    console.log(`[useSectionVisibility] Toggling visibility for section: ${sectionId} from ${section.visible} to ${!section.visible}`);
-
+    // Update local state immediately for UI responsiveness
     setLocalSections(prev => 
       prev.map(s => 
         s.id === sectionId 
@@ -192,39 +129,35 @@ export const useSectionVisibility = () => {
     );
 
     try {
-      const { data: currentSettings, error: fetchError } = await supabase.rpc('get_home_settings');
+      // Get current settings first
+      const { data: currentSettings } = await supabase.rpc('get_home_settings');
       
-      if (fetchError) {
-        console.error('[useSectionVisibility] Error fetching current settings:', fetchError);
-        throw fetchError;
+      if (currentSettings && typeof currentSettings === 'object') {
+        const settings = currentSettings as Record<string, any>;
+        const updatedSections = { ...settings.sections };
+        
+        // Convert dashboard ID to database ID for storage
+        const dbSectionId = DASHBOARD_TO_DB_MAPPING[sectionId] || sectionId;
+        
+        if (updatedSections[dbSectionId]) {
+          updatedSections[dbSectionId].visible = !section.visible;
+        } else {
+          updatedSections[dbSectionId] = { visible: !section.visible, order: section.order };
+        }
+
+        // Update site_meta directly
+        const { error } = await supabase
+          .from('site_meta')
+          .upsert({
+            key: 'home_settings',
+            value: { ...settings, sections: updatedSections }
+          });
+        
+        if (error) throw error;
       }
-
-      console.log('[useSectionVisibility] Current settings from DB:', currentSettings);
-      
-      const settings = (currentSettings && typeof currentSettings === 'object') ? currentSettings as Record<string, any> : {};
-      const updatedSections = { ...settings.sections };
-      
-      const dbSectionId = DASHBOARD_TO_DB_MAPPING[sectionId] || sectionId;
-      console.log(`[useSectionVisibility] Mapping ${sectionId} to database ID: ${dbSectionId}`);
-      
-      if (updatedSections[dbSectionId]) {
-        updatedSections[dbSectionId].visible = !section.visible;
-      } else {
-        updatedSections[dbSectionId] = { visible: !section.visible, order: section.order };
-      }
-
-      const finalSettings = { ...settings, sections: updatedSections };
-      console.log('[useSectionVisibility] Final settings to save:', finalSettings);
-
-      await updateSiteMetaWithRetry('home_settings', finalSettings);
-      
-      // Refetch to ensure UI reflects database state
-      setTimeout(() => {
-        refetch();
-      }, 500);
-      
     } catch (error) {
-      console.error('[useSectionVisibility] Failed to toggle section visibility:', error);
+      console.error('Failed to toggle section visibility:', error);
+      // Revert local state on error
       setLocalSections(prev => 
         prev.map(s => 
           s.id === sectionId 
@@ -233,84 +166,75 @@ export const useSectionVisibility = () => {
         )
       );
     }
-  }, [getSectionById, refetch]);
+  }, [getSectionById]);
 
   const reorderSections = useCallback(async (newOrder: string[]) => {
-    console.log('[useSectionVisibility] Reordering sections:', newOrder);
-    
     try {
-      const { data: currentSettings, error: fetchError } = await supabase.rpc('get_home_settings');
+      // Get current settings first
+      const { data: currentSettings } = await supabase.rpc('get_home_settings');
       
-      if (fetchError) {
-        console.error('[useSectionVisibility] Error fetching current settings for reorder:', fetchError);
-        throw fetchError;
-      }
-      
-      const settings = (currentSettings && typeof currentSettings === 'object') ? currentSettings as Record<string, any> : {};
-      const updatedSections = { ...settings.sections };
-      
-      newOrder.forEach((sectionId, index) => {
-        const dbSectionId = DASHBOARD_TO_DB_MAPPING[sectionId] || sectionId;
+      if (currentSettings && typeof currentSettings === 'object') {
+        const settings = currentSettings as Record<string, any>;
+        const updatedSections = { ...settings.sections };
         
-        if (updatedSections[dbSectionId]) {
-          updatedSections[dbSectionId].order = index;
-        } else {
-          updatedSections[dbSectionId] = { visible: true, order: index };
-        }
-      });
+        newOrder.forEach((sectionId, index) => {
+          // Convert dashboard ID to database ID for storage
+          const dbSectionId = DASHBOARD_TO_DB_MAPPING[sectionId] || sectionId;
+          
+          if (updatedSections[dbSectionId]) {
+            updatedSections[dbSectionId].order = index;
+          } else {
+            updatedSections[dbSectionId] = { visible: true, order: index };
+          }
+        });
 
-      const finalSettings = { ...settings, sections: updatedSections };
-      console.log('[useSectionVisibility] Final reorder settings to save:', finalSettings);
-
-      await updateSiteMetaWithRetry('home_settings', finalSettings);
-      
-      // Refetch to ensure UI reflects database state
-      setTimeout(() => {
-        refetch();
-      }, 500);
-      
+        // Update site_meta directly
+        const { error } = await supabase
+          .from('site_meta')
+          .upsert({
+            key: 'home_settings',
+            value: { ...settings, sections: updatedSections }
+          });
+        
+        if (error) throw error;
+      }
     } catch (error) {
-      console.error('[useSectionVisibility] Failed to reorder sections:', error);
+      console.error('Failed to reorder sections:', error);
     }
-  }, [refetch]);
+  }, []);
 
   const updateSection = useCallback(async (sectionId: string, updates: Partial<SectionConfig>) => {
-    console.log('[useSectionVisibility] Updating section:', sectionId, updates);
-    
     try {
-      const { data: currentSettings, error: fetchError } = await supabase.rpc('get_home_settings');
+      // Get current settings first
+      const { data: currentSettings } = await supabase.rpc('get_home_settings');
       
-      if (fetchError) {
-        console.error('[useSectionVisibility] Error fetching current settings for update:', fetchError);
-        throw fetchError;
+      if (currentSettings && typeof currentSettings === 'object') {
+        const settings = currentSettings as Record<string, any>;
+        const updatedSections = { ...settings.sections };
+        
+        // Convert dashboard ID to database ID for storage
+        const dbSectionId = DASHBOARD_TO_DB_MAPPING[sectionId] || sectionId;
+        
+        updatedSections[dbSectionId] = { ...updatedSections[dbSectionId], ...updates };
+
+        // Update site_meta directly
+        const { error } = await supabase
+          .from('site_meta')
+          .upsert({
+            key: 'home_settings',
+            value: { ...settings, sections: updatedSections }
+          });
+        
+        if (error) throw error;
       }
-      
-      const settings = (currentSettings && typeof currentSettings === 'object') ? currentSettings as Record<string, any> : {};
-      const updatedSections = { ...settings.sections };
-      
-      const dbSectionId = DASHBOARD_TO_DB_MAPPING[sectionId] || sectionId;
-      
-      updatedSections[dbSectionId] = { ...updatedSections[dbSectionId], ...updates };
-
-      const finalSettings = { ...settings, sections: updatedSections };
-      console.log('[useSectionVisibility] Final update settings to save:', finalSettings);
-
-      await updateSiteMetaWithRetry('home_settings', finalSettings);
-      
-      // Refetch to ensure UI reflects database state
-      setTimeout(() => {
-        refetch();
-      }, 500);
-      
     } catch (error) {
-      console.error('[useSectionVisibility] Failed to update section:', error);
+      console.error('Failed to update section:', error);
     }
-  }, [refetch]);
+  }, []);
 
   const resetToDefaults = useCallback(async () => {
-    console.log('[useSectionVisibility] Resetting to defaults');
-    
     try {
+      // Reset to default configuration by updating site_meta directly
       const defaultSettings = {
         sections: Object.fromEntries(
           defaultSections.map(section => {
@@ -320,21 +244,20 @@ export const useSectionVisibility = () => {
         )
       };
 
-      console.log('[useSectionVisibility] Default settings to save:', defaultSettings);
-
-      await updateSiteMetaWithRetry('home_settings', defaultSettings);
+      const { error } = await supabase
+        .from('site_meta')
+        .upsert({
+          key: 'home_settings',
+          value: defaultSettings
+        });
+      
+      if (error) throw error;
       
       setLocalSections(defaultSections);
-      
-      // Refetch to ensure UI reflects database state
-      setTimeout(() => {
-        refetch();
-      }, 500);
-      
     } catch (error) {
-      console.error('[useSectionVisibility] Failed to reset to defaults:', error);
+      console.error('Failed to reset to defaults:', error);
     }
-  }, [refetch]);
+  }, []);
 
   return {
     sections: safeSections,

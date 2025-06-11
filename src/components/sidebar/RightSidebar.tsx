@@ -1,11 +1,10 @@
 
-// ABOUTME: Right sidebar component with unified data pipeline and proper hook usage
+// ABOUTME: Right sidebar component with optimized rendering and minimal re-renders
 import React, { useEffect, useMemo } from 'react';
 import { X } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { useSidebarStore } from '@/stores/sidebarStore';
-import { useSidebarConfig } from '@/hooks/sidebar/useSidebarConfig';
-import { useOptimizedSidebarData } from '@/hooks/useOptimizedSidebarData';
+import { useSidebarData } from '@/hooks/useSidebarData';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { SidebarErrorBoundary } from './components/SidebarErrorBoundary';
 import { CommunityHeader } from './components/CommunityHeader';
@@ -31,6 +30,7 @@ interface SidebarSection {
 
 const SECTION_COMPONENTS = {
   'community-header': CommunityHeader,
+  'active-avatars': ActiveAvatars,
   'top-threads': TopThreads,
   'next-review': NextReviewCountdown,
   'weekly-poll': WeeklyPoll,
@@ -50,12 +50,22 @@ const DEFAULT_SECTIONS: SidebarSection[] = [
   { id: 'mini-changelog', name: 'Changelog', enabled: true, order: 7 },
 ];
 
+const isSidebarSectionsArray = (sections: unknown): sections is SidebarSection[] => {
+  return Array.isArray(sections) && sections.every(section => 
+    section && 
+    typeof section === 'object' && 
+    'id' in section && 
+    'enabled' in section && 
+    'order' in section
+  );
+};
+
 export const RightSidebar = React.memo<RightSidebarProps>(({
   className = '',
   isMobile = false
 }) => {
   const location = useLocation();
-  const { isMobileDrawerOpen, toggleMobileDrawer, setOnlineUsers, setStats, setComments, setThreads } = useSidebarStore();
+  const { isMobileDrawerOpen, toggleMobileDrawer, config, onlineUsers } = useSidebarStore();
   const focusTrapRef = useFocusTrap(isMobile && isMobileDrawerOpen);
   
   // Only show sidebar in community routes
@@ -64,60 +74,11 @@ export const RightSidebar = React.memo<RightSidebarProps>(({
     [location.pathname]
   );
   
-  // Load configuration and data with unified pipeline
-  const { data: config, isLoading: configLoading } = useSidebarConfig();
-  const {
-    stats,
-    reviewerComments,
-    topThreads,
-    hasError,
-    isLoading: dataLoading
-  } = useOptimizedSidebarData();
-
-  // Update store with loaded data
-  useEffect(() => {
-    if (!dataLoading && !hasError) {
-      if (stats.data) {
-        setStats({
-          totalUsers: stats.data.totalUsers || 0,
-          onlineUsers: stats.data.onlineUsers || 0,
-          totalIssues: stats.data.totalIssues || 0,
-          totalPosts: stats.data.totalPosts || 0,
-          totalComments: stats.data.totalComments || 0,
-        });
-      }
-      
-      if (reviewerComments.data && Array.isArray(reviewerComments.data)) {
-        setComments(reviewerComments.data.map(comment => ({
-          id: comment.id,
-          author_name: comment.reviewer_name || 'Reviewer',
-          author_avatar: comment.reviewer_avatar || null,
-          body: comment.comment || '',
-          votes: 0,
-          created_at: comment.created_at,
-          thread_id: `comment-${comment.id}`
-        })));
-      }
-      
-      if (topThreads.data && Array.isArray(topThreads.data)) {
-        setThreads(topThreads.data.map(thread => ({
-          id: thread.id,
-          title: thread.title || 'Discussão',
-          comments: Number(thread.comments) || 0,
-          votes: thread.votes || 0,
-          created_at: thread.created_at,
-          thread_type: thread.thread_type || 'post'
-        })));
-      }
-
-      // Set mock online users
-      setOnlineUsers([
-        { id: '1', full_name: 'Dr. Silva', avatar_url: null, last_active: new Date().toISOString() },
-        { id: '2', full_name: 'Dra. Santos', avatar_url: null, last_active: new Date().toISOString() },
-        { id: '3', full_name: 'Prof. Lima', avatar_url: null, last_active: new Date().toISOString() }
-      ]);
-    }
-  }, [dataLoading, hasError, stats.data, reviewerComments.data, topThreads.data, setStats, setComments, setThreads, setOnlineUsers]);
+  // Initialize data fetching only when sidebar should be visible
+  const shouldFetchData = shouldShowSidebar;
+  if (shouldFetchData) {
+    useSidebarData();
+  }
 
   // Handle escape key to close mobile drawer
   useEffect(() => {
@@ -133,31 +94,26 @@ export const RightSidebar = React.memo<RightSidebarProps>(({
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isMobile, isMobileDrawerOpen, toggleMobileDrawer]);
 
-  // Get enabled sections from config or use defaults
+  // Get enabled sections from config or use defaults with proper type checking
   const enabledSections = useMemo(() => {
-    if (configLoading || !config || !config.sections) {
+    if (!config || !config.sections || !isSidebarSectionsArray(config.sections)) {
       return DEFAULT_SECTIONS;
     }
     
     return config.sections
       .filter((section: SidebarSection) => section.enabled)
       .sort((a: SidebarSection, b: SidebarSection) => a.order - b.order);
-  }, [config, configLoading]);
+  }, [config]);
 
   // Helper function to render section components with proper props
   const renderSectionComponent = (sectionId: string) => {
-    // Handle ActiveAvatars separately to pass the required users prop
-    if (sectionId === 'active-avatars') {
-      return <ActiveAvatars users={[
-        { id: '1', full_name: 'Dr. Silva', avatar_url: null, last_active: new Date().toISOString() },
-        { id: '2', full_name: 'Dra. Santos', avatar_url: null, last_active: new Date().toISOString() },
-        { id: '3', full_name: 'Prof. Lima', avatar_url: null, last_active: new Date().toISOString() }
-      ]} maxDisplay={8} />;
+    switch(sectionId) {
+      case 'active-avatars':
+        return <ActiveAvatars users={onlineUsers || []} maxDisplay={8} />;
+      default:
+        const SectionComponent = SECTION_COMPONENTS[sectionId as keyof typeof SECTION_COMPONENTS];
+        return SectionComponent ? <SectionComponent /> : null;
     }
-    
-    // Render other components from the mapping
-    const SectionComponent = SECTION_COMPONENTS[sectionId as keyof typeof SECTION_COMPONENTS];
-    return SectionComponent ? <SectionComponent /> : null;
   };
 
   // Mobile drawer overlay and sidebar

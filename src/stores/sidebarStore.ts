@@ -46,7 +46,7 @@ interface SidebarState {
   setPoll: (poll: Poll | null) => void;
   setUserVote: (vote: number | null) => void;
   setLoading: (loading: boolean) => void;
-  setError: (error: any) => void;
+  setError: (error: boolean) => void;
   setSidebarData: (data: SidebarData) => void;
   setCommentCarouselIndex: (index: number) => void;
   toggleMobileDrawer: () => void;
@@ -95,12 +95,7 @@ export const useSidebarStore = create<SidebarState>((set, get) => ({
   setLoading: (loading) => set((state) => ({
     loadingStates: { ...state.loadingStates, Stats: loading }
   })),
-  setError: (error) => {
-    if (error) {
-      console.error('Sidebar error:', error);
-    }
-    // Handle error state appropriately
-  },
+  setError: (error) => set({ /* Handle error state */ }),
   setSidebarData: (data) => set({
     stats: data.stats,
     comments: data.commentHighlights,
