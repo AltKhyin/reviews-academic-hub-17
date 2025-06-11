@@ -1,5 +1,5 @@
 
-// ABOUTME: Issues hook using unified query system with intelligent caching
+// ABOUTME: Enhanced issues hook with rate limiting and improved caching
 import { useUnifiedQuery } from './useUnifiedQuery';
 import { supabase } from '@/integrations/supabase/client';
 import { Issue } from '@/types/issue';
@@ -48,18 +48,23 @@ export const useIssues = (options: UseIssuesOptions = {}) => {
         throw error;
       }
       
-      console.log(`useIssues: Fetched ${data?.length || 0} issues`);
+      console.log(`useIssues: Fetched ${data?.length || 0} issues with filters:`, filters);
       return data || [];
     },
     {
       priority: 'normal',
       staleTime: 10 * 60 * 1000, // 10 minutes
       enableMonitoring: true,
+      rateLimit: {
+        endpoint: 'issues',
+        maxRequests: 10,
+        windowMs: 60000,
+      },
     }
   );
 };
 
-// Optimized hook for featured issue
+// Optimized hook for featured issue with enhanced caching
 export const useFeaturedIssue = () => {
   return useUnifiedQuery<Issue | null>(
     ['featured-issue'],
@@ -84,11 +89,16 @@ export const useFeaturedIssue = () => {
       priority: 'critical',
       staleTime: 15 * 60 * 1000, // 15 minutes
       enableMonitoring: true,
+      rateLimit: {
+        endpoint: 'issues',
+        maxRequests: 5,
+        windowMs: 60000,
+      },
     }
   );
 };
 
-// Batch hook for multiple issue types
+// Batch hook for multiple issue types with intelligent rate limiting
 export const useIssuesBatch = () => {
   const featured = useFeaturedIssue();
   const recent = useIssues({ filters: { limit: 10 } });
