@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Comment, EntityType } from '@/types/commentTypes';
@@ -24,17 +23,27 @@ export function useCommentActions(
 
   const addComment = async (content: string, imageUrl?: string): Promise<void> => {
     if (!user || !entityId || !entityType) {
+      console.error('Missing requirements for comment:', { user: !!user, entityId, entityType });
       toast({
-        title: "Autenticação necessária",
+        title: "Erro de autenticação",
         description: "Faça login para comentar.",
         variant: "destructive",
       });
       return;
     }
 
-    if (!content.trim()) return;
+    if (!content.trim()) {
+      toast({
+        title: "Comentário vazio",
+        description: "Por favor, escreva algo antes de enviar.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsAddingComment(true);
+    console.log(`Adding comment for ${entityType} ${entityId}:`, content.substring(0, 50) + '...');
+    
     try {
       let finalImageUrl = imageUrl;
       
@@ -63,6 +72,8 @@ export function useCommentActions(
         image_url: finalImageUrl || null
       };
       
+      console.log('Inserting comment data:', commentData);
+      
       const { data: newComment, error } = await supabase
         .from('comments')
         .insert(commentData)
@@ -76,7 +87,12 @@ export function useCommentActions(
         `)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase comment insert error:', error);
+        throw error;
+      }
+
+      console.log('Comment inserted successfully:', newComment);
 
       // Auto-upvote the user's own comment
       if (newComment) {
@@ -90,16 +106,38 @@ export function useCommentActions(
           
         if (voteError) {
           console.error('Error auto-upvoting comment:', voteError);
+        } else {
+          console.log('Auto-upvoted comment successfully');
         }
       }
 
       // Refresh comments to update the view
-      if (fetchComments) await fetchComments();
+      if (fetchComments) {
+        console.log('Refreshing comments after successful insert');
+        await fetchComments();
+      }
+      
+      toast({
+        title: "Comentário adicionado",
+        description: "Seu comentário foi publicado com sucesso.",
+      });
     } catch (error) {
       console.error('Error adding comment:', error);
+      
+      // Provide more specific error messages based on the error type
+      let errorMessage = "Não foi possível adicionar seu comentário.";
+      
+      if (error?.message?.includes('violates row-level security')) {
+        errorMessage = "Você não tem permissão para comentar neste item.";
+      } else if (error?.message?.includes('duplicate key')) {
+        errorMessage = "Este comentário já foi enviado.";
+      } else if (error?.message?.includes('not found')) {
+        errorMessage = "O item que você está tentando comentar não foi encontrado.";
+      }
+      
       toast({
         title: "Erro ao adicionar comentário",
-        description: "Não foi possível adicionar seu comentário.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

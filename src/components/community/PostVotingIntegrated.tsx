@@ -1,5 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
+// ABOUTME: Post voting component with race condition and state mutation fixes
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,10 +25,17 @@ export const PostVotingIntegrated: React.FC<PostVotingIntegratedProps> = ({
   const [score, setScore] = useState(initialScore);
   const [userVote, setUserVote] = useState(initialUserVote);
   const [isVoting, setIsVoting] = useState(false);
+  
+  // Fix: Add ref to track ongoing operations and prevent race conditions
+  const votingInProgress = useRef(false);
+  const lastVoteOperation = useRef<number>(0);
 
   useEffect(() => {
-    setScore(initialScore);
-    setUserVote(initialUserVote);
+    // Fix: Properly sync props without causing render loops
+    if (!votingInProgress.current) {
+      setScore(initialScore);
+      setUserVote(initialUserVote);
+    }
   }, [initialScore, initialUserVote]);
 
   const handleVote = async (value: 1 | -1) => {
@@ -40,39 +48,70 @@ export const PostVotingIntegrated: React.FC<PostVotingIntegratedProps> = ({
       return;
     }
 
-    if (isVoting) return;
+    // Fix: Prevent multiple simultaneous voting operations
+    if (isVoting || votingInProgress.current) {
+      console.log('Voting already in progress, ignoring click');
+      return;
+    }
 
+    const operationId = Date.now();
+    lastVoteOperation.current = operationId;
+    
     setIsVoting(true);
+    votingInProgress.current = true;
+    
     try {
       const newVoteValue = userVote === value ? 0 : value;
       
+      // Fix: Calculate score delta based on previous state, not optimistic updates
+      const previousVote = userVote;
+      const scoreDelta = newVoteValue - previousVote;
+      
+      // Fix: Apply optimistic update using functional setState to avoid stale closures
+      setUserVote(newVoteValue);
+      setScore(prevScore => prevScore + scoreDelta);
+      
+      console.log(`Voting operation ${operationId}: ${previousVote} -> ${newVoteValue}, delta: ${scoreDelta}`);
+      
+      // Perform database operation
       if (newVoteValue === 0) {
         // Remove vote
-        await supabase
+        const { error } = await supabase
           .from('post_votes')
           .delete()
           .eq('post_id', postId)
           .eq('user_id', user.id);
+          
+        if (error) throw error;
       } else {
         // Upsert vote
-        await supabase
+        const { error } = await supabase
           .from('post_votes')
           .upsert({
             post_id: postId,
             user_id: user.id,
             value: newVoteValue
           });
+          
+        if (error) throw error;
       }
 
-      // Update local state optimistically
-      const scoreDelta = newVoteValue - userVote;
-      setScore(prev => prev + scoreDelta);
-      setUserVote(newVoteValue);
-      
-      // Trigger parent refresh
-      onVoteChange();
+      // Fix: Only trigger parent refresh if this is still the latest operation
+      if (lastVoteOperation.current === operationId) {
+        // Delay parent refresh to allow database triggers to complete
+        setTimeout(() => {
+          if (lastVoteOperation.current === operationId) {
+            onVoteChange();
+          }
+        }, 300);
+      }
     } catch (error) {
       console.error('Error voting:', error);
+      
+      // Fix: Revert optimistic updates on error using the original values
+      setScore(initialScore);
+      setUserVote(initialUserVote);
+      
       toast({
         title: "Erro ao votar",
         description: "Não foi possível registrar seu voto.",
@@ -80,6 +119,7 @@ export const PostVotingIntegrated: React.FC<PostVotingIntegratedProps> = ({
       });
     } finally {
       setIsVoting(false);
+      votingInProgress.current = false;
     }
   };
 

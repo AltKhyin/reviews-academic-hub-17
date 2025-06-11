@@ -1,4 +1,5 @@
 
+// ABOUTME: Optimized comment section with reduced console logging
 import React from 'react';
 import { useComments } from '@/hooks/comments';
 import { useAuth } from '@/contexts/AuthContext';
@@ -31,8 +32,12 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, articleI
     entityType = 'issue';
   }
   
-  // Add debugging to verify entity information is correct
-  console.log(`CommentSection rendering for ${entityType} with ID: ${entityId}`);
+  // Fix: Reduce excessive console logging - only log on entity change, not on every render
+  React.useEffect(() => {
+    if (entityId) {
+      console.log(`CommentSection initialized for ${entityType} with ID: ${entityId}`);
+    }
+  }, [entityId, entityType]);
   
   const {
     comments,
