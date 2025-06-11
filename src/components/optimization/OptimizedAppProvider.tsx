@@ -35,7 +35,7 @@ export const OptimizedAppProvider: React.FC<OptimizedAppProviderProps> = ({
   enableBackgroundSync = true,
 }) => {
   // Initialize cache optimization
-  const { cacheMetrics, optimizeCache, prefetchCriticalData, calculateMetrics } = useOptimizedQueryClient({
+  const { cacheMetrics, optimizeCache, prefetchCriticalData, calculateCacheMetrics } = useOptimizedQueryClient({
     maxCacheSize: 150,
     cleanupInterval: 300000, // 5 minutes
     staleCacheThreshold: 600000, // 10 minutes

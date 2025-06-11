@@ -35,6 +35,11 @@ export const useOptimizedComments = (entityId: string, entityType: EntityType = 
     }
   );
 
+  // Create a wrapper function that matches the expected signature
+  const refetchComments = async () => {
+    await refetch();
+  };
+
   // Optimized comment actions that use local state management
   const { 
     addComment, 
@@ -43,7 +48,7 @@ export const useOptimizedComments = (entityId: string, entityType: EntityType = 
     isAddingComment, 
     isDeletingComment,
     isReplying
-  } = useOptimizedCommentActions(entityId, entityType, refetch);
+  } = useOptimizedCommentActions(entityId, entityType, refetchComments);
 
   // Optimized voting that doesn't trigger full refetches
   const { voteComment, isVoting } = useOptimizedCommentVoting(entityType, entityId);
@@ -52,7 +57,7 @@ export const useOptimizedComments = (entityId: string, entityType: EntityType = 
     comments,
     isLoading,
     error,
-    refetch,
+    refetch: refetchComments,
     addComment,
     replyToComment,
     deleteComment,

@@ -62,8 +62,15 @@ export const useArchiveData = (filters: ArchiveFilters = {}) => {
         throw error;
       }
       
-      console.log(`useArchiveData: Fetched ${data?.length || 0} issues`);
-      return data || [];
+      // Transform backend_tags from Json to string
+      const transformedData = data?.map(issue => ({
+        ...issue,
+        backend_tags: typeof issue.backend_tags === 'string' ? issue.backend_tags : 
+                     issue.backend_tags ? String(issue.backend_tags) : null,
+      })) || [];
+      
+      console.log(`useArchiveData: Fetched ${transformedData.length} issues`);
+      return transformedData as Issue[];
     },
     {
       priority: 'normal',

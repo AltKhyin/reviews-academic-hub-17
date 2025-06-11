@@ -90,7 +90,10 @@ export const useIntelligentPrefetch = () => {
         prefetchRoute: '/review/*',
         confidence: 0.8,
         queryKey: ['sidebar-stats'],
-        queryFn: () => supabase.rpc('get_sidebar_stats'),
+        queryFn: async () => {
+          const { data } = await supabase.rpc('get_sidebar_stats');
+          return data;
+        },
       });
     }
 
@@ -106,7 +109,10 @@ export const useIntelligentPrefetch = () => {
           prefetchRoute: '/acervo',
           confidence: Math.min(archivePattern.frequency / 10, 0.9),
           queryKey: ['archive-metadata'],
-          queryFn: () => supabase.rpc('get_archive_metadata'),
+          queryFn: async () => {
+            const { data } = await supabase.rpc('get_archive_metadata');
+            return data;
+          },
         });
       }
     }

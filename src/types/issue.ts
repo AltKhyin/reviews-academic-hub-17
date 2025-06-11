@@ -21,7 +21,7 @@ export interface Issue {
   real_title_ptbr?: string | null;
   search_title?: string | null;
   search_description?: string | null;
-  backend_tags?: string | null; // Added for internal recommendation system
+  backend_tags?: string | null; // Changed from string to string | null to handle Json conversion
   
   // New fields for native review support
   review_type?: 'pdf' | 'native' | 'hybrid';

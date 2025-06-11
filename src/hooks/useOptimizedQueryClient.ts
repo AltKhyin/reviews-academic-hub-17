@@ -2,6 +2,7 @@
 // ABOUTME: Enhanced query client with comprehensive cache management and optimization
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CacheMetrics {
   totalQueries: number;
@@ -11,6 +12,8 @@ interface CacheMetrics {
   memoryUsage: number;
   oldestEntry: number;
   newestEntry: number;
+  activeQueries: number; // Added missing property
+  cacheSize: number; // Added missing property
 }
 
 interface CacheOptimizationResult {
@@ -19,7 +22,13 @@ interface CacheOptimizationResult {
   duration: number;
 }
 
-export const useOptimizedQueryClient = () => {
+interface UseOptimizedQueryClientOptions {
+  maxCacheSize?: number;
+  cleanupInterval?: number;
+  staleCacheThreshold?: number;
+}
+
+export const useOptimizedQueryClient = (options: UseOptimizedQueryClientOptions = {}) => {
   const queryClient = useQueryClient();
   const [cacheMetrics, setCacheMetrics] = useState<CacheMetrics>({
     totalQueries: 0,
@@ -29,6 +38,8 @@ export const useOptimizedQueryClient = () => {
     memoryUsage: 0,
     oldestEntry: 0,
     newestEntry: 0,
+    activeQueries: 0,
+    cacheSize: 0,
   });
 
   // Calculate cache metrics
@@ -39,10 +50,15 @@ export const useOptimizedQueryClient = () => {
     let totalSize = 0;
     let oldestTime = Date.now();
     let newestTime = 0;
+    let activeQueries = 0;
     
     queries.forEach(query => {
       const dataSize = JSON.stringify(query.state.data || {}).length;
       totalSize += dataSize;
+      
+      if (query.getObserversCount() > 0) {
+        activeQueries++;
+      }
       
       if (query.state.dataUpdatedAt) {
         oldestTime = Math.min(oldestTime, query.state.dataUpdatedAt);
@@ -58,6 +74,8 @@ export const useOptimizedQueryClient = () => {
       memoryUsage: totalSize / (1024 * 1024), // MB
       oldestEntry: oldestTime,
       newestEntry: newestTime,
+      activeQueries,
+      cacheSize: totalSize,
     };
   }, [queryClient]);
 

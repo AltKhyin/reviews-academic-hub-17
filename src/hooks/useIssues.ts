@@ -48,8 +48,15 @@ export const useIssues = (options: UseIssuesOptions = {}) => {
         throw error;
       }
       
-      console.log(`useIssues: Fetched ${data?.length || 0} issues with filters:`, filters);
-      return data || [];
+      // Transform backend_tags from Json to string
+      const transformedData = data?.map(issue => ({
+        ...issue,
+        backend_tags: typeof issue.backend_tags === 'string' ? issue.backend_tags : 
+                     issue.backend_tags ? String(issue.backend_tags) : null,
+      })) || [];
+      
+      console.log(`useIssues: Fetched ${transformedData.length} issues with filters:`, filters);
+      return transformedData as Issue[];
     },
     {
       priority: 'normal',
@@ -83,7 +90,16 @@ export const useFeaturedIssue = () => {
         throw error;
       }
       
-      return data || null;
+      if (!data) return null;
+      
+      // Transform backend_tags from Json to string
+      const transformedIssue = {
+        ...data,
+        backend_tags: typeof data.backend_tags === 'string' ? data.backend_tags : 
+                     data.backend_tags ? String(data.backend_tags) : null,
+      };
+      
+      return transformedIssue as Issue;
     },
     {
       priority: 'critical',

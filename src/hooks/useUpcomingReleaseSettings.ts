@@ -30,7 +30,13 @@ export const useUpcomingReleaseSettings = () => {
         
         if (error && error.code !== 'PGRST116') throw error;
         
-        return data?.value || {
+        // Type guard to ensure we have the right structure
+        const value = data?.value;
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+          return value as ReleaseSettings;
+        }
+        
+        return {
           customDate: '',
           customTime: '',
           isRecurring: false,
@@ -63,7 +69,7 @@ export const useUpcomingReleaseSettings = () => {
         .from('site_meta')
         .upsert({
           key: 'upcoming_release_settings',
-          value: newSettings,
+          value: newSettings as any, // Cast to any for Json compatibility
         });
       
       if (error) throw error;
