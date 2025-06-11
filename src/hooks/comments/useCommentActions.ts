@@ -1,12 +1,11 @@
 
-// ABOUTME: Comment actions hook with fixed entity validation and improved error handling
+// ABOUTME: Comment actions hook with fixed database schema and improved error handling
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Comment, EntityType } from '@/types/commentTypes';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { buildCommentData } from '@/utils/commentHelpers';
-import { useFileUpload } from '@/hooks/useFileUpload';
 
 /**
  * Hook for comment actions (add, reply, delete, vote)
@@ -18,7 +17,6 @@ export function useCommentActions(
 ) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { uploadFile } = useFileUpload();
   const [isAddingComment, setIsAddingComment] = useState(false);
   const [isDeletingComment, setIsDeletingComment] = useState(false);
   const [isReplying, setIsReplying] = useState(false);
@@ -76,32 +74,8 @@ export function useCommentActions(
         throw new Error(`${entityType === 'article' ? 'Artigo' : entityType === 'post' ? 'Publicação' : 'Edição'} não encontrada`);
       }
 
-      let finalImageUrl = imageUrl;
-      
-      // Handle blob URL upload
-      if (imageUrl && imageUrl.startsWith('blob:')) {
-        try {
-          const response = await fetch(imageUrl);
-          const blob = await response.blob();
-          const file = new File([blob], 'comment-image.jpg', { type: blob.type });
-          finalImageUrl = await uploadFile(file, 'community/comments');
-        } catch (uploadError) {
-          console.error('Error uploading image:', uploadError);
-          toast({
-            title: "Erro no upload",
-            description: "Não foi possível fazer upload da imagem.",
-            variant: "destructive",
-          });
-          // Continue without image instead of failing completely
-          finalImageUrl = undefined;
-        }
-      }
-      
-      // Build comment data with proper entity field
-      const commentData = {
-        ...buildCommentData(content, user.id, entityType, entityId),
-        image_url: finalImageUrl || null
-      };
+      // Build comment data with proper entity field - REMOVED image_url as it doesn't exist in schema
+      const commentData = buildCommentData(content, user.id, entityType, entityId);
       
       console.log('Inserting comment data:', commentData);
       
@@ -196,31 +170,10 @@ export function useCommentActions(
         throw new Error(`${entityType === 'article' ? 'Artigo' : entityType === 'post' ? 'Publicação' : 'Edição'} não encontrada`);
       }
 
-      let finalImageUrl = imageUrl;
-      
-      // Handle blob URL upload
-      if (imageUrl && imageUrl.startsWith('blob:')) {
-        try {
-          const response = await fetch(imageUrl);
-          const blob = await response.blob();
-          const file = new File([blob], 'comment-reply-image.jpg', { type: blob.type });
-          finalImageUrl = await uploadFile(file, 'community/comments');
-        } catch (uploadError) {
-          console.error('Error uploading image:', uploadError);
-          toast({
-            title: "Erro no upload",
-            description: "Não foi possível fazer upload da imagem.",
-            variant: "destructive",
-          });
-          finalImageUrl = undefined;
-        }
-      }
-      
-      // Create comment data with parent_id
+      // Create comment data with parent_id - REMOVED image_url as it doesn't exist in schema
       const commentData = {
         ...buildCommentData(content, user.id, entityType, entityId),
-        parent_id: parentId,
-        image_url: finalImageUrl || null
+        parent_id: parentId
       };
       
       const { data: newReply, error } = await supabase

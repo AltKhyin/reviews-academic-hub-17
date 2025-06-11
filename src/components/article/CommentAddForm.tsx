@@ -5,7 +5,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from "@/integrations/supabase/client";
 
 interface CommentAddFormProps {
@@ -26,7 +25,7 @@ export const CommentAddForm: React.FC<CommentAddFormProps> = ({
   placeholder = 'Compartilhe seus pensamentos...'
 }) => {
   const [comment, setComment] = useState('');
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [isVerifyingEntity, setIsVerifyingEntity] = useState(false);
 
@@ -125,18 +124,12 @@ export const CommentAddForm: React.FC<CommentAddFormProps> = ({
     }
   };
 
-  const userInitial = profile?.full_name ? profile.full_name[0] : 'U';
-
   return (
     <Card className="border-white/5 bg-gray-800/10 mb-6">
       <CardContent className="pt-6">
         <form onSubmit={handleSubmit}>
           <div className="flex gap-4">
-            {/* User avatar */}
-            <Avatar className="w-10 h-10 flex-shrink-0">
-              <AvatarImage src={profile?.avatar_url || undefined} />
-              <AvatarFallback>{userInitial}</AvatarFallback>
-            </Avatar>
+            {/* Avatar removed as requested */}
             
             <div className="flex-1">
               <Textarea

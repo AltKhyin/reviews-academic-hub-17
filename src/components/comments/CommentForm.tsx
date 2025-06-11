@@ -1,9 +1,8 @@
 
-// ABOUTME: Comment form with fixed avatar display and proper error handling
+// ABOUTME: Comment form with removed avatar display and proper error handling
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { SendIcon, X, Type, Bold, Italic, Underline, Image } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -141,40 +140,9 @@ export const CommentForm: React.FC<CommentFormProps> = ({
     );
   }
 
-  // Fixed avatar resolution: try multiple sources with proper fallbacks
-  let avatarUrl: string | undefined;
-  let userDisplayName = 'Usuário';
-  let userInitial = 'U';
-
-  // Try to get avatar from user metadata (OAuth providers)
-  if (user.user_metadata?.avatar_url) {
-    avatarUrl = user.user_metadata.avatar_url;
-  }
-
-  // Try to get display name and initial
-  if (user.user_metadata?.full_name) {
-    userDisplayName = user.user_metadata.full_name;
-    userInitial = userDisplayName[0].toUpperCase();
-  } else if (user.email) {
-    userDisplayName = user.email.split('@')[0];
-    userInitial = userDisplayName[0].toUpperCase();
-  }
-
   return (
     <form onSubmit={handleSubmit} className="flex items-start gap-3 relative">
-      <Avatar className="w-8 h-8">
-        <AvatarImage 
-          src={avatarUrl} 
-          alt={userDisplayName}
-          onError={(e) => {
-            console.log('Avatar failed to load:', avatarUrl);
-            // The AvatarFallback will automatically show when image fails
-          }}
-        />
-        <AvatarFallback className="bg-gray-700 text-gray-200 text-sm font-medium">
-          {userInitial}
-        </AvatarFallback>
-      </Avatar>
+      {/* Avatar removed as requested */}
       <div className="flex-1">
         <div className="relative">
           <Textarea
