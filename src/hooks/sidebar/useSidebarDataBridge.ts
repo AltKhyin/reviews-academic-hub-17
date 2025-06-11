@@ -41,8 +41,11 @@ export function useSidebarDataBridge(userId?: string) {
       }
     } catch (err) {
       console.error('Error fetching online users:', err);
+      if (isMountedRef.current) {
+        setError(err);
+      }
     }
-  }, [setOnlineUsers]);
+  }, [setOnlineUsers, setError]);
 
   // Memoized update function to prevent unnecessary re-renders
   const updateSidebarStore = useCallback(() => {
@@ -51,7 +54,7 @@ export function useSidebarDataBridge(userId?: string) {
     setLoading(isLoading);
     
     if (hasError) {
-      setError(true);
+      setError(hasError);
       return;
     }
 
@@ -84,7 +87,7 @@ export function useSidebarDataBridge(userId?: string) {
         thread_type: thread.thread_type
       })));
       
-      setError(false);
+      setError(null);
     }
   }, [
     isLoading,

@@ -1,6 +1,6 @@
 
-// ABOUTME: Fixed voting race conditions with optimistic updates and debouncing
-import React, { useState, useCallback, useRef } from 'react';
+// ABOUTME: Fixed voting race conditions with separated state management and proper conflict resolution
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -13,6 +13,15 @@ interface PostVotingProps {
   onVoteChange: () => void;
 }
 
+interface VotingState {
+  optimisticScore: number;
+  optimisticVote: number;
+  serverScore: number;
+  serverVote: number;
+  isPending: boolean;
+  lastUpdateTime: number;
+}
+
 export const PostVoting: React.FC<PostVotingProps> = ({
   postId,
   initialScore,
@@ -22,17 +31,47 @@ export const PostVoting: React.FC<PostVotingProps> = ({
   const { user } = useAuth();
   const { toast } = useToast();
   
-  // Local state for optimistic updates
-  const [localScore, setLocalScore] = useState(initialScore);
-  const [localUserVote, setLocalUserVote] = useState(initialUserVote);
-  const [isVoting, setIsVoting] = useState(false);
+  // Separated voting state management
+  const [votingState, setVotingState] = useState<VotingState>({
+    optimisticScore: initialScore,
+    optimisticVote: initialUserVote,
+    serverScore: initialScore,
+    serverVote: initialUserVote,
+    isPending: false,
+    lastUpdateTime: Date.now()
+  });
   
-  // Refs for race condition prevention
-  const lastVoteRef = useRef<number>(initialUserVote);
+  // Refs for managing pending operations
   const pendingVoteRef = useRef<boolean>(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Debounced vote handler to prevent rapid clicking issues
+  // Update state when props change (server data refresh)
+  useEffect(() => {
+    if (!pendingVoteRef.current) {
+      setVotingState(prev => ({
+        ...prev,
+        optimisticScore: initialScore,
+        optimisticVote: initialUserVote,
+        serverScore: initialScore,
+        serverVote: initialUserVote,
+        lastUpdateTime: Date.now()
+      }));
+    }
+  }, [initialScore, initialUserVote]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
   const handleVote = useCallback(async (value: number) => {
     if (!user) {
       toast({
@@ -53,20 +92,31 @@ export const PostVoting: React.FC<PostVotingProps> = ({
       clearTimeout(timeoutRef.current);
     }
 
-    const currentVote = lastVoteRef.current;
+    // Cancel any pending request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    const currentVote = votingState.optimisticVote;
     const newVote = currentVote === value ? 0 : value;
     
     // Calculate score delta for optimistic update
     const scoreDelta = newVote - currentVote;
     
-    // Optimistic updates
-    setLocalUserVote(newVote);
-    setLocalScore(prevScore => prevScore + scoreDelta);
-    lastVoteRef.current = newVote;
+    // Optimistic updates with separated state
+    setVotingState(prev => ({
+      ...prev,
+      optimisticScore: prev.serverScore + scoreDelta,
+      optimisticVote: newVote,
+      isPending: true,
+      lastUpdateTime: Date.now()
+    }));
     
-    // Set pending flag and debounce
+    // Set pending flag
     pendingVoteRef.current = true;
-    setIsVoting(true);
+
+    // Create new abort controller for this request
+    abortControllerRef.current = new AbortController();
 
     // Debounce the actual API call
     timeoutRef.current = setTimeout(async () => {
@@ -76,9 +126,10 @@ export const PostVoting: React.FC<PostVotingProps> = ({
           .select('value')
           .eq('post_id', postId)
           .eq('user_id', user.id)
+          .abortSignal(abortControllerRef.current?.signal)
           .maybeSingle();
 
-        if (checkError) throw checkError;
+        if (checkError && checkError.name !== 'AbortError') throw checkError;
 
         if (existingVote) {
           if (newVote === 0) {
@@ -87,40 +138,60 @@ export const PostVoting: React.FC<PostVotingProps> = ({
               .from('post_votes')
               .delete()
               .eq('post_id', postId)
-              .eq('user_id', user.id);
+              .eq('user_id', user.id)
+              .abortSignal(abortControllerRef.current?.signal);
 
-            if (deleteError) throw deleteError;
+            if (deleteError && deleteError.name !== 'AbortError') throw deleteError;
           } else {
             // Update vote
             const { error: updateError } = await supabase
               .from('post_votes')
               .update({ value: newVote })
               .eq('post_id', postId)
-              .eq('user_id', user.id);
+              .eq('user_id', user.id)
+              .abortSignal(abortControllerRef.current?.signal);
 
-            if (updateError) throw updateError;
+            if (updateError && updateError.name !== 'AbortError') throw updateError;
           }
         } else if (newVote !== 0) {
           // Insert new vote
           const { error: insertError } = await supabase
             .from('post_votes')
-            .insert({ post_id: postId, user_id: user.id, value: newVote });
+            .insert({ post_id: postId, user_id: user.id, value: newVote })
+            .abortSignal(abortControllerRef.current?.signal);
 
-          if (insertError) throw insertError;
+          if (insertError && insertError.name !== 'AbortError') throw insertError;
         }
 
-        // Delay parent refresh to allow DB triggers to complete
+        // Update server state to match optimistic state
+        setVotingState(prev => ({
+          ...prev,
+          serverScore: prev.optimisticScore,
+          serverVote: prev.optimisticVote,
+          isPending: false
+        }));
+
+        // Delay parent refresh to allow DB triggers to complete and prevent conflicts
         setTimeout(() => {
-          onVoteChange();
-        }, 500);
+          if (!pendingVoteRef.current) {
+            onVoteChange();
+          }
+        }, 1000);
         
-      } catch (error) {
+      } catch (error: any) {
+        if (error?.name === 'AbortError') {
+          return; // Request was cancelled, ignore
+        }
+        
         console.error('Error voting on post:', error);
         
         // Revert optimistic updates on error
-        setLocalScore(initialScore);
-        setLocalUserVote(initialUserVote);
-        lastVoteRef.current = initialUserVote;
+        setVotingState(prev => ({
+          ...prev,
+          optimisticScore: prev.serverScore,
+          optimisticVote: prev.serverVote,
+          isPending: false
+        }));
         
         toast({
           title: "Erro ao votar",
@@ -129,39 +200,38 @@ export const PostVoting: React.FC<PostVotingProps> = ({
         });
       } finally {
         pendingVoteRef.current = false;
-        setIsVoting(false);
       }
-    }, 300); // 300ms debounce
-  }, [user, postId, initialScore, initialUserVote, onVoteChange, toast]);
+    }, 500); // Increased debounce to 500ms for better stability
+  }, [user, postId, votingState, onVoteChange, toast]);
 
   return (
     <div className="flex items-center space-x-1">
       <button
         className={`
           p-1.5 hover:bg-gray-800 rounded transition-colors disabled:opacity-50 flex items-center justify-center
-          ${localUserVote === 1 ? 'text-orange-500' : 'text-gray-400 hover:text-gray-300'}
+          ${votingState.optimisticVote === 1 ? 'text-orange-500' : 'text-gray-400 hover:text-gray-300'}
         `}
         onClick={() => handleVote(1)}
-        disabled={isVoting}
+        disabled={votingState.isPending}
         aria-label="Vote up"
       >
         <ArrowUp className="h-4 w-4" />
       </button>
       
       <span className={`text-sm font-medium min-w-[24px] text-center ${
-        localScore > 0 ? 'text-orange-500' : 
-        localScore < 0 ? 'text-blue-500' : 'text-gray-400'
+        votingState.optimisticScore > 0 ? 'text-orange-500' : 
+        votingState.optimisticScore < 0 ? 'text-blue-500' : 'text-gray-400'
       }`}>
-        {localScore}
+        {votingState.optimisticScore}
       </span>
       
       <button
         className={`
           p-1.5 hover:bg-gray-800 rounded transition-colors disabled:opacity-50 flex items-center justify-center
-          ${localUserVote === -1 ? 'text-blue-500' : 'text-gray-400 hover:text-gray-300'}
+          ${votingState.optimisticVote === -1 ? 'text-blue-500' : 'text-gray-400 hover:text-gray-300'}
         `}
         onClick={() => handleVote(-1)}
-        disabled={isVoting}
+        disabled={votingState.isPending}
         aria-label="Vote down"
       >
         <ArrowDown className="h-4 w-4" />
