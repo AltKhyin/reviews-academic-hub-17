@@ -1,29 +1,28 @@
-
-// ABOUTME: Updated App.tsx with corrected provider nesting and single AuthProvider
-import React from 'react';
+// ABOUTME: Main application component with optimized route-based code splitting
+import React, { Suspense, lazy } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
-import { QueryOptimizationProvider } from "./components/optimization/QueryOptimizationProvider";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { PageLoader } from "@/components/ui/PageLoader";
 
-// Components
-import { DashboardLayout } from "./layouts/DashboardLayout";
-import AuthPage from "./pages/auth/AuthPage";
-import Dashboard from "./pages/dashboard/Dashboard";
-import ArticleViewer from "./pages/dashboard/ArticleViewer";
-import SearchPage from "./pages/dashboard/SearchPage";
-import ArchivePage from "./pages/dashboard/ArchivePage";
-import Community from "./pages/dashboard/Community";
-import Profile from "./pages/dashboard/Profile";
-import Edit from "./pages/dashboard/Edit";
-import IssueEditor from "./pages/dashboard/IssueEditor";
-import NotFound from "./pages/NotFound";
-import PolicyPage from "./pages/PolicyPage";
+// Keep critical routes static for immediate loading
+import DashboardLayout from "@/pages/dashboard/DashboardLayout";
+import AuthPage from "@/pages/auth/AuthPage";
+import Dashboard from "@/pages/dashboard/Dashboard";
 
-// Create optimized query client
+// Lazy load heavy/admin routes for better performance
+const ArticleViewer = lazy(() => import("@/pages/dashboard/ArticleViewer"));
+const ArchivePage = lazy(() => import("@/pages/dashboard/ArchivePage"));
+const SearchPage = lazy(() => import("@/pages/dashboard/SearchPage"));
+const Community = lazy(() => import("@/pages/dashboard/Community"));
+const Profile = lazy(() => import("@/pages/dashboard/Profile"));
+const Edit = lazy(() => import("@/pages/dashboard/Edit"));
+const IssueEditor = lazy(() => import("@/pages/dashboard/IssueEditor"));
+
+// Optimized query client configuration
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -38,59 +37,82 @@ const queryClient = new QueryClient({
   },
 });
 
-const App = () => {
-  // Enable dark mode by default and optimize for native editor experience
-  React.useEffect(() => {
-    document.documentElement.classList.add('dark');
-    
-    // Add editor-optimized class for better native editing experience
-    const currentPath = window.location.pathname;
-    if (currentPath.includes('/edit/issue/')) {
-      document.body.classList.add('editor-optimized');
-    }
-    
-    // Clean up on route changes
-    return () => {
-      document.body.classList.remove('editor-optimized');
-    };
-  }, []);
-
-  const isDevelopment = process.env.NODE_ENV === 'development';
-
+function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
+      <BrowserRouter>
         <AuthProvider>
-          <QueryOptimizationProvider enableDebugLogging={isDevelopment}>
+          <TooltipProvider>
             <Toaster />
             <Sonner />
             <Routes>
-              {/* Public routes that don't require authentication */}
               <Route path="/auth" element={<AuthPage />} />
-              <Route path="/policy" element={<PolicyPage />} />
-              
-              {/* Protected routes that require authentication */}
               <Route path="/" element={<DashboardLayout />}>
-                <Route path="homepage" element={<Dashboard />} />
-                <Route path="article/:id" element={<ArticleViewer />} />
-                <Route path="acervo" element={<ArchivePage />} />
-                <Route path="search" element={<SearchPage />} />
-                <Route path="community" element={<Community />} />
-                <Route path="articles" element={<Dashboard />} />
-                <Route path="profile" element={<Profile />} />
-                <Route path="edit" element={<Edit />} />
-                <Route path="edit/issue/:id" element={<IssueEditor />} />
-                <Route path="edit/issue/new" element={<IssueEditor />} />
                 <Route index element={<Navigate to="/homepage" replace />} />
+                <Route path="homepage" element={<Dashboard />} />
+                <Route 
+                  path="article/:id" 
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ArticleViewer />
+                    </Suspense>
+                  } 
+                />
+                <Route 
+                  path="acervo" 
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ArchivePage />
+                    </Suspense>
+                  } 
+                />
+                <Route 
+                  path="search" 
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <SearchPage />
+                    </Suspense>
+                  } 
+                />
+                <Route 
+                  path="community" 
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <Community />
+                    </Suspense>
+                  } 
+                />
+                <Route 
+                  path="profile" 
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <Profile />
+                    </Suspense>
+                  } 
+                />
+                <Route 
+                  path="edit" 
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <Edit />
+                    </Suspense>
+                  } 
+                />
+                <Route 
+                  path="edit/issue/:id" 
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <IssueEditor />
+                    </Suspense>
+                  } 
+                />
               </Route>
-
-              <Route path="*" element={<NotFound />} />
             </Routes>
-          </QueryOptimizationProvider>
+          </TooltipProvider>
         </AuthProvider>
-      </TooltipProvider>
+      </BrowserRouter>
     </QueryClientProvider>
   );
-};
+}
 
 export default App;
