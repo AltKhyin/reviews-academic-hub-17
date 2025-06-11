@@ -1,119 +1,65 @@
 
-// ABOUTME: Centralized navigation service for consistent URL generation and routing
-import { useNavigate } from 'react-router-dom';
-
+// ABOUTME: Centralized navigation service with consistent routing patterns
 export interface ArchiveFilters {
   specialty?: string;
   year?: string;
   search?: string;
+  featured?: boolean;
   page?: number;
 }
 
 export class NavigationService {
-  // Static URL generators
   static getIssueUrl(id: string): string {
-    return `/article/${id}`;
+    return `/review/${encodeURIComponent(id)}`;
   }
 
   static getArchiveUrl(filters?: ArchiveFilters): string {
-    if (!filters || Object.keys(filters).length === 0) {
-      return '/acervo';
-    }
-
     const params = new URLSearchParams();
     
-    if (filters.specialty) params.set('specialty', filters.specialty);
-    if (filters.year) params.set('year', filters.year);
-    if (filters.search) params.set('search', filters.search);
-    if (filters.page && filters.page > 1) params.set('page', filters.page.toString());
+    if (filters?.specialty) params.set('specialty', filters.specialty);
+    if (filters?.year) params.set('year', filters.year);
+    if (filters?.search) params.set('search', filters.search);
+    if (filters?.featured !== undefined) params.set('featured', filters.featured.toString());
+    if (filters?.page && filters.page > 1) params.set('page', filters.page.toString());
 
-    return `/acervo?${params.toString()}`;
-  }
-
-  static getHomepageUrl(): string {
-    return '/homepage';
-  }
-
-  static getCommunityUrl(): string {
-    return '/community';
+    const query = params.toString();
+    return query ? `/acervo?${query}` : '/acervo';
   }
 
   static getSearchUrl(query?: string): string {
     return query ? `/search?q=${encodeURIComponent(query)}` : '/search';
   }
 
+  static getCommunityUrl(): string {
+    return '/community';
+  }
+
   static getProfileUrl(): string {
     return '/profile';
   }
 
-  static getEditUrl(issueId?: string): string {
-    return issueId ? `/edit/issue/${issueId}` : '/edit';
+  static getHomepageUrl(): string {
+    return '/';
   }
 
-  // Navigation helper with error handling
-  static navigateWithFallback(navigate: ReturnType<typeof useNavigate>, url: string, fallbackUrl?: string) {
-    try {
-      navigate(url);
-    } catch (error) {
-      console.error('Navigation failed:', error);
-      if (fallbackUrl) {
-        navigate(fallbackUrl);
-      }
-    }
+  static parseArchiveFilters(searchParams: URLSearchParams): ArchiveFilters {
+    const filters: ArchiveFilters = {};
+    
+    const specialty = searchParams.get('specialty');
+    if (specialty) filters.specialty = specialty;
+    
+    const year = searchParams.get('year');
+    if (year) filters.year = year;
+    
+    const search = searchParams.get('search');
+    if (search) filters.search = search;
+    
+    const featured = searchParams.get('featured');
+    if (featured !== null) filters.featured = featured === 'true';
+    
+    const page = searchParams.get('page');
+    if (page) filters.page = parseInt(page, 10);
+    
+    return filters;
   }
 }
-
-// Hook for navigation with consistent error handling
-export const useAppNavigation = () => {
-  const navigate = useNavigate();
-
-  const navigateToIssue = (id: string) => {
-    NavigationService.navigateWithFallback(
-      navigate, 
-      NavigationService.getIssueUrl(id),
-      NavigationService.getHomepageUrl()
-    );
-  };
-
-  const navigateToArchive = (filters?: ArchiveFilters) => {
-    NavigationService.navigateWithFallback(
-      navigate,
-      NavigationService.getArchiveUrl(filters),
-      NavigationService.getHomepageUrl()
-    );
-  };
-
-  const navigateToHomepage = () => {
-    navigate(NavigationService.getHomepageUrl());
-  };
-
-  const navigateToSearch = (query?: string) => {
-    NavigationService.navigateWithFallback(
-      navigate,
-      NavigationService.getSearchUrl(query),
-      NavigationService.getHomepageUrl()
-    );
-  };
-
-  return {
-    navigateToIssue,
-    navigateToArchive,
-    navigateToHomepage,
-    navigateToSearch,
-    navigate,
-  };
-};
-
-// Utility for building query strings
-export const buildQueryString = (params: Record<string, string | number | boolean | undefined>): string => {
-  const searchParams = new URLSearchParams();
-  
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') {
-      searchParams.set(key, String(value));
-    }
-  });
-
-  const queryString = searchParams.toString();
-  return queryString ? `?${queryString}` : '';
-};

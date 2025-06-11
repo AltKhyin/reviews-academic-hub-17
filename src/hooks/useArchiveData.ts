@@ -69,6 +69,11 @@ export const useArchiveData = (filters: ArchiveFilters = {}) => {
       priority: 'normal',
       staleTime: 10 * 60 * 1000, // 10 minutes
       enableMonitoring: true,
+      rateLimit: {
+        endpoint: 'archive',
+        maxRequests: 15,
+        windowMs: 60000,
+      },
     }
   );
 };
@@ -98,6 +103,11 @@ export const useArchiveMetadata = () => {
       priority: 'background',
       staleTime: 30 * 60 * 1000, // 30 minutes
       enableMonitoring: false,
+      rateLimit: {
+        endpoint: 'archive',
+        maxRequests: 5,
+        windowMs: 300000, // 5 minutes
+      },
     }
   );
 };

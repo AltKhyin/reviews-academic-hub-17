@@ -1,5 +1,5 @@
 
-# README‑BÍBLIA v3.10.0
+# README‑BÍBLIA v3.11.0
 *Compreensão 360º do Reviews em 2 min — Fonte canônica para produto, marketing, design e tecnologia*
 
 ---
@@ -29,6 +29,7 @@
 | **Tag System** | Sistema hierárquico de categorização (especialidade > subtópico) |
 | **RPC** | Remote Procedure Call - funções otimizadas no Supabase |
 | **Unified Query** | Sistema consolidado de cache e rate limiting para APIs |
+| **Optimistic Updates** | Atualizações locais imediatas com sync posterior |
 
 ---
 
@@ -38,6 +39,7 @@
 │  ├─ Auth Context (Supabase Auth)            │
 │  ├─ Unified Query System (TanStack Query)   │
 │  ├─ Rate Limiting (API Protection)          │
+│  ├─ Optimistic Updates (Local State Sync)  │
 │  └─ Error Boundaries (Enhanced Recovery)    │
 └─────────────────────────────────────────────┘
            │
@@ -55,6 +57,7 @@
 - **Hook-Based State**: `useUnifiedQuery` para dados, Context para estado global
 - **Rate-Limited APIs**: Todos os endpoints protegidos (5-30 req/min)
 - **Error Boundaries**: Auto-retry + fallbacks + logging estruturado
+- **Optimistic Updates**: UI responsiva com sync posterior ao backend
 - **Monochrome Design**: Grayscale first, cor apenas para semântica
 
 ---
@@ -88,22 +91,27 @@
 ### 5.3 Archive & Search
 ```
 /src/hooks/useArchiveData.ts       → Busca otimizada com filtros
-/src/components/archive/          → MasonryGrid, SearchFilters
+/src/components/archive/          → MasonryGrid (4px spacing), SearchFilters
 /src/hooks/useSimplifiedArchiveSearch.ts → Search simplificado
+/src/services/navigation.ts       → Centralizado routing patterns
 ```
 
-### 5.4 Community
+### 5.4 Community (Optimized)
 ```
-/src/hooks/useCommunityPosts.ts   → Posts com rate limiting
+/src/hooks/comments/useOptimizedComments.ts → Sistema sem refetch desnecessário
+/src/hooks/comments/useOptimizedCommentActions.ts → Ações com optimistic updates
+/src/hooks/comments/useOptimizedCommentVoting.ts → Voting sem reload completo
 /src/components/community/       → Post, PostVoting, NewPostModal
 /src/types/community.ts          → PostData, CommunitySettings
 ```
 
-### 5.5 Performance & Monitoring
+### 5.5 Performance & Monitoring (Enhanced)
 ```
-/src/hooks/useUnifiedQuery.ts     → Sistema único de cache + rate limit
+/src/hooks/useUnifiedQuery.ts     → Sistema único de cache + rate limit + dedup
 /src/hooks/useAPIRateLimit.ts     → Rate limiting inteligente
-/src/hooks/useEnhancedErrorBoundary.ts → Error handling avançado
+/src/hooks/useEnhancedErrorBoundary.ts → Error handling com auto-retry
+/src/hooks/useIntelligentCacheInvalidation.ts → Cache invalidation estratégico
+/src/hooks/useOptimizedSectionVisibility.ts → Settings sem rollback
 ```
 
 ---
@@ -125,15 +133,15 @@ profiles: id, full_name, avatar_url, role, created_at
 ```
 
 ### 6.2 Rate Limited Endpoints
-| Endpoint | Limite | Janela | Uso |
-|----------|--------|--------|-----|
-| `/issues` | 10 req | 1 min | Busca reviews |
-| `/archive` | 15 req | 1 min | Busca arquivo |
-| `/comments` | 20 req | 1 min | Interação social |
-| `/community` | 25 req | 1 min | Posts comunidade |
-| `/search` | 30 req | 1 min | Busca global |
-| `/sidebar` | 5 req | 1 min | Stats sidebar |
-| `/analytics` | 5 req | 5 min | Métricas admin |
+| Endpoint | Limite | Janela | Uso | Status |
+|----------|--------|--------|-----|--------|
+| `/issues` | 10 req | 1 min | Busca reviews | ✅ Implemented |
+| `/archive` | 15 req | 1 min | Busca arquivo | ✅ Implemented |
+| `/comments` | 20 req | 1 min | Interação social | ✅ Implemented |
+| `/community` | 25 req | 1 min | Posts comunidade | ✅ Implemented |
+| `/search` | 30 req | 1 min | Busca global | ✅ Implemented |
+| `/sidebar` | 5 req | 1 min | Stats sidebar | ✅ Implemented |
+| `/analytics` | 5 req | 5 min | Métricas admin | ✅ Implemented |
 
 ### 6.3 RPC Functions (Otimizadas)
 ```sql
@@ -152,19 +160,20 @@ get_top_threads(min_comments) → Posts populares
 /src/components/navigation/Sidebar.tsx → Nav principal
 /src/components/sidebar/RightSidebar.tsx → Stats + community info
 /src/layouts/DashboardLayout.tsx → Layout wrapper
+/src/services/navigation.ts → Routing centralizado
 ```
 
-### 7.2 Content Display
+### 7.2 Content Display (Optimized)
 ```
 /src/components/review/BlockRenderer.tsx → Renderiza blocks modulares
-/src/components/archive/OptimizedMasonryGrid.tsx → Grid responsivo
+/src/components/archive/OptimizedMasonryGrid.tsx → Grid 4px spacing
 /src/components/dashboard/FeaturedArticle.tsx → Destaque homepage
 ```
 
-### 7.3 Interactive Elements  
+### 7.3 Interactive Elements (Enhanced)
 ```
-/src/components/comments/CommentSection.tsx → Sistema de comentários
-/src/components/community/PostVoting.tsx → Votação integrada
+/src/components/comments/CommentSection.tsx → Sistema otimizado sem reload
+/src/components/community/PostVoting.tsx → Voting com optimistic updates
 /src/components/ui/ → ShadCN components customizados
 ```
 
@@ -176,7 +185,7 @@ get_top_threads(min_comments) → Posts populares
 | **Palette** | `#0E0E0E` (background), `#F4F1EA` (foreground), `#7E5BEF` (accent) |
 | **Theme** | Monochrome-first, color only for semantics (success/warning/error) |
 | **Fontes** | Inter (corpo), system fonts como fallback |
-| **Spacing** | 4px base grid, componentes ≤ 50 LOC |
+| **Spacing** | 4px base grid (**ARCHIVE: gap-1**), componentes ≤ 50 LOC |
 | **Icons** | Lucide React, linha fina, 16px/24px |
 | **Acessibilidade** | Contraste ≥ 4.5:1, focus visível, ARIA compliant |
 
@@ -216,11 +225,13 @@ get_top_threads(min_comments) → Posts populares
 | **Memory** | < 50MB | ~35MB | Query cache limits, cleanup |
 | **API Calls** | Rate limited | ✅ | Unified query system + deduplication |
 
-### 10.1 Cache Strategy
+### 10.1 Cache Strategy (Enhanced)
 - **Query Cache**: 5-15 min stale time por prioridade
 - **Request Dedup**: 30s window para requests idênticos  
-- **Rate Limiting**: 5-30 req/min por endpoint
+- **Rate Limiting**: 5-30 req/min por endpoint com intelligent batching
 - **Error Recovery**: Auto-retry com backoff exponencial
+- **Optimistic Updates**: UI responsiva com sync posterior
+- **Intelligent Invalidation**: Cache invalidation baseado em relacionamentos
 
 ---
 
@@ -244,6 +255,7 @@ get_top_threads(min_comments) → Posts populares
 | **Analytics** | Query performance + user engagement | Admin only |
 | **System Health** | Error boundaries + monitoring hooks | Auto + Admin |
 | **Rate Limit Config** | Per-endpoint limits + bypass | Admin only |
+| **Homepage Settings** | Section visibility com optimistic updates | Admin only |
 
 ---
 
@@ -255,6 +267,7 @@ get_top_threads(min_comments) → Posts populares
 | **Performance** | Query speed, error rate, cache hits | <500ms, <2%, >80% |
 | **API Health** | Rate limit hits, failed requests | <5%, <1% |
 | **Content** | Reviews/week, community posts | 2-3, 15-25 |
+| **UX Quality** | Comment reload rate, settings rollback | <10%, <5% |
 
 ---
 
@@ -267,12 +280,14 @@ get_top_threads(min_comments) → Posts populares
 - [ ] Implement advanced search with AI assistance
 - [ ] Add integration with medical databases (PubMed)
 - [ ] Create mobile app (React Native)
+- [x] ✅ **P0 FIXES**: Archive 4px spacing, comment reload optimization, settings rollback fix
 
 ---
 
 ## 15. Histórico de Revisões
 | Versão | Data | Mudanças |
 |--------|------|----------|
+| 3.11.0 | 2025-06-11 | **P0 CRITICAL FIXES**: Archive 4px spacing, optimized comments (no unnecessary reloads), homepage settings rollback fix, intelligent cache invalidation |
 | 3.10.0 | 2025-06-11 | Enhanced rate limiting, error boundaries, unified query system v2 |
 | 3.9.0 | 2025-06-11 | Archive navigation integration, performance monitoring consolidation |
 | 3.8.0 | 2025-06-11 | Corrected color theme documentation, settings persistence fixes |
@@ -282,4 +297,4 @@ get_top_threads(min_comments) → Posts populares
 
 ---
 
-*Última atualização: 2025-06-11 • Próxima revisão: Features de notificação push*
+*Última atualização: 2025-06-11 • Próxima revisão: Database layer optimization (P1)*
