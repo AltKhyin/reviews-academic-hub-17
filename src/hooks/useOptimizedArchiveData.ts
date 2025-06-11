@@ -1,6 +1,6 @@
 
 // ABOUTME: Simplified archive data hook without tag hierarchy - only fetches issues and basic metadata
-import { useQuery } from '@tanstack/react-query';
+import { useUnifiedQuery } from './useUnifiedQuery';
 import { supabase } from '@/integrations/supabase/client';
 import { Issue } from '@/types/issue';
 import { useAuth } from '@/contexts/AuthContext';
@@ -83,25 +83,36 @@ const fetchArchiveMetadata = async (issues: Issue[]) => {
 export const useOptimizedArchiveData = () => {
   const { isAdmin } = useAuth();
   
-  // Main issues query
-  const { data: issues = [], isLoading: issuesLoading, error: issuesError } = useQuery({
-    queryKey: ['archive-issues', isAdmin],
-    queryFn: () => fetchArchiveIssues(isAdmin),
-    staleTime: 10 * 60 * 1000, // 10 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes
-    retry: 2,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
-  });
+  // Main issues query using unified system
+  const { 
+    data: issues = [], 
+    isLoading: issuesLoading, 
+    error: issuesError 
+  } = useUnifiedQuery(
+    ['archive-issues', isAdmin],
+    () => fetchArchiveIssues(isAdmin),
+    {
+      priority: 'normal',
+      staleTime: 10 * 60 * 1000, // 10 minutes
+      enableMonitoring: true,
+    }
+  );
 
-  // Metadata query (depends on issues but runs in parallel once issues load)
-  const { data: metadata, isLoading: metadataLoading, error: metadataError } = useQuery({
-    queryKey: ['archive-metadata', issues.length],
-    queryFn: () => fetchArchiveMetadata(issues),
-    enabled: issues.length > 0,
-    staleTime: 15 * 60 * 1000, // 15 minutes
-    gcTime: 45 * 60 * 1000, // 45 minutes
-    retry: 1,
-  });
+  // Metadata query using unified system
+  const { 
+    data: metadata, 
+    isLoading: metadataLoading, 
+    error: metadataError 
+  } = useUnifiedQuery(
+    ['archive-metadata', issues.length],
+    () => fetchArchiveMetadata(issues),
+    {
+      enabled: issues.length > 0,
+      priority: 'background',
+      staleTime: 15 * 60 * 1000, // 15 minutes
+      enableMonitoring: false,
+    }
+  );
 
   const isLoading = issuesLoading || (issues.length > 0 && metadataLoading);
   const error = issuesError || metadataError;

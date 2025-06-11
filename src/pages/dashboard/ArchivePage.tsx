@@ -1,13 +1,15 @@
 
-// ABOUTME: Archive page with integrated backend tag reordering system and text search
+// ABOUTME: Archive page with integrated navigation handlers and optimized data flow
 import React from 'react';
 import { ArchiveHeader } from '@/components/archive/ArchiveHeader';
 import { ResultsGrid } from '@/components/archive/ResultsGrid';
 import { useSimplifiedArchiveSearch } from '@/hooks/useSimplifiedArchiveSearch';
 import { useArchiveTagReordering } from '@/hooks/useArchiveTagReordering';
+import { useAppNavigation } from '@/hooks/useAppNavigation';
 
 const ArchivePage = () => {
   const [searchQuery, setSearchQuery] = React.useState('');
+  const { navigateToIssue } = useAppNavigation();
 
   // Use simplified search for text filtering
   const {
@@ -64,6 +66,12 @@ const ArchivePage = () => {
     published_at: issue.published_at || issue.created_at || new Date().toISOString()
   }));
 
+  // Handle issue navigation using unified NavigationService
+  const handleIssueClick = (issueId: string) => {
+    console.log('Archive: Navigating to issue:', issueId);
+    navigateToIssue(issueId);
+  };
+
   return (
     <div 
       className="min-h-screen bg-background"
@@ -101,6 +109,7 @@ const ArchivePage = () => {
           issues={archiveIssues}
           isLoading={isLoading}
           searchQuery={searchQuery}
+          onIssueClick={handleIssueClick}
         />
       </div>
     </div>
