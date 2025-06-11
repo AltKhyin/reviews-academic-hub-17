@@ -1,34 +1,83 @@
 
-// ABOUTME: Stable authentication hook with consistent auth state and optimized caching
-import { useAuth } from '@/contexts/AuthContext';
+// ABOUTME: Stable authentication hook with consistent session management
+import { useState, useEffect, useCallback } from 'react';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 
-export const useStableAuth = () => {
-  const authData = useAuth();
-  
-  return {
-    user: authData.user,
-    profile: authData.profile,
-    isAuthenticated: !!authData.user,
-    isAdmin: authData.isAdmin,
-    canEdit: authData.isAdmin, // Simplified: canEdit = isAdmin (editor role eliminated)
-    role: authData.profile?.role || 'user',
-    isLoading: authData.isLoading,
-    isReady: !authData.isLoading,
-    permissions: {
-      isAdmin: authData.isAdmin,
-      canEdit: authData.isAdmin, // Simplified: canEdit = isAdmin (editor role eliminated)
-    },
-    hasPermission: (permission: 'read' | 'write' | 'admin') => {
-      switch (permission) {
-        case 'read':
-          return !!authData.user;
-        case 'write':
-        case 'admin':
-          return authData.isAdmin;
-        default:
-          return false;
+interface StableAuthState {
+  user: User | null;
+  session: Session | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  error: Error | null;
+}
+
+export const useStableAuth = (): StableAuthState => {
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  // Initialize auth state
+  useEffect(() => {
+    let mounted = true;
+
+    // Get initial session
+    const getInitialSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) throw error;
+        
+        if (mounted) {
+          setSession(session);
+          setUser(session?.user || null);
+          setError(null);
+        }
+      } catch (err) {
+        if (mounted) {
+          setError(err as Error);
+          console.error('Auth initialization error:', err);
+        }
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
-    },
-    refreshAuth: authData.refreshProfile,
+    };
+
+    getInitialSession();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (mounted) {
+          setSession(session);
+          setUser(session?.user || null);
+          setError(null);
+          
+          if (event === 'SIGNED_IN') {
+            console.log('User signed in');
+          } else if (event === 'SIGNED_OUT') {
+            console.log('User signed out');
+          }
+        }
+      }
+    );
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const isAuthenticated = Boolean(session && user);
+
+  return {
+    user,
+    session,
+    isAuthenticated,
+    isLoading,
+    error,
   };
 };

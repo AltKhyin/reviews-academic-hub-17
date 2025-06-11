@@ -54,7 +54,6 @@ export const usePerformanceOptimizer = (config: OptimizationConfig = {}) => {
   });
   
   const optimizationIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const lastMetricsRef = useRef<PerformanceMetrics | null>(null);
 
   // Calculate composite performance metrics
   const calculateMetrics = useCallback((): PerformanceMetrics => {
@@ -94,7 +93,6 @@ export const usePerformanceOptimizer = (config: OptimizationConfig = {}) => {
       if (finalConfig.enableMemoryOptimization && 
           currentMetrics.memoryUsage > thresholds.maxMemoryUsage) {
         
-        // Aggressive cache cleanup
         optimizeCache();
         
         // Force garbage collection if available
@@ -109,11 +107,11 @@ export const usePerformanceOptimizer = (config: OptimizationConfig = {}) => {
       if (finalConfig.enableAggressiveCaching && 
           currentMetrics.cacheEfficiency < 80) {
         
-        // Prefetch critical data
+        // Prefetch critical data using existing RPC functions
         const criticalQueries = [
-          ['parallel-issues'],
-          ['sidebarStats'],
-          ['archive-issues', false],
+          ['sidebar', 'stats'],
+          ['issues', 'featured'],
+          ['issues', { limit: 20 }],
         ];
         
         await Promise.allSettled(
@@ -128,28 +126,12 @@ export const usePerformanceOptimizer = (config: OptimizationConfig = {}) => {
         console.log('🚀 Cache optimization performed');
       }
       
-      // Network optimization
-      if (finalConfig.enableNetworkOptimization && 
-          currentMetrics.networkLatency > 1000) {
-        
-        // Implement request batching for similar queries
-        const cache = queryClient.getQueryCache();
-        const pendingQueries = cache.getAll().filter(q => q.state.fetchStatus === 'fetching');
-        
-        if (pendingQueries.length > 5) {
-          console.log('⚠️ High network load detected, implementing request throttling');
-          // Could implement request queue here
-        }
-      }
-      
       setOptimizationState(prev => ({
         ...prev,
         isOptimizing: false,
         lastOptimization: Date.now(),
         optimizationCount: prev.optimizationCount + 1,
       }));
-      
-      lastMetricsRef.current = currentMetrics;
       
     } catch (error) {
       console.error('Optimization error:', error);
@@ -159,7 +141,6 @@ export const usePerformanceOptimizer = (config: OptimizationConfig = {}) => {
 
   // Adaptive optimization scheduling
   useEffect(() => {
-    const currentMetrics = calculateMetrics();
     const overallScore = getPerformanceScore();
     
     // Determine optimization frequency based on performance
@@ -186,7 +167,7 @@ export const usePerformanceOptimizer = (config: OptimizationConfig = {}) => {
         clearInterval(optimizationIntervalRef.current);
       }
     };
-  }, [calculateMetrics, getPerformanceScore, performOptimizations]);
+  }, [getPerformanceScore, performOptimizations]);
 
   // Manual optimization trigger
   const triggerOptimization = useCallback(() => {

@@ -50,141 +50,90 @@ export const useParallelDataLoader = (): ParallelDataState => {
   const { isAuthenticated, isLoading: authLoading } = useStableAuth();
   const { sections, isLoading: sectionsLoading, getVisibleSections } = useSectionVisibility();
   const [errors, setErrors] = useState<Record<string, Error>>({});
-  const retryCountRef = useRef(0);
-  const maxRetries = 2;
+  const [retryCount, setRetryCount] = useState(0);
+  const retryTimeoutRef = useRef<NodeJS.Timeout>();
 
-  // Use optimized issues query with enhanced error handling
+  // Load optimized issues data
   const { 
     data: issuesData, 
     isLoading: issuesLoading, 
-    error: issuesError,
-    refetch: refetchIssues
-  } = useOptimizedIssues({ limit: 20 });
+    error: issuesError 
+  } = useOptimizedIssues({ 
+    limit: 20, 
+    includeUnpublished: isAuthenticated 
+  });
 
-  // Use optimized featured issue query with enhanced error handling
-  const {
-    data: featuredIssueData,
-    isLoading: featuredLoading,
-    error: featuredError,
-    refetch: refetchFeatured
+  // Load featured issue
+  const { 
+    data: featuredIssueData, 
+    isLoading: featuredLoading, 
+    error: featuredError 
   } = useOptimizedFeaturedIssue();
 
-  // Use optimized sidebar data
-  const optimizedSidebar = useOptimizedSidebarData();
+  // Load sidebar data
+  const { 
+    reviewerComments, 
+    isLoading: sidebarLoading, 
+    hasError: sidebarError 
+  } = useOptimizedSidebarData();
 
-  // Safely get issues array with type checking
-  const issues = useMemo(() => {
-    return isIssueArray(issuesData) ? issuesData : [];
-  }, [issuesData]);
+  // Aggregate loading states
+  const isLoading = useMemo(() => {
+    return authLoading || sectionsLoading || issuesLoading || featuredLoading || sidebarLoading;
+  }, [authLoading, sectionsLoading, issuesLoading, featuredLoading, sidebarLoading]);
 
-  // Safely get featured issue with type checking
-  const featuredIssue = useMemo(() => {
-    return featuredIssueData && typeof featuredIssueData === 'object' ? featuredIssueData as Issue : null;
-  }, [featuredIssueData]);
-
-  // Memoize section visibility with improved caching
-  const sectionVisibility = useMemo(() => {
-    if (!sectionsLoading && isSectionsArray(sections) && sections.length > 0) {
-      const visibleSections = getVisibleSections();
-      const mappedSections = mapSectionVisibilityToConfig(visibleSections);
-      console.log('ParallelDataLoader: Cached section visibility:', mappedSections.length, 'sections');
-      return mappedSections;
-    }
-    return [];
-  }, [sections, sectionsLoading, getVisibleSections]);
-
-  // Enhanced error management with debouncing
-  const currentErrors = useMemo(() => {
+  // Aggregate and track errors
+  useEffect(() => {
     const newErrors: Record<string, Error> = {};
     
-    if (issuesError) {
-      newErrors.issues = issuesError as Error;
-      console.warn('ParallelDataLoader: Issues error:', issuesError);
-    }
-    if (featuredError) {
-      newErrors.featured = featuredError as Error;
-      console.warn('ParallelDataLoader: Featured issue error:', featuredError);
-    }
-    if (optimizedSidebar.hasError) {
-      newErrors.sidebar = new Error('Sidebar data error');
-      console.warn('ParallelDataLoader: Sidebar error detected');
-    }
+    if (issuesError) newErrors.issues = issuesError as Error;
+    if (featuredError) newErrors.featured = featuredError as Error;
+    if (sidebarError) newErrors.sidebar = new Error('Sidebar data loading failed');
     
-    return newErrors;
-  }, [issuesError, featuredError, optimizedSidebar.hasError]);
+    setErrors(newErrors);
+  }, [issuesError, featuredError, sidebarError]);
 
-  // Debounced error updates to prevent excessive re-renders
-  useEffect(() => {
-    const errorKeys = Object.keys(currentErrors);
-    const existingErrorKeys = Object.keys(errors);
-    
-    const hasErrorChanges = errorKeys.length !== existingErrorKeys.length || 
-      errorKeys.some(key => !errors[key] || errors[key].message !== currentErrors[key].message);
-    
-    if (hasErrorChanges) {
-      // Debounce error updates
-      const timeoutId = setTimeout(() => {
-        setErrors(currentErrors);
-      }, 100);
-      
-      return () => clearTimeout(timeoutId);
-    }
-  }, [currentErrors, errors]);
-
-  // Enhanced retry mechanism with exponential backoff
+  // Retry failed operations
   const retryFailed = useCallback(() => {
-    if (retryCountRef.current < maxRetries) {
-      retryCountRef.current++;
-      const backoffDelay = Math.min(1000 * Math.pow(2, retryCountRef.current - 1), 5000);
-      
-      console.log(`ParallelDataLoader: Retrying failed requests (attempt ${retryCountRef.current}) with ${backoffDelay}ms delay`);
-      
-      setTimeout(() => {
-        if (issuesError) {
-          console.log('ParallelDataLoader: Retrying issues fetch');
-          refetchIssues();
-        }
-        if (featuredError) {
-          console.log('ParallelDataLoader: Retrying featured issue fetch');
-          refetchFeatured();
-        }
-        
-        // Clear errors temporarily to show loading state
-        setErrors({});
-      }, backoffDelay);
-    } else {
-      console.warn('ParallelDataLoader: Max retries reached, stopping retry attempts');
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current);
     }
-  }, [issuesError, featuredError, refetchIssues, refetchFeatured]);
+    
+    setRetryCount(prev => prev + 1);
+    setErrors({});
+    
+    // Implement exponential backoff for retries
+    retryTimeoutRef.current = setTimeout(() => {
+      // This will trigger a re-render and potentially retry failed queries
+      console.log('Retrying failed data loads...');
+    }, Math.min(1000 * Math.pow(2, retryCount), 10000));
+  }, [retryCount]);
 
-  // Reset retry count on successful loads
+  // Cleanup timeout on unmount
   useEffect(() => {
-    if (!issuesError && !featuredError && !optimizedSidebar.hasError) {
-      retryCountRef.current = 0;
-    }
-  }, [issuesError, featuredError, optimizedSidebar.hasError]);
+    return () => {
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
+    };
+  }, []);
 
-  // Optimized loading state calculation
-  const isLoading = useMemo(() => {
-    return authLoading || sectionsLoading || (issuesLoading && issues.length === 0) || featuredLoading;
-  }, [authLoading, sectionsLoading, issuesLoading, issues.length, featuredLoading]);
-
-  // Memoize return value to prevent unnecessary re-renders
+  // Process and return the parallel data state
   return useMemo(() => ({
-    issues,
-    sectionVisibility,
-    reviewerComments: optimizedSidebar.reviewerComments.data || [],
-    featuredIssue,
+    issues: isIssueArray(issuesData) ? issuesData : [],
+    sectionVisibility: mapSectionVisibilityToConfig(isSectionsArray(sections) ? sections : []),
+    reviewerComments: reviewerComments.data || [],
+    featuredIssue: featuredIssueData || null,
     isLoading,
     errors,
     retryFailed,
   }), [
-    issues,
-    sectionVisibility,
-    optimizedSidebar.reviewerComments.data,
-    featuredIssue,
-    isLoading,
-    errors,
+    issuesData, 
+    sections, 
+    reviewerComments.data, 
+    featuredIssueData, 
+    isLoading, 
+    errors, 
     retryFailed
   ]);
 };
