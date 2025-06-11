@@ -1,84 +1,87 @@
 
-// ABOUTME: Standardized mutation hook with optimistic updates and consistent error handling
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import { useErrorTracking } from './useErrorTracking';
+// ABOUTME: Standardized mutation hook with comprehensive error handling and optimization
+import { useMutation, useQueryClient, MutationOptions } from '@tanstack/react-query';
+import { useCallback } from 'react';
+import { toast } from '@/hooks/use-toast';
 
-interface MutationConfig<TData, TVariables> {
-  mutationFn: (variables: TVariables) => Promise<TData>;
-  onOptimisticUpdate?: (variables: TVariables) => void;
-  onError?: (error: Error, variables: TVariables) => void;
-  onSuccess?: (data: TData, variables: TVariables) => void;
+interface StandardMutationOptions<TData, TVariables> {
+  mutationKey?: string[];
   invalidateQueries?: string[][];
-  rollbackFn?: (variables: TVariables) => void;
-  successMessage?: string;
-  errorMessage?: string;
-  component?: string;
+  onSuccessMessage?: string;
+  onErrorMessage?: string;
+  optimisticUpdate?: {
+    queryKey: string[];
+    updater: (old: any, variables: TVariables) => any;
+  };
 }
 
-export const useStandardizedMutation = <TData, TVariables>(
-  config: MutationConfig<TData, TVariables>
+export const useStandardizedMutation = <TData = unknown, TVariables = void>(
+  mutationFn: (variables: TVariables) => Promise<TData>,
+  options: StandardMutationOptions<TData, TVariables> = {}
 ) => {
   const queryClient = useQueryClient();
-  const { trackError } = useErrorTracking();
 
-  return useMutation({
-    mutationFn: config.mutationFn,
-    onMutate: async (variables) => {
-      // Cancel outgoing queries to prevent race conditions
-      if (config.invalidateQueries) {
-        await Promise.all(
-          config.invalidateQueries.map(key => 
-            queryClient.cancelQueries({ queryKey: key })
-          )
-        );
+  const {
+    mutationKey,
+    invalidateQueries = [],
+    onSuccessMessage,
+    onErrorMessage,
+    optimisticUpdate,
+  } = options;
+
+  // Handle optimistic updates
+  const handleOptimisticUpdate = useCallback((variables: TVariables) => {
+    if (optimisticUpdate) {
+      const { queryKey, updater } = optimisticUpdate;
+      const previousData = queryClient.getQueryData(queryKey);
+      
+      queryClient.setQueryData(queryKey, (old: any) => updater(old, variables));
+      
+      return { previousData, queryKey };
+    }
+    return null;
+  }, [queryClient, optimisticUpdate]);
+
+  // Revert optimistic update on error
+  const revertOptimisticUpdate = useCallback((context: any) => {
+    if (context?.previousData && context?.queryKey) {
+      queryClient.setQueryData(context.queryKey, context.previousData);
+    }
+  }, [queryClient]);
+
+  const mutation = useMutation({
+    mutationKey,
+    mutationFn,
+    onMutate: handleOptimisticUpdate,
+    onSuccess: (data, variables) => {
+      // Invalidate related queries
+      invalidateQueries.forEach(queryKey => {
+        queryClient.invalidateQueries({ queryKey });
+      });
+
+      // Show success message
+      if (onSuccessMessage) {
+        toast({
+          title: "Sucesso",
+          description: onSuccessMessage,
+        });
       }
-
-      // Save snapshot for potential rollback
-      const previousData = config.invalidateQueries?.map(key => ({
-        key,
-        data: queryClient.getQueryData(key)
-      }));
-
-      // Apply optimistic update
-      config.onOptimisticUpdate?.(variables);
-
-      // Return context for rollback
-      return { variables, previousData };
     },
     onError: (error, variables, context) => {
-      // Track error for monitoring
-      trackError(error as Error, config.component, { variables });
-
-      // Rollback optimistic update
-      if (config.rollbackFn) {
-        config.rollbackFn(variables);
-      } else if (context?.previousData) {
-        // Automatic rollback using snapshot
-        context.previousData.forEach(({ key, data }) => {
-          queryClient.setQueryData(key, data);
-        });
-      }
+      console.error('Mutation error:', error);
       
-      // Show error toast
-      toast.error(config.errorMessage || 'Operation failed. Please try again.');
+      // Revert optimistic updates
+      revertOptimisticUpdate(context);
       
-      // Custom error handling
-      config.onError?.(error as Error, variables);
-    },
-    onSuccess: (data, variables) => {
-      if (config.successMessage) {
-        toast.success(config.successMessage);
-      }
-      config.onSuccess?.(data, variables);
-    },
-    onSettled: () => {
-      // Invalidate and refetch affected queries
-      if (config.invalidateQueries) {
-        config.invalidateQueries.forEach(key => {
-          queryClient.invalidateQueries({ queryKey: key });
-        });
-      }
+      // Show error message
+      const errorMessage = onErrorMessage || 'Ocorreu um erro inesperado.';
+      toast({
+        title: "Erro",
+        description: errorMessage,
+        variant: "destructive",
+      });
     },
   });
+
+  return mutation;
 };

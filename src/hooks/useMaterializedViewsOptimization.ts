@@ -1,140 +1,153 @@
 
-// ABOUTME: Materialized views management and optimization system
+// ABOUTME: Materialized views optimization for enhanced database performance
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useOptimizedQuery } from './useOptimizedQuery';
 
-interface MaterializedView {
+interface MaterializedViewHealth {
   view_name: string;
   size: string;
   last_refresh: string;
   is_stale: boolean;
 }
 
-interface ViewRefreshResult {
-  view_name: string;
-  success: boolean;
-  duration: number;
-  error?: string;
+interface ViewOptimizationStats {
+  totalViews: number;
+  staleViews: number;
+  totalSize: string;
+  lastRefresh: Date | null;
+  refreshInProgress: boolean;
 }
 
 export const useMaterializedViewsOptimization = () => {
-  const [refreshing, setRefreshing] = useState<string[]>([]);
-  const [lastRefreshResults, setLastRefreshResults] = useState<ViewRefreshResult[]>([]);
+  const [viewHealth, setViewHealth] = useState<MaterializedViewHealth[]>([]);
+  const [stats, setStats] = useState<ViewOptimizationStats>({
+    totalViews: 0,
+    staleViews: 0,
+    totalSize: '0 B',
+    lastRefresh: null,
+    refreshInProgress: false,
+  });
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Query materialized view health
-  const { data: viewHealth = [], isLoading } = useOptimizedQuery(
-    ['materialized-view-health'],
-    async (): Promise<MaterializedView[]> => {
+  // Get materialized view health status
+  const getViewHealth = useCallback(async () => {
+    try {
       const { data, error } = await supabase.rpc('get_materialized_view_health');
       
       if (error) {
-        console.error('Error fetching materialized view health:', error);
-        throw error;
+        console.error('Error fetching view health:', error);
+        return [];
+      }
+
+      // Type guard and transformation
+      if (Array.isArray(data)) {
+        const healthData = data as MaterializedViewHealth[];
+        setViewHealth(healthData);
+        
+        // Calculate stats
+        const staleCount = healthData.filter((view: MaterializedViewHealth) => view.is_stale).length;
+        const lastRefreshDates = healthData
+          .map((view: MaterializedViewHealth) => new Date(view.last_refresh))
+          .filter(date => !isNaN(date.getTime()));
+        
+        setStats({
+          totalViews: healthData.length,
+          staleViews: staleCount,
+          totalSize: healthData.reduce((acc, view) => acc + ' + ' + view.size, '').slice(3) || '0 B',
+          lastRefresh: lastRefreshDates.length > 0 ? new Date(Math.max(...lastRefreshDates.map(d => d.getTime()))) : null,
+          refreshInProgress: false,
+        });
+        
+        return healthData;
       }
       
-      return data || [];
-    },
-    {
-      staleTime: 2 * 60 * 1000, // 2 minutes
-      refetchInterval: 5 * 60 * 1000, // 5 minutes
+      return [];
+    } catch (error) {
+      console.error('Error in getViewHealth:', error);
+      return [];
     }
-  );
+  }, []);
 
   // Create materialized views if they don't exist
-  const initializeMaterializedViews = useCallback(async () => {
+  const createViewsIfNeeded = useCallback(async () => {
     try {
+      setIsLoading(true);
       const { error } = await supabase.rpc('create_materialized_view_if_not_exists');
       
       if (error) {
-        console.error('Error initializing materialized views:', error);
+        console.error('Error creating materialized views:', error);
         throw error;
       }
       
-      console.log('✅ Materialized views initialized successfully');
-      return true;
+      console.log('✅ Materialized views created/verified successfully');
+      await getViewHealth();
     } catch (error) {
-      console.error('Failed to initialize materialized views:', error);
-      return false;
+      console.error('Failed to create materialized views:', error);
+    } finally {
+      setIsLoading(false);
     }
-  }, []);
+  }, [getViewHealth]);
 
-  // Refresh specific materialized view
-  const refreshView = useCallback(async (viewName: string): Promise<ViewRefreshResult> => {
-    const startTime = performance.now();
-    setRefreshing(prev => [...prev, viewName]);
-    
+  // Refresh all materialized views
+  const refreshViews = useCallback(async () => {
     try {
-      // For now, use the general refresh function since we can't refresh individual views easily
+      setStats(prev => ({ ...prev, refreshInProgress: true }));
+      
       const { error } = await supabase.rpc('refresh_materialized_views');
       
-      if (error) throw error;
-      
-      const duration = performance.now() - startTime;
-      const result: ViewRefreshResult = {
-        view_name: viewName,
-        success: true,
-        duration,
-      };
-      
-      setLastRefreshResults(prev => [result, ...prev.slice(0, 9)]); // Keep last 10 results
-      console.log(`✅ Refreshed materialized view ${viewName} in ${duration.toFixed(0)}ms`);
-      
-      return result;
-    } catch (error) {
-      const duration = performance.now() - startTime;
-      const result: ViewRefreshResult = {
-        view_name: viewName,
-        success: false,
-        duration,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      };
-      
-      setLastRefreshResults(prev => [result, ...prev.slice(0, 9)]);
-      console.error(`❌ Failed to refresh materialized view ${viewName}:`, error);
-      
-      return result;
-    } finally {
-      setRefreshing(prev => prev.filter(name => name !== viewName));
-    }
-  }, []);
-
-  // Refresh all stale views
-  const refreshStaleViews = useCallback(async (): Promise<ViewRefreshResult[]> => {
-    const staleViews = viewHealth.filter(view => view.is_stale);
-    
-    if (staleViews.length === 0) {
-      console.log('✅ No stale materialized views found');
-      return [];
-    }
-    
-    console.log(`🔄 Refreshing ${staleViews.length} stale materialized views`);
-    
-    const results = await Promise.all(
-      staleViews.map(view => refreshView(view.view_name))
-    );
-    
-    return results;
-  }, [viewHealth, refreshView]);
-
-  // Auto-refresh stale views on mount
-  useEffect(() => {
-    if (viewHealth.length > 0) {
-      const staleCount = viewHealth.filter(view => view.is_stale).length;
-      if (staleCount > 0) {
-        console.log(`🔄 Found ${staleCount} stale materialized views, auto-refreshing...`);
-        refreshStaleViews();
+      if (error) {
+        console.error('Error refreshing materialized views:', error);
+        throw error;
       }
+      
+      console.log('✅ Materialized views refreshed successfully');
+      
+      // Wait a moment then fetch updated health
+      setTimeout(() => {
+        getViewHealth();
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Failed to refresh materialized views:', error);
+    } finally {
+      setStats(prev => ({ ...prev, refreshInProgress: false }));
     }
-  }, [viewHealth, refreshStaleViews]);
+  }, [getViewHealth]);
+
+  // Auto-refresh stale views
+  const autoRefreshIfStale = useCallback(async () => {
+    const health = await getViewHealth();
+    const hasStaleViews = health.some((view: MaterializedViewHealth) => view.is_stale);
+    
+    if (hasStaleViews) {
+      console.log('🔄 Auto-refreshing stale materialized views');
+      await refreshViews();
+    }
+  }, [getViewHealth, refreshViews]);
+
+  // Initialize views and check health on mount
+  useEffect(() => {
+    const initializeViews = async () => {
+      await createViewsIfNeeded();
+      await getViewHealth();
+    };
+    
+    initializeViews();
+  }, [createViewsIfNeeded, getViewHealth]);
+
+  // Auto-refresh stale views periodically
+  useEffect(() => {
+    const interval = setInterval(autoRefreshIfStale, 5 * 60 * 1000); // Every 5 minutes
+    return () => clearInterval(interval);
+  }, [autoRefreshIfStale]);
 
   return {
     viewHealth,
+    stats,
     isLoading,
-    refreshing,
-    lastRefreshResults,
-    initializeMaterializedViews,
-    refreshView,
-    refreshStaleViews,
+    refreshViews,
+    createViewsIfNeeded,
+    getViewHealth,
+    autoRefreshIfStale,
   };
 };

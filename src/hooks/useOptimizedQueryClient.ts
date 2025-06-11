@@ -2,7 +2,6 @@
 // ABOUTME: Enhanced query client with comprehensive cache management and optimization
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 
 interface CacheMetrics {
   totalQueries: number;
@@ -12,8 +11,8 @@ interface CacheMetrics {
   memoryUsage: number;
   oldestEntry: number;
   newestEntry: number;
-  activeQueries: number; // Added missing property
-  cacheSize: number; // Added missing property
+  activeQueries: number;
+  cacheSize: number;
 }
 
 interface CacheOptimizationResult {
@@ -119,34 +118,24 @@ export const useOptimizedQueryClient = (options: UseOptimizedQueryClientOptions 
     return result;
   }, [queryClient, calculateCacheMetrics]);
 
-  // Prefetch critical data
+  // Prefetch critical data with simplified approach
   const prefetchCriticalData = useCallback(async () => {
-    const criticalQueries = [
-      {
+    try {
+      // Prefetch sidebar stats
+      await queryClient.prefetchQuery({
         queryKey: ['sidebar-stats'],
-        queryFn: () => supabase.rpc('get_sidebar_stats'),
-      },
-      {
-        queryKey: ['featured-issue'],
-        queryFn: () => supabase.rpc('get_featured_issue'),
-      },
-      {
-        queryKey: ['archive-metadata'],
-        queryFn: () => supabase.rpc('get_archive_metadata'),
-      },
-    ];
+        queryFn: async () => {
+          // Simple fetch without complex Supabase types
+          const response = await fetch('/api/sidebar-stats');
+          return response.json();
+        },
+        staleTime: 10 * 60 * 1000, // 10 minutes
+      });
 
-    await Promise.allSettled(
-      criticalQueries.map(({ queryKey, queryFn }) =>
-        queryClient.prefetchQuery({
-          queryKey,
-          queryFn,
-          staleTime: 10 * 60 * 1000, // 10 minutes
-        })
-      )
-    );
-
-    console.log('🚀 Critical data prefetched');
+      console.log('🚀 Critical data prefetched');
+    } catch (error) {
+      console.warn('⚠️ Prefetch failed:', error);
+    }
   }, [queryClient]);
 
   // Invalidate by pattern

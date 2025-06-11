@@ -1,9 +1,9 @@
 
-// ABOUTME: Sidebar data hook using unified query system with intelligent caching
+// ABOUTME: Sidebar data management with enhanced caching and type safety
 import { useUnifiedQuery } from './useUnifiedQuery';
 import { supabase } from '@/integrations/supabase/client';
 
-interface SidebarStats {
+export interface SidebarStats {
   totalUsers: number;
   onlineUsers: number;
   totalIssues: number;
@@ -11,115 +11,47 @@ interface SidebarStats {
   totalComments: number;
 }
 
-interface TopThread {
-  id: string;
-  title: string;
-  comments: number;
-  votes: number;
-  created_at: string;
-  thread_type: string;
-}
-
-interface HighlightComment {
-  id: string;
-  votes: number;
-  created_at: string;
-  body: string;
-  author_avatar: string;
-  author_name: string;
-  thread_id: string;
-}
-
-export const useSidebarStats = () => {
+export const useSidebarData = () => {
   return useUnifiedQuery<SidebarStats>(
     ['sidebar-stats'],
     async (): Promise<SidebarStats> => {
-      console.log('useSidebarStats: Fetching sidebar statistics');
-      
       const { data, error } = await supabase.rpc('get_sidebar_stats');
       
       if (error) {
-        console.error('useSidebarStats: Error fetching stats:', error);
+        console.error('useSidebarData: Error fetching stats:', error);
         throw error;
       }
       
-      console.log('useSidebarStats: Fetched stats:', data);
-      return data;
+      // Type guard and safe casting
+      if (data && typeof data === 'object') {
+        const stats = data as any;
+        return {
+          totalUsers: Number(stats.totalUsers) || 0,
+          onlineUsers: Number(stats.onlineUsers) || 0,
+          totalIssues: Number(stats.totalIssues) || 0,
+          totalPosts: Number(stats.totalPosts) || 0,
+          totalComments: Number(stats.totalComments) || 0,
+        };
+      }
+      
+      // Fallback defaults
+      return {
+        totalUsers: 0,
+        onlineUsers: 0,
+        totalIssues: 0,
+        totalPosts: 0,
+        totalComments: 0,
+      };
     },
     {
-      priority: 'normal',
+      priority: 'background',
       staleTime: 5 * 60 * 1000, // 5 minutes
-      enableMonitoring: true,
-    }
-  );
-};
-
-export const useTopThreads = () => {
-  return useUnifiedQuery<TopThread[]>(
-    ['top-threads'],
-    async (): Promise<TopThread[]> => {
-      console.log('useTopThreads: Fetching top threads');
-      
-      const { data, error } = await supabase.rpc('get_top_threads', { min_comments: 3 });
-      
-      if (error) {
-        console.error('useTopThreads: Error fetching top threads:', error);
-        throw error;
-      }
-      
-      console.log(`useTopThreads: Fetched ${data?.length || 0} threads`);
-      return data || [];
-    },
-    {
-      priority: 'background',
-      staleTime: 10 * 60 * 1000, // 10 minutes
       enableMonitoring: false,
+      rateLimit: {
+        endpoint: 'sidebar',
+        maxRequests: 10,
+        windowMs: 60000,
+      },
     }
   );
 };
-
-export const useHighlightComments = () => {
-  return useUnifiedQuery<HighlightComment[]>(
-    ['highlight-comments'],
-    async (): Promise<HighlightComment[]> => {
-      console.log('useHighlightComments: Fetching highlight comments');
-      
-      const { data, error } = await supabase
-        .from('comments_highlight')
-        .select('*')
-        .order('votes', { ascending: false })
-        .limit(5);
-      
-      if (error) {
-        console.error('useHighlightComments: Error fetching comments:', error);
-        throw error;
-      }
-      
-      console.log(`useHighlightComments: Fetched ${data?.length || 0} comments`);
-      return data || [];
-    },
-    {
-      priority: 'background',
-      staleTime: 15 * 60 * 1000, // 15 minutes
-      enableMonitoring: false,
-    }
-  );
-};
-
-// Batch hook for all sidebar data
-export const useSidebarData = () => {
-  const stats = useSidebarStats();
-  const threads = useTopThreads();
-  const comments = useHighlightComments();
-  
-  return {
-    stats,
-    threads,
-    comments,
-    isLoading: stats.isLoading || threads.isLoading || comments.isLoading,
-    error: stats.error || threads.error || comments.error,
-  };
-};
-
-// Export for backward compatibility
-export { useSidebarData as useOptimizedSidebarData };

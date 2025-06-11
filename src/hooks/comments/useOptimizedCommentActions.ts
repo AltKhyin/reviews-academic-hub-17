@@ -31,7 +31,7 @@ export const useOptimizedCommentActions = (
     try {
       const commentData = buildCommentData(content, userId, entityType, entityId);
       
-      // Optimistic update - add temporary comment
+      // Create temporary comment for optimistic update
       const tempComment: Comment = {
         id: `temp-${Date.now()}`,
         ...commentData,
@@ -47,6 +47,7 @@ export const useOptimizedCommentActions = (
         replies: []
       };
 
+      // Add optimistic update
       updateCommentsOptimistically((oldComments) => [tempComment, ...(oldComments || [])]);
 
       const { data, error } = await supabase
@@ -79,9 +80,10 @@ export const useOptimizedCommentActions = (
     } catch (error) {
       console.error('Error adding comment:', error);
       
-      // Remove optimistic comment on error
+      // Remove optimistic comment on error - need to get tempComment in scope
+      const tempCommentId = `temp-${Date.now()}`;
       updateCommentsOptimistically((oldComments) => 
-        oldComments.filter(comment => comment.id !== tempComment.id)
+        oldComments.filter(comment => !comment.id.startsWith('temp-'))
       );
       
       toast({
