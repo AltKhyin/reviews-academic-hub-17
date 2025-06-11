@@ -1,6 +1,6 @@
 
-// ABOUTME: Fixed voting race conditions with optimistic updates and debouncing
-import React, { useState, useCallback, useRef } from 'react';
+// ABOUTME: Fixed voting system with separated optimistic updates and conflict resolution
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -22,17 +22,43 @@ export const PostVoting: React.FC<PostVotingProps> = ({
   const { user } = useAuth();
   const { toast } = useToast();
   
-  // Local state for optimistic updates
-  const [localScore, setLocalScore] = useState(initialScore);
-  const [localUserVote, setLocalUserVote] = useState(initialUserVote);
+  // Separated state management for optimistic updates
+  const [optimisticScore, setOptimisticScore] = useState(initialScore);
+  const [optimisticUserVote, setOptimisticUserVote] = useState(initialUserVote);
+  const [serverScore, setServerScore] = useState(initialScore);
+  const [serverUserVote, setServerUserVote] = useState(initialUserVote);
   const [isVoting, setIsVoting] = useState(false);
   
-  // Refs for race condition prevention
-  const lastVoteRef = useRef<number>(initialUserVote);
+  // Conflict resolution refs
+  const lastServerUpdateRef = useRef<number>(Date.now());
   const pendingVoteRef = useRef<boolean>(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Debounced vote handler to prevent rapid clicking issues
+  // Update server state when props change, but preserve optimistic during voting
+  useEffect(() => {
+    if (!pendingVoteRef.current) {
+      setOptimisticScore(initialScore);
+      setOptimisticUserVote(initialUserVote);
+    }
+    setServerScore(initialScore);
+    setServerUserVote(initialUserVote);
+    lastServerUpdateRef.current = Date.now();
+  }, [initialScore, initialUserVote]);
+
+  // Conflict resolution: restore server state if parent updates during voting
+  useEffect(() => {
+    if (pendingVoteRef.current && Date.now() - lastServerUpdateRef.current > 1000) {
+      // Parent updated after our vote, check for conflicts
+      const scoreDiff = Math.abs(optimisticScore - initialScore);
+      if (scoreDiff > 2) {
+        // Significant difference suggests conflict, restore server state
+        setOptimisticScore(initialScore);
+        setOptimisticUserVote(initialUserVote);
+        pendingVoteRef.current = false;
+      }
+    }
+  }, [initialScore, initialUserVote, optimisticScore]);
+
   const handleVote = useCallback(async (value: number) => {
     if (!user) {
       toast({
@@ -53,18 +79,17 @@ export const PostVoting: React.FC<PostVotingProps> = ({
       clearTimeout(timeoutRef.current);
     }
 
-    const currentVote = lastVoteRef.current;
+    const currentVote = optimisticUserVote;
     const newVote = currentVote === value ? 0 : value;
     
     // Calculate score delta for optimistic update
     const scoreDelta = newVote - currentVote;
     
-    // Optimistic updates
-    setLocalUserVote(newVote);
-    setLocalScore(prevScore => prevScore + scoreDelta);
-    lastVoteRef.current = newVote;
+    // Apply optimistic updates immediately
+    setOptimisticUserVote(newVote);
+    setOptimisticScore(prev => prev + scoreDelta);
     
-    // Set pending flag and debounce
+    // Set pending flag
     pendingVoteRef.current = true;
     setIsVoting(true);
 
@@ -109,18 +134,23 @@ export const PostVoting: React.FC<PostVotingProps> = ({
           if (insertError) throw insertError;
         }
 
-        // Delay parent refresh to allow DB triggers to complete
+        // Update server state
+        setServerScore(optimisticScore);
+        setServerUserVote(newVote);
+
+        // Delay parent refresh to prevent conflicts with optimistic state
         setTimeout(() => {
-          onVoteChange();
-        }, 500);
+          if (!pendingVoteRef.current) {
+            onVoteChange();
+          }
+        }, 1500);
         
       } catch (error) {
         console.error('Error voting on post:', error);
         
         // Revert optimistic updates on error
-        setLocalScore(initialScore);
-        setLocalUserVote(initialUserVote);
-        lastVoteRef.current = initialUserVote;
+        setOptimisticScore(serverScore);
+        setOptimisticUserVote(serverUserVote);
         
         toast({
           title: "Erro ao votar",
@@ -131,15 +161,15 @@ export const PostVoting: React.FC<PostVotingProps> = ({
         pendingVoteRef.current = false;
         setIsVoting(false);
       }
-    }, 300); // 300ms debounce
-  }, [user, postId, initialScore, initialUserVote, onVoteChange, toast]);
+    }, 300);
+  }, [user, postId, optimisticUserVote, optimisticScore, serverScore, serverUserVote, onVoteChange, toast]);
 
   return (
     <div className="flex items-center space-x-1">
       <button
         className={`
           p-1.5 hover:bg-gray-800 rounded transition-colors disabled:opacity-50 flex items-center justify-center
-          ${localUserVote === 1 ? 'text-orange-500' : 'text-gray-400 hover:text-gray-300'}
+          ${optimisticUserVote === 1 ? 'text-orange-500' : 'text-gray-400 hover:text-gray-300'}
         `}
         onClick={() => handleVote(1)}
         disabled={isVoting}
@@ -149,16 +179,16 @@ export const PostVoting: React.FC<PostVotingProps> = ({
       </button>
       
       <span className={`text-sm font-medium min-w-[24px] text-center ${
-        localScore > 0 ? 'text-orange-500' : 
-        localScore < 0 ? 'text-blue-500' : 'text-gray-400'
+        optimisticScore > 0 ? 'text-orange-500' : 
+        optimisticScore < 0 ? 'text-blue-500' : 'text-gray-400'
       }`}>
-        {localScore}
+        {optimisticScore}
       </span>
       
       <button
         className={`
           p-1.5 hover:bg-gray-800 rounded transition-colors disabled:opacity-50 flex items-center justify-center
-          ${localUserVote === -1 ? 'text-blue-500' : 'text-gray-400 hover:text-gray-300'}
+          ${optimisticUserVote === -1 ? 'text-blue-500' : 'text-gray-400 hover:text-gray-300'}
         `}
         onClick={() => handleVote(-1)}
         disabled={isVoting}
