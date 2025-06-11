@@ -29,18 +29,18 @@ export const useSectionVisibility = () => {
       try {
         console.log('useSectionVisibility: Fetching home settings');
         
-        // First, try to get existing settings from site_meta
+        // Use single() with proper error handling for PGRST116 (no rows)
         const { data: metaData, error: metaError } = await supabase
           .from('site_meta')
           .select('value')
           .eq('key', 'home_settings')
-          .single();
+          .maybeSingle();
         
-        if (metaError && metaError.code !== 'PGRST116') { // PGRST116 = no rows returned
+        if (metaError) {
           console.warn('useSectionVisibility: site_meta query error:', metaError);
+          return getDefaultSectionConfig(isAdmin);
         }
 
-        // If we have data, process it, otherwise use defaults
         if (metaData?.value && typeof metaData.value === 'object' && 'sections' in metaData.value) {
           console.log('useSectionVisibility: Found saved settings:', metaData.value);
           return processSectionData(metaData.value.sections, isAdmin);
@@ -55,7 +55,7 @@ export const useSectionVisibility = () => {
     },
     {
       priority: 'critical',
-      staleTime: 20 * 60 * 1000, // 20 minutes for section config
+      staleTime: 20 * 60 * 1000,
       enableMonitoring: true,
     }
   );
@@ -70,6 +70,42 @@ export const useSectionVisibility = () => {
     return [...sections].sort((a, b) => a.order - b.order);
   }, [sections]);
 
+  const saveSectionsToDatabase = useCallback(async (updatedSections: Section[]) => {
+    try {
+      console.log('saveSectionsToDatabase: Attempting to save:', { sections: updatedSections });
+      
+      // Use UPSERT to avoid unique constraint violations
+      const { data, error } = await supabase
+        .from('site_meta')
+        .upsert(
+          {
+            key: 'home_settings',
+            value: { sections: updatedSections }
+          },
+          { 
+            onConflict: 'key',
+            ignoreDuplicates: false 
+          }
+        )
+        .select();
+      
+      if (error) {
+        console.error('saveSectionsToDatabase: Database error:', error);
+        throw error;
+      }
+      
+      console.log('saveSectionsToDatabase: Successfully saved:', data);
+      
+      // Invalidate and refetch to ensure consistency
+      await queryClient.invalidateQueries({ queryKey: ['home-sections'] });
+      
+      return true;
+    } catch (error) {
+      console.error('saveSectionsToDatabase: Failed to save:', error);
+      throw error;
+    }
+  }, [queryClient]);
+
   const toggleSectionVisibility = useCallback(async (sectionId: string) => {
     if (!Array.isArray(sections)) return;
     
@@ -83,25 +119,7 @@ export const useSectionVisibility = () => {
     queryClient.setQueryData(['home-sections', isAdmin], updatedSections);
     
     try {
-      console.log('toggleSectionVisibility: Saving to database:', { sections: updatedSections });
-      
-      const { data, error } = await supabase
-        .from('site_meta')
-        .upsert({
-          key: 'home_settings',
-          value: { sections: updatedSections }
-        })
-        .select();
-      
-      if (error) {
-        console.error('toggleSectionVisibility: Database error:', error);
-        throw error;
-      }
-      
-      console.log('toggleSectionVisibility: Successfully saved:', data);
-      
-      // Force a refetch to ensure consistency
-      await queryClient.invalidateQueries({ queryKey: ['home-sections'] });
+      await saveSectionsToDatabase(updatedSections);
       
       toast({
         title: "Configuração salva",
@@ -120,7 +138,7 @@ export const useSectionVisibility = () => {
         variant: "destructive",
       });
     }
-  }, [sections, queryClient, isAdmin]);
+  }, [sections, queryClient, isAdmin, saveSectionsToDatabase]);
 
   const reorderSections = useCallback(async (newOrder: string[]) => {
     if (!Array.isArray(sections)) return;
@@ -134,25 +152,7 @@ export const useSectionVisibility = () => {
     queryClient.setQueryData(['home-sections', isAdmin], reorderedSections);
     
     try {
-      console.log('reorderSections: Saving to database:', { sections: reorderedSections });
-      
-      const { data, error } = await supabase
-        .from('site_meta')
-        .upsert({
-          key: 'home_settings',
-          value: { sections: reorderedSections }
-        })
-        .select();
-      
-      if (error) {
-        console.error('reorderSections: Database error:', error);
-        throw error;
-      }
-      
-      console.log('reorderSections: Successfully saved:', data);
-      
-      // Force a refetch to ensure consistency
-      await queryClient.invalidateQueries({ queryKey: ['home-sections'] });
+      await saveSectionsToDatabase(reorderedSections);
       
       toast({
         title: "Ordem atualizada",
@@ -171,7 +171,7 @@ export const useSectionVisibility = () => {
         variant: "destructive",
       });
     }
-  }, [sections, queryClient, isAdmin]);
+  }, [sections, queryClient, isAdmin, saveSectionsToDatabase]);
 
   const updateSection = useCallback(async (sectionId: string, updates: Partial<Section>) => {
     if (!Array.isArray(sections)) return;
@@ -186,25 +186,7 @@ export const useSectionVisibility = () => {
     queryClient.setQueryData(['home-sections', isAdmin], updatedSections);
     
     try {
-      console.log('updateSection: Saving to database:', { sections: updatedSections });
-      
-      const { data, error } = await supabase
-        .from('site_meta')
-        .upsert({
-          key: 'home_settings',
-          value: { sections: updatedSections }
-        })
-        .select();
-      
-      if (error) {
-        console.error('updateSection: Database error:', error);
-        throw error;
-      }
-      
-      console.log('updateSection: Successfully saved:', data);
-      
-      // Force a refetch to ensure consistency
-      await queryClient.invalidateQueries({ queryKey: ['home-sections'] });
+      await saveSectionsToDatabase(updatedSections);
       
     } catch (error) {
       console.error('updateSection: Failed to update section:', error);
@@ -212,7 +194,7 @@ export const useSectionVisibility = () => {
       // Revert optimistic update
       queryClient.setQueryData(['home-sections', isAdmin], sections);
     }
-  }, [sections, queryClient, isAdmin]);
+  }, [sections, queryClient, isAdmin, saveSectionsToDatabase]);
 
   const resetToDefaults = useCallback(async () => {
     const defaultSections = getDefaultSectionConfig(isAdmin);
@@ -221,25 +203,7 @@ export const useSectionVisibility = () => {
     queryClient.setQueryData(['home-sections', isAdmin], defaultSections);
     
     try {
-      console.log('resetToDefaults: Saving to database:', { sections: defaultSections });
-      
-      const { data, error } = await supabase
-        .from('site_meta')
-        .upsert({
-          key: 'home_settings',
-          value: { sections: defaultSections }
-        })
-        .select();
-      
-      if (error) {
-        console.error('resetToDefaults: Database error:', error);
-        throw error;
-      }
-      
-      console.log('resetToDefaults: Successfully saved:', data);
-      
-      // Force a refetch to ensure consistency
-      await queryClient.invalidateQueries({ queryKey: ['home-sections'] });
+      await saveSectionsToDatabase(defaultSections);
       
       toast({
         title: "Configuração restaurada",
@@ -258,7 +222,7 @@ export const useSectionVisibility = () => {
         variant: "destructive",
       });
     }
-  }, [sections, queryClient, isAdmin]);
+  }, [sections, queryClient, isAdmin, saveSectionsToDatabase]);
 
   return {
     sections: Array.isArray(sections) ? sections : [],
