@@ -1,110 +1,77 @@
 
-// ABOUTME: Background synchronization system for data prefetching and cache warming
-import { useEffect, useCallback, useRef, useState } from 'react';
+// ABOUTME: Background synchronization hook for prefetching and cache management
+import { useCallback, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 
 interface BackgroundSyncConfig {
-  enablePrefetch?: boolean;
-  enablePeriodicSync?: boolean;
-  enableVisibilitySync?: boolean;
-  prefetchCriticalData?: boolean;
-  syncInterval?: number;
+  enablePrefetch: boolean;
+  enablePeriodicSync: boolean;
+  enableVisibilitySync: boolean;
+  prefetchCriticalData: boolean;
 }
 
-const defaultConfig: BackgroundSyncConfig = {
-  enablePrefetch: true,
-  enablePeriodicSync: true,
-  enableVisibilitySync: true,
-  prefetchCriticalData: true,
-  syncInterval: 5 * 60 * 1000, // 5 minutes
-};
-
-export const useBackgroundSync = (config: BackgroundSyncConfig = {}) => {
-  const finalConfig = { ...defaultConfig, ...config };
+export const useBackgroundSync = (config: BackgroundSyncConfig) => {
   const queryClient = useQueryClient();
-  const [isEnabled, setIsEnabled] = useState(true);
-  const [lastSyncTime, setLastSyncTime] = useState<number | null>(null);
-  const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout>();
+  const isEnabled = config.enablePrefetch || config.enablePeriodicSync;
 
-  // Critical data queries that should be kept fresh
-  const criticalQueries = [
-    ['parallel-issues'],
-    ['sidebarStats'],
-    ['archive-issues', false],
-    ['userPermissions'],
-  ];
-
-  // Prefetch critical data
-  const prefetchCriticalData = useCallback(async () => {
-    if (!finalConfig.prefetchCriticalData) return;
+  const triggerSync = useCallback(async () => {
+    if (!isEnabled) return;
 
     try {
-      const results = await Promise.allSettled(
-        criticalQueries.map(queryKey =>
+      // Prefetch critical queries
+      if (config.prefetchCriticalData) {
+        await Promise.allSettled([
           queryClient.prefetchQuery({
-            queryKey,
-            staleTime: 10 * 60 * 1000, // 10 minutes
-          })
-        )
-      );
+            queryKey: ['sidebar', 'stats'],
+            staleTime: 15 * 60 * 1000,
+          }),
+          queryClient.prefetchQuery({
+            queryKey: ['issues', 'featured'],
+            staleTime: 15 * 60 * 1000,
+          }),
+        ]);
+      }
 
-      const successful = results.filter(r => r.status === 'fulfilled').length;
-      console.log(`🔄 Background sync: ${successful}/${criticalQueries.length} queries prefetched`);
-      
-      setLastSyncTime(Date.now());
+      console.log('🔄 Background sync completed');
     } catch (error) {
-      console.warn('Background prefetch failed:', error);
+      console.warn('Background sync failed:', error);
     }
-  }, [finalConfig.prefetchCriticalData, queryClient]);
+  }, [isEnabled, config.prefetchCriticalData, queryClient]);
 
-  // Periodic background sync
+  // Set up periodic sync
   useEffect(() => {
-    if (!finalConfig.enablePeriodicSync || !isEnabled) return;
+    if (!config.enablePeriodicSync) return;
 
-    syncIntervalRef.current = setInterval(() => {
-      prefetchCriticalData();
-    }, finalConfig.syncInterval);
+    intervalRef.current = setInterval(() => {
+      triggerSync();
+    }, 5 * 60 * 1000); // 5 minutes
 
     return () => {
-      if (syncIntervalRef.current) {
-        clearInterval(syncIntervalRef.current);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
       }
     };
-  }, [finalConfig.enablePeriodicSync, finalConfig.syncInterval, isEnabled, prefetchCriticalData]);
+  }, [config.enablePeriodicSync, triggerSync]);
 
-  // Visibility change sync
+  // Set up visibility change sync
   useEffect(() => {
-    if (!finalConfig.enableVisibilitySync) return;
+    if (!config.enableVisibilitySync) return;
 
     const handleVisibilityChange = () => {
-      if (!document.hidden && isEnabled) {
-        // Page became visible, sync data
-        prefetchCriticalData();
+      if (!document.hidden) {
+        triggerSync();
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [finalConfig.enableVisibilitySync, isEnabled, prefetchCriticalData]);
-
-  // Manual sync trigger
-  const triggerSync = useCallback((force = false) => {
-    if (!isEnabled && !force) return;
-    prefetchCriticalData();
-  }, [isEnabled, prefetchCriticalData]);
-
-  // Enable/disable sync
-  const setEnabled = useCallback((enabled: boolean) => {
-    setIsEnabled(enabled);
-    if (enabled) {
-      prefetchCriticalData();
-    }
-  }, [prefetchCriticalData]);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [config.enableVisibilitySync, triggerSync]);
 
   return {
-    isEnabled,
-    setEnabled,
     triggerSync,
-    lastSyncTime,
+    isEnabled,
   };
 };

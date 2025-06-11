@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useOptimizedIssues, useOptimizedFeaturedIssue } from './useOptimizedIssues';
 import { useOptimizedSidebarData } from './useOptimizedSidebarData';
-import { useStableAuth } from './useStableAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { useSectionVisibility } from './useSectionVisibility';
 import { Issue } from '@/types/issue';
 
@@ -47,7 +47,7 @@ const mapSectionVisibilityToConfig = (sections: any[]): SectionVisibilityConfig[
 };
 
 export const useParallelDataLoader = (): ParallelDataState => {
-  const { isAuthenticated, isLoading: authLoading } = useStableAuth();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { sections, isLoading: sectionsLoading, getVisibleSections } = useSectionVisibility();
   const [errors, setErrors] = useState<Record<string, Error>>({});
   const [retryCount, setRetryCount] = useState(0);

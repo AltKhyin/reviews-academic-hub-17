@@ -1,170 +1,93 @@
 
-// ABOUTME: RPC performance monitoring with real database functions
+// ABOUTME: RPC function performance monitoring and optimization tracking
 import { useState, useEffect, useCallback } from 'react';
-import { useOptimizedQuery, queryKeys, queryConfigs } from './useOptimizedQuery';
+import { useOptimizedQuery, queryKeys } from './useOptimizedQuery';
 import { supabase } from '@/integrations/supabase/client';
 
-interface RPCMetrics {
+interface RPCMetric {
   functionName: string;
-  averageExecutionTime: number;
   callCount: number;
-  errorRate: number;
-  lastCalled: Date;
+  totalExecutionTime: number;
+  averageExecutionTime: number;
+  lastExecuted: Date;
 }
 
 interface PerformanceComparison {
-  rpcCallTime: number;
-  legacyQueryTime: number;
+  rpcTime: number;
+  legacyTime: number;
   improvementPercentage: number;
-  networkSavings: number;
+  timestamp: Date;
 }
 
 export const useRPCPerformanceMonitoring = () => {
-  const [rpcMetrics, setRPCMetrics] = useState<Map<string, RPCMetrics>>(new Map());
+  const [rpcMetrics, setRpcMetrics] = useState<RPCMetric[]>([]);
   const [performanceComparisons, setPerformanceComparisons] = useState<PerformanceComparison[]>([]);
 
-  // Track RPC call performance
-  const trackRPCCall = useCallback((functionName: string, executionTime: number, success: boolean) => {
-    setRPCMetrics(prev => {
-      const current = prev.get(functionName) || {
-        functionName,
-        averageExecutionTime: 0,
-        callCount: 0,
-        errorRate: 0,
-        lastCalled: new Date(),
-      };
-
-      const newCallCount = current.callCount + 1;
-      const newAverageTime = ((current.averageExecutionTime * current.callCount) + executionTime) / newCallCount;
-      const errorCount = success ? current.errorRate * current.callCount : (current.errorRate * current.callCount) + 1;
-      const newErrorRate = errorCount / newCallCount;
-
-      const updated = new Map(prev);
-      updated.set(functionName, {
-        ...current,
-        averageExecutionTime: newAverageTime,
-        callCount: newCallCount,
-        errorRate: newErrorRate,
-        lastCalled: new Date(),
-      });
-
-      return updated;
-    });
-  }, []);
-
-  // Monitor database query performance using existing function
+  // Query performance data using the existing RPC function
   const { data: queryPerformanceData } = useOptimizedQuery(
     queryKeys.queryPerformance(),
     async () => {
       const { data, error } = await supabase.rpc('get_query_performance_stats');
-      
-      if (error) {
-        console.error('Query performance monitoring error:', error);
-        return null;
-      }
-
+      if (error) throw error;
       return data;
     },
     {
-      ...queryConfigs.performance,
-      refetchInterval: 30000, // Every 30 seconds
+      staleTime: 2 * 60 * 1000, // 2 minutes
+      refetchInterval: 60000, // 1 minute
     }
   );
 
-  // Compare RPC vs legacy query performance
-  const comparePerformance = useCallback(async (rpcFunction: string, legacyQuery: () => Promise<any>) => {
-    // Valid RPC functions that exist in our database
-    const validRPCFunctions = [
-      'get_optimized_issues',
-      'get_review_with_blocks', 
-      'get_sidebar_stats',
-      'get_featured_issue',
-      'get_issues_batch',
-      'get_top_threads',
-      'get_popular_issues'
-    ];
-
-    if (!validRPCFunctions.includes(rpcFunction)) {
-      console.warn(`RPC function ${rpcFunction} not available for comparison`);
-      return null;
-    }
-
-    const rpcStart = performance.now();
-    try {
-      await supabase.rpc(rpcFunction as any);
-      const rpcEnd = performance.now();
-      const rpcTime = rpcEnd - rpcStart;
-
-      const legacyStart = performance.now();
-      await legacyQuery();
-      const legacyEnd = performance.now();
-      const legacyTime = legacyEnd - legacyStart;
-
-      const improvement = ((legacyTime - rpcTime) / legacyTime) * 100;
-      const networkSavings = legacyTime > rpcTime ? 1 : 0; // Simplified metric
-
-      const comparison: PerformanceComparison = {
-        rpcCallTime: rpcTime,
-        legacyQueryTime: legacyTime,
-        improvementPercentage: improvement,
-        networkSavings,
-      };
-
-      setPerformanceComparisons(prev => [...prev.slice(-9), comparison]); // Keep last 10
-      return comparison;
-    } catch (error) {
-      console.error('Performance comparison failed:', error);
-      return null;
-    }
-  }, []);
-
-  // Automatic performance alerts
-  useEffect(() => {
-    const checkPerformanceAlerts = () => {
-      rpcMetrics.forEach((metrics, functionName) => {
-        if (metrics.errorRate > 0.1) { // 10% error rate threshold
-          console.warn(`🚨 High error rate detected for ${functionName}: ${(metrics.errorRate * 100).toFixed(1)}%`);
-        }
-        
-        if (metrics.averageExecutionTime > 2000) { // 2 second threshold
-          console.warn(`⚠️ Slow RPC function detected: ${functionName} (${metrics.averageExecutionTime.toFixed(0)}ms)`);
-        }
-      });
-    };
-
-    const alertInterval = setInterval(checkPerformanceAlerts, 60000); // Check every minute
-    return () => clearInterval(alertInterval);
-  }, [rpcMetrics]);
-
-  // Generate performance report
-  const generatePerformanceReport = useCallback(() => {
-    const report = {
-      timestamp: new Date().toISOString(),
-      rpcFunctions: Array.from(rpcMetrics.values()),
-      databaseMetrics: queryPerformanceData,
-      performanceComparisons,
-      recommendations: [] as string[],
-    };
-
-    // Add performance recommendations
-    rpcMetrics.forEach((metrics, functionName) => {
-      if (metrics.averageExecutionTime > 1000) {
-        report.recommendations.push(`Consider optimizing ${functionName} - average execution time: ${metrics.averageExecutionTime.toFixed(0)}ms`);
-      }
-      if (metrics.errorRate > 0.05) {
-        report.recommendations.push(`Investigate errors in ${functionName} - error rate: ${(metrics.errorRate * 100).toFixed(1)}%`);
+  const trackRPCCall = useCallback((functionName: string, executionTime: number) => {
+    setRpcMetrics(prev => {
+      const existing = prev.find(m => m.functionName === functionName);
+      if (existing) {
+        const newCallCount = existing.callCount + 1;
+        const newTotalTime = existing.totalExecutionTime + executionTime;
+        return prev.map(m => 
+          m.functionName === functionName
+            ? {
+                ...m,
+                callCount: newCallCount,
+                totalExecutionTime: newTotalTime,
+                averageExecutionTime: newTotalTime / newCallCount,
+                lastExecuted: new Date(),
+              }
+            : m
+        );
+      } else {
+        return [...prev, {
+          functionName,
+          callCount: 1,
+          totalExecutionTime: executionTime,
+          averageExecutionTime: executionTime,
+          lastExecuted: new Date(),
+        }];
       }
     });
+  }, []);
 
-    return report;
-  }, [rpcMetrics, queryPerformanceData, performanceComparisons]);
+  const generatePerformanceReport = useCallback(() => {
+    const slowFunctions = rpcMetrics.filter(m => m.averageExecutionTime > 1000);
+    const recommendations = [
+      ...slowFunctions.map(f => `Optimize ${f.functionName} (${f.averageExecutionTime.toFixed(0)}ms avg)`),
+    ];
+
+    return {
+      timestamp: new Date(),
+      totalRPCCalls: rpcMetrics.reduce((sum, m) => sum + m.callCount, 0),
+      averageResponseTime: rpcMetrics.length > 0 
+        ? rpcMetrics.reduce((sum, m) => sum + m.averageExecutionTime, 0) / rpcMetrics.length 
+        : 0,
+      slowFunctions,
+      recommendations,
+    };
+  }, [rpcMetrics]);
 
   return {
-    rpcMetrics: Array.from(rpcMetrics.values()),
-    trackRPCCall,
-    comparePerformance,
-    generatePerformanceReport,
+    rpcMetrics,
     queryPerformanceData,
     performanceComparisons,
+    trackRPCCall,
+    generatePerformanceReport,
   };
 };
