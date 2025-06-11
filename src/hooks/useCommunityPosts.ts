@@ -2,28 +2,28 @@
 // ABOUTME: Optimized community posts hook with proper caching and error handling
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { CommunitySettings } from '@/types/community';
+import { CommunitySettings, PostData } from '@/types/community';
 import { usePosts } from '@/hooks/community/usePosts';
 import { enhancePostsWithDetails } from '@/hooks/community/usePostEnhancement';
 
 export function useCommunityPosts(activeTab: string, searchTerm: string) {
-  const { data: posts, isLoading, error, refetch } = usePosts(activeTab, searchTerm);
+  const { data: rawPosts, isLoading: isRawPostsLoading, error: rawPostsError, refetch: refetchRawPosts } = usePosts(activeTab, searchTerm);
   
   // Enhanced posts query with optimized caching
   const enhancedQuery = useQuery({
-    queryKey: ['enhanced-posts', posts?.map(p => p.id).join(','), activeTab],
+    queryKey: ['enhanced-posts', rawPosts?.map(p => p.id).join(','), activeTab],
     queryFn: async () => {
-      if (!posts || posts.length === 0) return [];
+      if (!rawPosts || rawPosts.length === 0) return [] as PostData[];
       
       try {
-        return await enhancePostsWithDetails(posts);
+        return await enhancePostsWithDetails(rawPosts);
       } catch (error) {
         console.error('Error enhancing posts:', error);
-        // Return basic posts if enhancement fails
-        return posts;
+        // Return empty array if enhancement fails to ensure type safety
+        return [] as PostData[];
       }
     },
-    enabled: !!posts && posts.length > 0,
+    enabled: !!rawPosts && rawPosts.length > 0,
     staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
@@ -31,11 +31,11 @@ export function useCommunityPosts(activeTab: string, searchTerm: string) {
   });
 
   return {
-    data: enhancedQuery.data,
-    isLoading: isLoading || enhancedQuery.isLoading,
-    error: error || enhancedQuery.error,
+    data: enhancedQuery.data as PostData[] | undefined,
+    isLoading: isRawPostsLoading || enhancedQuery.isLoading,
+    error: rawPostsError || enhancedQuery.error,
     refetch: async () => {
-      await refetch();
+      await refetchRawPosts();
       await enhancedQuery.refetch();
     }
   };
