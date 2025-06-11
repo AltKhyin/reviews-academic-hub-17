@@ -40,13 +40,14 @@ export const ActiveAvatars: React.FC = () => {
             let displayName = 'Usuário';
             let userInitial = 'U';
 
-            // Get display name and initial first
+            // Get display name and initial from available properties
             if (user.full_name) {
               displayName = user.full_name;
               userInitial = displayName[0].toUpperCase();
-            } else if (user.email) {
-              displayName = user.email.split('@')[0];
-              userInitial = displayName[0].toUpperCase();
+            } else {
+              // Use user ID as fallback for display name
+              displayName = `Usuário ${user.id.slice(0, 8)}`;
+              userInitial = 'U';
             }
 
             // Try to get avatar URL from user data
