@@ -143,7 +143,7 @@ export const useOptimizedSectionVisibility = () => {
     }
   }, []);
 
-  // Save sections with comprehensive format handling and upsert support
+  // Save sections with comprehensive format handling and direct upsert
   const saveSections = useCallback(async (newSections: Section[]) => {
     try {
       console.log('useOptimizedSectionVisibility: Saving sections:', newSections);
@@ -164,14 +164,19 @@ export const useOptimizedSectionVisibility = () => {
         recommended_issues: { max_items: 10 }
       };
 
-      // Use upsert function to avoid conflicts
-      const { error } = await supabase.rpc('upsert_site_meta', {
-        p_key: 'home_settings',
-        p_value: settingsValue
-      });
+      // Use direct upsert instead of RPC to avoid TypeScript issues
+      const { error } = await supabase
+        .from('site_meta')
+        .upsert({
+          key: 'home_settings',
+          value: settingsValue,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'key'
+        });
 
       if (error) {
-        console.error('Error calling upsert_site_meta:', error);
+        console.error('Error upserting site_meta:', error);
         throw error;
       }
 
