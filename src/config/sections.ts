@@ -7,7 +7,7 @@ export interface SectionDefinition {
   defaultOrder: number;
   adminOnly?: boolean;
   description?: string;
-  component: string; // Add component property
+  component: string;
 }
 
 export const SECTION_REGISTRY: SectionDefinition[] = [
@@ -20,7 +20,7 @@ export const SECTION_REGISTRY: SectionDefinition[] = [
     component: 'ReviewerNotesSection'
   },
   {
-    id: 'featured',
+    id: 'featured', 
     title: 'Edição em Destaque',
     defaultVisible: true,
     defaultOrder: 1,
@@ -37,7 +37,7 @@ export const SECTION_REGISTRY: SectionDefinition[] = [
   },
   {
     id: 'recent',
-    title: 'Edições Recentes',
+    title: 'Edições Recentes', 
     defaultVisible: true,
     defaultOrder: 3,
     description: 'Edições publicadas recentemente',
