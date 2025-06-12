@@ -35,6 +35,14 @@ interface DataLoader {
   critical: boolean;
 }
 
+// Helper function to convert database issue to Issue type
+const convertDbIssueToIssue = (dbIssue: any): Issue => {
+  return {
+    ...dbIssue,
+    backend_tags: dbIssue.backend_tags ? JSON.stringify(dbIssue.backend_tags) : null,
+  };
+};
+
 export const useParallelDataLoader = (): ParallelDataState => {
   const { user } = useAuth();
   const isAuthenticated = !!user;
@@ -60,7 +68,7 @@ export const useParallelDataLoader = (): ParallelDataState => {
         .limit(50);
 
       if (error) throw error;
-      return data || [];
+      return (data || []).map(convertDbIssueToIssue);
     } catch (error) {
       console.error('Error loading issues:', error);
       return [];
@@ -150,7 +158,7 @@ export const useParallelDataLoader = (): ParallelDataState => {
         .single();
 
       if (error && error.code !== 'PGRST116') throw error;
-      return data || null;
+      return data ? convertDbIssueToIssue(data) : null;
     } catch (error) {
       console.error('Error loading featured issue:', error);
       return null;
