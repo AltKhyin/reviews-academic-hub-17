@@ -21,6 +21,16 @@ export interface UpcomingReleaseSettings {
   highlightThreshold: number; // days until release to highlight
 }
 
+// Type guard to check if an object is a valid UpcomingReleaseSettings
+const isValidUpcomingReleaseSettings = (obj: any): obj is UpcomingReleaseSettings => {
+  return obj &&
+    typeof obj === 'object' &&
+    typeof obj.enabled === 'boolean' &&
+    typeof obj.showDaysUntil === 'boolean' &&
+    typeof obj.maxItems === 'number' &&
+    typeof obj.highlightThreshold === 'number';
+};
+
 export const useUpcomingReleaseSettings = () => {
   const [releases, setReleases] = useState<UpcomingRelease[]>([]);
   const [settings, setSettings] = useState<UpcomingReleaseSettings>({
@@ -76,13 +86,42 @@ export const useUpcomingReleaseSettings = () => {
         .maybeSingle();
 
       if (!error && data?.value) {
-        const savedSettings = data.value as UpcomingReleaseSettings;
-        setSettings(prev => ({ ...prev, ...savedSettings }));
+        // Use type guard to safely convert the JSON data
+        const parsedValue = data.value as unknown;
+        if (isValidUpcomingReleaseSettings(parsedValue)) {
+          setSettings(prev => ({ ...prev, ...parsedValue }));
+        } else {
+          console.warn('Invalid upcoming release settings format in database, using defaults');
+        }
       }
     } catch (error) {
       console.error('Failed to load upcoming release settings:', error);
     }
   }, []);
+
+  // Update settings in database
+  const updateSettings = useCallback(async (newSettings: Partial<UpcomingReleaseSettings>) => {
+    try {
+      const updatedSettings = { ...settings, ...newSettings };
+      
+      const { error } = await supabase
+        .from('site_meta')
+        .upsert({
+          key: 'upcoming_release_settings',
+          value: updatedSettings
+        });
+
+      if (error) {
+        throw error;
+      }
+
+      setSettings(updatedSettings);
+      console.log('useUpcomingReleaseSettings: Settings updated successfully');
+    } catch (error) {
+      console.error('Failed to update upcoming release settings:', error);
+      throw error;
+    }
+  }, [settings]);
 
   // Get the next upcoming release
   const getNextReleaseDate = useCallback((): Date | null => {
@@ -136,5 +175,6 @@ export const useUpcomingReleaseSettings = () => {
     getDaysUntilNextRelease,
     shouldHighlightNextRelease,
     loadReleases,
+    updateSettings,
   };
 };
