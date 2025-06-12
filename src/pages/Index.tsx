@@ -1,11 +1,11 @@
 
 // ABOUTME: Optimized landing page with dynamic section rendering and enhanced performance
 import React, { useMemo } from 'react';
-import { useSectionVisibility } from '@/hooks/useSectionVisibility';
+import { useOptimizedSectionVisibility } from '@/hooks/useOptimizedSectionVisibility';
 import { SectionFactory } from '@/components/homepage/SectionFactory';
 
 const Index = () => {
-  const { getVisibleSections, isLoading } = useSectionVisibility();
+  const { getVisibleSections, isLoading } = useOptimizedSectionVisibility();
 
   // Memoize visible sections to prevent unnecessary re-renders
   const visibleSections = useMemo(() => {

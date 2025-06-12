@@ -1,3 +1,4 @@
+
 // ABOUTME: Comprehensive homepage management interface with unified section schema
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Eye, EyeOff, ChevronUp, ChevronDown, RotateCcw, Calendar, Clock, RefreshCw } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
-import { useSectionVisibility } from '@/hooks/useSectionVisibility';
+import { useOptimizedSectionVisibility } from '@/hooks/useOptimizedSectionVisibility';
 import { useUpcomingReleaseSettings } from '@/hooks/useUpcomingReleaseSettings';
 
 interface LocalReleaseSettings {
@@ -36,7 +37,7 @@ export const HomepageManager = () => {
     reorderSections, 
     resetToDefaults,
     getAllSections 
-  } = useSectionVisibility();
+  } = useOptimizedSectionVisibility();
   
   const {
     settings,

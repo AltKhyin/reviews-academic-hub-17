@@ -1,5 +1,5 @@
 
-// ABOUTME: Optimized Dashboard with integrated section visibility management - no UI changes
+// ABOUTME: Optimized Dashboard with unified section management - no UI changes
 import React from 'react';
 import { useParallelDataLoader } from '@/hooks/useParallelDataLoader';
 import { useStableAuth } from '@/hooks/useStableAuth';
@@ -96,13 +96,12 @@ const Dashboard = () => {
     .sort((a, b) => (b.score || 0) - (a.score || 0))
     .slice(0, 10);
 
-  // Get enabled sections in order from the integrated configuration
-  // Fix: Use 'visible' property instead of 'enabled'
+  // Get enabled sections in order from the unified configuration
   const enabledSections = sectionVisibility
     .filter(section => section.visible) 
     .sort((a, b) => a.order - b.order);
 
-  console.log('Dashboard: Visible sections from integrated config:', enabledSections.map(s => `${s.id} (order: ${s.order})`));
+  console.log('Dashboard: Visible sections from unified config:', enabledSections.map(s => `${s.id} (order: ${s.order})`));
   console.log('Dashboard: Featured issue:', featuredIssue?.id);
 
   const renderSection = (sectionConfig: any, index: number) => {
@@ -123,7 +122,6 @@ const Dashboard = () => {
         );
         
       case 'reviewer':
-        // Handle both 'reviewer' and 'reviews' for compatibility
         return (
           <DataErrorBoundary key={`reviewer-${index}`} context="reviewer comments">
             <div className={isFollowedByFeatured ? 'mb-4' : ''}>
