@@ -1,124 +1,140 @@
 
-// ABOUTME: Upcoming release settings management hook with proper type safety
-import { useState, useCallback } from 'react';
-import { useOptimizedQuery } from './useOptimizedQuery';
-import { supabase } from '@/integrations/supabase/client';
-import { useQueryClient } from '@tanstack/react-query';
+// ABOUTME: Hook for managing upcoming release settings and date calculations
+// Provides functionality for upcoming releases section
 
-interface ReleaseSettings {
-  customDate?: string;
-  customTime?: string;
-  isRecurring?: boolean;
-  recurringPattern?: 'weekly' | 'biweekly';
-  recurringDays?: string[];
-  recurringTime?: string;
-  wipeSuggestions?: boolean;
-  [key: string]: any; // Add index signature for Json compatibility
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
+
+export interface UpcomingRelease {
+  id: string;
+  release_date: string;
+  title: string;
+  description?: string;
+  created_at: string;
 }
 
-// Type guard to validate release settings
-const isReleaseSettings = (obj: any): obj is ReleaseSettings => {
-  return obj && typeof obj === 'object' && !Array.isArray(obj);
-};
+export interface UpcomingReleaseSettings {
+  enabled: boolean;
+  showDaysUntil: boolean;
+  maxItems: number;
+  highlightThreshold: number; // days until release to highlight
+}
 
 export const useUpcomingReleaseSettings = () => {
-  const queryClient = useQueryClient();
-  
-  const { data: settings, isLoading } = useOptimizedQuery<ReleaseSettings>(
-    ['upcoming-release-settings'],
-    async (): Promise<ReleaseSettings> => {
-      try {
-        const { data, error } = await supabase
-          .from('site_meta')
-          .select('value')
-          .eq('key', 'upcoming_release_settings')
-          .single();
-        
-        if (error && error.code !== 'PGRST116') throw error;
-        
-        // Type guard and safe casting
-        const value = data?.value;
-        if (isReleaseSettings(value)) {
-          return value;
-        }
-        
-        return {
-          customDate: '',
-          customTime: '',
-          isRecurring: false,
-          recurringPattern: 'weekly',
-          recurringDays: [],
-          recurringTime: '10:00',
-          wipeSuggestions: true,
-        };
-      } catch (error) {
-        console.warn('Failed to fetch release settings:', error);
-        return {
-          customDate: '',
-          customTime: '',
-          isRecurring: false,
-          recurringPattern: 'weekly',
-          recurringDays: [],
-          recurringTime: '10:00',
-          wipeSuggestions: true,
-        };
-      }
-    },
-    {
-      staleTime: 10 * 60 * 1000, // 10 minutes
-    }
-  );
+  const [releases, setReleases] = useState<UpcomingRelease[]>([]);
+  const [settings, setSettings] = useState<UpcomingReleaseSettings>({
+    enabled: true,
+    showDaysUntil: true,
+    maxItems: 5,
+    highlightThreshold: 7
+  });
+  const [isLoading, setIsLoading] = useState(true);
 
-  const updateSettings = useCallback(async (newSettings: ReleaseSettings) => {
+  // Load upcoming releases from database
+  const loadReleases = useCallback(async () => {
     try {
-      const { error } = await supabase
-        .from('site_meta')
-        .upsert({
-          key: 'upcoming_release_settings',
-          value: newSettings as any, // Cast to any for Json compatibility
-        });
+      console.log('useUpcomingReleaseSettings: Loading upcoming releases...');
       
-      if (error) throw error;
-      
-      // Update cache
-      queryClient.setQueryData(['upcoming-release-settings'], newSettings);
-    } catch (error) {
-      console.error('Failed to update release settings:', error);
-      throw error;
-    }
-  }, [queryClient]);
+      const { data, error } = await supabase
+        .from('upcoming_releases')
+        .select('*')
+        .gte('release_date', new Date().toISOString())
+        .order('release_date', { ascending: true })
+        .limit(settings.maxItems);
 
-  const getNextReleaseDate = useCallback(() => {
-    if (!settings) return null;
-    
-    // Safe property access with type guards
-    const safeSettings = settings as ReleaseSettings;
-    if (safeSettings.customDate) {
-      return new Date(safeSettings.customDate);
+      if (error) {
+        console.error('Error loading upcoming releases:', error);
+        // Don't throw error, just log it and return empty array
+        setReleases([]);
+        return;
+      }
+
+      const releasesData = (data || []).map(release => ({
+        id: release.id,
+        release_date: release.release_date,
+        title: release.title,
+        description: release.description,
+        created_at: release.created_at
+      }));
+
+      console.log('useUpcomingReleaseSettings: Loaded', releasesData.length, 'upcoming releases');
+      setReleases(releasesData);
+    } catch (error) {
+      console.error('Failed to load upcoming releases:', error);
+      setReleases([]);
     }
-    
-    if (safeSettings.isRecurring && safeSettings.recurringDays?.length) {
-      // Simple logic for next recurring date
-      const now = new Date();
-      const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-      return nextWeek;
+  }, [settings.maxItems]);
+
+  // Load settings from site_meta
+  const loadSettings = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('site_meta')
+        .select('value')
+        .eq('key', 'upcoming_release_settings')
+        .maybeSingle();
+
+      if (!error && data?.value) {
+        const savedSettings = data.value as UpcomingReleaseSettings;
+        setSettings(prev => ({ ...prev, ...savedSettings }));
+      }
+    } catch (error) {
+      console.error('Failed to load upcoming release settings:', error);
     }
+  }, []);
+
+  // Get the next upcoming release
+  const getNextReleaseDate = useCallback((): Date | null => {
+    if (releases.length === 0) return null;
     
-    return null;
-  }, [settings]);
+    const now = new Date();
+    const nextRelease = releases.find(release => 
+      new Date(release.release_date) > now
+    );
+    
+    return nextRelease ? new Date(nextRelease.release_date) : null;
+  }, [releases]);
+
+  // Get days until next release
+  const getDaysUntilNextRelease = useCallback((): number | null => {
+    const nextDate = getNextReleaseDate();
+    if (!nextDate) return null;
+    
+    const now = new Date();
+    const diffTime = nextDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays;
+  }, [getNextReleaseDate]);
+
+  // Check if next release should be highlighted
+  const shouldHighlightNextRelease = useCallback((): boolean => {
+    const daysUntil = getDaysUntilNextRelease();
+    return daysUntil !== null && daysUntil <= settings.highlightThreshold;
+  }, [getDaysUntilNextRelease, settings.highlightThreshold]);
+
+  // Load data on mount
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true);
+      await Promise.all([
+        loadSettings(),
+        loadReleases()
+      ]);
+      setIsLoading(false);
+    };
+    
+    loadData();
+  }, [loadSettings, loadReleases]);
 
   return {
-    settings: settings || {
-      customDate: '',
-      customTime: '',
-      isRecurring: false,
-      recurringPattern: 'weekly' as const,
-      recurringDays: [],
-      recurringTime: '10:00',
-      wipeSuggestions: true,
-    },
+    releases,
+    settings,
     isLoading,
-    updateSettings,
     getNextReleaseDate,
+    getDaysUntilNextRelease,
+    shouldHighlightNextRelease,
+    loadReleases,
   };
 };

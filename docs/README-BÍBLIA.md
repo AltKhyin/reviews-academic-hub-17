@@ -1,5 +1,5 @@
 
-# README‑BÍBLIA v3.11.0
+# README‑BÍBLIA v3.12.0
 *Compreensão 360º do Reviews em 2 min — Fonte canônica para produto, marketing, design e tecnologia*
 
 ---
@@ -30,6 +30,8 @@
 | **RPC** | Remote Procedure Call - funções otimizadas no Supabase |
 | **Unified Query** | Sistema consolidado de cache e rate limiting para APIs |
 | **Optimistic Updates** | Atualizações locais imediatas com sync posterior |
+| **Section Registry** | Sistema centralizado de configuração de seções homepage |
+| **Error Boundaries** | Sistema robusto de tratamento de erros com auto-recovery |
 
 ---
 
@@ -40,7 +42,8 @@
 │  ├─ Unified Query System (TanStack Query)   │
 │  ├─ Rate Limiting (API Protection)          │
 │  ├─ Optimistic Updates (Local State Sync)  │
-│  └─ Error Boundaries (Enhanced Recovery)    │
+│  ├─ Error Boundaries (Enhanced Recovery)    │
+│  └─ Section Registry (Homepage Config)      │
 └─────────────────────────────────────────────┘
            │
            ▼
@@ -54,10 +57,11 @@
 
 ### Padrões Arquiteturais
 - **Component-First**: Componentes pequenos (<50 LOC), focados, reutilizáveis
-- **Hook-Based State**: `useUnifiedQuery` para dados, Context para estado global
+- **Hook-Based State**: `useParallelDataLoader` para dados, Context para estado global
 - **Rate-Limited APIs**: Todos os endpoints protegidos (5-30 req/min)
 - **Error Boundaries**: Auto-retry + fallbacks + logging estruturado
 - **Optimistic Updates**: UI responsiva com sync posterior ao backend
+- **Section Registry**: Configuração centralizada para seções homepage
 - **Monochrome Design**: Grayscale first, cor apenas para semântica
 
 ---
@@ -105,13 +109,23 @@
 /src/types/community.ts          → PostData, CommunitySettings
 ```
 
-### 5.5 Performance & Monitoring (Enhanced)
+### 5.5 Homepage System (Enhanced)
+```
+/src/config/sections.ts           → SECTION_REGISTRY centralizado
+/src/hooks/useParallelDataLoader.ts → Sistema otimizado data loading
+/src/hooks/useOptimizedSectionVisibility.ts → Settings sem rollback
+/src/hooks/useUpcomingReleaseSettings.ts → Upcoming releases management
+/src/components/homepage/sections/ → All section components (6 sections)
+/src/components/homepage/SectionFactory.tsx → Dynamic section rendering
+/src/pages/Index.tsx             → Homepage orchestration
+```
+
+### 5.6 Performance & Monitoring (Enhanced)
 ```
 /src/hooks/useUnifiedQuery.ts     → Sistema único de cache + rate limit + dedup
 /src/hooks/useAPIRateLimit.ts     → Rate limiting inteligente
-/src/hooks/useEnhancedErrorBoundary.ts → Error handling com auto-retry
+/src/components/error/DataErrorBoundary.tsx → Error handling com auto-retry
 /src/hooks/useIntelligentCacheInvalidation.ts → Cache invalidation estratégico
-/src/hooks/useOptimizedSectionVisibility.ts → Settings sem rollback
 ```
 
 ---
@@ -130,6 +144,10 @@ comments: id, post_id, parent_id, content, user_id, score
 
 -- Users & Profiles
 profiles: id, full_name, avatar_url, role, created_at
+
+-- Homepage Configuration
+site_meta: id, key, value, created_at, updated_at
+upcoming_releases: id, release_date, title, description, created_at
 ```
 
 ### 6.2 Rate Limited Endpoints
@@ -142,6 +160,7 @@ profiles: id, full_name, avatar_url, role, created_at
 | `/search` | 30 req | 1 min | Busca global | ✅ Implemented |
 | `/sidebar` | 5 req | 1 min | Stats sidebar | ✅ Implemented |
 | `/analytics` | 5 req | 5 min | Métricas admin | ✅ Implemented |
+| `/homepage-data` | 8 req | 1 min | Homepage parallel loading | ✅ Implemented |
 
 ### 6.3 RPC Functions (Otimizadas)
 ```sql
@@ -149,6 +168,8 @@ get_optimized_issues(limit, offset, specialty, featured_only)
 get_sidebar_stats() → Estatísticas cache-friendly
 get_review_with_blocks(review_id) → Review + blocks em 1 query
 get_top_threads(min_comments) → Posts populares
+get_home_settings() → Homepage configuration
+upsert_site_meta(key, value) → Safe configuration updates
 ```
 
 ---
@@ -163,17 +184,29 @@ get_top_threads(min_comments) → Posts populares
 /src/services/navigation.ts → Routing centralizado
 ```
 
-### 7.2 Content Display (Optimized)
+### 7.2 Homepage System (New)
+```
+/src/components/homepage/SectionFactory.tsx → Dynamic section rendering
+/src/components/homepage/sections/ReviewerNotesSection.tsx → Reviewer comments
+/src/components/homepage/sections/FeaturedSection.tsx → Featured content
+/src/components/homepage/sections/UpcomingSection.tsx → Upcoming releases
+/src/components/homepage/sections/RecentSection.tsx → Recent articles
+/src/components/homepage/sections/RecommendedSection.tsx → Recommendations
+/src/components/homepage/sections/TrendingSection.tsx → Popular content
+```
+
+### 7.3 Content Display (Optimized)
 ```
 /src/components/review/BlockRenderer.tsx → Renderiza blocks modulares
 /src/components/archive/OptimizedMasonryGrid.tsx → Grid 4px spacing
 /src/components/dashboard/FeaturedArticle.tsx → Destaque homepage
 ```
 
-### 7.3 Interactive Elements (Enhanced)
+### 7.4 Interactive Elements (Enhanced)
 ```
 /src/components/comments/CommentSection.tsx → Sistema otimizado sem reload
 /src/components/community/PostVoting.tsx → Voting com optimistic updates
+/src/components/error/DataErrorBoundary.tsx → Error boundaries robusto
 /src/components/ui/ → ShadCN components customizados
 ```
 
@@ -256,6 +289,7 @@ get_top_threads(min_comments) → Posts populares
 | **System Health** | Error boundaries + monitoring hooks | Auto + Admin |
 | **Rate Limit Config** | Per-endpoint limits + bypass | Admin only |
 | **Homepage Settings** | Section visibility com optimistic updates | Admin only |
+| **Release Schedule** | Upcoming releases management | Admin only |
 
 ---
 
@@ -268,6 +302,7 @@ get_top_threads(min_comments) → Posts populares
 | **API Health** | Rate limit hits, failed requests | <5%, <1% |
 | **Content** | Reviews/week, community posts | 2-3, 15-25 |
 | **UX Quality** | Comment reload rate, settings rollback | <10%, <5% |
+| **Homepage Health** | Section load success, error boundary triggers | >95%, <2% |
 
 ---
 
@@ -280,13 +315,16 @@ get_top_threads(min_comments) → Posts populares
 - [ ] Implement advanced search with AI assistance
 - [ ] Add integration with medical databases (PubMed)
 - [ ] Create mobile app (React Native)
-- [x] ✅ **P0 FIXES**: Archive 4px spacing, comment reload optimization, settings rollback fix
+- [x] ✅ **COMPLETED**: Homepage optimization overhaul (sections, error boundaries, parallel loading)
+- [x] ✅ **COMPLETED**: Section registry system and configuration management
+- [x] ✅ **COMPLETED**: Comprehensive error boundary system implementation
 
 ---
 
 ## 15. Histórico de Revisões
 | Versão | Data | Mudanças |
 |--------|------|----------|
+| 3.12.0 | 2025-06-12 | **COMPREHENSIVE HOMEPAGE OVERHAUL**: Complete section registry system, parallel data loading optimization, error boundary implementation, upcoming releases system, all 6 homepage sections fully implemented |
 | 3.11.0 | 2025-06-11 | **P0 CRITICAL FIXES**: Archive 4px spacing, optimized comments (no unnecessary reloads), homepage settings rollback fix, intelligent cache invalidation |
 | 3.10.0 | 2025-06-11 | Enhanced rate limiting, error boundaries, unified query system v2 |
 | 3.9.0 | 2025-06-11 | Archive navigation integration, performance monitoring consolidation |
@@ -297,4 +335,4 @@ get_top_threads(min_comments) → Posts populares
 
 ---
 
-*Última atualização: 2025-06-11 • Próxima revisão: Database layer optimization (P1)*
+*Última atualização: 2025-06-12 • Próxima revisão: Mobile optimization and real-time features (P1)*
