@@ -1,66 +1,89 @@
 
-// ABOUTME: Enhanced results grid with navigation integration and improved loading states
+// ABOUTME: Results grid component that orchestrates different grid layouts for the archive
 import React from 'react';
-import { OptimizedMasonryGrid } from './OptimizedMasonryGrid';
+import { MasonryGrid } from './MasonryGrid';
 import { ArchiveIssue } from '@/types/archive';
 
 interface ResultsGridProps {
   issues: ArchiveIssue[];
   isLoading: boolean;
-  searchQuery?: string;
+  searchQuery: string;
   onIssueClick: (issueId: string) => void;
 }
 
 export const ResultsGrid: React.FC<ResultsGridProps> = ({
   issues,
   isLoading,
-  searchQuery = '',
+  searchQuery,
   onIssueClick
 }) => {
+  // Loading state with Pinterest-style skeleton
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {Array.from({ length: 8 }).map((_, index) => (
-          <div
-            key={index}
-            className="bg-card rounded-lg overflow-hidden animate-pulse"
-            style={{ height: `${300 + (index % 3) * 50}px` }}
-          >
-            <div className="h-48 bg-muted"></div>
-            <div className="p-4 space-y-2">
-              <div className="h-4 bg-muted rounded w-3/4"></div>
-              <div className="h-3 bg-muted rounded w-1/2"></div>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  if (issues.length === 0) {
-    const emptyMessage = searchQuery.trim() 
-      ? `Nenhuma edição encontrada para "${searchQuery}"`
-      : 'Nenhuma edição disponível no momento';
-      
-    return (
-      <div className="text-center py-12">
-        <div className="text-muted-foreground text-lg mb-2">
-          {emptyMessage}
+      <div className="w-full">
+        <div className="columns-1 md:columns-2 lg:columns-3 xl:columns-4 gap-1 space-y-1">
+          {Array.from({ length: 12 }).map((_, i) => {
+            // Vary skeleton heights to match Pinterest style
+            const heights = ['h-64', 'h-80', 'h-96', 'h-72', 'h-88'];
+            const heightClass = heights[i % heights.length];
+            return (
+              <div 
+                key={i} 
+                className={`bg-muted animate-pulse rounded-lg break-inside-avoid mb-1 ${heightClass}`} 
+              />
+            );
+          })}
         </div>
-        {searchQuery.trim() && (
-          <p className="text-sm text-muted-foreground">
-            Tente ajustar os termos de busca ou limpar os filtros.
-          </p>
-        )}
       </div>
     );
   }
 
+  // Empty state
+  if (issues.length === 0) {
+    return (
+      <div className="text-center py-16">
+        <p className="text-muted-foreground text-lg">
+          {searchQuery.trim()
+            ? 'Nenhum resultado encontrado para a busca realizada.'
+            : 'Nenhum artigo disponível no momento.'
+          }
+        </p>
+      </div>
+    );
+  }
+
+  // Enhanced issues with tag matches for search highlighting
+  const enhancedIssues = issues.map(issue => {
+    let tagMatches = 0;
+    
+    if (searchQuery.trim()) {
+      const searchTerms = searchQuery.toLowerCase().split(' ').filter(term => term.length > 2);
+      const searchableText = `
+        ${issue.title || ''} 
+        ${issue.search_title || ''} 
+        ${issue.description || ''} 
+        ${issue.search_description || ''} 
+        ${issue.specialty || ''} 
+        ${issue.authors || ''}
+      `.toLowerCase();
+
+      searchTerms.forEach(term => {
+        if (searchableText.includes(term)) {
+          tagMatches++;
+        }
+      });
+    }
+
+    return { ...issue, tagMatches };
+  });
+
+  // Use Pinterest-style MasonryGrid for all layouts
   return (
-    <OptimizedMasonryGrid
-      issues={issues}
-      onIssueClick={onIssueClick}
-      searchQuery={searchQuery}
-    />
+    <div className="w-full px-4">
+      <MasonryGrid
+        issues={enhancedIssues}
+        onIssueClick={onIssueClick}
+      />
+    </div>
   );
 };

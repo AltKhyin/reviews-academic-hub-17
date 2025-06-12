@@ -1,5 +1,5 @@
 
-// ABOUTME: Pinterest-style masonry grid with dynamic heights, improved responsiveness and minimal spacing
+// ABOUTME: Pinterest-style masonry grid with dynamic heights (0.85x-1.5x), improved responsiveness and minimal spacing
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { IssueCard } from './IssueCard';
 import { ArchiveIssue } from '@/types/archive';
@@ -26,29 +26,21 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
   const [columns, setColumns] = useState(4);
   const [containerHeight, setContainerHeight] = useState(0);
 
-  // Reduced base card dimensions and minimal spacing
+  // Pinterest-style configuration - fixed base dimensions with 4px gaps
   const baseWidth = 280;
   const baseHeight = 374;
-  const gap = 4; // Reduced from 20 to 4 for minimal spacing
+  const gap = 4;
 
-  // Height variants for visual interest
-  const heightVariants = [
-    baseHeight * 0.85,
-    baseHeight * 1.0,
-    baseHeight * 1.2,
-    baseHeight * 1.4,
-    baseHeight * 1.6
-  ];
+  // Pinterest-style height variants (0.85x to 1.5x as requested)
+  const heightMultipliers = [0.85, 1.0, 1.15, 1.3, 1.5];
+  const heightVariants = heightMultipliers.map(multiplier => Math.round(baseHeight * multiplier));
 
-  // Improved responsive column calculation
+  // Responsive column calculation optimized for Pinterest-style layout
   const updateColumns = useCallback(() => {
     if (!containerRef.current) return;
     
     const containerWidth = containerRef.current.offsetWidth;
     const cardWithGap = baseWidth + gap;
-    
-    // Calculate optimal columns based on container width
-    const maxPossibleColumns = Math.floor((containerWidth + gap) / cardWithGap);
     
     let newColumns = 4; // Default
     
@@ -61,24 +53,26 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
     } else if (containerWidth < 1280) { // Desktop
       newColumns = 4;
     } else { // Large desktop
+      const maxPossibleColumns = Math.floor((containerWidth + gap) / cardWithGap);
       newColumns = Math.min(5, maxPossibleColumns);
     }
     
-    console.log(`Container width: ${containerWidth}, Setting columns: ${newColumns}`);
-    
     if (newColumns !== columns) {
+      console.log(`MasonryGrid: Container width ${containerWidth}px, setting ${newColumns} columns`);
       setColumns(newColumns);
     }
   }, [columns, baseWidth, gap]);
 
-  // Get deterministic height variant for each issue
+  // Deterministic height assignment for Pinterest-style consistency
   const getCardHeight = useCallback((issueId: string, index: number): number => {
+    // Use both issueId hash and index for better distribution
     const hash = issueId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const variantIndex = (hash + index) % heightVariants.length;
+    const combinedSeed = (hash + index * 7) % 1000; // Multiply index by prime for better distribution
+    const variantIndex = combinedSeed % heightVariants.length;
     return heightVariants[variantIndex];
   }, [heightVariants]);
 
-  // Calculate masonry layout with improved algorithm
+  // Enhanced Pinterest-style masonry layout algorithm
   const calculateLayout = useCallback(() => {
     if (!issues.length || columns === 0) {
       setLayouts([]);
@@ -92,7 +86,7 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
     issues.forEach((issue, index) => {
       const height = getCardHeight(issue.id, index);
       
-      // Find column with minimum height
+      // Find column with minimum height for better balance
       const minColumnIndex = columnHeights.indexOf(Math.min(...columnHeights));
       
       newLayouts.push({
@@ -109,6 +103,8 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
 
     setLayouts(newLayouts);
     setContainerHeight(Math.max(...columnHeights) - gap);
+    
+    console.log(`MasonryGrid: Layout calculated for ${issues.length} issues in ${columns} columns, max height: ${Math.max(...columnHeights) - gap}px`);
   }, [issues, columns, getCardHeight, gap]);
 
   // Recalculate layout when dependencies change
@@ -116,7 +112,7 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
     calculateLayout();
   }, [calculateLayout]);
 
-  // Improved resize handling with debouncing
+  // Debounced resize handling for performance
   useEffect(() => {
     let timeoutId: NodeJS.Timeout;
     
@@ -124,7 +120,7 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
         updateColumns();
-      }, 100); // Debounce resize events
+      }, 150); // Slightly longer debounce for stability
     };
 
     updateColumns(); // Initial calculation
@@ -136,7 +132,7 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
     };
   }, [updateColumns]);
 
-  // Use ResizeObserver for more accurate container size tracking
+  // ResizeObserver for precise container tracking
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -144,7 +140,8 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
       for (const entry of entries) {
         const { width } = entry.contentRect;
         if (width > 0) {
-          updateColumns();
+          // Debounce ResizeObserver calls
+          setTimeout(() => updateColumns(), 50);
         }
       }
     });
@@ -158,7 +155,7 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
 
   if (!issues.length) return null;
 
-  // Calculate the total width needed for the grid
+  // Calculate total width for centering
   const gridWidth = columns * baseWidth + (columns - 1) * gap;
 
   return (

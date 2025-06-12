@@ -1,5 +1,5 @@
 
-// ABOUTME: Clean, monochromatic issue card with stable hover states and dynamic height support
+// ABOUTME: Clean, monochromatic issue card with stable hover states and dynamic height support for Pinterest-style masonry
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,8 +10,8 @@ interface IssueCardProps {
   issue: ArchiveIssue;
   onClick: (issueId: string) => void;
   tagMatches?: number;
-  height?: number; // Dynamic height support for masonry layout
-  className?: string; // Added className prop
+  height?: number; // Dynamic height support for Pinterest-style masonry layout
+  className?: string;
 }
 
 export const IssueCard: React.FC<IssueCardProps> = ({
@@ -33,7 +33,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({
     return match ? `#${match[1]}` : `#${issue.id.slice(-3)}`;
   };
 
-  // Smart text truncation based on available content
+  // Smart text truncation based on available content and card height
   const getTruncatedDescription = (text: string, maxLength: number = 120) => {
     if (!text || text.length <= maxLength) return text;
     const truncated = text.substring(0, maxLength);
@@ -53,7 +53,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({
   const coverImage = issue.cover_image_url || 
     placeholderCovers[parseInt(issue.id.slice(-1)) % placeholderCovers.length];
 
-  // Dynamic styling based on height prop
+  // Pinterest-style dynamic sizing - use height prop when provided, otherwise default aspect ratio
   const cardStyle = height ? { height: `${height}px` } : {};
   const aspectRatioClass = height ? '' : 'aspect-[3/4]';
 
@@ -128,7 +128,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({
         </div>
       </div>
 
-      {/* Detailed Information - Revealed on Hover - Improved Content Management */}
+      {/* Detailed Information - Revealed on Hover - Optimized for Variable Heights */}
       <div className="absolute inset-0 bg-black/90 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4 flex flex-col justify-between z-20">
         <div className="flex-1 space-y-3 overflow-hidden">
           {/* Title */}
@@ -136,10 +136,13 @@ export const IssueCard: React.FC<IssueCardProps> = ({
             {issue.search_title || issue.title}
           </h3>
           
-          {/* Description with smart truncation */}
+          {/* Description with smart truncation adapted to card height */}
           {(issue.search_description || issue.description) && (
             <p className="text-white/90 text-sm leading-relaxed flex-1 overflow-hidden">
-              {getTruncatedDescription(issue.search_description || issue.description || '', 100)}
+              {getTruncatedDescription(
+                issue.search_description || issue.description || '', 
+                height ? Math.round(height * 0.25) : 100 // Adapt description length to card height
+              )}
             </p>
           )}
           
