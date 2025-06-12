@@ -1,5 +1,5 @@
 
-// ABOUTME: Parallel data loading system with intelligent error recovery and real data implementation
+// ABOUTME: Enhanced parallel data loading system with comprehensive error recovery and standardized data formats
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,6 +17,7 @@ export interface SectionVisibilityConfig {
   id: string;
   visible: boolean;
   order: number;
+  title?: string;
 }
 
 export interface ParallelDataState {
@@ -47,15 +48,32 @@ const convertDbIssueToIssue = (dbIssue: any): Issue => {
   };
 };
 
-// Default sections configuration
+// Default sections configuration that matches SECTION_REGISTRY
 const DEFAULT_SECTIONS: SectionVisibilityConfig[] = [
-  { id: 'reviewer', visible: true, order: 0 },
-  { id: 'featured', visible: true, order: 1 },
-  { id: 'upcoming', visible: true, order: 2 },
-  { id: 'recent', visible: true, order: 3 },
-  { id: 'recommended', visible: true, order: 4 },
-  { id: 'trending', visible: true, order: 5 }
+  { id: 'reviewer', visible: true, order: 0, title: 'Comentários dos Revisores' },
+  { id: 'featured', visible: true, order: 1, title: 'Edição em Destaque' },
+  { id: 'upcoming', visible: true, order: 2, title: 'Próximas Edições' },
+  { id: 'recent', visible: true, order: 3, title: 'Edições Recentes' },
+  { id: 'recommended', visible: true, order: 4, title: 'Recomendadas' },
+  { id: 'trending', visible: true, order: 5, title: 'Mais Acessadas' }
 ];
+
+// Helper to safely create section config from database object
+const createSectionConfigFromObject = (sectionsObj: Record<string, any>): SectionVisibilityConfig[] => {
+  const sectionKeys = ['reviewer', 'featured', 'upcoming', 'recent', 'recommended', 'trending'];
+  
+  return sectionKeys.map((key, defaultOrder) => {
+    const sectionData = sectionsObj[key] || {};
+    const defaultSection = DEFAULT_SECTIONS.find(s => s.id === key) || DEFAULT_SECTIONS[defaultOrder];
+    
+    return {
+      id: key,
+      visible: sectionData.visible ?? true,
+      order: sectionData.order ?? defaultOrder,
+      title: defaultSection.title
+    };
+  }).sort((a, b) => a.order - b.order);
+};
 
 export const useParallelDataLoader = (): ParallelDataState => {
   const { user } = useAuth();
@@ -71,7 +89,7 @@ export const useParallelDataLoader = (): ParallelDataState => {
     retryFailed: () => {},
   });
 
-  // Load issues from database
+  // Load issues from database with enhanced error handling
   const loadIssues = async (): Promise<Issue[]> => {
     try {
       console.log('useParallelDataLoader: Loading issues...');
@@ -82,41 +100,60 @@ export const useParallelDataLoader = (): ParallelDataState => {
         .order('created_at', { ascending: false })
         .limit(50);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading issues:', error);
+        throw error;
+      }
+      
       const issues = (data || []).map(convertDbIssueToIssue);
-      console.log('useParallelDataLoader: Loaded', issues.length, 'issues');
+      console.log('useParallelDataLoader: Successfully loaded', issues.length, 'issues');
       return issues;
     } catch (error) {
-      console.error('Error loading issues:', error);
+      console.error('Failed to load issues:', error);
       return [];
     }
   };
 
-  // Load section visibility settings
+  // Load section visibility settings with comprehensive format handling
   const loadSectionVisibility = async (): Promise<SectionVisibilityConfig[]> => {
     try {
       console.log('useParallelDataLoader: Loading section visibility...');
-      const { data, error } = await supabase
+      
+      // Try to get from home_settings first
+      const { data: homeSettings, error: homeError } = await supabase
         .from('site_meta')
         .select('value')
         .eq('key', 'home_settings')
         .single();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (!homeError && homeSettings?.value) {
+        const value = homeSettings.value as any;
+        if (value.sections && typeof value.sections === 'object') {
+          const sections = createSectionConfigFromObject(value.sections);
+          console.log('useParallelDataLoader: Loaded sections from home_settings', sections);
+          return sections;
+        }
+      }
 
-      if (data?.value && typeof data.value === 'object') {
-        const value = data.value as any;
-        const sectionsConfig = value.sections || {};
-        
-        // Convert to array format expected by UI
-        const sections = Object.entries(sectionsConfig).map(([id, config]: [string, any]) => ({
-          id,
-          visible: config?.visible ?? true,
-          order: config?.order ?? 0
-        }));
-        
-        console.log('useParallelDataLoader: Loaded section visibility', sections);
-        return sections;
+      // Fallback to section_visibility key
+      const { data: sectionData, error: sectionError } = await supabase
+        .from('site_meta')
+        .select('value')
+        .eq('key', 'section_visibility')
+        .single();
+
+      if (!sectionError && sectionData?.value) {
+        const value = sectionData.value as any;
+        if (Array.isArray(value.sections)) {
+          const sections = value.sections.map((section: any) => ({
+            id: section.id,
+            visible: section.visible ?? true,
+            order: section.order ?? 0,
+            title: section.title || DEFAULT_SECTIONS.find(s => s.id === section.id)?.title || section.id
+          }));
+          console.log('useParallelDataLoader: Loaded sections from section_visibility', sections);
+          return sections;
+        }
       }
 
       console.log('useParallelDataLoader: Using default section visibility');
@@ -127,7 +164,7 @@ export const useParallelDataLoader = (): ParallelDataState => {
     }
   };
 
-  // Load reviewer comments
+  // Load reviewer comments with enhanced error handling
   const loadReviewerComments = async (): Promise<ReviewerComment[]> => {
     try {
       console.log('useParallelDataLoader: Loading reviewer comments...');
@@ -137,7 +174,10 @@ export const useParallelDataLoader = (): ParallelDataState => {
         .order('created_at', { ascending: false })
         .limit(10);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading reviewer comments:', error);
+        throw error;
+      }
       
       const comments = (data || []).map(comment => ({
         id: comment.id,
@@ -147,15 +187,15 @@ export const useParallelDataLoader = (): ParallelDataState => {
         reviewer_avatar: comment.reviewer_avatar
       }));
       
-      console.log('useParallelDataLoader: Loaded', comments.length, 'reviewer comments');
+      console.log('useParallelDataLoader: Successfully loaded', comments.length, 'reviewer comments');
       return comments;
     } catch (error) {
-      console.error('Error loading reviewer comments:', error);
+      console.error('Failed to load reviewer comments:', error);
       return [];
     }
   };
 
-  // Load featured issue
+  // Load featured issue with enhanced error handling
   const loadFeaturedIssue = async (): Promise<Issue | null> => {
     try {
       console.log('useParallelDataLoader: Loading featured issue...');
@@ -166,14 +206,18 @@ export const useParallelDataLoader = (): ParallelDataState => {
         .eq('featured', true)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error) {
+        console.error('Error loading featured issue:', error);
+        throw error;
+      }
+      
       const featuredIssue = data ? convertDbIssueToIssue(data) : null;
       console.log('useParallelDataLoader: Featured issue:', featuredIssue?.id || 'none');
       return featuredIssue;
     } catch (error) {
-      console.error('Error loading featured issue:', error);
+      console.error('Failed to load featured issue:', error);
       return null;
     }
   };
@@ -198,13 +242,13 @@ export const useParallelDataLoader = (): ParallelDataState => {
     {
       key: 'featuredIssue',
       loader: loadFeaturedIssue,
-      critical: true,
+      critical: false,
     },
   ];
 
-  // Execute parallel data loading
+  // Execute parallel data loading with comprehensive error handling
   const loadData = useCallback(async () => {
-    console.log('useParallelDataLoader: Starting data load...');
+    console.log('useParallelDataLoader: Starting comprehensive data load...');
     setState(prev => ({ ...prev, isLoading: true, errors: {} }));
 
     const results = await Promise.allSettled(
@@ -223,12 +267,13 @@ export const useParallelDataLoader = (): ParallelDataState => {
       
       if (result.status === 'fulfilled') {
         (newState as any)[loader.key] = result.value.data;
-        console.log(`useParallelDataLoader: Successfully loaded ${loader.key}`);
+        console.log(`useParallelDataLoader: Successfully loaded ${loader.key}:`, 
+          Array.isArray(result.value.data) ? `${result.value.data.length} items` : result.value.data ? 'data loaded' : 'no data');
       } else {
         errors[loader.key] = result.reason;
         console.error(`useParallelDataLoader: Failed to load ${loader.key}:`, result.reason);
         
-        // Set defaults for failed loads
+        // Set safe defaults for failed loads
         switch (loader.key) {
           case 'issues':
             (newState as any)[loader.key] = [];
@@ -248,7 +293,7 @@ export const useParallelDataLoader = (): ParallelDataState => {
 
     newState.errors = errors;
     
-    console.log('useParallelDataLoader: Data load complete. State:', {
+    console.log('useParallelDataLoader: Data load complete. Final state:', {
       issuesCount: (newState as any).issues?.length || 0,
       sectionsCount: (newState as any).sectionVisibility?.length || 0,
       commentsCount: (newState as any).reviewerComments?.length || 0,

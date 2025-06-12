@@ -1,126 +1,105 @@
 
-// ABOUTME: Enhanced upcoming releases section with real data and countdown
+// ABOUTME: Upcoming releases section component for homepage
+// Displays upcoming medical content releases using real data
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, Clock } from 'lucide-react';
 import { useUpcomingReleaseSettings } from '@/hooks/useUpcomingReleaseSettings';
-import { formatDistanceToNow, differenceInDays, differenceInHours, differenceInMinutes } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Clock, Calendar } from 'lucide-react';
 
 export const UpcomingSection: React.FC = () => {
   const { getNextReleaseDate, isLoading } = useUpcomingReleaseSettings();
-  
-  const nextReleaseDate = getNextReleaseDate();
-  
-  const getTimeRemaining = () => {
-    if (!nextReleaseDate) return null;
-    
-    const now = new Date();
-    const totalTime = nextReleaseDate.getTime() - now.getTime();
-    
-    if (totalTime <= 0) return null;
-    
-    const days = differenceInDays(nextReleaseDate, now);
-    const hours = differenceInHours(nextReleaseDate, now) % 24;
-    const minutes = differenceInMinutes(nextReleaseDate, now) % 60;
-    
-    return { days, hours, minutes };
-  };
-
-  const timeRemaining = getTimeRemaining();
 
   if (isLoading) {
     return (
-      <div>
-        <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-          <Calendar className="w-6 h-6" />
-          Próximas Edições
-        </h2>
-        <div className="animate-pulse">
-          <Card>
-            <CardHeader>
-              <div className="h-6 bg-gray-300 rounded w-3/4"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-            </CardHeader>
-            <CardContent>
-              <div className="h-4 bg-gray-200 rounded w-full"></div>
-            </CardContent>
-          </Card>
-        </div>
+      <div className="animate-pulse">
+        <div className="h-8 bg-gray-300 rounded w-1/3 mb-6"></div>
+        <div className="h-48 bg-gray-200 rounded"></div>
       </div>
     );
   }
 
-  return (
-    <div>
-      <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-        <Calendar className="w-6 h-6" />
-        Próximas Edições
-      </h2>
-      <div className="space-y-4">
-        {nextReleaseDate && timeRemaining ? (
-          <Card className="border-l-4 border-l-blue-500">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Clock className="w-5 h-5 text-blue-600" />
-                Próxima Edição
-              </CardTitle>
-              <p className="text-sm text-gray-500">
-                {nextReleaseDate.toLocaleString('pt-BR', { 
-                  timeZone: 'America/Sao_Paulo',
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })}
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-4 text-sm">
-                <div className="flex items-center gap-1">
-                  <span className="font-bold text-lg text-blue-600">{timeRemaining.days}</span>
-                  <span className="text-gray-600">dias</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="font-bold text-lg text-blue-600">{timeRemaining.hours}</span>
-                  <span className="text-gray-600">horas</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="font-bold text-lg text-blue-600">{timeRemaining.minutes}</span>
-                  <span className="text-gray-600">minutos</span>
-                </div>
-              </div>
-              <p className="text-gray-600 mt-3">
-                Nova edição com análises e descobertas científicas atualizadas.
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Nova Edição em Breve</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600">
-                A próxima edição está sendo preparada. Fique atento para novos conteúdos e análises.
-              </p>
-            </CardContent>
-          </Card>
-        )}
-        
+  const nextReleaseDate = getNextReleaseDate();
+
+  if (!nextReleaseDate) {
+    return (
+      <div>
+        <h2 className="text-2xl font-bold mb-6">Próximas Edições</h2>
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Como Participar</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="p-8 text-center">
+            <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-600">
-              Envie suas sugestões de artigos e temas para as próximas edições através da seção de sugestões.
+              Nenhuma edição programada no momento.
             </p>
           </CardContent>
         </Card>
       </div>
+    );
+  }
+
+  const formatDate = (date: Date) => {
+    return new Intl.DateTimeFormat('pt-BR', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }).format(date);
+  };
+
+  const getDaysUntilRelease = (date: Date) => {
+    const now = new Date();
+    const diffTime = date.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const daysUntil = getDaysUntilRelease(nextReleaseDate);
+
+  return (
+    <div>
+      <h2 className="text-2xl font-bold mb-6">Próximas Edições</h2>
+      <Card className="border-2 border-orange-200">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-xl flex items-center gap-2">
+              <Clock className="w-5 h-5" />
+              Próxima Edição
+            </CardTitle>
+            {daysUntil > 0 && (
+              <Badge variant="secondary">
+                {daysUntil === 1 ? 'Amanhã' : `${daysUntil} dias`}
+              </Badge>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-gray-600">
+              <Calendar className="w-4 h-4" />
+              <span>{formatDate(nextReleaseDate)}</span>
+            </div>
+            
+            {daysUntil <= 7 && (
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                <p className="text-orange-800 font-medium">
+                  {daysUntil === 0 ? 'Lançamento hoje!' : 
+                   daysUntil === 1 ? 'Lançamento amanhã!' : 
+                   `Faltam apenas ${daysUntil} dias!`}
+                </p>
+                <p className="text-orange-600 text-sm mt-1">
+                  Acompanhe as novidades da medicina baseada em evidências.
+                </p>
+              </div>
+            )}
+            
+            {daysUntil > 7 && (
+              <p className="text-gray-600">
+                Aguarde por mais conteúdo científico de qualidade.
+              </p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
