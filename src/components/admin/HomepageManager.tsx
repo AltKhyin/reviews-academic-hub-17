@@ -1,4 +1,3 @@
-
 // ABOUTME: Comprehensive homepage management interface with unified section schema
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -40,9 +39,9 @@ export const HomepageManager = () => {
   } = useOptimizedSectionVisibility();
   
   const {
-    settings,
+    settings: upcomingSettings,
     isLoading: settingsLoading,
-    updateSettings,
+    updateSettings: updateUpcomingSettings,
     getNextReleaseDate
   } = useUpcomingReleaseSettings();
   
@@ -71,8 +70,8 @@ export const HomepageManager = () => {
 
   // Initialize release settings with proper type guards
   useEffect(() => {
-    if (settings && isValidReleaseSettings(settings)) {
-      const safeSettings = settings as any;
+    if (upcomingSettings && isValidReleaseSettings(upcomingSettings)) {
+      const safeSettings = upcomingSettings as any;
       setReleaseSettings(prev => ({
         ...prev,
         customDate: safeSettings.customDate || '',
@@ -84,7 +83,7 @@ export const HomepageManager = () => {
         wipeSuggestions: safeSettings.wipeSuggestions !== false
       }));
     }
-  }, [settings]);
+  }, [upcomingSettings]);
 
   const moveSection = (sectionId: string, direction: 'up' | 'down') => {
     const safeLocalSections = Array.isArray(localSections) ? localSections : [];
@@ -154,7 +153,14 @@ export const HomepageManager = () => {
 
   const handleSaveReleaseSettings = async () => {
     try {
-      await updateSettings(releaseSettings);
+      // Update only the upcoming release display settings, not the scheduling settings
+      await updateUpcomingSettings({
+        enabled: upcomingSettings.enabled,
+        showDaysUntil: upcomingSettings.showDaysUntil,
+        maxItems: upcomingSettings.maxItems,
+        highlightThreshold: upcomingSettings.highlightThreshold
+      });
+      
       toast({
         title: "Configurações salvas",
         description: "As configurações de próximas edições foram salvas com sucesso.",
