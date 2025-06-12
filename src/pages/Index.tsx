@@ -3,6 +3,7 @@
 import React, { useMemo } from 'react';
 import { useParallelDataLoader } from '@/hooks/useParallelDataLoader';
 import { SectionFactory } from '@/components/homepage/SectionFactory';
+import { getSectionById } from '@/config/sections';
 
 const Index = () => {
   const { 
@@ -27,14 +28,17 @@ const Index = () => {
 
   // Memoize section configs to prevent object recreation
   const sectionConfigs = useMemo(() => {
-    return visibleSections.map((section) => ({
-      id: section.id,
-      config: {
-        visible: section.visible,
-        order: section.order,
-        title: section.title || section.id
-      }
-    }));
+    return visibleSections.map((section) => {
+      const sectionDefinition = getSectionById(section.id);
+      return {
+        id: section.id,
+        config: {
+          visible: section.visible,
+          order: section.order,
+          title: sectionDefinition?.title || section.id
+        }
+      };
+    });
   }, [visibleSections]);
 
   if (isLoading) {
