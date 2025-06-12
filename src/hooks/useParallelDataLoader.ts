@@ -39,9 +39,23 @@ interface DataLoader {
 const convertDbIssueToIssue = (dbIssue: any): Issue => {
   return {
     ...dbIssue,
-    backend_tags: dbIssue.backend_tags ? JSON.stringify(dbIssue.backend_tags) : null,
+    backend_tags: typeof dbIssue.backend_tags === 'string' 
+      ? dbIssue.backend_tags 
+      : dbIssue.backend_tags 
+        ? JSON.stringify(dbIssue.backend_tags) 
+        : null,
   };
 };
+
+// Default sections configuration
+const DEFAULT_SECTIONS: SectionVisibilityConfig[] = [
+  { id: 'reviewer', visible: true, order: 0 },
+  { id: 'featured', visible: true, order: 1 },
+  { id: 'upcoming', visible: true, order: 2 },
+  { id: 'recent', visible: true, order: 3 },
+  { id: 'recommended', visible: true, order: 4 },
+  { id: 'trending', visible: true, order: 5 }
+];
 
 export const useParallelDataLoader = (): ParallelDataState => {
   const { user } = useAuth();
@@ -49,7 +63,7 @@ export const useParallelDataLoader = (): ParallelDataState => {
   
   const [state, setState] = useState<ParallelDataState>({
     issues: [],
-    sectionVisibility: [],
+    sectionVisibility: DEFAULT_SECTIONS,
     reviewerComments: [],
     featuredIssue: null,
     isLoading: true,
@@ -60,6 +74,7 @@ export const useParallelDataLoader = (): ParallelDataState => {
   // Load issues from database
   const loadIssues = async (): Promise<Issue[]> => {
     try {
+      console.log('useParallelDataLoader: Loading issues...');
       const { data, error } = await supabase
         .from('issues')
         .select('*')
@@ -68,7 +83,9 @@ export const useParallelDataLoader = (): ParallelDataState => {
         .limit(50);
 
       if (error) throw error;
-      return (data || []).map(convertDbIssueToIssue);
+      const issues = (data || []).map(convertDbIssueToIssue);
+      console.log('useParallelDataLoader: Loaded', issues.length, 'issues');
+      return issues;
     } catch (error) {
       console.error('Error loading issues:', error);
       return [];
@@ -78,6 +95,7 @@ export const useParallelDataLoader = (): ParallelDataState => {
   // Load section visibility settings
   const loadSectionVisibility = async (): Promise<SectionVisibilityConfig[]> => {
     try {
+      console.log('useParallelDataLoader: Loading section visibility...');
       const { data, error } = await supabase
         .from('site_meta')
         .select('value')
@@ -91,39 +109,28 @@ export const useParallelDataLoader = (): ParallelDataState => {
         const sectionsConfig = value.sections || {};
         
         // Convert to array format expected by UI
-        return Object.entries(sectionsConfig).map(([id, config]: [string, any]) => ({
+        const sections = Object.entries(sectionsConfig).map(([id, config]: [string, any]) => ({
           id,
           visible: config?.visible ?? true,
           order: config?.order ?? 0
         }));
+        
+        console.log('useParallelDataLoader: Loaded section visibility', sections);
+        return sections;
       }
 
-      // Return default configuration if no settings found
-      return [
-        { id: 'reviewer', visible: true, order: 0 },
-        { id: 'featured', visible: true, order: 1 },
-        { id: 'upcoming', visible: true, order: 2 },
-        { id: 'recent', visible: true, order: 3 },
-        { id: 'recommended', visible: true, order: 4 },
-        { id: 'trending', visible: true, order: 5 }
-      ];
+      console.log('useParallelDataLoader: Using default section visibility');
+      return DEFAULT_SECTIONS;
     } catch (error) {
       console.error('Error loading section visibility:', error);
-      // Return default sections on error
-      return [
-        { id: 'reviewer', visible: true, order: 0 },
-        { id: 'featured', visible: true, order: 1 },
-        { id: 'upcoming', visible: true, order: 2 },
-        { id: 'recent', visible: true, order: 3 },
-        { id: 'recommended', visible: true, order: 4 },
-        { id: 'trending', visible: true, order: 5 }
-      ];
+      return DEFAULT_SECTIONS;
     }
   };
 
   // Load reviewer comments
   const loadReviewerComments = async (): Promise<ReviewerComment[]> => {
     try {
+      console.log('useParallelDataLoader: Loading reviewer comments...');
       const { data, error } = await supabase
         .from('reviewer_comments')
         .select('*')
@@ -132,13 +139,16 @@ export const useParallelDataLoader = (): ParallelDataState => {
 
       if (error) throw error;
       
-      return (data || []).map(comment => ({
+      const comments = (data || []).map(comment => ({
         id: comment.id,
         reviewer_name: comment.reviewer_name,
         comment: comment.comment,
         created_at: comment.created_at,
         reviewer_avatar: comment.reviewer_avatar
       }));
+      
+      console.log('useParallelDataLoader: Loaded', comments.length, 'reviewer comments');
+      return comments;
     } catch (error) {
       console.error('Error loading reviewer comments:', error);
       return [];
@@ -148,6 +158,7 @@ export const useParallelDataLoader = (): ParallelDataState => {
   // Load featured issue
   const loadFeaturedIssue = async (): Promise<Issue | null> => {
     try {
+      console.log('useParallelDataLoader: Loading featured issue...');
       const { data, error } = await supabase
         .from('issues')
         .select('*')
@@ -158,7 +169,9 @@ export const useParallelDataLoader = (): ParallelDataState => {
         .single();
 
       if (error && error.code !== 'PGRST116') throw error;
-      return data ? convertDbIssueToIssue(data) : null;
+      const featuredIssue = data ? convertDbIssueToIssue(data) : null;
+      console.log('useParallelDataLoader: Featured issue:', featuredIssue?.id || 'none');
+      return featuredIssue;
     } catch (error) {
       console.error('Error loading featured issue:', error);
       return null;
@@ -191,6 +204,7 @@ export const useParallelDataLoader = (): ParallelDataState => {
 
   // Execute parallel data loading
   const loadData = useCallback(async () => {
+    console.log('useParallelDataLoader: Starting data load...');
     setState(prev => ({ ...prev, isLoading: true, errors: {} }));
 
     const results = await Promise.allSettled(
@@ -209,8 +223,10 @@ export const useParallelDataLoader = (): ParallelDataState => {
       
       if (result.status === 'fulfilled') {
         (newState as any)[loader.key] = result.value.data;
+        console.log(`useParallelDataLoader: Successfully loaded ${loader.key}`);
       } else {
         errors[loader.key] = result.reason;
+        console.error(`useParallelDataLoader: Failed to load ${loader.key}:`, result.reason);
         
         // Set defaults for failed loads
         switch (loader.key) {
@@ -218,14 +234,7 @@ export const useParallelDataLoader = (): ParallelDataState => {
             (newState as any)[loader.key] = [];
             break;
           case 'sectionVisibility':
-            (newState as any)[loader.key] = [
-              { id: 'reviewer', visible: true, order: 0 },
-              { id: 'featured', visible: true, order: 1 },
-              { id: 'upcoming', visible: true, order: 2 },
-              { id: 'recent', visible: true, order: 3 },
-              { id: 'recommended', visible: true, order: 4 },
-              { id: 'trending', visible: true, order: 5 }
-            ];
+            (newState as any)[loader.key] = DEFAULT_SECTIONS;
             break;
           case 'reviewerComments':
             (newState as any)[loader.key] = [];
@@ -239,11 +248,20 @@ export const useParallelDataLoader = (): ParallelDataState => {
 
     newState.errors = errors;
     
+    console.log('useParallelDataLoader: Data load complete. State:', {
+      issuesCount: (newState as any).issues?.length || 0,
+      sectionsCount: (newState as any).sectionVisibility?.length || 0,
+      commentsCount: (newState as any).reviewerComments?.length || 0,
+      featuredIssue: (newState as any).featuredIssue?.id || 'none',
+      errorsCount: Object.keys(errors).length
+    });
+    
     setState(prev => ({ ...prev, ...newState }));
   }, []);
 
   // Retry failed data loads
   const retryFailed = useCallback(() => {
+    console.log('useParallelDataLoader: Retrying failed loads...');
     loadData();
   }, [loadData]);
 

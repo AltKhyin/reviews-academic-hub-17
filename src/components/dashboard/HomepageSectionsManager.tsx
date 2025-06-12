@@ -22,16 +22,18 @@ const HomepageSectionsManager = () => {
   // Ensure sections is always an array
   const safeSections = Array.isArray(sections) ? sections : [];
   const [localSections, setLocalSections] = useState<Section[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Initialize local state with sections from the hook
+  // Initialize local state with sections from the hook - prevent infinite loops
   useEffect(() => {
-    if (Array.isArray(sections) && sections.length > 0) {
+    if (Array.isArray(sections) && sections.length > 0 && !isInitialized) {
       const sortedSections = getAllSections();
       const safeSortedSections = Array.isArray(sortedSections) ? sortedSections : [];
       setLocalSections([...safeSortedSections]);
+      setIsInitialized(true);
       console.log('HomepageSectionsManager: Loaded sections', safeSortedSections);
     }
-  }, [sections, getAllSections]);
+  }, [sections, getAllSections, isInitialized]);
 
   const moveSection = (sectionId: string, direction: 'up' | 'down') => {
     const currentIndex = localSections.findIndex(s => s.id === sectionId);
@@ -96,6 +98,7 @@ const HomepageSectionsManager = () => {
 
   const handleReset = () => {
     resetToDefaults();
+    setIsInitialized(false); // Allow re-initialization after reset
     toast({
       title: "Configurações restauradas",
       description: "As seções foram restauradas para a configuração padrão.",
@@ -208,7 +211,7 @@ const HomepageSectionsManager = () => {
             );
           })}
           
-          {localSections.length === 0 && (
+          {localSections.length === 0 && !isLoading && (
             <div className="text-center py-8 text-muted-foreground">
               Nenhuma seção configurada
             </div>

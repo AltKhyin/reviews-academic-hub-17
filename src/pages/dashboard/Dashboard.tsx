@@ -112,15 +112,6 @@ const Dashboard = () => {
     console.log(`Dashboard: Rendering section ${sectionId}`);
     
     switch (sectionId) {
-      case 'reviews':
-        return (
-          <DataErrorBoundary key={`reviews-${index}`} context="reviewer comments">
-            <div className={isFollowedByFeatured ? 'mb-4' : ''}>
-              <ReviewerCommentsDisplay />
-            </div>
-          </DataErrorBoundary>
-        );
-        
       case 'reviewer':
         return (
           <DataErrorBoundary key={`reviewer-${index}`} context="reviewer comments">

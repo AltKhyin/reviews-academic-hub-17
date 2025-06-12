@@ -10,6 +10,7 @@ const Index = () => {
     issues, 
     sectionVisibility, 
     featuredIssue, 
+    reviewerComments,
     isLoading, 
     errors,
     retryFailed 
@@ -18,9 +19,14 @@ const Index = () => {
   console.log('Index page render - Issues:', issues?.length || 0);
   console.log('Index page render - Section visibility:', sectionVisibility);
   console.log('Index page render - Featured issue:', featuredIssue?.id);
+  console.log('Index page render - Reviewer comments:', reviewerComments?.length || 0);
 
   // Memoize visible sections to prevent unnecessary re-renders
   const visibleSections = useMemo(() => {
+    if (!Array.isArray(sectionVisibility)) {
+      console.warn('Index: sectionVisibility is not an array:', sectionVisibility);
+      return [];
+    }
     return sectionVisibility
       .filter(section => section.visible)
       .sort((a, b) => a.order - b.order);
@@ -41,6 +47,9 @@ const Index = () => {
     });
   }, [visibleSections]);
 
+  // Check if we have any actual content
+  const hasContent = issues.length > 0 || featuredIssue || reviewerComments.length > 0;
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
@@ -52,8 +61,8 @@ const Index = () => {
     );
   }
 
-  // Show error state if critical errors occurred
-  if (Object.keys(errors).length > 0 && !issues.length && !featuredIssue) {
+  // Show error state if critical errors occurred and no content
+  if (Object.keys(errors).length > 0 && !hasContent) {
     return (
       <div className="min-h-screen bg-gray-100">
         <div className="max-w-7xl mx-auto px-4 py-16">
@@ -68,6 +77,25 @@ const Index = () => {
             >
               Tentar novamente
             </button>
+            <div className="mt-4 text-sm text-gray-500">
+              Erros: {Object.keys(errors).join(', ')}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show no content message only if we truly have no content and no sections
+  if (!hasContent && sectionConfigs.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-100">
+        <div className="max-w-7xl mx-auto px-4 py-16">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-4">Nenhum conteúdo disponível</h2>
+            <p className="text-gray-600">
+              Aguarde novos conteúdos serem publicados.
+            </p>
           </div>
         </div>
       </div>
@@ -75,6 +103,7 @@ const Index = () => {
   }
 
   console.log('Index page render - Visible sections:', visibleSections.map(s => `${s.id} (order: ${s.order}, visible: ${s.visible})`));
+  console.log('Index page render - Section configs:', sectionConfigs);
 
   return (
     <div className="min-h-screen bg-gray-100">
