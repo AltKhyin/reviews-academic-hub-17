@@ -1,7 +1,7 @@
 
 // ABOUTME: Optimized native review hook with analytics and performance monitoring
 import { useState, useCallback } from 'react';
-import { useUnifiedQuery } from '@/hooks/useUnifiedQuery';
+import { useOptimizedQuery } from './useOptimizedQuery';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ReviewData {
@@ -24,12 +24,12 @@ interface AnalyticsEvent {
 export const useNativeReview = (issueId: string) => {
   const [isVoting, setIsVoting] = useState(false);
 
-  // Use unified query system for review data
+  // Use optimized query system for review data
   const { 
     data: reviewData, 
     isLoading, 
     error 
-  } = useUnifiedQuery<ReviewData>(
+  } = useOptimizedQuery<ReviewData>(
     ['review-blocks', issueId],
     async () => {
       console.log(`Fetching review blocks for issue: ${issueId}`);
@@ -58,13 +58,10 @@ export const useNativeReview = (issueId: string) => {
       };
     },
     {
-      priority: 'critical',
-      enableMonitoring: false, // Reduce console noise
-      rateLimit: {
-        endpoint: 'review-blocks',
-        maxRequests: 10,
-        windowMs: 60000,
-      },
+      staleTime: 2 * 60 * 1000, // 2 minutes
+      gcTime: 5 * 60 * 1000, // 5 minutes
+      refetchOnWindowFocus: false,
+      retry: 2,
     }
   );
 
