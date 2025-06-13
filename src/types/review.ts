@@ -57,7 +57,9 @@ export type BlockType =
   | 'poll'
   | 'citation_list'
   | 'snapshot_card'
-  | 'diagram'; // Added diagram type
+  | 'diagram'
+  | 'quote'
+  | 'divider';
 
 export interface EnhancedIssue {
   id: string;
@@ -72,7 +74,7 @@ export interface EnhancedIssue {
   pdf_url?: string;
 }
 
-// Add missing diagram-related types
+// Enhanced DiagramNode with all required properties
 export interface DiagramNode {
   id: string;
   type: 'process' | 'decision' | 'start' | 'end' | 'data';
@@ -81,32 +83,84 @@ export interface DiagramNode {
   y: number;
   width?: number;
   height?: number;
+  // Additional properties for enhanced functionality
+  position?: {
+    x: number;
+    y: number;
+  };
+  size?: {
+    width: number;
+    height: number;
+  };
+  text?: string;
+  style?: {
+    backgroundColor: string;
+    borderColor: string;
+    textColor: string;
+    borderWidth: number;
+    borderRadius: number;
+    fontSize: number;
+    fontWeight: string;
+    opacity: number;
+  };
 }
 
+// Enhanced DiagramConnection with all required properties
 export interface DiagramConnection {
   id: string;
   from: string;
   to: string;
   label?: string;
   type?: 'straight' | 'curved';
+  // Additional properties for enhanced functionality
+  sourceNodeId?: string;
+  targetNodeId?: string;
 }
 
+// Enhanced DiagramContent with canvas support
 export interface DiagramContent {
   nodes: DiagramNode[];
   connections: DiagramConnection[];
   title?: string;
   description?: string;
   layout?: 'flowchart' | 'mindmap' | 'org-chart';
+  // Canvas configuration
+  canvas?: {
+    width: number;
+    height: number;
+    backgroundColor: string;
+    gridEnabled: boolean;
+    gridSize: number;
+    gridColor: string;
+    snapToGrid: boolean;
+  };
 }
 
-// Add missing snapshot card content type
+// Complete SnapshotCardContent with all PICOD framework properties
 export interface SnapshotCardContent {
   title: string;
+  subtitle?: string;
   value: string | number;
   unit?: string;
-  trend?: 'up' | 'down' | 'stable';
+  trend?: 'up' | 'down' | 'stable' | 'neutral';
+  change?: number;
   trendValue?: number;
   description?: string;
   icon?: string;
   color?: string;
+  // PICOD Framework properties
+  population?: string;
+  intervention?: string;
+  comparison?: string;
+  outcome?: string;
+  design?: string;
+  // Evidence and recommendation properties
+  evidence_level?: 'high' | 'moderate' | 'low' | 'very_low';
+  recommendation_strength?: 'strong' | 'conditional' | 'expert_opinion';
+  key_findings?: string[];
+  // Styling properties
+  background_color?: string;
+  border_color?: string;
+  accent_color?: string;
+  text_color?: string;
 }

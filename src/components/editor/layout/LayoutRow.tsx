@@ -34,9 +34,9 @@ interface LayoutRowProps {
   onUpdateRow: (rowId: string, updates: Partial<LayoutRowData>) => void;
   onDeleteRow: (rowId: string) => void;
   onAddBlock: (rowId: string, position: number, blockType: string) => void;
-  onUpdateBlock: (blockId: number, updates: Partial<ReviewBlock>) => void;
-  onMoveBlock: (blockId: number, targetRowId: string, targetPosition: number) => void;
-  onDeleteBlock: (blockId: number) => void;
+  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void; // Changed from number to string
+  onMoveBlock: (blockId: string, targetRowId: string, targetPosition: number) => void; // Changed from number to string
+  onDeleteBlock: (blockId: string) => void; // Changed from number to string
   readonly?: boolean;
   className?: string;
 }
@@ -53,7 +53,7 @@ export const LayoutRow: React.FC<LayoutRowProps> = ({
   className
 }) => {
   const [isDragging, setIsDragging] = useState(false);
-  const [draggedBlock, setDraggedBlock] = useState<number | null>(null);
+  const [draggedBlock, setDraggedBlock] = useState<string | null>(null); // Changed from number to string
   const [showControls, setShowControls] = useState(false);
 
   // Generate responsive grid classes
@@ -83,7 +83,7 @@ export const LayoutRow: React.FC<LayoutRowProps> = ({
   };
 
   // Handle drag events
-  const handleDragStart = (blockId: number) => {
+  const handleDragStart = (blockId: string) => {
     setDraggedBlock(blockId);
     setIsDragging(true);
   };
@@ -101,7 +101,7 @@ export const LayoutRow: React.FC<LayoutRowProps> = ({
   };
 
   // Create wrapper function for onUpdate
-  const createBlockUpdateWrapper = (blockId: number) => {
+  const createBlockUpdateWrapper = (blockId: string) => {
     return (updates: Partial<ReviewBlock>) => {
       onUpdateBlock(blockId, updates);
     };

@@ -5,7 +5,6 @@
 import React, { useCallback, useMemo } from 'react';
 import { ReviewBlock } from '@/types/review';
 import { GridPosition } from '@/types/grid';
-import { Grid2DRow } from './Grid2DRow';
 import { Button } from '@/components/ui/button';
 import { Plus, Grid3X3, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -25,12 +24,12 @@ interface Grid2DPanelProps {
   globalIndex: number;
   activeBlockId: string | null;
   dragState: DragState;
-  onActiveBlockChange: (blockId: string | null) => void;
+  onActiveBlockChange?: (blockId: string | null) => void;
   onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
   onDeleteBlock: (blockId: string) => void;
   onDuplicateBlock: (blockId: string) => void;
   onPlaceBlockIn2DGrid: (blockId: string, gridId: string, position: GridPosition) => void;
-  onAddBlockBetween: (position: number, type?: string) => void;
+  onAddBlockBetween: (position: number, type?: string) => string;
   onDragStart: (e: React.DragEvent, blockId: string) => void;
   onDragEnd: () => void;
   onDragOver: (e: React.DragEvent, targetRowId: string, targetPosition?: number, targetType?: string) => void;
@@ -101,7 +100,9 @@ export const Grid2DPanel: React.FC<Grid2DPanelProps> = ({
   const handleAddBlock = useCallback((position: GridPosition) => {
     // Create a new block and place it in the grid
     const newBlockId = onAddBlockBetween(globalIndex + 1, 'paragraph');
-    onPlaceBlockIn2DGrid(newBlockId, gridId, position);
+    if (newBlockId) {
+      onPlaceBlockIn2DGrid(newBlockId, gridId, position);
+    }
   }, [onAddBlockBetween, onPlaceBlockIn2DGrid, gridId, globalIndex]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {

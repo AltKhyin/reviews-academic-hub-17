@@ -1,3 +1,4 @@
+
 // ABOUTME: Enhanced block editor with comprehensive layout support - FIXED: String IDs throughout
 // Main editor component managing block rendering, drag-and-drop, and layout operations
 
@@ -22,16 +23,16 @@ interface DragState {
 interface BlockEditorProps {
   blocks: ReviewBlock[];
   activeBlockId: string | null;
-  onActiveBlockChange: (blockId: string | null) => void;
+  onActiveBlockChange?: (blockId: string | null) => void;
   onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
   onDeleteBlock: (blockId: string) => void;
   onMoveBlock: (blockId: string, direction: 'up' | 'down') => void;
   onAddBlock: (type: BlockType, position?: number) => string;
   onDuplicateBlock: (blockId: string) => void;
-  onConvertToGrid: (blockId: string, columns: number) => void;
-  onConvertTo2DGrid: (blockId: string, columns: number, rows: number) => void;
-  onMergeBlockIntoGrid: (draggedBlockId: string, targetRowId: string, targetPosition?: number) => void;
-  onPlaceBlockIn2DGrid: (blockId: string, gridId: string, position: GridPosition) => void;
+  onConvertToGrid?: (blockId: string) => void;
+  onConvertTo2DGrid?: (blockId: string) => void;
+  onMergeBlockIntoGrid?: (blockId: string, targetRowId: string, position?: number) => void;
+  onPlaceBlockIn2DGrid?: (blockId: string, gridId: string, position: GridPosition) => void;
   className?: string;
 }
 
@@ -59,50 +60,13 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     dropTargetType: null
   });
 
-  // Layout management
-  // const { getEditorStyles, isDividirMode } = useEditorLayout();
-
-  // 1D Grid management
-  // const {
-  //   layoutState,
-  //   updateColumnWidths,
-  //   getRowByBlockId,
-  //   isBlockInGrid
-  // } = useGridLayoutManager({
-  //   blocks,
-  //   onUpdateBlock,
-  //   onDeleteBlock
-  // });
-
-  // 2D Grid management
-  // const {
-  //   grids,
-  //   createGrid,
-  //   addRowToGridById,
-  //   removeRowFromGridById,
-  //   placeBlockInGridById,
-  //   removeBlockFromGridById,
-  //   updateGridLayout,
-  //   extractGridsFromBlocks
-  // } = useGrid2DManager({
-  //   onUpdateBlock,
-  //   onDeleteBlock,
-  //   onAddBlock
-  // });
-
-  // Extract 2D grids from current blocks
-  // React.useEffect(() => {
-  //   const extracted2DGrids = extractGridsFromBlocks(blocks);
-  //   console.log('Extracted 2D grids from blocks:', extracted2DGrids.length);
-  // }, [blocks, extractGridsFromBlocks]);
-
   // Organize blocks by layout type
   const organizedBlocks = useMemo(() => {
     const singleBlocks: ReviewBlock[] = [];
-    const rowGroups: { [rowId: string]: ReviewBlock[] } = {};
-    const gridGroups: { [gridId: string]: ReviewBlock[] } = {};
+    const rowGroups: Record<string, ReviewBlock[]> = {};
+    const gridGroups: Record<string, ReviewBlock[]> = {};
 
-    blocks.forEach(block => {
+    blocks.forEach((block) => {
       const layout = block.meta?.layout;
       
       if (layout?.grid_id) {
@@ -124,7 +88,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     });
 
     // Sort blocks within each group
-    Object.keys(rowGroups).forEach(rowId => {
+    Object.keys(rowGroups).forEach((rowId) => {
       rowGroups[rowId].sort((a, b) => {
         const posA = a.meta?.layout?.position ?? 0;
         const posB = b.meta?.layout?.position ?? 0;
@@ -132,13 +96,11 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       });
     });
 
-    Object.keys(gridGroups).forEach(gridId => {
+    Object.keys(gridGroups).forEach((gridId) => {
       gridGroups[gridId].sort((a, b) => {
         const posA = a.meta?.layout?.grid_position;
         const posB = b.meta?.layout?.grid_position;
-        
         if (!posA || !posB) return 0;
-        
         if (posA.row !== posB.row) {
           return posA.row - posB.row;
         }
@@ -149,80 +111,29 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     return { singleBlocks, rowGroups, gridGroups };
   }, [blocks]);
 
-  // const addBlockBetween = useCallback((position: number, type: BlockType = 'paragraph') => {
-  //   return onAddBlock(type, position);
-  // }, [onAddBlock]);
+  // Create wrapper functions with correct signatures
+  const handleAddBlockBetween = useCallback((position: number, type: string = 'paragraph') => {
+    return onAddBlock(type as BlockType, position);
+  }, [onAddBlock]);
 
-  // const addBlockToGrid = useCallback((rowId: string, position: number) => {
-  //   const row = layoutState.rows.find(r => r.id === rowId);
-  //   if (!row) return;
-
-  //   let insertionIndex: number;
-    
-  //   if (position === 0 && row.blocks.length === 0) {
-  //     const allSingleRows = layoutState.rows.filter(r => r.id.startsWith('single-'));
-  //     const rowBlocks = layoutState.rows
-  //       .filter(r => !r.id.startsWith('single-'))
-  //       .sort((a, b) => {
-  //         const aMinSort = Math.min(...a.blocks.map(b => b.sort_index));
-  //         const bMinSort = Math.min(...b.blocks.map(b => b.sort_index));
-  //         return aMinSort - bMinSort;
-  //       });
-      
-  //     const targetRowIndex = rowBlocks.findIndex(r => r.id === rowId);
-  //     insertionIndex = targetRowIndex > 0 ? 
-  //       Math.max(...rowBlocks[targetRowIndex - 1].blocks.map(b => blocks.findIndex(bl => bl.id === b.id))) + 1 :
-  //       0;
-  //   } else if (position < row.blocks.length) {
-  //     const blockAtPosition = row.blocks[position];
-  //     insertionIndex = blocks.findIndex(b => b.id === blockAtPosition.id);
-  //   } else {
-  //     const lastBlockInRow = row.blocks[row.blocks.length - 1];
-  //     insertionIndex = lastBlockInRow ? 
-  //       blocks.findIndex(b => b.id === lastBlockInRow.id) + 1 : 
-  //       blocks.length;
-  //   }
-
-  //   return onAddBlock('paragraph' as BlockType, insertionIndex);
-  // }, [layoutState.rows, blocks, onAddBlock]);
-
-  // 2D Grid operations - FIXED: Proper block creation and placement
-  // const handleAddBlockTo2DGrid = useCallback((gridId: string, position: GridPosition) => {
-  //   console.log('Adding block to 2D grid:', { gridId, position });
-    
-  //   // Create a new block first
-  //   const newBlockId = onAddBlock('paragraph' as BlockType, blocks.length);
-    
-  //   // Place it in the 2D grid immediately using the returned block ID
-  //   if (onPlaceBlockIn2DGrid && newBlockId) {
-  //     console.log('Placing newly created block in 2D grid:', { newBlockId, gridId, position });
-  //     onPlaceBlockIn2DGrid(newBlockId, gridId, position);
-  //   } else {
-  //     console.error('Failed to place block in 2D grid:', { newBlockId, onPlaceBlockIn2DGrid });
-  //   }
-  // }, [blocks, onAddBlock, onPlaceBlockIn2DGrid]);
-
-  // const handleAddRowAbove = useCallback((gridId: string, rowIndex: number) => {
-  //   addRowToGridById(gridId, 'above', rowIndex);
-  // }, [addRowToGridById]);
-
-  // const handleAddRowBelow = useCallback((gridId: string, rowIndex: number) => {
-  //   addRowToGridById(gridId, 'below', rowIndex);
-  // }, [addRowToGridById]);
-
-  // const handleRemoveRow = useCallback((gridId: string, rowIndex: number) => {
-  //   removeRowFromGridById(gridId, rowIndex);
-  // }, [removeRowFromGridById]);
+  const handleAddBlockTo2DGrid = useCallback((gridId: string, position: GridPosition) => {
+    console.log('Adding block to 2D grid:', { gridId, position });
+    const newBlockId = onAddBlock('paragraph' as BlockType, blocks.length);
+    if (onPlaceBlockIn2DGrid && newBlockId) {
+      console.log('Placing newly created block in 2D grid:', { newBlockId, gridId, position });
+      onPlaceBlockIn2DGrid(newBlockId, gridId, position);
+    }
+    return newBlockId;
+  }, [blocks, onAddBlock, onPlaceBlockIn2DGrid]);
 
   // Handle drag start
   const handleDragStart = useCallback((e: React.DragEvent, blockId: string) => {
     console.log('Drag start:', blockId);
-    
-    const block = blocks.find(b => b.id === blockId);
+    const block = blocks.find((b) => b.id === blockId);
     const fromRowId = block?.meta?.layout?.row_id || 
-                      block?.meta?.layout?.grid_id || 
-                      `single-${blockId}`;
-    
+                     block?.meta?.layout?.grid_id || 
+                     `single-${blockId}`;
+
     setDragState({
       draggedBlockId: blockId,
       dragOverRowId: null,
@@ -248,12 +159,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     });
   }, []);
 
-  const handleDragOver = useCallback((
-    e: React.DragEvent, 
-    targetRowId: string, 
-    targetPosition?: number, 
-    targetType?: 'grid' | 'single' | 'merge'
-  ) => {
+  const handleDragOver = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number, targetType?: string) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     
@@ -261,13 +167,13 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       ...prev,
       dragOverRowId: targetRowId,
       dragOverPosition: targetPosition ?? null,
-      dropTargetType: targetType || null
+      dropTargetType: (targetType as DragState['dropTargetType']) || null
     }));
   }, []);
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
-    const relatedTarget = e.relatedTarget as Element;
-    const currentTarget = e.currentTarget as Element;
+    const relatedTarget = e.relatedTarget as Node;
+    const currentTarget = e.currentTarget as Node;
     
     if (!currentTarget.contains(relatedTarget)) {
       setDragState(prev => ({
@@ -279,29 +185,23 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     }
   }, []);
 
-  const handleDrop = useCallback((
-    e: React.DragEvent, 
-    targetRowId: string, 
-    targetPosition?: number, 
-    dropType?: 'grid' | 'single' | 'merge'
-  ) => {
+  const handleDrop = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number, dropType?: string) => {
     e.preventDefault();
-    
     const draggedBlockId = e.dataTransfer.getData('text/plain');
     
     if (!draggedBlockId || draggedBlockId === dragState.draggedBlockId) {
-      console.log('Drop operation:', { 
-        draggedBlockId, 
-        targetRowId, 
-        targetPosition, 
-        dropType 
+      console.log('Drop operation:', {
+        draggedBlockId,
+        targetRowId,
+        targetPosition,
+        dropType
       });
 
-      if (dropType === 'merge' || targetRowId.startsWith('row-') || targetRowId.startsWith('grid-')) {
+      if ((dropType === 'merge' || targetRowId.startsWith('row-') || targetRowId.startsWith('grid-')) && onMergeBlockIntoGrid) {
         onMergeBlockIntoGrid(draggedBlockId, targetRowId, targetPosition);
       }
     }
-
+    
     handleDragEnd();
   }, [dragState.draggedBlockId, onMergeBlockIntoGrid, handleDragEnd]);
 
@@ -313,14 +213,13 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       blocks: ReviewBlock[];
       globalIndex: number;
     }> = [];
-
     let globalIndex = 0;
 
     // Process all blocks in sort order to maintain proper positioning
     const sortedBlocks = [...blocks].sort((a, b) => a.sort_index - b.sort_index);
     const processedBlocks = new Set<string>();
 
-    sortedBlocks.forEach(block => {
+    sortedBlocks.forEach((block) => {
       if (processedBlocks.has(block.id)) return;
 
       const layout = block.meta?.layout;
@@ -335,7 +234,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
             blocks: gridBlocks,
             globalIndex
           });
-          gridBlocks.forEach(b => processedBlocks.add(b.id));
+          gridBlocks.forEach((b) => processedBlocks.add(b.id));
           globalIndex++;
         }
       } else if (layout?.row_id && organizedBlocks.rowGroups[layout.row_id]) {
@@ -348,7 +247,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
             blocks: rowBlocks,
             globalIndex
           });
-          rowBlocks.forEach(b => processedBlocks.add(b.id));
+          rowBlocks.forEach((b) => processedBlocks.add(b.id));
           globalIndex++;
         }
       } else {
@@ -386,7 +285,10 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
 
   return (
     <ScrollArea className={cn("h-full", className)}>
-      <div className="block-editor-content p-4 space-y-4" style={{ minHeight: '100%' }}>
+      <div 
+        className="block-editor-content p-4 space-y-4"
+        style={{ minHeight: '100%' }}
+      >
         {renderList.map((item) => {
           switch (item.type) {
             case 'single':
@@ -403,7 +305,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                   onDuplicateBlock={onDuplicateBlock}
                   onConvertToGrid={onConvertToGrid}
                   onConvertTo2DGrid={onConvertTo2DGrid}
-                  onAddBlockBetween={onAddBlock}
+                  onAddBlockBetween={handleAddBlockBetween}
                   onDragStart={handleDragStart}
                   onDragEnd={handleDragEnd}
                   onDragOver={handleDragOver}
@@ -411,29 +313,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                   onDrop={handleDrop}
                 />
               );
-            
-            case 'row':
-              return (
-                <LayoutRow
-                  key={item.id}
-                  rowId={item.id}
-                  blocks={item.blocks}
-                  globalIndex={item.globalIndex}
-                  activeBlockId={activeBlockId}
-                  dragState={dragState}
-                  onActiveBlockChange={onActiveBlockChange}
-                  onUpdateBlock={onUpdateBlock}
-                  onDeleteBlock={onDeleteBlock}
-                  onDuplicateBlock={onDuplicateBlock}
-                  onAddBlockBetween={onAddBlock}
-                  onDragStart={handleDragStart}
-                  onDragEnd={handleDragEnd}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                />
-              );
-            
+
             case 'grid':
               return (
                 <Grid2DPanel
@@ -447,8 +327,8 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                   onUpdateBlock={onUpdateBlock}
                   onDeleteBlock={onDeleteBlock}
                   onDuplicateBlock={onDuplicateBlock}
-                  onPlaceBlockIn2DGrid={onPlaceBlockIn2DGrid}
-                  onAddBlockBetween={onAddBlock}
+                  onPlaceBlockIn2DGrid={onPlaceBlockIn2DGrid!}
+                  onAddBlockBetween={handleAddBlockBetween}
                   onDragStart={handleDragStart}
                   onDragEnd={handleDragEnd}
                   onDragOver={handleDragOver}
@@ -456,7 +336,31 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                   onDrop={handleDrop}
                 />
               );
-            
+
+            case 'row':
+              // For now, render as single blocks until LayoutRow is fixed
+              return item.blocks.map((block, index) => (
+                <SingleBlock
+                  key={block.id}
+                  block={block}
+                  globalIndex={item.globalIndex + index}
+                  activeBlockId={activeBlockId}
+                  dragState={dragState}
+                  onActiveBlockChange={onActiveBlockChange}
+                  onUpdateBlock={onUpdateBlock}
+                  onDeleteBlock={onDeleteBlock}
+                  onDuplicateBlock={onDuplicateBlock}
+                  onConvertToGrid={onConvertToGrid}
+                  onConvertTo2DGrid={onConvertTo2DGrid}
+                  onAddBlockBetween={handleAddBlockBetween}
+                  onDragStart={handleDragStart}
+                  onDragEnd={handleDragEnd}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                />
+              ));
+
             default:
               return null;
           }
