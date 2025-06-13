@@ -1,247 +1,155 @@
 
-// ABOUTME: Layout row component for grid system with string ID consistency
-// Fixed to use standardized string IDs and proper interface alignment
+// ABOUTME: Layout row component with standardized string ID usage
+// Fixed to export LayoutRowData interface and use consistent string IDs
 
-import React, { useCallback, useState } from 'react';
+import React from 'react';
 import { ReviewBlock } from '@/types/review';
-import { BlockRenderer } from '@/components/review/BlockRenderer';
 import { Button } from '@/components/ui/button';
-import { 
-  Plus, 
-  Minus, 
-  GripHorizontal, 
-  Settings, 
-  Eye, 
-  EyeOff 
-} from 'lucide-react';
+import { Trash2, Plus, GripHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface LayoutRowProps {
-  rowId: string;
+export interface LayoutRowData {
+  id: string;
+  columns: number;
   blocks: ReviewBlock[];
-  rowIndex: number;
-  isActive: boolean;
-  onActivate: (rowId: string | null) => void;
+  style?: {
+    gap?: number;
+    padding?: number;
+    background?: string;
+  };
+}
+
+interface LayoutRowProps {
+  row: LayoutRowData;
+  onUpdateRow: (rowId: string, updates: Partial<LayoutRowData>) => void;
+  onDeleteRow: (rowId: string) => void;
+  onAddBlock: (rowId: string, position: number, blockType: string) => void;
   onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
-  onDeleteBlock: (blockId: string) => void;
   onMoveBlock: (blockId: string, direction: 'up' | 'down') => void;
-  onAddRowAbove: (rowId: string, rowIndex: number) => void;
-  onAddRowBelow: (rowId: string, rowIndex: number) => void;
-  onRemoveRow: (rowId: string, rowIndex: number) => void;
-  dragState: any;
-  onDragStart: (blockId: string) => void;
-  onDragOver: (e: React.DragEvent, targetId: string, position?: number, targetType?: string) => void;
-  onDragLeave: (e: React.DragEvent) => void;
-  onDrop: (draggedBlockId: string, targetRowId: string, targetPosition?: number, dropType?: string) => void;
+  onDeleteBlock: (blockId: string) => void;
+  readonly?: boolean;
 }
 
 export const LayoutRow: React.FC<LayoutRowProps> = ({
-  rowId,
-  blocks,
-  rowIndex,
-  isActive,
-  onActivate,
+  row,
+  onUpdateRow,
+  onDeleteRow,
+  onAddBlock,
   onUpdateBlock,
-  onDeleteBlock,
   onMoveBlock,
-  onAddRowAbove,
-  onAddRowBelow,
-  onRemoveRow,
-  dragState,
-  onDragStart,
-  onDragOver,
-  onDragLeave,
-  onDrop
+  onDeleteBlock,
+  readonly = false
 }) => {
-  const [showControls, setShowControls] = useState(false);
-  const [columnWidths, setColumnWidths] = useState<number[]>([]);
+  const gridCols = {
+    1: 'grid-cols-1',
+    2: 'grid-cols-2', 
+    3: 'grid-cols-3',
+    4: 'grid-cols-4'
+  }[row.columns] || 'grid-cols-1';
 
-  // Get layout metadata from first block
-  const layout = blocks[0]?.meta?.layout;
-  const columns = layout?.columns || blocks.length;
-  const currentColumnWidths = layout?.columnWidths || Array(columns).fill(100 / columns);
+  const handleAddBlock = (position: number) => {
+    onAddBlock(row.id, position, 'paragraph');
+  };
 
-  const handleRowClick = useCallback(() => {
-    onActivate(isActive ? null : rowId);
-  }, [isActive, rowId, onActivate]);
-
-  const handleBlockUpdate = useCallback((blockId: string, updates: Partial<ReviewBlock>) => {
-    onUpdateBlock(blockId, updates);
-  }, [onUpdateBlock]);
-
-  const handleColumnWidthChange = useCallback((index: number, width: number) => {
-    const newWidths = [...currentColumnWidths];
-    newWidths[index] = width;
-    
-    // Update all blocks in this row with new column widths
-    blocks.forEach(block => {
-      onUpdateBlock(block.id, {
-        meta: {
-          ...block.meta,
-          layout: {
-            ...block.meta?.layout,
-            columnWidths: newWidths
-          }
-        }
-      });
-    });
-  }, [blocks, currentColumnWidths, onUpdateBlock]);
-
-  const handleDragStart = useCallback((blockId: string) => {
-    onDragStart(blockId);
-  }, [onDragStart]);
-
-  const handleDragOver = useCallback((e: React.DragEvent, position?: number) => {
-    e.preventDefault();
-    onDragOver(e, rowId, position, 'grid');
-  }, [onDragOver, rowId]);
-
-  const handleDrop = useCallback((e: React.DragEvent, position?: number) => {
-    e.preventDefault();
-    const draggedBlockId = e.dataTransfer.getData('text/plain');
-    
-    if (draggedBlockId && draggedBlockId !== rowId) {
-      onDrop(draggedBlockId, rowId, position, 'merge');
-    }
-  }, [onDrop, rowId]);
-
-  const isDraggedOver = dragState?.dragOverRowId === rowId;
+  const handleDeleteRow = () => {
+    onDeleteRow(row.id);
+  };
 
   return (
-    <div
-      className={cn(
-        "layout-row group relative border rounded-lg transition-all duration-200",
-        isActive ? "border-blue-500 bg-blue-500/10" : "border-gray-600 hover:border-gray-500",
-        isDraggedOver && "border-green-500 bg-green-500/10"
-      )}
-      onClick={handleRowClick}
-      onMouseEnter={() => setShowControls(true)}
-      onMouseLeave={() => setShowControls(false)}
-    >
-      {/* Row Controls */}
-      <div className={cn(
-        "absolute -left-12 top-1/2 transform -translate-y-1/2 flex flex-col items-center gap-1 z-10 transition-opacity",
-        showControls ? "opacity-100" : "opacity-0"
-      )}>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={(e) => {
-            e.stopPropagation();
-            onAddRowAbove(rowId, rowIndex);
-          }}
-          className="h-6 w-8 p-0 bg-gray-800 border border-gray-600 hover:bg-blue-700"
-          title="Adicionar linha acima"
-        >
-          <Plus className="w-3 h-3" />
-        </Button>
-
-        <div
-          className="h-6 w-8 flex items-center justify-center bg-gray-800 border border-gray-600 rounded cursor-move hover:bg-gray-700"
-          title="Arrastar linha"
-        >
-          <GripHorizontal className="w-3 h-3 text-gray-400" />
-        </div>
-
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={(e) => {
-            e.stopPropagation();
-            onRemoveRow(rowId, rowIndex);
-          }}
-          className="h-6 w-8 p-0 bg-red-800 border border-red-600 hover:bg-red-700"
-          title="Remover linha"
-        >
-          <Minus className="w-3 h-3" />
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={(e) => {
-            e.stopPropagation();
-            onAddRowBelow(rowId, rowIndex);
-          }}
-          className="h-6 w-8 p-0 bg-gray-800 border border-gray-600 hover:bg-blue-700"
-          title="Adicionar linha abaixo"
-        >
-          <Plus className="w-3 h-3" />
-        </Button>
-      </div>
-
+    <div className="layout-row border border-gray-600 rounded-lg p-4 bg-gray-800/30">
       {/* Row Header */}
-      <div className="flex items-center justify-between p-3 border-b border-gray-700">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-white">
-            Grid Row {rowIndex + 1}
-          </span>
-          <span className="text-xs text-gray-400">
-            {columns} coluna(s) • {blocks.length} bloco(s)
-          </span>
-        </div>
-        
-        <div className="flex items-center gap-1">
+      {!readonly && (
+        <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-700">
+          <div className="flex items-center gap-2">
+            <GripHorizontal className="w-4 h-4 text-gray-400" />
+            <span className="text-sm font-medium text-gray-300">
+              Linha {row.columns} coluna(s)
+            </span>
+          </div>
+          
           <Button
             variant="ghost"
             size="sm"
-            className="h-6 w-6 p-0"
-            title="Configurações da linha"
+            onClick={handleDeleteRow}
+            className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
           >
-            <Settings className="w-3 h-3" />
+            <Trash2 className="w-4 h-4" />
           </Button>
         </div>
-      </div>
-
-      {/* Grid Content */}
-      <div
-        className="grid gap-2 p-3"
-        style={{
-          gridTemplateColumns: currentColumnWidths.map(w => `${w}%`).join(' ')
-        }}
-        onDragOver={handleDragOver}
-        onDragLeave={onDragLeave}
-        onDrop={handleDrop}
-      >
-        {blocks.map((block, index) => (
-          <div
-            key={block.id}
-            className="relative group"
-            draggable
-            onDragStart={() => handleDragStart(block.id)}
-          >
-            <BlockRenderer
-              block={block}
-              onUpdate={(updates) => handleBlockUpdate(block.id, updates)}
-              readonly={false}
-            />
-            
-            {/* Column Width Control */}
-            {isActive && (
-              <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <input
-                  type="range"
-                  min="10"
-                  max="90"
-                  value={currentColumnWidths[index]}
-                  onChange={(e) => handleColumnWidthChange(index, parseInt(e.target.value))}
-                  className="w-20 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
-                  title={`Largura: ${currentColumnWidths[index]}%`}
-                />
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Drop Zone Indicator */}
-      {isDraggedOver && (
-        <div className="absolute inset-0 border-2 border-green-500 rounded-lg bg-green-500/20 flex items-center justify-center z-20">
-          <div className="text-green-400 font-medium">
-            ↓ Soltar bloco na linha ↓
-          </div>
-        </div>
       )}
+
+      {/* Row Content Grid */}
+      <div className={cn("grid gap-4", gridCols)}>
+        {Array.from({ length: row.columns }).map((_, colIndex) => {
+          const columnBlocks = row.blocks.filter(block => 
+            block.meta?.layout?.column === colIndex
+          );
+
+          return (
+            <div
+              key={colIndex}
+              className="layout-column min-h-[100px] border-2 border-dashed border-gray-600 rounded-lg p-3"
+            >
+              {columnBlocks.length > 0 ? (
+                <div className="space-y-3">
+                  {columnBlocks.map((block) => (
+                    <div
+                      key={block.id}
+                      className="block-wrapper p-3 bg-gray-700/50 rounded border border-gray-600"
+                    >
+                      <div className="text-sm text-gray-300 mb-2">
+                        Bloco: {block.type}
+                      </div>
+                      {!readonly && (
+                        <div className="flex gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onMoveBlock(block.id, 'up')}
+                            className="text-gray-400 hover:text-gray-200"
+                          >
+                            ↑
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onMoveBlock(block.id, 'down')}
+                            className="text-gray-400 hover:text-gray-200"
+                          >
+                            ↓
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onDeleteBlock(block.id)}
+                            className="text-red-400 hover:text-red-300"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                !readonly && (
+                  <div className="flex items-center justify-center h-full">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleAddBlock(colIndex)}
+                      className="text-gray-400 hover:text-gray-200"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Adicionar Bloco
+                    </Button>
+                  </div>
+                )
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };

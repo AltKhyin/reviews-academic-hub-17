@@ -1,88 +1,87 @@
 
-// ABOUTME: Enhanced snapshot card block with improved null safety and text overflow handling
-// Displays PICO evidence cards with comprehensive styling and layout controls
+// ABOUTME: Snapshot card block wrapper with proper interface handling
+// Fixed to handle both block and content prop patterns
 
 import React from 'react';
 import { ReviewBlock } from '@/types/review';
 import { SnapshotCard } from './SnapshotCard';
-import { InlineBlockSettings } from '@/components/editor/inline/InlineBlockSettings';
-import { generateSpacingStyles, getDefaultSpacing } from '@/utils/spacingUtils';
 
 interface SnapshotCardBlockProps {
-  block: ReviewBlock;
+  block?: ReviewBlock;
+  content?: any;
+  onUpdate?: (updates: any) => void;
   readonly?: boolean;
-  onUpdate?: (updates: Partial<ReviewBlock>) => void;
 }
 
-export const SnapshotCardBlock: React.FC<SnapshotCardBlockProps> = ({ 
-  block, 
-  readonly = false,
-  onUpdate
+export const SnapshotCardBlock: React.FC<SnapshotCardBlockProps> = ({
+  block,
+  content,
+  onUpdate,
+  readonly = false
 }) => {
-  // Safe access to content with fallbacks
-  const content = block.content || {};
-  
-  // Ensure all required properties have fallbacks
-  const snapshotContent = {
-    title: content.title || '',
-    subtitle: content.subtitle || '',
-    value: content.value || '',
-    change: content.change || '',
-    trend: content.trend || 'neutral',
-    icon: content.icon || '',
-    evidence_level: content.evidence_level || 'moderate',
-    recommendation_strength: content.recommendation_strength || 'conditional',
-    population: content.population || '',
-    intervention: content.intervention || '',
-    comparison: content.comparison || '',
-    outcome: content.outcome || '',
-    design: content.design || '',
-    key_findings: Array.isArray(content.key_findings) ? content.key_findings : []
-  };
-
-  // Spacing system integration
-  const customSpacing = block.meta?.spacing;
-  const defaultSpacing = getDefaultSpacing('snapshot_card');
-  const finalSpacing = customSpacing || defaultSpacing;
-  const spacingStyles = generateSpacingStyles(finalSpacing);
-
-  const handleUpdate = (updates: any) => {
-    if (onUpdate) {
-      onUpdate({
-        content: {
-          ...content,
-          ...updates
+  // Handle both patterns - direct content prop or block with content
+  if (content) {
+    // Direct content pattern
+    const blockData: ReviewBlock = {
+      id: 'temp-snapshot',
+      type: 'snapshot_card',
+      content: {
+        title: content.title,
+        subtitle: content.subtitle,
+        value: content.value,
+        description: content.description,
+        color: content.color,
+        icon: content.icon,
+        trend: {
+          direction: content.change > 0 ? 'up' : content.change < 0 ? 'down' : 'stable',
+          percentage: Math.abs(content.change || 0),
+          period: 'vs. anterior'
         }
-      });
-    }
-  };
+      },
+      order: 0,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
 
-  if (readonly) {
     return (
-      <div className="snapshot-card-block w-full max-w-full overflow-hidden" style={spacingStyles}>
-        <SnapshotCard
-          content={snapshotContent}
-          readonly={true}
-        />
-      </div>
+      <SnapshotCard 
+        block={blockData}
+        readonly={readonly}
+      />
+    );
+  }
+
+  // Block pattern
+  if (block) {
+    const blockData: ReviewBlock = {
+      ...block,
+      content: {
+        title: block.content?.title,
+        subtitle: block.content?.subtitle,
+        value: block.content?.value,
+        description: block.content?.description,
+        color: block.content?.color,
+        icon: block.content?.icon,
+        trend: block.content?.trend ? {
+          direction: block.content.trend.direction || 'stable',
+          percentage: block.content.trend.percentage,
+          period: block.content.trend.period
+        } : undefined
+      }
+    };
+
+    return (
+      <SnapshotCard 
+        block={blockData}
+        onUpdate={onUpdate}
+        readonly={readonly}
+      />
     );
   }
 
   return (
-    <div className="snapshot-card-block group relative w-full max-w-full overflow-hidden" style={spacingStyles}>
-      {/* Inline Settings */}
-      <div className="absolute -top-2 -right-2 z-10">
-        <InlineBlockSettings
-          block={block}
-          onUpdate={onUpdate}
-        />
-      </div>
-
-      <SnapshotCard
-        content={snapshotContent}
-        onUpdate={handleUpdate}
-        readonly={readonly}
-      />
+    <div className="snapshot-card-error border-2 border-red-500 rounded-lg p-4 text-center">
+      <p className="text-red-500">Erro: Nenhum dado fornecido para o cartão</p>
     </div>
   );
 };

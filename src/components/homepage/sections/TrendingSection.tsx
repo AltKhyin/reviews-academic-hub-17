@@ -1,121 +1,106 @@
 
-// ABOUTME: Trending articles section component for homepage
-// Displays most viewed/popular medical content using real data
+// ABOUTME: Trending articles section for homepage
+// Fixed to use proper data loading patterns
+
 import React from 'react';
-import { useParallelDataLoader } from '@/hooks/useParallelDataLoader';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useOptimizedHomepage } from '@/hooks/useOptimizedHomepage';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, Eye, Activity } from 'lucide-react';
+import { TrendingUp, Clock } from 'lucide-react';
 
 export const TrendingSection: React.FC = () => {
-  const { issues, isLoading } = useParallelDataLoader();
+  const { data, isLoading, error } = useOptimizedHomepage();
 
   if (isLoading) {
     return (
-      <div className="animate-pulse">
-        <div className="h-8 bg-gray-300 rounded w-1/3 mb-6"></div>
-        <div className="space-y-4">
-          {[1, 2, 3, 4, 5].map(i => (
-            <div key={i} className="h-24 bg-gray-200 rounded"></div>
-          ))}
+      <div className="trending-section">
+        <div className="animate-pulse space-y-4">
+          <div className="h-6 bg-gray-300 rounded w-48"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-48 bg-gray-300 rounded"></div>
+            ))}
+          </div>
         </div>
       </div>
     );
   }
 
-  // Sort by score to get trending content
-  const trendingIssues = issues
-    .filter(issue => issue.published)
-    .sort((a, b) => (b.score || 0) - (a.score || 0))
-    .slice(0, 10);
-
-  if (!trendingIssues.length) {
+  if (error || !data?.issues) {
     return (
-      <div>
-        <h2 className="text-2xl font-bold mb-6">Mais Acessadas</h2>
-        <Card>
-          <CardContent className="p-8 text-center">
-            <TrendingUp className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">
-              Nenhum conteúdo em tendência no momento.
-            </p>
-          </CardContent>
-        </Card>
+      <div className="trending-section">
+        <div className="text-center py-8">
+          <p className="text-gray-500">Não foi possível carregar as tendências</p>
+        </div>
       </div>
     );
   }
 
-  const getTrendingBadge = (index: number, score: number) => {
-    if (index === 0) return { text: "#1 Trending", color: "bg-red-100 text-red-800" };
-    if (index < 3) return { text: `#${index + 1} Hot`, color: "bg-orange-100 text-orange-800" };
-    if (score && score > 5) return { text: "Popular", color: "bg-blue-100 text-blue-800" };
-    return { text: "Trending", color: "bg-gray-100 text-gray-800" };
-  };
+  const trendingIssues = data.issues
+    .filter(issue => issue.published && issue.score)
+    .sort((a, b) => (b.score || 0) - (a.score || 0))
+    .slice(0, 8);
+
+  if (trendingIssues.length === 0) {
+    return (
+      <div className="trending-section">
+        <div className="text-center py-8">
+          <p className="text-gray-500">Nenhuma tendência disponível no momento</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-        <TrendingUp className="w-6 h-6 text-red-500" />
-        Mais Acessadas
-      </h2>
-      
-      <div className="space-y-4">
-        {trendingIssues.map((issue, index) => {
-          const badge = getTrendingBadge(index, issue.score || 0);
-          
-          return (
-            <Card key={issue.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-4">
-                  <div className="flex-shrink-0">
-                    <div className="w-12 h-12 bg-gradient-to-br from-red-400 to-orange-500 rounded-lg flex items-center justify-center text-white font-bold text-lg">
-                      #{index + 1}
-                    </div>
-                  </div>
-                  
-                  {issue.cover_image_url && (
-                    <img 
-                      src={issue.cover_image_url} 
-                      alt={issue.title}
-                      className="w-16 h-16 object-cover rounded flex-shrink-0"
-                    />
-                  )}
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between mb-2">
-                      <h3 className="font-semibold text-lg line-clamp-1">{issue.title}</h3>
-                      <Badge className={badge.color}>
-                        {badge.text}
-                      </Badge>
-                    </div>
-                    
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
-                      {issue.specialty && (
-                        <Badge variant="outline" className="text-xs">
-                          {issue.specialty}
-                        </Badge>
-                      )}
-                      
-                      {issue.score && issue.score > 0 && (
-                        <div className="flex items-center gap-1">
-                          <Activity className="w-4 h-4" />
-                          <span>Score: {issue.score}</span>
-                        </div>
-                      )}
-                      
-                      {issue.authors && (
-                        <span className="truncate">
-                          {issue.authors}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+    <section className="trending-section mb-12">
+      <div className="flex items-center gap-2 mb-6">
+        <TrendingUp className="w-5 h-5 text-green-500" />
+        <h2 className="text-2xl font-bold">Em Alta</h2>
       </div>
-    </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {trendingIssues.map((issue, index) => (
+          <Card key={issue.id} className="hover:shadow-lg transition-shadow relative">
+            <div className="absolute top-2 left-2 z-10">
+              <Badge variant="default" className="bg-green-500">
+                #{index + 1}
+              </Badge>
+            </div>
+            <CardHeader>
+              {issue.cover_image_url && (
+                <img
+                  src={issue.cover_image_url}
+                  alt={issue.title}
+                  className="w-full h-32 object-cover rounded-md mb-3"
+                />
+              )}
+              <CardTitle className="line-clamp-2 text-sm">{issue.title}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between text-xs text-gray-500">
+                <div className="flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  <span>
+                    {new Date(issue.published_at || issue.created_at).toLocaleDateString('pt-BR')}
+                  </span>
+                </div>
+                {issue.specialty && (
+                  <Badge variant="outline" className="text-xs">
+                    {issue.specialty}
+                  </Badge>
+                )}
+              </div>
+              {issue.score && (
+                <div className="mt-2">
+                  <Badge variant="outline" className="text-green-600 text-xs">
+                    Score: {issue.score}
+                  </Badge>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </section>
   );
 };
