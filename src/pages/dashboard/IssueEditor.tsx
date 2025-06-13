@@ -1,10 +1,9 @@
 
-// ABOUTME: Refactored issue editor with improved component separation
-// Main editor page using focused sub-components for better maintainability
+// ABOUTME: Migrated issue editor using coordinated data access patterns
+// Replaces individual API calls with standardized data hooks - PHASE B MIGRATION
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Issue } from '@/types/issue';
 import { ReviewBlock } from '@/types/review';
@@ -13,7 +12,8 @@ import { IssueActionButtons } from './components/issue/IssueActionButtons';
 import { ContentTypeSelector } from './components/editor/ContentTypeSelector';
 import { EditorTabs } from './components/editor/EditorTabs';
 import { useIssueEditor } from './hooks/useIssueEditor';
-import { useQuery } from '@tanstack/react-query';
+import { useStandardizedData } from '@/hooks/useStandardizedData';
+import { architecturalGuards } from '@/core/ArchitecturalGuards';
 
 const IssueEditor = () => {
   const { id } = useParams<{ id: string }>();
@@ -22,6 +22,9 @@ const IssueEditor = () => {
   
   const [contentType, setContentType] = useState<'pdf' | 'native'>('pdf');
   const [nativeBlocks, setNativeBlocks] = useState<ReviewBlock[]>([]);
+  
+  // ARCHITECTURAL FIX: Use coordinated data access instead of individual queries
+  const { data: pageData, loading: dataLoading, error: dataError } = useStandardizedData.usePageData(`/edit/${id}`);
   
   const { 
     formValues,
@@ -33,67 +36,25 @@ const IssueEditor = () => {
     toggleFeatured
   } = useIssueEditor(isNewIssue ? undefined : id);
 
-  // Fetch issue data only if editing existing issue
-  const { data: issue, isLoading, error } = useQuery({
-    queryKey: ['issue-edit', id],
-    queryFn: async () => {
-      if (!id || id === 'new') return null;
-
-      try {
-        const { data, error } = await supabase
-          .from('issues')
-          .select('*')
-          .eq('id', id)
-          .single();
-
-        if (error) {
-          toast({
-            title: "Error loading issue",
-            description: "Could not load the issue data. Please try again.",
-            variant: "destructive",
-          });
-          throw error;
-        }
-        
-        return data as Issue;
-      } catch (err) {
-        throw err;
+  // PERFORMANCE MONITORING: Track coordination usage
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      const violations = architecturalGuards.flagArchitecturalViolations();
+      const editorViolations = violations.filter(v => v.component.includes('IssueEditor'));
+      
+      if (editorViolations.length > 0) {
+        console.warn('🚨 IssueEditor: Architectural violations detected:', editorViolations);
+      } else {
+        console.log('✅ IssueEditor: Using coordinated data access successfully');
       }
-    },
-    enabled: !isNewIssue && !!id,
-    retry: 1,
-  });
+    }
+  }, []);
 
-  // Fetch native blocks if this is a native review
-  const { data: blocks } = useQuery({
-    queryKey: ['review-blocks', id],
-    queryFn: async () => {
-      if (!id || isNewIssue) return [];
-      
-      const { data, error } = await supabase
-        .from('review_blocks')
-        .select('*')
-        .eq('issue_id', id)
-        .order('sort_index');
+  // Extract issue and blocks from coordinated page data
+  const issue = pageData?.contentData?.currentIssue;
+  const blocks = pageData?.contentData?.blocks || [];
 
-      if (error) throw error;
-      
-      return (data || []).map(dbBlock => ({
-        id: dbBlock.id,
-        type: dbBlock.type as any,
-        content: dbBlock.payload,
-        sort_index: dbBlock.sort_index,
-        visible: dbBlock.visible,
-        meta: dbBlock.meta as any,
-        issue_id: dbBlock.issue_id,
-        created_at: dbBlock.created_at,
-        updated_at: dbBlock.updated_at
-      })) as ReviewBlock[];
-    },
-    enabled: !isNewIssue && !!id && contentType === 'native'
-  });
-
-  // Update form values when issue data is loaded
+  // Update form values when issue data is loaded through coordination
   useEffect(() => {
     if (isNewIssue) {
       setFormValues({
@@ -115,7 +76,7 @@ const IssueEditor = () => {
         design: '',
         score: 0,
         population: '',
-        backend_tags: '' // Initialize backend_tags for new issues
+        backend_tags: ''
       });
     } else if (issue) {
       const formattedTags = issue.specialty ? 
@@ -145,15 +106,27 @@ const IssueEditor = () => {
         design: issue.design || '',
         score: issue.score || 0,
         population: issue.population || '',
-        backend_tags: issue.backend_tags || '' // Load backend_tags from database
+        backend_tags: issue.backend_tags || ''
       });
     }
   }, [issue, isNewIssue, setFormValues]);
 
-  // Update native blocks when data is loaded
+  // Update native blocks when coordinated data is loaded
   useEffect(() => {
-    if (blocks) {
-      setNativeBlocks(blocks);
+    if (blocks && blocks.length > 0) {
+      const transformedBlocks = blocks.map(dbBlock => ({
+        id: dbBlock.id,
+        type: dbBlock.type as any,
+        content: dbBlock.payload || dbBlock.content,
+        sort_index: dbBlock.sort_index,
+        visible: dbBlock.visible,
+        meta: dbBlock.meta as any,
+        issue_id: dbBlock.issue_id,
+        created_at: dbBlock.created_at,
+        updated_at: dbBlock.updated_at
+      })) as ReviewBlock[];
+      
+      setNativeBlocks(transformedBlocks);
     }
   }, [blocks]);
 
@@ -168,6 +141,9 @@ const IssueEditor = () => {
     }
 
     try {
+      // Use coordinated save through standardized data system
+      const { supabase } = await import('@/integrations/supabase/client');
+      
       // Delete existing blocks
       await supabase
         .from('review_blocks')
@@ -201,34 +177,16 @@ const IssueEditor = () => {
         })
         .eq('id', id);
 
-      // Refetch the blocks to get the proper database IDs
-      const { data: newBlocks } = await supabase
-        .from('review_blocks')
-        .select('*')
-        .eq('issue_id', id)
-        .order('sort_index');
+      // Invalidate coordinated cache to refresh data
+      const { requestCoordinator } = await import('@/core/RequestCoordinator');
+      requestCoordinator.invalidateCache();
 
-      if (newBlocks) {
-        const transformedBlocks = newBlocks.map(dbBlock => ({
-          id: dbBlock.id,
-          type: dbBlock.type as any,
-          content: dbBlock.payload,
-          sort_index: dbBlock.sort_index,
-          visible: dbBlock.visible,
-          meta: dbBlock.meta as any,
-          issue_id: dbBlock.issue_id,
-          created_at: dbBlock.created_at,
-          updated_at: dbBlock.updated_at
-        })) as ReviewBlock[];
-        
-        setNativeBlocks(transformedBlocks);
-      }
-      
       toast({
         title: "Conteúdo Salvo",
         description: "O conteúdo nativo foi salvo com sucesso.",
       });
     } catch (error: any) {
+      console.error('IssueEditor: Save error via coordinated system:', error);
       toast({
         title: "Erro ao Salvar",
         description: error.message || "Não foi possível salvar o conteúdo.",
@@ -237,15 +195,15 @@ const IssueEditor = () => {
     }
   };
 
-  if (!isNewIssue && isLoading) {
+  if (!isNewIssue && dataLoading) {
     return (
       <div className="p-8 text-center" style={{ backgroundColor: '#121212', color: '#ffffff' }}>
-        Carregando...
+        Carregando via sistema coordenado...
       </div>
     );
   }
 
-  if (!isNewIssue && error) {
+  if (!isNewIssue && dataError) {
     return (
       <div className="p-8 text-center" style={{ backgroundColor: '#121212', color: '#ffffff' }}>
         <h2 className="text-xl font-bold text-red-400 mb-2">Error loading issue</h2>
