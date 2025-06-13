@@ -38,8 +38,7 @@ export const SnapshotCardBlock: React.FC<SnapshotCardBlockProps> = ({
           period: 'vs. anterior'
         }
       },
-      sort_index: 0, // Fixed: use sort_index instead of order
-      visible: true,
+      order: 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };

@@ -1,6 +1,6 @@
 
 // ABOUTME: Sidebar data management with enhanced caching and type safety
-import { useOptimizedQuery } from './useOptimizedQuery';
+import { useUnifiedQuery } from './useUnifiedQuery';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface SidebarStats {
@@ -12,7 +12,7 @@ export interface SidebarStats {
 }
 
 export const useSidebarData = () => {
-  return useOptimizedQuery<SidebarStats>(
+  return useUnifiedQuery<SidebarStats>(
     ['sidebar-stats'],
     async (): Promise<SidebarStats> => {
       const { data, error } = await supabase.rpc('get_sidebar_stats');
@@ -44,10 +44,14 @@ export const useSidebarData = () => {
       };
     },
     {
+      priority: 'background',
       staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes
-      refetchOnWindowFocus: false,
-      retry: 1,
+      enableMonitoring: false,
+      rateLimit: {
+        endpoint: 'sidebar',
+        maxRequests: 10,
+        windowMs: 60000,
+      },
     }
   );
 };

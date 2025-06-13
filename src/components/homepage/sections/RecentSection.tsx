@@ -1,49 +1,45 @@
 
-// ABOUTME: Recent section component for homepage
-// Displays recent content with proper data handling
+// ABOUTME: Recent articles section component for homepage
+// Updated to use standardized data access patterns
 
 import React from 'react';
+import { StandardizedArticleCard } from '@/components/cards/StandardizedArticleCard';
+import { useStandardizedData } from '@/hooks/useStandardizedData';
 
 interface RecentSectionProps {
-  recentData?: any;
-  sectionConfig?: {
-    visible: boolean;
-    order: number;
-    title: string;
-  };
-  onConfigChange?: (updates: any) => void;
+  issues?: any[];
 }
 
-export const RecentSection: React.FC<RecentSectionProps> = ({
-  recentData,
-  sectionConfig,
-  onConfigChange
-}) => {
+export const RecentSection: React.FC<RecentSectionProps> = ({ issues }) => {
+  const { useBulkContent } = useStandardizedData;
+  const { issues: standardizedIssues, loading } = useBulkContent();
+
+  const displayIssues = issues || standardizedIssues || [];
+
+  if (loading) {
+    return (
+      <section className="recent-section">
+        <h2 className="text-2xl font-bold mb-6 text-white">Artigos Recentes</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <div key={index} className="animate-pulse h-64 bg-gray-800 rounded-lg" />
+          ))}
+        </div>
+      </section>
+    );
+  }
+
   return (
-    <section className="recent-section mb-8">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-white">
-          {sectionConfig?.title || 'Recentes'}
-        </h2>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {recentData?.items?.length > 0 ? (
-          recentData.items.map((item: any, index: number) => (
-            <div key={index} className="bg-gray-800 rounded-lg p-4 border border-gray-700">
-              <h3 className="text-md font-semibold text-white mb-2">
-                {item.title}
-              </h3>
-              <p className="text-gray-400 text-xs">
-                {item.date}
-              </p>
-            </div>
-          ))
-        ) : (
-          <div className="col-span-full text-center py-8 text-gray-400">
-            <p>Nenhum conteúdo recente disponível.</p>
-          </div>
-        )}
+    <section className="recent-section">
+      <h2 className="text-2xl font-bold mb-6 text-white">Artigos Recentes</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {displayIssues.slice(0, 6).map((issue) => (
+          <StandardizedArticleCard 
+            key={issue.id} 
+            issue={issue}
+            variant="default"
+          />
+        ))}
       </div>
     </section>
   );

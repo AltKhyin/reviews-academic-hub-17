@@ -1,109 +1,159 @@
 
-// ABOUTME: Hook for managing section visibility configuration
-// Enhanced version with all required methods and types
-
-import { useState, useEffect } from 'react';
-
-export interface SectionConfig {
-  visible: boolean;
-  order: number;
-  title: string;
-}
+// ABOUTME: Section visibility management with optimized database operations
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { SECTION_REGISTRY } from '@/config/sections';
 
 export interface Section {
   id: string;
+  title: string;
   visible: boolean;
   order: number;
-  title: string;
+  [key: string]: any; // Add index signature for JSON compatibility
 }
-
-interface SectionsConfig {
-  [sectionId: string]: SectionConfig;
-}
-
-const DEFAULT_SECTIONS: SectionsConfig = {
-  featured: { visible: true, order: 0, title: 'Em Destaque' },
-  recent: { visible: true, order: 1, title: 'Recentes' },
-  recommended: { visible: true, order: 2, title: 'Recomendados' },
-  trending: { visible: true, order: 3, title: 'Em Alta' },
-  reviewer: { visible: true, order: 4, title: 'Notas dos Revisores' },
-  upcoming: { visible: true, order: 5, title: 'Próximas Publicações' }
-};
 
 export const useSectionVisibility = () => {
-  const [sectionsConfig, setSectionsConfig] = useState<SectionsConfig>(DEFAULT_SECTIONS);
-  const [isLoading, setIsLoading] = useState(false);
+  const [sections, setSections] = useState<Section[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const updateSectionVisibility = async (sectionId: string, updates: Partial<SectionConfig>) => {
-    setSectionsConfig(prev => ({
-      ...prev,
-      [sectionId]: {
-        ...prev[sectionId],
-        ...updates
+  // Get sections from database or initialize defaults
+  const loadSections = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('site_meta')
+        .select('value')
+        .eq('key', 'section_visibility')
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error loading sections:', error);
+        throw error;
       }
-    }));
-  };
 
-  const updateSectionOrder = async (sectionId: string, newOrder: number) => {
-    await updateSectionVisibility(sectionId, { order: newOrder });
-  };
+      let sectionsData: Section[] = [];
 
-  const updateSection = async (sectionId: string, updates: Partial<SectionConfig>) => {
-    return updateSectionVisibility(sectionId, updates);
-  };
-
-  const toggleSectionVisibility = async (sectionId: string) => {
-    const section = sectionsConfig[sectionId];
-    if (section) {
-      await updateSectionVisibility(sectionId, { visible: !section.visible });
-    }
-  };
-
-  const reorderSections = async (newOrder: string[]) => {
-    const updates: SectionsConfig = {};
-    newOrder.forEach((sectionId, index) => {
-      if (sectionsConfig[sectionId]) {
-        updates[sectionId] = {
-          ...sectionsConfig[sectionId],
-          order: index
-        };
+      if (data?.value) {
+        // Type guard for JSON data
+        const jsonData = data.value as any;
+        if (jsonData && typeof jsonData === 'object' && 'sections' in jsonData) {
+          sectionsData = jsonData.sections as Section[];
+        }
       }
-    });
-    setSectionsConfig(prev => ({ ...prev, ...updates }));
-  };
 
-  const resetToDefaults = async () => {
-    setSectionsConfig(DEFAULT_SECTIONS);
-  };
+      // If no data, initialize with defaults
+      if (sectionsData.length === 0) {
+        sectionsData = Object.values(SECTION_REGISTRY).map((section, index) => ({
+          id: section.id,
+          title: section.title,
+          visible: section.defaultVisible ?? true,
+          order: index,
+        }));
+      }
 
-  const getAllSections = (): Section[] => {
-    return Object.entries(sectionsConfig).map(([id, config]) => ({
-      id,
-      ...config
-    })).sort((a, b) => a.order - b.order);
-  };
-
-  const sections = getAllSections();
-
-  const refetch = async () => {
-    setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+      setSections(sectionsData);
+    } catch (error) {
+      console.error('Failed to load sections:', error);
+      // Initialize with defaults on error
+      const defaultSections = Object.values(SECTION_REGISTRY).map((section, index) => ({
+        id: section.id,
+        title: section.title,
+        visible: section.defaultVisible ?? true,
+        order: index,
+      }));
+      setSections(defaultSections);
+    } finally {
       setIsLoading(false);
-    }, 100);
-  };
+    }
+  }, []);
+
+  // Save sections to database
+  const saveSections = useCallback(async (newSections: Section[]) => {
+    try {
+      const { error } = await supabase
+        .from('site_meta')
+        .upsert({
+          key: 'section_visibility',
+          value: { sections: newSections } as any, // Cast to any for JSON compatibility
+        });
+
+      if (error) {
+        console.error('Error saving sections:', error);
+        throw error;
+      }
+    } catch (error) {
+      console.error('Failed to save sections:', error);
+      throw error;
+    }
+  }, []);
+
+  // Toggle section visibility
+  const toggleSectionVisibility = useCallback(async (sectionId: string) => {
+    const updatedSections = sections.map(section =>
+      section.id === sectionId
+        ? { ...section, visible: !section.visible }
+        : section
+    );
+    setSections(updatedSections);
+    await saveSections(updatedSections);
+  }, [sections, saveSections]);
+
+  // Reorder sections
+  const reorderSections = useCallback(async (newOrder: string[]) => {
+    const reorderedSections = newOrder.map((sectionId, index) => {
+      const section = sections.find(s => s.id === sectionId);
+      return section ? { ...section, order: index } : null;
+    }).filter(Boolean) as Section[];
+
+    setSections(reorderedSections);
+    await saveSections(reorderedSections);
+  }, [sections, saveSections]);
+
+  // Update specific section
+  const updateSection = useCallback(async (sectionId: string, updates: Partial<Section>) => {
+    const updatedSections = sections.map(section =>
+      section.id === sectionId
+        ? { ...section, ...updates }
+        : section
+    );
+    setSections(updatedSections);
+    await saveSections(updatedSections);
+  }, [sections, saveSections]);
+
+  // Reset to defaults
+  const resetToDefaults = useCallback(async () => {
+    const defaultSections = Object.values(SECTION_REGISTRY).map((section, index) => ({
+      id: section.id,
+      title: section.title,
+      visible: section.defaultVisible ?? true,
+      order: index,
+    }));
+    setSections(defaultSections);
+    await saveSections(defaultSections);
+  }, [saveSections]);
+
+  // Get all sections sorted by order
+  const getAllSections = useCallback(() => {
+    return [...sections].sort((a, b) => a.order - b.order);
+  }, [sections]);
+
+  // Get visible sections only - ADD THIS MISSING METHOD
+  const getVisibleSections = useCallback(() => {
+    return sections.filter(section => section.visible).sort((a, b) => a.order - b.order);
+  }, [sections]);
+
+  // Load sections on mount
+  useEffect(() => {
+    loadSections();
+  }, [loadSections]);
 
   return {
-    sectionsConfig,
     sections,
     isLoading,
-    updateSectionVisibility,
-    updateSectionOrder,
-    updateSection,
     toggleSectionVisibility,
     reorderSections,
+    updateSection,
     resetToDefaults,
     getAllSections,
-    refetch
+    getVisibleSections, // Export the missing method
   };
 };

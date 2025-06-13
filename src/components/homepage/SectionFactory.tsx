@@ -1,6 +1,6 @@
 
-// ABOUTME: Section factory for creating homepage sections with standardized data integration
-// Updated to include all section types, proper data handling, and homepage bridge integration
+// ABOUTME: Section factory for creating homepage sections
+// Updated to include all section types and proper data handling
 
 import React from 'react';
 import { FeaturedSection } from './sections/FeaturedSection';
@@ -17,78 +17,29 @@ interface SectionFactoryProps {
     order: number;
     title: string;
   };
-  homepageData?: any;
-  onConfigChange?: (sectionId: string, updates: any) => void;
 }
 
 export const SectionFactory: React.FC<SectionFactoryProps> = ({ 
   sectionId, 
-  sectionConfig,
-  homepageData,
-  onConfigChange
+  sectionConfig 
 }) => {
   if (!sectionConfig.visible) {
     return null;
   }
 
-  // Pass relevant data to each section based on section type
-  const getSectionProps = () => {
-    const baseProps = {
-      sectionConfig,
-      onConfigChange: onConfigChange ? (updates: any) => onConfigChange(sectionId, updates) : undefined
-    };
-
-    switch (sectionId) {
-      case 'featured':
-        return {
-          ...baseProps,
-          featuredData: homepageData?.sectionsData?.featured
-        };
-      case 'recent':
-        return {
-          ...baseProps,
-          recentData: homepageData?.sectionsData?.recent
-        };
-      case 'recommended':
-        return {
-          ...baseProps,
-          recommendedData: homepageData?.sectionsData?.recommended
-        };
-      case 'trending':
-        return {
-          ...baseProps,
-          trendingData: homepageData?.sectionsData?.trending
-        };
-      case 'reviewer':
-        return {
-          ...baseProps,
-          reviewerData: homepageData?.sectionsData?.reviewer
-        };
-      case 'upcoming':
-        return {
-          ...baseProps,
-          upcomingData: homepageData?.sectionsData?.upcoming
-        };
-      default:
-        return baseProps;
-    }
-  };
-
-  const sectionProps = getSectionProps();
-
   switch (sectionId) {
     case 'featured':
-      return <FeaturedSection {...sectionProps} />;
+      return <FeaturedSection />;
     case 'recent':
-      return <RecentSection {...sectionProps} />;
+      return <RecentSection />;
     case 'recommended':
-      return <RecommendedSection {...sectionProps} />;
+      return <RecommendedSection />;
     case 'trending':
-      return <TrendingSection {...sectionProps} />;
+      return <TrendingSection />;
     case 'reviewer':
-      return <ReviewerNotesSection {...sectionProps} />;
+      return <ReviewerNotesSection />;
     case 'upcoming':
-      return <UpcomingSection {...sectionProps} />;
+      return <UpcomingSection />;
     default:
       console.warn(`Unknown section ID: ${sectionId}`);
       return (

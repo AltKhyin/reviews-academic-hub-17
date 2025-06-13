@@ -1,5 +1,6 @@
+
 // ABOUTME: Comprehensive toolbar for diagram creation with shape tools and styling options
-// Fixed to properly create DiagramNode objects with all required properties
+// Provides access to node types, styling, canvas settings, and template library
 
 import React from 'react';
 import { DiagramContent, DiagramNode } from '@/types/review';
@@ -82,28 +83,6 @@ export const DiagramToolbar: React.FC<DiagramToolbarProps> = ({
     'custom': '#6b7280'
   };
 
-  const createTemplateNode = (id: string, type: DiagramNode['type'], text: string, style: Partial<DiagramNode['style']>): DiagramNode => {
-    return {
-      id,
-      type,
-      position: { x: 100, y: 100 },
-      size: { width: 120, height: 60 },
-      text,
-      style: {
-        backgroundColor: 'transparent',
-        borderColor: '#3b82f6',
-        textColor: '#1f2937',
-        borderWidth: 2,
-        borderStyle: 'solid',
-        fontSize: 14,
-        fontWeight: 'normal',
-        textAlign: 'center',
-        opacity: 1,
-        ...style
-      }
-    };
-  };
-
   const handleTemplateSelect = (template: any) => {
     if (onTemplateApply) {
       onTemplateApply(template.nodes, template.connections);
@@ -145,35 +124,53 @@ export const DiagramToolbar: React.FC<DiagramToolbarProps> = ({
           {/* Shape Templates by Category */}
           <div className="space-y-3">
             <Label className="text-sm font-medium" style={{ color: '#ffffff' }}>
-              Elementos Básicos
+              Elementos por Categoria
             </Label>
+            
             <div className="grid grid-cols-2 gap-2">
-              {[
-                createTemplateNode('basic-rect', 'rectangle', 'Processo', {
-                  backgroundColor: 'transparent',
-                  borderColor: shapeCategoryColors.process,
-                  textColor: '#ffffff'
-                }),
-                createTemplateNode('basic-diamond', 'diamond', 'Decisão', {
-                  backgroundColor: 'transparent',
-                  borderColor: shapeCategoryColors.decision,
-                  textColor: '#ffffff'
-                })
-              ].map((node, index) => (
-                <Card 
-                  key={index}
-                  className="p-2 cursor-pointer hover:bg-gray-700"
-                  onClick={() => {
-                    if (onTemplateApply) {
-                      onTemplateApply([node], []);
-                    }
-                  }}
-                >
-                  <div className="text-xs text-center" style={{ color: '#ffffff' }}>
-                    {node.text}
-                  </div>
-                </Card>
-              ))}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onToolChange('rectangle')}
+                className="justify-start"
+                style={{ borderColor: shapeCategoryColors.process }}
+              >
+                <Square className="w-4 h-4 mr-2" style={{ color: shapeCategoryColors.process }} />
+                Processo
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onToolChange('diamond')}
+                className="justify-start"
+                style={{ borderColor: shapeCategoryColors.decision }}
+              >
+                <Diamond className="w-4 h-4 mr-2" style={{ color: shapeCategoryColors.decision }} />
+                Decisão
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onToolChange('circle')}
+                className="justify-start"
+                style={{ borderColor: shapeCategoryColors['start-end'] }}
+              >
+                <Circle className="w-4 h-4 mr-2" style={{ color: shapeCategoryColors['start-end'] }} />
+                Início/Fim
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onToolChange('hexagon')}
+                className="justify-start"
+                style={{ borderColor: shapeCategoryColors.data }}
+              >
+                <Hexagon className="w-4 h-4 mr-2" style={{ color: shapeCategoryColors.data }} />
+                Dados
+              </Button>
             </div>
           </div>
         </TabsContent>

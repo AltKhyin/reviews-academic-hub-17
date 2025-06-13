@@ -4,7 +4,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { ReviewBlock } from '@/types/review';
-import { LayoutRowData } from '@/types/grid';
+import { GridPosition } from '@/types/grid';
 import { LayoutRow } from './LayoutRow';
 import { Button } from '@/components/ui/button';
 import { Grid3X3, Plus } from 'lucide-react';
@@ -50,109 +50,87 @@ export const GridPanel: React.FC<GridPanelProps> = ({
     return acc;
   }, {} as Record<string, ReviewBlock[]>);
 
-  // Convert to LayoutRowData format
-  const layoutRows: LayoutRowData[] = Object.entries(groupedBlocks).map(([rowId, rowBlocks]) => {
-    const firstBlock = rowBlocks[0];
-    const columns = firstBlock?.meta?.layout?.columns || Math.max(1, rowBlocks.length);
-    
-    return {
-      id: rowId,
-      blocks: rowBlocks,
-      columns: columns,
-      columnWidths: firstBlock?.meta?.layout?.columnWidths
-    };
-  });
-
   const handleRowActivation = useCallback((rowId: string | null) => {
     setActiveRowId(rowId);
   }, []);
 
-  const handleUpdateRow = useCallback((rowId: string, updates: Partial<LayoutRowData>) => {
-    console.log('Updating row:', { rowId, updates });
-    // Update all blocks in the row with the new configuration
-    const rowBlocks = groupedBlocks[rowId] || [];
-    rowBlocks.forEach(block => {
-      onUpdateBlock(block.id, {
-        meta: {
-          ...block.meta,
-          layout: {
-            ...block.meta?.layout,
-            ...updates
-          }
-        }
-      });
-    });
-  }, [groupedBlocks, onUpdateBlock]);
+  const handleAddRowAbove = useCallback((rowId: string, rowIndex: number) => {
+    console.log('Adding row above:', { rowId, rowIndex });
+    // Implementation for adding row above
+  }, []);
 
-  const handleDeleteRow = useCallback((rowId: string) => {
-    console.log('Deleting row:', rowId);
-    const rowBlocks = groupedBlocks[rowId] || [];
-    rowBlocks.forEach(block => {
-      onDeleteBlock(block.id);
-    });
-  }, [groupedBlocks, onDeleteBlock]);
+  const handleAddRowBelow = useCallback((rowId: string, rowIndex: number) => {
+    console.log('Adding row below:', { rowId, rowIndex });
+    // Implementation for adding row below
+  }, []);
 
-  const handleAddBlockToRow = useCallback((rowId: string, position: number, blockType: string) => {
-    console.log('Adding block to row:', { rowId, position, blockType });
-    onAddBlock(blockType, position);
-  }, [onAddBlock]);
+  const handleRemoveRow = useCallback((rowId: string, rowIndex: number) => {
+    console.log('Removing row:', { rowId, rowIndex });
+    // Implementation for removing row
+  }, []);
+
+  const handleBlockDrop = useCallback((
+    draggedBlockId: string,
+    targetRowId: string,
+    targetPosition?: number,
+    dropType?: string
+  ) => {
+    const event = new CustomEvent('dragEvent') as any;
+    onDrop(event, targetRowId, targetPosition, dropType);
+  }, [onDrop]);
+
+  if (Object.keys(groupedBlocks).length === 0) {
+    return (
+      <div className="grid-panel-empty text-center py-8 text-gray-400">
+        <Grid3X3 className="w-12 h-12 mx-auto mb-4 opacity-50" />
+        <p>Nenhum layout em grid encontrado.</p>
+        <p className="text-sm mt-2">Arraste blocos para criar layouts em grade.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="grid-panel space-y-6">
-      {/* Grid Controls */}
-      <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg border border-gray-600">
-        <div className="flex items-center gap-2">
-          <Grid3X3 className="w-5 h-5 text-blue-500" />
-          <span className="text-sm text-gray-300">
-            {layoutRows.length} linha(s) de layout
-          </span>
-        </div>
-        
+    <div className="grid-panel space-y-4">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-white">Layouts em Grid</h3>
+        <span className="text-sm text-gray-400">
+          {Object.keys(groupedBlocks).length} linha(s)
+        </span>
+      </div>
+
+      {Object.entries(groupedBlocks).map(([rowId, rowBlocks], index) => (
+        <LayoutRow
+          key={rowId}
+          rowId={rowId}
+          blocks={rowBlocks}
+          rowIndex={index}
+          isActive={activeRowId === rowId}
+          onActivate={handleRowActivation}
+          onUpdateBlock={onUpdateBlock}
+          onDeleteBlock={onDeleteBlock}
+          onMoveBlock={onMoveBlock}
+          onAddRowAbove={handleAddRowAbove}
+          onAddRowBelow={handleAddRowBelow}
+          onRemoveRow={handleRemoveRow}
+          dragState={dragState}
+          onDragStart={onDragStart}
+          onDragOver={onDragOver}
+          onDragLeave={onDragLeave}
+          onDrop={handleBlockDrop}
+        />
+      ))}
+
+      <div className="text-center">
         <Button
+          onClick={() => onAddBlock('paragraph')}
           variant="outline"
           size="sm"
-          onClick={() => console.log('Add new row')}
-          className="flex items-center gap-2"
+          className="border-dashed"
         >
-          <Plus className="w-4 h-4" />
-          Nova Linha
+          <Plus className="w-4 h-4 mr-2" />
+          Adicionar Novo Layout
         </Button>
       </div>
-
-      {/* Layout Rows */}
-      <div className="space-y-6">
-        {layoutRows.map((row, index) => (
-          <LayoutRow
-            key={row.id}
-            row={row}
-            onUpdateRow={handleUpdateRow}
-            onDeleteRow={handleDeleteRow}
-            onAddBlock={handleAddBlockToRow}
-            onUpdateBlock={onUpdateBlock}
-            onMoveBlock={onMoveBlock}
-            onDeleteBlock={onDeleteBlock}
-            readonly={false}
-          />
-        ))}
-      </div>
-
-      {/* Empty State */}
-      {layoutRows.length === 0 && (
-        <div className="text-center py-12 border-2 border-dashed border-gray-600 rounded-lg">
-          <div className="text-gray-400">
-            <Grid3X3 className="w-16 h-16 mx-auto mb-4 opacity-50" />
-            <h3 className="text-lg font-medium mb-2">Nenhum layout em grid</h3>
-            <p className="text-sm mb-4">Crie layouts em grid para organizar seus blocos</p>
-            <Button
-              onClick={() => console.log('Create first grid')}
-              className="mx-auto"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Criar Primeiro Grid
-            </Button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

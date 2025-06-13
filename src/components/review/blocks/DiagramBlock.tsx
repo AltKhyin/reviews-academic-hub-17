@@ -1,6 +1,6 @@
 
 // ABOUTME: Diagram block component for interactive diagram rendering
-// Fixed to use proper type imports from review types and corrected node properties
+// Fixed to use proper type imports from review types
 
 import React, { useState, useCallback } from 'react';
 import { ReviewBlock, DiagramContent } from '@/types/review';
@@ -103,51 +103,51 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
           {/* Render diagram nodes */}
           {diagramContent.nodes.map(node => (
             <g key={node.id}>
-              {node.type === 'rectangle' && (
+              {node.type === 'rect' && (
                 <rect
-                  x={node.position.x}
-                  y={node.position.y}
-                  width={node.size.width}
-                  height={node.size.height}
-                  fill={node.style?.backgroundColor || '#f3f4f6'}
-                  stroke={node.style?.borderColor || '#6b7280'}
+                  x={node.x}
+                  y={node.y}
+                  width={node.width}
+                  height={node.height}
+                  fill={node.backgroundColor || '#f3f4f6'}
+                  stroke={node.color || '#6b7280'}
                   strokeWidth="2"
                 />
               )}
               {node.type === 'circle' && (
                 <circle
-                  cx={node.position.x + node.size.width / 2}
-                  cy={node.position.y + node.size.height / 2}
-                  r={Math.min(node.size.width, node.size.height) / 2}
-                  fill={node.style?.backgroundColor || '#f3f4f6'}
-                  stroke={node.style?.borderColor || '#6b7280'}
+                  cx={node.x + node.width / 2}
+                  cy={node.y + node.height / 2}
+                  r={Math.min(node.width, node.height) / 2}
+                  fill={node.backgroundColor || '#f3f4f6'}
+                  stroke={node.color || '#6b7280'}
                   strokeWidth="2"
                 />
               )}
               <text
-                x={node.position.x + node.size.width / 2}
-                y={node.position.y + node.size.height / 2}
+                x={node.x + node.width / 2}
+                y={node.y + node.height / 2}
                 textAnchor="middle"
                 dominantBaseline="central"
-                fill={node.style?.textColor || '#374151'}
+                fill={node.color || '#374151'}
                 fontSize="14"
               >
-                {node.text}
+                {node.label}
               </text>
             </g>
           ))}
           
           {/* Render connections */}
           {diagramContent.connections.map(connection => {
-            const sourceNode = diagramContent.nodes.find(n => n.id === connection.sourceNodeId);
-            const targetNode = diagramContent.nodes.find(n => n.id === connection.targetNodeId);
+            const sourceNode = diagramContent.nodes.find(n => n.id === connection.sourceId);
+            const targetNode = diagramContent.nodes.find(n => n.id === connection.targetId);
             
             if (!sourceNode || !targetNode) return null;
             
-            const x1 = sourceNode.position.x + sourceNode.size.width / 2;
-            const y1 = sourceNode.position.y + sourceNode.size.height / 2;
-            const x2 = targetNode.position.x + targetNode.size.width / 2;
-            const y2 = targetNode.position.y + targetNode.size.height / 2;
+            const x1 = sourceNode.x + sourceNode.width / 2;
+            const y1 = sourceNode.y + sourceNode.height / 2;
+            const x2 = targetNode.x + targetNode.width / 2;
+            const y2 = targetNode.y + targetNode.height / 2;
             
             return (
               <g key={connection.id}>
@@ -156,14 +156,14 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
                   y1={y1}
                   x2={x2}
                   y2={y2}
-                  stroke={connection.style?.strokeColor || '#6b7280'}
+                  stroke={connection.color || '#6b7280'}
                   strokeWidth="2"
-                  strokeDasharray={connection.style?.strokeStyle === 'dashed' ? '5,5' : '0'}
+                  strokeDasharray={connection.type === 'dashed' ? '5,5' : '0'}
                 />
-                {connection.style?.arrowType === 'arrow' && (
+                {connection.type === 'arrow' && (
                   <polygon
                     points={`${x2-5},${y2-5} ${x2+5},${y2-5} ${x2},${y2+5}`}
-                    fill={connection.style?.strokeColor || '#6b7280'}
+                    fill={connection.color || '#6b7280'}
                   />
                 )}
                 {connection.label && (
@@ -172,10 +172,10 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
                     y={(y1 + y2) / 2}
                     textAnchor="middle"
                     dominantBaseline="central"
-                    fill={connection.label.style?.textColor || '#374151'}
+                    fill={connection.color || '#374151'}
                     fontSize="12"
                   >
-                    {connection.label.text}
+                    {connection.label}
                   </text>
                 )}
               </g>

@@ -1,52 +1,27 @@
 
-// ABOUTME: Hook for community posts data fetching
-// Enhanced to include community settings
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { CommunitySettings } from '@/types/community';
+import { usePosts } from '@/hooks/community/usePosts';
+import { enhancePostsWithDetails } from '@/hooks/community/usePostEnhancement';
 
-export const useCommunityPosts = (activeTab: string, searchTerm: string) => {
+export function useCommunityPosts(activeTab: string, searchTerm: string) {
+  const { data: posts, ...queryProps } = usePosts(activeTab, searchTerm);
+  
   return useQuery({
-    queryKey: ['community-posts', activeTab, searchTerm],
+    queryKey: ['enhanced-posts', posts],
     queryFn: async () => {
-      console.log(`Fetching posts for tab: ${activeTab}, search: "${searchTerm}"`);
-      
-      let query = supabase
-        .from('posts')
-        .select('*')
-        .eq('published', true);
-      
-      if (searchTerm.trim()) {
-        query = query.ilike('title', `%${searchTerm}%`);
-      }
-      
-      if (activeTab === 'popular') {
-        query = query.order('score', { ascending: false });
-      } else if (activeTab === 'oldest') {
-        query = query.order('created_at', { ascending: true });
-      } else {
-        query = query.order('created_at', { ascending: false });
-      }
-
-      const { data, error } = await query;
-      
-      if (error) {
-        console.error('Error fetching posts:', error);
-        throw error;
-      }
-      
-      return data || [];
+      if (!posts) return [];
+      return enhancePostsWithDetails(posts);
     },
-    staleTime: 2 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
-    refetchOnWindowFocus: false,
-    retry: 2
+    enabled: !!posts,
+    ...queryProps
   });
-};
+}
 
-export const usePostFlairs = () => {
+export function usePostFlairs() {
   return useQuery({
-    queryKey: ['post-flairs'],
+    queryKey: ['flairs'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('post_flairs')
@@ -54,33 +29,77 @@ export const usePostFlairs = () => {
         .order('name');
       
       if (error) throw error;
-      return data || [];
-    },
-    staleTime: 5 * 60 * 1000
+      return data;
+    }
   });
-};
+}
 
-export const useCommunitySettings = () => {
-  return useQuery({
+export function useCommunitySettings() {
+  return useQuery<CommunitySettings>({
     queryKey: ['community-settings'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('community_settings')
-        .select('*')
-        .single();
-      
-      if (error) {
-        console.error('Error fetching community settings:', error);
-        // Return default settings if none exist
+      try {
+        const response = await fetch(
+          'https://kznasfgubbyinomtetiu.supabase.co/rest/v1/community_settings?select=*&limit=1',
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'apiKey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6bmFzZmd1YmJ5aW5vbXRldGl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2Njg4NzMsImV4cCI6MjA2MTI0NDg3M30.Fx7xl_EA_G8SVVjWyVRu61kWhwkrbFlZsulQz_WKx7Q',
+              'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || ''}`
+            }
+          }
+        );
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch community settings: ${response.statusText}`);
+        }
+        
+        const settings = await response.json();
+        
+        if (!settings || settings.length === 0) {
+          const defaultSettings: Omit<CommunitySettings, 'id' | 'created_at' | 'updated_at'> = {
+            header_image_url: 'https://images.unsplash.com/photo-1618044733300-9472054094ee?q=80&w=2942&auto=format&fit=crop',
+            theme_color: '#1e40af',
+            description: 'Comunidade científica para discussão de evidências médicas',
+            allow_polls: true
+          };
+          
+          const insertResponse = await fetch(
+            'https://kznasfgubbyinomtetiu.supabase.co/rest/v1/community_settings',
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'apiKey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt6bmFzZmd1YmJ5aW5vbXRldGl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU2Njg4NzMsImV4cCI6MjA2MTI0NDg3M30.Fx7xl_EA_G8SVVjWyVRu61kWhwkrbFlZsulQz_WKx7Q',
+                'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || ''}`
+              },
+              body: JSON.stringify(defaultSettings)
+            }
+          );
+          
+          if (!insertResponse.ok) {
+            throw new Error(`Failed to create default community settings: ${insertResponse.statusText}`);
+          }
+          
+          const newSettings = await insertResponse.json();
+          return newSettings as CommunitySettings;
+        }
+        
+        return settings[0] as CommunitySettings;
+      } catch (error) {
+        console.error("Error fetching community settings:", error);
+        
         return {
-          header_image_url: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19',
+          id: 'default',
+          header_image_url: 'https://images.unsplash.com/photo-1618044733300-9472054094ee?q=80&w=2942&auto=format&fit=crop',
           theme_color: '#1e40af',
-          description: 'Comunidade'
+          description: 'Comunidade científica para discussão de evidências médicas',
+          allow_polls: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         };
       }
-      
-      return data;
-    },
-    staleTime: 10 * 60 * 1000
+    }
   });
-};
+}
