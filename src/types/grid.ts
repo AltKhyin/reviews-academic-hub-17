@@ -1,10 +1,23 @@
 
 // ABOUTME: Grid position and layout type definitions
-// Fixed to support string IDs consistently
+// Fixed to support string IDs consistently - ENHANCED: Complete grid interfaces
 
 export interface GridPosition {
   row: number;
   column: number;
+}
+
+export interface GridCell {
+  id: string;
+  block?: ReviewBlock;
+  position: GridPosition;
+}
+
+export interface GridRow {
+  id: string;
+  cells: GridCell[];
+  blocks: ReviewBlock[];
+  columns: number;
 }
 
 export interface Grid2D {
@@ -16,3 +29,19 @@ export interface Grid2D {
     position: GridPosition;
   }>;
 }
+
+export interface Grid2DLayout {
+  id: string;
+  columns: number;
+  rows: number;
+  gap: number;
+  columnWidths?: number[];
+  rowHeights?: number[];
+  blocks: Array<{
+    block: ReviewBlock;
+    position: GridPosition;
+  }>;
+}
+
+// Import ReviewBlock type for circular dependency resolution
+import type { ReviewBlock } from './review';

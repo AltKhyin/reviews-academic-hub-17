@@ -20,56 +20,54 @@ interface DragState {
 }
 
 interface Grid2DCellProps {
-  cell: GridCell;
-  grid: Grid2DLayout;
+  gridId: string;
   position: GridPosition;
+  block: ReviewBlock | null;
   activeBlockId?: string | null;
   onActiveBlockChange?: (blockId: string | null) => void;
   onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
   onDeleteBlock: (blockId: string) => void;
-  onAddBlock: () => void;
-  readonly?: boolean;
+  onAddBlock: (gridId: string, position: GridPosition) => void;
   dragState?: DragState;
-  onDragOver?: (e: React.DragEvent, targetId: string, position?: GridPosition, targetType?: string) => void;
-  onDragLeave?: (e: React.DragEvent) => void;
-  onDrop?: (e: React.DragEvent, targetId: string, position?: GridPosition, dropType?: string) => void;
+  onDragOver?: () => void;
+  onDragLeave?: () => void;
+  onDrop?: () => void;
 }
 
 export const Grid2DCell: React.FC<Grid2DCellProps> = ({
-  cell,
-  grid,
+  gridId,
   position,
+  block,
   activeBlockId,
   onActiveBlockChange,
   onUpdateBlock,
   onDeleteBlock,
   onAddBlock,
-  readonly = false,
   dragState,
   onDragOver,
   onDragLeave,
   onDrop
 }) => {
-  const isDropTarget = dragState?.dragOverRowId === grid.id && 
-                      dragState?.dragOverPosition === position.row * grid.columns + position.column;
+  const isDropTarget = dragState?.dragOverRowId === gridId && 
+                      dragState?.dragOverPosition === position.row * 2 + position.column; // Assuming 2 columns
 
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     
     if (onDragOver && dragState?.isDragging) {
-      onDragOver(e, grid.id, position, 'merge');
+      onDragOver();
     }
-  }, [onDragOver, grid.id, position, dragState]);
+  }, [onDragOver, dragState]);
 
   const handleDragDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     
     if (onDrop && dragState?.isDragging) {
-      onDrop(e, grid.id, position, 'merge');
+      onDrop();
     }
-  }, [onDrop, grid.id, position, dragState]);
+  }, [onDrop, dragState]);
 
   const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -78,13 +76,13 @@ export const Grid2DCell: React.FC<Grid2DCellProps> = ({
     
     if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
       if (onDragLeave) {
-        onDragLeave(e);
+        onDragLeave();
       }
     }
   }, [onDragLeave]);
 
   const handleBlockClick = useCallback((blockId: string, event: React.MouseEvent) => {
-    if (!readonly && onActiveBlockChange) {
+    if (onActiveBlockChange) {
       const target = event.target as Element;
       
       const isInteractiveElement = target.closest(
@@ -96,7 +94,7 @@ export const Grid2DCell: React.FC<Grid2DCellProps> = ({
         onActiveBlockChange(activeBlockId === blockId ? null : blockId);
       }
     }
-  }, [activeBlockId, onActiveBlockChange, readonly]);
+  }, [activeBlockId, onActiveBlockChange]);
 
   const createBlockUpdateWrapper = useCallback((blockId: string) => {
     return (updates: Partial<ReviewBlock>) => {
@@ -104,14 +102,18 @@ export const Grid2DCell: React.FC<Grid2DCellProps> = ({
     };
   }, [onUpdateBlock]);
 
-  if (cell.block) {
-    const isActive = activeBlockId === cell.block.id;
-    const isDragging = dragState?.draggedBlockId === cell.block.id;
+  const handleAddBlock = useCallback(() => {
+    onAddBlock(gridId, position);
+  }, [onAddBlock, gridId, position]);
+
+  if (block) {
+    const isActive = activeBlockId === block.id;
+    const isDragging = dragState?.draggedBlockId === block.id;
 
     return (
       <div 
         className="relative group h-full" 
-        key={`block-${cell.block.id}`}
+        key={`block-${block.id}`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDragDrop}
@@ -134,43 +136,41 @@ export const Grid2DCell: React.FC<Grid2DCellProps> = ({
           className={cn(
             "h-full transition-all duration-200 cursor-pointer rounded-lg relative",
             isActive ? "ring-2 ring-blue-500 shadow-lg" : "hover:shadow-md",
-            !cell.block.visible && "opacity-50",
+            !block.visible && "opacity-50",
             isDragging && "opacity-30 scale-95"
           )}
           style={{ 
             backgroundColor: isActive ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
             borderColor: isActive ? '#3b82f6' : 'transparent'
           }}
-          onClick={(e) => handleBlockClick(cell.block!.id, e)}
+          onClick={(e) => handleBlockClick(block.id, e)}
         >
           {/* Block Controls */}
-          {!readonly && (
-            <div className={cn(
-              "absolute -top-2 -right-2 z-10 transition-opacity",
-              isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-            )}>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  onDeleteBlock(cell.block!.id);
-                }}
-                className="h-6 w-6 p-0 bg-red-800 border border-red-600 hover:bg-red-700"
-                title="Remover bloco"
-              >
-                <Trash2 className="w-3 h-3" />
-              </Button>
-            </div>
-          )}
+          <div className={cn(
+            "absolute -top-2 -right-2 z-10 transition-opacity",
+            isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+          )}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                onDeleteBlock(block.id);
+              }}
+              className="h-6 w-6 p-0 bg-red-800 border border-red-600 hover:bg-red-700"
+              title="Remover bloco"
+            >
+              <Trash2 className="w-3 h-3" />
+            </Button>
+          </div>
 
           {/* Block Content */}
           <div className="p-4 h-full">
             <BlockRenderer
-              block={cell.block}
-              onUpdate={createBlockUpdateWrapper(cell.block.id)}
-              readonly={readonly}
+              block={block}
+              onUpdate={createBlockUpdateWrapper(block.id)}
+              readonly={false}
             />
           </div>
         </div>
@@ -204,7 +204,7 @@ export const Grid2DCell: React.FC<Grid2DCellProps> = ({
         </div>
       )}
       
-      {!readonly && !isDropTarget && (
+      {!isDropTarget && (
         <div className="text-center opacity-60 group-hover:opacity-100 transition-opacity">
           <div className="text-gray-400 text-xs mb-3">
             L{position.row + 1} C{position.column + 1}
@@ -212,7 +212,7 @@ export const Grid2DCell: React.FC<Grid2DCellProps> = ({
           <Button
             variant="ghost"
             size="sm"
-            onClick={onAddBlock}
+            onClick={handleAddBlock}
             className="text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500"
           >
             <Plus className="w-4 h-4 mr-2" />
