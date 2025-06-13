@@ -1,84 +1,53 @@
 
-// ABOUTME: Reviewer notes section for homepage
-// Fixed to use proper data loading patterns
+// ABOUTME: Reviewer notes section component for homepage
+// Displays reviewer notes and comments
 
 import React from 'react';
-import { useOptimizedHomepage } from '@/hooks/useOptimizedHomepage';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MessageSquare } from 'lucide-react';
 
-export const ReviewerNotesSection: React.FC = () => {
-  const { data, isLoading, error } = useOptimizedHomepage();
+interface ReviewerNotesSectionProps {
+  reviewerData?: any;
+  sectionConfig?: {
+    visible: boolean;
+    order: number;
+    title: string;
+  };
+  onConfigChange?: (updates: any) => void;
+}
 
-  if (isLoading) {
-    return (
-      <div className="reviewer-notes-section">
-        <div className="animate-pulse space-y-4">
-          <div className="h-6 bg-gray-300 rounded w-48"></div>
-          <div className="space-y-3">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-24 bg-gray-300 rounded"></div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !data?.reviewerComments) {
-    return (
-      <div className="reviewer-notes-section">
-        <div className="text-center py-8">
-          <p className="text-gray-500">Não foi possível carregar os comentários</p>
-        </div>
-      </div>
-    );
-  }
-
-  const comments = data.reviewerComments.slice(0, 5);
-
-  if (comments.length === 0) {
-    return (
-      <div className="reviewer-notes-section">
-        <div className="text-center py-8">
-          <p className="text-gray-500">Nenhum comentário disponível no momento</p>
-        </div>
-      </div>
-    );
-  }
-
+export const ReviewerNotesSection: React.FC<ReviewerNotesSectionProps> = ({
+  reviewerData,
+  sectionConfig,
+  onConfigChange
+}) => {
   return (
-    <section className="reviewer-notes-section mb-12">
-      <div className="flex items-center gap-2 mb-6">
-        <MessageSquare className="w-5 h-5 text-blue-500" />
-        <h2 className="text-2xl font-bold">Notas dos Revisores</h2>
+    <section className="reviewer-notes-section mb-8">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold text-white">
+          {sectionConfig?.title || 'Notas dos Revisores'}
+        </h2>
       </div>
       
       <div className="space-y-4">
-        {comments.map((comment) => (
-          <Card key={comment.id}>
-            <CardContent className="pt-6">
-              <div className="flex items-start gap-4">
-                <Avatar>
-                  <AvatarImage src={comment.reviewer_avatar} />
-                  <AvatarFallback>
-                    {comment.reviewer_name?.charAt(0) || 'R'}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h4 className="font-semibold">{comment.reviewer_name}</h4>
-                    <span className="text-sm text-gray-500">
-                      {new Date(comment.created_at).toLocaleDateString('pt-BR')}
-                    </span>
-                  </div>
-                  <p className="text-gray-700">{comment.comment}</p>
+        {reviewerData?.notes?.length > 0 ? (
+          reviewerData.notes.map((note: any, index: number) => (
+            <div key={index} className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+              <div className="flex items-center mb-3">
+                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-semibold mr-3">
+                  {note.reviewer_name?.charAt(0) || 'R'}
+                </div>
+                <div>
+                  <h4 className="font-semibold text-white">{note.reviewer_name}</h4>
+                  <p className="text-xs text-gray-400">{note.date}</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        ))}
+              <p className="text-gray-300">{note.message}</p>
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-8 text-gray-400">
+            <p>Nenhuma nota de revisor disponível.</p>
+          </div>
+        )}
       </div>
     </section>
   );

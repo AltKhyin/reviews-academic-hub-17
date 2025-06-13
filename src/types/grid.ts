@@ -1,10 +1,30 @@
 
 // ABOUTME: Grid layout and positioning types
-// Core grid system type definitions
+// Core grid system type definitions with missing exports added
 
 export interface GridPosition {
   row: number;
   column: number;
+}
+
+export interface GridCell {
+  id: string;
+  block?: ReviewBlock | null;
+  position?: GridPosition;
+}
+
+export interface GridRow {
+  id: string;
+  cells: GridCell[];
+}
+
+export interface Grid2DLayout {
+  id: string;
+  columns: number;
+  rows: GridRow[];
+  gap?: number;
+  columnWidths?: number[];
+  rowHeights?: number[];
 }
 
 export interface LayoutRowProps {
@@ -28,18 +48,19 @@ export interface LayoutRowData {
 export interface Grid2DCellProps {
   gridId: string;
   position: GridPosition;
-  block: ReviewBlock;
-  activeBlockId: string;
-  onActiveBlockChange: (blockId: string) => void;
+  block: ReviewBlock | null;
+  activeBlockId?: string | null;
+  onActiveBlockChange?: (blockId: string | null) => void;
   onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
   onDeleteBlock: (blockId: string) => void;
-  onMoveBlock: (blockId: string, direction: 'up' | 'down') => void;
-  dragState: any;
-  onDragStart: (blockId: string) => void;
-  onDragOver: (e: React.DragEvent, targetId: string, position?: number) => void;
-  onDragLeave: (e: React.DragEvent) => void;
-  onDrop: (e: React.DragEvent, targetId: string, position?: number) => void;
-  onDragEnd: () => void;
+  onAddBlock?: (gridId: string, position: GridPosition) => void;
+  dragState?: any;
+  onDragStart?: (blockId: string) => void;
+  onDragOver?: (e: React.DragEvent, targetId: string, position?: number) => void;
+  onDragLeave?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent, targetId: string, position?: number) => void;
+  onDragEnd?: () => void;
+  readonly?: boolean;
 }
 
 // Import ReviewBlock from review types

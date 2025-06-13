@@ -1,142 +1,148 @@
-// ABOUTME: Block content editor with standardized string ID usage
-// Fixed to use consistent string IDs throughout the component
 
-import React, { useState, useCallback, useMemo } from 'react';
-import { ReviewBlock } from '@/types/review';
+// ABOUTME: Block content editor component for individual block editing
+// Handles editing interface for ReviewBlock content
+
+import React from 'react';
+import { ReviewBlock, BlockType } from '@/types/review';
 import { BlockRenderer } from '@/components/review/BlockRenderer';
 import { Button } from '@/components/ui/button';
-import { Plus, Eye, EyeOff } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Move, Copy, Trash2 } from 'lucide-react';
 
 interface BlockContentEditorProps {
-  blocks: ReviewBlock[];
-  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
-  onAddBlock: (type: string, position?: number) => string;
-  onMoveBlock: (blockId: string, direction: 'up' | 'down') => void;
-  onDeleteBlock: (blockId: string) => void;
-  onDuplicateBlock: (blockId: string) => void;
-  readonly?: boolean;
-  className?: string;
+  block: ReviewBlock;
+  isActive: boolean;
+  isFirst: boolean;
+  isLast: boolean;
+  onSelect: (blockId: string) => void;
+  onUpdate: (blockId: string, updates: Partial<ReviewBlock>) => void;
+  onDelete: (blockId: string) => void;
+  onDuplicate?: (blockId: string) => string;
+  onMove: (blockId: string, direction: 'up' | 'down') => void;
+  onAddBlock?: (type: BlockType, position?: number) => string;
 }
 
 export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
-  blocks,
-  onUpdateBlock,
-  onAddBlock,
-  onMoveBlock,
-  onDeleteBlock,
-  onDuplicateBlock,
-  readonly = false,
-  className
+  block,
+  isActive,
+  isFirst,
+  isLast,
+  onSelect,
+  onUpdate,
+  onDelete,
+  onDuplicate,
+  onMove,
+  onAddBlock
 }) => {
-  const [previewMode, setPreviewMode] = useState(false);
-  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  const handleSelect = () => {
+    onSelect(block.id);
+  };
 
-  const memoizedBlocks = useMemo(() => {
-    return blocks ? [...blocks] : [];
-  }, [blocks]);
+  const handleUpdate = (updates: Partial<ReviewBlock>) => {
+    onUpdate(block.id, updates);
+  };
 
-  const handleBlockSelect = useCallback((blockId: string) => {
-    setSelectedBlockId(blockId);
-  }, []);
+  const handleDelete = () => {
+    onDelete(block.id);
+  };
 
-  const handleAddBlock = useCallback((type: string, position?: number) => {
-    const newBlockId = onAddBlock(type, position);
-    setSelectedBlockId(newBlockId);
-  }, [onAddBlock]);
+  const handleDuplicate = () => {
+    if (onDuplicate) {
+      onDuplicate(block.id);
+    }
+  };
 
-  if (readonly || previewMode) {
-    return (
-      <div className={cn("block-content-editor-preview space-y-4", className)}>
-        {memoizedBlocks.map((block) => (
-          <BlockRenderer
-            key={block.id}
-            block={block}
-            readonly={true}
-          />
-        ))}
-      </div>
-    );
-  }
+  const handleMove = (direction: 'up' | 'down') => {
+    onMove(block.id, direction);
+  };
 
   return (
-    <div className={cn("block-content-editor space-y-4", className)}>
-      {/* Editor Controls */}
-      <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg border border-gray-600">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-300">
-            {memoizedBlocks.length} bloco(s)
-          </span>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPreviewMode(!previewMode)}
-            className="flex items-center gap-2"
-          >
-            {previewMode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            {previewMode ? 'Editar' : 'Visualizar'}
-          </Button>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleAddBlock('paragraph')}
-            className="flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Adicionar Bloco
-          </Button>
-        </div>
-      </div>
-
-      {/* Block List */}
-      <div className="space-y-4">
-        {memoizedBlocks.map((block, index) => (
-          <div
-            key={block.id}
-            className={cn(
-              "relative border rounded-lg transition-all duration-200",
-              selectedBlockId === block.id
-                ? "border-blue-500 bg-blue-500/10"
-                : "border-gray-600 bg-gray-800/30 hover:border-gray-500"
-            )}
-            onClick={() => handleBlockSelect(block.id)}
-          >
-            <BlockRenderer
-              block={block}
-              readonly={false}
-              onUpdate={(updates) => onUpdateBlock(block.id, updates)}
-              onMove={(direction) => onMoveBlock(block.id, direction)}
-              onDelete={() => onDeleteBlock(block.id)}
-              onDuplicate={() => onDuplicateBlock(block.id)}
-              isSelected={selectedBlockId === block.id}
-            />
+    <div
+      className={`block-content-editor border rounded-lg p-4 transition-all ${
+        isActive ? 'border-blue-500 bg-blue-50/5' : 'border-gray-600 hover:border-gray-500'
+      }`}
+      onClick={handleSelect}
+    >
+      {/* Block Controls */}
+      {isActive && (
+        <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-600">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-400 uppercase tracking-wide">
+              {block.type}
+            </span>
+            <span className="text-xs text-gray-500">
+              #{block.sort_index}
+            </span>
           </div>
-        ))}
-      </div>
-
-      {/* Empty State */}
-      {memoizedBlocks.length === 0 && (
-        <div className="text-center py-12 border-2 border-dashed border-gray-600 rounded-lg">
-          <div className="text-gray-400">
-            <div className="w-16 h-16 mx-auto mb-4 bg-gray-700 rounded-lg flex items-center justify-center">
-              <span className="text-2xl">📝</span>
-            </div>
-            <h3 className="text-lg font-medium mb-2">Nenhum bloco criado</h3>
-            <p className="text-sm mb-4">Comece adicionando seu primeiro bloco de conteúdo</p>
+          
+          <div className="flex items-center gap-1">
+            {!isFirst && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleMove('up');
+                }}
+                className="h-7 w-7 p-0"
+                title="Mover para cima"
+              >
+                <Move className="w-3 h-3 rotate-180" />
+              </Button>
+            )}
+            
+            {!isLast && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleMove('down');
+                }}
+                className="h-7 w-7 p-0"
+                title="Mover para baixo"
+              >
+                <Move className="w-3 h-3" />
+              </Button>
+            )}
+            
+            {onDuplicate && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDuplicate();
+                }}
+                className="h-7 w-7 p-0"
+                title="Duplicar bloco"
+              >
+                <Copy className="w-3 h-3" />
+              </Button>
+            )}
+            
             <Button
-              onClick={() => handleAddBlock('paragraph')}
-              className="mx-auto"
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete();
+              }}
+              className="h-7 w-7 p-0 text-red-400 hover:text-red-300"
+              title="Excluir bloco"
             >
-              <Plus className="w-4 h-4 mr-2" />
-              Criar Primeiro Bloco
+              <Trash2 className="w-3 h-3" />
             </Button>
           </div>
         </div>
       )}
+
+      {/* Block Content */}
+      <BlockRenderer
+        block={block}
+        isSelected={isActive}
+        onUpdate={handleUpdate}
+        readonly={false}
+      />
     </div>
   );
 };

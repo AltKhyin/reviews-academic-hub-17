@@ -2,7 +2,7 @@
 // ABOUTME: Block renderer with enhanced interface support and proper error boundaries
 // Fixed to support all expected props from components and handle dynamic content safely
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { ReviewBlock } from '@/types/review';
 import { BlockErrorBoundary } from './BlockErrorBoundary';
 
@@ -31,6 +31,25 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   isSelected = false,
   className
 }) => {
+  const elementRef = useRef<HTMLDivElement>(null);
+
+  // Handle viewport enter using intersection observer instead of invalid HTML attribute
+  useEffect(() => {
+    if (!onSectionView || !elementRef.current) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          onSectionView(block.id);
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    observer.observe(elementRef.current);
+    return () => observer.disconnect();
+  }, [block.id, onSectionView]);
+
   // Safe rendering with error boundary protection
   const handleInteraction = (interactionType: string, data?: any) => {
     if (onInteraction) {
@@ -38,17 +57,11 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
     }
   };
 
-  const handleSectionView = () => {
-    if (onSectionView) {
-      onSectionView(block.id);
-    }
-  };
-
   return (
     <BlockErrorBoundary blockId={block.id}>
       <div 
+        ref={elementRef}
         className={`block-renderer ${className || ''} ${isSelected ? 'selected' : ''}`}
-        onViewportEnter={handleSectionView}
       >
         <div className="block-content">
           <h4 className="text-sm font-medium text-gray-300 mb-2">

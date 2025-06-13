@@ -3,7 +3,7 @@
 // Renders a single cell with block content or empty state
 
 import React, { useCallback } from 'react';
-import { GridCell, Grid2DLayout, GridPosition } from '@/types/grid';
+import { GridPosition } from '@/types/grid';
 import { ReviewBlock } from '@/types/review';
 import { BlockRenderer } from '@/components/review/BlockRenderer';
 import { Button } from '@/components/ui/button';
@@ -27,7 +27,7 @@ interface Grid2DCellProps {
   onActiveBlockChange?: (blockId: string | null) => void;
   onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
   onDeleteBlock: (blockId: string) => void;
-  onAddBlock: (gridId: string, position: GridPosition) => void;
+  onAddBlock?: (gridId: string, position: GridPosition) => void;
   dragState?: DragState;
   onDragOver?: () => void;
   onDragLeave?: () => void;
@@ -102,8 +102,10 @@ export const Grid2DCell: React.FC<Grid2DCellProps> = ({
     };
   }, [onUpdateBlock]);
 
-  const handleAddBlock = useCallback(() => {
-    onAddBlock(gridId, position);
+  const handleAddBlockToCell = useCallback(() => {
+    if (onAddBlock) {
+      onAddBlock(gridId, position);
+    }
   }, [onAddBlock, gridId, position]);
 
   if (block) {
@@ -212,7 +214,7 @@ export const Grid2DCell: React.FC<Grid2DCellProps> = ({
           <Button
             variant="ghost"
             size="sm"
-            onClick={handleAddBlock}
+            onClick={handleAddBlockToCell}
             className="text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500"
           >
             <Plus className="w-4 h-4 mr-2" />

@@ -1,14 +1,29 @@
 
-// ABOUTME: Layout row component managing horizontal block arrangements
-// Fixed prop naming and interface consistency
+// ABOUTME: Layout row component for organizing blocks in columns
+// Provides column-based layout with drag & drop support
 
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import { ReviewBlock } from '@/types/review';
-import { LayoutRowData, LayoutRowProps } from '@/types/grid';
-import { BlockRenderer } from '@/components/review/BlockRenderer';
 import { Button } from '@/components/ui/button';
-import { Plus, Trash2, GripVertical } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Columns, Trash2, Plus } from 'lucide-react';
+
+export interface LayoutRowData {
+  id: string;
+  blocks: ReviewBlock[];
+  columns: number;
+  columnWidths?: number[];
+}
+
+interface LayoutRowProps {
+  row: LayoutRowData;
+  onUpdateRow: (rowId: string, updates: Partial<LayoutRowData>) => void;
+  onDeleteRow: (rowId: string) => void;
+  onAddBlock: (rowId: string, position: number, blockType: string) => void;
+  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
+  onMoveBlock: (blockId: string, direction: 'up' | 'down') => void;
+  onDeleteBlock: (blockId: string) => void;
+  readonly?: boolean;
+}
 
 export const LayoutRow: React.FC<LayoutRowProps> = ({
   row,
@@ -20,128 +35,109 @@ export const LayoutRow: React.FC<LayoutRowProps> = ({
   onDeleteBlock,
   readonly = false
 }) => {
-  const [isHovered, setIsHovered] = useState(false);
-  const [draggedOver, setDraggedOver] = useState<number | null>(null);
+  const handleColumnChange = (newColumns: number) => {
+    onUpdateRow(row.id, { columns: newColumns });
+  };
 
-  // Calculate column widths
-  const columnWidths = row.columnWidths || Array(row.columns).fill(100 / row.columns);
+  const handleDeleteRow = () => {
+    onDeleteRow(row.id);
+  };
 
-  const handleColumnWidthChange = useCallback((columnIndex: number, newWidth: number) => {
-    const newWidths = [...columnWidths];
-    newWidths[columnIndex] = newWidth;
-    
-    // Ensure total width is 100%
-    const total = newWidths.reduce((sum, width) => sum + width, 0);
-    if (total !== 100) {
-      const adjustment = 100 / total;
-      newWidths.forEach((width, index) => {
-        newWidths[index] = width * adjustment;
-      });
-    }
-    
-    onUpdateRow(row.id, { columnWidths: newWidths });
-  }, [columnWidths, onUpdateRow, row.id]);
-
-  const handleAddBlock = useCallback((columnIndex: number) => {
-    onAddBlock(row.id, columnIndex, 'paragraph');
-  }, [onAddBlock, row.id]);
-
-  const getBlocksForColumn = useCallback((columnIndex: number) => {
-    return row.blocks.filter(block => {
-      const layoutColumn = block.meta?.layout?.grid_position?.column;
-      return layoutColumn === columnIndex;
-    });
-  }, [row.blocks]);
-
-  if (readonly) {
-    return (
-      <div className="layout-row grid gap-4" style={{ gridTemplateColumns: columnWidths.map(w => `${w}%`).join(' ') }}>
-        {Array.from({ length: row.columns }, (_, columnIndex) => {
-          const columnBlocks = getBlocksForColumn(columnIndex);
-          
-          return (
-            <div key={columnIndex} className="layout-column space-y-4">
-              {columnBlocks.map(block => (
-                <BlockRenderer
-                  key={block.id}
-                  block={block}
-                  readonly={true}
-                />
-              ))}
-            </div>
-          );
-        })}
-      </div>
-    );
-  }
+  const handleAddBlock = (position: number) => {
+    onAddBlock(row.id, position, 'paragraph');
+  };
 
   return (
-    <div 
-      className={cn(
-        "layout-row border rounded-lg p-4 transition-all",
-        isHovered ? "border-blue-500 bg-blue-500/10" : "border-gray-600 bg-gray-800/30"
-      )}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
+    <div className="layout-row border border-gray-600 rounded-lg p-4">
       {/* Row Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <GripVertical className="w-4 h-4 text-gray-400" />
-          <span className="text-sm text-gray-300">
-            {row.columns} {row.columns === 1 ? 'coluna' : 'colunas'}
-          </span>
-        </div>
-        
-        {isHovered && (
+      {!readonly && (
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
+            <Columns className="w-4 h-4 text-gray-400" />
+            <span className="text-sm text-gray-300">
+              {row.columns} {row.columns === 1 ? 'coluna' : 'colunas'}
+            </span>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4].map(cols => (
+                <Button
+                  key={cols}
+                  variant={row.columns === cols ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => handleColumnChange(cols)}
+                  className="h-7 w-7 p-0 text-xs"
+                >
+                  {cols}
+                </Button>
+              ))}
+            </div>
+            
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              onClick={() => onDeleteRow(row.id)}
-              className="text-red-400 hover:text-red-300"
+              onClick={handleDeleteRow}
+              className="h-7 w-7 p-0 text-red-400"
+              title="Excluir linha"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-3 h-3" />
             </Button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Columns Grid */}
-      <div className="grid gap-4" style={{ gridTemplateColumns: columnWidths.map(w => `${w}%`).join(' ') }}>
-        {Array.from({ length: row.columns }, (_, columnIndex) => {
-          const columnBlocks = getBlocksForColumn(columnIndex);
-          
+      <div
+        className="grid gap-4"
+        style={{
+          gridTemplateColumns: row.columnWidths
+            ? row.columnWidths.map(w => `${w}%`).join(' ')
+            : `repeat(${row.columns}, 1fr)`
+        }}
+      >
+        {Array.from({ length: row.columns }).map((_, colIndex) => {
+          const columnBlocks = row.blocks.filter(
+            block => block.meta?.layout?.grid_position?.column === colIndex
+          );
+
           return (
-            <div 
-              key={columnIndex} 
-              className={cn(
-                "layout-column min-h-[100px] border-2 border-dashed rounded-lg p-3 space-y-3",
-                draggedOver === columnIndex ? "border-blue-400 bg-blue-400/10" : "border-gray-600"
-              )}
+            <div
+              key={colIndex}
+              className="layout-column min-h-[120px] border-2 border-dashed border-gray-600 rounded-lg p-3"
             >
-              {/* Column Blocks */}
-              {columnBlocks.map(block => (
-                <BlockRenderer
-                  key={block.id}
-                  block={block}
-                  onUpdate={(updates) => onUpdateBlock(block.id, updates)}
-                  onMove={(direction) => onMoveBlock(block.id, direction)}
-                  onDelete={() => onDeleteBlock(block.id)}
-                  readonly={false}
-                />
-              ))}
+              <div className="text-xs text-gray-400 mb-2">
+                Coluna {colIndex + 1}
+              </div>
               
-              {/* Add Block Button */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleAddBlock(columnIndex)}
-                className="w-full border-2 border-dashed border-gray-600 hover:border-blue-400 text-gray-400 hover:text-blue-400"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Adicionar Bloco
-              </Button>
+              {columnBlocks.length === 0 ? (
+                <div className="flex items-center justify-center h-20">
+                  {!readonly && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleAddBlock(colIndex)}
+                      className="text-gray-400 hover:text-white"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Adicionar Bloco
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {columnBlocks.map(block => (
+                    <div key={block.id} className="p-2 bg-gray-800 rounded border">
+                      <div className="text-xs text-gray-400 mb-1">
+                        {block.type}
+                      </div>
+                      <div className="text-sm text-gray-200 truncate">
+                        {JSON.stringify(block.content).substring(0, 50)}...
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           );
         })}
