@@ -1,5 +1,5 @@
 
-// ABOUTME: Individual cell component for 2D grid layout
+// ABOUTME: Individual cell component for 2D grid layout with string ID support
 // Renders a single cell with block content or empty state
 
 import React, { useCallback } from 'react';
@@ -11,7 +11,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface DragState {
-  draggedBlockId: number | null;
+  draggedBlockId: string | null;
   dragOverRowId: string | null;
   dragOverPosition: number | null;
   isDragging: boolean;
@@ -23,10 +23,10 @@ interface Grid2DCellProps {
   cell: GridCell;
   grid: Grid2DLayout;
   position: GridPosition;
-  activeBlockId?: number | null;
-  onActiveBlockChange?: (blockId: number | null) => void;
-  onUpdateBlock: (blockId: number, updates: Partial<ReviewBlock>) => void;
-  onDeleteBlock: (blockId: number) => void;
+  activeBlockId?: string | null;
+  onActiveBlockChange?: (blockId: string | null) => void;
+  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
+  onDeleteBlock: (blockId: string) => void;
   onAddBlock: () => void;
   readonly?: boolean;
   dragState?: DragState;
@@ -83,7 +83,7 @@ export const Grid2DCell: React.FC<Grid2DCellProps> = ({
     }
   }, [onDragLeave]);
 
-  const handleBlockClick = useCallback((blockId: number, event: React.MouseEvent) => {
+  const handleBlockClick = useCallback((blockId: string, event: React.MouseEvent) => {
     if (!readonly && onActiveBlockChange) {
       const target = event.target as Element;
       
@@ -98,7 +98,7 @@ export const Grid2DCell: React.FC<Grid2DCellProps> = ({
     }
   }, [activeBlockId, onActiveBlockChange, readonly]);
 
-  const createBlockUpdateWrapper = useCallback((blockId: number) => {
+  const createBlockUpdateWrapper = useCallback((blockId: string) => {
     return (updates: Partial<ReviewBlock>) => {
       onUpdateBlock(blockId, updates);
     };

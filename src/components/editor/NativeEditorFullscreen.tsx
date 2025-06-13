@@ -1,5 +1,5 @@
 
-// ABOUTME: Fullscreen native editor with immersive editing experience
+// ABOUTME: Fullscreen native editor with immersive editing experience and string ID support
 // Provides dedicated workspace for complex review creation
 
 import React, { useCallback, useEffect } from 'react';

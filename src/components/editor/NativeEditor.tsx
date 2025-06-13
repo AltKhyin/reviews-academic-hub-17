@@ -1,5 +1,5 @@
 
-// ABOUTME: Enhanced native editor with fullscreen capability and improved UX
+// ABOUTME: Enhanced native editor with fullscreen capability, improved UX, and string ID support
 // Main editor container with fullscreen mode support
 
 import React, { useState, useEffect, useCallback } from 'react';
