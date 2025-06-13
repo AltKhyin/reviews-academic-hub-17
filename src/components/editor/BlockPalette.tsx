@@ -1,4 +1,3 @@
-
 // ABOUTME: Block palette component for adding new blocks to the editor
 // Provides categorized block types with visual previews and drag-and-drop support
 
@@ -8,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { BlockType } from '@/types/review';
 import { 
   Type, 
   AlignLeft, 
@@ -28,7 +28,7 @@ import {
 import { cn } from '@/lib/utils';
 
 interface BlockPaletteProps {
-  onBlockAdd: (type: string, position?: number) => void;
+  onBlockAdd: (type: BlockType, position?: number) => string; // Updated return type and parameter type
 }
 
 export const BlockPalette: React.FC<BlockPaletteProps> = ({ onBlockAdd }) => {
@@ -39,14 +39,14 @@ export const BlockPalette: React.FC<BlockPaletteProps> = ({ onBlockAdd }) => {
       name: 'Texto',
       blocks: [
         {
-          type: 'heading',
+          type: 'heading' as BlockType,
           icon: Type,
           label: 'Título',
           description: 'Cabeçalhos H1-H6',
           color: '#3b82f6'
         },
         {
-          type: 'paragraph',
+          type: 'paragraph' as BlockType,
           icon: AlignLeft,
           label: 'Parágrafo',
           description: 'Texto formatado',

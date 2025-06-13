@@ -336,7 +336,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
             }}
           >
             <CardContent className="p-3">
-              <BlockPalette onAddBlock={handleAddBlock} />
+              <BlockPalette onBlockAdd={handleAddBlock} />
             </CardContent>
           </Card>
         )}
