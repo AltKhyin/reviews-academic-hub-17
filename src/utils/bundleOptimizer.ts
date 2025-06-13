@@ -38,7 +38,9 @@ class BundleOptimizer {
         this.loadedChunks.set(chunkName, true);
         PerformanceProfiler.endMeasurement(`bundle-${chunkName}`);
         
-        console.log(`📦 Bundle loaded: ${chunkName} (${loadTime.toFixed(2)}ms)`);
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`📦 Bundle loaded: ${chunkName} (${loadTime.toFixed(2)}ms)`);
+        }
         return component;
       } catch (error) {
         console.error(`❌ Bundle load failed: ${chunkName}`, error);
@@ -56,7 +58,9 @@ class BundleOptimizer {
       requestIdleCallback(() => {
         importFn().then(() => {
           this.loadedChunks.set(chunkName, true);
-          console.log(`🚀 Preloaded chunk: ${chunkName}`);
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`🚀 Preloaded chunk: ${chunkName}`);
+          }
         }).catch(() => {
           console.warn(`⚠️ Preload failed: ${chunkName}`);
         });
@@ -74,37 +78,37 @@ class BundleOptimizer {
     };
   }
 
-  // Optimized imports for heavy components - Fixed to handle named exports properly
+  // Optimized imports for heavy components
   static getOptimizedImports() {
     return {
-      // Editor components (heavy) - Handle named exports properly
+      // Editor components (heavy)
       NativeEditor: this.createLazyComponent(
         () => import('@/components/editor/NativeEditor').then(m => ({ 
-          default: (m as any).NativeEditor || m 
+          default: m.NativeEditor || (m as any).default || m
         })),
         'native-editor'
       ),
       
-      // Analytics dashboard (heavy) - Handle named exports properly
+      // Analytics dashboard (heavy)
       EnhancedAnalyticsDashboard: this.createLazyComponent(
         () => import('@/components/analytics/EnhancedAnalyticsDashboard').then(m => ({ 
-          default: (m as any).EnhancedAnalyticsDashboard || m 
+          default: m.EnhancedAnalyticsDashboard || (m as any).default || m
         })),
         'analytics-dashboard'
       ),
       
-      // Admin panels (heavy) - Handle named exports properly
+      // Admin panels (heavy)
       IssuesManagementPanel: this.createLazyComponent(
         () => import('@/components/admin/IssuesManagementPanel').then(m => ({ 
-          default: (m as any).IssuesManagementPanel || m 
+          default: m.IssuesManagementPanel || (m as any).default || m
         })),
         'issues-management'
       ),
       
-      // PDF viewer (heavy) - Handle named exports properly
+      // PDF viewer (heavy)
       PDFViewer: this.createLazyComponent(
         () => import('@/components/pdf/PDFViewer').then(m => ({ 
-          default: (m as any).PDFViewer || m 
+          default: m.PDFViewer || (m as any).default || m
         })),
         'pdf-viewer'
       )
@@ -113,3 +117,4 @@ class BundleOptimizer {
 }
 
 export { BundleOptimizer };
+export default BundleOptimizer;

@@ -1,9 +1,6 @@
 
 // ABOUTME: Global performance provider that initializes all performance optimization systems
 import React, { useEffect } from 'react';
-import { usePerformanceOptimizer } from '@/hooks/usePerformanceOptimizer';
-import { useIntelligentPrefetch } from '@/hooks/useIntelligentPrefetch';
-import { PerformanceDashboard } from '@/components/performance/PerformanceDashboard';
 import { MemoryLeakDetector, PerformanceProfiler } from '@/utils/performanceHelpers';
 
 interface PerformanceProviderProps {
@@ -17,10 +14,6 @@ export const PerformanceProvider: React.FC<PerformanceProviderProps> = ({
   enableDashboard = process.env.NODE_ENV === 'development',
   enableMemoryLeakDetection = true,
 }) => {
-  // Initialize performance systems
-  usePerformanceOptimizer();
-  useIntelligentPrefetch();
-
   useEffect(() => {
     // Initialize memory leak detection
     if (enableMemoryLeakDetection) {
@@ -54,10 +47,5 @@ export const PerformanceProvider: React.FC<PerformanceProviderProps> = ({
     }
   }, []);
 
-  return (
-    <>
-      {children}
-      {enableDashboard && <PerformanceDashboard />}
-    </>
-  );
+  return <>{children}</>;
 };
