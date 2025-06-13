@@ -1,60 +1,26 @@
 
-// ABOUTME: Enhanced review types with string IDs for database compatibility and complete type definitions
+// ABOUTME: Enhanced review types with complete 2D grid support and string ID compatibility
+// Provides type safety for both 1D and 2D grid layouts
+
 export type BlockType = 
-  | 'text' 
-  | 'heading' 
-  | 'image' 
-  | 'video' 
-  | 'quote' 
-  | 'list' 
-  | 'code' 
-  | 'table' 
-  | 'divider' 
-  | 'callout' 
-  | 'embed' 
-  | 'poll' 
-  | 'chart' 
-  | 'audio'
-  | 'file'
-  | 'gallery'
-  | 'timeline'
-  | 'comparison'
-  | 'accordion'
-  | 'tabs';
+  | 'heading'
+  | 'paragraph' 
+  | 'list'
+  | 'quote'
+  | 'code'
+  | 'divider'
+  | 'figure'
+  | 'callout'
+  | 'table'
+  | 'citation_list'
+  | 'poll'
+  | 'reviewer_quote'
+  | 'snapshot_card'
+  | 'number_card';
 
-export interface SpacingConfig {
-  top?: number;
-  bottom?: number;
-  left?: number;
-  right?: number;
-  margin?: {
-    top?: number;
-    bottom?: number;
-    left?: number;
-    right?: number;
-  };
-  padding?: {
-    top?: number;
-    bottom?: number;
-    left?: number;
-    right?: number;
-  };
-}
-
-export interface LayoutConfig {
-  columns?: number;
-  columnWidths?: number[];
-  grid_id?: string;
-  grid_position?: number;
-  row_id?: string;
-  grid_rows?: number;
-  gap?: number;
-  rowHeights?: number[];
-}
-
-export interface AlignmentConfig {
-  vertical?: 'top' | 'center' | 'bottom';
-  horizontal?: 'left' | 'center' | 'right';
+export interface GridPosition {
+  row: number;
+  column: number;
 }
 
 export interface ReviewBlock {
@@ -63,22 +29,43 @@ export interface ReviewBlock {
   content: any;
   sort_index: number;
   visible: boolean;
+  issue_id?: string;
+  created_at: string;
+  updated_at: string;
   meta?: {
-    spacing?: SpacingConfig;
-    alignment?: AlignmentConfig;
-    layout?: LayoutConfig;
+    layout?: {
+      // 1D Grid (row-based) properties
+      row_id?: string;
+      position?: number;
+      columns?: number;
+      gap?: number;
+      columnWidths?: number[];
+      
+      // 2D Grid properties
+      grid_id?: string;
+      grid_position?: GridPosition;
+      grid_rows?: number;
+      rowHeights?: number[];
+    };
+    alignment?: {
+      horizontal?: 'left' | 'center' | 'right';
+      vertical?: 'top' | 'center' | 'bottom';
+    };
+    spacing?: {
+      margin?: number;
+      padding?: number;
+    };
   };
 }
 
-export interface EnhancedIssue {
+export interface Review {
   id: string;
   title: string;
-  description?: string;
-  authors?: string;
-  specialty: string;
-  year?: number;
-  population?: string;
-  review_type: 'native' | 'pdf' | 'mixed';
-  article_pdf_url?: string;
-  pdf_url?: string;
+  content: string;
+  issue_id: string;
+  user_id: string;
+  blocks?: ReviewBlock[];
+  created_at: string;
+  updated_at: string;
+  published: boolean;
 }

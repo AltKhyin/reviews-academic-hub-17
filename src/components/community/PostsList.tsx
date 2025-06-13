@@ -60,11 +60,11 @@ export const PostsList: React.FC = () => {
           </Button>
         </div>
         
-        <EmptyState />
+        <EmptyState message="No posts available yet. Be the first to share something!" />
         
         <NewPostModal 
-          open={showNewPostModal} 
-          onOpenChange={setShowNewPostModal}
+          isOpen={showNewPostModal} 
+          onClose={() => setShowNewPostModal(false)}
         />
       </>
     );
@@ -111,8 +111,8 @@ export const PostsList: React.FC = () => {
       </div>
 
       <NewPostModal 
-        open={showNewPostModal} 
-        onOpenChange={setShowNewPostModal}
+        isOpen={showNewPostModal} 
+        onClose={() => setShowNewPostModal(false)}
       />
     </>
   );

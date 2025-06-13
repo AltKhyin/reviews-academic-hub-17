@@ -1,4 +1,3 @@
-
 // ABOUTME: Community-specific parallel data loader to eliminate API cascade
 // Replaces individual useQuery calls with centralized data management
 import { useState, useEffect, useCallback } from 'react';
@@ -35,6 +34,8 @@ export interface Post {
   };
   comment_count?: number;
   user_vote?: number;
+  // Required for Post component compatibility
+  poll?: any;
 }
 
 export interface CommunitySettings {
@@ -101,7 +102,8 @@ export const useCommunityDataLoader = (): CommunityDataState => {
       const posts = data?.map(post => ({
         ...post,
         comment_count: post.comments?.length || 0,
-        user_vote: 0 // Will be loaded separately if authenticated
+        user_vote: 0, // Will be loaded separately if authenticated
+        poll: null // Add default poll value
       })) || [];
 
       // If authenticated, load user votes in a single batch query

@@ -66,7 +66,7 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
   // Enhanced drag handlers with proper functionality
   const handleDragStart = useCallback((e: React.DragEvent) => {
     setIsDragging(true);
-    e.dataTransfer.setData('text/plain', block.id.toString());
+    e.dataTransfer.setData('text/plain', block.id);
     e.dataTransfer.effectAllowed = 'move';
     
     // Create drag image

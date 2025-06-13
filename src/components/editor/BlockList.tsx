@@ -33,12 +33,12 @@ import { cn } from '@/lib/utils';
 
 interface BlockListProps {
   blocks: ReviewBlock[];
-  activeBlockId: number | null;
-  onActiveBlockChange: (blockId: number | null) => void;
-  onDeleteBlock: (blockId: number) => void;
-  onMoveBlock: (blockId: number, direction: 'up' | 'down') => void;
+  activeBlockId: string | null;
+  onActiveBlockChange: (blockId: string | null) => void;
+  onDeleteBlock: (blockId: string) => void;
+  onMoveBlock: (blockId: string, direction: 'up' | 'down') => void;
   onAddBlock: (type: BlockType, position?: number) => void;
-  onDuplicateBlock?: (blockId: number) => void;
+  onDuplicateBlock?: (blockId: string) => void;
   compact?: boolean;
 }
 
@@ -135,7 +135,7 @@ export const BlockList: React.FC<BlockListProps> = ({
     useBlockDragDrop(onMoveBlock);
 
   // Handle block selection with proper event handling
-  const handleBlockClick = (e: React.MouseEvent, blockId: number) => {
+  const handleBlockClick = (e: React.MouseEvent, blockId: string) => {
     // Prevent triggering on button clicks or other interactive elements
     const target = e.target as HTMLElement;
     if (target.closest('button') || target.closest('[role="button"]')) {

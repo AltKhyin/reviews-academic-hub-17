@@ -1,4 +1,3 @@
-
 // ABOUTME: Enhanced block management with complete 2D grid support
 // Handles block operations for both 1D and 2D grid layouts
 
@@ -22,7 +21,7 @@ export const useBlockManagement = ({
   issueId 
 }: UseBlockManagementProps) => {
   const [blocks, setBlocks] = useState<ReviewBlock[]>(initialBlocks);
-  const [activeBlockId, setActiveBlockId] = useState<number | null>(null);
+  const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
   const [history, setHistory] = useState<BlockHistory[]>([
     { blocks: initialBlocks, timestamp: Date.now() }
   ]);
@@ -45,12 +44,12 @@ export const useBlockManagement = ({
   }, [history, historyIndex]);
 
   // Generate unique block ID
-  const generateBlockId = useCallback((): number => {
-    return -(Date.now() + Math.random());
+  const generateBlockId = useCallback((): string => {
+    return `block_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }, []);
 
-  // Add new block - FIXED: Now returns the block ID
-  const addBlock = useCallback((type: BlockType, position?: number): number => {
+  // Add new block - Returns string ID
+  const addBlock = useCallback((type: BlockType, position?: number): string => {
     const newBlock: ReviewBlock = {
       id: generateBlockId(),
       type,
@@ -86,8 +85,8 @@ export const useBlockManagement = ({
     return newBlock.id;
   }, [blocks.length, issueId, generateBlockId, saveToHistory]);
 
-  // Update block
-  const updateBlock = useCallback((blockId: number, updates: Partial<ReviewBlock>) => {
+  // Update block - Now uses string ID
+  const updateBlock = useCallback((blockId: string, updates: Partial<ReviewBlock>) => {
     setBlocks(prevBlocks => {
       const blockExists = prevBlocks.some(block => block.id === blockId);
       if (!blockExists) {
@@ -112,8 +111,8 @@ export const useBlockManagement = ({
     console.log('Updated block:', { blockId, updates });
   }, [saveToHistory]);
 
-  // Delete block
-  const deleteBlock = useCallback((blockId: number) => {
+  // Delete block - Now uses string ID
+  const deleteBlock = useCallback((blockId: string) => {
     setBlocks(prevBlocks => {
       const blockExists = prevBlocks.some(block => block.id === blockId);
       if (!blockExists) {
@@ -139,8 +138,8 @@ export const useBlockManagement = ({
     console.log('Deleted block:', blockId);
   }, [activeBlockId, saveToHistory]);
 
-  // Move block
-  const moveBlock = useCallback((blockId: number, direction: 'up' | 'down') => {
+  // Move block - Now uses string ID
+  const moveBlock = useCallback((blockId: string, direction: 'up' | 'down') => {
     setBlocks(prevBlocks => {
       const blockIndex = prevBlocks.findIndex(b => b.id === blockId);
       if (blockIndex === -1) return prevBlocks;
@@ -163,8 +162,8 @@ export const useBlockManagement = ({
     console.log('Moved block:', { blockId, direction });
   }, [saveToHistory]);
 
-  // Duplicate block
-  const duplicateBlock = useCallback((blockId: number) => {
+  // Duplicate block - Now uses string ID
+  const duplicateBlock = useCallback((blockId: string) => {
     const originalBlock = blocks.find(b => b.id === blockId);
     if (!originalBlock) return;
 
@@ -198,8 +197,8 @@ export const useBlockManagement = ({
     return duplicatedBlock.id;
   }, [blocks, generateBlockId, saveToHistory]);
 
-  // Convert single block to 1D grid
-  const convertToGrid = useCallback((blockId: number, columns: number) => {
+  // Convert single block to 1D grid - Now uses string ID
+  const convertToGrid = useCallback((blockId: string, columns: number) => {
     const block = blocks.find(b => b.id === blockId);
     if (!block) return;
 
@@ -221,8 +220,8 @@ export const useBlockManagement = ({
     console.log('Converted block to 1D grid:', { blockId, columns, rowId });
   }, [blocks, updateBlock]);
 
-  // Convert single block to 2D grid - FIXED: Proper grid creation
-  const convertTo2DGrid = useCallback((blockId: number, columns: number, rows: number) => {
+  // Convert single block to 2D grid - Now uses string ID
+  const convertTo2DGrid = useCallback((blockId: string, columns: number, rows: number) => {
     const block = blocks.find(b => b.id === blockId);
     if (!block) {
       console.error('Block not found for 2D grid conversion:', blockId);
@@ -252,9 +251,9 @@ export const useBlockManagement = ({
     console.log('Successfully converted block to 2D grid:', { blockId, gridId });
   }, [blocks, updateBlock]);
 
-  // Enhanced merge function for both 1D and 2D grids
+  // Enhanced merge function for both 1D and 2D grids - Now uses string ID
   const mergeBlockIntoGrid = useCallback((
-    draggedBlockId: number, 
+    draggedBlockId: string, 
     targetRowId: string, 
     targetPosition?: number
   ) => {
@@ -405,9 +404,9 @@ export const useBlockManagement = ({
     });
   }, [blocks, updateBlock]);
 
-  // Place block in 2D grid - FIXED: Proper validation and error handling
+  // Place block in 2D grid - Now uses string ID
   const placeBlockIn2DGrid = useCallback((
-    blockId: number,
+    blockId: string,
     gridId: string,
     position: GridPosition
   ) => {
