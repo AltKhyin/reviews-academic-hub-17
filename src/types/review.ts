@@ -1,6 +1,6 @@
 
 // ABOUTME: Core review and block type definitions with standardized string IDs
-// Updated to resolve editor component type mismatches - ENHANCED: Complete meta interface
+// Updated to resolve editor component type mismatches - ENHANCED: Complete meta interface with diagram fixes
 
 export interface ReviewBlock {
   id: string; // Standardized to string across all components
@@ -8,6 +8,9 @@ export interface ReviewBlock {
   content: any;
   visible: boolean;
   sort_index: number;
+  order?: number; // Added for compatibility
+  created_at: string;
+  updated_at: string;
   meta?: {
     layout?: {
       row_id?: string;
@@ -102,32 +105,64 @@ export interface EnhancedIssue extends Issue {
   };
 }
 
-// Diagram system types
+// Fixed Diagram system types to match actual usage
 export interface DiagramNode {
   id: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  type: 'rect' | 'circle' | 'diamond' | 'text';
-  label: string;
-  color?: string;
-  backgroundColor?: string;
+  type: 'rectangle' | 'rounded-rect' | 'circle' | 'ellipse' | 'diamond' | 'triangle' | 'hexagon';
+  position: { x: number; y: number };
+  size: { width: number; height: number };
+  text: string;
+  style: {
+    backgroundColor?: string;
+    borderColor?: string;
+    borderWidth?: number;
+    borderRadius?: number;
+    borderStyle?: 'solid' | 'dashed' | 'dotted';
+    textColor?: string;
+    fontSize?: number;
+    fontWeight?: string;
+    opacity?: number;
+  };
 }
 
 export interface DiagramConnection {
   id: string;
-  sourceId: string;
-  targetId: string;
-  type: 'arrow' | 'line' | 'dashed';
-  label?: string;
-  color?: string;
+  sourceNodeId: string; // Fixed naming
+  targetNodeId: string; // Fixed naming
+  sourcePoint: string;
+  targetPoint: string;
+  style: {
+    strokeColor: string;
+    strokeWidth: number;
+    strokeStyle: 'solid' | 'dashed' | 'dotted';
+    arrowType: 'none' | 'arrow' | 'double-arrow' | 'circle' | 'diamond';
+    curved: boolean;
+    opacity: number;
+  };
+  label?: {
+    text: string;
+    position: number;
+    style: {
+      backgroundColor: string;
+      textColor: string;
+      fontSize: number;
+    };
+  };
 }
 
 export interface DiagramContent {
+  canvas: {
+    width: number;
+    height: number;
+    backgroundColor: string;
+    gridEnabled: boolean;
+    gridSize: number;
+    gridColor: string;
+    snapToGrid: boolean;
+  };
   nodes: DiagramNode[];
   connections: DiagramConnection[];
-  layout: {
+  layout?: {
     width: number;
     height: number;
     zoom: number;
@@ -162,4 +197,12 @@ export interface TOCSection {
   level: number;
   anchor?: string;
   subsections?: TOCSection[];
+}
+
+// Layout Row Data interface
+export interface LayoutRowData {
+  id: string;
+  blocks: ReviewBlock[];
+  columns: number;
+  columnWidths?: number[];
 }

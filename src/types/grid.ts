@@ -1,47 +1,46 @@
 
-// ABOUTME: Grid position and layout type definitions
-// Fixed to support string IDs consistently - ENHANCED: Complete grid interfaces
+// ABOUTME: Grid layout and positioning types
+// Core grid system type definitions
 
 export interface GridPosition {
   row: number;
   column: number;
 }
 
-export interface GridCell {
-  id: string;
-  block?: ReviewBlock;
-  position: GridPosition;
+export interface LayoutRowProps {
+  row: LayoutRowData;
+  onUpdateRow: (rowId: string, updates: Partial<LayoutRowData>) => void;
+  onDeleteRow: (rowId: string) => void;
+  onAddBlock: (rowId: string, position: number, blockType: string) => void;
+  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
+  onMoveBlock: (blockId: string, direction: 'up' | 'down') => void;
+  onDeleteBlock: (blockId: string) => void;
+  readonly?: boolean;
 }
 
-export interface GridRow {
+export interface LayoutRowData {
   id: string;
-  cells: GridCell[];
   blocks: ReviewBlock[];
   columns: number;
-}
-
-export interface Grid2D {
-  id: string;
-  columns: number;
-  rows: number;
-  blocks: Array<{
-    blockId: string;
-    position: GridPosition;
-  }>;
-}
-
-export interface Grid2DLayout {
-  id: string;
-  columns: number;
-  rows: GridRow[]; // Changed from number to GridRow[] to match usage
-  gap: number;
   columnWidths?: number[];
-  rowHeights?: number[];
-  blocks: Array<{
-    block: ReviewBlock;
-    position: GridPosition;
-  }>;
 }
 
-// Import ReviewBlock type for circular dependency resolution
-import type { ReviewBlock } from './review';
+export interface Grid2DCellProps {
+  gridId: string;
+  position: GridPosition;
+  block: ReviewBlock;
+  activeBlockId: string;
+  onActiveBlockChange: (blockId: string) => void;
+  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
+  onDeleteBlock: (blockId: string) => void;
+  onMoveBlock: (blockId: string, direction: 'up' | 'down') => void;
+  dragState: any;
+  onDragStart: (blockId: string) => void;
+  onDragOver: (e: React.DragEvent, targetId: string, position?: number) => void;
+  onDragLeave: (e: React.DragEvent) => void;
+  onDrop: (e: React.DragEvent, targetId: string, position?: number) => void;
+  onDragEnd: () => void;
+}
+
+// Import ReviewBlock from review types
+import { ReviewBlock } from './review';
