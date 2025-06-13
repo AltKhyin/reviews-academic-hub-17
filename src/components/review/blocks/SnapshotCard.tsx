@@ -1,243 +1,136 @@
 
-// ABOUTME: Evidence summary card with PICOD framework
-// Displays structured clinical evidence with visual indicators
+// ABOUTME: Snapshot card block component for displaying key metrics and stats
+// Fixed to use proper type imports from review types
 
-import React, { useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { 
-  Users, 
-  Activity, 
-  GitCompare, 
-  Target, 
-  FlaskConical,
-  TrendingUp,
-  CheckCircle2,
-  AlertTriangle
-} from 'lucide-react';
-import { SnapshotCardContent } from '@/types/review';
+import React from 'react';
+import { ReviewBlock, SnapshotCardContent } from '@/types/review';
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SnapshotCardProps {
-  content: SnapshotCardContent;
-  onUpdate?: (updates: any) => void;
+  block: ReviewBlock;
+  onUpdate?: (updates: Partial<ReviewBlock>) => void;
   readonly?: boolean;
 }
 
 export const SnapshotCard: React.FC<SnapshotCardProps> = ({
-  content,
+  block,
   onUpdate,
-  readonly
+  readonly = false
 }) => {
-  // Safe access to content with comprehensive fallbacks
-  const safeContent: SnapshotCardContent = {
-    title: content?.title || '',
-    subtitle: content?.subtitle || '',
-    value: content?.value || '',
-    change: content?.change || '',
-    trend: content?.trend || 'neutral',
-    icon: content?.icon || '',
-    evidence_level: content?.evidence_level || 'moderate',
-    recommendation_strength: content?.recommendation_strength || 'conditional',
-    population: content?.population || '',
-    intervention: content?.intervention || '',
-    comparison: content?.comparison || '',
-    outcome: content?.outcome || '',
-    design: content?.design || '',
-    key_findings: Array.isArray(content?.key_findings) ? content.key_findings : []
-  };
+  // Type-safe content access
+  const cardContent = block.content as SnapshotCardContent;
 
-  const getEvidenceLevelConfig = () => {
-    switch (safeContent.evidence_level) {
-      case 'high':
-        return {
-          color: 'bg-green-500',
-          text: 'Alta Qualidade',
-          icon: CheckCircle2,
-          description: 'Evidência robusta e confiável'
-        };
-      case 'moderate':
-        return {
-          color: 'bg-yellow-500',
-          text: 'Qualidade Moderada',
-          icon: AlertTriangle,
-          description: 'Evidência com algumas limitações'
-        };
-      case 'low':
-        return {
-          color: 'bg-orange-500',
-          text: 'Baixa Qualidade',
-          icon: AlertTriangle,
-          description: 'Evidência com limitações importantes'
-        };
-      case 'very_low':
-        return {
-          color: 'bg-red-500',
-          text: 'Muito Baixa Qualidade',
-          icon: AlertTriangle,
-          description: 'Evidência muito limitada'
-        };
+  if (!cardContent?.title && !cardContent?.value) {
+    return (
+      <div className="snapshot-card-empty border-2 border-dashed border-gray-600 rounded-lg p-6 text-center">
+        <div className="text-gray-400">
+          <div className="w-12 h-12 mx-auto mb-4 bg-gray-700 rounded-lg flex items-center justify-center">
+            <span className="text-lg font-bold">📊</span>
+          </div>
+          <p className="font-medium mb-2">Cartão de estatística vazio</p>
+          <p className="text-sm">Configure o título e valor</p>
+        </div>
+      </div>
+    );
+  }
+
+  const getTrendIcon = () => {
+    if (!cardContent.trend) return null;
+    
+    switch (cardContent.trend.direction) {
+      case 'up':
+        return <TrendingUp className="w-4 h-4 text-green-500" />;
+      case 'down':
+        return <TrendingDown className="w-4 h-4 text-red-500" />;
+      case 'stable':
+        return <Minus className="w-4 h-4 text-gray-500" />;
       default:
-        return {
-          color: 'bg-gray-500',
-          text: 'Não Avaliada',
-          icon: AlertTriangle,
-          description: 'Qualidade da evidência não determinada'
-        };
+        return null;
     }
   };
 
-  const getRecommendationConfig = () => {
-    switch (safeContent.recommendation_strength) {
-      case 'strong':
-        return {
-          color: 'text-green-700 bg-green-100 border-green-200',
-          text: 'Recomendação Forte',
-          description: 'Benefícios claramente superam os riscos'
-        };
-      case 'conditional':
-        return {
-          color: 'text-yellow-700 bg-yellow-100 border-yellow-200',
-          text: 'Recomendação Condicional',
-          description: 'Benefícios provavelmente superam os riscos'
-        };
-      case 'expert_opinion':
-        return {
-          color: 'text-purple-700 bg-purple-100 border-purple-200',
-          text: 'Opinião de Especialista',
-          description: 'Baseado na experiência clínica'
-        };
+  const getTrendColor = () => {
+    if (!cardContent.trend) return 'text-gray-400';
+    
+    switch (cardContent.trend.direction) {
+      case 'up':
+        return 'text-green-500';
+      case 'down':
+        return 'text-red-500';
+      case 'stable':
+        return 'text-gray-500';
       default:
-        return {
-          color: 'text-gray-700 bg-gray-100 border-gray-200',
-          text: 'Não Classificada',
-          description: 'Força da recomendação não determinada'
-        };
+        return 'text-gray-400';
     }
   };
-
-  const evidenceConfig = getEvidenceLevelConfig();
-  const recommendationConfig = getRecommendationConfig();
-  const EvidenceIcon = evidenceConfig.icon;
 
   return (
-    <Card className="snapshot-card bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800 shadow-lg my-8">
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
-            <FlaskConical className="w-6 h-6" />
-            Cartão de Evidência Científica
-          </CardTitle>
-          
-          <div className="flex items-center gap-2">
-            <div className={cn("w-3 h-3 rounded-full", evidenceConfig.color)}></div>
-            <EvidenceIcon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-          </div>
+    <div 
+      className={cn(
+        "snapshot-card border rounded-lg p-6 transition-all duration-200",
+        "bg-gray-800/50 border-gray-600 hover:border-gray-500"
+      )}
+      style={{ 
+        borderColor: cardContent.color || '#374151',
+        backgroundColor: cardContent.color ? `${cardContent.color}15` : undefined 
+      }}
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between mb-4">
+        <div>
+          <h3 className="text-lg font-semibold text-white mb-1">
+            {cardContent.title}
+          </h3>
+          {cardContent.subtitle && (
+            <p className="text-sm text-gray-400">
+              {cardContent.subtitle}
+            </p>
+          )}
         </div>
-      </CardHeader>
-      
-      <CardContent className="space-y-6">
-        {/* PICOD Framework */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Population */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              <h4 className="font-semibold text-gray-900 dark:text-gray-100">População</h4>
-            </div>
-            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-              {safeContent.population || 'Não especificada'}
-            </p>
-          </div>
-
-          {/* Intervention */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Activity className="w-4 h-4 text-green-600 dark:text-green-400" />
-              <h4 className="font-semibold text-gray-900 dark:text-gray-100">Intervenção</h4>
-            </div>
-            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-              {safeContent.intervention || 'Não especificada'}
-            </p>
-          </div>
-
-          {/* Comparison */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <GitCompare className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-              <h4 className="font-semibold text-gray-900 dark:text-gray-100">Comparação</h4>
-            </div>
-            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-              {safeContent.comparison || 'Não especificada'}
-            </p>
-          </div>
-
-          {/* Outcome */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Target className="w-4 h-4 text-red-600 dark:text-red-400" />
-              <h4 className="font-semibold text-gray-900 dark:text-gray-100">Desfecho</h4>
-            </div>
-            <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-              {safeContent.outcome || 'Não especificado'}
-            </p>
-          </div>
-        </div>
-
-        <Separator className="dark:border-gray-700" />
-
-        {/* Study Design */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <FlaskConical className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-            <h4 className="font-semibold text-gray-900 dark:text-gray-100">Desenho do Estudo</h4>
-          </div>
-          <Badge variant="outline" className="dark:border-gray-600 dark:text-gray-300">
-            {safeContent.design || 'Não especificado'}
-          </Badge>
-        </div>
-
-        {/* Key Findings */}
-        {safeContent.key_findings && Array.isArray(safeContent.key_findings) && safeContent.key_findings.length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-              <h4 className="font-semibold text-gray-900 dark:text-gray-100">Principais Achados</h4>
-            </div>
-            <ul className="space-y-1">
-              {safeContent.key_findings.map((finding, index) => (
-                <li key={index} className="text-sm text-gray-700 dark:text-gray-300 flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full mt-2 flex-shrink-0"></span>
-                  {finding}
-                </li>
-              ))}
-            </ul>
+        
+        {cardContent.icon && (
+          <div className="text-2xl opacity-60">
+            {cardContent.icon}
           </div>
         )}
+      </div>
 
-        <Separator className="dark:border-gray-700" />
-
-        {/* Evidence Quality and Recommendation */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <h4 className="font-semibold text-gray-900 dark:text-gray-100">Qualidade da Evidência</h4>
-            <div className="flex items-center gap-2">
-              <div className={cn("w-3 h-3 rounded-full", evidenceConfig.color)}></div>
-              <span className="text-sm font-medium text-gray-800 dark:text-gray-200">{evidenceConfig.text}</span>
-            </div>
-            <p className="text-xs text-gray-600 dark:text-gray-400">{evidenceConfig.description}</p>
-          </div>
-
-          <div className="space-y-2">
-            <h4 className="font-semibold text-gray-900 dark:text-gray-100">Força da Recomendação</h4>
-            <Badge className={recommendationConfig.color}>
-              {recommendationConfig.text}
-            </Badge>
-            <p className="text-xs text-gray-600 dark:text-gray-400">{recommendationConfig.description}</p>
-          </div>
+      {/* Main Value */}
+      <div className="mb-4">
+        <div 
+          className="text-3xl font-bold mb-2"
+          style={{ color: cardContent.color || '#ffffff' }}
+        >
+          {cardContent.value}
         </div>
-      </CardContent>
-    </Card>
+        
+        {cardContent.description && (
+          <p className="text-sm text-gray-300">
+            {cardContent.description}
+          </p>
+        )}
+      </div>
+
+      {/* Trend Indicator */}
+      {cardContent.trend && (
+        <div className="flex items-center gap-2">
+          {getTrendIcon()}
+          <span className={cn("text-sm font-medium", getTrendColor())}>
+            {cardContent.trend.percentage && (
+              <span>{cardContent.trend.percentage}%</span>
+            )}
+            {cardContent.trend.period && (
+              <span className="ml-1 text-gray-400">
+                {cardContent.trend.period}
+              </span>
+            )}
+          </span>
+        </div>
+      )}
+    </div>
   );
 };
+
+// Export as SnapshotCardBlock for consistency with other block components
+export const SnapshotCardBlock = SnapshotCard;

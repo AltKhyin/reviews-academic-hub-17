@@ -1,415 +1,62 @@
 
-// ABOUTME: Main viewer component for native review content with enhanced error handling
-// Provides comprehensive loading states, error boundaries, and user interaction tracking
+// ABOUTME: Native review viewer component for displaying review content
+// Fixed to use proper type imports and handle enhanced issue data
 
-import React, { useState, useEffect } from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { FileText, Clock, Users, TrendingUp, Eye, ArrowLeft, AlertTriangle } from 'lucide-react';
-import { EnhancedIssue } from '@/types/review';
-import { useNativeReview } from '@/hooks/useNativeReview';
+import React from 'react';
+import { Issue } from '@/types/review';
 import { BlockRenderer } from './BlockRenderer';
-import { ViewModeSwitcher } from '../article/ViewModeSwitcher';
-import { PDFViewer } from '../pdf/PDFViewer';
-import { Link } from 'react-router-dom';
-import { cn } from '@/lib/utils';
-import { throttle } from '@/utils/throttle';
+
+// Enhanced Issue interface with computed properties (defined locally to avoid circular dependencies)
+interface EnhancedIssue extends Issue {
+  content_blocks?: any[];
+  table_of_contents?: any;
+  interaction_data?: {
+    is_bookmarked?: boolean;
+    user_reaction?: string | null;
+    view_count?: number;
+  };
+}
 
 interface NativeReviewViewerProps {
   issue: EnhancedIssue;
+  onBlockInteraction?: (blockId: string, interactionType: string, data?: any) => void;
+  onSectionView?: (blockId: string) => void;
   className?: string;
 }
 
 export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
   issue,
+  onBlockInteraction,
+  onSectionView,
   className
 }) => {
-  const { reviewData, isLoading, error, trackAnalytics, voteOnPoll } = useNativeReview(issue.id);
-  const [viewMode, setViewMode] = useState<'native' | 'pdf' | 'dual'>('native');
-  const [readingProgress, setReadingProgress] = useState(0);
-  const [activeSection, setActiveSection] = useState<string | null>(null);
-  const [startTime] = useState(Date.now());
-  const [sectionsViewed, setSectionsViewed] = useState<Set<string>>(new Set());
+  const blocks = issue.content_blocks || issue.review_content || [];
 
-  useEffect(() => {
-    // Track review opened event
-    if (reviewData) {
-      trackAnalytics({
-        eventType: 'review_opened',
-        eventData: {
-          review_type: issue.review_type,
-          has_original_pdf: !!issue.article_pdf_url,
-          total_blocks: reviewData.blocks?.length || 0
-        }
-      }).catch(console.error);
-    }
-  }, [issue.id, issue.review_type, issue.article_pdf_url, reviewData?.blocks?.length, trackAnalytics]);
-
-  useEffect(() => {
-    // Setup scroll progress tracking
-    const handleScroll = () => {
-      const scrollTop = window.pageYOffset;
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-      const progress = docHeight > 0 ? Math.min(100, Math.max(0, (scrollTop / docHeight) * 100)) : 0;
-      
-      setReadingProgress(progress);
-
-      // Track reading progress milestones
-      if (progress > 25 && progress < 30) {
-        trackAnalytics({
-          eventType: 'section_viewed',
-          eventData: { milestone: '25%' },
-          scrollDepth: progress
-        }).catch(console.error);
-      } else if (progress > 50 && progress < 55) {
-        trackAnalytics({
-          eventType: 'section_viewed',
-          eventData: { milestone: '50%' },
-          scrollDepth: progress
-        }).catch(console.error);
-      } else if (progress > 75 && progress < 80) {
-        trackAnalytics({
-          eventType: 'section_viewed',
-          eventData: { milestone: '75%' },
-          scrollDepth: progress
-        }).catch(console.error);
-      } else if (progress > 95) {
-        trackAnalytics({
-          eventType: 'review_completed',
-          eventData: { 
-            time_spent: Date.now() - startTime,
-            sections_viewed: sectionsViewed.size
-          },
-          scrollDepth: progress,
-          timeSpent: Math.floor((Date.now() - startTime) / 1000)
-        }).catch(console.error);
-      }
-    };
-
-    const throttledScroll = throttle(handleScroll, 250);
-    window.addEventListener('scroll', throttledScroll);
-    return () => window.removeEventListener('scroll', throttledScroll);
-  }, [trackAnalytics, startTime, sectionsViewed.size]);
-
-  const handleViewModeChange = (mode: string) => {
-    setViewMode(mode as 'native' | 'pdf' | 'dual');
-    trackAnalytics({
-      eventType: 'view_mode_changed',
-      eventData: { 
-        from_mode: viewMode,
-        to_mode: mode
-      }
-    }).catch(console.error);
-  };
-
-  const handleBlockInteraction = (blockId: string, interactionType: string, data?: any) => {
-    trackAnalytics({
-      eventType: 'block_interaction',
-      eventData: {
-        block_id: blockId,
-        interaction_type: interactionType,
-        ...data
-      }
-    }).catch(console.error);
-  };
-
-  const handleSectionView = (blockId: string) => {
-    setActiveSection(blockId);
-    setSectionsViewed(prev => new Set([...prev, blockId]));
-  };
-
-  if (isLoading) {
+  if (!blocks || blocks.length === 0) {
     return (
-      <div 
-        className="flex items-center justify-center min-h-screen"
-        style={{ backgroundColor: '#121212', color: '#ffffff' }}
-      >
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 mx-auto mb-4" 
-               style={{ borderColor: '#3b82f6' }}></div>
-          <p style={{ color: '#d1d5db' }}>Carregando revisão...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    console.error('Native review viewer error:', error);
-    return (
-      <div 
-        className="flex items-center justify-center min-h-screen"
-        style={{ backgroundColor: '#121212', color: '#ffffff' }}
-      >
-        <Card className="p-8 max-w-md mx-4" style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
-          <div className="text-center">
-            <AlertTriangle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-            <h2 className="text-xl font-bold text-red-300 mb-2">Erro ao carregar revisão</h2>
-            <p className="text-red-200 mb-4">
-              Não foi possível carregar os dados da revisão.
-            </p>
-            <div className="space-y-2">
-              <Button asChild variant="outline" className="w-full">
-                <Link to="/dashboard">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Voltar ao Dashboard
-                </Link>
-              </Button>
-              <Button 
-                onClick={() => window.location.reload()} 
-                variant="outline"
-                className="w-full"
-              >
-                Tentar novamente
-              </Button>
-            </div>
-            <details className="mt-4 text-left">
-              <summary className="cursor-pointer text-red-300">Detalhes do erro</summary>
-              <pre className="mt-2 text-xs text-red-200 bg-red-500/20 p-2 rounded overflow-auto">
-                {error?.message || 'Erro desconhecido'}
-              </pre>
-            </details>
+      <div className="native-review-viewer-empty text-center py-12">
+        <div className="text-gray-400">
+          <div className="w-16 h-16 mx-auto mb-4 bg-gray-700 rounded-lg flex items-center justify-center">
+            <span className="text-2xl">📄</span>
           </div>
-        </Card>
-      </div>
-    );
-  }
-
-  if (!reviewData) {
-    return (
-      <div 
-        className="flex items-center justify-center min-h-screen"
-        style={{ backgroundColor: '#121212', color: '#ffffff' }}
-      >
-        <div className="text-center">
-          <p style={{ color: '#d1d5db' }}>Revisão não encontrada</p>
+          <h3 className="text-lg font-medium mb-2">Conteúdo não disponível</h3>
+          <p className="text-sm">Este artigo não possui conteúdo nativo ou está sendo carregado.</p>
         </div>
       </div>
     );
   }
-
-  const { blocks } = reviewData;
 
   return (
-    <div 
-      className={cn("native-review-viewer", className)}
-      style={{ backgroundColor: '#121212', color: '#ffffff', minHeight: '100vh' }}
-    >
-      {/* Progress Bar - Fixed at top */}
-      <div 
-        className="fixed top-0 left-0 right-0 z-50 border-b"
-        style={{ backgroundColor: '#121212', borderColor: '#2a2a2a' }}
-      >
-        <Progress 
-          value={readingProgress} 
-          className="h-1 rounded-none"
-          style={{ backgroundColor: '#2a2a2a' }}
+    <div className={`native-review-viewer space-y-6 ${className || ''}`}>
+      {blocks.map((block: any) => (
+        <BlockRenderer
+          key={block.id}
+          block={block}
+          readonly={true}
+          onInteraction={onBlockInteraction}
+          onSectionView={onSectionView}
         />
-      </div>
-
-      {/* Header Section */}
-      <div 
-        className="border-b py-6 mt-1"
-        style={{ backgroundColor: '#121212', borderColor: '#2a2a2a' }}
-      >
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Back Button */}
-          <div className="mb-4">
-            <Button asChild variant="ghost" style={{ color: '#d1d5db' }}>
-              <Link to="/dashboard">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Voltar ao Dashboard
-              </Link>
-            </Button>
-          </div>
-
-          {/* View Mode Switcher */}
-          <div className="mb-6">
-            <ViewModeSwitcher
-              currentMode={viewMode}
-              onModeChange={handleViewModeChange}
-              hasOriginalPDF={!!issue.article_pdf_url}
-              hasNativeContent={true}
-              hasPDFReview={!!issue.pdf_url}
-            />
-          </div>
-
-          {/* Article Metadata */}
-          <div className="space-y-4">
-            <div className="flex flex-wrap items-center gap-2 text-sm">
-              <Badge 
-                variant="outline" 
-                className="px-3 py-1"
-                style={{ 
-                  backgroundColor: '#1e3a8a',
-                  borderColor: '#3b82f6',
-                  color: '#93c5fd'
-                }}
-              >
-                {issue.specialty}
-              </Badge>
-              {issue.year && (
-                <span className="flex items-center gap-1" style={{ color: '#d1d5db' }}>
-                  <Clock className="w-4 h-4" />
-                  {issue.year}
-                </span>
-              )}
-              {issue.population && (
-                <span className="flex items-center gap-1" style={{ color: '#d1d5db' }}>
-                  <Users className="w-4 h-4" />
-                  {issue.population}
-                </span>
-              )}
-              <span className="flex items-center gap-1" style={{ color: '#d1d5db' }}>
-                <Eye className="w-4 h-4" />
-                Revisão
-              </span>
-              <span className="text-xs" style={{ color: '#9ca3af' }}>
-                {blocks.length} {blocks.length === 1 ? 'bloco' : 'blocos'}
-              </span>
-            </div>
-
-            <h1 className="text-2xl md:text-3xl font-bold leading-tight" style={{ color: '#ffffff' }}>
-              {issue.title}
-            </h1>
-
-            {issue.description && (
-              <p className="text-lg leading-relaxed" style={{ color: '#d1d5db' }}>
-                {issue.description}
-              </p>
-            )}
-
-            {issue.authors && (
-              <div className="text-sm" style={{ color: '#d1d5db' }}>
-                <strong>Autores do estudo original:</strong> {issue.authors}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content Area */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {viewMode === 'native' && (
-          <div className="native-content space-y-6">
-            {blocks.length > 0 ? (
-              blocks.map((block) => (
-                <BlockRenderer
-                  key={block.id}
-                  block={block}
-                  readonly={true}
-                  onInteraction={handleBlockInteraction}
-                  onSectionView={handleSectionView}
-                />
-              ))
-            ) : (
-              <Card 
-                className="p-8 text-center shadow-lg"
-                style={{ 
-                  backgroundColor: '#1a1a1a',
-                  borderColor: '#2a2a2a'
-                }}
-              >
-                <FileText className="w-12 h-12 mx-auto mb-4" style={{ color: '#6b7280' }} />
-                <h3 className="text-lg font-medium mb-2" style={{ color: '#ffffff' }}>
-                  Conteúdo da Revisão em Desenvolvimento
-                </h3>
-                <p className="mb-4" style={{ color: '#d1d5db' }}>
-                  O conteúdo desta revisão ainda não foi criado. 
-                  {issue.article_pdf_url && ' Você pode visualizar o artigo original enquanto isso.'}
-                </p>
-                {issue.article_pdf_url && (
-                  <Button 
-                    onClick={() => handleViewModeChange('pdf')}
-                    variant="outline"
-                    style={{ 
-                      borderColor: '#3b82f6',
-                      color: '#3b82f6'
-                    }}
-                  >
-                    Ver Artigo Original (PDF)
-                  </Button>
-                )}
-              </Card>
-            )}
-          </div>
-        )}
-
-        {viewMode === 'pdf' && issue.article_pdf_url && (
-          <div className="pdf-content">
-            <PDFViewer 
-              url={issue.article_pdf_url} 
-              title="Artigo Original"
-              className="min-h-[80vh]"
-            />
-          </div>
-        )}
-
-        {viewMode === 'dual' && (
-          <div className="dual-content grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="native-panel">
-              <h3 className="text-lg font-semibold mb-4" style={{ color: '#ffffff' }}>
-                Revisão Estruturada
-              </h3>
-              <div className="space-y-4 max-h-[80vh] overflow-y-auto pr-4">
-                {blocks.length > 0 ? (
-                  blocks.map((block) => (
-                    <BlockRenderer
-                      key={block.id}
-                      block={block}
-                      readonly={true}
-                      onInteraction={handleBlockInteraction}
-                      onSectionView={handleSectionView}
-                    />
-                  ))
-                ) : (
-                  <Card 
-                    className="p-6 text-center"
-                    style={{ 
-                      backgroundColor: '#1a1a1a',
-                      borderColor: '#2a2a2a'
-                    }}
-                  >
-                    <FileText className="w-8 h-8 mx-auto mb-3" style={{ color: '#6b7280' }} />
-                    <p className="text-sm" style={{ color: '#d1d5db' }}>
-                      Conteúdo em desenvolvimento
-                    </p>
-                  </Card>
-                )}
-              </div>
-            </div>
-            
-            <div className="pdf-panel">
-              <h3 className="text-lg font-semibold mb-4" style={{ color: '#ffffff' }}>
-                Artigo Original
-              </h3>
-              {issue.article_pdf_url ? (
-                <PDFViewer 
-                  url={issue.article_pdf_url} 
-                  title="Artigo Original"
-                  className="h-[80vh]"
-                />
-              ) : (
-                <Card 
-                  className="p-6 text-center h-[80vh] flex items-center justify-center"
-                  style={{ 
-                    backgroundColor: '#1a1a1a',
-                    borderColor: '#2a2a2a'
-                  }}
-                >
-                  <div>
-                    <FileText className="w-12 h-12 mx-auto mb-4" style={{ color: '#6b7280' }} />
-                    <p style={{ color: '#d1d5db' }}>
-                      PDF original não disponível
-                    </p>
-                  </div>
-                </Card>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
+      ))}
     </div>
   );
 };
