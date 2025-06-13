@@ -1,520 +1,797 @@
 
-# README-BÍBLIA.md
-# Version 3.7.0 · 2025-06-13
-#
-# ── PERMA‑BLOCK ───────────────────────────────────────────────────────────────────────────────
-# SELF‑CHECK sentinel — On every reasoning loop verify THIS PERMA‑BLOCK exists **verbatim**.
-# If absent ⇒ STOP and reload this KB or ask the user to re‑inject. Never proceed without it.
-# ─────────────────────────────────────────────────────────────────────────────────────────────
+# README-BÍBLIA v3.8.0
+> **Comprehensive Project Context & Emergency Architecture Status**
+> Last Updated: 2025-06-13 | **🚨 CRITICAL ARCHITECTURE CRISIS**
 
-## 1. Purpose & Pitch (≤30 lines)
+---
 
-**ACADEMIA REVIEW PLATFORM** — Native Block Editor Sistema de Review Científico  
-Uma plataforma moderna para criação, edição e publicação de reviews científicos com editor nativo de blocos.
+## 🚨 EMERGENCY STATUS: CRITICAL PERFORMANCE CRISIS
 
-**Core Features:**
-- ✅ Native Block Editor com suporte a grids 1D/2D  
-- ✅ Sistema de autenticação e permissões via Supabase  
-- ✅ Preview em tempo real e modo fullscreen  
-- ✅ Gestão de issues, comentários e votações  
-- ✅ Interface responsiva com Tailwind CSS  
-- ✅ Arquitetura TypeScript rigorosa  
+**Current Crisis**: 70+ API requests per page load causing severe performance degradation
+**Root Cause**: Widespread architectural coordination failures and context bypass patterns
+**Action Required**: Immediate architectural transformation with request coordination system
+**Timeline**: 48-hour emergency response plan active
 
-**Status:** Em desenvolvimento ativo — Type System Foundation COMPLETE ✅  
-**Target:** Comunidade científica, pesquisadores, plataformas acadêmicas  
+---
 
-## 2. Glossary (60 lines)
+## 1. PURPOSE & PITCH (≤30 lines)
 
-**REVIEW SYSTEM**
-- **Issue**: Documento de review científico com metadados estruturados
-- **Review Block**: Unidade atômica de conteúdo (texto, imagem, tabela, etc.)
-- **Native Editor**: Editor de blocos personalizado com funcionalidades avançadas
-- **Grid Layout**: Sistema de layout em grid 1D (colunas) e 2D (matriz)
+**BMJ Review** is a comprehensive medical literature review platform that provides healthcare professionals with curated, analyzed, and peer-reviewed medical research content. The platform combines traditional PDF-based reviews with interactive components, community features, and performance analytics.
 
-**ARCHITECTURE**
-- **Block Renderer**: Sistema responsável por renderizar diferentes tipos de blocos
-- **Layout Manager**: Gerencia posicionamento e estrutura de layouts em grid
-- **Type System**: Sistema rigoroso de tipos TypeScript com IDs string (UUID)
-- **Component Architecture**: Estrutura modular com hooks focados e componentes pequenos
+**Current Architecture Crisis**: The application suffers from critical performance issues due to:
+- Components bypassing centralized data management (`UserInteractionContext`)
+- Multiple overlapping performance monitoring systems consuming 300MB+ memory
+- No architectural enforcement preventing direct API access in components
+- Data loading patterns fragmented across 70+ individual API calls per page
 
-**DATA FLOW**
-- **Block Management**: Hooks para CRUD de blocos com estado global
-- **Grid Management**: Hooks especializados para layouts 1D/2D
-- **Editor State**: Estado centralizado do editor com undo/redo
-- **Auto Save**: Sistema automático de salvamento com fallback manual
+**Immediate Value Proposition**: 
+- 🚨 **Performance Crisis Resolution**: Transform 70+ API requests to <10 per page
+- 🏗️ **Architectural Foundation**: Implement coordinated data access patterns
+- 🔧 **System Sustainability**: Establish enforcement mechanisms for maintainable code
+- 🚀 **User Experience**: Achieve <2 second page load times
 
-**UI/UX**
-- **Block Palette**: Painel lateral com tipos de blocos categorizados
-- **Live Preview**: Preview em tempo real com viewport responsivo
-- **Editor Toolbar**: Controles de modo, salvamento e histórico
-- **Status Bar**: Indicadores de status e estatísticas do documento
+---
 
-## 3. High-Level Architecture (120 lines)
+## 2. GLOSSARY (60 lines)
 
+### **🚨 EMERGENCY ARCHITECTURE TERMS**
+- **Context Bypass Pattern**: Components systematically circumventing `UserInteractionContext`
+- **Request Cascade**: 70+ API requests triggered simultaneously on page load
+- **Monitoring Overhead**: 15-25% CPU consumption from three overlapping monitoring systems
+- **Architectural Violation**: Direct Supabase imports in components bypassing coordination
+
+### **CORE PLATFORM CONCEPTS**
+- **Issue**: A complete medical literature review (PDF + interactive content)
+- **Review Block**: Interactive component within a review (polls, discussions, media)
+- **User Interaction**: Bookmarks, reactions, votes, comments associated with content
+- **Section Configuration**: Homepage layout management for featured content
+
+### **PERFORMANCE & ARCHITECTURE**
+- **RequestCoordinator**: 🚨 NEW - Central system for API request coordination
+- **ArchitecturalGuards**: 🚨 NEW - Build/runtime enforcement of architectural rules  
+- **StandardizedDataAccess**: 🚨 NEW - Unified data access patterns for components
+- **RequestBudget**: 🚨 NEW - Hard limits on API requests per page (<10)
+
+### **USER MANAGEMENT**
+- **Profile**: User account with specialty, institution, bio information
+- **Role**: Access level (user, admin, reviewer) determining permissions
+- **UserInteractionContext**: ✅ IMPLEMENTED - Bulk loading system for user data
+
+### **CONTENT ARCHITECTURE**
+- **Featured Content**: Highlighted issues displayed prominently on homepage
+- **Specialty Filtering**: Medical specialty-based content categorization
+- **Publication Status**: Content lifecycle (draft, published, featured)
+
+### **COMMUNITY FEATURES**
+- **Posts**: Community-generated discussion threads with flairs and voting
+- **Comments**: Hierarchical discussion system for issues and posts
+- **Polls**: Interactive voting components within reviews
+- **Analytics**: User engagement tracking and performance metrics
+
+---
+
+## 3. HIGH-LEVEL ARCHITECTURE (120 lines)
+
+### **🚨 EMERGENCY ARCHITECTURE STATUS**
 ```
-FRONTEND ARCHITECTURE (React + TypeScript)
-├── /src/components/editor/          # Editor nativo principal
-│   ├── BlockEditor.tsx              # Container principal do editor
-│   ├── BlockList.tsx                # Lista lateral de blocos
-│   ├── ReviewPreview.tsx            # Preview em tempo real
-│   ├── NativeEditor.tsx             # Editor padrão
-│   ├── NativeEditorFullscreen.tsx   # Modo fullscreen
-│   ├── EditorToolbar.tsx            # Barra de ferramentas
-│   ├── EditorStatusBar.tsx          # Barra de status
-│   ├── BlockPalette.tsx             # Paleta de blocos
-│   ├── LivePreview.tsx              # Preview interativo
-│   └── /blocks/                     # Componentes de blocos
-│       ├── SingleBlock.tsx          # Bloco individual
-│       ├── BlockControls.tsx        # Controles de bloco
-│       ├── BlockContentEditor.tsx   # Editor de conteúdo
-│       ├── BlockStatusIndicators.tsx # Indicadores visuais
-│       └── AddBlockButton.tsx       # Botão adicionar bloco
-│   └── /layout/                     # Sistema de layouts
-│       ├── ResizableGrid.tsx        # Grid 1D redimensionável
-│       ├── Grid2DContainer.tsx      # Container de grid 2D
-│       └── Grid2DCell.tsx           # Célula de grid 2D
-│   └── /inline/                     # Configurações inline
-│       ├── InlineBlockSettings.tsx  # Configurações centrais
-│       ├── InlineAlignmentControls.tsx # Controles de alinhamento
-│       └── SpacingControls.tsx      # Controles de espaçamento
-
-├── /src/hooks/                      # Business logic hooks
-│   ├── useBlockManagement.ts        # CRUD de blocos + estado
-│   ├── useGridLayoutManager.ts      # Gerenciamento de layouts 1D
-│   ├── useGrid2DManager.ts          # Gerenciamento de layouts 2D
-│   ├── useEditorLayout.ts           # Estados de layout do editor
-│   ├── useEditorAutoSave.ts         # Salvamento automático
-│   └── /grid/                       # Hooks especializados de grid
-│       ├── useGridState.ts          # Estado de grids 1D
-│       └── useGridRepair.ts         # Reparação de layouts
-
-├── /src/types/                      # Type definitions
-│   ├── review.ts                    # Tipos centrais (ReviewBlock, etc.)
-│   └── grid.ts                      # Tipos de grid e layout
-
-BACKEND ARCHITECTURE (Supabase)
-├── issues                 # Documentos de review principais
-├── review_blocks          # Blocos de conteúdo (jsonb payload)
-├── profiles              # Usuários e permissões
-├── comments              # Sistema de comentários
-└── [outros 20+ tables]   # Sistema completo de dados
+CURRENT CRITICAL STATE:
+├─ Frontend (React/Vite/TypeScript)
+│  ├─ 🚨 Components bypassing UserInteractionContext
+│  ├─ 🚨 Direct Supabase imports in components  
+│  ├─ 🚨 70+ API requests per page load
+│  └─ 🚨 300MB+ memory from monitoring overhead
+│
+├─ Data Layer (Supabase PostgreSQL)
+│  ├─ ✅ Database optimized with indexes
+│  ├─ ✅ RLS policies optimized
+│  └─ ✅ Materialized views active
+│
+└─ Performance (Multiple Systems - PROBLEM)
+   ├─ 🚨 useUnifiedPerformance.ts (206 lines)
+   ├─ 🚨 usePerformanceOptimizer.ts (monitoring)
+   └─ 🚨 useRPCPerformanceMonitoring.ts (database)
 ```
 
-**CRITICAL PATTERNS:**
-- **String IDs everywhere**: Migração completa para UUIDs string (database-compatible)
-- **Focused hooks**: Cada hook tem responsabilidade específica e limitada
-- **Small components**: Componentes < 300 LOC, hooks < 50 LOC
-- **Immutable updates**: Estado sempre atualizado de forma imutável
-- **Type safety**: TypeScript rigoroso em todas as camadas
-
-## 4. User Journeys (150 lines)
-
-**JOURNEY 1: Criar Review Científico**
+### **🎯 TARGET ARCHITECTURE (POST-EMERGENCY)**
 ```
-1. Usuário acessa /edit/new
-2. Sistema inicializa editor nativo vazio
-3. Usuário adiciona blocos via BlockPalette:
-   - Heading para título
-   - Text para introdução  
-   - Table para dados
-   - Figure para gráficos
-4. Sistema auto-salva a cada 30s
-5. Usuário organiza em grids:
-   - Converte blocos para grid 1D (colunas)
-   - Ou cria grid 2D (matriz)
-6. Preview em tempo real mostra resultado
-7. Usuário salva e publica
+COORDINATED ARCHITECTURE:
+├─ Request Coordination Layer 🚨 NEW
+│  ├─ RequestCoordinator (API coordination)
+│  ├─ ArchitecturalGuards (enforcement)
+│  └─ RequestBudget (<10 requests/page)
+│
+├─ Data Access Layer 🚨 STANDARDIZED
+│  ├─ usePageData() (coordinated loading)
+│  ├─ useUserContext() (bulk user data)
+│  └─ useBulkContent() (content coordination)
+│
+├─ Component Layer 🚨 COMPLIANT
+│  ├─ Zero direct Supabase imports
+│  ├─ Standardized data access patterns
+│  └─ Built-in error handling and loading states
+│
+└─ Performance Layer 🚨 UNIFIED
+   ├─ UnifiedPerformanceManager (<50MB)
+   ├─ Request budget enforcement
+   └─ Real-time compliance monitoring
 ```
 
-**JOURNEY 2: Editar Review Existente**
+### **DATA FLOW TRANSFORMATION**
 ```
-1. Usuário acessa /edit/:issueId
-2. Sistema carrega blocks do backend
-3. Editor reconstrói layout com grids
-4. Usuário modifica conteúdo inline
-5. Sistema detecta mudanças não salvas
-6. Auto-save + manual save disponíveis
-7. Validação de layout em tempo real
+BEFORE (CRISIS PATTERN):
+Page Load → 70+ Individual Component API Calls → Database Overload → Poor UX
+
+AFTER (COORDINATED PATTERN):
+Page Load → RequestCoordinator → <10 Batched API Calls → Efficient Response → Optimized UX
 ```
 
-**JOURNEY 3: Colaboração e Comentários**
+### **PERFORMANCE LAYER ARCHITECTURE**
 ```
-1. Reviewer acessa issue publicada
-2. Sistema permite comentários por bloco
-3. Votação e reações em tempo real
-4. Notificações de atividade
-5. Histórico de revisões preservado
+├─ Core Performance (NEW)
+│  ├─ UnifiedPerformanceManager.ts ✅ Replacing 3 systems
+│  ├─ RequestBudgetEnforcer.ts ✅ Hard API limits
+│  └─ ArchitecturalCompliance.ts ✅ Violation prevention
+│
+├─ Query Management (ENHANCED)
+│  ├─ useUnifiedQuery.ts ✅ Request deduplication
+│  ├─ QueryOptimizationProvider.tsx ✅ Background optimization
+│  └─ OptimizedAppProvider.tsx ✅ Global state management
+│
+└─ Monitoring & Analytics (RATIONALIZED)  
+   ├─ Essential metrics only (<5% CPU overhead)
+   ├─ Real-time architectural compliance
+   └─ Performance budget tracking
 ```
 
-**JOURNEY 4: Gestão de Layout Complexo**
+---
+
+## 4. USER JOURNEYS (150 lines)
+
+### **🚨 CRITICAL USER JOURNEY: Homepage Performance**
+
+**Current Crisis State**:
 ```
-1. Usuário cria grid 2D (3x2)
-2. Arrasta blocos para posições específicas
-3. Ajusta dimensões de colunas/linhas
-4. Sistema repara inconsistências automaticamente
-5. Preview mostra resultado final
+1. User visits homepage
+2. 70+ API requests fire simultaneously:
+   - Individual ArticleCard components: 30+ requests
+   - User interaction checks: 15+ requests  
+   - Performance monitoring: 10+ requests
+   - Authentication validation: 8+ requests
+   - Configuration loading: 7+ requests
+3. Page load time: 5-10 seconds
+4. User experience: Severely degraded
 ```
 
-## 5. Domain Modules Index
+**Target Optimized State**:
+```
+1. User visits homepage
+2. RequestCoordinator triggers coordinated loading:
+   - Single bulk user data request
+   - Batched content data (2-3 requests)
+   - Configuration data (1 request)
+   - Essential metadata (1-2 requests)
+3. Page load time: <2 seconds
+4. User experience: Optimal responsiveness
+```
 
-**EDITOR MODULE** — Core editing functionality
-- `BlockEditor`: Container principal com drag&drop
-- `BlockList`: Navegação lateral e reordenação  
-- `ReviewPreview`: Preview responsivo em tempo real
-- `NativeEditor`: Integração completa com modos
-- `EditorToolbar`: Controles e estados do editor
+### **PRIMARY USER JOURNEYS**
 
-**LAYOUT MODULE** — Grid system management  
-- `ResizableGrid`: Grids 1D com redimensionamento
-- `Grid2DContainer`: Grids 2D complexos
-- `Grid2DCell`: Células individuais interativas
-- `useGridLayoutManager`: Hook para grids 1D
-- `useGrid2DManager`: Hook para grids 2D
+#### **Medical Professional - Content Discovery**
+```
+Journey: Discovering Relevant Medical Literature
+Steps:
+1. Lands on homepage → 🚨 Currently 70+ API requests → 🎯 Target <10 requests
+2. Browses featured content → Uses coordinated data loading
+3. Filters by specialty → Efficient query with proper caching
+4. Opens review → Standardized component data access
+5. Interacts with content → Bulk-loaded user interaction data
+6. Bookmarks for later → Real-time state update (no additional API calls)
 
-**BLOCK MODULE** — Content block system
-- `SingleBlock`: Renderização de blocos individuais
-- `BlockRenderer`: Sistema de renderização universal
-- `BlockControls`: Controles de ação por bloco
-- `InlineBlockSettings`: Configurações modais inline
+Performance Targets:
+- Homepage load: <2 seconds (currently 5-10s)
+- Content browsing: Instant (currently 2-3s per action)
+- User interactions: <100ms response (currently 500ms+)
+```
 
-**STATE MODULE** — Editor state management
-- `useBlockManagement`: CRUD + história de blocos
-- `useEditorAutoSave`: Salvamento inteligente
-- `useGridState`: Estado computado de grids
-- `useGridRepair`: Validação e reparação de layouts
+#### **Community Engagement Flow**
+```
+Journey: Participating in Medical Discussions
+Steps:  
+1. Views community posts → Coordinated content loading
+2. Reads post details → Pre-loaded comment data
+3. Votes on content → Optimistic UI updates
+4. Writes comments → Efficient submission with validation
+5. Receives notifications → Real-time updates via optimized channels
 
-## 6. Data & API Schemas
+Current Issues:
+- Each vote/comment triggers separate API calls
+- No request coordination for community features
+- Performance degrades with user activity
 
-**ReviewBlock (Core Entity)**
+Target Improvements:
+- Batch user interaction updates
+- Optimistic UI for instant feedback
+- Background synchronization for data consistency
+```
+
+### **ADMINISTRATIVE WORKFLOWS**
+
+#### **Content Management Journey**
+```
+Admin Journey: Publishing New Medical Reviews
+Current Problems:
+1. Content editor loads slowly (multiple API calls)
+2. Review block management inefficient
+3. Publishing workflow has performance bottlenecks
+
+Target Optimizations:
+1. Editor loads with coordinated data access
+2. Block management uses standardized patterns
+3. Publishing uses efficient batch operations
+```
+
+### **DEVELOPER EXPERIENCE JOURNEYS**
+
+#### **Component Development Workflow**
+```
+Developer Journey: Creating New Components
+Current Problems:
+1. Developers can import Supabase directly (architectural violation)
+2. No guidance on data access patterns
+3. Performance impact not visible during development
+
+Target Improvements:
+1. Build-time prevention of architectural violations
+2. Standardized data access patterns enforced
+3. Performance budgets enforced during development
+4. Immediate feedback on architectural compliance
+```
+
+---
+
+## 5. DOMAIN MODULES INDEX
+
+### **🚨 EMERGENCY COORDINATION SYSTEMS (NEW)**
+```
+├─ Core Coordination
+│  ├─ /src/core/RequestCoordinator.ts ✅ API request coordination
+│  ├─ /src/core/ArchitecturalGuards.ts ✅ Enforcement mechanisms
+│  ├─ /src/core/RequestBudgetEnforcer.ts ✅ Hard API limits
+│  └─ /src/core/UnifiedPerformanceManager.ts ✅ Consolidated monitoring
+│
+├─ Data Access Standardization  
+│  ├─ /src/hooks/useStandardizedData.ts ✅ Unified data access
+│  ├─ /src/hooks/usePageData.ts ✅ Coordinated page loading
+│  └─ /src/hooks/useUserContext.ts ✅ Enhanced user data management
+```
+
+### **EXISTING SYSTEMS (ENHANCED)**
+```
+├─ User Management
+│  ├─ /src/contexts/UserInteractionContext.tsx ✅ Bulk user data loading
+│  ├─ /src/hooks/useStableAuth.ts ✅ Consistent auth state
+│  └─ /src/components/auth/ ✅ Authentication components
+│
+├─ Content Management
+│  ├─ /src/components/editor/ ✅ Native review editor
+│  ├─ /src/hooks/grid/ ✅ Grid layout management
+│  └─ /src/types/ ✅ TypeScript definitions
+│
+├─ Performance & Optimization
+│  ├─ /src/hooks/useUnifiedQuery.ts ✅ Query optimization
+│  ├─ /src/components/optimization/ ✅ Performance providers
+│  └─ /src/utils/performanceHelpers.ts ✅ Utility functions
+│
+├─ Community Features
+│  ├─ /src/pages/community/ ✅ Community pages
+│  ├─ /src/components/posts/ ✅ Post management
+│  └─ /src/components/comments/ ✅ Comment system
+```
+
+### **LEGACY SYSTEMS (BEING PHASED OUT)**
+```
+├─ Individual Component API Access 🚨 DEPRECATED
+│  ├─ Direct Supabase imports in components
+│  ├─ Individual useQuery patterns
+│  └─ Component-specific error handling
+│
+├─ Overlapping Monitoring Systems 🚨 CONSOLIDATING
+│  ├─ useUnifiedPerformance.ts (206 lines) → UnifiedPerformanceManager
+│  ├─ usePerformanceOptimizer.ts → Consolidated
+│  └─ useRPCPerformanceMonitoring.ts → Integrated
+```
+
+---
+
+## 6. DATA & API SCHEMAS
+
+### **🚨 EMERGENCY API COORDINATION PATTERNS**
 ```typescript
-interface ReviewBlock {
-  id: string;                    // UUID string (DB compatible)
-  type: BlockType;              // Enum de tipos de bloco
-  content: any;                 // Payload específico do tipo
-  sort_index: number;           // Posição no documento
-  visible: boolean;             // Visibilidade no preview
-  meta?: {
-    spacing?: SpacingConfig;    // Configurações de espaçamento
-    alignment?: AlignmentConfig; // Alinhamento vertical/horizontal
-    layout?: LayoutConfig;      // Configurações de grid
+// NEW: Coordinated API Request Schema
+interface CoordinatedAPIRequest {
+  route: string;
+  requestBudget: number; // Max 10 per page
+  batchedRequests: BatchRequest[];
+  deduplicationKey: string;
+  cacheStrategy: CacheStrategy;
+}
+
+// NEW: Request Budget Schema
+interface RequestBudget {
+  maxRequestsPerPage: 10;
+  currentRequestCount: number;
+  budgetExceeded: boolean;
+  emergencyRequests: EmergencyRequest[];
+}
+```
+
+### **ENHANCED USER INTERACTION SCHEMA**
+```typescript
+// UserInteractionContext Enhancement
+interface BulkUserInteractionData {
+  bookmarks: Map<string, UserBookmark>;
+  reactions: Map<string, UserReaction>;
+  votes: Map<string, UserVote>;
+  permissions: UserPermissions;
+  loadingState: BulkLoadingState;
+}
+```
+
+### **PERFORMANCE MONITORING SCHEMA** 
+```typescript
+// Unified Performance Metrics
+interface UnifiedPerformanceMetrics {
+  apiRequestCount: number; // Target: <10
+  memoryUsageMB: number; // Target: <100  
+  cpuOverheadPercent: number; // Target: <5
+  pageLoadTimeMs: number; // Target: <2000
+  architecturalViolations: ArchitecturalViolation[];
+}
+```
+
+### **CORE DATA SCHEMAS (EXISTING)**
+```typescript
+// Issue Schema (Enhanced)
+interface Issue {
+  id: string;
+  title: string;
+  specialty: MedicalSpecialty;
+  published: boolean;
+  featured: boolean;
+  // Performance: Loaded via coordinated requests
+}
+
+// User Profile Schema
+interface Profile {
+  id: string;
+  full_name: string;
+  specialty: string;
+  role: 'user' | 'admin' | 'reviewer';
+  // Performance: Bulk loaded with user interactions
+}
+```
+
+---
+
+## 7. UI COMPONENT INDEX
+
+### **🚨 EMERGENCY ARCHITECTURE COMPLIANCE**
+```typescript
+// Component Architecture Status
+interface ComponentArchitectureStatus {
+  compliantComponents: Component[]; // Target: 100%
+  violatingComponents: Component[]; // Target: 0
+  migrationProgress: number; // Current: <10%
+  architecturalEnforcement: boolean; // Target: true
+}
+```
+
+### **HIGH-IMPACT COMPONENTS (MIGRATION PRIORITY)**
+```
+├─ Dashboard Components 🚨 HIGH PRIORITY
+│  ├─ Dashboard.tsx (247 lines) - Uses UserInteractionProvider ✅
+│  ├─ CarouselArticleCard.tsx - 🚨 Needs standardization
+│  ├─ FeaturedIssueCard.tsx - 🚨 Needs migration
+│  └─ SectionVisibilityManager.tsx - 🚨 Needs migration
+│
+├─ Article Components 🚨 HIGH PRIORITY  
+│  ├─ ArticleCard family - 🚨 Individual API calls
+│  ├─ IssueView components - 🚨 Mixed patterns
+│  └─ ReviewBlock components - 🚨 Direct access patterns
+```
+
+### **EDITOR COMPONENTS (STABLE)**
+```
+├─ Editor System ✅ STABLE
+│  ├─ /src/components/editor/NativeEditor.tsx
+│  ├─ /src/components/editor/layout/ (Grid systems)
+│  ├─ /src/components/editor/blocks/ (Content blocks)
+│  └─ /src/components/editor/toolbar/ (Editor controls)
+```
+
+### **COMMUNITY COMPONENTS (STABLE)**
+```
+├─ Community Features ✅ STABLE
+│  ├─ /src/components/posts/ (Post management)
+│  ├─ /src/components/comments/ (Comment system)
+│  ├─ /src/components/polls/ (Interactive polls)
+│  └─ /src/components/votes/ (Voting system)
+```
+
+---
+
+## 8. DESIGN LANGUAGE (120 lines)
+
+### **🚨 EMERGENCY PERFORMANCE DESIGN PRINCIPLES**
+- **Coordination First**: All data access must be coordinated, no individual API calls
+- **Budget Consciousness**: Every component must respect <10 requests per page budget
+- **Architectural Compliance**: Build-time enforcement of design patterns
+- **Performance Visibility**: Real-time performance impact feedback
+
+### **VISUAL DESIGN SYSTEM**
+```css
+/* Emergency Performance Indicators */
+.performance-critical { 
+  border-left: 4px solid #ef4444; /* Red for critical issues */
+}
+
+.performance-warning {
+  border-left: 4px solid #f59e0b; /* Amber for warnings */
+}
+
+.performance-optimal {
+  border-left: 4px solid #10b981; /* Green for optimal */
+}
+
+/* Architectural Compliance Indicators */
+.architecture-compliant {
+  background: linear-gradient(to right, #10b981, #059669);
+}
+
+.architecture-violation {
+  background: linear-gradient(to right, #ef4444, #dc2626);
+}
+```
+
+### **COMPONENT DESIGN PATTERNS**
+```typescript
+// Standardized Component Pattern (NEW)
+interface StandardComponentProps<TData> {
+  data: TData; // From coordinated loading only
+  loading?: boolean; // Managed by coordination system
+  error?: Error; // Centralized error handling
+  actions?: ComponentActions; // Standardized action interface
+}
+
+// Legacy Pattern (DEPRECATED)
+interface LegacyComponentProps {
+  // ❌ NO individual data fetching allowed
+  // ❌ NO direct API calls
+  // ❌ NO component-specific error handling
+}
+```
+
+### **RESPONSIVE DESIGN PRINCIPLES**
+- **Mobile First**: Optimized for mobile with minimal resource usage
+- **Performance Budget**: Every viewport must maintain <2s load time
+- **Progressive Enhancement**: Core functionality with enhanced features
+- **Accessibility**: WCAG 2.1 AA compliance with performance consideration
+
+### **INTERACTION DESIGN**
+- **Optimistic UI**: Instant feedback with background synchronization
+- **Loading States**: Coordinated loading indicators
+- **Error Recovery**: Standardized error handling with retry mechanisms
+- **Performance Feedback**: User-visible performance indicators during development
+
+---
+
+## 9. ACCESSIBILITY CONTRACT (100 lines)
+
+### **🚨 PERFORMANCE-ACCESSIBILITY INTEGRATION**
+- **Fast Load Times**: <2 seconds for optimal screen reader experience
+- **Efficient Navigation**: Keyboard navigation without performance lag
+- **Reduced Motion**: Performance-aware animation controls
+- **Error Communication**: Accessible error states with performance context
+
+### **ACCESSIBILITY STANDARDS**
+- **WCAG 2.1 AA Compliance**: All components meet accessibility standards
+- **Screen Reader Support**: Semantic HTML with proper ARIA labels
+- **Keyboard Navigation**: Full keyboard accessibility without performance impact
+- **Color Contrast**: 4.5:1 minimum contrast ratio with performance-aware themes
+
+### **ACCESSIBLE COMPONENT PATTERNS**
+```typescript
+// Accessible Performance Component
+interface AccessiblePerformanceComponent {
+  ariaLabel: string;
+  performanceMetric?: string; // "Fast loading" | "Optimized"
+  loadingAnnouncement?: string; // Screen reader feedback
+  errorAnnouncement?: string; // Accessible error communication
+}
+```
+
+### **EMERGENCY ACCESSIBILITY CONSIDERATIONS**
+- **Performance Impact**: Accessibility features must not impact <10 API request budget
+- **Error Communication**: Screen reader friendly error messages for performance issues
+- **Loading States**: Accessible loading indicators for coordinated data loading
+- **Navigation**: Keyboard navigation optimized for new architectural patterns
+
+---
+
+## 10. PERFORMANCE BUDGETS (80 lines)
+
+### **🚨 CRITICAL PERFORMANCE BUDGETS**
+```typescript
+// Emergency Performance Budget Limits
+const CRITICAL_PERFORMANCE_BUDGETS = {
+  // API Performance (CRITICAL)
+  maxApiRequestsPerPage: 10, // Currently 70+ 🚨
+  maxConcurrentRequests: 3,
+  maxRequestDuration: 2000, // 2 seconds
+  
+  // Memory Performance (CRITICAL)  
+  maxMemoryUsageMB: 100, // Currently 300MB+ 🚨
+  maxMonitoringOverheadMB: 50,
+  maxComponentMemoryMB: 5,
+  
+  // CPU Performance (CRITICAL)
+  maxCpuOverheadPercent: 5, // Currently 15-25% 🚨
+  maxRenderTime: 16, // 60fps target
+  maxIdleTime: 50, // Main thread availability
+  
+  // Network Performance
+  maxBundleSize: 500, // KB, initial load
+  maxImageSize: 200, // KB per image
+  maxFontLoad: 100, // KB total fonts
+};
+```
+
+### **BUDGET ENFORCEMENT MECHANISMS**
+```typescript
+// Automated Budget Enforcement
+interface BudgetEnforcement {
+  // Build-time checks
+  validateBundleSize(): boolean;
+  checkApiRequestCount(): boolean;
+  
+  // Runtime monitoring
+  trackMemoryUsage(): boolean;
+  monitorCpuUsage(): boolean;
+  
+  // Emergency actions
+  blockExcessiveRequests(): void;
+  triggerGarbageCollection(): void;
+  fallbackToMinimalMode(): void;
+}
+```
+
+### **PERFORMANCE MONITORING INTEGRATION**
+```typescript
+// Real-time Budget Compliance
+const BudgetCompliance = {
+  // Current status vs targets
+  apiRequests: { current: 70, target: 10, status: 'CRITICAL' },
+  memoryUsage: { current: 300, target: 100, status: 'CRITICAL' },
+  cpuOverhead: { current: 20, target: 5, status: 'CRITICAL' },
+  
+  // Compliance percentage
+  overallCompliance: 0, // Currently 0% compliant
+  
+  // Actions required
+  immediateActions: [
+    'Implement RequestCoordinator',
+    'Enable ArchitecturalGuards', 
+    'Migrate high-impact components'
+  ]
+};
+```
+
+---
+
+## 11. SECURITY & COMPLIANCE (100 lines)
+
+### **🚨 ARCHITECTURAL SECURITY IMPLICATIONS**
+- **API Request Security**: Coordinated requests reduce attack surface
+- **Data Access Control**: Standardized access patterns improve security
+- **Performance Security**: Resource exhaustion prevention through budget enforcement
+- **Monitoring Security**: Unified monitoring reduces security monitoring overhead
+
+### **RLS POLICY INTEGRATION**
+```sql
+-- Performance-optimized RLS policies (already implemented)
+-- Enhanced with request coordination awareness
+CREATE POLICY "Coordinated user data access" ON user_bookmarks
+FOR SELECT USING (
+  user_id = (SELECT auth.uid()) AND
+  -- Performance: Coordinated via bulk requests only
+  pg_catalog.current_setting('app.bulk_request', true) = 'true'
+);
+```
+
+### **SECURITY PERFORMANCE BALANCE**
+- **Authentication**: Efficient auth state management with security
+- **Authorization**: Bulk permission checking for performance
+- **Data Privacy**: Coordinated data access with privacy controls
+- **Audit Logging**: Performance-aware security event logging
+
+---
+
+## 12. ADMIN & OPS (120 lines)
+
+### **🚨 EMERGENCY OPERATIONAL PROCEDURES**
+```typescript
+// Critical System Monitoring
+interface EmergencyOperations {
+  // Performance crisis detection
+  detectPerformanceCrisis(): CrisisLevel;
+  
+  // Automatic mitigation
+  triggerEmergencyOptimization(): void;
+  
+  // System rollback
+  emergencyRollback(): RollbackResult;
+  
+  // Status reporting
+  generateCrisisReport(): CrisisReport;
+}
+```
+
+### **OPERATIONAL MONITORING**
+```typescript
+// System Health Dashboard
+const SystemHealth = {
+  // Critical metrics
+  apiRequestsPerPage: 70, // 🚨 CRITICAL: Target <10
+  memoryUsage: 300, // 🚨 CRITICAL: Target <100MB
+  cpuOverhead: 20, // 🚨 CRITICAL: Target <5%
+  
+  // System status
+  architecturalCompliance: 0, // 🚨 CRITICAL: Target 100%
+  performanceCompliance: 0, // 🚨 CRITICAL: Target 100%
+  
+  // Operational actions
+  requiredActions: [
+    'IMMEDIATE: Implement RequestCoordinator',
+    'URGENT: Enable ArchitecturalGuards',
+    'HIGH: Migrate components to standards'
+  ]
+};
+```
+
+### **DEPLOYMENT PROCEDURES**
+- **Emergency Deployment**: Fast deployment of performance fixes
+- **Rollback Capability**: Immediate rollback for performance regressions
+- **Performance Validation**: Automated performance testing in deployment pipeline
+- **Monitoring Integration**: Real-time performance monitoring post-deployment
+
+---
+
+## 13. ANALYTICS & KPIs (120 lines)
+
+### **🚨 CRITICAL PERFORMANCE KPIs**
+```typescript
+// Emergency Performance KPIs
+interface CriticalKPIs {
+  // Primary crisis metrics
+  apiRequestsPerPage: {
+    current: 70,
+    target: 10,
+    criticality: 'EMERGENCY'
+  };
+  
+  memoryUsageMB: {
+    current: 300,
+    target: 100,
+    criticality: 'EMERGENCY'
+  };
+  
+  pageLoadTimeSeconds: {
+    current: 8,
+    target: 2,
+    criticality: 'EMERGENCY'
+  };
+  
+  // System health metrics
+  architecturalCompliance: {
+    current: 0,
+    target: 100,
+    unit: 'percentage'
   };
 }
 ```
 
-**LayoutConfig (Grid System)**
-```typescript  
-interface LayoutConfig {
-  columns?: number;             // Colunas em grid 1D
-  columnWidths?: number[];      // Larguras percentuais
-  grid_id?: string;             // ID do grid 2D
-  grid_position?: GridPosition; // Posição em grid 2D  
-  row_id?: string;              // ID da linha em grid 1D
-  grid_rows?: number;           // Linhas em grid 2D
-  gap?: number;                 // Espaçamento entre elementos
-  rowHeights?: number[];        // Alturas das linhas
-}
-```
+### **USER EXPERIENCE ANALYTICS**
+- **Performance Impact**: User behavior correlation with performance
+- **Bounce Rate**: Performance-related user abandonment
+- **Task Completion**: Performance impact on user task success
+- **Satisfaction Metrics**: User satisfaction correlation with load times
 
-**Grid2DLayout (2D Grid Structure)**
-```typescript
-interface Grid2DLayout {
-  id: string;                   // Identificador único do grid
-  rows: GridRow[];              // Estrutura de linhas
-  columns: number;              // Número de colunas
-  columnWidths?: number[];      // Larguras das colunas
-  grid_rows?: number;           // Número de linhas
-  gap?: number;                 // Espaçamento interno
-  rowHeights?: number[];        // Alturas das linhas
-}
-```
-
-## 7. UI Component Index
-
-**EDITOR COMPONENTS** — /src/components/editor/
-- `BlockEditor` — Container principal (538 LOC) [NEEDS REFACTOR]
-- `BlockList` — Lista lateral (395 LOC) [NEEDS REFACTOR]  
-- `ReviewPreview` — Preview (320 LOC) [NEEDS REFACTOR]
-- `NativeEditor` — Editor padrão (225 LOC) [NEEDS REFACTOR]
-- `NativeEditorFullscreen` — Fullscreen (214 LOC) [NEEDS REFACTOR]
-- `InlineBlockSettings` — Configurações (235 LOC) [NEEDS REFACTOR]
-- `SingleBlock` — Bloco individual (220 LOC) [NEEDS REFACTOR]
-
-**LAYOUT COMPONENTS** — /src/components/editor/layout/
-- `ResizableGrid` — Grid 1D redimensionável
-- `Grid2DContainer` — Container de grid 2D  
-- `Grid2DCell` — Célula de grid 2D
-
-**UTILITY COMPONENTS** — /src/components/editor/blocks/
-- `BlockControls` — Controles de ação
-- `AddBlockButton` — Botão adicionar
-- `BlockStatusIndicators` — Indicadores visuais
-- `BlockContentEditor` — Editor de conteúdo
-
-**INTERFACE COMPONENTS**
-- `EditorToolbar` — Barra de ferramentas
-- `EditorStatusBar` — Barra de status  
-- `BlockPalette` — Paleta de blocos
-- `LivePreview` — Preview interativo
-
-**REFACTOR PRIORITIES:**
-🔴 HIGH: Files > 300 LOC need immediate refactoring
-🟡 MEDIUM: Files > 200 LOC should be refactored soon
-🟢 LOW: Files < 200 LOC are acceptable
-
-## 8. Design Language (120 lines)
-
-**COLOR SYSTEM**
-```css
-/* Dark Theme Primary */
---bg-primary: #121212      /* Main background */
---bg-secondary: #1a1a1a    /* Card backgrounds */  
---bg-tertiary: #212121     /* Input backgrounds */
---border-primary: #2a2a2a  /* Main borders */
---border-secondary: #333   /* Subtle borders */
-
-/* Text Hierarchy */
---text-primary: #ffffff    /* Primary text */
---text-secondary: #d1d5db  /* Secondary text */
---text-tertiary: #9ca3af   /* Muted text */
---text-disabled: #6b7280   /* Disabled text */
-
-/* Semantic Colors */
---success: #10b981         /* Success states */
---warning: #f59e0b         /* Warning states */
---error: #ef4444           /* Error states */
---info: #3b82f6            /* Info states */
-
-/* Block Type Colors */
---block-text: #ffffff      /* Text blocks */
---block-heading: #8b5cf6   /* Heading blocks */
---block-media: #10b981     /* Media blocks */
---block-data: #f59e0b      /* Data blocks */
---block-advanced: #ef4444  /* Advanced blocks */
-```
-
-**SPACING SYSTEM**
-```css  
-/* Consistent spacing scale */
---space-1: 0.25rem  /* 4px */
---space-2: 0.5rem   /* 8px */
---space-3: 0.75rem  /* 12px */
---space-4: 1rem     /* 16px */
---space-6: 1.5rem   /* 24px */
---space-8: 2rem     /* 32px */
-```
-
-**TYPOGRAPHY**
-- **Font Stack**: Inter, system-ui, sans-serif
-- **Heading Scale**: text-xs → text-sm → text-base → text-lg → text-xl
-- **Line Heights**: tight (1.25) for headings, normal (1.5) for body
-- **Font Weights**: normal (400), medium (500), semibold (600)
-
-**COMPONENT PATTERNS**
-- **Cards**: Rounded corners (8px), subtle borders, dark backgrounds
-- **Buttons**: Consistent sizing (sm/md/lg), hover states, disabled states  
-- **Inputs**: Dark theme, focus rings, validation states
-- **Grids**: Gap system aligned with spacing scale
-- **Shadows**: Minimal usage, dark theme appropriate
-
-## 9. Accessibility Contract (100 lines)
-
-**KEYBOARD NAVIGATION**
-- ✅ Tab navigation through all interactive elements
-- ✅ Arrow keys for block list navigation  
-- ✅ Space/Enter for activation
-- ✅ Escape for modal/popup dismissal
-- ✅ Ctrl+Z/Y for undo/redo
-- ✅ Ctrl+S for manual save
-
-**SCREEN READER SUPPORT**
-- ✅ Semantic HTML structure (headings, lists, buttons)
-- ✅ ARIA labels for complex interactions
-- ✅ Role attributes for custom components
-- ✅ Focus management in modals
-- ✅ Status announcements for save states
-
-**VISUAL ACCESSIBILITY**  
-- ✅ High contrast ratios (4.5:1 minimum)
-- ✅ Color not as sole indicator of meaning
-- ✅ Focus indicators visible and consistent
-- ✅ Text scalable to 200% without horizontal scroll
-- ✅ Motion reduced when user prefers
-
-**INTERACTION PATTERNS**
-- ✅ Drag and drop with keyboard alternatives
-- ✅ Grid navigation with arrow keys
-- ✅ Context menus accessible via keyboard  
-- ✅ Form validation with clear error messages
-- ✅ Progressive disclosure for complex features
-
-## 10. Performance Budgets (80 lines)
-
-**BUNDLE SIZES**
-- Main bundle: < 500KB (gzipped)
-- Editor bundle: < 200KB (gzipped)  
-- Component chunks: < 50KB each
-- Asset loading: Progressive, lazy where possible
-
-**RUNTIME PERFORMANCE**
-- First Paint: < 1.5s
-- Time to Interactive: < 3s
-- Block render time: < 100ms per block
-- Grid layout calculation: < 50ms
-- Auto-save debounce: 500ms
-
-**MEMORY USAGE**
-- Editor state: < 10MB for 100 blocks
-- Undo history: Limited to 50 operations
-- Component cleanup on unmount
-- Event listener cleanup
-
-**OPTIMIZATION STRATEGIES**
-- React.memo for expensive renders
-- useMemo for computed values
-- useCallback for event handlers  
-- Code splitting by route and feature
-- Image optimization and lazy loading
-
-## 11. Security & Compliance (100 lines)
-
-**AUTHENTICATION & AUTHORIZATION**
-- ✅ Supabase Auth integration
-- ✅ JWT token management
-- ✅ Role-based access control (RBAC)
-- ✅ Session timeout handling
-- ✅ Secure logout procedures
-
-**DATA PROTECTION**
-- ✅ Input sanitization for all user content
-- ✅ XSS prevention in block rendering
-- ✅ CSRF protection via Supabase
-- ✅ SQL injection prevention (RLS policies)
-- ✅ File upload restrictions and validation
-
-**RLS POLICIES** — Following [RLS_PRINCIPLES]
-- ✅ Row-level security on all tables
-- ✅ Simple condition-based policies
-- ✅ No self-referential queries in policies
-- ✅ Security definer functions for complex logic
-- ✅ Anti-recursion testing in CI
-
-**CONTENT SECURITY**
-- ✅ HTML sanitization in rich text
-- ✅ Image source validation
-- ✅ External link verification
-- ✅ File type restrictions
-- ✅ Content moderation hooks
-
-## 12. Admin & Ops (120 lines)
-
-**DEPLOYMENT PIPELINE**
-- ✅ Automated builds via GitHub Actions
-- ✅ Supabase integration for backend
-- ✅ Environment-specific configurations
-- ✅ Database migration management
-- ✅ Health check endpoints
-
-**MONITORING & LOGGING**
-- ✅ Error boundary implementation
-- ✅ Console logging for development  
-- ✅ Performance metrics collection
-- ✅ User interaction tracking
-- ✅ Build error reporting
-
-**BACKUP & RECOVERY**
-- ✅ Supabase automatic backups
-- ✅ Local data recovery mechanisms
-- ✅ Version history preservation
-- ✅ Export functionality for data portability
-
-**MAINTENANCE PROCEDURES**
-- Database cleanup scripts
-- Performance monitoring dashboards
-- User feedback collection
-- Regular security audits
-- Dependency updates
-
-## 13. Analytics & KPIs (120 lines)
-
-**USER ENGAGEMENT METRICS**
-- Daily/Monthly active users
-- Editor session duration
-- Blocks created per session
-- Feature adoption rates
-- User retention cohorts
-
-**PERFORMANCE METRICS**
-- Page load times
-- Component render times  
-- API response times
-- Error rates by feature
-- Browser compatibility metrics
-
-**CONTENT METRICS**
-- Reviews published per day
-- Block types usage distribution
-- Grid layout adoption
-- Comment engagement rates
-- Download/export frequency
-
-**BUSINESS METRICS**
-- User registration flow completion
-- Feature usage patterns
-- Support ticket volume
-- User satisfaction scores
-- Platform reliability uptime
-
-**TRACKING IMPLEMENTATION**
-- Google Analytics 4 integration
-- Custom event tracking for editor actions
-- Performance API for technical metrics
-- User feedback collection system
-- A/B testing framework ready
-
-## 14. TODO / Backlog
-
-**IMMEDIATE (Phase 1 - COMPLETE ✅)**
-- ✅ Type System Foundation Repair (string IDs, consistent types)
-- ✅ Component Migration (all editor components updated)
-- ✅ Missing Hook Creation (grid management, editor state)
-- ✅ Build Error Resolution (all TypeScript errors fixed)
-
-**NEXT PRIORITIES (Phase 2)**  
-- 🔄 Component Refactoring (files > 300 LOC)
-- 🔄 Performance Testing (bundle analysis, runtime metrics)
-- 🔄 Memory Leak Prevention (cleanup, optimization)
-- 🔄 Edge Case Handling (error boundaries, fallbacks)
-
-**FUTURE ENHANCEMENTS (Phase 3)**
-- 📋 Advanced Grid Features (nested grids, templates)
-- 📋 Collaboration Tools (real-time editing, comments)
-- 📋 Export Formats (PDF, Word, LaTeX)
-- 📋 Advanced Block Types (interactive charts, forms)
-- 📋 Mobile Responsiveness (touch interactions)
-- 📋 Plugin Architecture (custom block types)
-
-**REFACTORING QUEUE**
-1. `BlockEditor.tsx` (538 LOC) → Split into focused components
-2. `BlockList.tsx` (395 LOC) → Extract list management logic  
-3. `ReviewPreview.tsx` (320 LOC) → Separate preview modes
-4. `NativeEditor.tsx` (225 LOC) → Extract toolbar and layout
-5. `InlineBlockSettings.tsx` (235 LOC) → Split settings panels
-6. `SingleBlock.tsx` (220 LOC) → Extract conversion logic
-
-## 15. Revision History
-
-| Version | Date | Changes | Author |
-|---------|------|---------|--------|
-| 3.7.0 | 2025-06-13 | Type System Foundation Complete - Added missing hooks and components | AI Assistant |
-| 3.6.0 | 2025-06-13 | Type System Foundation Repair - String ID migration | AI Assistant |  
-| 3.5.0 | 2025-06-13 | Initial Type System audit and error analysis | AI Assistant |
-| 3.4.0 | 2025-06-13 | Enhanced editor architecture documentation | AI Assistant |
-| 3.3.0 | 2025-06-13 | Updated component architecture and hook structure | AI Assistant |
-| 3.2.0 | 2025-06-13 | Added grid system and layout management | AI Assistant |
-| 3.1.0 | 2025-06-13 | Comprehensive editor component documentation | AI Assistant |
-| 3.0.0 | 2025-06-13 | Major restructure - Native Block Editor focus | AI Assistant |
-| 2.x.x | 2025-06-12 | Legacy versions - PDF-focused architecture | AI Assistant |
-| 1.0.0 | 2025-06-11 | Initial documentation structure | AI Assistant |
+### **SYSTEM PERFORMANCE ANALYTICS**
+- **Resource Utilization**: Memory, CPU, network usage patterns
+- **Error Rates**: Performance-related error tracking
+- **Optimization Impact**: Before/after performance measurements
+- **Budget Compliance**: API request budget adherence tracking
 
 ---
-**END README-BÍBLIA v3.7.0**
+
+## 14. TODO / BACKLOG (live)
+
+### **🚨 EMERGENCY TODO (Next 48 Hours)**
+```typescript
+// Critical Implementation Tasks
+const EMERGENCY_TODO = [
+  {
+    task: 'Implement RequestCoordinator system',
+    priority: 'CRITICAL',
+    timeline: '8 hours',
+    impact: 'API requests 70+ → 35-40'
+  },
+  {
+    task: 'Create ArchitecturalGuards enforcement',
+    priority: 'CRITICAL', 
+    timeline: '6 hours',
+    impact: 'Prevent architectural violations'
+  },
+  {
+    task: 'Standardize component data access',
+    priority: 'CRITICAL',
+    timeline: '10 hours', 
+    impact: 'Enable coordinated loading'
+  },
+  {
+    task: 'Migrate high-impact components',
+    priority: 'HIGH',
+    timeline: '8 hours',
+    impact: 'API requests 35-40 → <10'
+  },
+  {
+    task: 'Consolidate performance monitoring',
+    priority: 'HIGH',
+    timeline: '6 hours',
+    impact: 'Memory 300MB → <100MB'
+  }
+];
+```
+
+### **IMMEDIATE BACKLOG (Next Week)**
+- [ ] **Request Budget Enforcement**: Hard API limits per page
+- [ ] **Component Migration**: Systematic migration of remaining components  
+- [ ] **Performance Validation**: End-to-end performance testing
+- [ ] **Documentation Update**: Architecture decision records
+- [ ] **Monitoring Dashboard**: Real-time performance compliance tracking
+
+### **STRATEGIC BACKLOG (Next Month)**  
+- [ ] **Advanced Optimization**: Further performance enhancements
+- [ ] **Feature Development**: New features with performance constraints
+- [ ] **Scalability Planning**: Architecture scaling for growth
+- [ ] **Developer Tools**: Performance development tooling
+- [ ] **User Experience**: Advanced UX optimizations
+
+---
+
+## 15. REVISION HISTORY (live)
+
+| Version | Date | Changes | Impact |
+|---------|------|---------|---------|
+| **v3.8.0** | **2025-06-13** | **🚨 CRITICAL ARCHITECTURE CRISIS DOCUMENTATION** | **Emergency response plan** |
+| | | - Documented 70+ API requests crisis | Critical performance impact |
+| | | - Identified context bypass patterns | Architectural violation analysis |
+| | | - Created emergency implementation plan | 48-hour resolution timeline |
+| | | - Updated all documentation for crisis response | Complete documentation overhaul |
+| v3.7.0 | 2025-06-13 | Type system foundation repair | String ID migration complete |
+| v3.6.0 | 2025-06-13 | Editor component creation | UI component architecture |
+| v3.5.0 | 2025-06-13 | Performance optimization phase | Database and monitoring systems |
+| v3.4.0 | 2025-06-12 | Advanced features implementation | Grid systems and UI enhancements |
+| v3.3.0 | 2025-06-12 | User interaction optimization | Context providers and bulk loading |
+
+### **EMERGENCY STATUS TRACKING**
+- **Crisis Identified**: 2025-06-13 (70+ API requests per page)
+- **Response Plan Created**: 2025-06-13 (48-hour emergency timeline)
+- **Implementation Status**: PENDING (awaiting execution approval)
+- **Expected Resolution**: 2025-06-15 (complete architectural transformation)
+
+---
+
+**🚨 EMERGENCY CONTACT**: This documentation reflects a critical architecture crisis requiring immediate intervention. The 70+ API requests per page load represent a severe performance emergency that must be addressed within 48 hours to restore acceptable user experience.
+
+**END README-BÍBLIA v3.8.0 - EMERGENCY ARCHITECTURE CRISIS RESPONSE**
