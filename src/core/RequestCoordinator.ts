@@ -78,21 +78,21 @@ class RequestCoordinator {
     // Batch all required data in minimal requests
     const bulkRequests = [];
 
-    // Request 1: Issues and content data
+    // Request 1: Issues and content data - Homepage
     if (route === '/homepage' || route === '/') {
       bulkRequests.push(
         this.trackRequest('issues-content', () =>
           Promise.all([
             supabase
               .from('issues')
-              .select('id, title, cover_image_url, specialty, published_at, created_at, featured, published, score, authors')
+              .select('id, title, cover_image_url, specialty, published_at, created_at, featured, published, score, authors, description')
               .eq('published', true)
               .order('created_at', { ascending: false })
               .limit(20),
             
             supabase
               .from('issues')
-              .select('id, title, cover_image_url, specialty, published_at, created_at, featured, published, score')
+              .select('id, title, cover_image_url, specialty, published_at, created_at, featured, published, score, description')
               .eq('published', true)
               .eq('featured', true)
               .order('created_at', { ascending: false })
@@ -103,7 +103,34 @@ class RequestCoordinator {
               .from('site_meta')
               .select('value')
               .eq('key', 'homepage_sections')
-              .single()
+              .maybeSingle()
+          ])
+        )
+      );
+    }
+
+    // Request 1: Issues and content data - Archive
+    if (route === '/archive' || route === '/acervo') {
+      bulkRequests.push(
+        this.trackRequest('archive-content', () =>
+          Promise.all([
+            supabase
+              .from('issues')
+              .select('id, title, cover_image_url, specialty, published_at, created_at, published, score, authors, description')
+              .eq('published', true)
+              .order('created_at', { ascending: false }),
+            
+            supabase
+              .from('issues')
+              .select('specialty')
+              .eq('published', true)
+              .not('specialty', 'is', null),
+            
+            supabase
+              .from('issues')
+              .select('published_at')
+              .eq('published', true)
+              .not('published_at', 'is', null)
           ])
         )
       );
@@ -146,7 +173,7 @@ class RequestCoordinator {
       contentData: {
         issues: [],
         featuredIssue: null,
-        metadata: null
+        metadata: {}
       },
       configData: {
         sectionVisibility: [],
@@ -156,16 +183,52 @@ class RequestCoordinator {
 
     // Process content data (first request)
     if (results[0]) {
-      const [issuesResult, featuredIssueResult, sectionVisibilityResult] = results[0];
-      
-      pageData.contentData.issues = issuesResult.data || [];
-      pageData.contentData.featuredIssue = featuredIssueResult.data || null;
-      pageData.configData.sectionVisibility = sectionVisibilityResult.data?.value || [];
+      if (route === '/homepage' || route === '/') {
+        const [issuesResult, featuredIssueResult, sectionVisibilityResult] = results[0];
+        
+        pageData.contentData.issues = issuesResult.data || [];
+        pageData.contentData.featuredIssue = featuredIssueResult.data || null;
+        
+        // Parse homepage sections from site_meta
+        const sectionsData = sectionVisibilityResult?.data?.value;
+        if (typeof sectionsData === 'string') {
+          try {
+            pageData.configData.sectionVisibility = JSON.parse(sectionsData);
+          } catch (e) {
+            console.warn('Failed to parse homepage sections:', e);
+            pageData.configData.sectionVisibility = [];
+          }
+        } else if (Array.isArray(sectionsData)) {
+          pageData.configData.sectionVisibility = sectionsData;
+        } else {
+          // Default sections for homepage
+          pageData.configData.sectionVisibility = [
+            { id: 'featured', visible: true, order: 1 },
+            { id: 'recent', visible: true, order: 2 },
+            { id: 'recommended', visible: true, order: 3 },
+            { id: 'trending', visible: true, order: 4 }
+          ];
+        }
+      } else if (route === '/archive' || route === '/acervo') {
+        const [issuesResult, specialtiesResult, yearsResult] = results[0];
+        
+        pageData.contentData.issues = issuesResult.data || [];
+        
+        // Process metadata for archive
+        const specialties = [...new Set((specialtiesResult.data || []).map((r: any) => r.specialty).filter(Boolean))];
+        const years = [...new Set((yearsResult.data || []).map((r: any) => new Date(r.published_at).getFullYear()).filter(Boolean))];
+        
+        pageData.contentData.metadata = {
+          specialties,
+          years
+        };
+      }
     }
 
     // Process user data (second request, if exists)
-    if (results[1] && userId) {
-      const [bookmarksResult, reactionsResult] = results[1];
+    const userDataIndex = userId ? 1 : -1;
+    if (userDataIndex >= 0 && results[userDataIndex]) {
+      const [bookmarksResult, reactionsResult] = results[userDataIndex];
       
       pageData.userData.bookmarks = bookmarksResult.data || [];
       pageData.userData.reactions = reactionsResult.data || [];

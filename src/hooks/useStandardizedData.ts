@@ -20,6 +20,8 @@ interface UserContextState {
   loading: boolean;
   isBookmarked: (issueId: string) => boolean;
   hasReaction: (issueId: string, type: string) => boolean;
+  toggleBookmark: (issueId: string) => Promise<void>;
+  toggleReaction: (issueId: string, type: string) => Promise<void>;
 }
 
 interface ContentState {
@@ -77,6 +79,7 @@ export const usePageData = (route?: string): PageDataState => {
 // Coordinated user context hook
 export const useUserContext = (): UserContextState => {
   const { data, loading } = usePageData();
+  const { user } = useAuth();
   
   const bookmarks = new Set(
     data?.userData?.bookmarks?.map(b => b.issue_id) || []
@@ -94,13 +97,58 @@ export const useUserContext = (): UserContextState => {
     return reactions.get(issueId) === type;
   }, [reactions]);
 
+  const toggleBookmark = useCallback(async (issueId: string) => {
+    if (!user?.id) throw new Error('User not authenticated');
+    
+    const { supabase } = await import('@/integrations/supabase/client');
+    
+    if (isBookmarked(issueId)) {
+      await supabase
+        .from('user_bookmarks')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('issue_id', issueId);
+    } else {
+      await supabase
+        .from('user_bookmarks')
+        .insert({ user_id: user.id, issue_id: issueId });
+    }
+    
+    // Invalidate cache to refresh data
+    requestCoordinator.invalidateCache();
+  }, [user?.id, isBookmarked]);
+
+  const toggleReaction = useCallback(async (issueId: string, type: string) => {
+    if (!user?.id) throw new Error('User not authenticated');
+    
+    const { supabase } = await import('@/integrations/supabase/client');
+    
+    if (hasReaction(issueId, type)) {
+      await supabase
+        .from('user_article_reactions')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('issue_id', issueId)
+        .eq('reaction_type', type);
+    } else {
+      await supabase
+        .from('user_article_reactions')
+        .upsert({ user_id: user.id, issue_id: issueId, reaction_type: type });
+    }
+    
+    // Invalidate cache to refresh data
+    requestCoordinator.invalidateCache();
+  }, [user?.id, hasReaction]);
+
   return {
     bookmarks,
     reactions,
     permissions: data?.userData?.permissions,
     loading,
     isBookmarked,
-    hasReaction
+    hasReaction,
+    toggleBookmark,
+    toggleReaction
   };
 };
 
@@ -141,4 +189,13 @@ export const useStandardizedDataMetrics = () => {
   }, []);
 
   return metrics;
+};
+
+// Main export object for convenient access
+export const useStandardizedData = {
+  usePageData,
+  useUserContext,
+  useBulkContent,
+  useConfigData,
+  useStandardizedDataMetrics
 };
