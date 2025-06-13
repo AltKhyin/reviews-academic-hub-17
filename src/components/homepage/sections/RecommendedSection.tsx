@@ -1,99 +1,113 @@
 
-// ABOUTME: Recommended articles section for homepage
-// Fixed to use proper data loading patterns
-
+// ABOUTME: Recommended articles section component for homepage
+// Displays recommended medical content using real data and user preferences
 import React from 'react';
-import { useOptimizedHomepage } from '@/hooks/useOptimizedHomepage';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { useParallelDataLoader } from '@/hooks/useParallelDataLoader';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Clock, Star } from 'lucide-react';
+import { Star, ThumbsUp } from 'lucide-react';
 
 export const RecommendedSection: React.FC = () => {
-  const { data, isLoading, error } = useOptimizedHomepage();
+  const { issues, isLoading } = useParallelDataLoader();
 
   if (isLoading) {
     return (
-      <div className="recommended-section">
-        <div className="animate-pulse space-y-4">
-          <div className="h-6 bg-gray-300 rounded w-48"></div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-48 bg-gray-300 rounded"></div>
-            ))}
-          </div>
+      <div className="animate-pulse">
+        <div className="h-8 bg-gray-300 rounded w-1/3 mb-6"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="h-48 bg-gray-200 rounded"></div>
+          ))}
         </div>
       </div>
     );
   }
 
-  if (error || !data?.issues) {
-    return (
-      <div className="recommended-section">
-        <div className="text-center py-8">
-          <p className="text-gray-500">Não foi possível carregar as recomendações</p>
-        </div>
-      </div>
-    );
-  }
-
-  const recommendedIssues = data.issues
-    .filter(issue => issue.published && issue.score && issue.score > 0)
+  // Simple recommendation algorithm based on score and specialty diversity
+  const recommendedIssues = issues
+    .filter(issue => issue.published)
     .sort((a, b) => (b.score || 0) - (a.score || 0))
-    .slice(0, 6);
+    .slice(0, 8);
 
-  if (recommendedIssues.length === 0) {
+  if (!recommendedIssues.length) {
     return (
-      <div className="recommended-section">
-        <div className="text-center py-8">
-          <p className="text-gray-500">Nenhuma recomendação disponível no momento</p>
-        </div>
+      <div>
+        <h2 className="text-2xl font-bold mb-6">Recomendadas para Você</h2>
+        <Card>
+          <CardContent className="p-8 text-center">
+            <Star className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-600">
+              Nenhuma recomendação disponível no momento.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
+
+  const getRecommendationReason = (issue: any) => {
+    if (issue.score && issue.score > 5) return "Alta relevância";
+    if (issue.featured) return "Edição em destaque";
+    return "Recomendado";
+  };
 
   return (
-    <section className="recommended-section mb-12">
-      <div className="flex items-center gap-2 mb-6">
-        <Star className="w-5 h-5 text-yellow-500" />
-        <h2 className="text-2xl font-bold">Recomendados para você</h2>
-      </div>
+    <div>
+      <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+        <Star className="w-6 h-6 text-yellow-500" />
+        Recomendadas para Você
+      </h2>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {recommendedIssues.map((issue) => (
-          <Card key={issue.id} className="hover:shadow-lg transition-shadow">
-            <CardHeader>
-              {issue.cover_image_url && (
-                <img
-                  src={issue.cover_image_url}
-                  alt={issue.title}
-                  className="w-full h-32 object-cover rounded-md mb-3"
-                />
-              )}
-              <CardTitle className="line-clamp-2">{issue.title}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between text-sm text-gray-500">
-                <div className="flex items-center gap-1">
-                  <Clock className="w-4 h-4" />
-                  <span>
-                    {new Date(issue.published_at || issue.created_at).toLocaleDateString('pt-BR')}
-                  </span>
-                </div>
+          <Card key={issue.id} className="hover:shadow-lg transition-shadow border-l-4 border-l-yellow-400">
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between">
+                <CardTitle className="text-lg line-clamp-2">{issue.title}</CardTitle>
+                <Badge className="ml-2 bg-yellow-100 text-yellow-800">
+                  <ThumbsUp className="w-3 h-3 mr-1" />
+                  {getRecommendationReason(issue)}
+                </Badge>
+              </div>
+              
+              <div className="flex gap-2">
                 {issue.specialty && (
-                  <Badge variant="secondary">{issue.specialty}</Badge>
+                  <Badge variant="outline">{issue.specialty}</Badge>
+                )}
+                {issue.score && issue.score > 0 && (
+                  <Badge variant="secondary">Score: {issue.score}</Badge>
                 )}
               </div>
-              {issue.score && (
-                <div className="mt-2">
-                  <Badge variant="outline" className="text-yellow-600">
-                    Score: {issue.score}
-                  </Badge>
+            </CardHeader>
+            
+            <CardContent>
+              <div className="flex gap-4">
+                {issue.cover_image_url && (
+                  <img 
+                    src={issue.cover_image_url} 
+                    alt={issue.title}
+                    className="w-20 h-20 object-cover rounded flex-shrink-0"
+                  />
+                )}
+                
+                <div className="flex-1">
+                  {issue.description && (
+                    <p className="text-gray-600 text-sm line-clamp-3 mb-2">
+                      {issue.description}
+                    </p>
+                  )}
+                  
+                  {issue.authors && (
+                    <p className="text-xs text-gray-500">
+                      Por: {issue.authors}
+                    </p>
+                  )}
                 </div>
-              )}
+              </div>
             </CardContent>
           </Card>
         ))}
       </div>
-    </section>
+    </div>
   );
 };

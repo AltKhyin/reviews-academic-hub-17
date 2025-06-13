@@ -5,7 +5,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { addDays } from 'date-fns';
 
 export interface UpcomingRelease {
   id: string;
@@ -72,7 +71,7 @@ export const useUpcomingReleaseSettings = () => {
       console.log('useUpcomingReleaseSettings: Loaded', releasesData.length, 'upcoming releases');
       setReleases(releasesData);
     } catch (error) {
-      console.error('useUpcomingReleaseSettings: Error in loadReleases:', error);
+      console.error('Failed to load upcoming releases:', error);
       setReleases([]);
     }
   }, [settings.maxItems]);
@@ -86,32 +85,21 @@ export const useUpcomingReleaseSettings = () => {
         .eq('key', 'upcoming_release_settings')
         .maybeSingle();
 
-      if (error) {
-        console.error('Error loading upcoming release settings:', error);
-        return;
-      }
-
-      if (data?.value && isValidUpcomingReleaseSettings(data.value)) {
-        setSettings(data.value);
-        console.log('useUpcomingReleaseSettings: Loaded settings:', data.value);
+      if (!error && data?.value) {
+        // Use type guard to safely convert the JSON data
+        const parsedValue = data.value as unknown;
+        if (isValidUpcomingReleaseSettings(parsedValue)) {
+          setSettings(prev => ({ ...prev, ...parsedValue }));
+        } else {
+          console.warn('Invalid upcoming release settings format in database, using defaults');
+        }
       }
     } catch (error) {
-      console.error('useUpcomingReleaseSettings: Error in loadSettings:', error);
+      console.error('Failed to load upcoming release settings:', error);
     }
   }, []);
 
-  // Initialize data loading
-  useEffect(() => {
-    const initializeData = async () => {
-      setIsLoading(true);
-      await Promise.all([loadSettings(), loadReleases()]);
-      setIsLoading(false);
-    };
-
-    initializeData();
-  }, [loadSettings, loadReleases]);
-
-  // Update settings
+  // Update settings in database
   const updateSettings = useCallback(async (newSettings: Partial<UpcomingReleaseSettings>) => {
     try {
       const updatedSettings = { ...settings, ...newSettings };
@@ -128,45 +116,65 @@ export const useUpcomingReleaseSettings = () => {
       }
 
       setSettings(updatedSettings);
-      console.log('useUpcomingReleaseSettings: Updated settings:', updatedSettings);
-      
-      // Reload releases if maxItems changed
-      if (newSettings.maxItems && newSettings.maxItems !== settings.maxItems) {
-        await loadReleases();
-      }
+      console.log('useUpcomingReleaseSettings: Settings updated successfully');
     } catch (error) {
-      console.error('useUpcomingReleaseSettings: Error updating settings:', error);
+      console.error('Failed to update upcoming release settings:', error);
       throw error;
     }
-  }, [settings, loadReleases]);
+  }, [settings]);
 
-  // Calculate next release date (defaults to next Saturday at 9am)
-  const getNextReleaseDate = useCallback((): Date => {
-    if (releases.length > 0) {
-      return new Date(releases[0].release_date);
-    }
-
-    // Default to next Saturday at 9am BRT
+  // Get the next upcoming release
+  const getNextReleaseDate = useCallback((): Date | null => {
+    if (releases.length === 0) return null;
+    
     const now = new Date();
-    const day = now.getDay(); // 0 is Sunday, 6 is Saturday
-    const daysUntilSaturday = day === 6 ? 7 : 6 - day;
-    let nextSaturday = addDays(now, daysUntilSaturday);
-    nextSaturday.setHours(9, 0, 0, 0);
+    const nextRelease = releases.find(release => 
+      new Date(release.release_date) > now
+    );
     
-    // If it's Saturday after 9am, get next week's Saturday
-    if (day === 6 && now.getHours() >= 9) {
-      nextSaturday = addDays(nextSaturday, 7);
-    }
-    
-    return nextSaturday;
+    return nextRelease ? new Date(nextRelease.release_date) : null;
   }, [releases]);
+
+  // Get days until next release
+  const getDaysUntilNextRelease = useCallback((): number | null => {
+    const nextDate = getNextReleaseDate();
+    if (!nextDate) return null;
+    
+    const now = new Date();
+    const diffTime = nextDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays;
+  }, [getNextReleaseDate]);
+
+  // Check if next release should be highlighted
+  const shouldHighlightNextRelease = useCallback((): boolean => {
+    const daysUntil = getDaysUntilNextRelease();
+    return daysUntil !== null && daysUntil <= settings.highlightThreshold;
+  }, [getDaysUntilNextRelease, settings.highlightThreshold]);
+
+  // Load data on mount
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true);
+      await Promise.all([
+        loadSettings(),
+        loadReleases()
+      ]);
+      setIsLoading(false);
+    };
+    
+    loadData();
+  }, [loadSettings, loadReleases]);
 
   return {
     releases,
     settings,
     isLoading,
-    updateSettings,
     getNextReleaseDate,
-    refetch: loadReleases
+    getDaysUntilNextRelease,
+    shouldHighlightNextRelease,
+    loadReleases,
+    updateSettings,
   };
 };

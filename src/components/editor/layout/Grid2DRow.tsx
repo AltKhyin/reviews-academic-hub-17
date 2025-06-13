@@ -11,7 +11,7 @@ import { Plus, Minus, GripHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface DragState {
-  draggedBlockId: string | null;
+  draggedBlockId: number | null;
   dragOverRowId: string | null;
   dragOverPosition: number | null;
   isDragging: boolean;
@@ -23,10 +23,10 @@ interface Grid2DRowProps {
   row: GridRow;
   grid: Grid2DLayout;
   rowIndex: number;
-  activeBlockId?: string | null;
-  onActiveBlockChange?: (blockId: string | null) => void;
-  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
-  onDeleteBlock: (blockId: string) => void;
+  activeBlockId?: number | null;
+  onActiveBlockChange?: (blockId: number | null) => void;
+  onUpdateBlock: (blockId: number, updates: Partial<ReviewBlock>) => void;
+  onDeleteBlock: (blockId: number) => void;
   onAddBlock: (position: GridPosition) => void;
   onAddRowAbove: (rowIndex: number) => void;
   onAddRowBelow: (rowIndex: number) => void;
@@ -157,22 +157,19 @@ export const Grid2DRow: React.FC<Grid2DRowProps> = ({
         {row.cells.map((cell, columnIndex) => (
           <Grid2DCell
             key={cell.id}
-            gridId={grid.id}
+            cell={cell}
+            grid={grid}
             position={{ row: rowIndex, column: columnIndex }}
-            block={cell.block || null}
             activeBlockId={activeBlockId}
             onActiveBlockChange={onActiveBlockChange}
             onUpdateBlock={onUpdateBlock}
             onDeleteBlock={onDeleteBlock}
             onAddBlock={() => handleAddBlock(columnIndex)}
-            dragState={dragState}
-            onDragOver={onDragOver ? () => onDragOver({} as React.DragEvent, grid.id, { row: rowIndex, column: columnIndex }) : undefined}
-            onDragLeave={onDragLeave ? () => onDragLeave({} as React.DragEvent) : undefined}
-            onDrop={onDrop ? () => onDrop({} as React.DragEvent, grid.id, { row: rowIndex,
-
-
- column: columnIndex }) : undefined}
             readonly={readonly}
+            dragState={dragState}
+            onDragOver={onDragOver}
+            onDragLeave={onDragLeave}
+            onDrop={onDrop}
           />
         ))}
       </div>

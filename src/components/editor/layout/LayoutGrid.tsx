@@ -1,6 +1,6 @@
 
 // ABOUTME: Layout grid container managing multiple layout rows
-// Fixed to use consistent string IDs and proper interfaces
+// Orchestrates row creation, deletion, and block distribution
 
 import React from 'react';
 import { ReviewBlock } from '@/types/review';
@@ -15,9 +15,9 @@ interface LayoutGridProps {
   onDeleteRow: (rowId: string) => void;
   onAddRow: (position?: number, columns?: number) => void;
   onAddBlock: (rowId: string, position: number, blockType: string) => void;
-  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
-  onMoveBlock: (blockId: string, direction: 'up' | 'down') => void;
-  onDeleteBlock: (blockId: string) => void;
+  onUpdateBlock: (blockId: number, updates: Partial<ReviewBlock>) => void;
+  onMoveBlock: (blockId: number, targetRowId: string, targetPosition: number) => void;
+  onDeleteBlock: (blockId: number) => void;
   readonly?: boolean;
   className?: string;
 }

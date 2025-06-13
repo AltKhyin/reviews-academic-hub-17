@@ -33,7 +33,7 @@ export interface Grid2D {
 export interface Grid2DLayout {
   id: string;
   columns: number;
-  rows: GridRow[]; // Changed from number to GridRow[] to match usage
+  rows: number;
   gap: number;
   columnWidths?: number[];
   rowHeights?: number[];

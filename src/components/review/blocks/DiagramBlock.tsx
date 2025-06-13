@@ -1,194 +1,298 @@
+// ABOUTME: Enhanced diagram block with comprehensive null safety and responsive design
+// Supports scientific diagrams with inline editing and fullscreen capabilities
 
-// ABOUTME: Diagram block component for interactive diagram rendering
-// Fixed to use proper type imports from review types
-
-import React, { useState, useCallback } from 'react';
-import { ReviewBlock, DiagramContent } from '@/types/review';
+import React, { useState } from 'react';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Maximize2, Download, Settings } from 'lucide-react';
+import { ReviewBlock, DiagramContent } from '@/types/review';
+import { DiagramCanvas } from './diagram/DiagramCanvas';
+import { DiagramToolbar } from './diagram/DiagramToolbar';
+import { DiagramFullscreenViewer } from './diagram/DiagramFullscreenViewer';
+import { InlineBlockSettings } from '@/components/editor/inline/InlineBlockSettings';
+import { generateSpacingStyles, getDefaultSpacing } from '@/utils/spacingUtils';
+import { cn } from '@/lib/utils';
+import { Maximize2, Edit3 } from 'lucide-react';
 
 interface DiagramBlockProps {
   block: ReviewBlock;
-  onUpdate?: (updates: Partial<ReviewBlock>) => void;
   readonly?: boolean;
+  onUpdate?: (updates: Partial<ReviewBlock>) => void;
 }
 
-export const DiagramBlock: React.FC<DiagramBlockProps> = ({
-  block,
-  onUpdate,
-  readonly = false
+export const DiagramBlock: React.FC<DiagramBlockProps> = ({ 
+  block, 
+  readonly = false,
+  onUpdate
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [selectedTool, setSelectedTool] = useState('select');
+  const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
+
+  // Safe access to content with comprehensive fallbacks
+  const content = block.content || {};
   
-  // Type-safe content access
-  const diagramContent = block.content as DiagramContent;
-  
-  const handleDiagramUpdate = useCallback((newContent: DiagramContent) => {
-    if (onUpdate) {
-      onUpdate({ content: newContent });
+  // Create complete diagram content with all required fields and fallbacks
+  const diagramContent: DiagramContent = {
+    title: content.title || 'Untitled Diagram',
+    description: content.description || '',
+    canvas: {
+      width: content.canvas?.width || 800,
+      height: content.canvas?.height || 600,
+      backgroundColor: content.canvas?.backgroundColor || '#ffffff',
+      gridEnabled: content.canvas?.gridEnabled ?? true,
+      gridSize: content.canvas?.gridSize || 20,
+      gridColor: content.canvas?.gridColor || '#e5e7eb',
+      snapToGrid: content.canvas?.snapToGrid ?? true,
+      ...content.canvas
+    },
+    nodes: Array.isArray(content.nodes) ? content.nodes : [],
+    connections: Array.isArray(content.connections) ? content.connections : [],
+    template: content.template || undefined,
+    exportSettings: {
+      format: 'svg',
+      quality: 1,
+      transparentBackground: false,
+      ...content.exportSettings
+    },
+    accessibility: {
+      altText: content.accessibility?.altText || 'Scientific diagram',
+      longDescription: content.accessibility?.longDescription || '',
+      ...content.accessibility
     }
-  }, [onUpdate]);
+  };
 
-  const handleExport = useCallback(() => {
-    // Implementation for diagram export
-    console.log('Exporting diagram:', block.id);
-  }, [block.id]);
+  // Spacing system integration
+  const customSpacing = block.meta?.spacing;
+  const defaultSpacing = getDefaultSpacing('diagram');
+  const finalSpacing = customSpacing || defaultSpacing;
+  const spacingStyles = generateSpacingStyles(finalSpacing);
 
-  if (!diagramContent?.nodes) {
+  const handleContentUpdate = (updates: Partial<DiagramContent>) => {
+    if (onUpdate) {
+      onUpdate({
+        content: {
+          ...content,
+          ...updates
+        }
+      });
+    }
+  };
+
+  const handleSave = () => {
+    // Save action that doesn't require parameters
+    console.log('Diagram saved');
+  };
+
+  const handleNodeAdd = (nodeType: string, position: { x: number; y: number }) => {
+    const newNode = {
+      id: `node_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      type: nodeType as any,
+      position,
+      size: { width: 120, height: 60 },
+      text: 'New Node',
+      style: {
+        backgroundColor: '#3b82f6',
+        borderColor: '#1e40af',
+        textColor: '#ffffff',
+        borderWidth: 2,
+        borderStyle: 'solid' as const,
+        fontSize: 14,
+        fontWeight: 'normal' as const,
+        textAlign: 'center' as const,
+        opacity: 1
+      }
+    };
+
+    handleContentUpdate({
+      nodes: [...diagramContent.nodes, newNode]
+    });
+  };
+
+  const handleNodeUpdate = (nodeId: string, updates: any) => {
+    const updatedNodes = diagramContent.nodes.map(node =>
+      node.id === nodeId ? { ...node, ...updates } : node
+    );
+    
+    handleContentUpdate({
+      nodes: updatedNodes
+    });
+  };
+
+  const handleNodeDelete = (nodeId: string) => {
+    const updatedNodes = diagramContent.nodes.filter(node => node.id !== nodeId);
+    const updatedConnections = diagramContent.connections.filter(
+      conn => conn.sourceNodeId !== nodeId && conn.targetNodeId !== nodeId
+    );
+    
+    handleContentUpdate({
+      nodes: updatedNodes,
+      connections: updatedConnections
+    });
+  };
+
+  const handleConnectionAdd = (connection: any) => {
+    handleContentUpdate({
+      connections: [...diagramContent.connections, connection]
+    });
+  };
+
+  const handleConnectionDelete = (connectionId: string) => {
+    const updatedConnections = diagramContent.connections.filter(
+      conn => conn.id !== connectionId
+    );
+    
+    handleContentUpdate({
+      connections: updatedConnections
+    });
+  };
+
+  if (readonly) {
     return (
-      <div className="diagram-block-empty border-2 border-dashed border-gray-600 rounded-lg p-8 text-center">
-        <div className="text-gray-400">
-          <svg className="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          <p className="font-medium mb-2">Diagrama vazio</p>
-          <p className="text-sm">Configure o conteúdo do diagrama</p>
-        </div>
+      <div className="diagram-block w-full max-w-full overflow-hidden" style={spacingStyles}>
+        <Card className="w-full max-w-full overflow-hidden" style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
+          <div className="p-4 border-b" style={{ borderColor: '#2a2a2a' }}>
+            <div className="flex items-center justify-between">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-lg font-medium truncate" style={{ color: '#ffffff' }}>
+                  {diagramContent.title}
+                </h3>
+                {diagramContent.description && (
+                  <p className="text-sm mt-1 break-words" style={{ color: '#d1d5db' }}>
+                    {diagramContent.description}
+                  </p>
+                )}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsFullscreen(true)}
+                style={{ borderColor: '#3b82f6', color: '#3b82f6' }}
+              >
+                <Maximize2 className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+          
+          <div className="aspect-[4/3] w-full max-w-full overflow-hidden">
+            <DiagramCanvas
+              content={diagramContent}
+              mode="preview"
+              selectedTool={selectedTool}
+              selectedNodes={selectedNodes}
+              onNodeAdd={handleNodeAdd}
+              onNodeUpdate={handleNodeUpdate}
+              onNodeDelete={handleNodeDelete}
+              onConnectionAdd={handleConnectionAdd}
+              onConnectionDelete={handleConnectionDelete}
+              onSelectionChange={setSelectedNodes}
+              readonly={true}
+            />
+          </div>
+        </Card>
+
+        {isFullscreen && (
+          <DiagramFullscreenViewer
+            content={diagramContent}
+            selectedTool={selectedTool}
+            selectedNodes={selectedNodes}
+            onContentUpdate={handleContentUpdate}
+            onToolChange={setSelectedTool}
+            onSelectionChange={setSelectedNodes}
+            onSave={handleSave}
+            onClose={() => setIsFullscreen(false)}
+          />
+        )}
       </div>
     );
   }
 
   return (
-    <div className="diagram-block">
-      {/* Diagram Header */}
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold">
-          {block.content?.title || 'Diagrama'}
-        </h3>
-        
-        {!readonly && (
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsFullscreen(true)}
-              title="Visualizar em tela cheia"
-            >
-              <Maximize2 className="w-4 h-4" />
-            </Button>
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleExport}
-              title="Exportar diagrama"
-            >
-              <Download className="w-4 h-4" />
-            </Button>
-            
-            <Button
-              variant="ghost"
-              size="sm"
-              title="Configurações"
-            >
-              <Settings className="w-4 h-4" />
-            </Button>
-          </div>
-        )}
+    <div className="diagram-block group relative w-full max-w-full overflow-hidden" style={spacingStyles}>
+      {/* Inline Settings */}
+      <div className="absolute -top-2 -right-2 z-10">
+        <InlineBlockSettings
+          block={block}
+          onUpdate={onUpdate}
+        />
       </div>
 
-      {/* Diagram Canvas */}
-      <div 
-        className="diagram-canvas border border-gray-600 rounded-lg bg-white"
-        style={{ 
-          width: diagramContent.layout?.width || 800, 
-          height: diagramContent.layout?.height || 600 
-        }}
-      >
-        <svg
-          width="100%"
-          height="100%"
-          viewBox={`0 0 ${diagramContent.layout?.width || 800} ${diagramContent.layout?.height || 600}`}
-        >
-          {/* Render diagram nodes */}
-          {diagramContent.nodes.map(node => (
-            <g key={node.id}>
-              {node.type === 'rect' && (
-                <rect
-                  x={node.x}
-                  y={node.y}
-                  width={node.width}
-                  height={node.height}
-                  fill={node.backgroundColor || '#f3f4f6'}
-                  stroke={node.color || '#6b7280'}
-                  strokeWidth="2"
-                />
-              )}
-              {node.type === 'circle' && (
-                <circle
-                  cx={node.x + node.width / 2}
-                  cy={node.y + node.height / 2}
-                  r={Math.min(node.width, node.height) / 2}
-                  fill={node.backgroundColor || '#f3f4f6'}
-                  stroke={node.color || '#6b7280'}
-                  strokeWidth="2"
-                />
-              )}
-              <text
-                x={node.x + node.width / 2}
-                y={node.y + node.height / 2}
-                textAnchor="middle"
-                dominantBaseline="central"
-                fill={node.color || '#374151'}
-                fontSize="14"
+      <Card className="w-full max-w-full overflow-hidden" style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
+        {/* Header */}
+        <div className="p-4 border-b" style={{ borderColor: '#2a2a2a' }}>
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <input
+                type="text"
+                value={diagramContent.title}
+                onChange={(e) => handleContentUpdate({ title: e.target.value })}
+                className="text-lg font-medium bg-transparent border-none outline-none w-full"
+                style={{ color: '#ffffff' }}
+                placeholder="Diagram Title"
+              />
+              <textarea
+                value={diagramContent.description}
+                onChange={(e) => handleContentUpdate({ description: e.target.value })}
+                className="text-sm mt-1 bg-transparent border-none outline-none w-full resize-none"
+                style={{ color: '#d1d5db' }}
+                placeholder="Optional description..."
+                rows={2}
+              />
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsFullscreen(true)}
+                style={{ borderColor: '#3b82f6', color: '#3b82f6' }}
               >
-                {node.label}
-              </text>
-            </g>
-          ))}
-          
-          {/* Render connections */}
-          {diagramContent.connections.map(connection => {
-            const sourceNode = diagramContent.nodes.find(n => n.id === connection.sourceId);
-            const targetNode = diagramContent.nodes.find(n => n.id === connection.targetId);
-            
-            if (!sourceNode || !targetNode) return null;
-            
-            const x1 = sourceNode.x + sourceNode.width / 2;
-            const y1 = sourceNode.y + sourceNode.height / 2;
-            const x2 = targetNode.x + targetNode.width / 2;
-            const y2 = targetNode.y + targetNode.height / 2;
-            
-            return (
-              <g key={connection.id}>
-                <line
-                  x1={x1}
-                  y1={y1}
-                  x2={x2}
-                  y2={y2}
-                  stroke={connection.color || '#6b7280'}
-                  strokeWidth="2"
-                  strokeDasharray={connection.type === 'dashed' ? '5,5' : '0'}
-                />
-                {connection.type === 'arrow' && (
-                  <polygon
-                    points={`${x2-5},${y2-5} ${x2+5},${y2-5} ${x2},${y2+5}`}
-                    fill={connection.color || '#6b7280'}
-                  />
-                )}
-                {connection.label && (
-                  <text
-                    x={(x1 + x2) / 2}
-                    y={(y1 + y2) / 2}
-                    textAnchor="middle"
-                    dominantBaseline="central"
-                    fill={connection.color || '#374151'}
-                    fontSize="12"
-                  >
-                    {connection.label}
-                  </text>
-                )}
-              </g>
-            );
-          })}
-        </svg>
-      </div>
-
-      {/* Diagram Description */}
-      {block.content?.description && (
-        <div className="mt-4 text-sm text-gray-300">
-          {block.content.description}
+                <Edit3 className="w-4 h-4 mr-1" />
+                Edit
+              </Button>
+            </div>
+          </div>
         </div>
+
+        {/* Toolbar */}
+        <DiagramToolbar
+          selectedTool={selectedTool}
+          onToolChange={setSelectedTool}
+          selectedNodes={selectedNodes}
+          canvas={diagramContent.canvas}
+          onCanvasUpdate={(updates) => handleContentUpdate({ canvas: { ...diagramContent.canvas, ...updates } })}
+          onNodesUpdate={(nodes) => handleContentUpdate({ nodes })}
+        />
+        
+        {/* Canvas */}
+        <div className="aspect-[4/3] w-full max-w-full overflow-hidden">
+          <DiagramCanvas
+            content={diagramContent}
+            mode="edit"
+            selectedTool={selectedTool}
+            selectedNodes={selectedNodes}
+            onNodeAdd={handleNodeAdd}
+            onNodeUpdate={handleNodeUpdate}
+            onNodeDelete={handleNodeDelete}
+            onConnectionAdd={handleConnectionAdd}
+            onConnectionDelete={handleConnectionDelete}
+            onSelectionChange={setSelectedNodes}
+            readonly={false}
+          />
+        </div>
+      </Card>
+
+      {/* Fullscreen Editor */}
+      {isFullscreen && (
+        <DiagramFullscreenViewer
+          content={diagramContent}
+          selectedTool={selectedTool}
+          selectedNodes={selectedNodes}
+          onContentUpdate={handleContentUpdate}
+          onToolChange={setSelectedTool}
+          onSelectionChange={setSelectedNodes}
+          onSave={handleSave}
+          onClose={() => setIsFullscreen(false)}
+        />
       )}
     </div>
   );

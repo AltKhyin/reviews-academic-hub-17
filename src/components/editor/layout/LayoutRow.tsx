@@ -1,21 +1,31 @@
 
-// ABOUTME: Layout row component with standardized string ID usage
-// Fixed to export LayoutRowData interface and use consistent string IDs
+// ABOUTME: Multi-block layout row container with drag & drop support
+// Manages horizontal arrangement of blocks with responsive breakpoints
 
-import React from 'react';
+import React, { useState } from 'react';
 import { ReviewBlock } from '@/types/review';
+import { BlockRenderer } from '@/components/review/BlockRenderer';
 import { Button } from '@/components/ui/button';
-import { Trash2, Plus, GripHorizontal } from 'lucide-react';
+import { 
+  Plus, 
+  Grip, 
+  Columns2, 
+  Columns3, 
+  Columns4,
+  Trash2,
+  Move
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface LayoutRowData {
   id: string;
-  columns: number;
   blocks: ReviewBlock[];
-  style?: {
-    gap?: number;
-    padding?: number;
-    background?: string;
+  columns: number;
+  gap: number;
+  responsive: {
+    sm: number;
+    md: number;
+    lg: number;
   };
 }
 
@@ -24,10 +34,11 @@ interface LayoutRowProps {
   onUpdateRow: (rowId: string, updates: Partial<LayoutRowData>) => void;
   onDeleteRow: (rowId: string) => void;
   onAddBlock: (rowId: string, position: number, blockType: string) => void;
-  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
-  onMoveBlock: (blockId: string, direction: 'up' | 'down') => void;
-  onDeleteBlock: (blockId: string) => void;
+  onUpdateBlock: (blockId: number, updates: Partial<ReviewBlock>) => void;
+  onMoveBlock: (blockId: number, targetRowId: string, targetPosition: number) => void;
+  onDeleteBlock: (blockId: number) => void;
   readonly?: boolean;
+  className?: string;
 }
 
 export const LayoutRow: React.FC<LayoutRowProps> = ({
@@ -38,117 +49,227 @@ export const LayoutRow: React.FC<LayoutRowProps> = ({
   onUpdateBlock,
   onMoveBlock,
   onDeleteBlock,
-  readonly = false
+  readonly = false,
+  className
 }) => {
-  const gridCols = {
-    1: 'grid-cols-1',
-    2: 'grid-cols-2', 
-    3: 'grid-cols-3',
-    4: 'grid-cols-4'
-  }[row.columns] || 'grid-cols-1';
+  const [isDragging, setIsDragging] = useState(false);
+  const [draggedBlock, setDraggedBlock] = useState<number | null>(null);
+  const [showControls, setShowControls] = useState(false);
 
-  const handleAddBlock = (position: number) => {
-    onAddBlock(row.id, position, 'paragraph');
+  // Generate responsive grid classes
+  const getGridClasses = () => {
+    const baseClass = `grid gap-${row.gap}`;
+    const responsiveClasses = [
+      `grid-cols-${row.responsive.sm}`,
+      `md:grid-cols-${row.responsive.md}`,
+      `lg:grid-cols-${row.columns}`
+    ].join(' ');
+    
+    return `${baseClass} ${responsiveClasses}`;
   };
 
-  const handleDeleteRow = () => {
-    onDeleteRow(row.id);
+  // Handle column count changes
+  const handleColumnChange = (newColumns: number) => {
+    const newResponsive = {
+      sm: Math.min(newColumns, 2), // Max 2 columns on small screens
+      md: Math.min(newColumns, 3), // Max 3 columns on medium screens  
+      lg: newColumns
+    };
+
+    onUpdateRow(row.id, {
+      columns: newColumns,
+      responsive: newResponsive
+    });
   };
 
-  return (
-    <div className="layout-row border border-gray-600 rounded-lg p-4 bg-gray-800/30">
-      {/* Row Header */}
+  // Handle drag events
+  const handleDragStart = (blockId: number) => {
+    setDraggedBlock(blockId);
+    setIsDragging(true);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedBlock(null);
+    setIsDragging(false);
+  };
+
+  const handleDrop = (position: number) => {
+    if (draggedBlock && onMoveBlock) {
+      onMoveBlock(draggedBlock, row.id, position);
+    }
+    handleDragEnd();
+  };
+
+  // Create wrapper function for onUpdate
+  const createBlockUpdateWrapper = (blockId: number) => {
+    return (updates: Partial<ReviewBlock>) => {
+      onUpdateBlock(blockId, updates);
+    };
+  };
+
+  // Render empty slot for adding blocks
+  const renderEmptySlot = (position: number) => (
+    <div
+      key={`empty-${position}`}
+      className={cn(
+        "min-h-[120px] border-2 border-dashed rounded-lg flex items-center justify-center transition-all",
+        isDragging ? "border-blue-500 bg-blue-500/10" : "border-gray-600 hover:border-gray-500"
+      )}
+      style={{ borderColor: '#2a2a2a' }}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={() => handleDrop(position)}
+    >
       {!readonly && (
-        <div className="flex items-center justify-between mb-4 pb-2 border-b border-gray-700">
-          <div className="flex items-center gap-2">
-            <GripHorizontal className="w-4 h-4 text-gray-400" />
-            <span className="text-sm font-medium text-gray-300">
-              Linha {row.columns} coluna(s)
-            </span>
-          </div>
-          
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onAddBlock(row.id, position, 'paragraph')}
+          className="text-gray-400 hover:text-white"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Adicionar Bloco
+        </Button>
+      )}
+    </div>
+  );
+
+  // Render block with position controls
+  const renderBlock = (block: ReviewBlock, position: number) => (
+    <div
+      key={block.id}
+      className="relative group"
+      draggable={!readonly}
+      onDragStart={() => handleDragStart(block.id)}
+      onDragEnd={handleDragEnd}
+    >
+      {/* Drag Handle */}
+      {!readonly && (
+        <div className="absolute -top-2 -left-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
           <Button
             variant="ghost"
             size="sm"
-            onClick={handleDeleteRow}
-            className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+            className="h-6 w-6 p-0 bg-gray-800 border border-gray-600 cursor-move"
+            title="Arrastar bloco"
           >
-            <Trash2 className="w-4 h-4" />
+            <Move className="w-3 h-3" />
           </Button>
         </div>
       )}
 
-      {/* Row Content Grid */}
-      <div className={cn("grid gap-4", gridCols)}>
-        {Array.from({ length: row.columns }).map((_, colIndex) => {
-          const columnBlocks = row.blocks.filter(block => 
-            block.meta?.layout?.column === colIndex
-          );
+      {/* Block Content */}
+      <BlockRenderer
+        block={block}
+        onUpdate={createBlockUpdateWrapper(block.id)}
+        readonly={readonly}
+        className={cn(
+          "transition-all duration-200",
+          isDragging && draggedBlock === block.id && "opacity-50 scale-95"
+        )}
+      />
 
-          return (
-            <div
-              key={colIndex}
-              className="layout-column min-h-[100px] border-2 border-dashed border-gray-600 rounded-lg p-3"
-            >
-              {columnBlocks.length > 0 ? (
-                <div className="space-y-3">
-                  {columnBlocks.map((block) => (
-                    <div
-                      key={block.id}
-                      className="block-wrapper p-3 bg-gray-700/50 rounded border border-gray-600"
-                    >
-                      <div className="text-sm text-gray-300 mb-2">
-                        Bloco: {block.type}
-                      </div>
-                      {!readonly && (
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onMoveBlock(block.id, 'up')}
-                            className="text-gray-400 hover:text-gray-200"
-                          >
-                            ↑
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onMoveBlock(block.id, 'down')}
-                            className="text-gray-400 hover:text-gray-200"
-                          >
-                            ↓
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onDeleteBlock(block.id)}
-                            className="text-red-400 hover:text-red-300"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                !readonly && (
-                  <div className="flex items-center justify-center h-full">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleAddBlock(colIndex)}
-                      className="text-gray-400 hover:text-gray-200"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Adicionar Bloco
-                    </Button>
-                  </div>
-                )
-              )}
-            </div>
-          );
-        })}
+      {/* Delete Button */}
+      {!readonly && (
+        <div className="absolute -top-2 -right-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onDeleteBlock(block.id)}
+            className="h-6 w-6 p-0 bg-red-800 border border-red-600 hover:bg-red-700"
+            title="Remover bloco"
+          >
+            <Trash2 className="w-3 h-3" />
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+
+  if (readonly) {
+    return (
+      <div className={cn("layout-row my-6", className)}>
+        <div className={getGridClasses()}>
+          {row.blocks.map((block, position) => renderBlock(block, position))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div 
+      className={cn("layout-row my-6 group relative", className)}
+      onMouseEnter={() => setShowControls(true)}
+      onMouseLeave={() => setShowControls(false)}
+    >
+      {/* Row Controls */}
+      <div className={cn(
+        "absolute -top-3 left-0 right-0 flex items-center justify-between z-10 transition-opacity",
+        showControls ? "opacity-100" : "opacity-0"
+      )}>
+        <div className="flex items-center gap-2">
+          {/* Drag Handle */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0 bg-gray-800 border border-gray-600"
+            title="Arrastar linha"
+          >
+            <Grip className="w-3 h-3" />
+          </Button>
+
+          {/* Column Controls */}
+          <div className="flex items-center gap-1">
+            {[2, 3, 4].map((cols) => {
+              const Icon = cols === 2 ? Columns2 : cols === 3 ? Columns3 : Columns4;
+              return (
+                <Button
+                  key={cols}
+                  variant={row.columns === cols ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => handleColumnChange(cols)}
+                  className="h-6 w-6 p-0"
+                  title={`${cols} colunas`}
+                >
+                  <Icon className="w-3 h-3" />
+                </Button>
+              );
+            })}
+          </div>
+
+          {/* Gap Control */}
+          <select
+            value={row.gap}
+            onChange={(e) => onUpdateRow(row.id, { gap: parseInt(e.target.value) })}
+            className="h-6 px-2 text-xs bg-gray-800 border border-gray-600 rounded"
+            style={{ color: '#ffffff' }}
+          >
+            <option value={2}>Gap: 2</option>
+            <option value={4}>Gap: 4</option>
+            <option value={6}>Gap: 6</option>
+            <option value={8}>Gap: 8</option>
+          </select>
+        </div>
+
+        {/* Delete Row */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onDeleteRow(row.id)}
+          className="h-6 w-6 p-0 bg-red-800 border border-red-600 hover:bg-red-700"
+          title="Remover linha"
+        >
+          <Trash2 className="w-3 h-3" />
+        </Button>
+      </div>
+
+      {/* Grid Container */}
+      <div className={getGridClasses()}>
+        {/* Render existing blocks */}
+        {row.blocks.map((block, position) => renderBlock(block, position))}
+        
+        {/* Render empty slots */}
+        {Array.from({ length: row.columns - row.blocks.length }, (_, index) => 
+          renderEmptySlot(row.blocks.length + index)
+        )}
       </div>
     </div>
   );

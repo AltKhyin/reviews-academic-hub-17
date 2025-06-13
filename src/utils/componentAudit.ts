@@ -1,237 +1,85 @@
 
-// ABOUTME: Component auditing utilities for performance monitoring and code quality
-// Tracks component violations and performance issues
+// ABOUTME: Component audit utility to identify unauthorized API calls
+import { apiCallMonitor } from '@/middleware/ApiCallMiddleware';
 
-interface ComponentViolation {
+interface ComponentAuditResult {
   componentName: string;
   violations: string[];
-  severity: 'low' | 'medium' | 'high';
-  timestamp: number;
+  apiCallCount: number;
+  recommendations: string[];
 }
 
-interface PerformanceIssue {
-  componentName: string;
-  issue: string;
-  impact: 'minor' | 'moderate' | 'severe';
-  recommendation: string;
-}
+export class ComponentAuditor {
+  private static violations: ComponentAuditResult[] = [];
 
-class ComponentAuditor {
-  private static violations: ComponentViolation[] = [];
-  private static performanceIssues: PerformanceIssue[] = [];
-  private static maxViolations = 500; // Prevent memory bloat
+  static auditComponent(componentName: string, hasDirectSupabaseImport: boolean, hasIndividualHooks: boolean): void {
+    const violations: string[] = [];
+    const recommendations: string[] = [];
 
-  // Add the missing auditComponent method
-  static auditComponent(
-    componentName: string, 
-    hasCleanup: boolean = true, 
-    hasOptimization: boolean = true
-  ): void {
-    // Basic component auditing
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`🔍 Auditing component: ${componentName}`);
-      
-      // Check for cleanup patterns
-      if (!hasCleanup) {
-        this.recordViolation(
-          componentName,
-          'Component may be missing cleanup logic in useEffect',
-          'medium'
-        );
-      }
-      
-      // Check for optimization patterns
-      if (!hasOptimization) {
-        this.recordViolation(
-          componentName,
-          'Component may benefit from React.memo or useMemo optimization',
-          'low'
-        );
-      }
+    if (hasDirectSupabaseImport) {
+      violations.push('Direct Supabase import detected');
+      recommendations.push('Use shared context instead of direct Supabase calls');
     }
-  }
 
-  static recordViolation(
-    componentName: string, 
-    violation: string, 
-    severity: 'low' | 'medium' | 'high' = 'medium'
-  ): void {
-    const existingViolation = this.violations.find(v => v.componentName === componentName);
-    
-    if (existingViolation) {
-      existingViolation.violations.push(violation);
-      existingViolation.timestamp = Date.now();
-      if (severity === 'high' || (severity === 'medium' && existingViolation.severity === 'low')) {
-        existingViolation.severity = severity;
-      }
-    } else {
+    if (hasIndividualHooks) {
+      violations.push('Individual data fetching hooks detected');
+      recommendations.push('Migrate to shared data providers or context');
+    }
+
+    const stats = apiCallMonitor.getCallStats();
+    const componentCalls = Object.entries(stats)
+      .filter(([key]) => key.includes(componentName))
+      .reduce((sum, [, value]) => sum + value.count, 0);
+
+    if (componentCalls > 5) {
+      violations.push(`Excessive API calls: ${componentCalls} in last minute`);
+      recommendations.push('Implement request batching or use shared context');
+    }
+
+    if (violations.length > 0) {
       this.violations.push({
         componentName,
-        violations: [violation],
-        severity,
-        timestamp: Date.now()
+        violations,
+        apiCallCount: componentCalls,
+        recommendations
+      });
+
+      console.warn(`🔍 AUDIT: ${componentName}`, {
+        violations,
+        apiCallCount: componentCalls,
+        recommendations
       });
     }
-
-    // Manage memory by keeping only recent violations
-    if (this.violations.length > this.maxViolations) {
-      this.violations = this.violations
-        .sort((a, b) => b.timestamp - a.timestamp)
-        .slice(0, this.maxViolations / 2);
-    }
-
-    if (process.env.NODE_ENV === 'development' && severity === 'high') {
-      console.warn(`🚨 High severity violation in ${componentName}: ${violation}`);
-    }
   }
 
-  static recordPerformanceIssue(
-    componentName: string,
-    issue: string,
-    impact: 'minor' | 'moderate' | 'severe',
-    recommendation: string
-  ): void {
-    this.performanceIssues.push({
-      componentName,
-      issue,
-      impact,
-      recommendation
-    });
-
-    if (process.env.NODE_ENV === 'development' && impact === 'severe') {
-      console.error(`💥 Severe performance issue in ${componentName}: ${issue}`);
-      console.log(`💡 Recommendation: ${recommendation}`);
-    }
+  static getViolationReport(): ComponentAuditResult[] {
+    return this.violations;
   }
 
-  static getViolationReport(): ComponentViolation[] {
-    return [...this.violations].sort((a, b) => {
-      const severityOrder = { high: 3, medium: 2, low: 1 };
-      return severityOrder[b.severity] - severityOrder[a.severity];
-    });
+  static clearViolations(): void {
+    this.violations = [];
   }
 
-  static getPerformanceReport(): PerformanceIssue[] {
-    return [...this.performanceIssues].sort((a, b) => {
-      const impactOrder = { severe: 3, moderate: 2, minor: 1 };
-      return impactOrder[b.impact] - impactOrder[a.impact];
-    });
-  }
-
-  static getComponentHealth(componentName: string): {
-    violationCount: number;
-    severity: 'low' | 'medium' | 'high' | 'none';
-    performanceIssues: number;
-    overallHealth: 'good' | 'fair' | 'poor';
-  } {
-    const violations = this.violations.filter(v => v.componentName === componentName);
-    const perfIssues = this.performanceIssues.filter(p => p.componentName === componentName);
+  static logPerformanceMetrics(): void {
+    const totalCalls = apiCallMonitor.getTotalCallsInLastMinute();
+    const stats = apiCallMonitor.getCallStats();
     
-    const violationCount = violations.reduce((sum, v) => sum + v.violations.length, 0);
-    const highestSeverity = violations.reduce((max, v) => {
-      const severityOrder = { high: 3, medium: 2, low: 1, none: 0 };
-      return severityOrder[v.severity] > severityOrder[max] ? v.severity : max;
-    }, 'none' as 'low' | 'medium' | 'high' | 'none');
+    console.group('📊 API Performance Metrics');
+    console.log(`Total API calls in last minute: ${totalCalls}`);
+    console.log('Component breakdown:', stats);
+    console.log(`Components with violations: ${this.violations.length}`);
+    console.groupEnd();
 
-    const severePerf = perfIssues.filter(p => p.impact === 'severe').length;
-    
-    let overallHealth: 'good' | 'fair' | 'poor' = 'good';
-    if (highestSeverity === 'high' || severePerf > 0 || violationCount > 10) {
-      overallHealth = 'poor';
-    } else if (highestSeverity === 'medium' || violationCount > 5 || perfIssues.length > 2) {
-      overallHealth = 'fair';
+    if (totalCalls > 10) {
+      console.error(`🚨 PERFORMANCE ALERT: ${totalCalls} API calls detected (target: <10)`);
     }
-
-    return {
-      violationCount,
-      severity: highestSeverity,
-      performanceIssues: perfIssues.length,
-      overallHealth
-    };
-  }
-
-  static clearViolations(componentName?: string): void {
-    if (componentName) {
-      this.violations = this.violations.filter(v => v.componentName !== componentName);
-      this.performanceIssues = this.performanceIssues.filter(p => p.componentName !== componentName);
-    } else {
-      this.violations = [];
-      this.performanceIssues = [];
-    }
-  }
-
-  static generateAuditReport(): {
-    totalViolations: number;
-    highSeverityComponents: string[];
-    performanceIssues: number;
-    recommendations: string[];
-  } {
-    const highSeverityComponents = this.violations
-      .filter(v => v.severity === 'high')
-      .map(v => v.componentName);
-
-    const recommendations = [
-      ...new Set(this.performanceIssues.map(p => p.recommendation))
-    ];
-
-    return {
-      totalViolations: this.violations.reduce((sum, v) => sum + v.violations.length, 0),
-      highSeverityComponents: [...new Set(highSeverityComponents)],
-      performanceIssues: this.performanceIssues.length,
-      recommendations
-    };
   }
 }
 
-// Utility functions for common auditing scenarios
-export const auditUtils = {
-  // Check if component is using too many props
-  checkPropCount: (componentName: string, propCount: number): void => {
-    if (propCount > 10) {
-      ComponentAuditor.recordViolation(
-        componentName, 
-        `High prop count: ${propCount} props (consider using composition or configuration objects)`,
-        'medium'
-      );
-    }
-  },
-
-  // Check component file size
-  checkComponentSize: (componentName: string, lineCount: number): void => {
-    if (lineCount > 300) {
-      ComponentAuditor.recordPerformanceIssue(
-        componentName,
-        `Large component file: ${lineCount} lines`,
-        'moderate',
-        'Consider breaking down into smaller, focused components'
-      );
-    }
-  },
-
-  // Check for potential memory leaks
-  checkMemoryLeaks: (componentName: string, hasCleanup: boolean): void => {
-    if (!hasCleanup) {
-      ComponentAuditor.recordViolation(
-        componentName,
-        'Missing cleanup in useEffect or event listeners',
-        'high'
-      );
-    }
-  },
-
-  // Check render frequency
-  checkRenderFrequency: (componentName: string, renderCount: number, timeWindow: number): void => {
-    const rendersPerSecond = renderCount / (timeWindow / 1000);
-    if (rendersPerSecond > 10) {
-      ComponentAuditor.recordPerformanceIssue(
-        componentName,
-        `High render frequency: ${rendersPerSecond.toFixed(2)} renders/second`,
-        'severe',
-        'Consider using React.memo, useMemo, or useCallback to reduce re-renders'
-      );
-    }
-  }
-};
-
-export { ComponentAuditor };
-export default ComponentAuditor;
+// Development mode automatic auditing
+if (process.env.NODE_ENV === 'development') {
+  // Log performance metrics every 30 seconds
+  setInterval(() => {
+    ComponentAuditor.logPerformanceMetrics();
+  }, 30000);
+}

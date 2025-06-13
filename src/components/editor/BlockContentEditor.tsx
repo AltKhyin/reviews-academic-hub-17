@@ -1,142 +1,198 @@
-// ABOUTME: Block content editor with standardized string ID usage
-// Fixed to use consistent string IDs throughout the component
 
-import React, { useState, useCallback, useMemo } from 'react';
-import { ReviewBlock } from '@/types/review';
+// ABOUTME: Enhanced block content editor with proper inline settings positioning and string ID support
+// Main container for block editing with improved modular controls integration
+
+import React, { useState, useCallback, useRef } from 'react';
+import { ReviewBlock, BlockType } from '@/types/review';
 import { BlockRenderer } from '@/components/review/BlockRenderer';
-import { Button } from '@/components/ui/button';
-import { Plus, Eye, EyeOff } from 'lucide-react';
+import { BlockControls } from './BlockControls';
+import { BlockStatusIndicators } from './BlockStatusIndicators';
+import { InlineBlockSettings } from './inline/InlineBlockSettings';
 import { cn } from '@/lib/utils';
 
 interface BlockContentEditorProps {
-  blocks: ReviewBlock[];
-  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
-  onAddBlock: (type: string, position?: number) => string;
-  onMoveBlock: (blockId: string, direction: 'up' | 'down') => void;
-  onDeleteBlock: (blockId: string) => void;
-  onDuplicateBlock: (blockId: string) => void;
-  readonly?: boolean;
-  className?: string;
+  block: ReviewBlock;
+  isActive: boolean;
+  isFirst: boolean;
+  isLast: boolean;
+  onSelect: (blockId: string) => void;
+  onUpdate: (blockId: string, updates: Partial<ReviewBlock>) => void;
+  onDelete: (blockId: string) => void;
+  onDuplicate?: (blockId: string) => void;
+  onMove: (blockId: string, direction: 'up' | 'down') => void;
+  onAddBlock: (type: BlockType, position?: number) => void;
 }
 
 export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
-  blocks,
-  onUpdateBlock,
-  onAddBlock,
-  onMoveBlock,
-  onDeleteBlock,
-  onDuplicateBlock,
-  readonly = false,
-  className
+  block,
+  isActive,
+  isFirst,
+  isLast,
+  onSelect,
+  onUpdate,
+  onDelete,
+  onDuplicate,
+  onMove,
+  onAddBlock
 }) => {
-  const [previewMode, setPreviewMode] = useState(false);
-  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [editMode, setEditMode] = useState(true);
+  const [draggedOver, setDraggedOver] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const memoizedBlocks = useMemo(() => {
-    return blocks ? [...blocks] : [];
-  }, [blocks]);
+  const handleBlockClick = useCallback((e: React.MouseEvent) => {
+    // Don't select if clicking on interactive elements
+    const target = e.target as Element;
+    const isInteractiveElement = target.closest('.inline-text-editor-display, .inline-rich-editor-display, input, textarea, button, select, .block-controls, .inline-block-settings');
+    
+    if (!isInteractiveElement) {
+      e.stopPropagation();
+      onSelect(block.id);
+    }
+  }, [block.id, onSelect]);
 
-  const handleBlockSelect = useCallback((blockId: string) => {
-    setSelectedBlockId(blockId);
+  const handleBlockUpdate = useCallback((updates: Partial<ReviewBlock>) => {
+    onUpdate(block.id, updates);
+  }, [onUpdate, block.id]);
+
+  const handleToggleVisibility = useCallback(() => {
+    onUpdate(block.id, { visible: !block.visible });
+  }, [block.id, block.visible, onUpdate]);
+
+  const handleToggleEditMode = useCallback(() => {
+    setEditMode(!editMode);
+  }, [editMode]);
+
+  // Enhanced drag handlers with proper functionality
+  const handleDragStart = useCallback((e: React.DragEvent) => {
+    setIsDragging(true);
+    e.dataTransfer.setData('text/plain', block.id);
+    e.dataTransfer.effectAllowed = 'move';
+    
+    // Create drag image
+    const dragImage = e.currentTarget.cloneNode(true) as HTMLElement;
+    dragImage.style.transform = 'rotate(0deg)';
+    dragImage.style.opacity = '0.8';
+    e.dataTransfer.setDragImage(dragImage, 0, 0);
+  }, [block.id]);
+
+  const handleDragEnd = useCallback(() => {
+    setIsDragging(false);
+    setDraggedOver(false);
   }, []);
 
-  const handleAddBlock = useCallback((type: string, position?: number) => {
-    const newBlockId = onAddBlock(type, position);
-    setSelectedBlockId(newBlockId);
-  }, [onAddBlock]);
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDraggedOver(true);
+  }, []);
 
-  if (readonly || previewMode) {
-    return (
-      <div className={cn("block-content-editor-preview space-y-4", className)}>
-        {memoizedBlocks.map((block) => (
-          <BlockRenderer
-            key={block.id}
-            block={block}
-            readonly={true}
-          />
-        ))}
-      </div>
-    );
-  }
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    // Only set draggedOver to false if we're actually leaving the element
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+    
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      setDraggedOver(false);
+    }
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    const draggedBlockId = e.dataTransfer.getData('text/plain');
+    
+    if (draggedBlockId !== block.id) {
+      // Determine direction based on drop position
+      const rect = e.currentTarget.getBoundingClientRect();
+      const midpoint = rect.top + rect.height / 2;
+      const direction = e.clientY < midpoint ? 'up' : 'down';
+      
+      // Move the dragged block relative to this block
+      onMove(draggedBlockId, direction);
+    }
+    
+    setDraggedOver(false);
+  }, [block.id, onMove]);
 
   return (
-    <div className={cn("block-content-editor space-y-4", className)}>
-      {/* Editor Controls */}
-      <div className="flex items-center justify-between p-4 bg-gray-800/50 rounded-lg border border-gray-600">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-300">
-            {memoizedBlocks.length} bloco(s)
-          </span>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPreviewMode(!previewMode)}
-            className="flex items-center gap-2"
-          >
-            {previewMode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            {previewMode ? 'Editar' : 'Visualizar'}
-          </Button>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleAddBlock('paragraph')}
-            className="flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Adicionar Bloco
-          </Button>
-        </div>
-      </div>
+    <div
+      ref={containerRef}
+      className={cn(
+        "block-content-editor group relative",
+        "border rounded-lg transition-all duration-200",
+        isActive && "ring-2 ring-blue-500 ring-opacity-50 shadow-lg",
+        isDragging && "opacity-50",
+        draggedOver && "ring-2 ring-green-500 ring-opacity-50",
+        !block.visible && "opacity-60"
+      )}
+      style={{
+        backgroundColor: '#1a1a1a',
+        borderColor: isActive ? '#3b82f6' : '#2a2a2a',
+        overflow: 'visible !important',
+        position: 'relative'
+      }}
+      onClick={handleBlockClick}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      <BlockControls
+        blockId={block.id}
+        isVisible={block.visible}
+        isActive={isActive}
+        isFirst={isFirst}
+        isLast={isLast}
+        editMode={editMode}
+        isDragging={isDragging}
+        onMove={onMove}
+        onToggleVisibility={handleToggleVisibility}
+        onToggleEditMode={handleToggleEditMode}
+        onDuplicate={onDuplicate}
+        onDelete={onDelete}
+      />
 
-      {/* Block List */}
-      <div className="space-y-4">
-        {memoizedBlocks.map((block, index) => (
-          <div
-            key={block.id}
-            className={cn(
-              "relative border rounded-lg transition-all duration-200",
-              selectedBlockId === block.id
-                ? "border-blue-500 bg-blue-500/10"
-                : "border-gray-600 bg-gray-800/30 hover:border-gray-500"
-            )}
-            onClick={() => handleBlockSelect(block.id)}
-          >
+      {/* Inline Settings - Positioned close to block controls */}
+      {isActive && (
+        <InlineBlockSettings
+          block={block}
+          onUpdate={handleBlockUpdate}
+          containerRef={containerRef}
+          className="absolute"
+        />
+      )}
+
+      {/* Block Content */}
+      <div className="relative" style={{ overflow: 'visible !important' }}>
+        {editMode ? (
+          /* Edit Mode - Inline Editing Enabled */
+          <div className="p-4" style={{ overflow: 'visible !important' }}>
             <BlockRenderer
               block={block}
+              onUpdate={handleBlockUpdate}
               readonly={false}
-              onUpdate={(updates) => onUpdateBlock(block.id, updates)}
-              onMove={(direction) => onMoveBlock(block.id, direction)}
-              onDelete={() => onDeleteBlock(block.id)}
-              onDuplicate={() => onDuplicateBlock(block.id)}
-              isSelected={selectedBlockId === block.id}
+              className="block-content-edit"
             />
           </div>
-        ))}
+        ) : (
+          /* Preview Mode - Read Only */
+          <div className="p-4">
+            <BlockRenderer
+              block={block}
+              readonly={true}
+              className="block-content-preview"
+            />
+          </div>
+        )}
       </div>
 
-      {/* Empty State */}
-      {memoizedBlocks.length === 0 && (
-        <div className="text-center py-12 border-2 border-dashed border-gray-600 rounded-lg">
-          <div className="text-gray-400">
-            <div className="w-16 h-16 mx-auto mb-4 bg-gray-700 rounded-lg flex items-center justify-center">
-              <span className="text-2xl">📝</span>
-            </div>
-            <h3 className="text-lg font-medium mb-2">Nenhum bloco criado</h3>
-            <p className="text-sm mb-4">Comece adicionando seu primeiro bloco de conteúdo</p>
-            <Button
-              onClick={() => handleAddBlock('paragraph')}
-              className="mx-auto"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Criar Primeiro Bloco
-            </Button>
-          </div>
-        </div>
-      )}
+      <BlockStatusIndicators
+        editMode={editMode}
+        isActive={isActive}
+        isVisible={block.visible}
+        isDragging={isDragging}
+        draggedOver={draggedOver}
+      />
     </div>
   );
 };

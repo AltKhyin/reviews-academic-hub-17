@@ -1,4 +1,3 @@
-
 // ABOUTME: Core review and block type definitions with standardized string IDs
 // Updated to resolve editor component type mismatches - ENHANCED: Complete meta interface
 
@@ -57,10 +56,9 @@ export type BlockType =
   | 'poll'
   | 'citation_list'
   | 'snapshot_card'
-  | 'divider'
-  | 'list'
-  | 'code'
-  | 'diagram'; // Added missing diagram block type
+  | 'divider' // Added missing block type
+  | 'list' // Added missing block type
+  | 'code'; // Added missing block type
 
 export interface Issue {
   id: string;
@@ -88,78 +86,4 @@ export interface Issue {
   review_content?: any;
   toc_data?: any;
   backend_tags?: any;
-}
-
-// Enhanced Issue interface with additional computed properties
-export interface EnhancedIssue extends Issue {
-  // Additional computed or enhanced fields for the viewer
-  content_blocks?: ReviewBlock[];
-  table_of_contents?: TableOfContents;
-  interaction_data?: {
-    is_bookmarked?: boolean;
-    user_reaction?: string | null;
-    view_count?: number;
-  };
-}
-
-// Diagram system types
-export interface DiagramNode {
-  id: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  type: 'rect' | 'circle' | 'diamond' | 'text';
-  label: string;
-  color?: string;
-  backgroundColor?: string;
-}
-
-export interface DiagramConnection {
-  id: string;
-  sourceId: string;
-  targetId: string;
-  type: 'arrow' | 'line' | 'dashed';
-  label?: string;
-  color?: string;
-}
-
-export interface DiagramContent {
-  nodes: DiagramNode[];
-  connections: DiagramConnection[];
-  layout: {
-    width: number;
-    height: number;
-    zoom: number;
-    pan: { x: number; y: number };
-  };
-  template?: string;
-}
-
-// Snapshot card content type
-export interface SnapshotCardContent {
-  title: string;
-  subtitle?: string;
-  value: string | number;
-  description?: string;
-  trend?: {
-    direction: 'up' | 'down' | 'stable';
-    percentage?: number;
-    period?: string;
-  };
-  color?: string;
-  icon?: string;
-}
-
-// Table of Contents structure
-export interface TableOfContents {
-  sections: TOCSection[];
-}
-
-export interface TOCSection {
-  id: string;
-  title: string;
-  level: number;
-  anchor?: string;
-  subsections?: TOCSection[];
 }

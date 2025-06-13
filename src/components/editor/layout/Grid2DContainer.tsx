@@ -41,29 +41,28 @@ export const Grid2DContainer: React.FC<Grid2DContainerProps> = ({
   onDragLeave,
   onDrop
 }) => {
-  const gridRowCount = grid.rows.length;
-  const totalCells = grid.columns * gridRowCount;
+  const totalCells = grid.columns * (grid.grid_rows || 2);
 
   return (
     <div className="grid-2d-container p-4 border border-gray-600 rounded-lg bg-gray-800/20">
       <div className="flex items-center justify-between mb-3">
         <h4 className="text-sm font-medium text-white">
-          Grid 2D ({grid.columns}×{gridRowCount})
+          Grid 2D ({grid.columns}×{grid.grid_rows || 2})
         </h4>
         <div className="flex gap-1">
           <Button
             size="sm"
             variant="ghost"
-            onClick={() => onAddRowBelow(grid.id, gridRowCount - 1)}
+            onClick={() => onAddRowBelow(grid.id, (grid.grid_rows || 2) - 1)}
             className="h-6 w-6 p-0"
           >
             <Plus className="w-3 h-3" />
           </Button>
-          {gridRowCount > 1 && (
+          {(grid.grid_rows || 2) > 1 && (
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => onRemoveRow(grid.id, gridRowCount - 1)}
+              onClick={() => onRemoveRow(grid.id, (grid.grid_rows || 2) - 1)}
               className="h-6 w-6 p-0"
             >
               <Minus className="w-3 h-3" />
@@ -80,7 +79,7 @@ export const Grid2DContainer: React.FC<Grid2DContainerProps> = ({
             : `repeat(${grid.columns}, 1fr)`,
           gridTemplateRows: grid.rowHeights
             ? grid.rowHeights.map(h => `${h}px`).join(' ')
-            : `repeat(${gridRowCount}, minmax(120px, auto))`
+            : `repeat(${grid.grid_rows || 2}, minmax(120px, auto))`
         }}
       >
         {Array.from({ length: totalCells }).map((_, index) => {
