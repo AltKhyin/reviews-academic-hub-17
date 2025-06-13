@@ -1,26 +1,72 @@
 
-// ABOUTME: Enhanced review types with proper ID handling and database compatibility
+// ABOUTME: Enhanced review types with string IDs for database compatibility and complete type definitions
+export type BlockType = 
+  | 'text' 
+  | 'heading' 
+  | 'image' 
+  | 'video' 
+  | 'quote' 
+  | 'list' 
+  | 'code' 
+  | 'table' 
+  | 'divider' 
+  | 'callout' 
+  | 'embed' 
+  | 'poll' 
+  | 'chart' 
+  | 'audio'
+  | 'file'
+  | 'gallery'
+  | 'timeline'
+  | 'comparison'
+  | 'accordion'
+  | 'tabs';
+
+export interface SpacingConfig {
+  top?: number;
+  bottom?: number;
+  left?: number;
+  right?: number;
+  margin?: {
+    top?: number;
+    bottom?: number;
+    left?: number;
+    right?: number;
+  };
+  padding?: {
+    top?: number;
+    bottom?: number;
+    left?: number;
+    right?: number;
+  };
+}
+
+export interface LayoutConfig {
+  columns?: number;
+  columnWidths?: number[];
+  grid_id?: string;
+  grid_position?: number;
+  row_id?: string;
+  grid_rows?: number;
+  gap?: number;
+  rowHeights?: number[];
+}
+
+export interface AlignmentConfig {
+  vertical?: 'top' | 'center' | 'bottom';
+  horizontal?: 'left' | 'center' | 'right';
+}
+
 export interface ReviewBlock {
-  id: string; // Changed from number to string for consistent handling
-  type: string;
-  content: any; // Using any for flexible content structure
+  id: string; // Changed from number to string for database compatibility
+  type: BlockType;
+  content: any;
   sort_index: number;
   visible: boolean;
   meta?: {
-    spacing?: {
-      top?: number;
-      bottom?: number;
-      left?: number;
-      right?: number;
-    };
-    alignment?: {
-      vertical?: 'top' | 'center' | 'bottom';
-      horizontal?: 'left' | 'center' | 'right';
-    };
-    layout?: {
-      columns?: number;
-      columnWidths?: number[];
-    };
+    spacing?: SpacingConfig;
+    alignment?: AlignmentConfig;
+    layout?: LayoutConfig;
   };
 }
 
