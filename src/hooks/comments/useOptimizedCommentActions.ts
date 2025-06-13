@@ -40,7 +40,6 @@ export const useOptimizedCommentActions = (
         score: 0,
         userVote: 0,
         profiles: {
-          id: userId,
           full_name: 'You',
           avatar_url: null
         },
@@ -56,7 +55,7 @@ export const useOptimizedCommentActions = (
         .select(`
           *,
           profiles:user_id (
-            id, full_name, avatar_url
+            full_name, avatar_url
           )
         `)
         .single();
@@ -80,8 +79,7 @@ export const useOptimizedCommentActions = (
     } catch (error) {
       console.error('Error adding comment:', error);
       
-      // Remove optimistic comment on error - need to get tempComment in scope
-      const tempCommentId = `temp-${Date.now()}`;
+      // Remove optimistic comment on error
       updateCommentsOptimistically((oldComments) => 
         oldComments.filter(comment => !comment.id.startsWith('temp-'))
       );
@@ -110,7 +108,7 @@ export const useOptimizedCommentActions = (
         .select(`
           *,
           profiles:user_id (
-            id, full_name, avatar_url
+            full_name, avatar_url
           )
         `)
         .single();

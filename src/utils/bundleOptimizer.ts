@@ -87,27 +87,27 @@ class BundleOptimizer {
 
 // Optimized dynamic imports for large dependencies
 export const optimizedImports = {
-  // Editor components (large bundle)
+  // Editor components (large bundle) - Fix: import with default export pattern
   NativeEditor: () => BundleOptimizer.createLazyComponent(
-    () => import('../components/editor/NativeEditor'),
+    () => import('../components/editor/NativeEditor').then(module => ({ default: module.default || module })),
     'NativeEditor'
   ),
   
   // Analytics dashboard (large charts bundle)
   AnalyticsDashboard: () => BundleOptimizer.createLazyComponent(
-    () => import('../components/analytics/EnhancedAnalyticsDashboard'),
+    () => import('../components/analytics/EnhancedAnalyticsDashboard').then(module => ({ default: module.default || module })),
     'AnalyticsDashboard'
   ),
   
   // Admin components (rarely accessed)
   AdminPanel: () => BundleOptimizer.createLazyComponent(
-    () => import('../components/admin/IssuesManagementPanel'),
+    () => import('../components/admin/IssuesManagementPanel').then(module => ({ default: module.default || module })),
     'AdminPanel'
   ),
   
   // PDF viewer (heavy dependency)
   PDFViewer: () => BundleOptimizer.createLazyComponent(
-    () => import('../components/pdf/PDFViewer'),
+    () => import('../components/pdf/PDFViewer').then(module => ({ default: module.default || module })),
     'PDFViewer'
   ),
 };
