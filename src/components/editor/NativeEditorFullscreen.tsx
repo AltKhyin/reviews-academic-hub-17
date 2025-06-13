@@ -1,4 +1,5 @@
-// ABOUTME: Fullscreen native editor with immersive editing experience
+
+// ABOUTME: Fullscreen native editor with immersive editing experience - FIXED: String IDs throughout
 // Provides dedicated workspace for complex review creation
 
 import React, { useCallback, useEffect } from 'react';
@@ -107,7 +108,9 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  }, [on
+
+Close]);
 
   return (
     <div 

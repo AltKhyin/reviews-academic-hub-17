@@ -28,7 +28,7 @@ import {
 import { cn } from '@/lib/utils';
 
 interface BlockPaletteProps {
-  onBlockAdd: (type: BlockType, position?: number) => string; // Updated return type and parameter type
+  onBlockAdd: (type: BlockType, position?: number) => string;
 }
 
 export const BlockPalette: React.FC<BlockPaletteProps> = ({ onBlockAdd }) => {
@@ -53,14 +53,14 @@ export const BlockPalette: React.FC<BlockPaletteProps> = ({ onBlockAdd }) => {
           color: '#6b7280'
         },
         {
-          type: 'quote',
+          type: 'quote' as BlockType,
           icon: Quote,
           label: 'Citação',
           description: 'Bloco de citação',
           color: '#8b5cf6'
         },
         {
-          type: 'divider',
+          type: 'divider' as BlockType,
           icon: Minus,
           label: 'Divisor',
           description: 'Linha de separação',
@@ -72,14 +72,14 @@ export const BlockPalette: React.FC<BlockPaletteProps> = ({ onBlockAdd }) => {
       name: 'Mídia',
       blocks: [
         {
-          type: 'figure',
+          type: 'figure' as BlockType,
           icon: Image,
           label: 'Figura',
           description: 'Imagem com legenda',
           color: '#10b981'
         },
         {
-          type: 'diagram',
+          type: 'diagram' as BlockType,
           icon: Grid3X3,
           label: 'Diagrama',
           description: 'Fluxogramas e diagramas científicos',
@@ -91,21 +91,21 @@ export const BlockPalette: React.FC<BlockPaletteProps> = ({ onBlockAdd }) => {
       name: 'Dados',
       blocks: [
         {
-          type: 'table',
+          type: 'table' as BlockType,
           icon: Table,
           label: 'Tabela',
           description: 'Dados tabulares',
           color: '#ef4444'
         },
         {
-          type: 'number_card',
+          type: 'number_card' as BlockType,
           icon: Hash,
           label: 'Card Numérico',
           description: 'Métricas destacadas',
           color: '#06b6d4'
         },
         {
-          type: 'snapshot_card',
+          type: 'snapshot_card' as BlockType,
           icon: BarChart3,
           label: 'Card de Evidência',
           description: 'Resumo de estudos',
@@ -117,21 +117,21 @@ export const BlockPalette: React.FC<BlockPaletteProps> = ({ onBlockAdd }) => {
       name: 'Interação',
       blocks: [
         {
-          type: 'callout',
+          type: 'callout' as BlockType,
           icon: MessageSquare,
           label: 'Callout',
           description: 'Destaque informativo',
           color: '#f59e0b'
         },
         {
-          type: 'poll',
+          type: 'poll' as BlockType,
           icon: Vote,
           label: 'Enquete',
           description: 'Votação interativa',
           color: '#10b981'
         },
         {
-          type: 'reviewer_quote',
+          type: 'reviewer_quote' as BlockType,
           icon: Star,
           label: 'Avaliação',
           description: 'Comentário de revisor',
@@ -143,7 +143,7 @@ export const BlockPalette: React.FC<BlockPaletteProps> = ({ onBlockAdd }) => {
       name: 'Referências',
       blocks: [
         {
-          type: 'citation_list',
+          type: 'citation_list' as BlockType,
           icon: FileText,
           label: 'Bibliografia',
           description: 'Lista de referências',

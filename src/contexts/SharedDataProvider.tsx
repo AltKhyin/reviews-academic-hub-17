@@ -1,62 +1,82 @@
+// ABOUTME: Enhanced shared data provider with homepage fallback
+// Provides centralized data management with proper error handling
 
-// ABOUTME: Shared data provider to prevent individual component API calls in lists
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { useOptimizedHomepage } from '@/hooks/useOptimizedHomepage';
-import { useUserInteractionContext } from './UserInteractionContext';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SharedDataContextType {
-  issues: any[];
-  featuredIssue: any | null;
-  reviewerComments: any[];
-  sectionVisibility: any[];
+  sectionVisibility: Record<string, boolean>;
+  setSectionVisibility: (visibility: Record<string, boolean>) => void;
   isLoading: boolean;
-  error: any;
-  refreshData: () => void;
 }
 
 const SharedDataContext = createContext<SharedDataContextType | undefined>(undefined);
 
+export const useSharedData = () => {
+  const context = useContext(SharedDataContext);
+  if (context === undefined) {
+    throw new Error('useSharedData must be used within a SharedDataProvider');
+  }
+  return context;
+};
+
 export const SharedDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { data, isLoading, error, refetch } = useOptimizedHomepage();
-  const { batchLoadUserData } = useUserInteractionContext();
-  const [dataLoaded, setDataLoaded] = useState(false);
+  const [sectionVisibility, setSectionVisibility] = useState<Record<string, boolean>>({
+    // Default sections - always visible to prevent empty homepage
+    hero: true,
+    featured: true,
+    categories: true,
+    recent: true,
+    stats: true
+  });
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Batch load user interactions when data becomes available
   useEffect(() => {
-    if (data?.issues && !dataLoaded && data.issues.length > 0) {
-      const issueIds = data.issues.map((issue: any) => issue.id);
-      batchLoadUserData(issueIds);
-      setDataLoaded(true);
-      console.log(`🚀 Batch loaded user data for ${issueIds.length} issues from SharedDataProvider`);
-    }
-  }, [data?.issues, batchLoadUserData, dataLoaded]);
+    const loadSectionVisibility = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('site_settings')
+          .select('setting_key, setting_value')
+          .like('setting_key', 'section_visibility_%');
 
-  const refreshData = useCallback(() => {
-    setDataLoaded(false);
-    refetch();
-  }, [refetch]);
+        if (error) throw error;
 
-  const contextValue = {
-    issues: data?.issues || [],
-    featuredIssue: data?.featuredIssue || null,
-    reviewerComments: data?.reviewerComments || [],
-    sectionVisibility: data?.sectionVisibility || [],
-    isLoading,
-    error,
-    refreshData
-  };
+        if (data && data.length > 0) {
+          const visibility: Record<string, boolean> = {
+            // Keep defaults
+            hero: true,
+            featured: true,
+            categories: true,
+            recent: true,
+            stats: true
+          };
+          
+          data.forEach(setting => {
+            const sectionName = setting.setting_key.replace('section_visibility_', '');
+            visibility[sectionName] = setting.setting_value === 'true';
+          });
+          
+          setSectionVisibility(visibility);
+        }
+        // If no data, keep defaults (already set in state)
+      } catch (error) {
+        console.error('Error loading section visibility:', error);
+        // Keep defaults on error
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadSectionVisibility();
+  }, []);
 
   return (
-    <SharedDataContext.Provider value={contextValue}>
+    <SharedDataContext.Provider value={{
+      sectionVisibility,
+      setSectionVisibility,
+      isLoading
+    }}>
       {children}
     </SharedDataContext.Provider>
   );
-};
-
-export const useSharedData = () => {
-  const context = useContext(SharedDataContext);
-  if (!context) {
-    throw new Error('useSharedData must be used within SharedDataProvider');
-  }
-  return context;
 };

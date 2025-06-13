@@ -33,7 +33,7 @@ interface NativeEditorProps {
 }
 
 export const NativeEditor: React.FC<NativeEditorProps> = ({
-  blocks,
+  blocks = [], // Add default empty array
   onUpdateBlocks,
   onSave,
   isSaving = false,
@@ -314,7 +314,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
             )}
           </Button>
           <Button
-            variant="primary"
+            variant="default"
             size="sm"
             onClick={handleSaveBlocks}
             disabled={isSaving}
