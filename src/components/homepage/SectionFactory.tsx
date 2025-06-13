@@ -3,6 +3,7 @@
 import React, { Suspense, memo } from 'react';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { SECTION_REGISTRY, getSectionById } from '@/config/sections';
+import { useParallelDataLoader } from '@/hooks/useParallelDataLoader';
 
 // Lazy load all sections for better performance with comprehensive error handling
 const ReviewerNotesSection = React.lazy(() => 
@@ -29,19 +30,18 @@ const UpcomingSection = React.lazy(() =>
     })
 );
 
-// NEW: Import optimized sections
-const OptimizedRecentSection = React.lazy(() => 
-  import('./sections/OptimizedRecentSection').then(module => ({ default: module.OptimizedRecentSection }))
+const RecentSection = React.lazy(() => 
+  import('./sections/RecentSection').then(module => ({ default: module.RecentSection }))
     .catch(error => {
-      console.error('Failed to load OptimizedRecentSection:', error);
+      console.error('Failed to load RecentSection:', error);
       return { default: () => <div>Error loading recent section</div> };
     })
 );
 
-const OptimizedRecommendedSection = React.lazy(() => 
-  import('./sections/OptimizedRecommendedSection').then(module => ({ default: module.OptimizedRecommendedSection }))
+const RecommendedSection = React.lazy(() => 
+  import('./sections/RecommendedSection').then(module => ({ default: module.RecommendedSection }))
     .catch(error => {
-      console.error('Failed to load OptimizedRecommendedSection:', error);
+      console.error('Failed to load RecommendedSection:', error);
       return { default: () => <div>Error loading recommended section</div> };
     })
 );
@@ -68,8 +68,8 @@ const SECTION_COMPONENTS = {
   ReviewerNotesSection,
   FeaturedSection,
   UpcomingSection,
-  OptimizedRecentSection, // NEW: Replace RecentSection
-  OptimizedRecommendedSection, // NEW: Replace RecommendedSection
+  RecentSection,
+  RecommendedSection,
   TrendingSection,
 } as const;
 
@@ -145,25 +145,17 @@ export const SectionFactory: React.FC<SectionFactoryProps> = memo(({
     );
   }
 
-  // Map section IDs to optimized components
-  let componentName = sectionDefinition.component;
-  if (sectionId === 'recent') {
-    componentName = 'OptimizedRecentSection';
-  } else if (sectionId === 'recommended') {
-    componentName = 'OptimizedRecommendedSection';
-  }
-
   // Get component from registry with fallback
-  const SectionComponent = SECTION_COMPONENTS[componentName as keyof typeof SECTION_COMPONENTS];
+  const SectionComponent = SECTION_COMPONENTS[sectionDefinition.component as keyof typeof SECTION_COMPONENTS];
 
   if (!SectionComponent) {
-    console.warn(`SectionFactory: No component found for section: ${sectionId} (${componentName})`);
+    console.warn(`SectionFactory: No component found for section: ${sectionId} (${sectionDefinition.component})`);
     return (
       <div className="w-full">
         <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
           <h3 className="text-orange-800 font-medium">Componente não disponível</h3>
           <p className="text-orange-600 text-sm mt-1">
-            O componente "{componentName}" para a seção "{sectionConfig.title}" não está disponível.
+            O componente "{sectionDefinition.component}" para a seção "{sectionConfig.title}" não está disponível.
           </p>
         </div>
       </div>

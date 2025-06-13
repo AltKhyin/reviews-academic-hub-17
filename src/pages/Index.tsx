@@ -1,7 +1,6 @@
 
 // ABOUTME: Enhanced landing page with optimized data loading to prevent API cascades
 import React, { useMemo } from 'react';
-import { OptimizedHomepageProvider } from '@/contexts/OptimizedHomepageContext';
 import { useOptimizedHomepage } from '@/hooks/useOptimizedHomepage';
 import { SectionFactory } from '@/components/homepage/SectionFactory';
 import { getSectionById } from '@/config/sections';
@@ -14,7 +13,7 @@ interface SectionVisibilityItem {
   title?: string;
 }
 
-const IndexContent = () => {
+const Index = () => {
   const { 
     data: homepageData,
     isLoading, 
@@ -222,14 +221,6 @@ const IndexContent = () => {
         )}
       </div>
     </div>
-  );
-};
-
-const Index = () => {
-  return (
-    <OptimizedHomepageProvider>
-      <IndexContent />
-    </OptimizedHomepageProvider>
   );
 };
 
