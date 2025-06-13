@@ -1,3 +1,4 @@
+
 // ABOUTME: Main App component with enhanced providers for API cascade prevention
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -12,7 +13,6 @@ import { GlobalErrorBoundary } from "@/components/error/GlobalErrorBoundary";
 import { queryClient, initializeBackgroundOptimization } from "@/lib/queryClient";
 import Index from "./pages/Index";
 import Dashboard from "./pages/dashboard/Dashboard";
-import Search from "./pages/search/Search";
 import Article from "./pages/article/Article";
 import Archive from "./pages/archive/Archive";
 import Community from "./pages/community/Community";
@@ -50,7 +50,6 @@ const App = () => {
                       <Routes>
                         <Route path="/" element={<Index />} />
                         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                        <Route path="/search" element={<Search />} />
                         <Route path="/article/:id" element={<Article />} />
                         <Route path="/archive" element={<Archive />} />
                         <Route path="/community" element={<Community />} />
