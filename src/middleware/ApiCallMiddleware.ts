@@ -1,14 +1,35 @@
 
-// ABOUTME: API access monitoring middleware to prevent unauthorized component database calls
-import { supabase } from '@/integrations/supabase/client';
+// ABOUTME: API call monitoring middleware for architectural compliance
+// Tracks and enforces coordinated data access patterns
+
+interface ApiCallStats {
+  endpoint: string;
+  count: number;
+  lastCalled: number;
+  component?: string;
+}
+
+interface ApiCallReport {
+  totalCalls: number;
+  callsByEndpoint: Map<string, ApiCallStats>;
+  violationsByComponent: Map<string, number>;
+  requestBudgetStatus: {
+    current: number;
+    maximum: number;
+    exceeded: boolean;
+  };
+}
 
 class ApiCallMonitor {
   private static instance: ApiCallMonitor;
-  private callLog: Map<string, { count: number; lastCall: number; component?: string }> = new Map();
-  private readonly MAX_CALLS_PER_MINUTE = 5;
-  private readonly ALERT_THRESHOLD = 10;
+  private callStats = new Map<string, ApiCallStats>();
+  private componentViolations = new Map<string, number>();
+  private requestBudget = { current: 0, maximum: 10, exceeded: false };
+  private readonly STATS_RETENTION_TIME = 60000; // 1 minute
 
-  private constructor() {}
+  private constructor() {
+    this.initializeMonitoring();
+  }
 
   static getInstance(): ApiCallMonitor {
     if (!ApiCallMonitor.instance) {
@@ -17,95 +38,103 @@ class ApiCallMonitor {
     return ApiCallMonitor.instance;
   }
 
-  logApiCall(endpoint: string, component?: string): void {
-    const key = `${endpoint}-${component || 'unknown'}`;
-    const now = Date.now();
-    const existing = this.callLog.get(key) || { count: 0, lastCall: 0 };
-    
-    // Reset counter if more than 1 minute has passed
-    if (now - existing.lastCall > 60000) {
-      existing.count = 0;
-    }
-    
-    existing.count++;
-    existing.lastCall = now;
-    existing.component = component;
-    this.callLog.set(key, existing);
+  private initializeMonitoring(): void {
+    // Clean up old stats periodically
+    setInterval(() => {
+      this.cleanupOldStats();
+    }, 30000); // Every 30 seconds
 
-    // Log excessive API calls
-    if (existing.count > this.ALERT_THRESHOLD) {
-      console.warn(`🚨 API CASCADE DETECTED: ${key} made ${existing.count} calls in last minute`);
-    }
-
-    // Development mode detailed logging
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`📡 API Call: ${endpoint} from ${component || 'unknown'} (${existing.count} calls)`);
-    }
+    console.log('📊 ApiCallMonitor: Monitoring initialized');
   }
 
-  getCallStats(): Record<string, { count: number; lastCall: number; component?: string }> {
-    const stats: Record<string, any> = {};
-    this.callLog.forEach((value, key) => {
-      stats[key] = value;
-    });
-    return stats;
+  trackApiCall(endpoint: string, component?: string): boolean {
+    const now = Date.now();
+    const key = component ? `${component}:${endpoint}` : endpoint;
+    
+    // Update call stats
+    const existing = this.callStats.get(key);
+    if (existing) {
+      existing.count++;
+      existing.lastCalled = now;
+    } else {
+      this.callStats.set(key, {
+        endpoint,
+        count: 1,
+        lastCalled: now,
+        component
+      });
+    }
+
+    // Track component violations
+    if (component) {
+      const violations = this.componentViolations.get(component) || 0;
+      this.componentViolations.set(component, violations + 1);
+    }
+
+    // Update request budget
+    this.requestBudget.current++;
+    this.requestBudget.exceeded = this.requestBudget.current > this.requestBudget.maximum;
+
+    // Log warning if budget exceeded
+    if (this.requestBudget.exceeded) {
+      console.warn(`🚨 API Budget Exceeded: ${this.requestBudget.current}/${this.requestBudget.maximum}`);
+    }
+
+    return !this.requestBudget.exceeded;
+  }
+
+  private cleanupOldStats(): void {
+    const cutoff = Date.now() - this.STATS_RETENTION_TIME;
+    
+    for (const [key, stats] of this.callStats.entries()) {
+      if (stats.lastCalled < cutoff) {
+        this.callStats.delete(key);
+      }
+    }
+
+    // Reset request budget every minute
+    this.requestBudget.current = 0;
+    this.requestBudget.exceeded = false;
   }
 
   getTotalCallsInLastMinute(): number {
-    const now = Date.now();
-    let total = 0;
-    this.callLog.forEach((value) => {
-      if (now - value.lastCall <= 60000) {
-        total += value.count;
-      }
-    });
-    return total;
+    return Array.from(this.callStats.values())
+      .reduce((sum, stats) => sum + stats.count, 0);
   }
 
-  preventUnauthorizedCalls(component: string, endpoint: string): boolean {
-    const key = `${endpoint}-${component}`;
-    const existing = this.callLog.get(key) || { count: 0, lastCall: 0 };
+  getCallStats(): Record<string, { count: number; lastCalled: number }> {
+    const result: Record<string, { count: number; lastCalled: number }> = {};
     
-    if (existing.count > this.MAX_CALLS_PER_MINUTE) {
-      console.error(`🚫 BLOCKED: ${component} attempted unauthorized API call to ${endpoint}`);
-      return false;
+    for (const [key, stats] of this.callStats.entries()) {
+      result[key] = {
+        count: stats.count,
+        lastCalled: stats.lastCalled
+      };
     }
     
-    return true;
+    return result;
+  }
+
+  getComponentViolations(): Map<string, number> {
+    return new Map(this.componentViolations);
+  }
+
+  generateReport(): ApiCallReport {
+    return {
+      totalCalls: this.getTotalCallsInLastMinute(),
+      callsByEndpoint: new Map(this.callStats),
+      violationsByComponent: new Map(this.componentViolations),
+      requestBudgetStatus: { ...this.requestBudget }
+    };
+  }
+
+  resetStats(): void {
+    this.callStats.clear();
+    this.componentViolations.clear();
+    this.requestBudget = { current: 0, maximum: 10, exceeded: false };
+    console.log('🔄 ApiCallMonitor: Stats reset');
   }
 }
 
-// Enhanced Supabase client wrapper with monitoring
-class MonitoredSupabaseClient {
-  private monitor = ApiCallMonitor.getInstance();
-  private client = supabase;
-
-  from(table: string) {
-    const component = this.getCallingComponent();
-    this.monitor.logApiCall(`table:${table}`, component);
-    
-    return this.client.from(table);
-  }
-
-  auth = this.client.auth;
-  storage = this.client.storage;
-  functions = this.client.functions;
-  realtime = this.client.realtime;
-
-  private getCallingComponent(): string {
-    const stack = new Error().stack;
-    if (!stack) return 'unknown';
-    
-    const lines = stack.split('\n');
-    for (const line of lines) {
-      if (line.includes('.tsx') || line.includes('.ts')) {
-        const match = line.match(/([A-Z][a-zA-Z0-9]*(?:\.tsx?)?)/);
-        if (match) return match[1];
-      }
-    }
-    return 'unknown';
-  }
-}
-
-export const monitoredSupabase = new MonitoredSupabaseClient();
 export const apiCallMonitor = ApiCallMonitor.getInstance();
+export type { ApiCallStats, ApiCallReport };
