@@ -1,5 +1,5 @@
 
-// ABOUTME: Optimized Dashboard with unified section management - no UI changes
+// ABOUTME: Optimized Dashboard with unified section management and centralized user interactions
 import React from 'react';
 import { useParallelDataLoader } from '@/hooks/useParallelDataLoader';
 import { useStableAuth } from '@/hooks/useStableAuth';
@@ -9,6 +9,7 @@ import { HeroSection } from '@/components/dashboard/HeroSection';
 import ArticleRow from '@/components/dashboard/ArticleRow';
 import { UpcomingReleaseCard } from '@/components/dashboard/UpcomingReleaseCard';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
+import { UserInteractionProvider } from '@/contexts/UserInteractionContext';
 
 const Dashboard = () => {
   const { isAuthenticated, isLoading: authLoading } = useStableAuth();
@@ -77,6 +78,9 @@ const Dashboard = () => {
     );
   }
 
+  // PERFORMANCE FIX: Extract all issue IDs for bulk user interaction loading
+  const allIssueIds = issues.map(issue => issue.id);
+
   // Filter out featured issue from other sections to avoid duplication
   const nonFeaturedIssues = featuredIssue 
     ? issues.filter(issue => issue.id !== featuredIssue.id)
@@ -103,6 +107,7 @@ const Dashboard = () => {
 
   console.log('Dashboard: Visible sections from unified config:', enabledSections.map(s => `${s.id} (order: ${s.order})`));
   console.log('Dashboard: Featured issue:', featuredIssue?.id);
+  console.log('Dashboard: PERFORMANCE FIX - Bulk loading interactions for', allIssueIds.length, 'issues');
 
   const renderSection = (sectionConfig: any, index: number) => {
     const sectionId = sectionConfig.id;
@@ -186,27 +191,30 @@ const Dashboard = () => {
 
   return (
     <DataErrorBoundary context="dashboard" onRetry={retryFailed}>
-      <div className="w-full min-h-screen" style={{ backgroundColor: '#121212' }}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="space-y-8">
-            {enabledSections.length === 0 ? (
-              <div className="text-center py-16">
-                <h2 className="text-2xl font-bold mb-4 text-white">Nenhuma seção configurada</h2>
-                <p className="text-gray-400">
-                  Configure as seções da página inicial no painel administrativo.
-                </p>
-              </div>
-            ) : (
-              enabledSections.map((section, index) => {
-                const sectionElement = renderSection(section, index);
-                // Only render if we have a valid element
-                if (!sectionElement) return null;
-                return sectionElement;
-              })
-            )}
+      {/* PERFORMANCE FIX: Wrap entire dashboard with UserInteractionProvider for bulk loading */}
+      <UserInteractionProvider issueIds={allIssueIds}>
+        <div className="w-full min-h-screen" style={{ backgroundColor: '#121212' }}>
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="space-y-8">
+              {enabledSections.length === 0 ? (
+                <div className="text-center py-16">
+                  <h2 className="text-2xl font-bold mb-4 text-white">Nenhuma seção configurada</h2>
+                  <p className="text-gray-400">
+                    Configure as seções da página inicial no painel administrativo.
+                  </p>
+                </div>
+              ) : (
+                enabledSections.map((section, index) => {
+                  const sectionElement = renderSection(section, index);
+                  // Only render if we have a valid element
+                  if (!sectionElement) return null;
+                  return sectionElement;
+                })
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      </UserInteractionProvider>
     </DataErrorBoundary>
   );
 };
