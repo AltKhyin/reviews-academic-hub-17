@@ -1,46 +1,51 @@
 
-import { Comment, BaseComment } from '@/types/commentTypes';
+// ABOUTME: Comment organization utilities for tree structure and sorting
+import { Comment } from '@/types/commentTypes';
 
-/**
- * Organizes comments into a nested tree structure
- * @param comments Flat array of comments
- * @returns Array of comments with nested replies
- */
-export function organizeCommentsInTree(comments: BaseComment[]): Comment[] {
-  if (!comments || comments.length === 0) return [];
-  
-  // Create a map to store comments by id for quick lookup
-  const commentMap = new Map<string, Comment>();
-  
-  // First pass: create Comment objects for all comments
-  comments.forEach(comment => {
-    commentMap.set(comment.id, {
-      ...comment,
-      replies: [] // Initialize empty replies array
-    });
-  });
-  
-  // Second pass: organize into tree structure
+export const organizeCommentsInTree = (comments: Comment[]): Comment[] => {
+  // Create a map for quick lookup
+  const commentMap = new Map<string, Comment & { replies: Comment[] }>();
   const rootComments: Comment[] = [];
-  
+
+  // Initialize all comments with empty replies array
+  comments.forEach(comment => {
+    commentMap.set(comment.id, { ...comment, replies: [] });
+  });
+
+  // Organize into tree structure
   comments.forEach(comment => {
     const commentWithReplies = commentMap.get(comment.id);
-    if (!commentWithReplies) return; // Skip if comment not found
-    
+    if (!commentWithReplies) return;
+
     if (comment.parent_id) {
-      // This is a reply, add it to its parent's replies
-      const parentComment = commentMap.get(comment.parent_id);
-      if (parentComment) {
-        parentComment.replies.push(commentWithReplies);
-      } else {
-        // If parent not found (unusual case), treat as root comment
-        rootComments.push(commentWithReplies);
+      const parent = commentMap.get(comment.parent_id);
+      if (parent) {
+        parent.replies.push(commentWithReplies);
       }
     } else {
-      // This is a root comment
       rootComments.push(commentWithReplies);
     }
   });
-  
+
+  // Sort root comments by score and date
+  rootComments.sort((a, b) => {
+    // First sort by score (higher first)
+    if (a.score !== b.score) {
+      return b.score - a.score;
+    }
+    // Then by creation date (newer first)
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+
+  // Sort replies by date (older first for better conversation flow)
+  const sortReplies = (comment: Comment & { replies: Comment[] }) => {
+    comment.replies.sort((a, b) => 
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
+    comment.replies.forEach(sortReplies);
+  };
+
+  rootComments.forEach(sortReplies);
+
   return rootComments;
-}
+};

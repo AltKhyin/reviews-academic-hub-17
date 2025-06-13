@@ -4,134 +4,148 @@ import { useState, useCallback, useRef } from 'react';
 import { toast } from '@/hooks/use-toast';
 
 interface RateLimitConfig {
-  maxRequests: number;
-  windowMs: number;
-  retryAfterMs?: number;
+  maxRequests?: number;
+  windowMs?: number;
   showToast?: boolean;
 }
 
 interface RateLimitState {
   requests: number[];
-  isLimited: boolean;
+  blocked: boolean;
   nextAllowedTime: number;
 }
 
-const DEFAULT_CONFIGS: Record<string, RateLimitConfig> = {
-  'issues': { maxRequests: 10, windowMs: 60000, showToast: true }, // 10 per minute
-  'archive': { maxRequests: 15, windowMs: 60000, showToast: true }, // 15 per minute
-  'comments': { maxRequests: 20, windowMs: 60000, showToast: true }, // 20 per minute
-  'community': { maxRequests: 25, windowMs: 60000, showToast: true }, // 25 per minute
-  'search': { maxRequests: 30, windowMs: 60000, showToast: true }, // 30 per minute
-  'sidebar': { maxRequests: 5, windowMs: 60000, showToast: false }, // 5 per minute, no toast
-  'analytics': { maxRequests: 5, windowMs: 300000, showToast: false }, // 5 per 5 minutes
+const defaultConfig: RateLimitConfig = {
+  maxRequests: 10,
+  windowMs: 60000, // 1 minute
+  showToast: true,
 };
 
-export const useAPIRateLimit = (endpoint: string, customConfig?: Partial<RateLimitConfig>) => {
-  const config = { ...DEFAULT_CONFIGS[endpoint], ...customConfig };
-  const stateRef = useRef<RateLimitState>({
-    requests: [],
-    isLimited: false,
-    nextAllowedTime: 0,
-  });
+// Global rate limit storage per endpoint
+const rateLimitStore = new Map<string, RateLimitState>();
 
-  const [isLimited, setIsLimited] = useState(false);
+export const useAPIRateLimit = (endpoint: string, config: RateLimitConfig = {}) => {
+  const finalConfig = { ...defaultConfig, ...config };
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [remainingRequests, setRemainingRequests] = useState(finalConfig.maxRequests || 10);
+  const cleanupTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const checkRateLimit = useCallback(() => {
+  const checkRateLimit = useCallback((): boolean => {
     const now = Date.now();
-    const state = stateRef.current;
+    
+    // Get or create rate limit state for this endpoint
+    let state = rateLimitStore.get(endpoint);
+    if (!state) {
+      state = {
+        requests: [],
+        blocked: false,
+        nextAllowedTime: 0,
+      };
+      rateLimitStore.set(endpoint, state);
+    }
 
-    // Clean old requests outside the window
-    state.requests = state.requests.filter(time => now - time < config.windowMs);
-
-    // Check if we're still in a rate limit period
-    if (state.isLimited && now < state.nextAllowedTime) {
-      if (config.showToast) {
+    // Check if we're still in a blocked state
+    if (state.blocked && now < state.nextAllowedTime) {
+      setIsBlocked(true);
+      setRemainingRequests(0);
+      
+      if (finalConfig.showToast) {
         const waitTime = Math.ceil((state.nextAllowedTime - now) / 1000);
         toast({
-          title: "Rate limit exceeded",
-          description: `Please wait ${waitTime}s before making more requests to ${endpoint}`,
+          title: "Rate Limited",
+          description: `Please wait ${waitTime} seconds before trying again.`,
           variant: "destructive",
         });
       }
-      setIsLimited(true);
+      
       return false;
     }
 
-    // Check if we exceed the rate limit
-    if (state.requests.length >= config.maxRequests) {
-      state.isLimited = true;
-      state.nextAllowedTime = now + (config.retryAfterMs || config.windowMs);
+    // Clean up old requests outside the window
+    const windowStart = now - (finalConfig.windowMs || 60000);
+    state.requests = state.requests.filter(time => time > windowStart);
+
+    // Check if we're at the limit
+    if (state.requests.length >= (finalConfig.maxRequests || 10)) {
+      // Block for the remainder of the window
+      const oldestRequest = Math.min(...state.requests);
+      const blockUntil = oldestRequest + (finalConfig.windowMs || 60000);
       
-      if (config.showToast) {
+      state.blocked = true;
+      state.nextAllowedTime = blockUntil;
+      
+      setIsBlocked(true);
+      setRemainingRequests(0);
+      
+      if (finalConfig.showToast) {
+        const waitTime = Math.ceil((blockUntil - now) / 1000);
         toast({
-          title: "Rate limit exceeded",
-          description: `Too many requests to ${endpoint}. Please slow down.`,
+          title: "Rate Limited",
+          description: `Too many requests. Please wait ${waitTime} seconds.`,
           variant: "destructive",
         });
       }
+
+      // Set a timeout to unblock
+      if (cleanupTimeoutRef.current) {
+        clearTimeout(cleanupTimeoutRef.current);
+      }
       
-      setIsLimited(true);
-      console.warn(`Rate limit exceeded for ${endpoint}:`, {
-        requests: state.requests.length,
-        maxRequests: config.maxRequests,
-        windowMs: config.windowMs,
-      });
+      cleanupTimeoutRef.current = setTimeout(() => {
+        state!.blocked = false;
+        setIsBlocked(false);
+        setRemainingRequests(finalConfig.maxRequests || 10);
+      }, blockUntil - now);
       
       return false;
     }
 
-    // Add current request and allow it
+    // Allow the request and record it
     state.requests.push(now);
-    state.isLimited = false;
-    setIsLimited(false);
+    state.blocked = false;
+    setIsBlocked(false);
+    setRemainingRequests((finalConfig.maxRequests || 10) - state.requests.length);
+    
     return true;
-  }, [endpoint, config]);
+  }, [endpoint, finalConfig]);
 
-  const getRemainingRequests = useCallback(() => {
-    const now = Date.now();
-    const state = stateRef.current;
-    const activeRequests = state.requests.filter(time => now - time < config.windowMs);
-    return Math.max(0, config.maxRequests - activeRequests.length);
-  }, [config]);
+  const resetRateLimit = useCallback(() => {
+    const state = rateLimitStore.get(endpoint);
+    if (state) {
+      state.requests = [];
+      state.blocked = false;
+      state.nextAllowedTime = 0;
+    }
+    setIsBlocked(false);
+    setRemainingRequests(finalConfig.maxRequests || 10);
+    
+    if (cleanupTimeoutRef.current) {
+      clearTimeout(cleanupTimeoutRef.current);
+      cleanupTimeoutRef.current = null;
+    }
+  }, [endpoint, finalConfig.maxRequests]);
 
-  const getTimeUntilReset = useCallback(() => {
+  const getRateLimitStatus = useCallback(() => {
+    const state = rateLimitStore.get(endpoint);
+    if (!state) return { requests: 0, blocked: false, remaining: finalConfig.maxRequests || 10 };
+    
     const now = Date.now();
-    const state = stateRef.current;
+    const windowStart = now - (finalConfig.windowMs || 60000);
+    const activeRequests = state.requests.filter(time => time > windowStart);
     
-    if (state.isLimited && now < state.nextAllowedTime) {
-      return state.nextAllowedTime - now;
-    }
-    
-    const oldestRequest = Math.min(...state.requests);
-    if (oldestRequest) {
-      return Math.max(0, (oldestRequest + config.windowMs) - now);
-    }
-    
-    return 0;
-  }, [config]);
+    return {
+      requests: activeRequests.length,
+      blocked: state.blocked && now < state.nextAllowedTime,
+      remaining: Math.max(0, (finalConfig.maxRequests || 10) - activeRequests.length),
+      nextAllowedTime: state.nextAllowedTime,
+    };
+  }, [endpoint, finalConfig]);
 
   return {
     checkRateLimit,
-    isLimited,
-    remainingRequests: getRemainingRequests(),
-    timeUntilReset: getTimeUntilReset(),
-    config,
+    resetRateLimit,
+    getRateLimitStatus,
+    isBlocked,
+    remainingRequests,
   };
-};
-
-// Rate limit decorator for query functions
-export const withRateLimit = <T extends (...args: any[]) => Promise<any>>(
-  queryFn: T,
-  endpoint: string,
-  config?: Partial<RateLimitConfig>
-): T => {
-  return ((...args: Parameters<T>) => {
-    const { checkRateLimit } = useAPIRateLimit(endpoint, config);
-    
-    if (!checkRateLimit()) {
-      return Promise.reject(new Error(`Rate limit exceeded for ${endpoint}`));
-    }
-    
-    return queryFn(...args);
-  }) as T;
 };

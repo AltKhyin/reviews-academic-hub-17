@@ -1,3 +1,4 @@
+
 // ABOUTME: Main viewer component for native review content with enhanced error handling
 // Provides comprehensive loading states, error boundaries, and user interaction tracking
 
@@ -14,6 +15,7 @@ import { ViewModeSwitcher } from '../article/ViewModeSwitcher';
 import { PDFViewer } from '../pdf/PDFViewer';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { throttle } from '@/utils/throttle';
 
 interface NativeReviewViewerProps {
   issue: EnhancedIssue;
@@ -347,45 +349,61 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
         {viewMode === 'dual' && (
           <div className="dual-content grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="native-panel">
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: '#ffffff' }}>
-                <TrendingUp className="w-5 h-5" style={{ color: '#10b981' }} />
-                Revisão
+              <h3 className="text-lg font-semibold mb-4" style={{ color: '#ffffff' }}>
+                Revisão Estruturada
               </h3>
               <div className="space-y-4 max-h-[80vh] overflow-y-auto pr-4">
-                {blocks.map((block) => (
-                  <BlockRenderer
-                    key={block.id}
-                    block={block}
-                    readonly={true}
-                    className="text-sm"
-                    onInteraction={handleBlockInteraction}
-                    onSectionView={handleSectionView}
-                  />
-                ))}
+                {blocks.length > 0 ? (
+                  blocks.map((block) => (
+                    <BlockRenderer
+                      key={block.id}
+                      block={block}
+                      readonly={true}
+                      onInteraction={handleBlockInteraction}
+                      onSectionView={handleSectionView}
+                    />
+                  ))
+                ) : (
+                  <Card 
+                    className="p-6 text-center"
+                    style={{ 
+                      backgroundColor: '#1a1a1a',
+                      borderColor: '#2a2a2a'
+                    }}
+                  >
+                    <FileText className="w-8 h-8 mx-auto mb-3" style={{ color: '#6b7280' }} />
+                    <p className="text-sm" style={{ color: '#d1d5db' }}>
+                      Conteúdo em desenvolvimento
+                    </p>
+                  </Card>
+                )}
               </div>
             </div>
             
             <div className="pdf-panel">
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2" style={{ color: '#ffffff' }}>
-                <FileText className="w-5 h-5" style={{ color: '#f59e0b' }} />
+              <h3 className="text-lg font-semibold mb-4" style={{ color: '#ffffff' }}>
                 Artigo Original
               </h3>
               {issue.article_pdf_url ? (
                 <PDFViewer 
                   url={issue.article_pdf_url} 
                   title="Artigo Original"
-                  className="max-h-[80vh]"
+                  className="h-[80vh]"
                 />
               ) : (
                 <Card 
-                  className="p-6 text-center"
+                  className="p-6 text-center h-[80vh] flex items-center justify-center"
                   style={{ 
                     backgroundColor: '#1a1a1a',
-                    borderColor: '#2a2a2a',
-                    color: '#9ca3af'
+                    borderColor: '#2a2a2a'
                   }}
                 >
-                  <p>PDF do artigo original não disponível</p>
+                  <div>
+                    <FileText className="w-12 h-12 mx-auto mb-4" style={{ color: '#6b7280' }} />
+                    <p style={{ color: '#d1d5db' }}>
+                      PDF original não disponível
+                    </p>
+                  </div>
                 </Card>
               )}
             </div>
@@ -395,15 +413,3 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
     </div>
   );
 };
-
-// Throttle utility function
-function throttle<T extends (...args: any[]) => any>(func: T, limit: number): T {
-  let inThrottle: boolean;
-  return ((...args: any[]) => {
-    if (!inThrottle) {
-      func.apply(this, args);
-      inThrottle = true;
-      setTimeout(() => (inThrottle = false), limit);
-    }
-  }) as T;
-}
