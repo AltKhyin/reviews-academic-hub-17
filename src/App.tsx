@@ -28,10 +28,10 @@ import EditArticle from "@/pages/admin/EditArticle";
 import EditIssue from "@/pages/admin/EditIssue";
 import NewArticle from "@/pages/admin/NewArticle";
 import NewIssue from "@/pages/admin/NewIssue";
-import AnalyticsDashboard from "@/components/analytics/AnalyticsDashboard";
-import IssuesManagementPanel from "@/components/admin/IssuesManagementPanel";
+import { AnalyticsDashboard } from "@/components/analytics/AnalyticsDashboard";
+import { IssuesManagementPanel } from "@/components/admin/IssuesManagementPanel";
 import { NativeEditor } from "@/components/editor/NativeEditor";
-import PDFViewer from "@/components/pdf/PDFViewer";
+import { PDFViewer } from "@/components/pdf/PDFViewer";
 
 // Initialize background optimization on app start
 initializeBackgroundOptimization();
