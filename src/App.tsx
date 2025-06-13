@@ -1,5 +1,5 @@
-// ABOUTME: Main application component with route configuration and global error boundary
-import React, { Suspense, lazy } from 'react';
+// ABOUTME: Main application component with API call monitoring integration
+import React, { Suspense, lazy, useEffect } from 'react';
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { GlobalErrorBoundary } from "@/components/error/GlobalErrorBoundary";
 import { BundleOptimizer } from "@/utils/bundleOptimizer";
+import { apiCallMonitor } from "@/middleware/ApiCallMiddleware";
 
 // Keep critical routes static for immediate loading
 import { DashboardLayout } from "@/layouts/DashboardLayout";
@@ -43,6 +44,29 @@ BundleOptimizer.preloadChunk(() => import("@/pages/dashboard/ArticleViewer"), 'a
 BundleOptimizer.preloadChunk(() => import("@/pages/dashboard/ArchivePage"), 'archive-page');
 
 function App() {
+  // Initialize API call monitoring
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      // Reset metrics on app start
+      apiCallMonitor.reset();
+      
+      // Log metrics every 30 seconds in development
+      const metricsInterval = setInterval(() => {
+        const metrics = apiCallMonitor.getMetrics();
+        if (metrics.totalCalls > 0) {
+          console.group('📊 API Call Metrics');
+          console.log(`Total Calls: ${metrics.totalCalls}`);
+          console.log(`Efficiency: ${metrics.efficiency.toFixed(1)}%`);
+          console.log(`Unauthorized Component Calls: ${metrics.componentCalls}`);
+          console.log(`Duplicate Calls: ${metrics.duplicateCount}`);
+          console.groupEnd();
+        }
+      }, 30000);
+      
+      return () => clearInterval(metricsInterval);
+    }
+  }, []);
+
   return (
     <GlobalErrorBoundary
       onError={(error, errorInfo) => {

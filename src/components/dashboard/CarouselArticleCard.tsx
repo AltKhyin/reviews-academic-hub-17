@@ -1,179 +1,123 @@
 
-import React, { useState } from 'react';
+// ABOUTME: Carousel article card component using shared context data only
+import React from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Calendar, User, Heart, Bookmark } from 'lucide-react';
 import { Issue } from '@/types/issue';
-import { useNavigate } from 'react-router-dom';
-import { Bookmark, Heart, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { useUserInteractionContext } from '@/contexts/UserInteractionContext';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useNavigate } from 'react-router-dom';
 
 interface CarouselArticleCardProps {
   issue: Issue;
+  onClick?: () => void;
   className?: string;
 }
 
 export const CarouselArticleCard: React.FC<CarouselArticleCardProps> = ({ 
   issue, 
+  onClick,
   className = '' 
 }) => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [isHovered, setIsHovered] = useState(false);
   
-  // PERFORMANCE FIX: Use shared context instead of individual hooks
+  // PERFORMANCE FIX: Use ONLY shared context - no individual API calls
   const { 
     hasBookmark,
-    hasReaction,
+    hasReaction, 
     toggleBookmark,
     toggleReaction,
     isLoading
   } = useUserInteractionContext();
 
-  const handleClick = () => {
-    navigate(`/article/${issue.id}`);
-  };
+  const handleClick = onClick || (() => navigate(`/article/${issue.id}`));
 
-  const checkAuthAndProceed = async (callback: () => void) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      toast({
-        variant: "destructive",
-        description: "Você precisa estar logado para realizar essa ação",
-      });
-      return;
-    }
-    callback();
-  };
-
-  const handleActionClick = (e: React.MouseEvent, action: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    checkAuthAndProceed(() => {
-      switch (action) {
-        case 'bookmark':
-          toggleBookmark(issue.id);
-          break;
-        case 'heart':
-          toggleReaction(issue.id, 'want_more');
-          break;
-        case 'thumbs-up':
-          toggleReaction(issue.id, 'like');
-          break;
-        case 'thumbs-down':
-          toggleReaction(issue.id, 'dislike');
-          break;
-      }
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
     });
   };
 
-  // Use context helpers instead of individual API calls
-  const isBookmarked = hasBookmark(issue.id);
-  const reactions = {
-    want_more: hasReaction(issue.id, 'want_more'),
-    like: hasReaction(issue.id, 'like'),
-    dislike: hasReaction(issue.id, 'dislike'),
+  const handleReactionClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toggleReaction(issue.id, 'want_more');
   };
 
+  const handleBookmarkClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toggleBookmark(issue.id);
+  };
+
+  // Use context helpers - NO individual API calls
+  const hasWantMoreReaction = hasReaction(issue.id, 'want_more');
+  const isIssueBookmarked = hasBookmark(issue.id);
+
   return (
-    <TooltipProvider>
-      <a 
-        href={`/article/${issue.id}`}
-        onClick={(e) => {
-          e.preventDefault();
-          handleClick();
-        }}
-        className="block"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        <div className={`relative rounded-md overflow-hidden h-[360px] w-[202px] cursor-pointer group ${className}`}>
-          <img 
-            src={issue.cover_image_url || '/placeholder.svg'} 
-            alt={issue.title}
-            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105 hover:brightness-75"
-            onError={(e) => {
-              e.currentTarget.src = '/placeholder.svg';
-            }}
-          />
+    <Card 
+      className={`group cursor-pointer transition-all duration-300 hover:shadow-lg hover:-translate-y-1 bg-card border-border overflow-hidden h-80 ${className}`}
+      onClick={handleClick}
+    >
+      {/* Cover Image */}
+      <div className="relative overflow-hidden aspect-video">
+        <img
+          src={issue.cover_image_url}
+          alt={issue.search_title || issue.title}
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          onError={(e) => {
+            const img = e.target as HTMLImageElement;
+            img.src = 'https://images.unsplash.com/photo-1487058792275-0ad4aaf24ca7';
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+        
+        {/* Action buttons using shared context ONLY */}
+        <div className="absolute top-3 right-3 flex gap-2 z-10">
+          <button
+            onClick={handleBookmarkClick}
+            disabled={isLoading}
+            className={`p-2 rounded-full backdrop-blur-sm transition-colors ${
+              isIssueBookmarked 
+                ? 'bg-yellow-500/20 text-yellow-400' 
+                : 'bg-black/20 text-white hover:bg-black/40'
+            }`}
+          >
+            <Bookmark className={`w-4 h-4 ${isIssueBookmarked ? 'fill-current' : ''}`} />
+          </button>
           
-          {/* Specialty tag - hide when hovered and actions are shown */}
-          <div className={`absolute bottom-4 left-4 transition-opacity duration-300 ${isHovered ? 'opacity-0' : 'opacity-100'}`}>
-            <span className="text-xs font-medium text-white bg-black/60 px-2 py-1 rounded">
-              {issue.specialty || ''}
-            </span>
-          </div>
+          <button
+            onClick={handleReactionClick}
+            disabled={isLoading}
+            className={`p-2 rounded-full backdrop-blur-sm transition-colors ${
+              hasWantMoreReaction 
+                ? 'bg-red-500/20 text-red-400' 
+                : 'bg-black/20 text-white hover:bg-black/40'
+            }`}
+          >
+            <Heart className={`w-4 h-4 ${hasWantMoreReaction ? 'fill-current' : ''}`} />
+          </button>
+        </div>
+      </div>
 
-          {/* Bookmark button - appears on hover at top right */}
-          <div className={`absolute top-4 right-4 transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button 
-                  className="bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors text-white"
-                  onClick={(e) => handleActionClick(e, 'bookmark')}
-                  disabled={isLoading}
-                >
-                  <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-white' : ''}`} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>{isBookmarked ? 'Remover dos salvos' : 'Salvar'}</p>
-              </TooltipContent>
-            </Tooltip>
+      {/* Content */}
+      <CardContent className="p-4">
+        <h3 className="font-semibold leading-tight mb-2 line-clamp-2 text-foreground text-base">
+          {issue.search_title || issue.title}
+        </h3>
+        
+        <div className="flex items-center justify-between text-muted-foreground text-sm">
+          <div className="flex items-center space-x-1">
+            <Calendar className="w-3 h-3" />
+            <span>{formatDate(issue.created_at)}</span>
           </div>
-
-          {/* Action buttons - appear on hover at bottom right */}
-          <div className={`absolute bottom-4 right-4 transition-opacity duration-300 flex gap-2 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button 
-                  className="bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors text-white"
-                  onClick={(e) => handleActionClick(e, 'heart')}
-                  disabled={isLoading}
-                >
-                  <Heart className={`w-4 h-4 ${reactions.want_more ? 'fill-white' : ''}`} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Quero mais sobre isso</p>
-              </TooltipContent>
-            </Tooltip>
-            
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button 
-                  className="bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors text-white"
-                  onClick={(e) => handleActionClick(e, 'thumbs-up')}
-                  disabled={isLoading}
-                >
-                  <ThumbsUp className={`w-4 h-4 ${reactions.like ? 'fill-white' : ''}`} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Gostei</p>
-              </TooltipContent>
-            </Tooltip>
-            
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button 
-                  className="bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors text-white"
-                  onClick={(e) => handleActionClick(e, 'thumbs-down')}
-                  disabled={isLoading}
-                >
-                  <ThumbsDown className={`w-4 h-4 ${reactions.dislike ? 'fill-white' : ''}`} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Não gostei</p>
-              </TooltipContent>
-            </Tooltip>
+          
+          <div className="flex items-center space-x-1">
+            <User className="w-3 h-3" />
+            <span>{issue.authors?.split(',')[0] || 'Autor'}</span>
           </div>
         </div>
-      </a>
-    </TooltipProvider>
+      </CardContent>
+    </Card>
   );
 };
-
-export default CarouselArticleCard;

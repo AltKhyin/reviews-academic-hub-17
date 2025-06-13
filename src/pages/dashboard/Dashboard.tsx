@@ -1,7 +1,7 @@
 
-// ABOUTME: Optimized Dashboard with unified section management and centralized user interactions
+// ABOUTME: Optimized Dashboard with eliminated API calls and centralized data flow
 import React from 'react';
-import { useParallelDataLoader } from '@/hooks/useParallelDataLoader';
+import { useEnhancedParallelDataLoader } from '@/hooks/useEnhancedParallelDataLoader';
 import { useStableAuth } from '@/hooks/useStableAuth';
 import { DataErrorBoundary } from '@/components/error/DataErrorBoundary';
 import { ReviewerCommentsDisplay } from '@/components/dashboard/ReviewerCommentsDisplay';
@@ -10,6 +10,7 @@ import ArticleRow from '@/components/dashboard/ArticleRow';
 import { UpcomingReleaseCard } from '@/components/dashboard/UpcomingReleaseCard';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { UserInteractionProvider } from '@/contexts/UserInteractionContext';
+import { apiCallMonitor } from '@/middleware/ApiCallMiddleware';
 
 const Dashboard = () => {
   const { isAuthenticated, isLoading: authLoading } = useStableAuth();
@@ -17,13 +18,27 @@ const Dashboard = () => {
     issues, 
     sectionVisibility, 
     featuredIssue, 
+    allIssueIds,
     isLoading: dataLoading, 
     errors,
     retryFailed 
-  } = useParallelDataLoader();
+  } = useEnhancedParallelDataLoader();
+
+  // Monitor API call efficiency
+  React.useEffect(() => {
+    if (!dataLoading) {
+      const metrics = apiCallMonitor.getMetrics();
+      console.log('Dashboard API Call Metrics:', {
+        totalCalls: metrics.totalCalls,
+        efficiency: `${metrics.efficiency.toFixed(1)}%`,
+        duplicates: metrics.duplicateCount,
+        unauthorized: metrics.componentCalls
+      });
+    }
+  }, [dataLoading]);
 
   console.log('Dashboard: Rendering with', issues?.length || 0, 'issues');
-  console.log('Dashboard: Section visibility config:', sectionVisibility);
+  console.log('Dashboard: PERFORMANCE FIX - Using enhanced loader with bulk context');
 
   // Show skeleton only while essential data is loading
   const isInitialLoading = authLoading || (dataLoading && issues.length === 0);
@@ -78,9 +93,6 @@ const Dashboard = () => {
     );
   }
 
-  // PERFORMANCE FIX: Extract all issue IDs for bulk user interaction loading
-  const allIssueIds = issues.map(issue => issue.id);
-
   // Filter out featured issue from other sections to avoid duplication
   const nonFeaturedIssues = featuredIssue 
     ? issues.filter(issue => issue.id !== featuredIssue.id)
@@ -105,32 +117,21 @@ const Dashboard = () => {
     .filter(section => section.visible) 
     .sort((a, b) => a.order - b.order);
 
-  console.log('Dashboard: Visible sections from unified config:', enabledSections.map(s => `${s.id} (order: ${s.order})`));
-  console.log('Dashboard: Featured issue:', featuredIssue?.id);
   console.log('Dashboard: PERFORMANCE FIX - Bulk loading interactions for', allIssueIds.length, 'issues');
 
   const renderSection = (sectionConfig: any, index: number) => {
     const sectionId = sectionConfig.id;
-    const nextSection = enabledSections[index + 1];
-    const isFollowedByFeatured = nextSection?.id === 'featured';
-    
-    console.log(`Dashboard: Rendering section ${sectionId}`);
     
     switch (sectionId) {
       case 'reviewer':
         return (
           <DataErrorBoundary key={`reviewer-${index}`} context="reviewer comments">
-            <div className={isFollowedByFeatured ? 'mb-4' : ''}>
-              <ReviewerCommentsDisplay />
-            </div>
+            <ReviewerCommentsDisplay />
           </DataErrorBoundary>
         );
         
       case 'featured':
-        if (!featuredIssue) {
-          console.log('Dashboard: No featured issue available for featured section');
-          return null;
-        }
+        if (!featuredIssue) return null;
         return (
           <DataErrorBoundary key={`featured-${featuredIssue.id}-${index}`} context="featured issue">
             <HeroSection featuredIssue={featuredIssue} />
@@ -145,10 +146,7 @@ const Dashboard = () => {
         );
         
       case 'recent':
-        if (recentIssues.length === 0) {
-          console.log('Dashboard: No recent issues available');
-          return null;
-        }
+        if (recentIssues.length === 0) return null;
         return (
           <DataErrorBoundary key={`recent-${index}`} context="recent issues">
             <ArticleRow title="Edições Recentes" articles={recentIssues} />
@@ -156,10 +154,7 @@ const Dashboard = () => {
         );
         
       case 'recommended':
-        if (recommendedIssues.length === 0) {
-          console.log('Dashboard: No recommended issues available');
-          return null;
-        }
+        if (recommendedIssues.length === 0) return null;
         return (
           <DataErrorBoundary key={`recommended-${index}`} context="recommended issues">
             <ArticleRow title="Recomendados para você" articles={recommendedIssues} />
@@ -167,10 +162,7 @@ const Dashboard = () => {
         );
         
       case 'trending':
-        if (trendingIssues.length === 0) {
-          console.log('Dashboard: No trending issues available');
-          return null;
-        }
+        if (trendingIssues.length === 0) return null;
         return (
           <DataErrorBoundary key={`trending-${index}`} context="trending issues">
             <ArticleRow title="Mais acessados" articles={trendingIssues} />
@@ -179,19 +171,13 @@ const Dashboard = () => {
         
       default:
         console.warn(`Dashboard: Unknown section ID: ${sectionId}`);
-        return (
-          <div key={`unknown-${sectionId}-${index}`} className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 mb-4">
-            <p className="text-red-400">
-              Seção desconhecida: {sectionId}. Verifique a configuração.
-            </p>
-          </div>
-        );
+        return null;
     }
   };
 
   return (
     <DataErrorBoundary context="dashboard" onRetry={retryFailed}>
-      {/* PERFORMANCE FIX: Wrap entire dashboard with UserInteractionProvider for bulk loading */}
+      {/* PERFORMANCE FIX: Single UserInteractionProvider for ALL components */}
       <UserInteractionProvider issueIds={allIssueIds}>
         <div className="w-full min-h-screen" style={{ backgroundColor: '#121212' }}>
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -206,7 +192,6 @@ const Dashboard = () => {
               ) : (
                 enabledSections.map((section, index) => {
                   const sectionElement = renderSection(section, index);
-                  // Only render if we have a valid element
                   if (!sectionElement) return null;
                   return sectionElement;
                 })
