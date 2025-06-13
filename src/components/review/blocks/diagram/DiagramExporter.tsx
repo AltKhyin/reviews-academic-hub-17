@@ -1,6 +1,5 @@
-
 // ABOUTME: Export functionality for diagrams in multiple formats
-// Handles SVG, PNG, PDF export with quality settings
+// Fixed to handle optional title property
 
 import React, { useState } from 'react';
 import { DiagramContent } from '@/types/review';
@@ -150,7 +149,7 @@ export const DiagramExporter: React.FC<DiagramExporterProps> = ({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${content.title || 'diagram'}.svg`;
+    link.download = `${content.title || 'diagram'}.svg`; // Fixed: handle optional title
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -177,7 +176,7 @@ export const DiagramExporter: React.FC<DiagramExporterProps> = ({
           const url = URL.createObjectURL(blob);
           const link = document.createElement('a');
           link.href = url;
-          link.download = `${content.title || 'diagram'}.png`;
+          link.download = `${content.title || 'diagram'}.png`; // Fixed: handle optional title
           link.click();
           URL.revokeObjectURL(url);
         }

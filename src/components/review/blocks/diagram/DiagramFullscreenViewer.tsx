@@ -1,4 +1,3 @@
-
 // ABOUTME: Fullscreen viewer for diagram editing with improved responsive design and disabled drag-drop
 // Provides dedicated workspace for complex diagram creation without block positioning conflicts
 
@@ -185,7 +184,7 @@ export const DiagramFullscreenViewer: React.FC<DiagramFullscreenViewerProps> = (
       >
         <div className="flex items-center gap-4 min-w-0 flex-1">
           <h2 className="text-lg font-semibold truncate" style={{ color: '#ffffff' }}>
-            <span className="hidden sm:inline">{content.title} - Editor Fullscreen</span>
+            <span className="hidden sm:inline">{content.title || 'Diagrama'} - Editor Fullscreen</span>
             <span className="sm:hidden">Editor Fullscreen</span>
           </h2>
         </div>

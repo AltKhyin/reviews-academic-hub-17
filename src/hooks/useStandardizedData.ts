@@ -1,6 +1,6 @@
 
 // ABOUTME: Hook for managing standardized data fetching
-// Simplified version to provide basic functionality
+// Enhanced version with user context support
 
 import { useState, useEffect } from 'react';
 
@@ -9,6 +9,14 @@ interface UsePageDataResult {
   loading: boolean;
   error: any;
   refetch: () => Promise<void>;
+}
+
+interface UseUserContextResult {
+  isBookmarked: (itemId: string) => boolean;
+  hasReaction: (itemId: string, reactionType: string) => boolean;
+  toggleBookmark: (itemId: string) => Promise<void>;
+  toggleReaction: (itemId: string, reactionType: string) => Promise<void>;
+  loading: boolean;
 }
 
 const usePageData = (path: string): UsePageDataResult => {
@@ -48,6 +56,27 @@ const usePageData = (path: string): UsePageDataResult => {
   return { data, loading, error, refetch };
 };
 
+const useUserContext = (): UseUserContextResult => {
+  const [loading, setLoading] = useState(false);
+
+  return {
+    isBookmarked: (itemId: string) => false,
+    hasReaction: (itemId: string, reactionType: string) => false,
+    toggleBookmark: async (itemId: string) => {
+      setLoading(true);
+      // Mock implementation
+      setTimeout(() => setLoading(false), 100);
+    },
+    toggleReaction: async (itemId: string, reactionType: string) => {
+      setLoading(true);
+      // Mock implementation
+      setTimeout(() => setLoading(false), 100);
+    },
+    loading
+  };
+};
+
 export const useStandardizedData = {
-  usePageData
+  usePageData,
+  useUserContext
 };

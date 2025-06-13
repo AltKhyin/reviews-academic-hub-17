@@ -1,6 +1,6 @@
 
 // ABOUTME: Hook for community posts data fetching
-// Simplified to avoid circular dependencies
+// Enhanced to include community settings
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -57,5 +57,30 @@ export const usePostFlairs = () => {
       return data || [];
     },
     staleTime: 5 * 60 * 1000
+  });
+};
+
+export const useCommunitySettings = () => {
+  return useQuery({
+    queryKey: ['community-settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('community_settings')
+        .select('*')
+        .single();
+      
+      if (error) {
+        console.error('Error fetching community settings:', error);
+        // Return default settings if none exist
+        return {
+          header_image_url: 'https://images.unsplash.com/photo-1559827260-dc66d52bef19',
+          theme_color: '#1e40af',
+          description: 'Comunidade'
+        };
+      }
+      
+      return data;
+    },
+    staleTime: 10 * 60 * 1000
   });
 };

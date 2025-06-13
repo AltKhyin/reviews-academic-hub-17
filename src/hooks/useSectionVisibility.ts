@@ -1,10 +1,17 @@
 
 // ABOUTME: Hook for managing section visibility configuration
-// Simplified version to provide basic functionality
+// Enhanced version with all required methods and types
 
 import { useState, useEffect } from 'react';
 
-interface SectionConfig {
+export interface SectionConfig {
+  visible: boolean;
+  order: number;
+  title: string;
+}
+
+export interface Section {
+  id: string;
   visible: boolean;
   order: number;
   title: string;
@@ -41,6 +48,43 @@ export const useSectionVisibility = () => {
     await updateSectionVisibility(sectionId, { order: newOrder });
   };
 
+  const updateSection = async (sectionId: string, updates: Partial<SectionConfig>) => {
+    return updateSectionVisibility(sectionId, updates);
+  };
+
+  const toggleSectionVisibility = async (sectionId: string) => {
+    const section = sectionsConfig[sectionId];
+    if (section) {
+      await updateSectionVisibility(sectionId, { visible: !section.visible });
+    }
+  };
+
+  const reorderSections = async (newOrder: string[]) => {
+    const updates: SectionsConfig = {};
+    newOrder.forEach((sectionId, index) => {
+      if (sectionsConfig[sectionId]) {
+        updates[sectionId] = {
+          ...sectionsConfig[sectionId],
+          order: index
+        };
+      }
+    });
+    setSectionsConfig(prev => ({ ...prev, ...updates }));
+  };
+
+  const resetToDefaults = async () => {
+    setSectionsConfig(DEFAULT_SECTIONS);
+  };
+
+  const getAllSections = (): Section[] => {
+    return Object.entries(sectionsConfig).map(([id, config]) => ({
+      id,
+      ...config
+    })).sort((a, b) => a.order - b.order);
+  };
+
+  const sections = getAllSections();
+
   const refetch = async () => {
     setIsLoading(true);
     // Simulate API call
@@ -51,9 +95,15 @@ export const useSectionVisibility = () => {
 
   return {
     sectionsConfig,
+    sections,
     isLoading,
     updateSectionVisibility,
     updateSectionOrder,
+    updateSection,
+    toggleSectionVisibility,
+    reorderSections,
+    resetToDefaults,
+    getAllSections,
     refetch
   };
 };

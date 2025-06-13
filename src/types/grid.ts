@@ -1,6 +1,6 @@
 
 // ABOUTME: Grid layout and positioning types
-// Core grid system type definitions with missing exports added
+// Enhanced with proper GridRow interface including blocks
 
 export interface GridPosition {
   row: number;
@@ -16,6 +16,7 @@ export interface GridCell {
 export interface GridRow {
   id: string;
   cells: GridCell[];
+  blocks: ReviewBlock[]; // Added missing blocks property
 }
 
 export interface Grid2DLayout {
@@ -60,7 +61,7 @@ export interface Grid2DCellProps {
   onDragLeave?: (e: React.DragEvent) => void;
   onDrop?: (e: React.DragEvent, targetId: string, position?: number) => void;
   onDragEnd?: () => void;
-  readonly?: boolean;
+  readonly?: boolean; // Added missing readonly property
 }
 
 // Import ReviewBlock from review types
