@@ -93,9 +93,8 @@ export interface Issue {
   backend_tags?: any;
 }
 
-// Enhanced Issue interface with additional computed properties
+// Enhanced Issue interface with additional computed properties - FIXED: No circular deps
 export interface EnhancedIssue extends Issue {
-  // Additional computed or enhanced fields for the viewer
   content_blocks?: ReviewBlock[];
   table_of_contents?: TableOfContents;
   interaction_data?: {
@@ -205,4 +204,15 @@ export interface LayoutRowData {
   blocks: ReviewBlock[];
   columns: number;
   columnWidths?: number[];
+}
+
+// Homepage section configuration interface
+export interface HomepageSectionConfig {
+  visible: boolean;
+  order: number;
+  title: string;
+}
+
+export interface HomepageSectionsConfig {
+  [sectionId: string]: HomepageSectionConfig;
 }

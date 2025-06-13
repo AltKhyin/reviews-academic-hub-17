@@ -1,13 +1,13 @@
 
 // ABOUTME: Native review viewer component for displaying review content
-// Fixed to use proper type imports and handle enhanced issue data
+// Fixed to use proper type imports and handle enhanced issue data without circular dependencies
 
 import React from 'react';
 import { Issue } from '@/types/review';
 import { BlockRenderer } from './BlockRenderer';
 
-// Enhanced Issue interface with computed properties (defined locally to avoid circular dependencies)
-interface EnhancedIssue extends Issue {
+// Local interface to avoid circular dependencies
+interface EnhancedIssueLocal extends Issue {
   content_blocks?: any[];
   table_of_contents?: any;
   interaction_data?: {
@@ -18,7 +18,7 @@ interface EnhancedIssue extends Issue {
 }
 
 interface NativeReviewViewerProps {
-  issue: EnhancedIssue;
+  issue: EnhancedIssueLocal;
   onBlockInteraction?: (blockId: string, interactionType: string, data?: any) => void;
   onSectionView?: (blockId: string) => void;
   className?: string;
