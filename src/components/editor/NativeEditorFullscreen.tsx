@@ -108,9 +108,7 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [on
-
-Close]);
+  }, [onClose]);
 
   return (
     <div 
