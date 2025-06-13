@@ -1,7 +1,7 @@
 
-// ABOUTME: Optimized Dashboard with unified section management and centralized user interactions
+// ABOUTME: Optimized Dashboard with coordinated data loading and standardized access patterns
 import React, { useEffect } from 'react';
-import { useParallelDataLoader } from '@/hooks/useParallelDataLoader';
+import { useStandardizedData } from '@/hooks/useStandardizedData';
 import { useStableAuth } from '@/hooks/useStableAuth';
 import { DataErrorBoundary } from '@/components/error/DataErrorBoundary';
 import { ReviewerCommentsDisplay } from '@/components/dashboard/ReviewerCommentsDisplay';
@@ -11,43 +11,46 @@ import { UpcomingReleaseCard } from '@/components/dashboard/UpcomingReleaseCard'
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { UserInteractionProvider } from '@/contexts/UserInteractionContext';
 import { ComponentAuditor } from '@/utils/componentAudit';
-import { apiCallMonitor } from '@/middleware/ApiCallMiddleware';
+import { architecturalGuards } from '@/core/ArchitecturalGuards';
 
 const Dashboard = () => {
   const { isAuthenticated, isLoading: authLoading } = useStableAuth();
+  
+  // ARCHITECTURAL FIX: Use standardized coordinated data access
   const { 
-    issues, 
-    sectionVisibility, 
-    featuredIssue, 
-    isLoading: dataLoading, 
-    errors,
-    retryFailed 
-  } = useParallelDataLoader();
+    data: pageData, 
+    loading: dataLoading, 
+    error,
+    refetch 
+  } = useStandardizedData.usePageData('/homepage');
 
   // PERFORMANCE MONITORING: Track API calls and violations
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
-      // Audit this component
+      // Audit this component for architectural compliance
       ComponentAuditor.auditComponent('Dashboard', false, false);
       
-      // Log initial metrics
-      const totalCalls = apiCallMonitor.getTotalCallsInLastMinute();
-      console.log(`🏠 Dashboard: Loaded with ${issues?.length || 0} issues, ${totalCalls} API calls in last minute`);
+      // Report coordination success
+      console.log(`🏠 Dashboard: Coordinated loading with ${pageData?.contentData?.issues?.length || 0} issues`);
       
-      // Set up performance monitoring interval
-      const monitoringInterval = setInterval(() => {
-        const currentCalls = apiCallMonitor.getTotalCallsInLastMinute();
-        if (currentCalls > 15) {
-          console.warn(`🚨 Dashboard: High API activity detected - ${currentCalls} calls`);
-        }
-      }, 10000);
-
-      return () => clearInterval(monitoringInterval);
+      // Check for architectural violations
+      const violations = architecturalGuards.flagArchitecturalViolations();
+      if (violations.length > 0) {
+        console.warn('🚨 Dashboard: Architectural violations detected:', violations);
+      }
     }
-  }, [issues?.length]);
+  }, [pageData?.contentData?.issues?.length]);
 
-  console.log('Dashboard: Rendering with', issues?.length || 0, 'issues');
-  console.log('Dashboard: Section visibility config:', sectionVisibility);
+  // Extract data from coordinated page load
+  const issues = pageData?.contentData?.issues || [];
+  const sectionVisibility = pageData?.configData?.sectionVisibility || [];
+  const featuredIssue = pageData?.contentData?.featuredIssue || null;
+
+  console.log('Dashboard: Rendering with coordinated data:', {
+    issuesCount: issues.length,
+    sectionsCount: sectionVisibility.length,
+    featuredIssue: featuredIssue?.id
+  });
 
   // Show skeleton only while essential data is loading
   const isInitialLoading = authLoading || (dataLoading && issues.length === 0);
@@ -63,9 +66,9 @@ const Dashboard = () => {
   }
 
   // Show error state if critical data failed to load
-  if (Object.keys(errors).length > 0 && issues.length === 0) {
+  if (error && issues.length === 0) {
     return (
-      <DataErrorBoundary context="dashboard data" onRetry={retryFailed}>
+      <DataErrorBoundary context="dashboard data" onRetry={refetch}>
         <div className="w-full min-h-screen" style={{ backgroundColor: '#121212' }}>
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="text-center py-16">
@@ -74,7 +77,7 @@ const Dashboard = () => {
                 Não foi possível carregar os dados do dashboard.
               </p>
               <button 
-                onClick={retryFailed}
+                onClick={refetch}
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
               >
                 Tentar novamente
@@ -129,16 +132,18 @@ const Dashboard = () => {
     .filter(section => section.visible) 
     .sort((a, b) => a.order - b.order);
 
-  console.log('Dashboard: Visible sections from unified config:', enabledSections.map(s => `${s.id} (order: ${s.order})`));
-  console.log('Dashboard: Featured issue:', featuredIssue?.id);
-  console.log('Dashboard: PERFORMANCE FIX - Bulk loading interactions for', allIssueIds.length, 'issues');
+  console.log('Dashboard: Coordinated data loading successful:', {
+    visibleSections: enabledSections.map(s => `${s.id} (order: ${s.order})`),
+    featuredIssue: featuredIssue?.id,
+    bulkInteractionIssues: allIssueIds.length
+  });
 
   const renderSection = (sectionConfig: any, index: number) => {
     const sectionId = sectionConfig.id;
     const nextSection = enabledSections[index + 1];
     const isFollowedByFeatured = nextSection?.id === 'featured';
     
-    console.log(`Dashboard: Rendering section ${sectionId}`);
+    console.log(`Dashboard: Rendering coordinated section ${sectionId}`);
     
     switch (sectionId) {
       case 'reviewer':
@@ -214,7 +219,7 @@ const Dashboard = () => {
   };
 
   return (
-    <DataErrorBoundary context="dashboard" onRetry={retryFailed}>
+    <DataErrorBoundary context="dashboard" onRetry={refetch}>
       {/* PERFORMANCE FIX: Wrap entire dashboard with UserInteractionProvider for bulk loading */}
       <UserInteractionProvider issueIds={allIssueIds}>
         <div className="w-full min-h-screen" style={{ backgroundColor: '#121212' }}>

@@ -1,25 +1,59 @@
 
-// ABOUTME: Archive page with integrated navigation handlers and optimized data flow
+// ABOUTME: Archive page with coordinated data loading and optimized data flow
 import React from 'react';
 import { ArchiveHeader } from '@/components/archive/ArchiveHeader';
 import { ResultsGrid } from '@/components/archive/ResultsGrid';
-import { useSimplifiedArchiveSearch } from '@/hooks/useSimplifiedArchiveSearch';
+import { useStandardizedData } from '@/hooks/useStandardizedData';
 import { useArchiveTagReordering } from '@/hooks/useArchiveTagReordering';
 import { useAppNavigation } from '@/hooks/useAppNavigation';
+import { architecturalGuards } from '@/core/ArchitecturalGuards';
 
 const ArchivePage = () => {
   const [searchQuery, setSearchQuery] = React.useState('');
   const { navigateToIssue } = useAppNavigation();
 
-  // Use simplified search for text filtering
+  // ARCHITECTURAL FIX: Use coordinated data loading instead of individual API calls
   const {
-    issues: searchFilteredIssues,
-    totalCount,
-    filteredCount,
-    isLoading: isSearchLoading,
-    specialties,
-    years,
-  } = useSimplifiedArchiveSearch({ searchQuery });
+    data: pageData,
+    loading: isDataLoading,
+    error: dataError,
+    refetch
+  } = useStandardizedData.usePageData('/archive');
+
+  // Extract coordinated data
+  const allIssues = pageData?.contentData?.issues || [];
+  const specialties = pageData?.contentData?.metadata?.specialties || [];
+  const years = pageData?.contentData?.metadata?.years || [];
+
+  // PERFORMANCE MONITORING: Track coordination success
+  React.useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🗄️ Archive: Coordinated loading complete:', {
+        issuesCount: allIssues.length,
+        specialtiesCount: specialties.length,
+        yearsCount: years.length
+      });
+
+      // Check for architectural violations
+      const violations = architecturalGuards.flagArchitecturalViolations();
+      if (violations.length > 0) {
+        console.warn('🚨 Archive: Architectural violations detected:', violations);
+      }
+    }
+  }, [allIssues.length, specialties.length, years.length]);
+
+  // Client-side search filtering (coordinated data is already loaded)
+  const searchFilteredIssues = React.useMemo(() => {
+    if (!searchQuery.trim()) return allIssues;
+    
+    const query = searchQuery.toLowerCase();
+    return allIssues.filter(issue => 
+      issue.title?.toLowerCase().includes(query) ||
+      issue.description?.toLowerCase().includes(query) ||
+      issue.specialty?.toLowerCase().includes(query) ||
+      issue.authors?.toLowerCase().includes(query)
+    );
+  }, [allIssues, searchQuery]);
 
   // Apply tag-based reordering to search-filtered results
   const {
@@ -36,7 +70,9 @@ const ArchivePage = () => {
     tagMatchCount,
   } = useArchiveTagReordering(searchFilteredIssues);
 
-  const isLoading = isSearchLoading || isTagsLoading;
+  const isLoading = isDataLoading || isTagsLoading;
+  const totalCount = allIssues.length;
+  const filteredCount = searchFilteredIssues.length;
 
   // Results counter text - only show for search queries, not for tag selections
   const getResultsText = () => {
@@ -71,6 +107,29 @@ const ArchivePage = () => {
     console.log('Archive: Navigating to issue:', issueId);
     navigateToIssue(issueId);
   };
+
+  // Handle data loading errors
+  if (dataError && allIssues.length === 0) {
+    return (
+      <div 
+        className="min-h-screen bg-background flex items-center justify-center"
+        style={{ backgroundColor: 'hsl(var(--background))' }}
+      >
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Erro ao carregar arquivo</h2>
+          <p className="text-muted-foreground mb-4">
+            Não foi possível carregar os dados do arquivo.
+          </p>
+          <button 
+            onClick={refetch}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div 
