@@ -23,6 +23,8 @@ export const Grid2DControls: React.FC<Grid2DControlsProps> = ({
   onUpdateGridLayout,
   className
 }) => {
+  const gridRowCount = grid.rows.length;
+
   const handleGapChange = (newGap: number) => {
     if (onUpdateGridLayout) {
       onUpdateGridLayout(grid.id, { gap: newGap });
@@ -35,7 +37,7 @@ export const Grid2DControls: React.FC<Grid2DControlsProps> = ({
         {/* Grid Info */}
         <div className="flex items-center gap-2 text-sm text-gray-400">
           <Grid3X3 className="w-4 h-4" />
-          <span>{grid.columns} × {grid.rows.length}</span>
+          <span>{grid.columns} × {gridRowCount}</span>
         </div>
         
         {/* Row Controls */}
