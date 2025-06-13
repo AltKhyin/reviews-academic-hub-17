@@ -1,34 +1,34 @@
 
-// ABOUTME: Enhanced landing page with comprehensive error handling and data validation
+// ABOUTME: Enhanced landing page with optimized data loading to prevent API cascades
 import React, { useMemo } from 'react';
-import { useParallelDataLoader } from '@/hooks/useParallelDataLoader';
+import { useOptimizedHomepage } from '@/hooks/useOptimizedHomepage';
 import { SectionFactory } from '@/components/homepage/SectionFactory';
 import { getSectionById } from '@/config/sections';
 
 const Index = () => {
   const { 
-    issues, 
-    sectionVisibility, 
-    featuredIssue, 
-    reviewerComments,
+    data: homepageData,
     isLoading, 
-    errors,
-    retryFailed 
-  } = useParallelDataLoader();
+    error,
+    refetch
+  } = useOptimizedHomepage();
 
-  console.log('Index page render - Full state:', {
-    issuesCount: issues?.length || 0,
-    sectionVisibilityType: typeof sectionVisibility,
-    sectionVisibilityLength: Array.isArray(sectionVisibility) ? sectionVisibility.length : 'not array',
-    sectionVisibility,
-    featuredIssue: featuredIssue?.id || 'none',
-    reviewerCommentsCount: reviewerComments?.length || 0,
+  console.log('Index page render - Optimized data loading:', {
+    issuesCount: homepageData?.issues?.length || 0,
+    sectionVisibilityType: typeof homepageData?.sectionVisibility,
+    sectionVisibilityLength: Array.isArray(homepageData?.sectionVisibility) 
+      ? homepageData.sectionVisibility.length 
+      : 'not array',
+    featuredIssue: homepageData?.featuredIssue?.id || 'none',
+    reviewerCommentsCount: homepageData?.reviewerComments?.length || 0,
     isLoading,
-    errorKeys: Object.keys(errors)
+    hasErrors: !!error
   });
 
   // Enhanced memoization with comprehensive validation
   const visibleSections = useMemo(() => {
+    const sectionVisibility = homepageData?.sectionVisibility;
+    
     if (!Array.isArray(sectionVisibility)) {
       console.warn('Index: sectionVisibility is not an array:', typeof sectionVisibility, sectionVisibility);
       return [];
@@ -50,7 +50,7 @@ const Index = () => {
     
     console.log('Index: Processed visible sections:', filtered);
     return filtered;
-  }, [sectionVisibility]);
+  }, [homepageData?.sectionVisibility]);
 
   // Enhanced section configs with comprehensive error handling
   const sectionConfigs = useMemo(() => {
@@ -76,6 +76,11 @@ const Index = () => {
 
   // Enhanced content validation
   const hasContent = useMemo(() => {
+    const issues = homepageData?.issues;
+    const featuredIssue = homepageData?.featuredIssue;
+    const reviewerComments = homepageData?.reviewerComments;
+    const sectionVisibility = homepageData?.sectionVisibility;
+    
     const contentCheck = {
       hasIssues: Array.isArray(issues) && issues.length > 0,
       hasFeaturedIssue: !!featuredIssue,
@@ -87,7 +92,7 @@ const Index = () => {
     
     console.log('Index: Content check:', contentCheck, 'hasContent:', result);
     return result;
-  }, [issues, featuredIssue, reviewerComments, sectionVisibility]);
+  }, [homepageData]);
 
   // Enhanced loading state
   if (isLoading) {
@@ -102,8 +107,8 @@ const Index = () => {
   }
 
   // Enhanced error state with detailed information
-  if (Object.keys(errors).length > 0 && !hasContent) {
-    console.error('Index: Critical errors with no content fallback:', errors);
+  if (error && !hasContent) {
+    console.error('Index: Critical error with no content fallback:', error);
     return (
       <div className="min-h-screen bg-gray-100">
         <div className="max-w-7xl mx-auto px-4 py-16">
@@ -113,19 +118,16 @@ const Index = () => {
               Não foi possível carregar os dados da página inicial.
             </p>
             <button 
-              onClick={retryFailed}
+              onClick={() => refetch()}
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
             >
               Tentar novamente
             </button>
-            <div className="mt-4 text-sm text-gray-500">
-              Erros: {Object.keys(errors).join(', ')}
-            </div>
             {process.env.NODE_ENV === 'development' && (
               <details className="mt-4 text-left">
                 <summary className="cursor-pointer text-sm text-gray-600">Detalhes técnicos</summary>
                 <pre className="mt-2 p-4 bg-gray-800 text-white text-xs rounded overflow-auto">
-                  {JSON.stringify({ errors, sectionVisibility, issues: issues?.length }, null, 2)}
+                  {JSON.stringify({ error, homepageData }, null, 2)}
                 </pre>
               </details>
             )}
@@ -138,8 +140,8 @@ const Index = () => {
   // Enhanced no content state with better debugging
   if (!hasContent && sectionConfigs.length === 0) {
     console.warn('Index: No content and no section configs. State:', {
-      issues: issues?.length,
-      sectionVisibility: sectionVisibility?.length,
+      issues: homepageData?.issues?.length,
+      sectionVisibility: homepageData?.sectionVisibility?.length,
       visibleSections: visibleSections?.length,
       sectionConfigs: sectionConfigs?.length
     });
@@ -153,7 +155,7 @@ const Index = () => {
               O conteúdo da página inicial está sendo configurado.
             </p>
             <button 
-              onClick={retryFailed}
+              onClick={() => refetch()}
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
             >
               Recarregar
@@ -161,8 +163,8 @@ const Index = () => {
             {process.env.NODE_ENV === 'development' && (
               <div className="mt-4 p-4 bg-gray-800 text-white text-xs rounded text-left">
                 <p>Debug Info:</p>
-                <p>Issues: {issues?.length || 0}</p>
-                <p>Section Visibility: {Array.isArray(sectionVisibility) ? sectionVisibility.length : 'not array'}</p>
+                <p>Issues: {homepageData?.issues?.length || 0}</p>
+                <p>Section Visibility: {Array.isArray(homepageData?.sectionVisibility) ? homepageData.sectionVisibility.length : 'not array'}</p>
                 <p>Visible Sections: {visibleSections?.length || 0}</p>
                 <p>Section Configs: {sectionConfigs?.length || 0}</p>
               </div>

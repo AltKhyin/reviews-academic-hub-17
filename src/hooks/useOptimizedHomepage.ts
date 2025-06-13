@@ -1,0 +1,112 @@
+
+// ABOUTME: Optimized homepage data loading with request batching and deduplication
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useRequestBatcher } from './useRequestBatcher';
+import { useCallback } from 'react';
+
+// Centralized homepage data fetcher to prevent cascade
+const fetchHomepageData = async () => {
+  const [issues, sectionVisibility, featuredIssue, reviewerComments] = await Promise.all([
+    supabase
+      .from('issues')
+      .select('id, title, cover_image_url, specialty, published_at, created_at, featured, published, score')
+      .eq('published', true)
+      .order('created_at', { ascending: false })
+      .limit(20),
+    
+    supabase
+      .from('site_meta')
+      .select('value')
+      .eq('key', 'homepage_sections')
+      .single(),
+      
+    supabase
+      .from('issues')
+      .select('id, title, cover_image_url, specialty, published_at, created_at, featured, published, score')
+      .eq('published', true)
+      .eq('featured', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single(),
+
+    supabase
+      .from('reviewer_comments')
+      .select('id, reviewer_name, reviewer_avatar, comment, created_at')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(10)
+  ]);
+
+  return {
+    issues: issues.data || [],
+    sectionVisibility: sectionVisibility.data?.value || [],
+    featuredIssue: featuredIssue.data || null,
+    reviewerComments: reviewerComments.data || [],
+    errors: {
+      issues: issues.error,
+      sectionVisibility: sectionVisibility.error,
+      featuredIssue: featuredIssue.error,
+      reviewerComments: reviewerComments.error,
+    }
+  };
+};
+
+export const useOptimizedHomepage = () => {
+  const { batchRequest } = useRequestBatcher();
+
+  const query = useQuery({
+    queryKey: ['homepage-data'],
+    queryFn: fetchHomepageData,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 15 * 60 * 1000, // 15 minutes
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    retry: 1,
+  });
+
+  // Batched individual data fetchers for components that need specific data
+  const batchFetchIssue = useCallback(async (issueId: string) => {
+    return batchRequest(
+      'issues',
+      issueId,
+      async (ids: string[]) => {
+        const { data } = await supabase
+          .from('issues')
+          .select('*')
+          .in('id', ids);
+        
+        const result: Record<string, any> = {};
+        data?.forEach(issue => {
+          result[issue.id] = issue;
+        });
+        return result;
+      }
+    );
+  }, [batchRequest]);
+
+  const batchFetchProfile = useCallback(async (userId: string) => {
+    return batchRequest(
+      'profiles',
+      userId,
+      async (ids: string[]) => {
+        const { data } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('id', ids);
+        
+        const result: Record<string, any> = {};
+        data?.forEach(profile => {
+          result[profile.id] = profile;
+        });
+        return result;
+      }
+    );
+  }, [batchRequest]);
+
+  return {
+    ...query,
+    batchFetchIssue,
+    batchFetchProfile,
+  };
+};
