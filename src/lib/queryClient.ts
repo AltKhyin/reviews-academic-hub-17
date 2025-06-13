@@ -37,7 +37,7 @@ export const initializeBackgroundOptimization = () => {
     const queries = queryClient.getQueryCache().getAll();
     const staleQueries = queries.filter(query => 
       query.isStale() && 
-      query.state.fetchStatus !== 'fetching' && // Fix: use fetchStatus instead of isFetching
+      !query.isFetching() &&
       (Date.now() - (query.state.dataUpdatedAt || 0)) > 30 * 60 * 1000 // 30 minutes
     );
     

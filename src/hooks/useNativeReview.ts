@@ -1,3 +1,4 @@
+
 // ABOUTME: Optimized native review hook with analytics and performance monitoring
 import { useState, useCallback } from 'react';
 import { useUnifiedQuery } from '@/hooks/useUnifiedQuery';
@@ -5,9 +6,9 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface ReviewData {
   blocks: Array<{
-    id: number;
+    id: string;
     type: string;
-    content: any; // Normalize payload to content
+    payload: any;
     sort_index: number;
     visible: boolean;
   }>;
@@ -45,17 +46,8 @@ export const useNativeReview = (issueId: string) => {
         throw blocksError;
       }
 
-      // Transform payload to content for compatibility
-      const transformedBlocks = (blocks || []).map(block => ({
-        id: block.id,
-        type: block.type,
-        content: block.payload, // Transform payload to content
-        sort_index: block.sort_index,
-        visible: block.visible
-      }));
-
       return {
-        blocks: transformedBlocks
+        blocks: blocks || []
       };
     },
     {

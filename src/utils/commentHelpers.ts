@@ -1,8 +1,7 @@
 
-// ABOUTME: Comment data processing and organization utilities
+// ABOUTME: Comment utility functions for data transformation and validation
 import { EntityType } from '@/types/commentTypes';
 
-// Build comment data for database insertion
 export const buildCommentData = (
   content: string,
   userId: string,
@@ -10,50 +9,45 @@ export const buildCommentData = (
   entityId: string,
   parentId?: string
 ) => {
-  const baseComment = {
+  const baseData = {
     content: content.trim(),
     user_id: userId,
     parent_id: parentId || null,
   };
 
-  // Add entity-specific field
+  // Add the appropriate entity ID based on type
   switch (entityType) {
-    case 'article':
-      return { ...baseComment, article_id: entityId };
     case 'issue':
-      return { ...baseComment, issue_id: entityId };
+      return { ...baseData, issue_id: entityId };
+    case 'article':
+      return { ...baseData, article_id: entityId };
     case 'post':
-      return { ...baseComment, post_id: entityId };
+      return { ...baseData, post_id: entityId };
     default:
-      throw new Error(`Unknown entity type: ${entityType}`);
+      throw new Error(`Unsupported entity type: ${entityType}`);
   }
 };
 
-// Get the correct entity ID field name for queries
-export const getEntityIdField = (entityType: EntityType): string => {
-  switch (entityType) {
-    case 'article':
-      return 'article_id';
-    case 'issue':
-      return 'issue_id';
-    case 'post':
-      return 'post_id';
-    default:
-      throw new Error(`Unknown entity type: ${entityType}`);
+export const validateCommentContent = (content: string): string | null => {
+  if (!content || content.trim().length === 0) {
+    return 'Comment content cannot be empty';
   }
+  
+  if (content.trim().length > 10000) {
+    return 'Comment content cannot exceed 10,000 characters';
+  }
+  
+  return null;
 };
 
-// Process comments data from database response
-export const processCommentsData = (rawComments: any[], userVotes: any[] = []) => {
-  if (!rawComments || !Array.isArray(rawComments)) return [];
-
-  return rawComments.map(comment => {
-    const userVote = userVotes.find(vote => vote.comment_id === comment.id);
-    
-    return {
-      ...comment,
-      userVote: userVote ? (userVote.value as 1 | 0 | -1) : 0,
-      replies: comment.replies || []
-    };
-  });
+export const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  
+  if (typeof error === 'string') {
+    return error;
+  }
+  
+  return 'An unexpected error occurred';
 };

@@ -1,3 +1,4 @@
+
 // ABOUTME: Enhanced block renderer with error boundaries and comprehensive block type coverage
 // Handles all block types with consistent error handling and spacing system integration
 
@@ -40,13 +41,11 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   onInteraction,
   onSectionView
 }) => {
-  // Normalize block data to handle database inconsistencies and ensure content property exists
+  // Normalize block data to handle database inconsistencies
   const normalizedBlock: ReviewBlock = {
     ...block,
     // Handle both 'content' and 'payload' properties from database
-    content: block.content || (block as any).payload || {},
-    // Ensure id is converted to number if needed
-    id: typeof block.id === 'string' ? parseInt(block.id) : block.id
+    content: block.content || (block as any).payload || {}
   };
 
   // Get vertical alignment from block metadata
@@ -90,13 +89,6 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
     const columns = layout?.columns || gridBlocks.length;
     const columnWidths = layout?.columnWidths || [];
     
-    // Normalize grid blocks as well
-    const normalizedGridBlocks = gridBlocks.map(gridBlock => ({
-      ...gridBlock,
-      content: gridBlock.content || (gridBlock as any).payload || {},
-      id: typeof gridBlock.id === 'string' ? parseInt(gridBlock.id) : gridBlock.id
-    }));
-    
     return (
       <div className={cn("grid-renderer", className)} style={spacingStyles}>
         <div 
@@ -107,7 +99,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
               : `repeat(${columns}, 1fr)`
           }}
         >
-          {normalizedGridBlocks.map((gridBlock) => (
+          {gridBlocks.map((gridBlock) => (
             <div key={gridBlock.id} className={getAlignmentClass(gridBlock.meta?.alignment?.vertical || 'top')}>
               <BlockRenderer
                 block={gridBlock}

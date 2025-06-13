@@ -1,81 +1,114 @@
-
-import { Toaster } from "@/components/ui/sonner";
+// ABOUTME: Main application component with route configuration (no BrowserRouter)
+import React, { Suspense, lazy } from 'react';
+import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Routes, Route } from "react-router-dom";
-import { queryClient, initializeBackgroundOptimization } from "@/lib/queryClient";
-import Index from "./pages/Index";
-import Dashboard from "./pages/dashboard/Dashboard";
-import Community from "./pages/dashboard/Community";
-import ArchivePage from "./pages/dashboard/ArchivePage";
-import EnhancedArticleViewer from "./pages/dashboard/EnhancedArticleViewer";
-import SearchPage from "./pages/dashboard/SearchPage";
-import Profile from "./pages/dashboard/Profile";
-import IssueEditor from "./pages/dashboard/IssueEditor";
-import AuthPage from "./pages/auth/AuthPage";
-import Login from "./pages/auth/Login";
-import Register from "./pages/auth/Register";
-import NotFound from "./pages/NotFound";
-import PolicyPage from "./pages/PolicyPage";
-import { AuthProvider } from "./contexts/AuthContext";
-import { PerformanceProvider } from "./providers/PerformanceProvider";
-import { OptimizedAppProvider } from "./components/optimization/OptimizedAppProvider";
-import BundleOptimizer from "./utils/bundleOptimizer";
-import GlobalErrorBoundary from "./components/error/GlobalErrorBoundary";
-import { useGlobalMemoryMonitor } from "./hooks/useMemoryOptimizer";
-import { useEffect } from "react";
-import "./App.css";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { PageLoader } from "@/components/ui/PageLoader";
 
-function AppContent() {
-  // Global memory monitoring
-  useGlobalMemoryMonitor();
+// Keep critical routes static for immediate loading
+import { DashboardLayout } from "@/layouts/DashboardLayout";
+import AuthPage from "@/pages/auth/AuthPage";
+import Dashboard from "@/pages/dashboard/Dashboard";
 
-  // Initialize performance optimizations
-  useEffect(() => {
-    initializeBackgroundOptimization();
-    BundleOptimizer.preloadCriticalComponents();
-  }, []);
+// Lazy load heavy/admin routes for better performance
+const ArticleViewer = lazy(() => import("@/pages/dashboard/ArticleViewer"));
+const ArchivePage = lazy(() => import("@/pages/dashboard/ArchivePage"));
+const SearchPage = lazy(() => import("@/pages/dashboard/SearchPage"));
+const Community = lazy(() => import("@/pages/dashboard/Community"));
+const Profile = lazy(() => import("@/pages/dashboard/Profile"));
+const Edit = lazy(() => import("@/pages/dashboard/Edit"));
+const IssueEditor = lazy(() => import("@/pages/dashboard/IssueEditor"));
 
+// Optimized query client configuration
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 30 * 60 * 1000, // 30 minutes
+      retry: 2,
+      refetchOnWindowFocus: false,
+    },
+    mutations: {
+      retry: 1,
+    },
+  },
+});
+
+function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Index />} />
-      <Route path="/auth" element={<AuthPage />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/community" element={<Community />} />
-      <Route path="/acervo" element={<ArchivePage />} />
-      <Route path="/artigo/:id" element={<EnhancedArticleViewer />} />
-      <Route path="/search" element={<SearchPage />} />
-      <Route path="/profile" element={<Profile />} />
-      <Route path="/editor/:id?" element={<IssueEditor />} />
-      <Route path="/privacy" element={<PolicyPage />} />
-      <Route path="/terms" element={<PolicyPage />} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Sonner />
+          <Routes>
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/" element={<DashboardLayout />}>
+              <Route index element={<Navigate to="/homepage" replace />} />
+              <Route path="homepage" element={<Dashboard />} />
+              <Route 
+                path="article/:id" 
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ArticleViewer />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="acervo" 
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ArchivePage />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="search" 
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <SearchPage />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="community" 
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <Community />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="profile" 
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <Profile />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="edit" 
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <Edit />
+                  </Suspense>
+                } 
+              />
+              <Route 
+                path="edit/issue/:id" 
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <IssueEditor />
+                  </Suspense>
+                } 
+              />
+            </Route>
+          </Routes>
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
-
-const App = () => {
-  return (
-    <GlobalErrorBoundary onError={(error, errorInfo) => {
-      // Log to external service in production
-      console.error('Global error:', error, errorInfo);
-    }}>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <PerformanceProvider>
-            <OptimizedAppProvider>
-              <TooltipProvider>
-                <Toaster />
-                <AppContent />
-              </TooltipProvider>
-            </OptimizedAppProvider>
-          </PerformanceProvider>
-        </AuthProvider>
-      </QueryClientProvider>
-    </GlobalErrorBoundary>
-  );
-};
 
 export default App;
