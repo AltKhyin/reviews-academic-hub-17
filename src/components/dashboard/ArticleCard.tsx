@@ -1,11 +1,10 @@
 
-// ABOUTME: Article card component with optimized user interaction handling
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, User, Heart, Bookmark } from 'lucide-react';
 import { Issue } from '@/types/issue';
-import { useUserInteractions } from '@/contexts/UserInteractionContext';
+import { useOptimizedUserInteractions } from '@/hooks/useOptimizedUserInteractions';
 import { useNavigate } from 'react-router-dom';
 
 interface ArticleCardProps {
@@ -25,12 +24,13 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 }) => {
   const navigate = useNavigate();
   const { 
-    hasBookmark,
-    hasReaction,
+    hasReaction, 
+    isBookmarked, 
+    toggleReaction, 
     toggleBookmark,
-    toggleReaction,
-    isLoading: userInteractionsLoading
-  } = useUserInteractions();
+    isUpdatingReaction,
+    isUpdatingBookmark
+  } = useOptimizedUserInteractions();
 
   const handleClick = onClick || (() => navigate(`/article/${issue.id}`));
 
@@ -44,7 +44,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 
   const handleReactionClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    toggleReaction(issue.id, 'want_more');
+    toggleReaction({ issueId: issue.id, reactionType: 'want_more' });
   };
 
   const handleBookmarkClick = (e: React.MouseEvent) => {
@@ -52,9 +52,8 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     toggleBookmark(issue.id);
   };
 
-  // Use centralized user interaction state
   const hasWantMoreReaction = hasReaction(issue.id, 'want_more');
-  const isIssueBookmarked = hasBookmark(issue.id);
+  const isIssueBookmarked = isBookmarked(issue.id);
 
   // Different styling for featured variant
   const cardClasses = variant === 'featured' 
@@ -89,11 +88,11 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
         )}
       </div>
       
-      {/* Optimized action buttons using shared state */}
+      {/* Optimized action buttons with batched state */}
       <div className="absolute top-3 right-3 flex gap-2 z-10">
         <button
           onClick={handleBookmarkClick}
-          disabled={userInteractionsLoading}
+          disabled={isUpdatingBookmark}
           className={`p-2 rounded-full backdrop-blur-sm transition-colors ${
             isIssueBookmarked 
               ? 'bg-yellow-500/20 text-yellow-400' 
@@ -105,7 +104,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
         
         <button
           onClick={handleReactionClick}
-          disabled={userInteractionsLoading}
+          disabled={isUpdatingReaction}
           className={`p-2 rounded-full backdrop-blur-sm transition-colors ${
             hasWantMoreReaction 
               ? 'bg-red-500/20 text-red-400' 
