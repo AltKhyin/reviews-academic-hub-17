@@ -3,7 +3,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { UserInteractionProvider } from "@/contexts/UserInteractionContext";
@@ -21,17 +21,11 @@ import Admin from "./pages/admin/Admin";
 import SignIn from "./pages/auth/SignIn";
 import SignUp from "./pages/auth/SignUp";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
-import PublicLayout from "@/layouts/PublicLayout";
-import AdminLayout from "@/layouts/AdminLayout";
 import CommunityPost from "@/pages/community/CommunityPost";
 import EditArticle from "@/pages/admin/EditArticle";
 import EditIssue from "@/pages/admin/EditIssue";
 import NewArticle from "@/pages/admin/NewArticle";
 import NewIssue from "@/pages/admin/NewIssue";
-import { AnalyticsDashboard } from "@/components/analytics/AnalyticsDashboard";
-import { IssuesManagementPanel } from "@/components/admin/IssuesManagementPanel";
-import { NativeEditor } from "@/components/editor/NativeEditor";
-import { PDFViewer } from "@/components/pdf/PDFViewer";
 
 // Initialize background optimization on app start
 initializeBackgroundOptimization();

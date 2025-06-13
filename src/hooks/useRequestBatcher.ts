@@ -38,12 +38,13 @@ export const useRequestBatcher = () => {
       batch.push({
         key: requestKey,
         resolver: resolve,
-        rejector: reject,
+        rejector: reject
       });
 
       // Clear existing timeout
-      if (batchTimeouts.has(batchKey)) {
-        clearTimeout(batchTimeouts.get(batchKey)!);
+      const existingTimeout = batchTimeouts.get(batchKey);
+      if (existingTimeout) {
+        clearTimeout(existingTimeout);
       }
 
       // Set new timeout to execute batch
@@ -51,25 +52,27 @@ export const useRequestBatcher = () => {
         if (!mountedRef.current) return;
 
         const currentBatch = requestBatches.get(batchKey) || [];
+        if (currentBatch.length === 0) return;
+
+        // Clear the batch
         requestBatches.delete(batchKey);
         batchTimeouts.delete(batchKey);
 
-        if (currentBatch.length === 0) return;
-
         try {
+          // Execute the batched request
           const keys = currentBatch.map(req => req.key);
           const results = await requestFn(keys);
-          
-          // Resolve all requests in the batch
+
+          // Resolve individual requests
           currentBatch.forEach(req => {
-            if (results[req.key]) {
+            if (results[req.key] !== undefined) {
               req.resolver(results[req.key]);
             } else {
-              req.rejector(new Error(`No data found for key: ${req.key}`));
+              req.rejector(new Error(`No result for key: ${req.key}`));
             }
           });
         } catch (error) {
-          // Reject all requests in the batch
+          // Reject all requests in batch
           currentBatch.forEach(req => {
             req.rejector(error);
           });
@@ -80,5 +83,15 @@ export const useRequestBatcher = () => {
     });
   }, []);
 
-  return { batchRequest };
+  const clearBatches = useCallback(() => {
+    // Clear all pending batches
+    batchTimeouts.forEach(timeout => clearTimeout(timeout));
+    requestBatches.clear();
+    batchTimeouts.clear();
+  }, []);
+
+  return {
+    batchRequest,
+    clearBatches
+  };
 };
