@@ -1,43 +1,32 @@
 
-// ABOUTME: Community header using simple settings hook
 import React from 'react';
-import { useCommunitySettings } from '@/hooks/community/useCommunitySettings';
+import { useCommunitySettings } from '@/hooks/useCommunityPosts';
 
-export const CommunityHeader: React.FC = () => {
+export const CommunityHeader = () => {
   const { data: settings, isLoading } = useCommunitySettings();
 
   if (isLoading) {
     return (
-      <div className="mb-8">
-        <div className="h-48 bg-gray-200 animate-pulse rounded-lg mb-4"></div>
-        <div className="h-8 bg-gray-200 animate-pulse rounded w-1/3"></div>
-      </div>
+      <div className="w-full h-40 bg-gray-800/20 mb-8 rounded-lg animate-pulse"></div>
     );
   }
 
-  // Use default values if no settings are configured
-  const headerImageUrl = settings?.header_image_url;
-  const themeColor = settings?.theme_color || '#1e40af';
-  const description = settings?.description || 'Welcome to our community! Share your thoughts and connect with others.';
+  if (!settings) {
+    return null;
+  }
 
   return (
     <div className="mb-8">
-      {headerImageUrl && (
-        <div 
-          className="h-48 bg-cover bg-center rounded-lg mb-4"
-          style={{ backgroundImage: `url(${headerImageUrl})` }}
-        />
-      )}
-      <div className="text-center">
-        <h1 
-          className="text-4xl font-bold mb-2"
-          style={{ color: themeColor }}
-        >
-          Community
-        </h1>
-        <p className="text-gray-600 max-w-2xl mx-auto">
-          {description}
-        </p>
+      <div 
+        className="w-full h-40 rounded-lg bg-cover bg-center"
+        style={{ 
+          backgroundImage: `url(${settings.header_image_url})`,
+          backgroundColor: settings.theme_color || '#1e40af'
+        }}
+      >
+        <div className="w-full h-full bg-black/30 flex items-center justify-center rounded-lg">
+          <h1 className="text-4xl font-serif text-white font-bold">Comunidade</h1>
+        </div>
       </div>
     </div>
   );

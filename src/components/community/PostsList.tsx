@@ -1,27 +1,21 @@
 
-// ABOUTME: Simplified posts list using individual focused hooks
-// Uses React Query's natural caching instead of complex centralized loading
+// ABOUTME: Optimized posts list using centralized data management
+// Eliminates individual API calls per post component
 import React from 'react';
-import { useSimplePosts } from '@/hooks/community/useSimplePosts';
-import { usePostProfiles } from '@/hooks/community/usePostProfiles';
-import { usePostFlairs } from '@/hooks/community/usePostFlairs';
+import { useCommunityData } from '@/contexts/CommunityDataContext';
 import { Post } from '@/components/community/Post';
+import { EmptyState } from '@/components/community/EmptyState';
 import { NewPostModal } from '@/components/community/NewPostModal';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 
 export const PostsList: React.FC = () => {
+  const { posts, isLoading, errors, retryFailed } = useCommunityData();
   const [showNewPostModal, setShowNewPostModal] = React.useState(false);
-  
-  // Load data with simple, focused hooks
-  const { data: posts = [], isLoading: postsLoading, error: postsError } = useSimplePosts();
-  const userIds = React.useMemo(() => posts.map(post => post.user_id), [posts]);
-  const { data: profiles = [] } = usePostProfiles(userIds);
-  const { data: flairs = [] } = usePostFlairs();
 
-  console.log('PostsList: Rendering with', posts.length, 'posts');
+  console.log('PostsList: Rendering with', posts.length, 'posts from centralized data');
 
-  if (postsLoading) {
+  if (isLoading) {
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between mb-6">
@@ -41,14 +35,14 @@ export const PostsList: React.FC = () => {
     );
   }
 
-  if (postsError) {
+  if (Object.keys(errors).length > 0 && posts.length === 0) {
     return (
       <div className="text-center py-16">
         <h2 className="text-2xl font-bold mb-4">Error loading community</h2>
         <p className="text-gray-600 mb-4">
           Unable to load community posts. Please try again.
         </p>
-        <Button onClick={() => window.location.reload()}>
+        <Button onClick={retryFailed}>
           Retry
         </Button>
       </div>
@@ -66,14 +60,7 @@ export const PostsList: React.FC = () => {
           </Button>
         </div>
         
-        <div className="text-center py-16">
-          <h2 className="text-xl font-semibold mb-2">No posts available yet</h2>
-          <p className="text-gray-600 mb-4">Be the first to share something!</p>
-          <Button onClick={() => setShowNewPostModal(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Create First Post
-          </Button>
-        </div>
+        <EmptyState message="No posts available yet. Be the first to share something!" />
         
         <NewPostModal 
           isOpen={showNewPostModal} 
@@ -83,30 +70,9 @@ export const PostsList: React.FC = () => {
     );
   }
 
-  // Create lookup maps for efficient data joining
-  const profilesMap = React.useMemo(() => 
-    new Map(profiles.map(profile => [profile.id, profile])), 
-    [profiles]
-  );
-  
-  const flairsMap = React.useMemo(() => 
-    new Map(flairs.map(flair => [flair.id, flair])), 
-    [flairs]
-  );
-
   // Separate pinned and regular posts
   const pinnedPosts = posts.filter(post => post.pinned);
   const regularPosts = posts.filter(post => !post.pinned);
-
-  // Enhance posts with profile and flair data
-  const enhancePost = (post: any) => ({
-    ...post,
-    profiles: profilesMap.get(post.user_id) || null,
-    post_flairs: post.flair_id ? flairsMap.get(post.flair_id) || null : null,
-    comment_count: 0, // Will be loaded by Post component if needed
-    user_vote: 0, // Will be loaded by Post component if needed
-    poll: null, // Will be loaded by Post component if needed
-  });
 
   return (
     <>
@@ -123,8 +89,11 @@ export const PostsList: React.FC = () => {
         {pinnedPosts.map((post) => (
           <Post 
             key={`pinned-${post.id}`} 
-            post={enhancePost(post)}
+            post={post}
             isPinned={true}
+            // Pass centralized data to avoid individual API calls
+            userVote={post.user_vote}
+            commentCount={post.comment_count}
           />
         ))}
         
@@ -132,8 +101,11 @@ export const PostsList: React.FC = () => {
         {regularPosts.map((post) => (
           <Post 
             key={post.id} 
-            post={enhancePost(post)}
+            post={post}
             isPinned={false}
+            // Pass centralized data to avoid individual API calls
+            userVote={post.user_vote}
+            commentCount={post.comment_count}
           />
         ))}
       </div>
