@@ -1,8 +1,7 @@
-
-# README‑BÍBLIA.md v3.5.0
+# README‑BÍBLIA.md v3.6.0
 
 ## 1. Purpose & Pitch
-Scientific journal platform with optimized review system, community features, and advanced performance monitoring. **Phase 1 API cascade resolution IMPLEMENTED** with comprehensive type system foundation repair completed - all IDs now use database-compatible string format.
+Scientific journal platform with optimized review system, community features, and advanced performance monitoring. **Phase 2 Section Cleanup IMPLEMENTED** - removed "Edições Recentes", "Recomendados para você", and "Mais acessados" sections to prepare for optimized replacements with zero per-card API calls.
 
 ## 2. Glossary
 - **Review Blocks**: Modular content components for scientific reviews (string IDs)
@@ -14,6 +13,7 @@ Scientific journal platform with optimized review system, community features, an
 - **API Call Monitor**: Real-time tracking system preventing unauthorized component API calls
 - **Component Auditor**: Automated system detecting API call violations and performance issues
 - **Type System Foundation**: String-based ID system aligned with database schema
+- **Section Cleanup**: Removal of high-API-call homepage sections for optimization
 
 ## 3. High‑Level Architecture
 ```
@@ -25,8 +25,9 @@ Scientific journal platform with optimized review system, community features, an
 │  │  ├─ UserInteractionContext
 │  │  ├─ API Call Monitor
 │  │  ├─ Component Auditor
-│  │  └─ Type System Foundation (NEW)
-│  ├─ UI Components
+│  │  ├─ Type System Foundation
+│  │  └─ Section Cleanup (NEW)
+│  ├─ UI Components (STREAMLINED)
 │  ├─ Lazy Routes
 │  └─ State Management
 ├─ Backend (Supabase)
@@ -41,7 +42,8 @@ Scientific journal platform with optimized review system, community features, an
    ├─ API cascade prevention
    ├─ Real-time monitoring
    ├─ Component violation detection
-   └─ Type system integrity (NEW)
+   ├─ Type system integrity
+   └─ Section optimization (NEW)
 ```
 
 ## 4. User Journeys
@@ -54,11 +56,12 @@ Scientific journal platform with optimized review system, community features, an
 - **User Interactions**: `/src/contexts/UserInteractionContext.tsx`
 - **API Monitoring**: `/src/middleware/ApiCallMiddleware.ts`
 - **Component Auditing**: `/src/utils/componentAudit.ts`
-- **Type Definitions**: `/src/types/review.ts`, `/src/types/grid.ts` (NEW)
+- **Type Definitions**: `/src/types/review.ts`, `/src/types/grid.ts`
 - **Review System**: `/src/components/review/`
 - **Performance**: `/src/utils/bundleOptimizer.ts`, `/src/utils/memoryManager.ts`
 - **Error Handling**: `/src/components/error/`
 - **Navigation**: `/src/layouts/DashboardLayout.tsx`
+- **Section Registry**: `/src/config/sections.ts` (UPDATED - removed 3 sections)
 
 ## 6. Data & API Schemas
 ```typescript
@@ -137,6 +140,21 @@ interface Grid2DLayout {
   gap?: number;
   rowHeights?: number[];
 }
+
+// Section Registry Schema (UPDATED)
+interface SectionDefinition {
+  id: string;
+  title: string;
+  component: string;
+  defaultVisible: boolean;
+  defaultOrder: number;
+  description?: string;
+  adminOnly?: boolean;
+  dependencies?: string[];
+}
+
+// Current Active Sections: reviewer, featured, upcoming
+// Removed Sections: recent, recommended, trending
 ```
 
 ## 7. UI Component Index
@@ -145,23 +163,25 @@ interface Grid2DLayout {
 - **User Interactions**: `UserInteractionProvider`, `useUserInteractionContext`
 - **API Monitoring**: `ApiCallMonitor`, `ComponentAuditor`
 - **Review Components**: `BlockRenderer`, `NativeReviewViewer`
-- **Editor Components**: `BlockContentEditor`, `SingleBlock`, `Grid2DCell` (UPDATED)
+- **Editor Components**: `BlockContentEditor`, `SingleBlock`, `Grid2DCell`
 - **Layout**: `DashboardLayout`, `Sidebar`
+- **Homepage Sections**: `ReviewerNotesSection`, `FeaturedSection`, `UpcomingSection` (STREAMLINED)
 
 ## 8. Design Language
-Material Design 3 with custom scientific journal styling. Dark theme default.
+Material Design 3 with custom scientific journal styling. Dark theme default with monochromatic enforcement.
 
 ## 9. Accessibility Contract
 WCAG 2.1 AA compliance with error boundary announcements and keyboard navigation.
 
 ## 10. Performance Budgets
 - Initial bundle: <500KB (optimized with lazy loading)
-- **API requests per page: <10** ✅ **IMPLEMENTED - AWAITING VALIDATION**
+- **API requests per page: <10** ✅ **TARGET - IN PROGRESS**
 - Memory usage: <100MB sustained
 - Error recovery: <3s average
 - API response: <100ms with caching
 - **Monitoring overhead: <5MB** ✅ **ACHIEVED**
 - **Type system integrity: 100%** ✅ **COMPLETE**
+- **Section optimization: 3 high-API sections removed** ✅ **COMPLETE**
 
 ## 11. Security & Compliance
 Row Level Security with performance optimization. Rate limiting on all endpoints.
@@ -173,28 +193,30 @@ Admin panel with performance monitoring dashboard and error tracking.
 - Bundle load times and cache hit rates
 - Memory usage patterns
 - Error frequency and recovery success
-- **API request efficiency: <10 per page** ✅ **IMPLEMENTED - AWAITING VALIDATION**
+- **API request efficiency: <10 per page** ✅ **TARGET - IN PROGRESS**
 - **Real-time performance monitoring** ✅ **ACTIVE**
 - **Component violation tracking** ✅ **ACTIVE**
 - **Type system compliance: 100%** ✅ **ACHIEVED**
+- **Section streamlining: 3 sections removed** ✅ **COMPLETE**
 - User engagement metrics
 
 ## 14. TODO / Backlog
-**Phase 1 Final Validation (Current):**
-- Network log validation - confirm <10 API requests per page
-- Performance metrics validation - verify monitoring accuracy
-- Component behavior validation - ensure no functionality regression
-- Type system validation - confirm all components use string IDs
+**Phase 2 New Section Development (Current):**
+- Build optimized "Recent Issues" section with horizontal scroll and 2x width leftmost card
+- Build optimized "Recommended" section with 2x3 grid layout
+- Implement zero per-card API call architecture
+- Scientific journal styling with transparent text overlays
 
-**Phase 2 (Next):**
+**Phase 3 (Next):**
 - Component refactoring for maintainability
 - State management optimization
 - Code organization improvements
 - Advanced caching strategies
 
 ## 15. Revision History
-- v3.5.0 (2025-06-13): **Type System Foundation Repair COMPLETE** - All IDs migrated to string format, comprehensive type definitions added, build errors resolved
-- v3.4.0 (2025-06-13): Phase 1 API CASCADE RESOLUTION IMPLEMENTED - Monitoring system, component audit, context enforcement complete
+- v3.6.0 (2025-06-13): **Section Cleanup COMPLETE** - Removed "Edições Recentes", "Recomendados para você", "Mais acessados" sections and associated components to prepare for optimized replacements
+- v3.5.0 (2025-06-13): Type System Foundation Repair COMPLETE - All IDs migrated to string format
+- v3.4.0 (2025-06-13): Phase 1 API CASCADE RESOLUTION IMPLEMENTED - Monitoring system complete
 - v3.3.0 (2025-06-13): Phase 1 complete - API cascade resolved, UserInteractionContext implemented
 - v3.2.0 (2025-06-13): Phase 1 completion - bundle optimization, memory management, error boundaries
 - v3.1.0 (2025-06-13): Performance monitoring and query optimization

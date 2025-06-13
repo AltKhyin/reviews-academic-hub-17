@@ -1,12 +1,11 @@
 
-// ABOUTME: Optimized Dashboard with unified section management and centralized user interactions
+// ABOUTME: Optimized Dashboard with unified section management - removed recent, recommended, trending sections
 import React, { useEffect } from 'react';
 import { useParallelDataLoader } from '@/hooks/useParallelDataLoader';
 import { useStableAuth } from '@/hooks/useStableAuth';
 import { DataErrorBoundary } from '@/components/error/DataErrorBoundary';
 import { ReviewerCommentsDisplay } from '@/components/dashboard/ReviewerCommentsDisplay';
 import { HeroSection } from '@/components/dashboard/HeroSection';
-import ArticleRow from '@/components/dashboard/ArticleRow';
 import { UpcomingReleaseCard } from '@/components/dashboard/UpcomingReleaseCard';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { UserInteractionProvider } from '@/contexts/UserInteractionContext';
@@ -105,28 +104,10 @@ const Dashboard = () => {
   // PERFORMANCE FIX: Extract all issue IDs for bulk user interaction loading
   const allIssueIds = issues.map(issue => issue.id);
 
-  // Filter out featured issue from other sections to avoid duplication
-  const nonFeaturedIssues = featuredIssue 
-    ? issues.filter(issue => issue.id !== featuredIssue.id)
-    : issues;
-  
-  // Organize issues by type for different sections
-  const recentIssues = nonFeaturedIssues
-    .filter(issue => issue.published)
-    .slice(0, 10);
-    
-  const recommendedIssues = nonFeaturedIssues
-    .filter(issue => issue.published)
-    .slice(0, 10);
-    
-  const trendingIssues = nonFeaturedIssues
-    .filter(issue => issue.published)
-    .sort((a, b) => (b.score || 0) - (a.score || 0))
-    .slice(0, 10);
-
-  // Get enabled sections in order from the unified configuration
+  // Get enabled sections in order from the unified configuration - only remaining sections
   const enabledSections = sectionVisibility
-    .filter(section => section.visible) 
+    .filter(section => section.visible)
+    .filter(section => ['reviewer', 'featured', 'upcoming'].includes(section.id)) // Only allow remaining sections
     .sort((a, b) => a.order - b.order);
 
   console.log('Dashboard: Visible sections from unified config:', enabledSections.map(s => `${s.id} (order: ${s.order})`));
@@ -165,39 +146,6 @@ const Dashboard = () => {
         return (
           <DataErrorBoundary key={`upcoming-${index}`} context="upcoming releases">
             <UpcomingReleaseCard />
-          </DataErrorBoundary>
-        );
-        
-      case 'recent':
-        if (recentIssues.length === 0) {
-          console.log('Dashboard: No recent issues available');
-          return null;
-        }
-        return (
-          <DataErrorBoundary key={`recent-${index}`} context="recent issues">
-            <ArticleRow title="Edições Recentes" articles={recentIssues} />
-          </DataErrorBoundary>
-        );
-        
-      case 'recommended':
-        if (recommendedIssues.length === 0) {
-          console.log('Dashboard: No recommended issues available');
-          return null;
-        }
-        return (
-          <DataErrorBoundary key={`recommended-${index}`} context="recommended issues">
-            <ArticleRow title="Recomendados para você" articles={recommendedIssues} />
-          </DataErrorBoundary>
-        );
-        
-      case 'trending':
-        if (trendingIssues.length === 0) {
-          console.log('Dashboard: No trending issues available');
-          return null;
-        }
-        return (
-          <DataErrorBoundary key={`trending-${index}`} context="trending issues">
-            <ArticleRow title="Mais acessados" articles={trendingIssues} />
           </DataErrorBoundary>
         );
         

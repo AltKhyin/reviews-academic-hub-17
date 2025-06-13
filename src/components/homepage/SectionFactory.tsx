@@ -1,11 +1,11 @@
 
-// ABOUTME: Enhanced section factory with comprehensive error handling and all components
+// ABOUTME: Enhanced section factory with comprehensive error handling and remaining components only
 import React, { Suspense, memo } from 'react';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { SECTION_REGISTRY, getSectionById } from '@/config/sections';
 import { useParallelDataLoader } from '@/hooks/useParallelDataLoader';
 
-// Lazy load all sections for better performance with comprehensive error handling
+// Lazy load remaining sections for better performance with comprehensive error handling
 const ReviewerNotesSection = React.lazy(() => 
   import('./sections/ReviewerNotesSection').then(module => ({ default: module.ReviewerNotesSection }))
     .catch(error => {
@@ -30,30 +30,6 @@ const UpcomingSection = React.lazy(() =>
     })
 );
 
-const RecentSection = React.lazy(() => 
-  import('./sections/RecentSection').then(module => ({ default: module.RecentSection }))
-    .catch(error => {
-      console.error('Failed to load RecentSection:', error);
-      return { default: () => <div>Error loading recent section</div> };
-    })
-);
-
-const RecommendedSection = React.lazy(() => 
-  import('./sections/RecommendedSection').then(module => ({ default: module.RecommendedSection }))
-    .catch(error => {
-      console.error('Failed to load RecommendedSection:', error);
-      return { default: () => <div>Error loading recommended section</div> };
-    })
-);
-
-const TrendingSection = React.lazy(() => 
-  import('./sections/TrendingSection').then(module => ({ default: module.TrendingSection }))
-    .catch(error => {
-      console.error('Failed to load TrendingSection:', error);
-      return { default: () => <div>Error loading trending section</div> };
-    })
-);
-
 interface SectionFactoryProps {
   sectionId: string;
   sectionConfig: {
@@ -63,14 +39,11 @@ interface SectionFactoryProps {
   };
 }
 
-// Component mapping using unified registry
+// Component mapping using unified registry - removed RecentSection, RecommendedSection, TrendingSection
 const SECTION_COMPONENTS = {
   ReviewerNotesSection,
   FeaturedSection,
   UpcomingSection,
-  RecentSection,
-  RecommendedSection,
-  TrendingSection,
 } as const;
 
 // Enhanced loading skeleton component
