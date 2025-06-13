@@ -28,7 +28,7 @@ const fetchHomepageData = async () => {
       .eq('featured', true)
       .order('created_at', { ascending: false })
       .limit(1)
-      .single(),
+      .maybeSingle(), // Use maybeSingle to handle no results gracefully
 
     supabase
       .from('reviewer_comments')

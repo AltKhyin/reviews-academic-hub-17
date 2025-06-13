@@ -77,27 +77,27 @@ class BundleOptimizer {
   // Optimized imports for heavy components
   static getOptimizedImports() {
     return {
-      // Editor components (heavy)
+      // Editor components (heavy) - Fixed default export handling
       NativeEditor: this.createLazyComponent(
-        () => import('@/components/editor/NativeEditor').then(m => ({ default: m.NativeEditor || m.default })),
+        () => import('@/components/editor/NativeEditor').then(m => ({ default: m.NativeEditor || m.default || m })),
         'native-editor'
       ),
       
-      // Analytics dashboard (heavy)
+      // Analytics dashboard (heavy) - Fixed default export handling
       EnhancedAnalyticsDashboard: this.createLazyComponent(
-        () => import('@/components/analytics/EnhancedAnalyticsDashboard').then(m => ({ default: m.EnhancedAnalyticsDashboard || m.default })),
+        () => import('@/components/analytics/EnhancedAnalyticsDashboard').then(m => ({ default: m.EnhancedAnalyticsDashboard || m.default || m })),
         'analytics-dashboard'
       ),
       
-      // Admin panels (heavy)
+      // Admin panels (heavy) - Fixed default export handling
       IssuesManagementPanel: this.createLazyComponent(
-        () => import('@/components/admin/IssuesManagementPanel').then(m => ({ default: m.IssuesManagementPanel || m.default })),
+        () => import('@/components/admin/IssuesManagementPanel').then(m => ({ default: m.IssuesManagementPanel || m.default || m })),
         'issues-management'
       ),
       
-      // PDF viewer (heavy)
+      // PDF viewer (heavy) - Fixed default export handling
       PDFViewer: this.createLazyComponent(
-        () => import('@/components/pdf/PDFViewer').then(m => ({ default: m.PDFViewer || m.default })),
+        () => import('@/components/pdf/PDFViewer').then(m => ({ default: m.PDFViewer || m.default || m })),
         'pdf-viewer'
       )
     };

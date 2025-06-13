@@ -8,7 +8,7 @@ interface ReviewData {
   blocks: Array<{
     id: string;
     type: string;
-    payload: any;
+    content: any; // Changed from payload to content
     sort_index: number;
     visible: boolean;
   }>;
@@ -46,8 +46,15 @@ export const useNativeReview = (issueId: string) => {
         throw blocksError;
       }
 
+      // Transform database payload to content and convert ID to string
       return {
-        blocks: blocks || []
+        blocks: (blocks || []).map(block => ({
+          id: block.id.toString(), // Convert number to string
+          type: block.type,
+          content: block.payload, // Map payload to content
+          sort_index: block.sort_index,
+          visible: block.visible,
+        }))
       };
     },
     {

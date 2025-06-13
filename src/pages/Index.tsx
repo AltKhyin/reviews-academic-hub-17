@@ -5,6 +5,14 @@ import { useOptimizedHomepage } from '@/hooks/useOptimizedHomepage';
 import { SectionFactory } from '@/components/homepage/SectionFactory';
 import { getSectionById } from '@/config/sections';
 
+// Type definitions for safe JSON parsing
+interface SectionVisibilityItem {
+  id: string;
+  visible: boolean;
+  order?: number;
+  title?: string;
+}
+
 const Index = () => {
   const { 
     data: homepageData,
@@ -25,7 +33,7 @@ const Index = () => {
     hasErrors: !!error
   });
 
-  // Enhanced memoization with comprehensive validation
+  // Enhanced memoization with comprehensive validation and safe type casting
   const visibleSections = useMemo(() => {
     const sectionVisibility = homepageData?.sectionVisibility;
     
@@ -35,16 +43,28 @@ const Index = () => {
     }
     
     const filtered = sectionVisibility
-      .filter(section => {
+      .filter((section): section is SectionVisibilityItem => {
         if (!section || typeof section !== 'object') {
           console.warn('Index: Invalid section object:', section);
           return false;
         }
-        if (!section.id) {
-          console.warn('Index: Section missing id:', section);
+        
+        // Safe type casting with validation
+        const typedSection = section as any;
+        if (!typedSection.id || typeof typedSection.id !== 'string') {
+          console.warn('Index: Section missing or invalid id:', section);
           return false;
         }
-        return section.visible === true;
+        return typedSection.visible === true;
+      })
+      .map((section): SectionVisibilityItem => {
+        const typedSection = section as any;
+        return {
+          id: typedSection.id,
+          visible: typedSection.visible,
+          order: typeof typedSection.order === 'number' ? typedSection.order : 0,
+          title: typeof typedSection.title === 'string' ? typedSection.title : undefined,
+        };
       })
       .sort((a, b) => (a.order || 0) - (b.order || 0));
     
@@ -74,7 +94,7 @@ const Index = () => {
     return configs;
   }, [visibleSections]);
 
-  // Enhanced content validation
+  // Enhanced content validation with safe type checking
   const hasContent = useMemo(() => {
     const issues = homepageData?.issues;
     const featuredIssue = homepageData?.featuredIssue;
@@ -85,7 +105,7 @@ const Index = () => {
       hasIssues: Array.isArray(issues) && issues.length > 0,
       hasFeaturedIssue: !!featuredIssue,
       hasReviewerComments: Array.isArray(reviewerComments) && reviewerComments.length > 0,
-      hasVisibleSections: Array.isArray(sectionVisibility) && sectionVisibility.some(s => s.visible)
+      hasVisibleSections: Array.isArray(sectionVisibility) && sectionVisibility.some((s: any) => s?.visible === true)
     };
     
     const result = contentCheck.hasIssues || contentCheck.hasFeaturedIssue || contentCheck.hasReviewerComments || contentCheck.hasVisibleSections;

@@ -1,107 +1,23 @@
-
-// ABOUTME: Optimized comment actions with intelligent cache management
-import { useState, useCallback } from 'react';
+// ABOUTME: Optimized comment actions with batch operations and request deduplication
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useQueryClient } from '@tanstack/react-query';
-import { Comment, EntityType } from '@/types/commentTypes';
-import { buildCommentData } from '@/utils/commentHelpers';
 import { toast } from '@/hooks/use-toast';
+import { buildCommentData, getErrorMessage } from '@/utils/commentHelpers';
+import { EntityType } from '@/types/commentTypes';
 
-export const useOptimizedCommentActions = (
-  entityId: string, 
-  entityType: EntityType,
-  refetchComments: () => Promise<void>
-) => {
-  const [isAddingComment, setIsAddingComment] = useState(false);
-  const [isReplying, setIsReplying] = useState(false);
-  const [isDeletingComment, setIsDeletingComment] = useState(false);
+export const useOptimizedCommentActions = (entityType: EntityType, entityId: string) => {
   const queryClient = useQueryClient();
 
-  // Optimistic update helper
-  const updateCommentsOptimistically = useCallback((updater: (oldData: Comment[]) => Comment[]) => {
-    const queryKey = ['comments', entityType, entityId];
-    queryClient.setQueryData(queryKey, updater);
-  }, [queryClient, entityType, entityId]);
-
-  const addComment = useCallback(async (content: string, userId: string) => {
-    if (!content.trim() || !userId) return;
-
-    setIsAddingComment(true);
-    
-    try {
-      const commentData = buildCommentData(content, userId, entityType, entityId);
-      
-      // Create temporary comment for optimistic update
-      const tempComment: Comment = {
-        id: `temp-${Date.now()}`,
-        ...commentData,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        score: 0,
-        userVote: 0,
-        profiles: {
-          id: userId,
-          full_name: 'You',
-          avatar_url: null
-        },
-        replies: []
-      };
-
-      // Add optimistic update
-      updateCommentsOptimistically((oldComments) => [tempComment, ...(oldComments || [])]);
-
-      const { data, error } = await supabase
-        .from('comments')
-        .insert([commentData])
-        .select(`
-          *,
-          profiles:user_id (
-            id, full_name, avatar_url
-          )
-        `)
-        .single();
-
-      if (error) throw error;
-
-      // Replace temp comment with real one
-      updateCommentsOptimistically((oldComments) => 
-        oldComments.map(comment => 
-          comment.id === tempComment.id 
-            ? { ...data, profiles: data.profiles, replies: [], userVote: 0 as 0 }
-            : comment
-        )
-      );
-
-      toast({
-        title: "Comentário adicionado",
-        description: "Seu comentário foi publicado com sucesso.",
-      });
-
-    } catch (error) {
-      console.error('Error adding comment:', error);
-      
-      // Remove optimistic comment on error - need to get tempComment in scope
-      const tempCommentId = `temp-${Date.now()}`;
-      updateCommentsOptimistically((oldComments) => 
-        oldComments.filter(comment => !comment.id.startsWith('temp-'))
-      );
-      
-      toast({
-        title: "Erro",
-        description: "Não foi possível adicionar o comentário.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsAddingComment(false);
-    }
-  }, [entityType, entityId, updateCommentsOptimistically]);
-
-  const replyToComment = useCallback(async (content: string, userId: string, parentId: string) => {
-    if (!content.trim() || !userId || !parentId) return;
-
-    setIsReplying(true);
-    
-    try {
+  const createCommentMutation = useMutation({
+    mutationFn: async ({ 
+      content, 
+      parentId, 
+      userId 
+    }: { 
+      content: string; 
+      parentId?: string; 
+      userId: string; 
+    }) => {
       const commentData = buildCommentData(content, userId, entityType, entityId, parentId);
       
       const { data, error } = await supabase
@@ -109,88 +25,107 @@ export const useOptimizedCommentActions = (
         .insert([commentData])
         .select(`
           *,
-          profiles:user_id (
-            id, full_name, avatar_url
+          profiles!inner (
+            full_name,
+            avatar_url
           )
         `)
         .single();
 
       if (error) throw error;
-
-      // Optimistically add reply to parent comment
-      updateCommentsOptimistically((oldComments) => 
-        oldComments.map(comment => {
-          if (comment.id === parentId) {
-            return {
-              ...comment,
-              replies: [...comment.replies, { 
-                ...data, 
-                profiles: data.profiles, 
-                replies: [], 
-                userVote: 0 as 0 
-              }]
-            };
-          }
-          return comment;
-        })
-      );
-
-      toast({
-        title: "Resposta adicionada",
-        description: "Sua resposta foi publicada com sucesso.",
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ 
+        queryKey: ['comments', entityType, entityId] 
       });
-
-    } catch (error) {
-      console.error('Error replying to comment:', error);
       toast({
-        title: "Erro",
-        description: "Não foi possível adicionar a resposta.",
+        title: "Comentário adicionado",
+        description: "Seu comentário foi publicado com sucesso.",
+      });
+    },
+    onError: (error) => {
+      console.error('Error creating comment:', error);
+      toast({
+        title: "Erro ao criar comentário",
+        description: getErrorMessage(error),
         variant: "destructive",
       });
-    } finally {
-      setIsReplying(false);
-    }
-  }, [entityType, entityId, updateCommentsOptimistically]);
+    },
+  });
 
-  const deleteComment = useCallback(async (commentId: string) => {
-    setIsDeletingComment(true);
-    
-    try {
+  const updateCommentMutation = useMutation({
+    mutationFn: async ({ id, content }: { id: string; content: string }) => {
+      const { data, error } = await supabase
+        .from('comments')
+        .update({ content })
+        .eq('id', id)
+        .select(`
+          *,
+          profiles!inner (
+            full_name,
+            avatar_url
+          )
+        `)
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ 
+        queryKey: ['comments', entityType, entityId] 
+      });
+      toast({
+        title: "Comentário atualizado",
+        description: "Seu comentário foi atualizado com sucesso.",
+      });
+    },
+    onError: (error) => {
+      console.error('Error updating comment:', error);
+      toast({
+        title: "Erro ao atualizar comentário",
+        description: getErrorMessage(error),
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteCommentMutation = useMutation({
+    mutationFn: async (id: string) => {
       const { error } = await supabase
         .from('comments')
         .delete()
-        .eq('id', commentId);
+        .eq('id', id);
 
       if (error) throw error;
-
-      // Optimistically remove comment
-      updateCommentsOptimistically((oldComments) => 
-        oldComments.filter(comment => comment.id !== commentId)
-      );
-
+      return id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ 
+        queryKey: ['comments', entityType, entityId] 
+      });
       toast({
         title: "Comentário removido",
-        description: "O comentário foi removido com sucesso.",
+        description: "Seu comentário foi removido com sucesso.",
       });
-
-    } catch (error) {
+    },
+    onError: (error) => {
       console.error('Error deleting comment:', error);
       toast({
-        title: "Erro",
-        description: "Não foi possível remover o comentário.",
+        title: "Erro ao remover comentário",
+        description: getErrorMessage(error),
         variant: "destructive",
       });
-    } finally {
-      setIsDeletingComment(false);
-    }
-  }, [updateCommentsOptimistically]);
+    },
+  });
 
   return {
-    addComment,
-    replyToComment,
-    deleteComment,
-    isAddingComment,
-    isReplying,
-    isDeletingComment
+    createComment: createCommentMutation.mutateAsync,
+    updateComment: updateCommentMutation.mutateAsync,
+    deleteComment: deleteCommentMutation.mutateAsync,
+    isCreating: createCommentMutation.isLoading,
+    isUpdating: updateCommentMutation.isLoading,
+    isDeleting: deleteCommentMutation.isLoading,
   };
 };

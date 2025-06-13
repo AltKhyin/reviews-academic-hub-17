@@ -1,4 +1,3 @@
-
 // ABOUTME: Enhanced block renderer with error boundaries and comprehensive block type coverage
 // Handles all block types with consistent error handling and spacing system integration
 
@@ -45,7 +44,8 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   const normalizedBlock: ReviewBlock = {
     ...block,
     // Handle both 'content' and 'payload' properties from database
-    content: block.content || (block as any).payload || {}
+    content: block.content || (block as any).payload || {},
+    id: typeof block.id === 'string' ? block.id : block.id.toString() // Ensure string ID
   };
 
   // Get vertical alignment from block metadata

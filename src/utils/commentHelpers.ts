@@ -51,3 +51,25 @@ export const getErrorMessage = (error: unknown): string => {
   
   return 'An unexpected error occurred';
 };
+
+// Add missing exported functions
+export const processCommentsData = (comments: any[]) => {
+  return comments.map(comment => ({
+    ...comment,
+    id: comment.id?.toString() || Math.random().toString(),
+    created_at: comment.created_at || new Date().toISOString(),
+  }));
+};
+
+export const getEntityIdField = (entityType: EntityType): string => {
+  switch (entityType) {
+    case 'issue':
+      return 'issue_id';
+    case 'article':
+      return 'article_id';
+    case 'post':
+      return 'post_id';
+    default:
+      throw new Error(`Unsupported entity type: ${entityType}`);
+  }
+};
