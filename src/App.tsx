@@ -1,4 +1,4 @@
-// ABOUTME: Main application component with API call monitoring integration
+// ABOUTME: Main application component with route configuration, global error boundary, and API monitoring
 import React, { Suspense, lazy, useEffect } from 'react';
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { GlobalErrorBoundary } from "@/components/error/GlobalErrorBoundary";
 import { BundleOptimizer } from "@/utils/bundleOptimizer";
+import { ComponentAuditor } from "@/utils/componentAudit";
 import { apiCallMonitor } from "@/middleware/ApiCallMiddleware";
 
 // Keep critical routes static for immediate loading
@@ -44,26 +45,28 @@ BundleOptimizer.preloadChunk(() => import("@/pages/dashboard/ArticleViewer"), 'a
 BundleOptimizer.preloadChunk(() => import("@/pages/dashboard/ArchivePage"), 'archive-page');
 
 function App() {
-  // Initialize API call monitoring
+  // API MONITORING: Set up global performance tracking
   useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
-      // Reset metrics on app start
-      apiCallMonitor.reset();
+      console.log('🚀 App: API monitoring initialized');
       
-      // Log metrics every 30 seconds in development
-      const metricsInterval = setInterval(() => {
-        const metrics = apiCallMonitor.getMetrics();
-        if (metrics.totalCalls > 0) {
-          console.group('📊 API Call Metrics');
-          console.log(`Total Calls: ${metrics.totalCalls}`);
-          console.log(`Efficiency: ${metrics.efficiency.toFixed(1)}%`);
-          console.log(`Unauthorized Component Calls: ${metrics.componentCalls}`);
-          console.log(`Duplicate Calls: ${metrics.duplicateCount}`);
+      // Set up global performance monitoring
+      const performanceInterval = setInterval(() => {
+        const totalCalls = apiCallMonitor.getTotalCallsInLastMinute();
+        const violations = ComponentAuditor.getViolationReport();
+        
+        if (totalCalls > 10 || violations.length > 0) {
+          console.group('🚨 PERFORMANCE ALERT');
+          console.log(`Total API calls: ${totalCalls} (target: <10)`);
+          console.log(`Components with violations: ${violations.length}`);
+          violations.forEach(violation => {
+            console.warn(`${violation.componentName}: ${violation.violations.join(', ')}`);
+          });
           console.groupEnd();
         }
       }, 30000);
-      
-      return () => clearInterval(metricsInterval);
+
+      return () => clearInterval(performanceInterval);
     }
   }, []);
 
