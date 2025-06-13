@@ -1,320 +1,126 @@
 
-// ABOUTME: Optimized user interactions hook with batched operations and intelligent caching
-import { useCallback, useMemo } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+// ABOUTME: Migrated user interactions to use unified data access layer
+import { useUnifiedQuery } from './useUnifiedQuery';
 import { useAuth } from '@/contexts/AuthContext';
-import { queryKeys, queryConfigs } from './useOptimizedQuery';
-import { toast } from '@/hooks/use-toast';
+import { DataAccessLayer } from '@/core/DataAccessLayer';
+import { useCallback } from 'react';
 
-interface UserReaction {
-  id: string;
-  issue_id: string;
-  reaction_type: string;
-  created_at: string;
-}
-
-interface UserBookmark {
-  id: string;
-  issue_id: string;
-  created_at: string;
-}
-
-// Batched state management for better performance
-interface BatchedInteractions {
-  reactions: Record<string, UserReaction>;
-  bookmarks: Record<string, UserBookmark>;
-  pendingReactions: Set<string>;
-  pendingBookmarks: Set<string>;
-}
-
-// Type guard for interactions data
-const isBatchedInteractions = (data: unknown): data is BatchedInteractions => {
-  return data !== null && 
-         typeof data === 'object' && 
-         'reactions' in data && 
-         'bookmarks' in data;
-};
-
-export const useOptimizedUserInteractions = () => {
+export const useOptimizedUserInteractions = (issueIds: string[] = []) => {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const isAuthenticated = !!user;
+  const dataLayer = DataAccessLayer.getInstance();
 
-  // Consolidated user interactions query
-  const { data: userInteractions, isLoading } = useQuery({
-    queryKey: queryKeys.userReactions(user?.id || 'anonymous'),
-    queryFn: async (): Promise<BatchedInteractions> => {
-      if (!user?.id) {
-        return {
-          reactions: {},
-          bookmarks: {},
-          pendingReactions: new Set(),
-          pendingBookmarks: new Set(),
-        };
-      }
+  // Bulk load user interactions using unified system
+  const { data: interactions, isLoading, error, refetch } = useUnifiedQuery(
+    ['user-interactions', user?.id, ...issueIds.sort()],
+    async () => {
+      if (!user?.id || issueIds.length === 0) return { bookmarks: [], reactions: [] };
 
-      try {
-        // Fetch reactions and bookmarks in parallel
-        const [reactionsResponse, bookmarksResponse] = await Promise.all([
-          supabase
-            .from('user_article_reactions')
-            .select('id, issue_id, reaction_type, created_at')
-            .eq('user_id', user.id),
-          supabase
-            .from('user_bookmarks')
-            .select('id, issue_id, created_at')
-            .eq('user_id', user.id)
-        ]);
+      // Use unified data layer for bulk operations
+      const [bookmarksResult, reactionsResult] = await Promise.all([
+        dataLayer.executeOperation({
+          type: 'query',
+          resource: 'user_bookmarks',
+          parameters: {
+            user_id: user.id,
+            issue_ids: issueIds
+          }
+        }),
+        dataLayer.executeOperation({
+          type: 'query',
+          resource: 'user_article_reactions',
+          parameters: {
+            user_id: user.id,
+            issue_ids: issueIds
+          }
+        })
+      ]);
 
-        if (reactionsResponse.error) throw reactionsResponse.error;
-        if (bookmarksResponse.error) throw bookmarksResponse.error;
-
-        // Convert to lookup objects for O(1) access
-        const reactions = (reactionsResponse.data || []).reduce((acc, reaction) => {
-          const key = `${reaction.issue_id}-${reaction.reaction_type}`;
-          acc[key] = reaction;
-          return acc;
-        }, {} as Record<string, UserReaction>);
-
-        const bookmarks = (bookmarksResponse.data || []).reduce((acc, bookmark) => {
-          acc[bookmark.issue_id] = bookmark;
-          return acc;
-        }, {} as Record<string, UserBookmark>);
-
-        return {
-          reactions,
-          bookmarks,
-          pendingReactions: new Set(),
-          pendingBookmarks: new Set(),
-        };
-      } catch (error) {
-        console.error('Error fetching user interactions:', error);
-        return {
-          reactions: {},
-          bookmarks: {},
-          pendingReactions: new Set(),
-          pendingBookmarks: new Set(),
-        };
-      }
+      return {
+        bookmarks: bookmarksResult.data || [],
+        reactions: reactionsResult.data || []
+      };
     },
-    ...queryConfigs.user,
-    enabled: isAuthenticated,
-    staleTime: 10 * 60 * 1000, // 10 minutes - user interactions don't change frequently
-  });
+    { 
+      priority: 'normal',
+      enabled: !!user?.id && issueIds.length > 0
+    }
+  );
 
-  // Safely access userInteractions with type guard
-  const safeUserInteractions = isBatchedInteractions(userInteractions) ? userInteractions : {
-    reactions: {},
-    bookmarks: {},
-    pendingReactions: new Set(),
-    pendingBookmarks: new Set(),
-  };
+  const toggleBookmark = useCallback(async (issueId: string) => {
+    if (!user?.id) return;
 
-  // Memoized helper functions
-  const hasReaction = useCallback((issueId: string, reactionType: string): boolean => {
-    const key = `${issueId}-${reactionType}`;
-    return key in safeUserInteractions.reactions;
-  }, [safeUserInteractions.reactions]);
+    const existingBookmark = interactions?.bookmarks?.find(b => b.issue_id === issueId);
+    
+    if (existingBookmark) {
+      await dataLayer.executeOperation({
+        type: 'mutation',
+        resource: 'user_bookmarks',
+        parameters: {
+          action: 'delete',
+          id: existingBookmark.id
+        }
+      });
+    } else {
+      await dataLayer.executeOperation({
+        type: 'mutation',
+        resource: 'user_bookmarks',
+        parameters: {
+          action: 'insert',
+          data: {
+            user_id: user.id,
+            issue_id: issueId
+          }
+        }
+      });
+    }
 
-  const isBookmarked = useCallback((issueId: string): boolean => {
-    return issueId in safeUserInteractions.bookmarks;
-  }, [safeUserInteractions.bookmarks]);
+    refetch();
+  }, [user?.id, interactions, dataLayer, refetch]);
 
-  // Optimized reaction toggle with optimistic updates
-  const toggleReaction = useMutation({
-    mutationFn: async ({ issueId, reactionType }: { issueId: string; reactionType: string }) => {
-      if (!user?.id) throw new Error('User not authenticated');
+  const toggleReaction = useCallback(async (issueId: string, reactionType: string) => {
+    if (!user?.id) return;
 
-      const key = `${issueId}-${reactionType}`;
-      const hasExistingReaction = hasReaction(issueId, reactionType);
-
-      if (hasExistingReaction) {
-        // Remove reaction
-        const { error } = await supabase
-          .from('user_article_reactions')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('issue_id', issueId)
-          .eq('reaction_type', reactionType);
-
-        if (error) throw error;
-        return { action: 'removed', issueId, reactionType };
-      } else {
-        // Add reaction
-        const { error } = await supabase
-          .from('user_article_reactions')
-          .insert({
+    const existingReaction = interactions?.reactions?.find(
+      r => r.issue_id === issueId && r.reaction_type === reactionType
+    );
+    
+    if (existingReaction) {
+      await dataLayer.executeOperation({
+        type: 'mutation',
+        resource: 'user_article_reactions',
+        parameters: {
+          action: 'delete',
+          id: existingReaction.id
+        }
+      });
+    } else {
+      await dataLayer.executeOperation({
+        type: 'mutation',
+        resource: 'user_article_reactions',
+        parameters: {
+          action: 'insert',
+          data: {
             user_id: user.id,
             issue_id: issueId,
-            reaction_type: reactionType,
-          });
-
-        if (error) throw error;
-        return { action: 'added', issueId, reactionType };
-      }
-    },
-    onMutate: async ({ issueId, reactionType }) => {
-      // Optimistic update
-      if (!user?.id || !userInteractions) return;
-
-      const key = `${issueId}-${reactionType}`;
-      const previousData = userInteractions;
-
-      queryClient.setQueryData(
-        queryKeys.userReactions(user.id),
-        (old: BatchedInteractions | undefined) => {
-          if (!old) return old;
-
-          const newData = { ...old };
-          
-          if (key in old.reactions) {
-            // Remove reaction
-            const { [key]: removed, ...remaining } = old.reactions;
-            newData.reactions = remaining;
-          } else {
-            // Add reaction
-            newData.reactions = {
-              ...old.reactions,
-              [key]: {
-                id: 'temp-' + Date.now(),
-                issue_id: issueId,
-                reaction_type: reactionType,
-                created_at: new Date().toISOString(),
-              },
-            };
+            reaction_type: reactionType
           }
-
-          return newData;
         }
-      );
-
-      return { previousData };
-    },
-    onError: (error, variables, context) => {
-      // Revert optimistic update
-      if (context?.previousData && user?.id) {
-        queryClient.setQueryData(queryKeys.userReactions(user.id), context.previousData);
-      }
-      
-      console.error('Reaction toggle error:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível atualizar a reação.",
-        variant: "destructive"
       });
-    },
-    onSuccess: (data) => {
-      // Invalidate related queries
-      queryClient.invalidateQueries({ queryKey: queryKeys.userReactions(user?.id || '') });
-      
-      console.log(`Reaction ${data.action} successfully for issue ${data.issueId}`);
-    },
-  });
+    }
 
-  // Optimized bookmark toggle with optimistic updates
-  const toggleBookmark = useMutation({
-    mutationFn: async (issueId: string) => {
-      if (!user?.id) throw new Error('User not authenticated');
+    refetch();
+  }, [user?.id, interactions, dataLayer, refetch]);
 
-      const isCurrentlyBookmarked = isBookmarked(issueId);
-
-      if (isCurrentlyBookmarked) {
-        // Remove bookmark
-        const { error } = await supabase
-          .from('user_bookmarks')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('issue_id', issueId);
-
-        if (error) throw error;
-        return { action: 'removed', issueId };
-      } else {
-        // Add bookmark
-        const { error } = await supabase
-          .from('user_bookmarks')
-          .insert({
-            user_id: user.id,
-            issue_id: issueId,
-          });
-
-        if (error) throw error;
-        return { action: 'added', issueId };
-      }
-    },
-    onMutate: async (issueId) => {
-      // Optimistic update
-      if (!user?.id || !userInteractions) return;
-
-      const previousData = userInteractions;
-
-      queryClient.setQueryData(
-        queryKeys.userReactions(user.id),
-        (old: BatchedInteractions | undefined) => {
-          if (!old) return old;
-
-          const newData = { ...old };
-          
-          if (issueId in old.bookmarks) {
-            // Remove bookmark
-            const { [issueId]: removed, ...remaining } = old.bookmarks;
-            newData.bookmarks = remaining;
-          } else {
-            // Add bookmark
-            newData.bookmarks = {
-              ...old.bookmarks,
-              [issueId]: {
-                id: 'temp-' + Date.now(),
-                issue_id: issueId,
-                created_at: new Date().toISOString(),
-              },
-            };
-          }
-
-          return newData;
-        }
-      );
-
-      return { previousData };
-    },
-    onError: (error, issueId, context) => {
-      // Revert optimistic update
-      if (context?.previousData && user?.id) {
-        queryClient.setQueryData(queryKeys.userReactions(user.id), context.previousData);
-      }
-      
-      console.error('Bookmark toggle error:', error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível atualizar o marcador.",
-        variant: "destructive"
-      });
-    },
-    onSuccess: (data) => {
-      // Invalidate related queries
-      queryClient.invalidateQueries({ queryKey: queryKeys.userReactions(user?.id || '') });
-      
-      console.log(`Bookmark ${data.action} successfully for issue ${data.issueId}`);
-    },
-  });
-
-  // Memoized return value to prevent unnecessary re-renders
-  return useMemo(() => ({
-    hasReaction,
-    isBookmarked,
-    toggleReaction: toggleReaction.mutateAsync,
-    toggleBookmark: toggleBookmark.mutateAsync,
-    isUpdatingReaction: toggleReaction.isPending,
-    isUpdatingBookmark: toggleBookmark.isPending,
-    isLoading: isLoading && isAuthenticated,
-  }), [
-    hasReaction,
-    isBookmarked,
-    toggleReaction.mutateAsync,
-    toggleBookmark.mutateAsync,
-    toggleReaction.isPending,
-    toggleBookmark.isPending,
+  return {
+    bookmarks: interactions?.bookmarks || [],
+    reactions: interactions?.reactions || [],
     isLoading,
-    isAuthenticated,
-  ]);
+    error,
+    toggleBookmark,
+    toggleReaction,
+    hasBookmark: (issueId: string) => 
+      interactions?.bookmarks?.some(b => b.issue_id === issueId) || false,
+    hasReaction: (issueId: string, reactionType: string) => 
+      interactions?.reactions?.some(r => r.issue_id === issueId && r.reaction_type === reactionType) || false
+  };
 };
