@@ -1,6 +1,6 @@
 
 // ABOUTME: Refactored grid layout manager using focused sub-hooks
-// Main grid management coordination with better separation of concerns - UPDATED: String ID support
+// Main grid management coordination with better separation of concerns - FIXED: String ID support
 
 import { useCallback } from 'react';
 import { ReviewBlock } from '@/types/review';

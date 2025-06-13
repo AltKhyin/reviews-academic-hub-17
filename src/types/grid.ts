@@ -1,40 +1,18 @@
 
-// ABOUTME: Grid layout types with string IDs for database compatibility
+// ABOUTME: Grid position and layout type definitions
+// Fixed to support string IDs consistently
+
 export interface GridPosition {
   row: number;
   column: number;
 }
 
-export interface GridCell {
+export interface Grid2D {
   id: string;
-  block?: {
-    id: string;
-    type: string;
-    content: any;
-    visible: boolean;
-    meta?: any;
-  };
-}
-
-export interface GridRow {
-  id: string;
-  cells: GridCell[];
+  columns: number;
+  rows: number;
   blocks: Array<{
-    id: string;
-    type: string;
-    content: any;
-    visible: boolean;
-    meta?: any;
+    blockId: string;
+    position: GridPosition;
   }>;
-  columns: number;
-}
-
-export interface Grid2DLayout {
-  id: string;
-  rows: GridRow[];
-  columns: number;
-  columnWidths?: number[];
-  grid_rows?: number;
-  gap?: number;
-  rowHeights?: number[];
 }
