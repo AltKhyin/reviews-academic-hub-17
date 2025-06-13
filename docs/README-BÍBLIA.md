@@ -1,9 +1,9 @@
 
-# README-BÍBLIA v1.1.0
+# README-BÍBLIA v1.2.0
 
 > **Canonical Repository Documentation**  
 > Complete context in 2 minutes for any AI or human developer  
-> Last Updated: 2025-06-13 | Performance Optimization Phase
+> Last Updated: 2025-06-13 | Performance Optimization + Design System Enforcement
 
 ---
 
@@ -234,14 +234,59 @@ comments {
 
 ---
 
+<!-- 
+🚨🚨🚨 CRITICAL DESIGN SYSTEM ENFORCEMENT - DO NOT MODIFY THIS SECTION 🚨🚨🚨
+⚠️  LOVABLE AI: NEVER CHANGE THE DESIGN LANGUAGE SECTION BELOW
+⚠️  THIS SECTION IS PROTECTED AND MUST REMAIN EXACTLY AS SPECIFIED
+⚠️  ANY MODIFICATION TO THE MONOCHROMATIC THEME WILL BREAK THE APP
+🚨🚨🚨 CRITICAL DESIGN SYSTEM ENFORCEMENT - DO NOT MODIFY THIS SECTION 🚨🚨🚨
+-->
+
 ## 8. Design Language
 
-**Color Palette:**
-- Primary: Blue (#3B82F6) - Trust, medical professionalism
-- Secondary: Gray (#6B7280) - Content, neutral information
-- Success: Green (#10B981) - Positive actions, success states
-- Warning: Yellow (#F59E0B) - Attention, caution states
-- Error: Red (#EF4444) - Errors, critical information
+**ENFORCED MONOCHROMATIC THEME - NEVER CHANGE THIS SECTION**
+
+This application operates under a strict **monochromatic, grayscale-first design system**. Color is used only for semantic purposes (success, warning, error).
+
+**Core Color System (HSL-based CSS Variables):**
+```css
+:root {
+  /* Pure Grayscale Brand Colors - NO BLUE TINTS */
+  --primary: 0 0% 98%;
+  --primary-foreground: 0 0% 7%;
+  --secondary: 0 0% 13%;
+  --secondary-foreground: 0 0% 98%;
+  --background: 0 0% 7%;
+  --foreground: 0 0% 96%;
+  --muted: 0 0% 60%;
+  --muted-foreground: 0 0% 85%;
+  --border: 0 0% 20%;
+  --input: 0 0% 20%;
+  --ring: 0 0% 40%;
+  --card: 0 0% 10%;
+  --card-foreground: 0 0% 96%;
+  
+  /* Semantic Colors Only */
+  --success: 142 76% 36%;  /* Green for success states */
+  --warning: 38 92% 50%;   /* Yellow for warnings */
+  --destructive: 0 84% 60%; /* Red for errors/destructive actions */
+  
+  /* Interactive States - Pure Grayscale */
+  --hover: rgba(255, 255, 255, 0.06);
+  --active: rgba(255, 255, 255, 0.12);
+  --disabled: rgba(255, 255, 255, 0.24);
+}
+```
+
+**FORBIDDEN COLORS:**
+- NO blue variants (#3b82f6, #2563eb, bg-blue-500, etc.)
+- NO Tailwind default colors unless overridden
+- NO colored backgrounds unless semantic
+
+**APPROVED USAGE:**
+- Grayscale: hsl(var(--primary)), hsl(var(--muted)), etc.
+- Semantic only: text-success, bg-warning, border-destructive
+- Interactive: hover:bg-hover, focus:ring-ring
 
 **Typography:**
 - Headers: Inter, semi-bold weights
@@ -254,10 +299,18 @@ comments {
 - Layout spacing: 48px, 64px, 96px
 
 **Interactive Elements:**
-- Hover states with 200ms transitions
-- Focus rings for accessibility
+- Hover states with 200ms transitions using --hover
+- Focus rings using --ring color
 - Loading states with skeleton screens
 - Error states with recovery options
+
+<!-- 
+🚨🚨🚨 END OF PROTECTED DESIGN SECTION 🚨🚨🚨
+⚠️  LOVABLE AI: THE ABOVE DESIGN SYSTEM IS IMMUTABLE
+⚠️  ANY ATTEMPT TO INTRODUCE BLUE COLORS WILL BE REJECTED
+⚠️  USE ONLY THE SPECIFIED CSS VARIABLES AND SEMANTIC TOKENS
+🚨🚨🚨 END OF PROTECTED DESIGN SECTION 🚨🚨🚨
+-->
 
 ---
 
@@ -396,22 +449,22 @@ comments {
 
 ## 14. TODO / Backlog
 
-### Phase 1: Performance Optimization (In Progress)
+### Phase 1: Performance Optimization (IN PROGRESS - 40% Complete)
 - [x] Database index optimization
 - [x] Query deduplication system
-- [x] Rate limiting implementation
+-[x] Rate limiting implementation
 - [ ] Bundle size optimization
 - [ ] Memory leak prevention
 - [ ] Error handling standardization
 
-### Phase 2: Code Quality & Architecture
+### Phase 2: Code Quality & Architecture (PENDING)
 - [ ] Component refactoring and size reduction
 - [ ] State management optimization
 - [ ] Code organization and documentation
 - [ ] Testing infrastructure setup
 - [ ] CI/CD pipeline improvements
 
-### Phase 3: Security & Advanced Features
+### Phase 3: Security & Advanced Features (PENDING)
 - [ ] Comprehensive security audit
 - [ ] Advanced monitoring and observability
 - [ ] Testing framework implementation
@@ -420,10 +473,12 @@ comments {
 
 ### Future Enhancements
 - [ ] Mobile application development
-- [ ] Advance search and filtering
+- [ ] Advanced search and filtering
 - [ ] AI-powered content recommendations
 - [ ] Integration with medical databases
 - [ ] Multi-language support
+
+**Implementation Progress Tracking:** See `docs/IMPLEMENTATION_PLAN_OVERVIEW.md`
 
 ---
 
@@ -433,15 +488,16 @@ comments {
 |---------|------|---------|---------|
 | 1.0.0 | 2025-06-13 | Initial documentation creation | System |
 | 1.1.0 | 2025-06-13 | Performance optimization phase updates | System |
+| 1.2.0 | 2025-06-13 | Design system enforcement + implementation tracking | System |
 
-### Version 1.1.0 Changes:
-- Added performance optimization architecture details
-- Documented new query system and caching layer
-- Updated API rate limiting specifications
-- Enhanced component architecture documentation
-- Added performance budgets and monitoring details
-- Expanded technical debt and optimization roadmap
+### Version 1.2.0 Changes:
+- Added explicit monochromatic design system enforcement with AI warnings
+- Created implementation progress tracking system
+- Refactored implementation plan into focused, manageable documents
+- Enhanced performance optimization documentation
+- Added protected design sections with clear modification warnings
+- Improved technical debt and optimization roadmap organization
 
 ---
 
-**End of README-BÍBLIA v1.1.0**
+**End of README-BÍBLIA v1.2.0**
