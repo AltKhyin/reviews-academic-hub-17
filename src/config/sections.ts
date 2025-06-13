@@ -1,6 +1,6 @@
 
-// ABOUTME: Centralized section registry for homepage sections - removed recent, recommended, and trending
-// Provides unified configuration for remaining homepage sections with metadata
+// ABOUTME: Centralized section registry for homepage sections with new optimized sections
+// Provides unified configuration for homepage sections with metadata
 
 export interface SectionDefinition {
   id: string;
@@ -33,12 +33,39 @@ export const SECTION_REGISTRY: SectionDefinition[] = [
     adminOnly: false
   },
   {
+    id: 'recent',
+    title: 'Edições Recentes',
+    component: 'OptimizedRecentSection',
+    defaultVisible: true,
+    defaultOrder: 2,
+    description: 'Edições recentes em layout horizontal otimizado',
+    adminOnly: false
+  },
+  {
     id: 'upcoming',
     title: 'Próximas Edições',
     component: 'UpcomingSection',
     defaultVisible: true,
-    defaultOrder: 2,
+    defaultOrder: 3,
     description: 'Próximos lançamentos e cronograma',
+    adminOnly: false
+  },
+  {
+    id: 'recommended',
+    title: 'Recomendados para você',
+    component: 'OptimizedRecommendedSection',
+    defaultVisible: true,
+    defaultOrder: 4,
+    description: 'Edições recomendadas em grid 2x3 otimizado',
+    adminOnly: false
+  },
+  {
+    id: 'trending',
+    title: 'Mais Acessados',
+    component: 'TrendingSection',
+    defaultVisible: false,
+    defaultOrder: 5,
+    description: 'Conteúdo mais acessado (arquivado)',
     adminOnly: false
   }
 ];

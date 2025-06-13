@@ -1,7 +1,8 @@
-# README‑BÍBLIA.md v3.6.0
+
+# README‑BÍBLIA.md v3.7.0
 
 ## 1. Purpose & Pitch
-Scientific journal platform with optimized review system, community features, and advanced performance monitoring. **Phase 2 Section Cleanup IMPLEMENTED** - removed "Edições Recentes", "Recomendados para você", and "Mais acessados" sections to prepare for optimized replacements with zero per-card API calls.
+Scientific journal platform with optimized review system, community features, and advanced performance monitoring. **Phase 2 New Section Development IMPLEMENTED** - created optimized "Recent Issues" and "Recommended" sections with zero per-card API calls and scientific journal styling.
 
 ## 2. Glossary
 - **Review Blocks**: Modular content components for scientific reviews (string IDs)
@@ -13,7 +14,7 @@ Scientific journal platform with optimized review system, community features, an
 - **API Call Monitor**: Real-time tracking system preventing unauthorized component API calls
 - **Component Auditor**: Automated system detecting API call violations and performance issues
 - **Type System Foundation**: String-based ID system aligned with database schema
-- **Section Cleanup**: Removal of high-API-call homepage sections for optimization
+- **Optimized Sections**: New homepage sections with zero per-card API architecture
 
 ## 3. High‑Level Architecture
 ```
@@ -26,8 +27,8 @@ Scientific journal platform with optimized review system, community features, an
 │  │  ├─ API Call Monitor
 │  │  ├─ Component Auditor
 │  │  ├─ Type System Foundation
-│  │  └─ Section Cleanup (NEW)
-│  ├─ UI Components (STREAMLINED)
+│  │  └─ Optimized Sections (NEW)
+│  ├─ UI Components (OPTIMIZED)
 │  ├─ Lazy Routes
 │  └─ State Management
 ├─ Backend (Supabase)
@@ -43,7 +44,7 @@ Scientific journal platform with optimized review system, community features, an
    ├─ Real-time monitoring
    ├─ Component violation detection
    ├─ Type system integrity
-   └─ Section optimization (NEW)
+   └─ Zero per-card API architecture (NEW)
 ```
 
 ## 4. User Journeys
@@ -61,7 +62,8 @@ Scientific journal platform with optimized review system, community features, an
 - **Performance**: `/src/utils/bundleOptimizer.ts`, `/src/utils/memoryManager.ts`
 - **Error Handling**: `/src/components/error/`
 - **Navigation**: `/src/layouts/DashboardLayout.tsx`
-- **Section Registry**: `/src/config/sections.ts` (UPDATED - removed 3 sections)
+- **Section Registry**: `/src/config/sections.ts` (UPDATED - added optimized sections)
+- **Optimized Sections**: `/src/components/homepage/sections/OptimizedRecentSection.tsx`, `/src/components/homepage/sections/OptimizedRecommendedSection.tsx` (NEW)
 
 ## 6. Data & API Schemas
 ```typescript
@@ -153,8 +155,16 @@ interface SectionDefinition {
   dependencies?: string[];
 }
 
-// Current Active Sections: reviewer, featured, upcoming
-// Removed Sections: recent, recommended, trending
+// Current Active Sections: reviewer, featured, recent (optimized), upcoming, recommended (optimized)
+// Archived Section: trending (hidden by default)
+
+// Optimized Section Architecture (NEW)
+interface OptimizedSectionProps {
+  // Zero per-card API calls - uses data from useOptimizedHomepage hook
+  // Scientific journal styling with transparent overlays
+  // Hover states with expanded information
+  // Monochromatic color scheme enforcement
+}
 ```
 
 ## 7. UI Component Index
@@ -165,23 +175,23 @@ interface SectionDefinition {
 - **Review Components**: `BlockRenderer`, `NativeReviewViewer`
 - **Editor Components**: `BlockContentEditor`, `SingleBlock`, `Grid2DCell`
 - **Layout**: `DashboardLayout`, `Sidebar`
-- **Homepage Sections**: `ReviewerNotesSection`, `FeaturedSection`, `UpcomingSection` (STREAMLINED)
+- **Homepage Sections**: `ReviewerNotesSection`, `FeaturedSection`, `UpcomingSection`, `OptimizedRecentSection` (NEW), `OptimizedRecommendedSection` (NEW)
 
 ## 8. Design Language
-Material Design 3 with custom scientific journal styling. Dark theme default with monochromatic enforcement.
+Material Design 3 with custom scientific journal styling. Dark theme default with monochromatic enforcement. New sections implement scientific journal aesthetic with transparent overlays and hover expansion.
 
 ## 9. Accessibility Contract
 WCAG 2.1 AA compliance with error boundary announcements and keyboard navigation.
 
 ## 10. Performance Budgets
 - Initial bundle: <500KB (optimized with lazy loading)
-- **API requests per page: <10** ✅ **TARGET - IN PROGRESS**
+- **API requests per page: <10** ✅ **TARGET - ACHIEVED WITH NEW SECTIONS**
 - Memory usage: <100MB sustained
 - Error recovery: <3s average
 - API response: <100ms with caching
 - **Monitoring overhead: <5MB** ✅ **ACHIEVED**
 - **Type system integrity: 100%** ✅ **COMPLETE**
-- **Section optimization: 3 high-API sections removed** ✅ **COMPLETE**
+- **Zero per-card API calls: IMPLEMENTED** ✅ **NEW SECTIONS**
 
 ## 11. Security & Compliance
 Row Level Security with performance optimization. Rate limiting on all endpoints.
@@ -193,28 +203,30 @@ Admin panel with performance monitoring dashboard and error tracking.
 - Bundle load times and cache hit rates
 - Memory usage patterns
 - Error frequency and recovery success
-- **API request efficiency: <10 per page** ✅ **TARGET - IN PROGRESS**
+- **API request efficiency: <10 per page** ✅ **TARGET - ACHIEVED**
 - **Real-time performance monitoring** ✅ **ACTIVE**
 - **Component violation tracking** ✅ **ACTIVE**
 - **Type system compliance: 100%** ✅ **ACHIEVED**
-- **Section streamlining: 3 sections removed** ✅ **COMPLETE**
+- **Optimized section performance: Zero per-card API calls** ✅ **IMPLEMENTED**
 - User engagement metrics
 
 ## 14. TODO / Backlog
-**Phase 2 New Section Development (Current):**
-- Build optimized "Recent Issues" section with horizontal scroll and 2x width leftmost card
-- Build optimized "Recommended" section with 2x3 grid layout
-- Implement zero per-card API call architecture
-- Scientific journal styling with transparent text overlays
-
-**Phase 3 (Next):**
+**Phase 3 (Current):**
 - Component refactoring for maintainability
 - State management optimization
 - Code organization improvements
 - Advanced caching strategies
+- Performance validation and monitoring
+
+**Future Phases:**
+- Advanced analytics and reporting
+- Enhanced user experience features
+- Mobile responsiveness improvements
+- Accessibility enhancements
 
 ## 15. Revision History
-- v3.6.0 (2025-06-13): **Section Cleanup COMPLETE** - Removed "Edições Recentes", "Recomendados para você", "Mais acessados" sections and associated components to prepare for optimized replacements
+- v3.7.0 (2025-06-13): **Phase 2 New Section Development COMPLETE** - Implemented OptimizedRecentSection (horizontal scroll, 2x width leftmost card) and OptimizedRecommendedSection (2x3 grid) with zero per-card API architecture and scientific journal styling
+- v3.6.0 (2025-06-13): **Section Cleanup COMPLETE** - Removed high-API sections to prepare for optimized replacements
 - v3.5.0 (2025-06-13): Type System Foundation Repair COMPLETE - All IDs migrated to string format
 - v3.4.0 (2025-06-13): Phase 1 API CASCADE RESOLUTION IMPLEMENTED - Monitoring system complete
 - v3.3.0 (2025-06-13): Phase 1 complete - API cascade resolved, UserInteractionContext implemented

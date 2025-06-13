@@ -1,5 +1,5 @@
 
-// ABOUTME: Optimized Dashboard with unified section management - removed recent, recommended, trending sections
+// ABOUTME: Optimized Dashboard with unified section management and new optimized sections
 import React, { useEffect } from 'react';
 import { useParallelDataLoader } from '@/hooks/useParallelDataLoader';
 import { useStableAuth } from '@/hooks/useStableAuth';
@@ -11,6 +11,10 @@ import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { UserInteractionProvider } from '@/contexts/UserInteractionContext';
 import { ComponentAuditor } from '@/utils/componentAudit';
 import { apiCallMonitor } from '@/middleware/ApiCallMiddleware';
+
+// Import new optimized sections
+import { OptimizedRecentSection } from '@/components/homepage/sections/OptimizedRecentSection';
+import { OptimizedRecommendedSection } from '@/components/homepage/sections/OptimizedRecommendedSection';
 
 const Dashboard = () => {
   const { isAuthenticated, isLoading: authLoading } = useStableAuth();
@@ -74,7 +78,7 @@ const Dashboard = () => {
               </p>
               <button 
                 onClick={retryFailed}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-hover"
               >
                 Tentar novamente
               </button>
@@ -104,10 +108,10 @@ const Dashboard = () => {
   // PERFORMANCE FIX: Extract all issue IDs for bulk user interaction loading
   const allIssueIds = issues.map(issue => issue.id);
 
-  // Get enabled sections in order from the unified configuration - only remaining sections
+  // Get enabled sections in order from the unified configuration - including new optimized sections
   const enabledSections = sectionVisibility
     .filter(section => section.visible)
-    .filter(section => ['reviewer', 'featured', 'upcoming'].includes(section.id)) // Only allow remaining sections
+    .filter(section => ['reviewer', 'featured', 'recent', 'upcoming', 'recommended'].includes(section.id))
     .sort((a, b) => a.order - b.order);
 
   console.log('Dashboard: Visible sections from unified config:', enabledSections.map(s => `${s.id} (order: ${s.order})`));
@@ -142,10 +146,24 @@ const Dashboard = () => {
           </DataErrorBoundary>
         );
         
+      case 'recent':
+        return (
+          <DataErrorBoundary key={`recent-${index}`} context="recent issues">
+            <OptimizedRecentSection />
+          </DataErrorBoundary>
+        );
+        
       case 'upcoming':
         return (
           <DataErrorBoundary key={`upcoming-${index}`} context="upcoming releases">
             <UpcomingReleaseCard />
+          </DataErrorBoundary>
+        );
+        
+      case 'recommended':
+        return (
+          <DataErrorBoundary key={`recommended-${index}`} context="recommended issues">
+            <OptimizedRecommendedSection />
           </DataErrorBoundary>
         );
         

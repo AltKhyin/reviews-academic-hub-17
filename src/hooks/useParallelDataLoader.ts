@@ -48,19 +48,19 @@ const convertDbIssueToIssue = (dbIssue: any): Issue => {
   };
 };
 
-// Default sections configuration that matches SECTION_REGISTRY
+// Default sections configuration that matches SECTION_REGISTRY with new optimized sections
 const DEFAULT_SECTIONS: SectionVisibilityConfig[] = [
   { id: 'reviewer', visible: true, order: 0, title: 'Comentários dos Revisores' },
   { id: 'featured', visible: true, order: 1, title: 'Edição em Destaque' },
-  { id: 'upcoming', visible: true, order: 2, title: 'Próximas Edições' },
-  { id: 'recent', visible: true, order: 3, title: 'Edições Recentes' },
-  { id: 'recommended', visible: true, order: 4, title: 'Recomendadas' },
-  { id: 'trending', visible: true, order: 5, title: 'Mais Acessadas' }
+  { id: 'recent', visible: true, order: 2, title: 'Edições Recentes' },
+  { id: 'upcoming', visible: true, order: 3, title: 'Próximas Edições' },
+  { id: 'recommended', visible: true, order: 4, title: 'Recomendados para você' },
+  { id: 'trending', visible: false, order: 5, title: 'Mais Acessados' }
 ];
 
 // Helper to safely create section config from database object
 const createSectionConfigFromObject = (sectionsObj: Record<string, any>): SectionVisibilityConfig[] => {
-  const sectionKeys = ['reviewer', 'featured', 'upcoming', 'recent', 'recommended', 'trending'];
+  const sectionKeys = ['reviewer', 'featured', 'recent', 'upcoming', 'recommended', 'trending'];
   
   return sectionKeys.map((key, defaultOrder) => {
     const sectionData = sectionsObj[key] || {};
@@ -68,9 +68,9 @@ const createSectionConfigFromObject = (sectionsObj: Record<string, any>): Sectio
     
     return {
       id: key,
-      visible: sectionData.visible ?? true,
+      visible: sectionData.visible ?? (defaultSection?.visible ?? true),
       order: sectionData.order ?? defaultOrder,
-      title: defaultSection.title
+      title: defaultSection?.title || key
     };
   }).sort((a, b) => a.order - b.order);
 };
@@ -156,7 +156,7 @@ export const useParallelDataLoader = (): ParallelDataState => {
         }
       }
 
-      console.log('useParallelDataLoader: Using default section visibility');
+      console.log('useParallelDataLoader: Using default section visibility with new optimized sections');
       return DEFAULT_SECTIONS;
     } catch (error) {
       console.error('Error loading section visibility:', error);
