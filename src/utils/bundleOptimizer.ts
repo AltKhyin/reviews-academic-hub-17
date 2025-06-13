@@ -87,27 +87,35 @@ class BundleOptimizer {
 
 // Optimized dynamic imports for large dependencies
 export const optimizedImports = {
-  // Editor components (large bundle) - Fix: import with default export pattern
+  // Editor components (large bundle) - Fixed import pattern
   NativeEditor: () => BundleOptimizer.createLazyComponent(
-    () => import('../components/editor/NativeEditor').then(module => ({ default: module.default || module })),
+    () => import('../components/editor/NativeEditor').then(module => ({ 
+      default: module.default || module.NativeEditor || module 
+    })),
     'NativeEditor'
   ),
   
   // Analytics dashboard (large charts bundle)
   AnalyticsDashboard: () => BundleOptimizer.createLazyComponent(
-    () => import('../components/analytics/EnhancedAnalyticsDashboard').then(module => ({ default: module.default || module })),
+    () => import('../components/analytics/EnhancedAnalyticsDashboard').then(module => ({ 
+      default: module.default || module.EnhancedAnalyticsDashboard || module 
+    })),
     'AnalyticsDashboard'
   ),
   
   // Admin components (rarely accessed)
   AdminPanel: () => BundleOptimizer.createLazyComponent(
-    () => import('../components/admin/IssuesManagementPanel').then(module => ({ default: module.default || module })),
+    () => import('../components/admin/IssuesManagementPanel').then(module => ({ 
+      default: module.default || module.IssuesManagementPanel || module 
+    })),
     'AdminPanel'
   ),
   
   // PDF viewer (heavy dependency)
   PDFViewer: () => BundleOptimizer.createLazyComponent(
-    () => import('../components/pdf/PDFViewer').then(module => ({ default: module.default || module })),
+    () => import('../components/pdf/PDFViewer').then(module => ({ 
+      default: module.default || module.PDFViewer || module 
+    })),
     'PDFViewer'
   ),
 };

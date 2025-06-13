@@ -2,7 +2,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import { queryClient, initializeBackgroundOptimization } from "@/lib/queryClient";
 import Index from "./pages/Index";
 import Dashboard from "./pages/dashboard/Dashboard";
@@ -68,9 +68,7 @@ const App = () => {
             <OptimizedAppProvider>
               <TooltipProvider>
                 <Toaster />
-                <BrowserRouter>
-                  <AppContent />
-                </BrowserRouter>
+                <AppContent />
               </TooltipProvider>
             </OptimizedAppProvider>
           </PerformanceProvider>

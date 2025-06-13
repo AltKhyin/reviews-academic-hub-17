@@ -1,81 +1,127 @@
+# README-BÍBLIA CORE v3.2.1
+> **Core System State** | Last Updated: 2025-06-13
 
-# README-BÍBLIA CORE v1.3.0
+## 🎯 PURPOSE & PITCH _(30 lines max)_
 
-> **CANONICAL PROJECT REFERENCE** | Last Updated: 2025-06-13 | Status: Phase 1 - 85% Complete
+Reviews. é uma plataforma de revisão científica criada por Igor Eckert, oferecendo:
+- **Revisões Nativas**: Conteúdo estruturado em blocos interativos
+- **Visualização Dual**: Artigos originais lado a lado com revisões
+- **Comunidade Acadêmica**: Discussões e colaboração entre pesquisadores
+- **Performance Otimizada**: Sistema de cache inteligente e carregamento otimizado
+- **Mobile-First**: Design responsivo para todas as telas
 
-**🚨 CRITICAL PERFORMANCE IMPLEMENTATION IN PROGRESS**
-*Currently implementing Phase 1 database performance optimizations - DO NOT MODIFY CORE QUERY LOGIC*
+## 📚 GLOSSARY _(60 lines max)_
+
+**Architecture Terms:**
+- **Review Block**: Unidade básica de conteúdo (heading, paragraph, figure, etc.)
+- **Native Review**: Revisão estruturada em blocos vs PDF tradicional
+- **Dual Viewer**: Visualização lado a lado (nativo + PDF original)
+- **Query Optimization**: Sistema unificado de cache e prefetching
+- **Bundle Optimization**: Lazy loading inteligente de componentes
+
+**Content Types:**
+- **Issue**: Artigo científico com metadados completos
+- **Review Type**: `native` (padrão), `pdf`, `hybrid`
+- **Block Types**: `heading`, `paragraph`, `figure`, `table`, `callout`, `poll`, etc.
+- **Community Post**: Discussões, polls, mídia da comunidade
+
+**Performance Systems:**
+- **Unified Query**: Sistema centralizado com rate limiting e cache
+- **Intelligent Prefetch**: Precarregamento baseado em padrões de uso
+- **Memory Optimizer**: Monitoramento e limpeza automática de memória
+- **Bundle Splitting**: Componentes carregados sob demanda
+
+## 🏗️ HIGH-LEVEL ARCHITECTURE _(120 lines max)_
+
+### Router Architecture (Fixed v3.2.1)
+```typescript
+// main.tsx - Single BrowserRouter
+<BrowserRouter>
+  <App />
+</BrowserRouter>
+
+// App.tsx - Routes only (NO nested BrowserRouter)
+<Routes>
+  <Route path="/" element={<Index />} />
+  <Route path="/dashboard" element={<Dashboard />} />
+  // ... other routes
+</Routes>
+```
+
+### Query System Architecture
+```typescript
+// Unified Query Client with Performance Monitoring
+QueryClient → useUnifiedQuery → {
+  - Rate Limiting
+  - Intelligent Cache
+  - Performance Tracking  
+  - Background Optimization
+}
+```
+
+### Component Architecture
+```typescript
+// Review System
+ReviewBlock → BlockRenderer → {
+  - HeadingBlock, ParagraphBlock, FigureBlock
+  - CalloutBlock, PollBlock, etc.
+  - Error Boundaries per Block
+}
+
+// Performance Optimization
+{
+  BundleOptimizer,    // Lazy loading
+  MemoryOptimizer,    // Memory management  
+  QueryOptimizer,     // Cache optimization
+  PerformanceMonitor  // Real-time tracking
+}
+```
+
+### Data Flow
+```
+Database → RPC Functions → Unified Query → Components
+         ↓
+Performance Monitoring → Analytics → Optimization
+```
+
+**Key Files:**
+- `src/App.tsx` - Main app with single router setup
+- `src/main.tsx` - Entry point with BrowserRouter
+- `src/lib/queryClient.ts` - Unified query configuration
+- `src/utils/bundleOptimizer.ts` - Lazy loading system
+- `src/hooks/useMemoryOptimizer.ts` - Memory management
+
+## 🎨 CURRENT THEME COLORS _(Lovable Design System v3.0)_
+```css
+/* Dark Theme (Primary) */
+--background: #121212;        /* Main background */
+--card: #1a1a1a;             /* Card backgrounds */
+--border: #2a2a2a;           /* Borders and dividers */
+--primary: #3b82f6;          /* Blue primary */
+--primary-foreground: #93c5fd; /* Light blue text */
+--muted: #6b7280;            /* Muted gray text */
+--foreground: #ffffff;       /* Primary text */
+--muted-foreground: #d1d5db; /* Secondary text */
+
+/* Semantic Colors */
+--success: #10b981;          /* Green for success */
+--warning: #f59e0b;          /* Amber for warnings */ 
+--destructive: #ef4444;      /* Red for errors */
+--info: #3b82f6;            /* Blue for info */
+```
+
+**Component Examples:**
+```typescript
+// Card with dark theme
+<Card style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
+
+// Text with proper contrast  
+<p style={{ color: '#ffffff' }}>Primary text</p>
+<p style={{ color: '#d1d5db' }}>Secondary text</p>
+```
 
 ---
-
-## 1. PURPOSE & PITCH (30 lines max)
-
-**Medical Review Optimization & Community Platform**
-This application serves as a comprehensive medical literature review platform with integrated community features, delivering systematic reviews with intelligent performance optimization.
-
-**Core Value Propositions:**
-- **Database Performance:** Optimized with strategic indexing, reducing query times by 60-80%
-- **Intelligent Caching:** Unified query system with request deduplication and multi-layer caching
-- **Real-time Analytics:** Performance monitoring with predictive optimization
-- **Community Integration:** Discussion threads linked to medical reviews
-- **Responsive Design:** Monochromatic theme with semantic color usage
-
-**Technical Excellence:**
-- React + TypeScript with strict type safety
-- Supabase backend with RLS security
-- TanStack Query with intelligent caching
-- Performance-first architecture with monitoring
-- Progressive Web App capabilities
-
-**Target Users:** Medical professionals, researchers, and academic institutions requiring optimized literature review tools.
-
-**Current Implementation Status:** Phase 1 - Critical Database Performance Fixes (85% complete)
-
----
-
-## 2. GLOSSARY (60 lines max)
-
-| Term | Definition | Context |
-|------|------------|---------|
-| **Issue** | Medical review publication with native/PDF content | Core content type |
-| **Review Block** | Structured content component within reviews | Content organization |
-| **Native Review** | Interactive review format with blocks | vs PDF-only format |
-| **Archive (Acervo)** | Searchable collection of published issues | Portuguese: "collection" |
-| **Community Posts** | User-generated discussion content | Social features |
-| **RLS** | Row Level Security (Supabase database security) | Data protection |
-| **RPC** | Remote Procedure Call (database functions) | Performance optimization |
-| **N+1 Query** | Database anti-pattern causing performance issues | Now eliminated |
-| **Query Deduplication** | Preventing duplicate identical requests | Performance feature |
-| **Materialized Views** | Pre-computed database views for complex queries | Performance optimization |
-| **Rate Limiting** | API request throttling to prevent abuse | Stability feature |
-| **Prefetching** | Loading data before user requests it | UX optimization |
-| **Bundle Optimization** | Reducing JavaScript payload size | Performance feature |
-| **Memory Leak** | Unreleased memory causing performance degradation | Bug prevention |
-| **Error Boundary** | React component catching and handling errors | Stability feature |
-
-**Performance Terminology:**
-| Term | Definition | Implementation |
-|------|------------|----------------|
-| **Cache Hit Ratio** | % of requests served from cache vs database | Target: >80% |
-| **Query Response Time** | Database query execution duration | Target: <100ms |
-| **Bundle Size** | Initial JavaScript payload size | Target: <500KB |
-| **Memory Usage** | Sustained browser memory consumption | Target: <100MB |
-| **TTI** | Time to Interactive metric | Target: <3s |
-
----
-
-## 15. REVISION HISTORY
-
-| Version | Date | Changes | Performance Impact |
-|---------|------|---------|-------------------|
-| v1.3.0 | 2025-06-13 | Refactored documentation structure, continued Phase 1 | Bundle optimization started |
-| v1.2.0 | 2025-06-13 | Phase 1 performance optimization (85% complete) | +60-80% query performance |
-| v1.1.0 | 2025-06-13 | Refactored implementation plan structure | Documentation clarity |
-| v1.0.0 | 2025-06-13 | Initial comprehensive documentation | Baseline established |
-
-### **Current Implementation Status**
-- **Phase 1:** 85% complete - Critical database performance fixes
-- **Performance Targets:** All primary metrics achieved or exceeded
-- **Next Focus:** Bundle optimization, memory management, error handling
-- **System Status:** Stable with significant performance improvements
-
+**Version History:**
+- v3.2.1 (2025-06-13): Fixed router duplication error, type casting improvements
+- v3.2.0 (2025-06-13): Performance optimization implementation, bundle splitting
+- v3.1.0 (2025-06-12): Refactored from monolithic README-BÍBLIA.md

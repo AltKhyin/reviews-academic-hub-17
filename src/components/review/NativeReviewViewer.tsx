@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { FileText, Clock, Users, TrendingUp, Eye, ArrowLeft, AlertTriangle } from 'lucide-react';
-import { EnhancedIssue } from '@/types/review';
+import { EnhancedIssue, ReviewBlock, BlockType } from '@/types/review';
 import { useNativeReview } from '@/hooks/useNativeReview';
 import { BlockRenderer } from './BlockRenderer';
 import { ViewModeSwitcher } from '../article/ViewModeSwitcher';
@@ -191,6 +191,15 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
 
   const { blocks } = reviewData;
 
+  // Transform blocks to proper ReviewBlock format with type casting
+  const reviewBlocks: ReviewBlock[] = blocks.map(block => ({
+    id: block.id,
+    type: block.type as BlockType,
+    content: block.content,
+    sort_index: block.sort_index,
+    visible: block.visible
+  }));
+
   return (
     <div 
       className={cn("native-review-viewer", className)}
@@ -293,8 +302,8 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {viewMode === 'native' && (
           <div className="native-content space-y-6">
-            {blocks.length > 0 ? (
-              blocks.map((block) => (
+            {reviewBlocks.length > 0 ? (
+              reviewBlocks.map((block) => (
                 <BlockRenderer
                   key={block.id}
                   block={block}
@@ -353,8 +362,8 @@ export const NativeReviewViewer: React.FC<NativeReviewViewerProps> = ({
                 Revisão Estruturada
               </h3>
               <div className="space-y-4 max-h-[80vh] overflow-y-auto pr-4">
-                {blocks.length > 0 ? (
-                  blocks.map((block) => (
+                {reviewBlocks.length > 0 ? (
+                  reviewBlocks.map((block) => (
                     <BlockRenderer
                       key={block.id}
                       block={block}
