@@ -1,223 +1,196 @@
 
 // ABOUTME: Intelligent prefetching system based on user behavior patterns
 import { useState, useEffect, useCallback } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 
-interface NavigationPattern {
+interface BehaviorPattern {
   fromRoute: string;
   toRoute: string;
-  frequency: number;
-  lastVisited: Date;
+  count: number;
+  confidence: number;
+  lastSeen: Date;
 }
 
 interface PrefetchRule {
-  currentRoute: string;
-  prefetchRoute: string;
+  route: string;
+  prefetchTargets: string[];
   confidence: number;
-  queryKey: string[];
-  queryFn: () => Promise<any>;
-}
-
-interface BehaviorPattern {
-  routeSequence: string[];
-  frequency: number;
-  avgTimeSpent: number;
+  enabled: boolean;
 }
 
 export const useIntelligentPrefetch = () => {
   const location = useLocation();
   const queryClient = useQueryClient();
   
-  const [navigationPatterns, setNavigationPatterns] = useState<NavigationPattern[]>([]);
   const [behaviorPatterns, setBehaviorPatterns] = useState<BehaviorPattern[]>([]);
   const [prefetchRules, setPrefetchRules] = useState<PrefetchRule[]>([]);
   const [currentConfidence, setCurrentConfidence] = useState(0);
-  
-  const [visitHistory, setVisitHistory] = useState<{route: string; timestamp: Date}[]>([]);
-  const [routeStartTime, setRouteStartTime] = useState<Date>(new Date());
 
-  // Track route changes and build patterns
+  // Load patterns from localStorage
   useEffect(() => {
-    const currentRoute = location.pathname;
-    const now = new Date();
+    const storedPatterns = localStorage.getItem('user_behavior_patterns');
+    const storedRules = localStorage.getItem('prefetch_rules');
     
-    // Calculate time spent on previous route
-    if (visitHistory.length > 0) {
-      const timeSpent = now.getTime() - routeStartTime.getTime();
-      
-      // Update behavior patterns
-      setBehaviorPatterns(prev => {
-        const sequence = visitHistory.slice(-2).map(v => v.route).concat(currentRoute);
-        const existing = prev.find(p => 
-          JSON.stringify(p.routeSequence) === JSON.stringify(sequence)
-        );
-        
-        if (existing) {
-          return prev.map(p => 
-            p === existing 
-              ? { ...p, frequency: p.frequency + 1, avgTimeSpent: (p.avgTimeSpent + timeSpent) / 2 }
-              : p
-          );
-        } else {
-          return [...prev, {
-            routeSequence: sequence,
-            frequency: 1,
-            avgTimeSpent: timeSpent,
-          }];
-        }
-      });
+    if (storedPatterns) {
+      try {
+        setBehaviorPatterns(JSON.parse(storedPatterns));
+      } catch (error) {
+        console.warn('Failed to parse behavior patterns:', error);
+      }
     }
-
-    // Add to visit history
-    setVisitHistory(prev => [
-      ...prev.slice(-9), // Keep last 10 visits
-      { route: currentRoute, timestamp: now }
-    ]);
     
-    setRouteStartTime(now);
-  }, [location.pathname, visitHistory, routeStartTime]);
+    if (storedRules) {
+      try {
+        setPrefetchRules(JSON.parse(storedRules));
+      } catch (error) {
+        console.warn('Failed to parse prefetch rules:', error);
+      }
+    }
+  }, []);
 
-  // Generate prefetch rules based on patterns
+  // Record navigation pattern
+  const recordNavigation = useCallback((fromRoute: string, toRoute: string) => {
+    setBehaviorPatterns(prev => {
+      const existingPattern = prev.find(p => p.fromRoute === fromRoute && p.toRoute === toRoute);
+      
+      if (existingPattern) {
+        const updated = prev.map(p => 
+          p === existingPattern 
+            ? { 
+                ...p, 
+                count: p.count + 1, 
+                lastSeen: new Date(),
+                confidence: Math.min(1, (p.count + 1) / 10) // Max confidence after 10 visits
+              }
+            : p
+        );
+        localStorage.setItem('user_behavior_patterns', JSON.stringify(updated));
+        return updated;
+      } else {
+        const newPattern: BehaviorPattern = {
+          fromRoute,
+          toRoute,
+          count: 1,
+          confidence: 0.1,
+          lastSeen: new Date(),
+        };
+        const updated = [...prev, newPattern];
+        localStorage.setItem('user_behavior_patterns', JSON.stringify(updated));
+        return updated;
+      }
+    });
+  }, []);
+
+  // Generate prefetch rules from patterns
   const generatePrefetchRules = useCallback(() => {
     const rules: PrefetchRule[] = [];
     
-    // Rule 1: Archive -> Review prefetching
-    if (location.pathname === '/acervo') {
-      rules.push({
-        currentRoute: '/acervo',
-        prefetchRoute: '/review/*',
-        confidence: 0.8,
-        queryKey: ['sidebar-stats'],
-        queryFn: async () => {
-          const { data } = await supabase.rpc('get_sidebar_stats');
-          return data;
-        },
-      });
-    }
+    // Group patterns by fromRoute
+    const patternGroups = behaviorPatterns.reduce((acc, pattern) => {
+      if (!acc[pattern.fromRoute]) acc[pattern.fromRoute] = [];
+      acc[pattern.fromRoute].push(pattern);
+      return acc;
+    }, {} as Record<string, BehaviorPattern[]>);
 
-    // Rule 2: Homepage -> Archive prefetching
-    if (location.pathname === '/') {
-      const archivePattern = navigationPatterns.find(p => 
-        p.fromRoute === '/' && p.toRoute === '/acervo'
-      );
-      
-      if (archivePattern && archivePattern.frequency > 2) {
+    Object.entries(patternGroups).forEach(([route, patterns]) => {
+      const highConfidenceTargets = patterns
+        .filter(p => p.confidence > 0.3)
+        .sort((a, b) => b.confidence - a.confidence)
+        .slice(0, 3) // Max 3 prefetch targets per route
+        .map(p => p.toRoute);
+
+      if (highConfidenceTargets.length > 0) {
+        const avgConfidence = patterns.reduce((sum, p) => sum + p.confidence, 0) / patterns.length;
+        
         rules.push({
-          currentRoute: '/',
-          prefetchRoute: '/acervo',
-          confidence: Math.min(archivePattern.frequency / 10, 0.9),
-          queryKey: ['archive-metadata'],
-          queryFn: async () => {
-            const { data } = await supabase.rpc('get_archive_metadata');
-            return data;
-          },
+          route,
+          prefetchTargets: highConfidenceTargets,
+          confidence: avgConfidence,
+          enabled: avgConfidence > 0.4,
         });
-      }
-    }
-
-    // Rule 3: Based on behavior patterns
-    behaviorPatterns.forEach(pattern => {
-      if (pattern.frequency > 3 && pattern.routeSequence.length >= 2) {
-        const currentIdx = pattern.routeSequence.findIndex(route => route === location.pathname);
-        if (currentIdx >= 0 && currentIdx < pattern.routeSequence.length - 1) {
-          const nextRoute = pattern.routeSequence[currentIdx + 1];
-          const confidence = Math.min(pattern.frequency / 20, 0.85);
-          
-          rules.push({
-            currentRoute: location.pathname,
-            prefetchRoute: nextRoute,
-            confidence,
-            queryKey: ['prefetch', nextRoute],
-            queryFn: () => Promise.resolve({}), // Placeholder
-          });
-        }
       }
     });
 
     setPrefetchRules(rules);
-    
-    // Set confidence for next route prediction
-    const highestConfidence = Math.max(...rules.map(r => r.confidence), 0);
-    setCurrentConfidence(highestConfidence);
-    
-  }, [location.pathname, navigationPatterns, behaviorPatterns]);
+    localStorage.setItem('prefetch_rules', JSON.stringify(rules));
+  }, [behaviorPatterns]);
 
-  // Execute prefetching based on rules
-  const executePrefetch = useCallback(async () => {
-    const applicableRules = prefetchRules.filter(rule => 
-      rule.currentRoute === location.pathname && rule.confidence > 0.5
-    );
-
-    if (applicableRules.length === 0) return;
-
-    console.log(`🚀 Executing ${applicableRules.length} prefetch rules for ${location.pathname}`);
-
-    await Promise.allSettled(
-      applicableRules.map(async rule => {
-        try {
-          await queryClient.prefetchQuery({
-            queryKey: rule.queryKey,
-            queryFn: rule.queryFn,
-            staleTime: 5 * 60 * 1000, // 5 minutes
-          });
-          
-          console.log(`✅ Prefetched ${rule.queryKey.join('/')} (confidence: ${rule.confidence.toFixed(2)})`);
-        } catch (error) {
-          console.warn(`⚠️ Prefetch failed for ${rule.queryKey.join('/')}:`, error);
-        }
-      })
-    );
-  }, [prefetchRules, location.pathname, queryClient]);
-
-  // Update navigation patterns
-  useEffect(() => {
-    if (visitHistory.length >= 2) {
-      const [previous, current] = visitHistory.slice(-2);
+  // Prefetch data for route
+  const prefetchForRoute = useCallback(async (route: string) => {
+    try {
+      if (route === '/acervo' || route.startsWith('/acervo')) {
+        // Prefetch archive data
+        queryClient.prefetchQuery({
+          queryKey: ['archive', 'metadata'],
+          queryFn: async () => {
+            // This would call the archive metadata function
+            return { specialties: [], years: [], total_published: 0 };
+          },
+          staleTime: 10 * 60 * 1000,
+        });
+      }
       
-      setNavigationPatterns(prev => {
-        const existing = prev.find(p => 
-          p.fromRoute === previous.route && p.toRoute === current.route
-        );
-        
-        if (existing) {
-          return prev.map(p => 
-            p === existing 
-              ? { ...p, frequency: p.frequency + 1, lastVisited: current.timestamp }
-              : p
-          );
-        } else {
-          return [...prev, {
-            fromRoute: previous.route,
-            toRoute: current.route,
-            frequency: 1,
-            lastVisited: current.timestamp,
-          }];
-        }
-      });
+      if (route === '/' || route === '/home') {
+        // Prefetch homepage data
+        queryClient.prefetchQuery({
+          queryKey: ['issues', 'featured'],
+          queryFn: async () => {
+            // This would call the featured issue function
+            return null;
+          },
+          staleTime: 5 * 60 * 1000,
+        });
+      }
+    } catch (error) {
+      console.warn('Prefetch failed for route:', route, error);
     }
-  }, [visitHistory]);
+  }, [queryClient]);
+
+  // Execute prefetching based on current route
+  useEffect(() => {
+    const currentRule = prefetchRules.find(rule => 
+      rule.route === location.pathname && rule.enabled
+    );
+    
+    if (currentRule) {
+      setCurrentConfidence(currentRule.confidence);
+      
+      // Prefetch targets with delay to avoid blocking main thread
+      setTimeout(() => {
+        currentRule.prefetchTargets.forEach(target => {
+          prefetchForRoute(target);
+        });
+      }, 500);
+    } else {
+      setCurrentConfidence(0);
+    }
+  }, [location.pathname, prefetchRules, prefetchForRoute]);
 
   // Generate rules when patterns change
   useEffect(() => {
-    generatePrefetchRules();
-  }, [generatePrefetchRules]);
-
-  // Execute prefetch when rules change
-  useEffect(() => {
-    if (prefetchRules.length > 0) {
-      // Small delay to avoid blocking the main thread
-      const timer = setTimeout(executePrefetch, 1000);
-      return () => clearTimeout(timer);
+    if (behaviorPatterns.length > 0) {
+      generatePrefetchRules();
     }
-  }, [prefetchRules, executePrefetch]);
+  }, [behaviorPatterns, generatePrefetchRules]);
+
+  // Track route changes
+  useEffect(() => {
+    const previousRoute = sessionStorage.getItem('previous_route');
+    const currentRoute = location.pathname;
+
+    if (previousRoute && previousRoute !== currentRoute) {
+      recordNavigation(previousRoute, currentRoute);
+    }
+
+    sessionStorage.setItem('previous_route', currentRoute);
+  }, [location.pathname, recordNavigation]);
 
   return {
-    navigationPatterns,
     behaviorPatterns,
     prefetchRules,
     currentConfidence,
-    visitHistory,
+    recordNavigation,
+    prefetchForRoute,
   };
 };

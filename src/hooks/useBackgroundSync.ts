@@ -1,77 +1,100 @@
 
-// ABOUTME: Background synchronization hook for prefetching and cache management
-import { useCallback, useEffect, useRef } from 'react';
+// ABOUTME: Background synchronization system for critical data prefetching
+import { useEffect, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
-interface BackgroundSyncConfig {
-  enablePrefetch: boolean;
-  enablePeriodicSync: boolean;
-  enableVisibilitySync: boolean;
-  prefetchCriticalData: boolean;
+interface BackgroundSyncOptions {
+  enablePrefetch?: boolean;
+  enablePeriodicSync?: boolean;
+  enableVisibilitySync?: boolean;
+  prefetchCriticalData?: boolean;
 }
 
-export const useBackgroundSync = (config: BackgroundSyncConfig) => {
+export const useBackgroundSync = (options: BackgroundSyncOptions = {}) => {
   const queryClient = useQueryClient();
-  const intervalRef = useRef<NodeJS.Timeout>();
-  const isEnabled = config.enablePrefetch || config.enablePeriodicSync;
+  const {
+    enablePrefetch = true,
+    enablePeriodicSync = true,
+    enableVisibilitySync = true,
+    prefetchCriticalData = true,
+  } = options;
 
-  const triggerSync = useCallback(async () => {
-    if (!isEnabled) return;
+  // Prefetch critical data on idle
+  const prefetchCritical = useCallback(async () => {
+    if (!prefetchCriticalData) return;
 
-    try {
-      // Prefetch critical queries
-      if (config.prefetchCriticalData) {
-        await Promise.allSettled([
-          queryClient.prefetchQuery({
-            queryKey: ['sidebar', 'stats'],
-            staleTime: 15 * 60 * 1000,
-          }),
-          queryClient.prefetchQuery({
-            queryKey: ['issues', 'featured'],
-            staleTime: 15 * 60 * 1000,
-          }),
-        ]);
-      }
+    // Prefetch sidebar stats (frequently accessed)
+    queryClient.prefetchQuery({
+      queryKey: ['sidebar', 'stats'],
+      queryFn: async () => {
+        const { data, error } = await supabase.rpc('get_sidebar_stats');
+        if (error) throw error;
+        return data;
+      },
+      staleTime: 10 * 60 * 1000, // 10 minutes
+    });
 
-      console.log('🔄 Background sync completed');
-    } catch (error) {
-      console.warn('Background sync failed:', error);
-    }
-  }, [isEnabled, config.prefetchCriticalData, queryClient]);
+    // Prefetch featured issue (homepage critical)
+    queryClient.prefetchQuery({
+      queryKey: ['issues', 'featured'],
+      queryFn: async () => {
+        const { data, error } = await supabase.rpc('get_featured_issue');
+        if (error) throw error;
+        return data;
+      },
+      staleTime: 15 * 60 * 1000, // 15 minutes
+    });
+  }, [queryClient, prefetchCriticalData]);
 
-  // Set up periodic sync
+  // Periodic sync for critical data
   useEffect(() => {
-    if (!config.enablePeriodicSync) return;
+    if (!enablePeriodicSync) return;
 
-    intervalRef.current = setInterval(() => {
-      triggerSync();
-    }, 5 * 60 * 1000); // 5 minutes
+    const interval = setInterval(() => {
+      // Invalidate critical queries every 5 minutes
+      queryClient.invalidateQueries({ 
+        queryKey: ['sidebar', 'stats'],
+        refetchType: 'none' // Don't refetch immediately, just mark as stale
+      });
+    }, 5 * 60 * 1000);
 
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [config.enablePeriodicSync, triggerSync]);
+    return () => clearInterval(interval);
+  }, [queryClient, enablePeriodicSync]);
 
-  // Set up visibility change sync
+  // Visibility change sync
   useEffect(() => {
-    if (!config.enableVisibilitySync) return;
+    if (!enableVisibilitySync) return;
 
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        triggerSync();
+        // User returned to tab, prefetch critical data
+        prefetchCritical();
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [config.enableVisibilitySync, triggerSync]);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [enableVisibilitySync, prefetchCritical]);
+
+  // Initial prefetch on mount
+  useEffect(() => {
+    if (enablePrefetch) {
+      // Use requestIdleCallback if available, otherwise setTimeout
+      if ('requestIdleCallback' in window) {
+        (window as any).requestIdleCallback(prefetchCritical);
+      } else {
+        setTimeout(prefetchCritical, 100);
+      }
+    }
+  }, [enablePrefetch, prefetchCritical]);
+
+  const triggerSync = useCallback(() => {
+    prefetchCritical();
+  }, [prefetchCritical]);
 
   return {
     triggerSync,
-    isEnabled,
+    isEnabled: enablePrefetch || enablePeriodicSync || enableVisibilitySync,
   };
 };
