@@ -1,20 +1,17 @@
 
-// ABOUTME: Optimized Dashboard with unified section management and new optimized sections
+// ABOUTME: Optimized Dashboard with unified section management and centralized user interactions
 import React, { useEffect } from 'react';
 import { useParallelDataLoader } from '@/hooks/useParallelDataLoader';
 import { useStableAuth } from '@/hooks/useStableAuth';
 import { DataErrorBoundary } from '@/components/error/DataErrorBoundary';
 import { ReviewerCommentsDisplay } from '@/components/dashboard/ReviewerCommentsDisplay';
 import { HeroSection } from '@/components/dashboard/HeroSection';
+import ArticleRow from '@/components/dashboard/ArticleRow';
 import { UpcomingReleaseCard } from '@/components/dashboard/UpcomingReleaseCard';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { UserInteractionProvider } from '@/contexts/UserInteractionContext';
 import { ComponentAuditor } from '@/utils/componentAudit';
 import { apiCallMonitor } from '@/middleware/ApiCallMiddleware';
-
-// Import new optimized sections
-import { OptimizedRecentSection } from '@/components/homepage/sections/OptimizedRecentSection';
-import { OptimizedRecommendedSection } from '@/components/homepage/sections/OptimizedRecommendedSection';
 
 const Dashboard = () => {
   const { isAuthenticated, isLoading: authLoading } = useStableAuth();
@@ -78,7 +75,7 @@ const Dashboard = () => {
               </p>
               <button 
                 onClick={retryFailed}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-hover"
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
               >
                 Tentar novamente
               </button>
@@ -108,10 +105,28 @@ const Dashboard = () => {
   // PERFORMANCE FIX: Extract all issue IDs for bulk user interaction loading
   const allIssueIds = issues.map(issue => issue.id);
 
-  // Get enabled sections in order from the unified configuration - including new optimized sections
+  // Filter out featured issue from other sections to avoid duplication
+  const nonFeaturedIssues = featuredIssue 
+    ? issues.filter(issue => issue.id !== featuredIssue.id)
+    : issues;
+  
+  // Organize issues by type for different sections
+  const recentIssues = nonFeaturedIssues
+    .filter(issue => issue.published)
+    .slice(0, 10);
+    
+  const recommendedIssues = nonFeaturedIssues
+    .filter(issue => issue.published)
+    .slice(0, 10);
+    
+  const trendingIssues = nonFeaturedIssues
+    .filter(issue => issue.published)
+    .sort((a, b) => (b.score || 0) - (a.score || 0))
+    .slice(0, 10);
+
+  // Get enabled sections in order from the unified configuration
   const enabledSections = sectionVisibility
-    .filter(section => section.visible)
-    .filter(section => ['reviewer', 'featured', 'recent', 'upcoming', 'recommended'].includes(section.id))
+    .filter(section => section.visible) 
     .sort((a, b) => a.order - b.order);
 
   console.log('Dashboard: Visible sections from unified config:', enabledSections.map(s => `${s.id} (order: ${s.order})`));
@@ -146,13 +161,6 @@ const Dashboard = () => {
           </DataErrorBoundary>
         );
         
-      case 'recent':
-        return (
-          <DataErrorBoundary key={`recent-${index}`} context="recent issues">
-            <OptimizedRecentSection />
-          </DataErrorBoundary>
-        );
-        
       case 'upcoming':
         return (
           <DataErrorBoundary key={`upcoming-${index}`} context="upcoming releases">
@@ -160,10 +168,36 @@ const Dashboard = () => {
           </DataErrorBoundary>
         );
         
+      case 'recent':
+        if (recentIssues.length === 0) {
+          console.log('Dashboard: No recent issues available');
+          return null;
+        }
+        return (
+          <DataErrorBoundary key={`recent-${index}`} context="recent issues">
+            <ArticleRow title="Edições Recentes" articles={recentIssues} />
+          </DataErrorBoundary>
+        );
+        
       case 'recommended':
+        if (recommendedIssues.length === 0) {
+          console.log('Dashboard: No recommended issues available');
+          return null;
+        }
         return (
           <DataErrorBoundary key={`recommended-${index}`} context="recommended issues">
-            <OptimizedRecommendedSection />
+            <ArticleRow title="Recomendados para você" articles={recommendedIssues} />
+          </DataErrorBoundary>
+        );
+        
+      case 'trending':
+        if (trendingIssues.length === 0) {
+          console.log('Dashboard: No trending issues available');
+          return null;
+        }
+        return (
+          <DataErrorBoundary key={`trending-${index}`} context="trending issues">
+            <ArticleRow title="Mais acessados" articles={trendingIssues} />
           </DataErrorBoundary>
         );
         

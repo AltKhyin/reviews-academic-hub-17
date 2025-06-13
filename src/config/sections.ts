@@ -1,6 +1,6 @@
 
-// ABOUTME: Centralized section registry for homepage sections with new optimized sections
-// Provides unified configuration for homepage sections with metadata
+// ABOUTME: Centralized section registry for homepage sections
+// Provides unified configuration for all homepage sections with metadata
 
 export interface SectionDefinition {
   id: string;
@@ -33,39 +33,39 @@ export const SECTION_REGISTRY: SectionDefinition[] = [
     adminOnly: false
   },
   {
-    id: 'recent',
-    title: 'Edições Recentes',
-    component: 'OptimizedRecentSection',
-    defaultVisible: true,
-    defaultOrder: 2,
-    description: 'Edições recentes em layout horizontal otimizado',
-    adminOnly: false
-  },
-  {
     id: 'upcoming',
     title: 'Próximas Edições',
     component: 'UpcomingSection',
     defaultVisible: true,
-    defaultOrder: 3,
+    defaultOrder: 2,
     description: 'Próximos lançamentos e cronograma',
     adminOnly: false
   },
   {
+    id: 'recent',
+    title: 'Edições Recentes',
+    component: 'RecentSection',
+    defaultVisible: true,
+    defaultOrder: 3,
+    description: 'Artigos publicados recentemente',
+    adminOnly: false
+  },
+  {
     id: 'recommended',
-    title: 'Recomendados para você',
-    component: 'OptimizedRecommendedSection',
+    title: 'Recomendadas',
+    component: 'RecommendedSection',
     defaultVisible: true,
     defaultOrder: 4,
-    description: 'Edições recomendadas em grid 2x3 otimizado',
+    description: 'Conteúdo recomendado baseado em preferências',
     adminOnly: false
   },
   {
     id: 'trending',
-    title: 'Mais Acessados',
+    title: 'Mais Acessadas',
     component: 'TrendingSection',
-    defaultVisible: false,
+    defaultVisible: true,
     defaultOrder: 5,
-    description: 'Conteúdo mais acessado (arquivado)',
+    description: 'Conteúdo mais popular e visualizado',
     adminOnly: false
   }
 ];

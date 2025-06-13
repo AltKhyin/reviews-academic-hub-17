@@ -1,5 +1,5 @@
 
-// ABOUTME: Enhanced section factory with comprehensive error handling and new optimized components
+// ABOUTME: Enhanced section factory with comprehensive error handling and all components
 import React, { Suspense, memo } from 'react';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { SECTION_REGISTRY, getSectionById } from '@/config/sections';
@@ -30,19 +30,27 @@ const UpcomingSection = React.lazy(() =>
     })
 );
 
-const OptimizedRecentSection = React.lazy(() => 
-  import('./sections/OptimizedRecentSection').then(module => ({ default: module.OptimizedRecentSection }))
+const RecentSection = React.lazy(() => 
+  import('./sections/RecentSection').then(module => ({ default: module.RecentSection }))
     .catch(error => {
-      console.error('Failed to load OptimizedRecentSection:', error);
+      console.error('Failed to load RecentSection:', error);
       return { default: () => <div>Error loading recent section</div> };
     })
 );
 
-const OptimizedRecommendedSection = React.lazy(() => 
-  import('./sections/OptimizedRecommendedSection').then(module => ({ default: module.OptimizedRecommendedSection }))
+const RecommendedSection = React.lazy(() => 
+  import('./sections/RecommendedSection').then(module => ({ default: module.RecommendedSection }))
     .catch(error => {
-      console.error('Failed to load OptimizedRecommendedSection:', error);
+      console.error('Failed to load RecommendedSection:', error);
       return { default: () => <div>Error loading recommended section</div> };
+    })
+);
+
+const TrendingSection = React.lazy(() => 
+  import('./sections/TrendingSection').then(module => ({ default: module.TrendingSection }))
+    .catch(error => {
+      console.error('Failed to load TrendingSection:', error);
+      return { default: () => <div>Error loading trending section</div> };
     })
 );
 
@@ -55,13 +63,14 @@ interface SectionFactoryProps {
   };
 }
 
-// Component mapping using unified registry with new optimized sections
+// Component mapping using unified registry
 const SECTION_COMPONENTS = {
   ReviewerNotesSection,
   FeaturedSection,
   UpcomingSection,
-  OptimizedRecentSection,
-  OptimizedRecommendedSection,
+  RecentSection,
+  RecommendedSection,
+  TrendingSection,
 } as const;
 
 // Enhanced loading skeleton component
