@@ -74,30 +74,38 @@ class BundleOptimizer {
     };
   }
 
-  // Optimized imports for heavy components
+  // Optimized imports for heavy components - Fixed to handle named exports properly
   static getOptimizedImports() {
     return {
-      // Editor components (heavy) - Fixed default export handling
+      // Editor components (heavy) - Handle named exports properly
       NativeEditor: this.createLazyComponent(
-        () => import('@/components/editor/NativeEditor').then(m => ({ default: m.NativeEditor || m.default || m })),
+        () => import('@/components/editor/NativeEditor').then(m => ({ 
+          default: (m as any).NativeEditor || m 
+        })),
         'native-editor'
       ),
       
-      // Analytics dashboard (heavy) - Fixed default export handling
+      // Analytics dashboard (heavy) - Handle named exports properly
       EnhancedAnalyticsDashboard: this.createLazyComponent(
-        () => import('@/components/analytics/EnhancedAnalyticsDashboard').then(m => ({ default: m.EnhancedAnalyticsDashboard || m.default || m })),
+        () => import('@/components/analytics/EnhancedAnalyticsDashboard').then(m => ({ 
+          default: (m as any).EnhancedAnalyticsDashboard || m 
+        })),
         'analytics-dashboard'
       ),
       
-      // Admin panels (heavy) - Fixed default export handling
+      // Admin panels (heavy) - Handle named exports properly
       IssuesManagementPanel: this.createLazyComponent(
-        () => import('@/components/admin/IssuesManagementPanel').then(m => ({ default: m.IssuesManagementPanel || m.default || m })),
+        () => import('@/components/admin/IssuesManagementPanel').then(m => ({ 
+          default: (m as any).IssuesManagementPanel || m 
+        })),
         'issues-management'
       ),
       
-      // PDF viewer (heavy) - Fixed default export handling
+      // PDF viewer (heavy) - Handle named exports properly
       PDFViewer: this.createLazyComponent(
-        () => import('@/components/pdf/PDFViewer').then(m => ({ default: m.PDFViewer || m.default || m })),
+        () => import('@/components/pdf/PDFViewer').then(m => ({ 
+          default: (m as any).PDFViewer || m 
+        })),
         'pdf-viewer'
       )
     };

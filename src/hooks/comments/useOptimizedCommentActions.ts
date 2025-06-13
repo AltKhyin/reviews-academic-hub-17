@@ -1,3 +1,4 @@
+
 // ABOUTME: Optimized comment actions with batch operations and request deduplication
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -124,8 +125,8 @@ export const useOptimizedCommentActions = (entityType: EntityType, entityId: str
     createComment: createCommentMutation.mutateAsync,
     updateComment: updateCommentMutation.mutateAsync,
     deleteComment: deleteCommentMutation.mutateAsync,
-    isCreating: createCommentMutation.isLoading,
-    isUpdating: updateCommentMutation.isLoading,
-    isDeleting: deleteCommentMutation.isLoading,
+    isCreating: createCommentMutation.isPending,
+    isUpdating: updateCommentMutation.isPending,
+    isDeleting: deleteCommentMutation.isPending,
   };
 };

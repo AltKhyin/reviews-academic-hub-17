@@ -1,39 +1,125 @@
 
-# README‑BÍBLIA PERFORMANCE v3.3.0
+# README-BÍBLIA_PERFORMANCE.md v1.2.0
 
-## 8. Design Language
-Material Design 3 with custom scientific journal styling. Dark theme default.
+> **Performance & Optimization Module**  
+> Comprehensive performance analysis and optimization documentation  
+> Part of the modular README-BÍBLIA system
 
-## 9. Accessibility Contract
-WCAG 2.1 AA compliance with error boundary announcements and keyboard navigation.
+---
 
-## 10. Performance Budgets
-- Initial bundle: <500KB (optimized with lazy loading)
-- Memory usage: <100MB sustained
-- Error recovery: <3s average
-- API response: <100ms with caching
-- **API requests per page load: <10** (CRITICAL - currently failing)
+## 📊 PERFORMANCE BUDGETS
 
-## 11. Security & Compliance
-Row Level Security with performance optimization. Rate limiting on all endpoints.
+### Bundle Size Targets
+- **Initial Bundle**: <500KB gzipped
+- **Lazy Chunks**: <100KB each
+- **Critical Path**: <50KB
+- **Font Loading**: <20KB WOFF2
 
-## 12. Admin & Ops
-Admin panel with performance monitoring dashboard and error tracking.
+### Runtime Performance
+- **First Contentful Paint**: <1.5s
+- **Largest Contentful Paint**: <2.5s
+- **Time to Interactive**: <3.5s
+- **Cumulative Layout Shift**: <0.1
 
-## 13. Analytics & KPIs
-- Bundle load times and cache hit rates
-- Memory usage patterns
-- Error frequency and recovery success
-- User engagement metrics
-- **API request frequency monitoring** (NEW)
+### API Performance
+- **Response Time**: <200ms (avg)
+- **Rate Limiting**: 5 req/30s per endpoint
+- **Cascade Detection**: Auto-block after 5 rapid requests
+- **Database Queries**: <50ms (avg)
 
-## 14. TODO / Backlog
-**CRITICAL Priority:**
-- Fix API request cascade on page load (hundreds of requests)
-- Implement proper query batching
-- Validate rate limiting effectiveness
+---
 
-**Phase 2 (Next):**
-- Component refactoring for maintainability
-- State management optimization
-- Advanced caching strategies
+## 🚀 OPTIMIZATION STRATEGIES
+
+### Code Splitting
+```typescript
+// Bundle optimizer with analytics
+BundleOptimizer.createLazyComponent(
+  () => import('./HeavyComponent'),
+  'heavy-component'
+);
+```
+
+### Request Batching
+```typescript
+// Prevent cascade with batching
+const { batchRequest } = useRequestBatcher();
+await batchRequest('issues', id, batchFn);
+```
+
+### Query Optimization
+```typescript
+// Unified query with deduplication
+useUnifiedQuery(['key'], queryFn, {
+  staleTime: 5 * 60 * 1000,
+  gcTime: 15 * 60 * 1000
+});
+```
+
+---
+
+## 📈 MONITORING SYSTEMS
+
+### Performance Profiler
+- **Measurement Tracking**: All critical operations
+- **Bundle Analytics**: Load times, cache hits
+- **Error Boundaries**: Component-level isolation
+- **Memory Management**: Automatic cleanup
+
+### Rate Limiting
+- **Cascade Detection**: Automatic protection
+- **Global State**: Cross-component coordination
+- **Recovery Mechanisms**: Auto-cooldown timers
+- **Toast Notifications**: User feedback
+
+### Background Optimization
+- **Cache Cleanup**: Periodic stale data removal
+- **Prefetch Strategy**: Idle-time resource loading
+- **Memory Monitoring**: Leak detection and cleanup
+
+---
+
+## 🔧 CURRENT OPTIMIZATIONS
+
+### Phase 1 Completed (v1.2.0)
+- ✅ API request cascade prevention
+- ✅ Enhanced rate limiting with cascade detection
+- ✅ Request batching and deduplication
+- ✅ Bundle size optimization with lazy loading
+- ✅ Memory leak fixes and cleanup
+- ✅ Error boundary implementation
+- ✅ Performance monitoring system
+
+### Phase 2 In Progress
+- 🔄 Component refactoring for better maintainability
+- 🔄 State management optimization
+- 🔄 Code organization improvements
+- 🔄 Advanced caching strategies
+
+---
+
+## 📋 PERFORMANCE CHECKLIST
+
+### Development
+- [ ] Bundle analysis before deployment
+- [ ] Performance profiling on major changes
+- [ ] Rate limit testing for all endpoints
+- [ ] Memory leak detection
+- [ ] Error boundary coverage
+
+### Production
+- [ ] Real User Monitoring (RUM) active
+- [ ] CDN optimization configured
+- [ ] Database query optimization
+- [ ] Cache hit rate monitoring
+- [ ] Background job efficiency
+
+---
+
+**Last Updated**: 2025-06-13  
+**Next Review**: Phase 2 completion  
+**Maintained By**: Performance Team  
+
+---
+
+*This performance module is part of the modular README-BÍBLIA system. For core system information, see README-BÍBLIA_CORE.md*

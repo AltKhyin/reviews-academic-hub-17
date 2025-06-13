@@ -1,3 +1,4 @@
+
 // ABOUTME: Enhanced block renderer with error boundaries and comprehensive block type coverage
 // Handles all block types with consistent error handling and spacing system integration
 
@@ -45,7 +46,7 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
     ...block,
     // Handle both 'content' and 'payload' properties from database
     content: block.content || (block as any).payload || {},
-    id: typeof block.id === 'string' ? block.id : block.id.toString() // Ensure string ID
+    id: block.id // ID is now consistently string type
   };
 
   // Get vertical alignment from block metadata
@@ -72,14 +73,14 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   // Handle interaction events
   const handleInteraction = (interactionType: string, data?: any) => {
     if (onInteraction) {
-      onInteraction(normalizedBlock.id.toString(), interactionType, data);
+      onInteraction(normalizedBlock.id, interactionType, data);
     }
   };
 
   // Handle section view tracking
   const handleSectionView = () => {
     if (onSectionView) {
-      onSectionView(normalizedBlock.id.toString());
+      onSectionView(normalizedBlock.id);
     }
   };
 

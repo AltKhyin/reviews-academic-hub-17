@@ -43,29 +43,25 @@ const Index = () => {
     }
     
     const filtered = sectionVisibility
-      .filter((section): section is SectionVisibilityItem => {
+      .filter((section: any): section is SectionVisibilityItem => {
         if (!section || typeof section !== 'object') {
           console.warn('Index: Invalid section object:', section);
           return false;
         }
         
-        // Safe type casting with validation
-        const typedSection = section as any;
-        if (!typedSection.id || typeof typedSection.id !== 'string') {
+        // Safe type validation without type predicate issues
+        if (!section.id || typeof section.id !== 'string') {
           console.warn('Index: Section missing or invalid id:', section);
           return false;
         }
-        return typedSection.visible === true;
+        return section.visible === true;
       })
-      .map((section): SectionVisibilityItem => {
-        const typedSection = section as any;
-        return {
-          id: typedSection.id,
-          visible: typedSection.visible,
-          order: typeof typedSection.order === 'number' ? typedSection.order : 0,
-          title: typeof typedSection.title === 'string' ? typedSection.title : undefined,
-        };
-      })
+      .map((section: any): SectionVisibilityItem => ({
+        id: section.id,
+        visible: section.visible,
+        order: typeof section.order === 'number' ? section.order : 0,
+        title: typeof section.title === 'string' ? section.title : undefined,
+      }))
       .sort((a, b) => (a.order || 0) - (b.order || 0));
     
     console.log('Index: Processed visible sections:', filtered);
@@ -161,7 +157,7 @@ const Index = () => {
   if (!hasContent && sectionConfigs.length === 0) {
     console.warn('Index: No content and no section configs. State:', {
       issues: homepageData?.issues?.length,
-      sectionVisibility: homepageData?.sectionVisibility?.length,
+      sectionVisibility: Array.isArray(homepageData?.sectionVisibility) ? homepageData.sectionVisibility.length : 'not array',
       visibleSections: visibleSections?.length,
       sectionConfigs: sectionConfigs?.length
     });

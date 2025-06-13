@@ -1,70 +1,41 @@
 
-// ABOUTME: Optimized comments system with intelligent caching and minimal refetches
-import { useUnifiedQuery } from '@/hooks/useUnifiedQuery';
-import { Comment, EntityType } from '@/types/commentTypes';
+// ABOUTME: Unified comment management with optimized data fetching and comprehensive interface
 import { useOptimizedCommentActions } from './useOptimizedCommentActions';
 import { useOptimizedCommentVoting } from './useOptimizedCommentVoting';
-import { fetchCommentsData, appendUserVotesToComments } from '@/utils/commentFetch';
-import { organizeCommentsInTree } from '@/utils/commentOrganize';
+import { useCommentFetch } from './useCommentFetch';
+import { EntityType } from '@/types/commentTypes';
 
-export const useOptimizedComments = (entityId: string, entityType: EntityType = 'issue') => {
-  // Main comments query with intelligent caching
-  const { 
-    data: comments = [], 
-    isLoading, 
-    error,
-    refetch
-  } = useUnifiedQuery<Comment[]>(
-    ['comments', entityType, entityId],
-    async () => {
-      console.log(`Fetching comments for ${entityType} with ID: ${entityId}`);
-      const { comments: fetchedComments, userVotes } = await fetchCommentsData(entityId, entityType);
-      
-      const commentsWithVotes = appendUserVotesToComments(fetchedComments, userVotes);
-      return organizeCommentsInTree(commentsWithVotes);
-    },
-    {
-      priority: 'normal',
-      staleTime: 5 * 60 * 1000, // 5 minutes - comments don't change that often
-      enableMonitoring: false, // Reduce console noise
-      rateLimit: {
-        endpoint: 'comments',
-        maxRequests: 20,
-        windowMs: 60000,
-      },
-    }
-  );
+export const useOptimizedComments = (entityType: EntityType, entityId: string) => {
+  const commentFetch = useCommentFetch(entityType, entityId);
+  const commentActions = useOptimizedCommentActions(entityType, entityId);
+  const commentVoting = useOptimizedCommentVoting();
 
-  // Create a wrapper function that matches the expected signature
-  const refetchComments = async () => {
-    await refetch();
+  // Create unified interface with proper method names
+  const addComment = async (content: string, userId: string) => {
+    return commentActions.createComment({ content, userId });
   };
 
-  // Optimized comment actions that use local state management
-  const { 
-    addComment, 
-    replyToComment, 
-    deleteComment,
-    isAddingComment, 
-    isDeletingComment,
-    isReplying
-  } = useOptimizedCommentActions(entityId, entityType, refetchComments);
-
-  // Optimized voting that doesn't trigger full refetches
-  const { voteComment, isVoting } = useOptimizedCommentVoting(entityType, entityId);
+  const replyToComment = async (content: string, parentId: string, userId: string) => {
+    return commentActions.createComment({ content, parentId, userId });
+  };
 
   return {
-    comments,
-    isLoading,
-    error,
-    refetch: refetchComments,
+    // Data
+    ...commentFetch,
+    
+    // Actions with unified naming
     addComment,
     replyToComment,
-    deleteComment,
-    voteComment,
-    isAddingComment,
-    isDeletingComment,
-    isReplying,
-    isVoting
+    updateComment: commentActions.updateComment,
+    deleteComment: commentActions.deleteComment,
+    
+    // Voting
+    ...commentVoting,
+    
+    // Loading states with unified naming
+    isAddingComment: commentActions.isCreating,
+    isDeletingComment: commentActions.isDeleting,
+    isReplying: commentActions.isCreating,
+    isUpdating: commentActions.isUpdating,
   };
 };
