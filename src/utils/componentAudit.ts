@@ -1,3 +1,4 @@
+
 // ABOUTME: Component auditing utilities for performance monitoring and code quality
 // Tracks component violations and performance issues
 
@@ -19,6 +20,36 @@ class ComponentAuditor {
   private static violations: ComponentViolation[] = [];
   private static performanceIssues: PerformanceIssue[] = [];
   private static maxViolations = 500; // Prevent memory bloat
+
+  // Add the missing auditComponent method
+  static auditComponent(
+    componentName: string, 
+    hasCleanup: boolean = true, 
+    hasOptimization: boolean = true
+  ): void {
+    // Basic component auditing
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`🔍 Auditing component: ${componentName}`);
+      
+      // Check for cleanup patterns
+      if (!hasCleanup) {
+        this.recordViolation(
+          componentName,
+          'Component may be missing cleanup logic in useEffect',
+          'medium'
+        );
+      }
+      
+      // Check for optimization patterns
+      if (!hasOptimization) {
+        this.recordViolation(
+          componentName,
+          'Component may benefit from React.memo or useMemo optimization',
+          'low'
+        );
+      }
+    }
+  }
 
   static recordViolation(
     componentName: string, 
