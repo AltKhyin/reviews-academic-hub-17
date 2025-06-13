@@ -1,3 +1,4 @@
+
 // ABOUTME: Block palette component for adding new blocks to the editor
 // Provides categorized block types with visual previews and drag-and-drop support
 
@@ -7,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { BlockType } from '@/types/review';
 import { 
   Type, 
   AlignLeft, 
@@ -28,7 +28,7 @@ import {
 import { cn } from '@/lib/utils';
 
 interface BlockPaletteProps {
-  onBlockAdd: (type: BlockType, position?: number) => string;
+  onBlockAdd: (type: string, position?: number) => void;
 }
 
 export const BlockPalette: React.FC<BlockPaletteProps> = ({ onBlockAdd }) => {
@@ -39,28 +39,28 @@ export const BlockPalette: React.FC<BlockPaletteProps> = ({ onBlockAdd }) => {
       name: 'Texto',
       blocks: [
         {
-          type: 'heading' as BlockType,
+          type: 'heading',
           icon: Type,
           label: 'Título',
           description: 'Cabeçalhos H1-H6',
           color: '#3b82f6'
         },
         {
-          type: 'paragraph' as BlockType,
+          type: 'paragraph',
           icon: AlignLeft,
           label: 'Parágrafo',
           description: 'Texto formatado',
           color: '#6b7280'
         },
         {
-          type: 'quote' as BlockType,
+          type: 'quote',
           icon: Quote,
           label: 'Citação',
           description: 'Bloco de citação',
           color: '#8b5cf6'
         },
         {
-          type: 'divider' as BlockType,
+          type: 'divider',
           icon: Minus,
           label: 'Divisor',
           description: 'Linha de separação',
@@ -72,14 +72,14 @@ export const BlockPalette: React.FC<BlockPaletteProps> = ({ onBlockAdd }) => {
       name: 'Mídia',
       blocks: [
         {
-          type: 'figure' as BlockType,
+          type: 'figure',
           icon: Image,
           label: 'Figura',
           description: 'Imagem com legenda',
           color: '#10b981'
         },
         {
-          type: 'diagram' as BlockType,
+          type: 'diagram',
           icon: Grid3X3,
           label: 'Diagrama',
           description: 'Fluxogramas e diagramas científicos',
@@ -91,21 +91,21 @@ export const BlockPalette: React.FC<BlockPaletteProps> = ({ onBlockAdd }) => {
       name: 'Dados',
       blocks: [
         {
-          type: 'table' as BlockType,
+          type: 'table',
           icon: Table,
           label: 'Tabela',
           description: 'Dados tabulares',
           color: '#ef4444'
         },
         {
-          type: 'number_card' as BlockType,
+          type: 'number_card',
           icon: Hash,
           label: 'Card Numérico',
           description: 'Métricas destacadas',
           color: '#06b6d4'
         },
         {
-          type: 'snapshot_card' as BlockType,
+          type: 'snapshot_card',
           icon: BarChart3,
           label: 'Card de Evidência',
           description: 'Resumo de estudos',
@@ -117,21 +117,21 @@ export const BlockPalette: React.FC<BlockPaletteProps> = ({ onBlockAdd }) => {
       name: 'Interação',
       blocks: [
         {
-          type: 'callout' as BlockType,
+          type: 'callout',
           icon: MessageSquare,
           label: 'Callout',
           description: 'Destaque informativo',
           color: '#f59e0b'
         },
         {
-          type: 'poll' as BlockType,
+          type: 'poll',
           icon: Vote,
           label: 'Enquete',
           description: 'Votação interativa',
           color: '#10b981'
         },
         {
-          type: 'reviewer_quote' as BlockType,
+          type: 'reviewer_quote',
           icon: Star,
           label: 'Avaliação',
           description: 'Comentário de revisor',
@@ -143,7 +143,7 @@ export const BlockPalette: React.FC<BlockPaletteProps> = ({ onBlockAdd }) => {
       name: 'Referências',
       blocks: [
         {
-          type: 'citation_list' as BlockType,
+          type: 'citation_list',
           icon: FileText,
           label: 'Bibliografia',
           description: 'Lista de referências',

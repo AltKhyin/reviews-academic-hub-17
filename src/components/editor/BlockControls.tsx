@@ -16,18 +16,18 @@ import {
 import { cn } from '@/lib/utils';
 
 interface BlockControlsProps {
-  blockId: string; // Changed from number to string
+  blockId: number;
   isVisible: boolean;
   isActive: boolean;
   isFirst: boolean;
   isLast: boolean;
   editMode: boolean;
   isDragging: boolean;
-  onMove: (blockId: string, direction: 'up' | 'down') => void; // Changed parameter type
+  onMove: (blockId: number, direction: 'up' | 'down') => void;
   onToggleVisibility: () => void;
   onToggleEditMode: () => void;
-  onDuplicate?: (blockId: string) => void; // Changed parameter type
-  onDelete: (blockId: string) => void; // Changed parameter type
+  onDuplicate?: (blockId: number) => void;
+  onDelete: (blockId: number) => void;
 }
 
 export const BlockControls: React.FC<BlockControlsProps> = ({
@@ -130,7 +130,7 @@ export const BlockControls: React.FC<BlockControlsProps> = ({
             className="text-xs px-1.5 py-0.5 rounded font-medium"
             style={{ backgroundColor: '#3b82f6', color: '#ffffff' }}
           >
-            {blockId.substring(0, 8)} {/* Show first 8 chars of string ID */}
+            #{blockId}
           </div>
         </div>
 

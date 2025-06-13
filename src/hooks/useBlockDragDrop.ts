@@ -1,8 +1,8 @@
 
-// ABOUTME: Hook for handling block drag and drop operations - UPDATED: String IDs
-// Manages drag state and provides handlers for block reordering
+// ABOUTME: Drag and drop functionality for block reordering
+// Provides comprehensive drag-and-drop state management and operations
 
-import { useState, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 
 interface DragState {
   draggedIndex: number | null;
@@ -10,37 +10,50 @@ interface DragState {
   isDragging: boolean;
 }
 
-export const useBlockDragDrop = (onMoveBlock: (blockId: string, direction: 'up' | 'down') => void) => {
+export const useBlockDragDrop = (onMoveBlock: (blockId: number, direction: 'up' | 'down') => void) => {
   const [dragState, setDragState] = useState<DragState>({
     draggedIndex: null,
     draggedOver: null,
     isDragging: false
   });
+  
+  const dragItemRef = useRef<number | null>(null);
+  const dragOverItemRef = useRef<number | null>(null);
 
   const handleDragStart = useCallback((e: React.DragEvent, index: number) => {
-    setDragState({
+    dragItemRef.current = index;
+    setDragState(prev => ({
+      ...prev,
       draggedIndex: index,
-      draggedOver: null,
       isDragging: true
-    });
+    }));
     
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', index.toString());
+    e.dataTransfer.setData('text/html', e.currentTarget.outerHTML);
+    
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.opacity = '0.5';
+    }
   }, []);
 
   const handleDragEnd = useCallback((e: React.DragEvent, blocks: any[]) => {
-    const draggedIndex = dragState.draggedIndex;
-    const draggedOver = dragState.draggedOver;
+    if (e.currentTarget instanceof HTMLElement) {
+      e.currentTarget.style.opacity = '1';
+    }
     
-    if (draggedIndex !== null && draggedOver !== null && draggedIndex !== draggedOver) {
-      const draggedBlock = blocks[draggedIndex];
-      if (draggedBlock) {
-        const direction = draggedOver > draggedIndex ? 'down' : 'up';
-        const steps = Math.abs(draggedOver - draggedIndex);
-        
-        // Move block step by step to reach target position
-        for (let i = 0; i < steps; i++) {
-          onMoveBlock(draggedBlock.id, direction);
+    if (dragItemRef.current !== null && dragOverItemRef.current !== null && 
+        dragItemRef.current !== dragOverItemRef.current) {
+      
+      const fromIndex = dragItemRef.current;
+      const toIndex = dragOverItemRef.current;
+      
+      if (fromIndex < toIndex) {
+        for (let i = fromIndex; i < toIndex; i++) {
+          onMoveBlock(blocks[fromIndex].id, 'down');
+        }
+      } else {
+        for (let i = fromIndex; i > toIndex; i--) {
+          onMoveBlock(blocks[fromIndex].id, 'up');
         }
       }
     }
@@ -50,7 +63,9 @@ export const useBlockDragDrop = (onMoveBlock: (blockId: string, direction: 'up' 
       draggedOver: null,
       isDragging: false
     });
-  }, [dragState.draggedIndex, dragState.draggedOver, onMoveBlock]);
+    dragItemRef.current = null;
+    dragOverItemRef.current = null;
+  }, [onMoveBlock]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -59,6 +74,7 @@ export const useBlockDragDrop = (onMoveBlock: (blockId: string, direction: 'up' 
 
   const handleDragEnter = useCallback((e: React.DragEvent, index: number) => {
     e.preventDefault();
+    dragOverItemRef.current = index;
     setDragState(prev => ({
       ...prev,
       draggedOver: index

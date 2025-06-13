@@ -6,7 +6,7 @@ import React from 'react';
 
 interface EditorStatusBarProps {
   blockCount: number;
-  activeBlockId: string | null; // Changed from number to string
+  activeBlockId: number | null;
 }
 
 export const EditorStatusBar: React.FC<EditorStatusBarProps> = ({
@@ -20,7 +20,7 @@ export const EditorStatusBar: React.FC<EditorStatusBarProps> = ({
     >
       <div className="flex items-center gap-4">
         <span>{blockCount} blocos</span>
-        <span>Bloco ativo: {activeBlockId ? `${activeBlockId.substring(0, 8)}...` : 'Nenhum'}</span>
+        <span>Bloco ativo: {activeBlockId ? `#${activeBlockId}` : 'Nenhum'}</span>
       </div>
       
       <div className="flex items-center gap-4">

@@ -1,213 +1,213 @@
 
-// ABOUTME: Enhanced dashboard with proper error handling and data validation
-// Main dashboard page with comprehensive null safety
-
+// ABOUTME: Optimized Dashboard with unified section management - no UI changes
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { Issue } from '@/types/issue';
-import { useSharedData } from '@/contexts/SharedDataProvider';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Plus, BookOpen, Users, TrendingUp } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useParallelDataLoader } from '@/hooks/useParallelDataLoader';
+import { useStableAuth } from '@/hooks/useStableAuth';
+import { DataErrorBoundary } from '@/components/error/DataErrorBoundary';
+import { ReviewerCommentsDisplay } from '@/components/dashboard/ReviewerCommentsDisplay';
+import { HeroSection } from '@/components/dashboard/HeroSection';
+import ArticleRow from '@/components/dashboard/ArticleRow';
+import { UpcomingReleaseCard } from '@/components/dashboard/UpcomingReleaseCard';
+import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 
 const Dashboard = () => {
-  const { sectionVisibility, isLoading: sharedDataLoading } = useSharedData();
+  const { isAuthenticated, isLoading: authLoading } = useStableAuth();
+  const { 
+    issues, 
+    sectionVisibility, 
+    featuredIssue, 
+    isLoading: dataLoading, 
+    errors,
+    retryFailed 
+  } = useParallelDataLoader();
 
-  // Fetch recent issues with proper error handling
-  const { data: issues = [], isLoading, error } = useQuery({
-    queryKey: ['dashboard-issues'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('issues')
-        .select('*')
-        .eq('published', true)
-        .order('created_at', { ascending: false })
-        .limit(10);
-      
-      if (error) throw error;
-      return (data || []) as Issue[];
-    },
-    retry: 3,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
+  console.log('Dashboard: Rendering with', issues?.length || 0, 'issues');
+  console.log('Dashboard: Section visibility config:', sectionVisibility);
 
-  // Fetch stats with error handling
-  const { data: stats } = useQuery({
-    queryKey: ['dashboard-stats'],
-    queryFn: async () => {
-      const [issuesCount, usersCount] = await Promise.all([
-        supabase.from('issues').select('id', { count: 'exact', head: true }),
-        supabase.from('profiles').select('id', { count: 'exact', head: true })
-      ]);
+  // Show skeleton only while essential data is loading
+  const isInitialLoading = authLoading || (dataLoading && issues.length === 0);
 
-      return {
-        totalIssues: issuesCount.count || 0,
-        totalUsers: usersCount.count || 0,
-        publishedIssues: issues?.length || 0
-      };
-    },
-    enabled: !!issues, // Only run after issues are loaded
-  });
-
-  if (sharedDataLoading || isLoading) {
+  if (isInitialLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando dashboard...</p>
+      <div className="w-full min-h-screen" style={{ backgroundColor: '#121212' }}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <DashboardSkeleton />
         </div>
       </div>
     );
   }
 
-  if (error) {
+  // Show error state if critical data failed to load
+  if (Object.keys(errors).length > 0 && issues.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <p className="text-red-600 mb-2">Erro ao carregar dashboard</p>
-          <p className="text-gray-600 text-sm">Tente recarregar a página</p>
+      <DataErrorBoundary context="dashboard data" onRetry={retryFailed}>
+        <div className="w-full min-h-screen" style={{ backgroundColor: '#121212' }}>
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="text-center py-16">
+              <h2 className="text-2xl font-bold mb-4 text-white">Erro ao carregar conteúdo</h2>
+              <p className="text-gray-400 mb-4">
+                Não foi possível carregar os dados do dashboard.
+              </p>
+              <button 
+                onClick={retryFailed}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Tentar novamente
+              </button>
+            </div>
+          </div>
+        </div>
+      </DataErrorBoundary>
+    );
+  }
+
+  // Show empty state if no content available
+  if (issues.length === 0) {
+    return (
+      <div className="w-full min-h-screen" style={{ backgroundColor: '#121212' }}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="text-center py-16">
+            <h2 className="text-2xl font-bold mb-4 text-white">Nenhum conteúdo disponível</h2>
+            <p className="text-gray-400">
+              Aguarde novos conteúdos serem publicados.
+            </p>
+          </div>
         </div>
       </div>
     );
   }
 
-  // Safe array operations with fallbacks
-  const safeIssues = Array.isArray(issues) ? issues : [];
-  const featuredIssues = safeIssues.filter(issue => issue.featured) || [];
-  const recentIssues = safeIssues.slice(0, 5) || [];
+  // Filter out featured issue from other sections to avoid duplication
+  const nonFeaturedIssues = featuredIssue 
+    ? issues.filter(issue => issue.id !== featuredIssue.id)
+    : issues;
+  
+  // Organize issues by type for different sections
+  const recentIssues = nonFeaturedIssues
+    .filter(issue => issue.published)
+    .slice(0, 10);
+    
+  const recommendedIssues = nonFeaturedIssues
+    .filter(issue => issue.published)
+    .slice(0, 10);
+    
+  const trendingIssues = nonFeaturedIssues
+    .filter(issue => issue.published)
+    .sort((a, b) => (b.score || 0) - (a.score || 0))
+    .slice(0, 10);
+
+  // Get enabled sections in order from the unified configuration
+  const enabledSections = sectionVisibility
+    .filter(section => section.visible) 
+    .sort((a, b) => a.order - b.order);
+
+  console.log('Dashboard: Visible sections from unified config:', enabledSections.map(s => `${s.id} (order: ${s.order})`));
+  console.log('Dashboard: Featured issue:', featuredIssue?.id);
+
+  const renderSection = (sectionConfig: any, index: number) => {
+    const sectionId = sectionConfig.id;
+    const nextSection = enabledSections[index + 1];
+    const isFollowedByFeatured = nextSection?.id === 'featured';
+    
+    console.log(`Dashboard: Rendering section ${sectionId}`);
+    
+    switch (sectionId) {
+      case 'reviewer':
+        return (
+          <DataErrorBoundary key={`reviewer-${index}`} context="reviewer comments">
+            <div className={isFollowedByFeatured ? 'mb-4' : ''}>
+              <ReviewerCommentsDisplay />
+            </div>
+          </DataErrorBoundary>
+        );
+        
+      case 'featured':
+        if (!featuredIssue) {
+          console.log('Dashboard: No featured issue available for featured section');
+          return null;
+        }
+        return (
+          <DataErrorBoundary key={`featured-${featuredIssue.id}-${index}`} context="featured issue">
+            <HeroSection featuredIssue={featuredIssue} />
+          </DataErrorBoundary>
+        );
+        
+      case 'upcoming':
+        return (
+          <DataErrorBoundary key={`upcoming-${index}`} context="upcoming releases">
+            <UpcomingReleaseCard />
+          </DataErrorBoundary>
+        );
+        
+      case 'recent':
+        if (recentIssues.length === 0) {
+          console.log('Dashboard: No recent issues available');
+          return null;
+        }
+        return (
+          <DataErrorBoundary key={`recent-${index}`} context="recent issues">
+            <ArticleRow title="Edições Recentes" articles={recentIssues} />
+          </DataErrorBoundary>
+        );
+        
+      case 'recommended':
+        if (recommendedIssues.length === 0) {
+          console.log('Dashboard: No recommended issues available');
+          return null;
+        }
+        return (
+          <DataErrorBoundary key={`recommended-${index}`} context="recommended issues">
+            <ArticleRow title="Recomendados para você" articles={recommendedIssues} />
+          </DataErrorBoundary>
+        );
+        
+      case 'trending':
+        if (trendingIssues.length === 0) {
+          console.log('Dashboard: No trending issues available');
+          return null;
+        }
+        return (
+          <DataErrorBoundary key={`trending-${index}`} context="trending issues">
+            <ArticleRow title="Mais acessados" articles={trendingIssues} />
+          </DataErrorBoundary>
+        );
+        
+      default:
+        console.warn(`Dashboard: Unknown section ID: ${sectionId}`);
+        return (
+          <div key={`unknown-${sectionId}-${index}`} className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 mb-4">
+            <p className="text-red-400">
+              Seção desconhecida: {sectionId}. Verifique a configuração.
+            </p>
+          </div>
+        );
+    }
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-1">Gerencie suas revisões e conteúdo</p>
-        </div>
-        <Link to="/dashboard/issues/new">
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
-            Nova Revisão
-          </Button>
-        </Link>
-      </div>
-
-      {/* Stats Cards */}
-      {sectionVisibility?.stats !== false && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total de Revisões</CardTitle>
-              <BookOpen className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.totalIssues || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                {stats?.publishedIssues || 0} publicadas
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Usuários</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats?.totalUsers || 0}</div>
-              <p className="text-xs text-muted-foreground">
-                usuários registrados
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Engajamento</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">+12%</div>
-              <p className="text-xs text-muted-foreground">
-                vs. mês anterior
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Featured Issues */}
-      {sectionVisibility?.featured !== false && featuredIssues.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Revisões em Destaque</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {featuredIssues.map((issue) => (
-                <div key={issue.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex-1">
-                    <h3 className="font-medium">{issue.title}</h3>
-                    <p className="text-sm text-gray-600 mt-1">{issue.specialty}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary">Destaque</Badge>
-                    <Link to={`/issues/${issue.id}`}>
-                      <Button variant="outline" size="sm">Ver</Button>
-                    </Link>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Recent Issues */}
-      {sectionVisibility?.recent !== false && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Revisões Recentes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {recentIssues.length > 0 ? (
-              <div className="space-y-4">
-                {recentIssues.map((issue) => (
-                  <div key={issue.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex-1">
-                      <h3 className="font-medium">{issue.title}</h3>
-                      <p className="text-sm text-gray-600 mt-1">{issue.specialty}</p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {new Date(issue.created_at).toLocaleDateString('pt-BR')}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {issue.published && <Badge variant="default">Publicado</Badge>}
-                      <Link to={`/dashboard/issues/${issue.id}`}>
-                        <Button variant="outline" size="sm">Editar</Button>
-                      </Link>
-                    </div>
-                  </div>
-                ))}
+    <DataErrorBoundary context="dashboard" onRetry={retryFailed}>
+      <div className="w-full min-h-screen" style={{ backgroundColor: '#121212' }}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="space-y-8">
+            {enabledSections.length === 0 ? (
+              <div className="text-center py-16">
+                <h2 className="text-2xl font-bold mb-4 text-white">Nenhuma seção configurada</h2>
+                <p className="text-gray-400">
+                  Configure as seções da página inicial no painel administrativo.
+                </p>
               </div>
             ) : (
-              <div className="text-center py-8">
-                <p className="text-gray-600 mb-4">Nenhuma revisão encontrada</p>
-                <Link to="/dashboard/issues/new">
-                  <Button>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Criar Primeira Revisão
-                  </Button>
-                </Link>
-              </div>
+              enabledSections.map((section, index) => {
+                const sectionElement = renderSection(section, index);
+                // Only render if we have a valid element
+                if (!sectionElement) return null;
+                return sectionElement;
+              })
             )}
-          </CardContent>
-        </Card>
-      )}
-    </div>
+          </div>
+        </div>
+      </div>
+    </DataErrorBoundary>
   );
 };
 

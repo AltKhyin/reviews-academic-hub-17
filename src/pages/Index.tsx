@@ -39,11 +39,7 @@ const Index = () => {
     
     if (!Array.isArray(sectionVisibility)) {
       console.warn('Index: sectionVisibility is not an array:', typeof sectionVisibility, sectionVisibility);
-      // Return default sections if no config is found to prevent empty page
-      return [
-        { id: 'featured', visible: true, order: 0, title: 'Destaque' },
-        { id: 'recent', visible: true, order: 1, title: 'Recentes' }
-      ];
+      return [];
     }
     
     const filtered = sectionVisibility
@@ -69,15 +65,6 @@ const Index = () => {
       .sort((a, b) => (a.order || 0) - (b.order || 0));
     
     console.log('Index: Processed visible sections:', filtered);
-    
-    // If no visible sections, return default ones
-    if (filtered.length === 0) {
-      return [
-        { id: 'featured', visible: true, order: 0, title: 'Destaque' },
-        { id: 'recent', visible: true, order: 1, title: 'Recentes' }
-      ];
-    }
-    
     return filtered;
   }, [homepageData?.sectionVisibility]);
 
@@ -166,20 +153,72 @@ const Index = () => {
     );
   }
 
+  // Enhanced no content state with better debugging
+  if (!hasContent && sectionConfigs.length === 0) {
+    console.warn('Index: No content and no section configs. State:', {
+      issues: homepageData?.issues?.length,
+      sectionVisibility: Array.isArray(homepageData?.sectionVisibility) ? homepageData.sectionVisibility.length : 'not array',
+      visibleSections: visibleSections?.length,
+      sectionConfigs: sectionConfigs?.length
+    });
+    
+    return (
+      <div className="min-h-screen bg-gray-100">
+        <div className="max-w-7xl mx-auto px-4 py-16">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-4">Página inicial em configuração</h2>
+            <p className="text-gray-600 mb-4">
+              O conteúdo da página inicial está sendo configurado.
+            </p>
+            <button 
+              onClick={() => refetch()}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            >
+              Recarregar
+            </button>
+            {process.env.NODE_ENV === 'development' && (
+              <div className="mt-4 p-4 bg-gray-800 text-white text-xs rounded text-left">
+                <p>Debug Info:</p>
+                <p>Issues: {homepageData?.issues?.length || 0}</p>
+                <p>Section Visibility: {Array.isArray(homepageData?.sectionVisibility) ? homepageData.sectionVisibility.length : 'not array'}</p>
+                <p>Visible Sections: {visibleSections?.length || 0}</p>
+                <p>Section Configs: {sectionConfigs?.length || 0}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   console.log('Index: Rendering homepage with sections:', sectionConfigs.map(s => `${s.id} (${s.config.title})`));
 
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="space-y-12">
-          {sectionConfigs.map(({ id, config }) => (
-            <SectionFactory
-              key={`${id}-${config.order}`}
-              sectionId={id}
-              sectionConfig={config}
-            />
-          ))}
-        </div>
+        {sectionConfigs.length > 0 ? (
+          <div className="space-y-12">
+            {sectionConfigs.map(({ id, config }) => (
+              <SectionFactory
+                key={`${id}-${config.order}`}
+                sectionId={id}
+                sectionConfig={config}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="text-center">
+              <h1 className="text-2xl font-bold mb-4">Configuração da página inicial</h1>
+              <p className="text-gray-600 mb-4">
+                As seções da página inicial estão sendo configuradas.
+              </p>
+              <p className="text-sm text-gray-500">
+                Configure as seções no painel administrativo para personalizar esta página.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -11,7 +11,7 @@ import { Plus, Grip } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface DragState {
-  draggedBlockId: string | null; // Changed from number to string
+  draggedBlockId: number | null;
   dragOverRowId: string | null;
   dragOverPosition: number | null;
   isDragging: boolean;
@@ -24,11 +24,11 @@ interface GridPanelProps {
   position: number;
   block?: ReviewBlock;
   readonly?: boolean;
-  activeBlockId?: string | null; // Changed from number to string
+  activeBlockId?: number | null;
   dragState?: DragState;
-  onActiveBlockChange?: (blockId: string | null) => void; // Changed from number to string
-  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void; // Changed from number to string
-  onDeleteBlock: (blockId: string) => void; // Changed from number to string
+  onActiveBlockChange?: (blockId: number | null) => void;
+  onUpdateBlock: (blockId: number, updates: Partial<ReviewBlock>) => void;
+  onDeleteBlock: (blockId: number) => void;
   onAddBlock: (targetRowId: string, position: number) => void;
   onDragOver?: (e: React.DragEvent, targetRowId: string, targetPosition?: number, targetType?: 'grid' | 'single' | 'merge') => void;
   onDragLeave?: (e: React.DragEvent) => void;

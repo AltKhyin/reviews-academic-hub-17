@@ -13,8 +13,8 @@ import { cn } from '@/lib/utils';
 
 interface LivePreviewProps {
   blocks: ReviewBlock[];
-  activeBlockId?: string | null;
-  onBlockUpdate?: (blockId: string, updates: Partial<ReviewBlock>) => void;
+  activeBlockId?: number | null;
+  onBlockUpdate?: (blockId: number, updates: Partial<ReviewBlock>) => void;
   className?: string;
 }
 
@@ -43,7 +43,7 @@ export const LivePreview: React.FC<LivePreviewProps> = ({
   }, [blocks]);
 
   // Create wrapper function for onUpdate
-  const createBlockUpdateWrapper = (blockId: string) => {
+  const createBlockUpdateWrapper = (blockId: number) => {
     return (updates: Partial<ReviewBlock>) => {
       if (onBlockUpdate) {
         onBlockUpdate(blockId, updates);

@@ -11,7 +11,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface DragState {
-  draggedBlockId: string | null; // Changed from number to string
+  draggedBlockId: number | null;
   dragOverRowId: string | null;
   dragOverPosition: number | null;
   isDragging: boolean;
@@ -23,10 +23,10 @@ interface Grid2DCellProps {
   cell: GridCell;
   grid: Grid2DLayout;
   position: GridPosition;
-  activeBlockId?: string | null; // Changed from number to string
-  onActiveBlockChange?: (blockId: string | null) => void; // Changed from number to string
-  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void; // Changed from number to string
-  onDeleteBlock: (blockId: string) => void; // Changed from number to string
+  activeBlockId?: number | null;
+  onActiveBlockChange?: (blockId: number | null) => void;
+  onUpdateBlock: (blockId: number, updates: Partial<ReviewBlock>) => void;
+  onDeleteBlock: (blockId: number) => void;
   onAddBlock: () => void;
   readonly?: boolean;
   dragState?: DragState;
@@ -83,7 +83,7 @@ export const Grid2DCell: React.FC<Grid2DCellProps> = ({
     }
   }, [onDragLeave]);
 
-  const handleBlockClick = useCallback((blockId: string, event: React.MouseEvent) => {
+  const handleBlockClick = useCallback((blockId: number, event: React.MouseEvent) => {
     if (!readonly && onActiveBlockChange) {
       const target = event.target as Element;
       
@@ -98,7 +98,7 @@ export const Grid2DCell: React.FC<Grid2DCellProps> = ({
     }
   }, [activeBlockId, onActiveBlockChange, readonly]);
 
-  const createBlockUpdateWrapper = useCallback((blockId: string) => {
+  const createBlockUpdateWrapper = useCallback((blockId: number) => {
     return (updates: Partial<ReviewBlock>) => {
       onUpdateBlock(blockId, updates);
     };

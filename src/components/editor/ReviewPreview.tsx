@@ -51,7 +51,7 @@ export const ReviewPreview: React.FC<ReviewPreviewProps> = ({
   // Enhanced layout grouping with 2D grid support
   const layoutGroups: LayoutGroup[] = useMemo(() => {
     const groups: LayoutGroup[] = [];
-    const processedBlockIds = new Set<string>();
+    const processedBlockIds = new Set<number>();
     
     const sortedBlocks = [...visibleBlocks].sort((a, b) => a.sort_index - b.sort_index);
 

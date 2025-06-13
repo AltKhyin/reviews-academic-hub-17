@@ -13,11 +13,6 @@ interface ArticleCardProps {
   variant?: 'default' | 'featured';
   featured?: boolean;
   className?: string;
-  // NEW: Shared user interaction data to prevent individual API calls
-  userInteractionData?: {
-    isBookmarked?: boolean;
-    hasWantMoreReaction?: boolean;
-  };
 }
 
 export const ArticleCard: React.FC<ArticleCardProps> = ({ 
@@ -25,13 +20,12 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
   onClick, 
   variant = 'default', 
   featured = false,
-  className = '',
-  userInteractionData
+  className = '' 
 }) => {
   const navigate = useNavigate();
   const { 
-    isBookmarked, 
     hasReaction, 
+    isBookmarked, 
     toggleReaction, 
     toggleBookmark,
     isUpdatingReaction,
@@ -58,9 +52,8 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     toggleBookmark(issue.id);
   };
 
-  // Use shared data if available, otherwise fall back to context
-  const hasWantMoreReaction = userInteractionData?.hasWantMoreReaction ?? hasReaction(issue.id, 'want_more');
-  const isIssueBookmarked = userInteractionData?.isBookmarked ?? isBookmarked(issue.id);
+  const hasWantMoreReaction = hasReaction(issue.id, 'want_more');
+  const isIssueBookmarked = isBookmarked(issue.id);
 
   // Different styling for featured variant
   const cardClasses = variant === 'featured' 
@@ -95,7 +88,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
         )}
       </div>
       
-      {/* Optimized action buttons with shared state */}
+      {/* Optimized action buttons with batched state */}
       <div className="absolute top-3 right-3 flex gap-2 z-10">
         <button
           onClick={handleBookmarkClick}

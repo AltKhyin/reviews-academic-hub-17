@@ -1,4 +1,3 @@
-
 // ABOUTME: Main application component with route configuration and global error boundary
 import React, { Suspense, lazy } from 'react';
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -6,8 +5,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { UserInteractionProvider } from "@/contexts/UserInteractionContext";
-import { SharedDataProvider } from "@/contexts/SharedDataProvider";
 import { PageLoader } from "@/components/ui/PageLoader";
 import { GlobalErrorBoundary } from "@/components/error/GlobalErrorBoundary";
 import { BundleOptimizer } from "@/utils/bundleOptimizer";
@@ -55,76 +52,72 @@ function App() {
     >
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <UserInteractionProvider>
-            <SharedDataProvider>
-              <TooltipProvider>
-                <Sonner />
-                <Routes>
-                  <Route path="/auth" element={<AuthPage />} />
-                  <Route path="/" element={<DashboardLayout />}>
-                    <Route index element={<Navigate to="/homepage" replace />} />
-                    <Route path="homepage" element={<Dashboard />} />
-                    <Route 
-                      path="article/:id" 
-                      element={
-                        <Suspense fallback={<PageLoader />}>
-                          <ArticleViewer />
-                        </Suspense>
-                      } 
-                    />
-                    <Route 
-                      path="acervo" 
-                      element={
-                        <Suspense fallback={<PageLoader />}>
-                          <ArchivePage />
-                        </Suspense>
-                      } 
-                    />
-                    <Route 
-                      path="search" 
-                      element={
-                        <Suspense fallback={<PageLoader />}>
-                          <SearchPage />
-                        </Suspense>
-                      } 
-                    />
-                    <Route 
-                      path="community" 
-                      element={
-                        <Suspense fallback={<PageLoader />}>
-                          <Community />
-                        </Suspense>
-                      } 
-                    />
-                    <Route 
-                      path="profile" 
-                      element={
-                        <Suspense fallback={<PageLoader />}>
-                          <Profile />
-                        </Suspense>
-                      } 
-                    />
-                    <Route 
-                      path="edit" 
-                      element={
-                        <Suspense fallback={<PageLoader />}>
-                          <Edit />
-                        </Suspense>
-                      } 
-                    />
-                    <Route 
-                      path="edit/issue/:id" 
-                      element={
-                        <Suspense fallback={<PageLoader />}>
-                          <IssueEditor />
-                        </Suspense>
-                      } 
-                    />
-                  </Route>
-                </Routes>
-              </TooltipProvider>
-            </SharedDataProvider>
-          </UserInteractionProvider>
+          <TooltipProvider>
+            <Sonner />
+            <Routes>
+              <Route path="/auth" element={<AuthPage />} />
+              <Route path="/" element={<DashboardLayout />}>
+                <Route index element={<Navigate to="/homepage" replace />} />
+                <Route path="homepage" element={<Dashboard />} />
+                <Route 
+                  path="article/:id" 
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ArticleViewer />
+                    </Suspense>
+                  } 
+                />
+                <Route 
+                  path="acervo" 
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ArchivePage />
+                    </Suspense>
+                  } 
+                />
+                <Route 
+                  path="search" 
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <SearchPage />
+                    </Suspense>
+                  } 
+                />
+                <Route 
+                  path="community" 
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <Community />
+                    </Suspense>
+                  } 
+                />
+                <Route 
+                  path="profile" 
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <Profile />
+                    </Suspense>
+                  } 
+                />
+                <Route 
+                  path="edit" 
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <Edit />
+                    </Suspense>
+                  } 
+                />
+                <Route 
+                  path="edit/issue/:id" 
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <IssueEditor />
+                    </Suspense>
+                  } 
+                />
+              </Route>
+            </Routes>
+          </TooltipProvider>
         </AuthProvider>
       </QueryClientProvider>
     </GlobalErrorBoundary>

@@ -1,9 +1,9 @@
 
-// ABOUTME: Fullscreen native editor with immersive editing experience - FIXED: String IDs throughout
+// ABOUTME: Fullscreen native editor with immersive editing experience
 // Provides dedicated workspace for complex review creation
 
 import React, { useCallback, useEffect } from 'react';
-import { ReviewBlock, BlockType } from '@/types/review';
+import { ReviewBlock } from '@/types/review';
 import { BlockEditor } from './BlockEditor';
 import { BlockPalette } from './BlockPalette';
 import { ReviewPreview } from './ReviewPreview';
@@ -79,7 +79,7 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
     setHasUnsavedChanges(hasChanges);
   }, [blocks, initialBlocks]);
 
-  const handleAddBlock = useCallback((type: BlockType, position?: number): string => {
+  const handleAddBlock = useCallback((type: any, position?: number) => {
     const newBlockId = addBlock(type, position);
     console.log('Block added in fullscreen editor:', { type, position, newBlockId });
     return newBlockId;
@@ -89,10 +89,10 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
     console.log('Importing blocks in fullscreen:', importedBlocks);
     importedBlocks.forEach((block, index) => {
       if (index === 0) {
-        const firstBlockId = addBlock(block.type as BlockType, 0);
+        const firstBlockId = addBlock(block.type, 0);
         updateBlock(firstBlockId, block);
       } else {
-        const newBlockId = addBlock(block.type as BlockType, index);
+        const newBlockId = addBlock(block.type, index);
         updateBlock(newBlockId, { ...block, id: newBlockId });
       }
     });

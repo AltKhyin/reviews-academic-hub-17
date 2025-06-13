@@ -3,7 +3,8 @@ import React, { useState } from 'react';
 import { Issue } from '@/types/issue';
 import { useNavigate } from 'react-router-dom';
 import { Bookmark, Heart, ThumbsUp, ThumbsDown } from 'lucide-react';
-import { useOptimizedUserInteractions } from '@/hooks/useOptimizedUserInteractions';
+import { useReactionData } from '@/hooks/comments/useReactionData';
+import { useBookmarkData } from '@/hooks/comments/useBookmarkData';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -21,14 +22,8 @@ export const CarouselArticleCard: React.FC<CarouselArticleCardProps> = ({
   const { toast } = useToast();
   const [isHovered, setIsHovered] = useState(false);
   
-  const { 
-    isBookmarked, 
-    hasReaction, 
-    toggleReaction, 
-    toggleBookmark,
-    isUpdatingReaction,
-    isUpdatingBookmark
-  } = useOptimizedUserInteractions();
+  const { reactions, reactionMutation } = useReactionData(issue.id, 'issue');
+  const { isBookmarked, bookmarkMutation } = useBookmarkData(issue.id, 'issue');
 
   const handleClick = () => {
     navigate(`/article/${issue.id}`);
@@ -53,16 +48,16 @@ export const CarouselArticleCard: React.FC<CarouselArticleCardProps> = ({
     checkAuthAndProceed(() => {
       switch (action) {
         case 'bookmark':
-          toggleBookmark(issue.id);
+          bookmarkMutation.mutate();
           break;
         case 'heart':
-          toggleReaction({ issueId: issue.id, reactionType: 'want_more' });
+          reactionMutation.mutate({ type: 'want_more' });
           break;
         case 'thumbs-up':
-          toggleReaction({ issueId: issue.id, reactionType: 'like' });
+          reactionMutation.mutate({ type: 'like' });
           break;
         case 'thumbs-down':
-          toggleReaction({ issueId: issue.id, reactionType: 'dislike' });
+          reactionMutation.mutate({ type: 'dislike' });
           break;
       }
     });
@@ -104,13 +99,13 @@ export const CarouselArticleCard: React.FC<CarouselArticleCardProps> = ({
                 <button 
                   className="bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors text-white"
                   onClick={(e) => handleActionClick(e, 'bookmark')}
-                  disabled={isUpdatingBookmark}
+                  disabled={bookmarkMutation.isPending}
                 >
-                  <Bookmark className={`w-4 h-4 ${isBookmarked(issue.id) ? 'fill-white' : ''}`} />
+                  <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-white' : ''}`} />
                 </button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>{isBookmarked(issue.id) ? 'Remover dos salvos' : 'Salvar'}</p>
+                <p>{isBookmarked ? 'Remover dos salvos' : 'Salvar'}</p>
               </TooltipContent>
             </Tooltip>
           </div>
@@ -122,9 +117,9 @@ export const CarouselArticleCard: React.FC<CarouselArticleCardProps> = ({
                 <button 
                   className="bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors text-white"
                   onClick={(e) => handleActionClick(e, 'heart')}
-                  disabled={isUpdatingReaction}
+                  disabled={reactionMutation.isPending}
                 >
-                  <Heart className={`w-4 h-4 ${hasReaction(issue.id, 'want_more') ? 'fill-white' : ''}`} />
+                  <Heart className={`w-4 h-4 ${reactions?.includes('want_more') ? 'fill-white' : ''}`} />
                 </button>
               </TooltipTrigger>
               <TooltipContent>
@@ -137,9 +132,9 @@ export const CarouselArticleCard: React.FC<CarouselArticleCardProps> = ({
                 <button 
                   className="bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors text-white"
                   onClick={(e) => handleActionClick(e, 'thumbs-up')}
-                  disabled={isUpdatingReaction}
+                  disabled={reactionMutation.isPending}
                 >
-                  <ThumbsUp className={`w-4 h-4 ${hasReaction(issue.id, 'like') ? 'fill-white' : ''}`} />
+                  <ThumbsUp className={`w-4 h-4 ${reactions?.includes('like') ? 'fill-white' : ''}`} />
                 </button>
               </TooltipTrigger>
               <TooltipContent>
@@ -152,9 +147,9 @@ export const CarouselArticleCard: React.FC<CarouselArticleCardProps> = ({
                 <button 
                   className="bg-black/60 rounded-full p-1.5 hover:bg-black/80 transition-colors text-white"
                   onClick={(e) => handleActionClick(e, 'thumbs-down')}
-                  disabled={isUpdatingReaction}
+                  disabled={reactionMutation.isPending}
                 >
-                  <ThumbsDown className={`w-4 h-4 ${hasReaction(issue.id, 'dislike') ? 'fill-white' : ''}`} />
+                  <ThumbsDown className={`w-4 h-4 ${reactions?.includes('dislike') ? 'fill-white' : ''}`} />
                 </button>
               </TooltipTrigger>
               <TooltipContent>
@@ -167,3 +162,5 @@ export const CarouselArticleCard: React.FC<CarouselArticleCardProps> = ({
     </TooltipProvider>
   );
 };
+
+export default CarouselArticleCard;
