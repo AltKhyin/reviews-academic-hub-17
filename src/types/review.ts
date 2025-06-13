@@ -41,6 +41,7 @@ export interface ReviewBlock {
       grid_rows?: number;
       gap?: number;
       rowHeights?: number[];
+      position?: number; // Added missing position property
     };
   };
 }
@@ -55,7 +56,8 @@ export type BlockType =
   | 'reviewer_quote'
   | 'poll'
   | 'citation_list'
-  | 'snapshot_card';
+  | 'snapshot_card'
+  | 'diagram'; // Added diagram type
 
 export interface EnhancedIssue {
   id: string;
@@ -68,4 +70,43 @@ export interface EnhancedIssue {
   review_type: 'native' | 'pdf' | 'mixed';
   article_pdf_url?: string;
   pdf_url?: string;
+}
+
+// Add missing diagram-related types
+export interface DiagramNode {
+  id: string;
+  type: 'process' | 'decision' | 'start' | 'end' | 'data';
+  label: string;
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+}
+
+export interface DiagramConnection {
+  id: string;
+  from: string;
+  to: string;
+  label?: string;
+  type?: 'straight' | 'curved';
+}
+
+export interface DiagramContent {
+  nodes: DiagramNode[];
+  connections: DiagramConnection[];
+  title?: string;
+  description?: string;
+  layout?: 'flowchart' | 'mindmap' | 'org-chart';
+}
+
+// Add missing snapshot card content type
+export interface SnapshotCardContent {
+  title: string;
+  value: string | number;
+  unit?: string;
+  trend?: 'up' | 'down' | 'stable';
+  trendValue?: number;
+  description?: string;
+  icon?: string;
+  color?: string;
 }
