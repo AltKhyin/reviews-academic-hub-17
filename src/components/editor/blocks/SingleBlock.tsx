@@ -10,7 +10,7 @@ import { AddBlockButton } from './AddBlockButton';
 import { cn } from '@/lib/utils';
 
 interface DragState {
-  draggedBlockId: number | null;
+  draggedBlockId: string | null;
   dragOverRowId: string | null;
   dragOverPosition: number | null;
   isDragging: boolean;
@@ -21,16 +21,16 @@ interface DragState {
 interface SingleBlockProps {
   block: ReviewBlock;
   globalIndex: number;
-  activeBlockId: number | null;
+  activeBlockId: string | null;
   dragState: DragState;
-  onActiveBlockChange: (blockId: number | null) => void;
-  onUpdateBlock: (blockId: number, updates: Partial<ReviewBlock>) => void;
-  onDeleteBlock: (blockId: number) => void;
-  onDuplicateBlock: (blockId: number) => void;
-  onConvertToGrid: (blockId: number, columns: number) => void;
-  onConvertTo2DGrid?: (blockId: number, columns: number, rows: number) => void;
+  onActiveBlockChange: (blockId: string | null) => void;
+  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
+  onDeleteBlock: (blockId: string) => void;
+  onDuplicateBlock: (blockId: string) => void;
+  onConvertToGrid: (blockId: string, columns: number) => void;
+  onConvertTo2DGrid?: (blockId: string, columns: number, rows: number) => void;
   onAddBlockBetween: (position: number, type?: string) => void;
-  onDragStart: (e: React.DragEvent, blockId: number) => void;
+  onDragStart: (e: React.DragEvent, blockId: string) => void;
   onDragEnd: () => void;
   onDragOver: (e: React.DragEvent, targetRowId: string, targetPosition?: number, targetType?: 'grid' | 'single' | 'merge') => void;
   onDragLeave: (e: React.DragEvent) => void;

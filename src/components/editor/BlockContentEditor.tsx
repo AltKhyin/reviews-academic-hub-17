@@ -15,11 +15,11 @@ interface BlockContentEditorProps {
   isActive: boolean;
   isFirst: boolean;
   isLast: boolean;
-  onSelect: (blockId: number) => void;
-  onUpdate: (blockId: number, updates: Partial<ReviewBlock>) => void;
-  onDelete: (blockId: number) => void;
-  onDuplicate?: (blockId: number) => void;
-  onMove: (blockId: number, direction: 'up' | 'down') => void;
+  onSelect: (blockId: string) => void;
+  onUpdate: (blockId: string, updates: Partial<ReviewBlock>) => void;
+  onDelete: (blockId: string) => void;
+  onDuplicate?: (blockId: string) => void;
+  onMove: (blockId: string, direction: 'up' | 'down') => void;
   onAddBlock: (type: BlockType, position?: number) => void;
 }
 
@@ -66,7 +66,7 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
   // Enhanced drag handlers with proper functionality
   const handleDragStart = useCallback((e: React.DragEvent) => {
     setIsDragging(true);
-    e.dataTransfer.setData('text/plain', block.id.toString());
+    e.dataTransfer.setData('text/plain', block.id);
     e.dataTransfer.effectAllowed = 'move';
     
     // Create drag image
@@ -100,7 +100,7 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
-    const draggedBlockId = parseInt(e.dataTransfer.getData('text/plain'));
+    const draggedBlockId = e.dataTransfer.getData('text/plain');
     
     if (draggedBlockId !== block.id) {
       // Determine direction based on drop position
