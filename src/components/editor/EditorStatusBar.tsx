@@ -1,12 +1,12 @@
 
-// ABOUTME: Editor status bar with block count and keyboard shortcuts
-// Shows editor status and helpful shortcuts at the bottom
+// ABOUTME: Editor status bar with document statistics
+// Shows block count and current selection status
 
 import React from 'react';
 
 interface EditorStatusBarProps {
   blockCount: number;
-  activeBlockId: number | null;
+  activeBlockId: string | null;
 }
 
 export const EditorStatusBar: React.FC<EditorStatusBarProps> = ({
@@ -15,18 +15,22 @@ export const EditorStatusBar: React.FC<EditorStatusBarProps> = ({
 }) => {
   return (
     <div 
-      className="px-4 py-2 border-t flex items-center justify-between text-xs"
-      style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a', color: '#9ca3af' }}
+      className="editor-status-bar flex items-center justify-between px-4 py-2 text-xs border-t"
+      style={{ 
+        backgroundColor: '#1a1a1a', 
+        borderColor: '#2a2a2a',
+        color: '#9ca3af'
+      }}
     >
       <div className="flex items-center gap-4">
-        <span>{blockCount} blocos</span>
-        <span>Bloco ativo: {activeBlockId ? `#${activeBlockId}` : 'Nenhum'}</span>
+        <span>{blockCount} {blockCount === 1 ? 'bloco' : 'blocos'}</span>
+        {activeBlockId && (
+          <span>Bloco ativo: {activeBlockId}</span>
+        )}
       </div>
       
       <div className="flex items-center gap-4">
-        <span>Ctrl+S para salvar</span>
-        <span>Ctrl+Z para desfazer</span>
-        <span>Arrastar para reordenar</span>
+        <span>Editor Nativo v1.0</span>
       </div>
     </div>
   );
