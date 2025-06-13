@@ -1,39 +1,76 @@
 
-// ABOUTME: Enhanced query client with background optimization and cascade prevention
+// ABOUTME: Enhanced query client configuration with background optimization
 import { QueryClient } from '@tanstack/react-query';
+import { PerformanceProfiler } from '@/utils/performanceHelpers';
 
+// Performance-optimized query client configuration
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
-      retry: (failureCount, error: any) => {
-        // Don't retry if it's a 4xx error
-        if (error?.response?.status >= 400 && error?.response?.status < 500) {
-          return false;
+      gcTime: 15 * 60 * 1000, // 15 minutes (was cacheTime)
+      retry: (failureCount, error) => {
+        // Don't retry on client errors (4xx)
+        if (error && typeof error === 'object' && 'status' in error) {
+          const status = (error as any).status;
+          if (status >= 400 && status < 500) return false;
         }
-        return failureCount < 3;
+        return failureCount < 2;
       },
       refetchOnWindowFocus: false,
-      refetchOnReconnect: 'always'
+      refetchOnMount: false,
     },
     mutations: {
-      retry: 1
-    }
-  }
+      retry: 1,
+    },
+  },
 });
 
+// Background optimization system
+let backgroundOptimizationInterval: NodeJS.Timeout | null = null;
+
 export const initializeBackgroundOptimization = () => {
-  console.log('🚀 Background optimization initialized');
+  if (backgroundOptimizationInterval) return;
   
-  // Set up performance monitoring
-  if (typeof window !== 'undefined') {
-    // Monitor query cache size
-    setInterval(() => {
-      const cacheSize = queryClient.getQueryCache().getAll().length;
-      if (cacheSize > 100) {
-        console.warn(`⚠️ Query cache size: ${cacheSize} queries`);
-      }
-    }, 30000); // Check every 30 seconds
+  // Periodic cache cleanup every 10 minutes
+  backgroundOptimizationInterval = setInterval(() => {
+    const queries = queryClient.getQueryCache().getAll();
+    const staleQueries = queries.filter(query => 
+      query.isStale() && 
+      query.state.fetchStatus !== 'fetching' && // Fixed: use fetchStatus instead of isFetching
+      (Date.now() - (query.state.dataUpdatedAt || 0)) > 30 * 60 * 1000 // 30 minutes
+    );
+    
+    if (staleQueries.length > 10) {
+      console.log(`🧹 Cleaning up ${staleQueries.length} stale queries`);
+      staleQueries.slice(0, -5).forEach(query => {
+        queryClient.getQueryCache().remove(query);
+      });
+    }
+  }, 10 * 60 * 1000);
+};
+
+export const cleanupBackgroundOptimization = () => {
+  if (backgroundOptimizationInterval) {
+    clearInterval(backgroundOptimizationInterval);
+    backgroundOptimizationInterval = null;
   }
+};
+
+// Query performance monitoring
+export const createPerformanceQueryWrapper = <TData = unknown>(
+  queryKey: any[],
+  queryFn: () => Promise<TData>
+) => {
+  return async (): Promise<TData> => {
+    const operationName = `query-${JSON.stringify(queryKey).substring(0, 50)}`;
+    PerformanceProfiler.startMeasurement(operationName);
+    
+    try {
+      const result = await queryFn();
+      return result;
+    } finally {
+      PerformanceProfiler.endMeasurement(operationName);
+    }
+  };
 };

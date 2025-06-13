@@ -1,7 +1,7 @@
 
-// ABOUTME: Enhanced Index page using SharedDataProvider to prevent API cascade
+// ABOUTME: Enhanced landing page with optimized data loading to prevent API cascades
 import React, { useMemo } from 'react';
-import { useSharedData } from '@/contexts/SharedDataProvider';
+import { useOptimizedHomepage } from '@/hooks/useOptimizedHomepage';
 import { SectionFactory } from '@/components/homepage/SectionFactory';
 import { getSectionById } from '@/config/sections';
 
@@ -15,27 +15,28 @@ interface SectionVisibilityItem {
 
 const Index = () => {
   const { 
-    issues,
-    featuredIssue,
-    reviewerComments,
-    sectionVisibility,
+    data: homepageData,
     isLoading, 
     error,
-    refreshData
-  } = useSharedData();
+    refetch
+  } = useOptimizedHomepage();
 
-  console.log('Index page render - Using SharedDataProvider:', {
-    issuesCount: issues.length,
-    sectionVisibilityType: typeof sectionVisibility,
-    sectionVisibilityLength: Array.isArray(sectionVisibility) ? sectionVisibility.length : 'not array',
-    featuredIssue: featuredIssue?.id || 'none',
-    reviewerCommentsCount: reviewerComments.length,
+  console.log('Index page render - Optimized data loading:', {
+    issuesCount: homepageData?.issues?.length || 0,
+    sectionVisibilityType: typeof homepageData?.sectionVisibility,
+    sectionVisibilityLength: Array.isArray(homepageData?.sectionVisibility) 
+      ? homepageData.sectionVisibility.length 
+      : 'not array',
+    featuredIssue: homepageData?.featuredIssue?.id || 'none',
+    reviewerCommentsCount: homepageData?.reviewerComments?.length || 0,
     isLoading,
     hasErrors: !!error
   });
 
   // Enhanced memoization with comprehensive validation and safe type casting
   const visibleSections = useMemo(() => {
+    const sectionVisibility = homepageData?.sectionVisibility;
+    
     if (!Array.isArray(sectionVisibility)) {
       console.warn('Index: sectionVisibility is not an array:', typeof sectionVisibility, sectionVisibility);
       return [];
@@ -65,7 +66,7 @@ const Index = () => {
     
     console.log('Index: Processed visible sections:', filtered);
     return filtered;
-  }, [sectionVisibility]);
+  }, [homepageData?.sectionVisibility]);
 
   // Enhanced section configs with comprehensive error handling
   const sectionConfigs = useMemo(() => {
@@ -91,6 +92,11 @@ const Index = () => {
 
   // Enhanced content validation with safe type checking
   const hasContent = useMemo(() => {
+    const issues = homepageData?.issues;
+    const featuredIssue = homepageData?.featuredIssue;
+    const reviewerComments = homepageData?.reviewerComments;
+    const sectionVisibility = homepageData?.sectionVisibility;
+    
     const contentCheck = {
       hasIssues: Array.isArray(issues) && issues.length > 0,
       hasFeaturedIssue: !!featuredIssue,
@@ -102,7 +108,7 @@ const Index = () => {
     
     console.log('Index: Content check:', contentCheck, 'hasContent:', result);
     return result;
-  }, [issues, featuredIssue, reviewerComments, sectionVisibility]);
+  }, [homepageData]);
 
   // Enhanced loading state
   if (isLoading) {
@@ -128,7 +134,7 @@ const Index = () => {
               Não foi possível carregar os dados da página inicial.
             </p>
             <button 
-              onClick={() => refreshData()}
+              onClick={() => refetch()}
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
             >
               Tentar novamente
@@ -137,7 +143,7 @@ const Index = () => {
               <details className="mt-4 text-left">
                 <summary className="cursor-pointer text-sm text-gray-600">Detalhes técnicos</summary>
                 <pre className="mt-2 p-4 bg-gray-800 text-white text-xs rounded overflow-auto">
-                  {JSON.stringify({ error, issues: issues.length, sectionVisibility: sectionVisibility.length }, null, 2)}
+                  {JSON.stringify({ error, homepageData }, null, 2)}
                 </pre>
               </details>
             )}
@@ -150,8 +156,8 @@ const Index = () => {
   // Enhanced no content state with better debugging
   if (!hasContent && sectionConfigs.length === 0) {
     console.warn('Index: No content and no section configs. State:', {
-      issues: issues.length,
-      sectionVisibility: Array.isArray(sectionVisibility) ? sectionVisibility.length : 'not array',
+      issues: homepageData?.issues?.length,
+      sectionVisibility: Array.isArray(homepageData?.sectionVisibility) ? homepageData.sectionVisibility.length : 'not array',
       visibleSections: visibleSections?.length,
       sectionConfigs: sectionConfigs?.length
     });
@@ -165,7 +171,7 @@ const Index = () => {
               O conteúdo da página inicial está sendo configurado.
             </p>
             <button 
-              onClick={() => refreshData()}
+              onClick={() => refetch()}
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
             >
               Recarregar
@@ -173,8 +179,8 @@ const Index = () => {
             {process.env.NODE_ENV === 'development' && (
               <div className="mt-4 p-4 bg-gray-800 text-white text-xs rounded text-left">
                 <p>Debug Info:</p>
-                <p>Issues: {issues.length}</p>
-                <p>Section Visibility: {Array.isArray(sectionVisibility) ? sectionVisibility.length : 'not array'}</p>
+                <p>Issues: {homepageData?.issues?.length || 0}</p>
+                <p>Section Visibility: {Array.isArray(homepageData?.sectionVisibility) ? homepageData.sectionVisibility.length : 'not array'}</p>
                 <p>Visible Sections: {visibleSections?.length || 0}</p>
                 <p>Section Configs: {sectionConfigs?.length || 0}</p>
               </div>
