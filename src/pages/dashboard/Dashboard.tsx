@@ -1,6 +1,6 @@
 
 // ABOUTME: Optimized Dashboard with unified section management and centralized user interactions
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParallelDataLoader } from '@/hooks/useParallelDataLoader';
 import { useStableAuth } from '@/hooks/useStableAuth';
 import { DataErrorBoundary } from '@/components/error/DataErrorBoundary';
@@ -10,6 +10,8 @@ import ArticleRow from '@/components/dashboard/ArticleRow';
 import { UpcomingReleaseCard } from '@/components/dashboard/UpcomingReleaseCard';
 import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
 import { UserInteractionProvider } from '@/contexts/UserInteractionContext';
+import { ComponentAuditor } from '@/utils/componentAudit';
+import { apiCallMonitor } from '@/middleware/ApiCallMiddleware';
 
 const Dashboard = () => {
   const { isAuthenticated, isLoading: authLoading } = useStableAuth();
@@ -21,6 +23,28 @@ const Dashboard = () => {
     errors,
     retryFailed 
   } = useParallelDataLoader();
+
+  // PERFORMANCE MONITORING: Track API calls and violations
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      // Audit this component
+      ComponentAuditor.auditComponent('Dashboard', false, false);
+      
+      // Log initial metrics
+      const totalCalls = apiCallMonitor.getTotalCallsInLastMinute();
+      console.log(`🏠 Dashboard: Loaded with ${issues?.length || 0} issues, ${totalCalls} API calls in last minute`);
+      
+      // Set up performance monitoring interval
+      const monitoringInterval = setInterval(() => {
+        const currentCalls = apiCallMonitor.getTotalCallsInLastMinute();
+        if (currentCalls > 15) {
+          console.warn(`🚨 Dashboard: High API activity detected - ${currentCalls} calls`);
+        }
+      }, 10000);
+
+      return () => clearInterval(monitoringInterval);
+    }
+  }, [issues?.length]);
 
   console.log('Dashboard: Rendering with', issues?.length || 0, 'issues');
   console.log('Dashboard: Section visibility config:', sectionVisibility);

@@ -1,4 +1,5 @@
 
+// ABOUTME: Optimized carousel article card using shared context exclusively (no individual API calls)
 import React, { useState } from 'react';
 import { Issue } from '@/types/issue';
 import { useNavigate } from 'react-router-dom';
@@ -21,7 +22,7 @@ export const CarouselArticleCard: React.FC<CarouselArticleCardProps> = ({
   const { toast } = useToast();
   const [isHovered, setIsHovered] = useState(false);
   
-  // PERFORMANCE FIX: Use shared context instead of individual hooks
+  // PERFORMANCE FIX: Use ONLY shared context - no individual API calls
   const { 
     hasBookmark,
     hasReaction,
@@ -68,7 +69,7 @@ export const CarouselArticleCard: React.FC<CarouselArticleCardProps> = ({
     });
   };
 
-  // Use context helpers instead of individual API calls
+  // CRITICAL: Use ONLY context helpers - no individual API calls
   const isBookmarked = hasBookmark(issue.id);
   const reactions = {
     want_more: hasReaction(issue.id, 'want_more'),
