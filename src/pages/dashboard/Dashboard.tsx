@@ -1,213 +1,184 @@
 
-// ABOUTME: Optimized Dashboard with unified section management - no UI changes
-import React from 'react';
-import { useParallelDataLoader } from '@/hooks/useParallelDataLoader';
-import { useStableAuth } from '@/hooks/useStableAuth';
-import { DataErrorBoundary } from '@/components/error/DataErrorBoundary';
-import { ReviewerCommentsDisplay } from '@/components/dashboard/ReviewerCommentsDisplay';
+// ABOUTME: Enhanced Dashboard page using SharedDataProvider to prevent API cascade
+import React, { useMemo } from 'react';
+import { useSharedData } from '@/contexts/SharedDataProvider';
 import { HeroSection } from '@/components/dashboard/HeroSection';
 import ArticleRow from '@/components/dashboard/ArticleRow';
-import { UpcomingReleaseCard } from '@/components/dashboard/UpcomingReleaseCard';
-import { DashboardSkeleton } from '@/components/dashboard/DashboardSkeleton';
+import { useOptimizedUserInteractions } from '@/hooks/useOptimizedUserInteractions';
+
+// Type definitions for safe JSON parsing
+interface SectionVisibilityItem {
+  id: string;
+  visible: boolean;
+  order?: number;
+  title?: string;
+}
 
 const Dashboard = () => {
-  const { isAuthenticated, isLoading: authLoading } = useStableAuth();
-  const { 
-    issues, 
-    sectionVisibility, 
-    featuredIssue, 
-    isLoading: dataLoading, 
-    errors,
-    retryFailed 
-  } = useParallelDataLoader();
+  const { issues, featuredIssue, reviewerComments, sectionVisibility, isLoading, error } = useSharedData();
+  const { userInteractions } = useOptimizedUserInteractions();
 
-  console.log('Dashboard: Rendering with', issues?.length || 0, 'issues');
+  console.log('Dashboard: Rendering with', issues.length, 'issues');
   console.log('Dashboard: Section visibility config:', sectionVisibility);
 
-  // Show skeleton only while essential data is loading
-  const isInitialLoading = authLoading || (dataLoading && issues.length === 0);
-
-  if (isInitialLoading) {
-    return (
-      <div className="w-full min-h-screen" style={{ backgroundColor: '#121212' }}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <DashboardSkeleton />
-        </div>
-      </div>
-    );
-  }
-
-  // Show error state if critical data failed to load
-  if (Object.keys(errors).length > 0 && issues.length === 0) {
-    return (
-      <DataErrorBoundary context="dashboard data" onRetry={retryFailed}>
-        <div className="w-full min-h-screen" style={{ backgroundColor: '#121212' }}>
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="text-center py-16">
-              <h2 className="text-2xl font-bold mb-4 text-white">Erro ao carregar conteúdo</h2>
-              <p className="text-gray-400 mb-4">
-                Não foi possível carregar os dados do dashboard.
-              </p>
-              <button 
-                onClick={retryFailed}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                Tentar novamente
-              </button>
-            </div>
-          </div>
-        </div>
-      </DataErrorBoundary>
-    );
-  }
-
-  // Show empty state if no content available
-  if (issues.length === 0) {
-    return (
-      <div className="w-full min-h-screen" style={{ backgroundColor: '#121212' }}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="text-center py-16">
-            <h2 className="text-2xl font-bold mb-4 text-white">Nenhum conteúdo disponível</h2>
-            <p className="text-gray-400">
-              Aguarde novos conteúdos serem publicados.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Filter out featured issue from other sections to avoid duplication
-  const nonFeaturedIssues = featuredIssue 
-    ? issues.filter(issue => issue.id !== featuredIssue.id)
-    : issues;
-  
-  // Organize issues by type for different sections
-  const recentIssues = nonFeaturedIssues
-    .filter(issue => issue.published)
-    .slice(0, 10);
-    
-  const recommendedIssues = nonFeaturedIssues
-    .filter(issue => issue.published)
-    .slice(0, 10);
-    
-  const trendingIssues = nonFeaturedIssues
-    .filter(issue => issue.published)
-    .sort((a, b) => (b.score || 0) - (a.score || 0))
-    .slice(0, 10);
-
-  // Get enabled sections in order from the unified configuration
-  const enabledSections = sectionVisibility
-    .filter(section => section.visible) 
-    .sort((a, b) => a.order - b.order);
-
-  console.log('Dashboard: Visible sections from unified config:', enabledSections.map(s => `${s.id} (order: ${s.order})`));
-  console.log('Dashboard: Featured issue:', featuredIssue?.id);
-
-  const renderSection = (sectionConfig: any, index: number) => {
-    const sectionId = sectionConfig.id;
-    const nextSection = enabledSections[index + 1];
-    const isFollowedByFeatured = nextSection?.id === 'featured';
-    
-    console.log(`Dashboard: Rendering section ${sectionId}`);
-    
-    switch (sectionId) {
-      case 'reviewer':
-        return (
-          <DataErrorBoundary key={`reviewer-${index}`} context="reviewer comments">
-            <div className={isFollowedByFeatured ? 'mb-4' : ''}>
-              <ReviewerCommentsDisplay />
-            </div>
-          </DataErrorBoundary>
-        );
-        
-      case 'featured':
-        if (!featuredIssue) {
-          console.log('Dashboard: No featured issue available for featured section');
-          return null;
-        }
-        return (
-          <DataErrorBoundary key={`featured-${featuredIssue.id}-${index}`} context="featured issue">
-            <HeroSection featuredIssue={featuredIssue} />
-          </DataErrorBoundary>
-        );
-        
-      case 'upcoming':
-        return (
-          <DataErrorBoundary key={`upcoming-${index}`} context="upcoming releases">
-            <UpcomingReleaseCard />
-          </DataErrorBoundary>
-        );
-        
-      case 'recent':
-        if (recentIssues.length === 0) {
-          console.log('Dashboard: No recent issues available');
-          return null;
-        }
-        return (
-          <DataErrorBoundary key={`recent-${index}`} context="recent issues">
-            <ArticleRow title="Edições Recentes" articles={recentIssues} />
-          </DataErrorBoundary>
-        );
-        
-      case 'recommended':
-        if (recommendedIssues.length === 0) {
-          console.log('Dashboard: No recommended issues available');
-          return null;
-        }
-        return (
-          <DataErrorBoundary key={`recommended-${index}`} context="recommended issues">
-            <ArticleRow title="Recomendados para você" articles={recommendedIssues} />
-          </DataErrorBoundary>
-        );
-        
-      case 'trending':
-        if (trendingIssues.length === 0) {
-          console.log('Dashboard: No trending issues available');
-          return null;
-        }
-        return (
-          <DataErrorBoundary key={`trending-${index}`} context="trending issues">
-            <ArticleRow title="Mais acessados" articles={trendingIssues} />
-          </DataErrorBoundary>
-        );
-        
-      default:
-        console.warn(`Dashboard: Unknown section ID: ${sectionId}`);
-        return (
-          <div key={`unknown-${sectionId}-${index}`} className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 mb-4">
-            <p className="text-red-400">
-              Seção desconhecida: {sectionId}. Verifique a configuração.
-            </p>
-          </div>
-        );
+  // Enhanced memoization with comprehensive validation and safe type casting
+  const visibleSections = useMemo(() => {
+    if (!Array.isArray(sectionVisibility)) {
+      console.warn('Dashboard: sectionVisibility is not an array:', typeof sectionVisibility, sectionVisibility);
+      return [];
     }
-  };
+
+    const filtered = sectionVisibility
+      .filter((section: any): section is SectionVisibilityItem => {
+        if (!section || typeof section !== 'object') {
+          console.warn('Dashboard: Invalid section object:', section);
+          return false;
+        }
+        
+        if (!section.id || typeof section.id !== 'string') {
+          console.warn('Dashboard: Section missing or invalid id:', section);
+          return false;
+        }
+        return section.visible === true;
+      })
+      .map((section: any): SectionVisibilityItem => ({
+        id: section.id,
+        visible: section.visible,
+        order: typeof section.order === 'number' ? section.order : 0,
+        title: typeof section.title === 'string' ? section.title : undefined,
+      }))
+      .sort((a, b) => (a.order || 0) - (b.order || 0));
+
+    console.log('Dashboard: Visible sections from unified config:', filtered.map(s => `${s.id} (order: ${s.order})`));
+    return filtered;
+  }, [sectionVisibility]);
+
+  // Pre-compute user interaction data for all articles to prevent individual API calls
+  const articlesWithUserData = useMemo(() => {
+    return issues.map(article => ({
+      ...article,
+      userInteractionData: {
+        isBookmarked: userInteractions.bookmarks.has(article.id),
+        hasWantMoreReaction: userInteractions.reactions[article.id]?.includes('want_more') || false
+      }
+    }));
+  }, [issues, userInteractions]);
+
+  // Enhanced loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Carregando página inicial...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Enhanced error state with detailed information
+  if (error) {
+    console.error('Dashboard: Error loading data:', error);
+    return (
+      <div className="min-h-screen bg-gray-100">
+        <div className="max-w-7xl mx-auto px-4 py-16">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-4">Erro ao carregar conteúdo</h2>
+            <p className="text-gray-600 mb-4">
+              Não foi possível carregar os dados da página inicial.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  console.log('Dashboard: Featured issue:', featuredIssue?.id || 'none');
+
+  // Group articles by sections with user interaction data
+  const sectionedArticles = useMemo(() => {
+    const sections: Record<string, any[]> = {};
+    
+    visibleSections.forEach(section => {
+      switch (section.id) {
+        case 'featured':
+          if (featuredIssue) {
+            sections.featured = [{
+              ...featuredIssue,
+              userInteractionData: {
+                isBookmarked: userInteractions.bookmarks.has(featuredIssue.id),
+                hasWantMoreReaction: userInteractions.reactions[featuredIssue.id]?.includes('want_more') || false
+              }
+            }];
+          }
+          break;
+        case 'recent':
+          sections.recent = articlesWithUserData.slice(0, 5);
+          break;
+        case 'upcoming':
+          sections.upcoming = articlesWithUserData.filter(a => new Date(a.published_at) > new Date()).slice(0, 5);
+          break;
+        case 'recommended':
+          sections.recommended = articlesWithUserData.filter(a => a.score > 50).slice(0, 5);
+          break;
+        case 'trending':
+          sections.trending = articlesWithUserData.sort((a, b) => b.score - a.score).slice(0, 5);
+          break;
+      }
+    });
+    
+    return sections;
+  }, [visibleSections, articlesWithUserData, featuredIssue, userInteractions]);
 
   return (
-    <DataErrorBoundary context="dashboard" onRetry={retryFailed}>
-      <div className="w-full min-h-screen" style={{ backgroundColor: '#121212' }}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="space-y-8">
-            {enabledSections.length === 0 ? (
-              <div className="text-center py-16">
-                <h2 className="text-2xl font-bold mb-4 text-white">Nenhuma seção configurada</h2>
-                <p className="text-gray-400">
-                  Configure as seções da página inicial no painel administrativo.
-                </p>
-              </div>
-            ) : (
-              enabledSections.map((section, index) => {
-                const sectionElement = renderSection(section, index);
-                // Only render if we have a valid element
-                if (!sectionElement) return null;
-                return sectionElement;
-              })
-            )}
+    <div className="min-h-screen bg-background">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {visibleSections.length > 0 ? (
+          <div className="space-y-12">
+            {visibleSections.map((section) => {
+              console.log('Dashboard: Rendering section', section.id);
+              
+              // Render featured section as hero
+              if (section.id === 'featured' && sectionedArticles.featured?.[0]) {
+                return (
+                  <HeroSection 
+                    key={section.id}
+                    featuredIssue={sectionedArticles.featured[0]}
+                  />
+                );
+              }
+              
+              // Render other sections as article rows
+              const sectionArticles = sectionedArticles[section.id];
+              if (sectionArticles && sectionArticles.length > 0) {
+                return (
+                  <ArticleRow
+                    key={section.id}
+                    title={section.title || section.id}
+                    articles={sectionArticles}
+                    variant={section.id === 'featured' ? 'featured' : 'default'}
+                  />
+                );
+              }
+              
+              return null;
+            })}
           </div>
-        </div>
+        ) : (
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="text-center">
+              <h1 className="text-2xl font-bold mb-4">Configuração da página inicial</h1>
+              <p className="text-gray-600 mb-4">
+                As seções da página inicial estão sendo configuradas.
+              </p>
+              <p className="text-sm text-gray-500">
+                Configure as seções no painel administrativo para personalizar esta página.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
-    </DataErrorBoundary>
+    </div>
   );
 };
 
