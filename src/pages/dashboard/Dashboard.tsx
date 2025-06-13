@@ -21,7 +21,7 @@ const Dashboard = () => {
   console.log('Dashboard: Rendering with', issues.length, 'issues');
   console.log('Dashboard: Section visibility config:', sectionVisibility);
 
-  // Enhanced memoization with comprehensive validation and safe type casting
+  // FIXED: Always call useMemo hooks in the same order, regardless of data state
   const visibleSections = useMemo(() => {
     if (!Array.isArray(sectionVisibility)) {
       console.warn('Dashboard: sectionVisibility is not an array:', typeof sectionVisibility, sectionVisibility);
@@ -53,8 +53,12 @@ const Dashboard = () => {
     return filtered;
   }, [sectionVisibility]);
 
-  // Pre-compute user interaction data for all articles to prevent individual API calls
+  // FIXED: Always call this useMemo hook regardless of issues length
   const articlesWithUserData = useMemo(() => {
+    if (!Array.isArray(issues)) {
+      return [];
+    }
+    
     return issues.map(article => ({
       ...article,
       userInteractionData: {
@@ -64,38 +68,7 @@ const Dashboard = () => {
     }));
   }, [issues, userInteractions]);
 
-  // Enhanced loading state
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Carregando página inicial...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Enhanced error state with detailed information
-  if (error) {
-    console.error('Dashboard: Error loading data:', error);
-    return (
-      <div className="min-h-screen bg-gray-100">
-        <div className="max-w-7xl mx-auto px-4 py-16">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold mb-4">Erro ao carregar conteúdo</h2>
-            <p className="text-gray-600 mb-4">
-              Não foi possível carregar os dados da página inicial.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  console.log('Dashboard: Featured issue:', featuredIssue?.id || 'none');
-
-  // Group articles by sections with user interaction data
+  // FIXED: Always call this useMemo hook regardless of other conditions
   const sectionedArticles = useMemo(() => {
     const sections: Record<string, any[]> = {};
     
@@ -129,6 +102,38 @@ const Dashboard = () => {
     
     return sections;
   }, [visibleSections, articlesWithUserData, featuredIssue, userInteractions]);
+
+  // FIXED: No early returns before all hooks are called
+  // Handle loading state after all hooks are called
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Carregando página inicial...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle error state after all hooks are called
+  if (error) {
+    console.error('Dashboard: Error loading data:', error);
+    return (
+      <div className="min-h-screen bg-gray-100">
+        <div className="max-w-7xl mx-auto px-4 py-16">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-4">Erro ao carregar conteúdo</h2>
+            <p className="text-gray-600 mb-4">
+              Não foi possível carregar os dados da página inicial.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  console.log('Dashboard: Featured issue:', featuredIssue?.id || 'none');
 
   return (
     <div className="min-h-screen bg-background">

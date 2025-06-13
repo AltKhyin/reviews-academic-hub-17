@@ -27,7 +27,17 @@ const UserInteractionContext = createContext<UserInteractionContextType | undefi
 
 export const UserInteractionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
-  const { batchRequest } = useRequestBatcher();
+  
+  // FIXED: Handle missing useRequestBatcher hook gracefully
+  let batchRequest;
+  try {
+    const batcher = useRequestBatcher();
+    batchRequest = batcher.batchRequest;
+  } catch (error) {
+    console.warn('useRequestBatcher hook not available, falling back to direct requests');
+    batchRequest = null;
+  }
+  
   const [userInteractions, setUserInteractions] = useState<UserInteraction>({
     bookmarks: new Set(),
     reactions: {},
@@ -86,7 +96,7 @@ export const UserInteractionProvider: React.FC<{ children: React.ReactNode }> = 
     } catch (error) {
       console.error('Error batch loading user data:', error);
     }
-  }, [user, batchRequest]);
+  }, [user]);
 
   // Optimized individual interaction functions
   const isBookmarked = useCallback((itemId: string) => 
