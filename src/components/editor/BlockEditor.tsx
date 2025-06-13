@@ -1,6 +1,5 @@
-
 // ABOUTME: Enhanced block editor with complete 2D grid support and dynamic layout
-// Main editor with full grid functionality and responsive design - UPDATED: String ID support
+// Main editor with full grid functionality and responsive design - UPDATED: Reduced spacing by 50%
 
 import React, { useState, useCallback, useRef } from 'react';
 import { ReviewBlock, BlockType } from '@/types/review';
@@ -17,22 +16,22 @@ import { GridPosition } from '@/types/grid';
 
 interface BlockEditorProps {
   blocks: ReviewBlock[];
-  activeBlockId: string | null;
-  onActiveBlockChange: (blockId: string | null) => void;
-  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
-  onDeleteBlock: (blockId: string) => void;
-  onMoveBlock: (blockId: string, direction: 'up' | 'down') => void;
-  onAddBlock: (type: BlockType, position?: number) => string;
-  onDuplicateBlock: (blockId: string) => void;
-  onConvertToGrid?: (blockId: string, columns: number) => void;
-  onConvertTo2DGrid?: (blockId: string, columns: number, rows: number) => void;
-  onMergeBlockIntoGrid?: (draggedBlockId: string, targetRowId: string, targetPosition?: number) => void;
-  onPlaceBlockIn2DGrid?: (blockId: string, gridId: string, position: GridPosition) => void;
+  activeBlockId: number | null;
+  onActiveBlockChange: (blockId: number | null) => void;
+  onUpdateBlock: (blockId: number, updates: Partial<ReviewBlock>) => void;
+  onDeleteBlock: (blockId: number) => void;
+  onMoveBlock: (blockId: number, direction: 'up' | 'down') => void;
+  onAddBlock: (type: BlockType, position?: number) => number;
+  onDuplicateBlock: (blockId: number) => void;
+  onConvertToGrid?: (blockId: number, columns: number) => void;
+  onConvertTo2DGrid?: (blockId: number, columns: number, rows: number) => void;
+  onMergeBlockIntoGrid?: (draggedBlockId: number, targetRowId: string, targetPosition?: number) => void;
+  onPlaceBlockIn2DGrid?: (blockId: number, gridId: string, position: GridPosition) => void;
   className?: string;
 }
 
 interface DragState {
-  draggedBlockId: string | null;
+  draggedBlockId: number | null;
   dragOverRowId: string | null;
   dragOverPosition: number | null;
   isDragging: boolean;
@@ -113,7 +112,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       config?: any;
     }> = [];
 
-    const processedBlockIds = new Set<string>();
+    const processedBlockIds = new Set<number>();
 
     // First, handle 2D grids
     const grid2DIds = new Set<string>();
@@ -252,7 +251,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
   }, [removeRowFromGridById]);
 
   // Handle drag start
-  const handleDragStart = useCallback((e: React.DragEvent, blockId: string) => {
+  const handleDragStart = useCallback((e: React.DragEvent, blockId: number) => {
     if (processingDropRef.current) {
       e.preventDefault();
       return;

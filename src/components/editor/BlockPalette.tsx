@@ -1,130 +1,261 @@
 
-// ABOUTME: Block palette component for adding new blocks
-// Provides categorized block types for content creation
+// ABOUTME: Block palette component for adding new blocks to the editor
+// Provides categorized block types with visual previews and drag-and-drop support
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BlockType } from '@/types/review';
-import {
-  Type,
-  Heading,
-  Image,
-  Table,
-  Quote,
-  List,
-  Code,
-  BarChart3,
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Type, 
+  AlignLeft, 
+  Image, 
+  Table, 
+  MessageSquare, 
+  BarChart3, 
+  Hash, 
+  Quote, 
+  Star,
+  Vote,
   FileText,
-  AlertCircle,
-  Video,
-  Music,
-  FileDown,
-  Calendar,
-  GitBranch,
-  ChevronDown
+  Minus,
+  Grid3X3,
+  Search,
+  Plus
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface BlockPaletteProps {
-  onBlockAdd: (type: BlockType, position?: number) => string;
+  onBlockAdd: (type: string, position?: number) => void;
 }
 
-const blockTypes = [
-  { type: 'heading' as BlockType, label: 'Título', icon: Heading, category: 'text' },
-  { type: 'text' as BlockType, label: 'Texto', icon: Type, category: 'text' },
-  { type: 'quote' as BlockType, label: 'Citação', icon: Quote, category: 'text' },
-  { type: 'list' as BlockType, label: 'Lista', icon: List, category: 'text' },
-  { type: 'image' as BlockType, label: 'Imagem', icon: Image, category: 'media' },
-  { type: 'video' as BlockType, label: 'Vídeo', icon: Video, category: 'media' },
-  { type: 'audio' as BlockType, label: 'Áudio', icon: Music, category: 'media' },
-  { type: 'table' as BlockType, label: 'Tabela', icon: Table, category: 'data' },
-  { type: 'chart' as BlockType, label: 'Gráfico', icon: BarChart3, category: 'data' },
-  { type: 'code' as BlockType, label: 'Código', icon: Code, category: 'advanced' },
-  { type: 'callout' as BlockType, label: 'Destaque', icon: AlertCircle, category: 'advanced' },
-  { type: 'file' as BlockType, label: 'Arquivo', icon: FileDown, category: 'advanced' },
-  { type: 'timeline' as BlockType, label: 'Timeline', icon: Calendar, category: 'advanced' },
-  { type: 'comparison' as BlockType, label: 'Comparação', icon: GitBranch, category: 'advanced' }
-];
-
-const categories = {
-  text: 'Texto',
-  media: 'Mídia',
-  data: 'Dados',
-  advanced: 'Avançado'
-};
-
 export const BlockPalette: React.FC<BlockPaletteProps> = ({ onBlockAdd }) => {
-  const [expandedCategories, setExpandedCategories] = React.useState<Set<string>>(
-    new Set(['text', 'media'])
-  );
+  const [searchTerm, setSearchTerm] = useState('');
 
-  const toggleCategory = (category: string) => {
-    setExpandedCategories(prev => {
-      const next = new Set(prev);
-      if (next.has(category)) {
-        next.delete(category);
-      } else {
-        next.add(category);
-      }
-      return next;
-    });
-  };
+  const blockCategories = [
+    {
+      name: 'Texto',
+      blocks: [
+        {
+          type: 'heading',
+          icon: Type,
+          label: 'Título',
+          description: 'Cabeçalhos H1-H6',
+          color: '#3b82f6'
+        },
+        {
+          type: 'paragraph',
+          icon: AlignLeft,
+          label: 'Parágrafo',
+          description: 'Texto formatado',
+          color: '#6b7280'
+        },
+        {
+          type: 'quote',
+          icon: Quote,
+          label: 'Citação',
+          description: 'Bloco de citação',
+          color: '#8b5cf6'
+        },
+        {
+          type: 'divider',
+          icon: Minus,
+          label: 'Divisor',
+          description: 'Linha de separação',
+          color: '#9ca3af'
+        }
+      ]
+    },
+    {
+      name: 'Mídia',
+      blocks: [
+        {
+          type: 'figure',
+          icon: Image,
+          label: 'Figura',
+          description: 'Imagem com legenda',
+          color: '#10b981'
+        },
+        {
+          type: 'diagram',
+          icon: Grid3X3,
+          label: 'Diagrama',
+          description: 'Fluxogramas e diagramas científicos',
+          color: '#f59e0b'
+        }
+      ]
+    },
+    {
+      name: 'Dados',
+      blocks: [
+        {
+          type: 'table',
+          icon: Table,
+          label: 'Tabela',
+          description: 'Dados tabulares',
+          color: '#ef4444'
+        },
+        {
+          type: 'number_card',
+          icon: Hash,
+          label: 'Card Numérico',
+          description: 'Métricas destacadas',
+          color: '#06b6d4'
+        },
+        {
+          type: 'snapshot_card',
+          icon: BarChart3,
+          label: 'Card de Evidência',
+          description: 'Resumo de estudos',
+          color: '#8b5cf6'
+        }
+      ]
+    },
+    {
+      name: 'Interação',
+      blocks: [
+        {
+          type: 'callout',
+          icon: MessageSquare,
+          label: 'Callout',
+          description: 'Destaque informativo',
+          color: '#f59e0b'
+        },
+        {
+          type: 'poll',
+          icon: Vote,
+          label: 'Enquete',
+          description: 'Votação interativa',
+          color: '#10b981'
+        },
+        {
+          type: 'reviewer_quote',
+          icon: Star,
+          label: 'Avaliação',
+          description: 'Comentário de revisor',
+          color: '#a855f7'
+        }
+      ]
+    },
+    {
+      name: 'Referências',
+      blocks: [
+        {
+          type: 'citation_list',
+          icon: FileText,
+          label: 'Bibliografia',
+          description: 'Lista de referências',
+          color: '#6366f1'
+        }
+      ]
+    }
+  ];
 
-  const handleBlockAdd = (type: BlockType) => {
-    onBlockAdd(type);
-  };
+  const filteredCategories = blockCategories
+    .map(category => ({
+      ...category,
+      blocks: category.blocks.filter(block =>
+        block.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        block.description.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    }))
+    .filter(category => category.blocks.length > 0);
 
   return (
-    <Card className="block-palette h-full" style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg" style={{ color: '#ffffff' }}>
-          Blocos
-        </CardTitle>
-      </CardHeader>
-      
-      <CardContent className="space-y-4">
-        {Object.entries(categories).map(([categoryKey, categoryLabel]) => {
-          const categoryBlocks = blockTypes.filter(block => block.category === categoryKey);
-          const isExpanded = expandedCategories.has(categoryKey);
-          
-          return (
-            <div key={categoryKey} className="space-y-2">
-              <Button
-                variant="ghost"
-                onClick={() => toggleCategory(categoryKey)}
-                className="w-full justify-between p-2 h-auto text-left"
-                style={{ color: '#ffffff' }}
-              >
-                <span className="font-medium">{categoryLabel}</span>
-                <ChevronDown 
-                  className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
-                />
-              </Button>
+    <div className="h-full flex flex-col" style={{ backgroundColor: '#1a1a1a' }}>
+      {/* Header */}
+      <div className="p-4 border-b" style={{ borderColor: '#2a2a2a' }}>
+        <h3 className="font-semibold mb-3" style={{ color: '#ffffff' }}>
+          Blocos Disponíveis
+        </h3>
+        
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Input
+            placeholder="Buscar blocos..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10 h-9"
+            style={{ backgroundColor: '#212121', borderColor: '#2a2a2a', color: '#ffffff' }}
+          />
+        </div>
+      </div>
+
+      {/* Block Categories */}
+      <ScrollArea className="flex-1 p-4">
+        <div className="space-y-6">
+          {filteredCategories.map((category) => (
+            <div key={category.name}>
+              <h4 className="text-sm font-medium mb-3 flex items-center gap-2" style={{ color: '#d1d5db' }}>
+                {category.name}
+                <Badge variant="outline" className="text-xs">
+                  {category.blocks.length}
+                </Badge>
+              </h4>
               
-              {isExpanded && (
-                <div className="grid grid-cols-2 gap-2 pl-2">
-                  {categoryBlocks.map(({ type, label, icon: Icon }) => (
+              <div className="grid grid-cols-1 gap-2">
+                {category.blocks.map((block) => {
+                  const Icon = block.icon;
+                  return (
                     <Button
-                      key={type}
-                      variant="outline"
-                      onClick={() => handleBlockAdd(type)}
-                      className="h-auto p-3 flex flex-col items-center gap-1 text-xs"
+                      key={block.type}
+                      variant="ghost"
+                      className={cn(
+                        "h-auto p-3 justify-start hover:bg-gray-800/50 group transition-all",
+                        "border border-transparent hover:border-gray-700"
+                      )}
+                      onClick={() => onBlockAdd(block.type)}
                       style={{ 
-                        borderColor: '#2a2a2a',
                         backgroundColor: 'transparent',
                         color: '#ffffff'
                       }}
                     >
-                      <Icon className="w-4 h-4" />
-                      <span>{label}</span>
+                      <div className="flex items-start gap-3 w-full">
+                        <div 
+                          className="p-2 rounded-md flex-shrink-0 group-hover:scale-110 transition-transform"
+                          style={{ backgroundColor: `${block.color}20`, color: block.color }}
+                        >
+                          <Icon className="w-4 h-4" />
+                        </div>
+                        
+                        <div className="flex-1 text-left min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium text-sm">{block.label}</span>
+                            <Plus className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                          <p className="text-xs text-gray-400 line-clamp-2">
+                            {block.description}
+                          </p>
+                        </div>
+                      </div>
                     </Button>
-                  ))}
-                </div>
-              )}
+                  );
+                })}
+              </div>
             </div>
-          );
-        })}
-      </CardContent>
-    </Card>
+          ))}
+        </div>
+
+        {filteredCategories.length === 0 && (
+          <div className="text-center py-12">
+            <Search className="w-12 h-12 mx-auto mb-4 opacity-30" style={{ color: '#6b7280' }} />
+            <p className="text-gray-400 mb-2">Nenhum bloco encontrado</p>
+            <p className="text-sm text-gray-500">
+              Tente ajustar os termos de busca
+            </p>
+          </div>
+        )}
+      </ScrollArea>
+
+      {/* Footer */}
+      <div className="p-4 border-t" style={{ borderColor: '#2a2a2a' }}>
+        <p className="text-xs text-gray-500 text-center">
+          Clique para adicionar • Arraste para organizar
+        </p>
+      </div>
+    </div>
   );
 };

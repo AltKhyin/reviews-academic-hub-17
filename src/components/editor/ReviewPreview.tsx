@@ -1,6 +1,5 @@
-
 // ABOUTME: Enhanced preview component with complete 2D grid support
-// Shows real-time preview of both 1D and 2D grid layouts with proper rendering - UPDATED: String ID support
+// Shows real-time preview of both 1D and 2D grid layouts with proper rendering
 
 import React, { useMemo } from 'react';
 import { ReviewBlock } from '@/types/review';
@@ -52,7 +51,7 @@ export const ReviewPreview: React.FC<ReviewPreviewProps> = ({
   // Enhanced layout grouping with 2D grid support
   const layoutGroups: LayoutGroup[] = useMemo(() => {
     const groups: LayoutGroup[] = [];
-    const processedBlockIds = new Set<string>();
+    const processedBlockIds = new Set<number>();
     
     const sortedBlocks = [...visibleBlocks].sort((a, b) => a.sort_index - b.sort_index);
 

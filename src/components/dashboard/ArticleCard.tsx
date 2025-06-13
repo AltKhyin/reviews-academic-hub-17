@@ -1,15 +1,11 @@
 
-// ABOUTME: Migrated ArticleCard using coordinated data access patterns
-// Replaces individual user interaction API calls with shared context
-
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, User, Heart, Bookmark } from 'lucide-react';
 import { Issue } from '@/types/issue';
-import { useStandardizedData } from '@/hooks/useStandardizedData';
+import { useUserInteractionContext } from '@/contexts/UserInteractionContext';
 import { useNavigate } from 'react-router-dom';
-import { architecturalGuards } from '@/core/ArchitecturalGuards';
 
 interface ArticleCardProps {
   issue: Issue;
@@ -28,29 +24,14 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
 }) => {
   const navigate = useNavigate();
   
-  // ARCHITECTURAL FIX: Use coordinated user context instead of individual API calls
+  // PERFORMANCE FIX: Use shared context instead of individual hooks
   const { 
-    isBookmarked,
+    hasBookmark,
     hasReaction, 
     toggleBookmark,
     toggleReaction,
-    loading: userDataLoading
-  } = useStandardizedData.useUserContext();
-
-  // PERFORMANCE MONITORING: Track coordination usage
-  React.useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      // Verify no direct API calls in this component
-      const violations = architecturalGuards.flagArchitecturalViolations();
-      const cardViolations = violations.filter(v => v.component.includes('ArticleCard'));
-      
-      if (cardViolations.length > 0) {
-        console.warn('🚨 ArticleCard: Architectural violations detected:', cardViolations);
-      } else {
-        console.log('✅ ArticleCard: Using coordinated data access successfully');
-      }
-    }
-  }, []);
+    isLoading
+  } = useUserInteractionContext();
 
   const handleClick = onClick || (() => navigate(`/article/${issue.id}`));
 
@@ -62,29 +43,19 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
     });
   };
 
-  const handleReactionClick = async (e: React.MouseEvent) => {
+  const handleReactionClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    try {
-      await toggleReaction(issue.id, 'want_more');
-      console.log('ArticleCard: Reaction toggled via coordinated action');
-    } catch (error) {
-      console.error('ArticleCard: Reaction error:', error);
-    }
+    toggleReaction(issue.id, 'want_more');
   };
 
-  const handleBookmarkClick = async (e: React.MouseEvent) => {
+  const handleBookmarkClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    try {
-      await toggleBookmark(issue.id);
-      console.log('ArticleCard: Bookmark toggled via coordinated action');
-    } catch (error) {
-      console.error('ArticleCard: Bookmark error:', error);
-    }
+    toggleBookmark(issue.id);
   };
 
-  // Use coordinated data instead of individual context calls
+  // Use context helpers instead of individual API calls
   const hasWantMoreReaction = hasReaction(issue.id, 'want_more');
-  const isIssueBookmarked = isBookmarked(issue.id);
+  const isIssueBookmarked = hasBookmark(issue.id);
 
   // Different styling for featured variant
   const cardClasses = variant === 'featured' 
@@ -119,11 +90,11 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
         )}
       </div>
       
-      {/* Action buttons using coordinated data */}
+      {/* Action buttons using shared context */}
       <div className="absolute top-3 right-3 flex gap-2 z-10">
         <button
           onClick={handleBookmarkClick}
-          disabled={userDataLoading}
+          disabled={isLoading}
           className={`p-2 rounded-full backdrop-blur-sm transition-colors ${
             isIssueBookmarked 
               ? 'bg-yellow-500/20 text-yellow-400' 
@@ -135,7 +106,7 @@ export const ArticleCard: React.FC<ArticleCardProps> = ({
         
         <button
           onClick={handleReactionClick}
-          disabled={userDataLoading}
+          disabled={isLoading}
           className={`p-2 rounded-full backdrop-blur-sm transition-colors ${
             hasWantMoreReaction 
               ? 'bg-red-500/20 text-red-400' 

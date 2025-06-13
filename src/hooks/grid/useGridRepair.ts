@@ -1,69 +1,62 @@
 
-// ABOUTME: Grid repair utilities for fixing layout metadata inconsistencies  
-// Provides validation and repair functions for grid layouts
+// ABOUTME: Grid layout repair and validation utilities
+// Handles metadata validation and repair operations
 
 import { useCallback } from 'react';
 import { ReviewBlock } from '@/types/review';
 
 interface UseGridRepairProps {
-  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
+  onUpdateBlock: (blockId: number, updates: Partial<ReviewBlock>) => void;
 }
 
 export const useGridRepair = ({ onUpdateBlock }: UseGridRepairProps) => {
-  
-  const validateLayoutMetadata = useCallback((blocks: ReviewBlock[]) => {
-    const issues: string[] = [];
+  const validateLayoutMetadata = useCallback((block: ReviewBlock): boolean => {
+    const layout = block.meta?.layout;
+    if (!layout) return true;
     
-    blocks.forEach(block => {
-      const layout = block.meta?.layout;
-      if (layout?.row_id) {
-        // Check for valid column widths
-        if (layout.columnWidths && layout.columns) {
-          if (layout.columnWidths.length !== layout.columns) {
-            issues.push(`Block ${block.id}: columnWidths length doesn't match columns`);
-          }
-          
-          const totalWidth = layout.columnWidths.reduce((sum, width) => sum + width, 0);
-          if (Math.abs(totalWidth - 100) > 0.1) {
-            issues.push(`Block ${block.id}: columnWidths don't sum to 100%`);
-          }
-        }
-      }
-      
-      if (layout?.grid_id && layout?.grid_position) {
-        // Validate 2D grid position
-        if (layout.grid_position.row < 0 || layout.grid_position.column < 0) {
-          issues.push(`Block ${block.id}: invalid grid position`);
-        }
-      }
-    });
+    const isValid = !!(layout.row_id && 
+                      typeof layout.position === 'number' && 
+                      typeof layout.columns === 'number' && 
+                      layout.columns > 0);
     
-    return issues;
+    if (!isValid) {
+      console.warn('Invalid layout metadata detected:', { blockId: block.id, layout });
+    }
+    
+    return isValid;
   }, []);
-
+  
   const repairLayoutMetadata = useCallback((rowId: string, blocks: ReviewBlock[]) => {
     console.log('Repairing layout metadata for row:', rowId);
     
-    if (blocks.length === 0) return;
-    
-    // Ensure equal column widths
-    const columns = blocks.length;
-    const equalWidth = 100 / columns;
-    const columnWidths = Array(columns).fill(equalWidth);
-    
     blocks.forEach((block, index) => {
-      onUpdateBlock(block.id, {
-        meta: {
-          ...block.meta,
-          layout: {
-            ...block.meta?.layout,
-            row_id: rowId,
-            columns,
-            columnWidths,
-            position: index
+      const currentLayout = block.meta?.layout;
+      const expectedLayout = {
+        row_id: rowId,
+        position: index,
+        columns: blocks.length,
+        gap: currentLayout?.gap || 4,
+        columnWidths: currentLayout?.columnWidths
+      };
+      
+      if (!currentLayout || 
+          currentLayout.row_id !== expectedLayout.row_id ||
+          currentLayout.position !== expectedLayout.position ||
+          currentLayout.columns !== expectedLayout.columns) {
+        
+        console.log('Updating block layout metadata:', { 
+          blockId: block.id, 
+          oldLayout: currentLayout, 
+          newLayout: expectedLayout 
+        });
+        
+        onUpdateBlock(block.id, {
+          meta: {
+            ...block.meta,
+            layout: expectedLayout
           }
-        }
-      });
+        });
+      }
     });
   }, [onUpdateBlock]);
 

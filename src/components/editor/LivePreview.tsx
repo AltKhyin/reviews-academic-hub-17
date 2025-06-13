@@ -1,5 +1,5 @@
 
-// ABOUTME: Live preview component with real-time updates for block editing and string ID support
+// ABOUTME: Live preview component with real-time updates for block editing
 // Provides immediate visual feedback during content creation
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -13,8 +13,8 @@ import { cn } from '@/lib/utils';
 
 interface LivePreviewProps {
   blocks: ReviewBlock[];
-  activeBlockId?: string | null;
-  onBlockUpdate?: (blockId: string, updates: Partial<ReviewBlock>) => void;
+  activeBlockId?: number | null;
+  onBlockUpdate?: (blockId: number, updates: Partial<ReviewBlock>) => void;
   className?: string;
 }
 
@@ -24,176 +24,225 @@ export const LivePreview: React.FC<LivePreviewProps> = ({
   blocks,
   activeBlockId,
   onBlockUpdate,
-  className
+  className = ""
 }) => {
   const [viewportSize, setViewportSize] = useState<ViewportSize>('desktop');
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [showHiddenBlocks, setShowHiddenBlocks] = useState(false);
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  const [highlightActiveBlock, setHighlightActiveBlock] = useState(true);
 
-  // Memoize filtered blocks for performance
+  // Update timestamp when blocks change
+  useEffect(() => {
+    setLastUpdate(new Date());
+  }, [blocks]);
+
+  // Filter visible blocks and sort by index
   const visibleBlocks = useMemo(() => {
-    return showHiddenBlocks 
-      ? blocks 
-      : blocks.filter(block => block.visible !== false);
-  }, [blocks, showHiddenBlocks]);
+    return blocks
+      .filter(block => block.visible)
+      .sort((a, b) => a.sort_index - b.sort_index);
+  }, [blocks]);
 
-  const hiddenBlocksCount = blocks.length - blocks.filter(block => block.visible !== false).length;
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    // Simulate refresh delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    setIsRefreshing(false);
+  // Create wrapper function for onUpdate
+  const createBlockUpdateWrapper = (blockId: number) => {
+    return (updates: Partial<ReviewBlock>) => {
+      if (onBlockUpdate) {
+        onBlockUpdate(blockId, updates);
+      }
+    };
   };
 
-  const handleBlockUpdate = (blockId: string, updates: Partial<ReviewBlock>) => {
-    if (onBlockUpdate) {
-      onBlockUpdate(blockId, updates);
-    }
-  };
-
-  const getViewportDimensions = () => {
+  const getViewportClasses = () => {
     switch (viewportSize) {
       case 'mobile':
-        return { width: '375px', maxWidth: '100%' };
+        return 'max-w-sm mx-auto';
       case 'tablet':
-        return { width: '768px', maxWidth: '100%' };
+        return 'max-w-2xl mx-auto';
+      case 'desktop':
       default:
-        return { width: '100%', maxWidth: '100%' };
+        return 'max-w-4xl mx-auto';
     }
   };
 
-  const viewportDimensions = getViewportDimensions();
+  const getViewportIcon = () => {
+    switch (viewportSize) {
+      case 'mobile':
+        return <Smartphone className="w-4 h-4" />;
+      case 'tablet':
+        return <Tablet className="w-4 h-4" />;
+      case 'desktop':
+      default:
+        return <Monitor className="w-4 h-4" />;
+    }
+  };
+
+  const handleRefresh = () => {
+    setLastUpdate(new Date());
+  };
 
   return (
-    <Card className={cn("h-full flex flex-col", className)} style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2" style={{ color: '#ffffff' }}>
-            <Eye className="w-5 h-5" />
-            Live Preview
-          </CardTitle>
-          
-          <div className="flex items-center gap-2">
-            {/* Viewport Size Toggle */}
-            <div className="flex border rounded overflow-hidden" style={{ borderColor: '#2a2a2a' }}>
-              <Button
-                variant={viewportSize === 'desktop' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewportSize('desktop')}
-                className="rounded-none border-0"
-              >
-                <Monitor className="w-4 h-4" />
-              </Button>
-              <Button
-                variant={viewportSize === 'tablet' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewportSize('tablet')}
-                className="rounded-none border-0"
-              >
-                <Tablet className="w-4 h-4" />
-              </Button>
-              <Button
-                variant={viewportSize === 'mobile' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewportSize('mobile')}
-                className="rounded-none border-0"
-              >
-                <Smartphone className="w-4 h-4" />
-              </Button>
-            </div>
+    <div className={cn("live-preview h-full flex flex-col", className)}>
+      {/* Preview Controls */}
+      <div 
+        className="flex items-center justify-between p-3 border-b flex-shrink-0"
+        style={{ 
+          backgroundColor: '#1a1a1a',
+          borderColor: '#2a2a2a'
+        }}
+      >
+        <div className="flex items-center gap-3">
+          <Eye className="w-4 h-4" style={{ color: '#10b981' }} />
+          <span className="text-sm font-medium" style={{ color: '#ffffff' }}>
+            Preview ao Vivo
+          </span>
+          <Badge 
+            variant="secondary" 
+            className="text-xs"
+            style={{ backgroundColor: '#3b82f6', color: '#ffffff' }}
+          >
+            {visibleBlocks.length} blocos
+          </Badge>
+        </div>
 
-            {/* Hidden Blocks Toggle */}
-            {hiddenBlocksCount > 0 && (
-              <Button
-                variant={showHiddenBlocks ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setShowHiddenBlocks(!showHiddenBlocks)}
-                className="text-xs"
-              >
-                {showHiddenBlocks ? 'Ocultar' : `Mostrar ${hiddenBlocksCount}`} ocultos
-              </Button>
-            )}
-
-            {/* Refresh Button */}
+        <div className="flex items-center gap-2">
+          {/* Viewport Size Controls */}
+          <div className="flex items-center border rounded-md" style={{ borderColor: '#2a2a2a' }}>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              onClick={handleRefresh}
-              disabled={isRefreshing}
+              onClick={() => setViewportSize('mobile')}
+              className={cn(
+                "h-8 w-8 p-0 rounded-r-none",
+                viewportSize === 'mobile' && "bg-blue-600 text-white"
+              )}
+              title="Mobile View"
             >
-              <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
+              <Smartphone className="w-3 h-3" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setViewportSize('tablet')}
+              className={cn(
+                "h-8 w-8 p-0 rounded-none border-x",
+                viewportSize === 'tablet' && "bg-blue-600 text-white"
+              )}
+              style={{ borderColor: '#2a2a2a' }}
+              title="Tablet View"
+            >
+              <Tablet className="w-3 h-3" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setViewportSize('desktop')}
+              className={cn(
+                "h-8 w-8 p-0 rounded-l-none",
+                viewportSize === 'desktop' && "bg-blue-600 text-white"
+              )}
+              title="Desktop View"
+            >
+              <Monitor className="w-3 h-3" />
             </Button>
           </div>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleRefresh}
+            className="h-8 w-8 p-0"
+            title="Refresh Preview"
+            style={{ color: '#9ca3af' }}
+          >
+            <RefreshCw className="w-3 h-3" />
+          </Button>
         </div>
-        
-        {/* Viewport Info */}
-        <div className="flex items-center gap-2 text-sm text-gray-400">
-          <Badge variant="outline" className="text-xs">
-            {viewportSize === 'desktop' ? 'Desktop' : viewportSize === 'tablet' ? 'Tablet' : 'Mobile'}
-          </Badge>
-          <span>•</span>
-          <span>{visibleBlocks.length} blocos visíveis</span>
-          {activeBlockId && (
-            <>
-              <span>•</span>
-              <span>Ativo: {activeBlockId}</span>
-            </>
+      </div>
+
+      {/* Preview Content */}
+      <div 
+        className="flex-1 overflow-y-auto p-6"
+        style={{ backgroundColor: '#121212' }}
+      >
+        <div className={cn("transition-all duration-200", getViewportClasses())}>
+          {visibleBlocks.length === 0 ? (
+            <Card 
+              className="border-2 border-dashed text-center py-16"
+              style={{ 
+                backgroundColor: '#1a1a1a',
+                borderColor: '#2a2a2a'
+              }}
+            >
+              <CardContent>
+                <div className="space-y-4">
+                  <div 
+                    className="mx-auto w-16 h-16 rounded-full flex items-center justify-center"
+                    style={{ backgroundColor: '#10b981' }}
+                  >
+                    <Eye className="w-8 h-8" style={{ color: '#ffffff' }} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2" style={{ color: '#ffffff' }}>
+                      Preview Vazio
+                    </h3>
+                    <p className="text-sm" style={{ color: '#9ca3af' }}>
+                      Adicione blocos no editor para ver o preview aqui
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-6">
+              {visibleBlocks.map((block) => (
+                <div
+                  key={block.id}
+                  className={cn(
+                    "transition-all duration-200",
+                    highlightActiveBlock && activeBlockId === block.id && 
+                    "ring-2 ring-blue-500 ring-offset-2 ring-offset-gray-900 rounded-lg"
+                  )}
+                >
+                  <BlockRenderer
+                    block={block}
+                    onUpdate={createBlockUpdateWrapper(block.id)}
+                    readonly={true}
+                    className="preview-block"
+                  />
+                </div>
+              ))}
+            </div>
           )}
         </div>
-      </CardHeader>
+      </div>
 
-      <CardContent className="flex-1 overflow-hidden p-0">
-        <div 
-          className="h-full overflow-auto mx-auto transition-all duration-300"
-          style={viewportDimensions}
-        >
-          <div className="p-6 space-y-4" style={{ backgroundColor: '#121212' }}>
-            {visibleBlocks.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="text-gray-400 mb-2">Nenhum bloco para visualizar</div>
-                <div className="text-sm text-gray-500">
-                  Adicione blocos no editor para ver a prévia
-                </div>
-              </div>
-            ) : (
-              visibleBlocks.map((block) => {
-                const isActive = activeBlockId === block.id;
-                
-                return (
-                  <div
-                    key={block.id}
-                    className={cn(
-                      "transition-all duration-200 rounded-lg",
-                      isActive && "ring-2 ring-blue-500 ring-opacity-50",
-                      !block.visible && "opacity-50 border border-dashed border-gray-600"
-                    )}
-                    style={{
-                      backgroundColor: isActive ? 'rgba(59, 130, 246, 0.05)' : 'transparent'
-                    }}
-                  >
-                    {!block.visible && (
-                      <div className="text-xs text-gray-500 mb-2 px-2">
-                        Bloco oculto - ID: {block.id}
-                      </div>
-                    )}
-                    <BlockRenderer
-                      block={block}
-                      onUpdate={(updates) => handleBlockUpdate(block.id, updates)}
-                      readonly={true}
-                    />
-                  </div>
-                );
-              })
-            )}
-            
-            {/* End Indicator */}
-            <div className="text-center py-4 border-t border-gray-700">
-              <div className="text-xs text-gray-500">Fim da prévia</div>
-            </div>
-          </div>
+      {/* Preview Footer */}
+      <div 
+        className="flex items-center justify-between p-3 border-t text-xs flex-shrink-0"
+        style={{ 
+          backgroundColor: '#1a1a1a',
+          borderColor: '#2a2a2a',
+          color: '#9ca3af'
+        }}
+      >
+        <div className="flex items-center gap-2">
+          {getViewportIcon()}
+          <span>Visualização {viewportSize}</span>
         </div>
-      </CardContent>
-    </Card>
+        <div className="flex items-center gap-4">
+          <span>
+            Última atualização: {lastUpdate.toLocaleTimeString()}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setHighlightActiveBlock(!highlightActiveBlock)}
+            className="h-6 px-2 text-xs"
+            style={{ color: highlightActiveBlock ? '#3b82f6' : '#9ca3af' }}
+          >
+            {highlightActiveBlock ? 'Highlight ON' : 'Highlight OFF'}
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 };

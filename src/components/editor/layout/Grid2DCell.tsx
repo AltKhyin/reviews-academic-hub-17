@@ -1,5 +1,5 @@
 
-// ABOUTME: Individual cell component for 2D grid layout with string ID support
+// ABOUTME: Individual cell component for 2D grid layout
 // Renders a single cell with block content or empty state
 
 import React, { useCallback } from 'react';
@@ -11,7 +11,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface DragState {
-  draggedBlockId: string | null;
+  draggedBlockId: number | null;
   dragOverRowId: string | null;
   dragOverPosition: number | null;
   isDragging: boolean;
@@ -20,54 +20,56 @@ interface DragState {
 }
 
 interface Grid2DCellProps {
-  gridId: string;
+  cell: GridCell;
+  grid: Grid2DLayout;
   position: GridPosition;
-  block: ReviewBlock | null;
-  activeBlockId?: string | null;
-  onActiveBlockChange?: (blockId: string | null) => void;
-  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
-  onDeleteBlock: (blockId: string) => void;
-  onAddBlock: (gridId: string, position: GridPosition) => void;
+  activeBlockId?: number | null;
+  onActiveBlockChange?: (blockId: number | null) => void;
+  onUpdateBlock: (blockId: number, updates: Partial<ReviewBlock>) => void;
+  onDeleteBlock: (blockId: number) => void;
+  onAddBlock: () => void;
+  readonly?: boolean;
   dragState?: DragState;
-  onDragOver?: () => void;
-  onDragLeave?: () => void;
-  onDrop?: () => void;
+  onDragOver?: (e: React.DragEvent, targetId: string, position?: GridPosition, targetType?: string) => void;
+  onDragLeave?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent, targetId: string, position?: GridPosition, dropType?: string) => void;
 }
 
 export const Grid2DCell: React.FC<Grid2DCellProps> = ({
-  gridId,
+  cell,
+  grid,
   position,
-  block,
   activeBlockId,
   onActiveBlockChange,
   onUpdateBlock,
   onDeleteBlock,
   onAddBlock,
+  readonly = false,
   dragState,
   onDragOver,
   onDragLeave,
   onDrop
 }) => {
-  const isDropTarget = dragState?.dragOverRowId === gridId && 
-                      dragState?.dragOverPosition === position.row * 2 + position.column; // Assuming 2 columns
+  const isDropTarget = dragState?.dragOverRowId === grid.id && 
+                      dragState?.dragOverPosition === position.row * grid.columns + position.column;
 
   const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     
     if (onDragOver && dragState?.isDragging) {
-      onDragOver();
+      onDragOver(e, grid.id, position, 'merge');
     }
-  }, [onDragOver, dragState]);
+  }, [onDragOver, grid.id, position, dragState]);
 
   const handleDragDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     
     if (onDrop && dragState?.isDragging) {
-      onDrop();
+      onDrop(e, grid.id, position, 'merge');
     }
-  }, [onDrop, dragState]);
+  }, [onDrop, grid.id, position, dragState]);
 
   const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -76,13 +78,13 @@ export const Grid2DCell: React.FC<Grid2DCellProps> = ({
     
     if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
       if (onDragLeave) {
-        onDragLeave();
+        onDragLeave(e);
       }
     }
   }, [onDragLeave]);
 
-  const handleBlockClick = useCallback((blockId: string, event: React.MouseEvent) => {
-    if (onActiveBlockChange) {
+  const handleBlockClick = useCallback((blockId: number, event: React.MouseEvent) => {
+    if (!readonly && onActiveBlockChange) {
       const target = event.target as Element;
       
       const isInteractiveElement = target.closest(
@@ -94,26 +96,22 @@ export const Grid2DCell: React.FC<Grid2DCellProps> = ({
         onActiveBlockChange(activeBlockId === blockId ? null : blockId);
       }
     }
-  }, [activeBlockId, onActiveBlockChange]);
+  }, [activeBlockId, onActiveBlockChange, readonly]);
 
-  const createBlockUpdateWrapper = useCallback((blockId: string) => {
+  const createBlockUpdateWrapper = useCallback((blockId: number) => {
     return (updates: Partial<ReviewBlock>) => {
       onUpdateBlock(blockId, updates);
     };
   }, [onUpdateBlock]);
 
-  const handleAddBlock = useCallback(() => {
-    onAddBlock(gridId, position);
-  }, [onAddBlock, gridId, position]);
-
-  if (block) {
-    const isActive = activeBlockId === block.id;
-    const isDragging = dragState?.draggedBlockId === block.id;
+  if (cell.block) {
+    const isActive = activeBlockId === cell.block.id;
+    const isDragging = dragState?.draggedBlockId === cell.block.id;
 
     return (
       <div 
         className="relative group h-full" 
-        key={`block-${block.id}`}
+        key={`block-${cell.block.id}`}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDragDrop}
@@ -136,41 +134,43 @@ export const Grid2DCell: React.FC<Grid2DCellProps> = ({
           className={cn(
             "h-full transition-all duration-200 cursor-pointer rounded-lg relative",
             isActive ? "ring-2 ring-blue-500 shadow-lg" : "hover:shadow-md",
-            !block.visible && "opacity-50",
+            !cell.block.visible && "opacity-50",
             isDragging && "opacity-30 scale-95"
           )}
           style={{ 
             backgroundColor: isActive ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
             borderColor: isActive ? '#3b82f6' : 'transparent'
           }}
-          onClick={(e) => handleBlockClick(block.id, e)}
+          onClick={(e) => handleBlockClick(cell.block!.id, e)}
         >
           {/* Block Controls */}
-          <div className={cn(
-            "absolute -top-2 -right-2 z-10 transition-opacity",
-            isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-          )}>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-                onDeleteBlock(block.id);
-              }}
-              className="h-6 w-6 p-0 bg-red-800 border border-red-600 hover:bg-red-700"
-              title="Remover bloco"
-            >
-              <Trash2 className="w-3 h-3" />
-            </Button>
-          </div>
+          {!readonly && (
+            <div className={cn(
+              "absolute -top-2 -right-2 z-10 transition-opacity",
+              isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+            )}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  onDeleteBlock(cell.block!.id);
+                }}
+                className="h-6 w-6 p-0 bg-red-800 border border-red-600 hover:bg-red-700"
+                title="Remover bloco"
+              >
+                <Trash2 className="w-3 h-3" />
+              </Button>
+            </div>
+          )}
 
           {/* Block Content */}
           <div className="p-4 h-full">
             <BlockRenderer
-              block={block}
-              onUpdate={createBlockUpdateWrapper(block.id)}
-              readonly={false}
+              block={cell.block}
+              onUpdate={createBlockUpdateWrapper(cell.block.id)}
+              readonly={readonly}
             />
           </div>
         </div>
@@ -204,7 +204,7 @@ export const Grid2DCell: React.FC<Grid2DCellProps> = ({
         </div>
       )}
       
-      {!isDropTarget && (
+      {!readonly && !isDropTarget && (
         <div className="text-center opacity-60 group-hover:opacity-100 transition-opacity">
           <div className="text-gray-400 text-xs mb-3">
             L{position.row + 1} C{position.column + 1}
@@ -212,7 +212,7 @@ export const Grid2DCell: React.FC<Grid2DCellProps> = ({
           <Button
             variant="ghost"
             size="sm"
-            onClick={handleAddBlock}
+            onClick={onAddBlock}
             className="text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500"
           >
             <Plus className="w-4 h-4 mr-2" />

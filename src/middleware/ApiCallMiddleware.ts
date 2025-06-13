@@ -1,140 +1,88 @@
 
-// ABOUTME: API call monitoring middleware for architectural compliance
-// Tracks and enforces coordinated data access patterns
+// ABOUTME: Request monitoring middleware to prevent unauthorized component API calls
+import { supabase } from '@/integrations/supabase/client';
 
-interface ApiCallStats {
-  endpoint: string;
-  count: number;
-  lastCalled: number;
-  component?: string;
-}
-
-interface ApiCallReport {
-  totalCalls: number;
-  callsByEndpoint: Map<string, ApiCallStats>;
-  violationsByComponent: Map<string, number>;
-  requestBudgetStatus: {
-    current: number;
-    maximum: number;
-    exceeded: boolean;
-  };
+interface ApiCallMetrics {
+  componentCalls: number;
+  authorizedCalls: number;
+  duplicateCalls: Map<string, number>;
+  timestamp: number;
 }
 
 class ApiCallMonitor {
-  private static instance: ApiCallMonitor;
-  private callStats = new Map<string, ApiCallStats>();
-  private componentViolations = new Map<string, number>();
-  private requestBudget = { current: 0, maximum: 10, exceeded: false };
-  private readonly STATS_RETENTION_TIME = 60000; // 1 minute
+  private metrics: ApiCallMetrics = {
+    componentCalls: 0,
+    authorizedCalls: 0,
+    duplicateCalls: new Map(),
+    timestamp: Date.now()
+  };
 
-  private constructor() {
-    this.initializeMonitoring();
-  }
+  private allowedContexts = new Set([
+    'UserInteractionContext',
+    'AuthContext', 
+    'useParallelDataLoader',
+    'DataAccessLayer'
+  ]);
 
-  static getInstance(): ApiCallMonitor {
-    if (!ApiCallMonitor.instance) {
-      ApiCallMonitor.instance = new ApiCallMonitor();
-    }
-    return ApiCallMonitor.instance;
-  }
-
-  private initializeMonitoring(): void {
-    // Clean up old stats periodically
-    setInterval(() => {
-      this.cleanupOldStats();
-    }, 30000); // Every 30 seconds
-
-    console.log('📊 ApiCallMonitor: Monitoring initialized');
-  }
-
-  trackApiCall(endpoint: string, component?: string): boolean {
-    const now = Date.now();
-    const key = component ? `${component}:${endpoint}` : endpoint;
+  trackCall(source: string, operation: string) {
+    const callKey = `${source}-${operation}`;
     
-    // Update call stats
-    const existing = this.callStats.get(key);
-    if (existing) {
-      existing.count++;
-      existing.lastCalled = now;
+    if (this.allowedContexts.has(source)) {
+      this.metrics.authorizedCalls++;
     } else {
-      this.callStats.set(key, {
-        endpoint,
-        count: 1,
-        lastCalled: now,
-        component
-      });
+      this.metrics.componentCalls++;
+      console.warn(`🚨 Unauthorized API call from ${source}: ${operation}`);
     }
 
-    // Track component violations
-    if (component) {
-      const violations = this.componentViolations.get(component) || 0;
-      this.componentViolations.set(component, violations + 1);
-    }
-
-    // Update request budget
-    this.requestBudget.current++;
-    this.requestBudget.exceeded = this.requestBudget.current > this.requestBudget.maximum;
-
-    // Log warning if budget exceeded
-    if (this.requestBudget.exceeded) {
-      console.warn(`🚨 API Budget Exceeded: ${this.requestBudget.current}/${this.requestBudget.maximum}`);
-    }
-
-    return !this.requestBudget.exceeded;
-  }
-
-  private cleanupOldStats(): void {
-    const cutoff = Date.now() - this.STATS_RETENTION_TIME;
+    // Track duplicates
+    const count = this.metrics.duplicateCalls.get(callKey) || 0;
+    this.metrics.duplicateCalls.set(callKey, count + 1);
     
-    for (const [key, stats] of this.callStats.entries()) {
-      if (stats.lastCalled < cutoff) {
-        this.callStats.delete(key);
-      }
+    if (count > 0) {
+      console.warn(`🔄 Duplicate API call detected: ${callKey} (${count + 1} times)`);
     }
-
-    // Reset request budget every minute
-    this.requestBudget.current = 0;
-    this.requestBudget.exceeded = false;
   }
 
-  getTotalCallsInLastMinute(): number {
-    return Array.from(this.callStats.values())
-      .reduce((sum, stats) => sum + stats.count, 0);
-  }
-
-  getCallStats(): Record<string, { count: number; lastCalled: number }> {
-    const result: Record<string, { count: number; lastCalled: number }> = {};
+  getMetrics() {
+    const totalCalls = this.metrics.componentCalls + this.metrics.authorizedCalls;
+    const duplicateCount = Array.from(this.metrics.duplicateCalls.values())
+      .filter(count => count > 1).length;
     
-    for (const [key, stats] of this.callStats.entries()) {
-      result[key] = {
-        count: stats.count,
-        lastCalled: stats.lastCalled
-      };
-    }
-    
-    return result;
-  }
-
-  getComponentViolations(): Map<string, number> {
-    return new Map(this.componentViolations);
-  }
-
-  generateReport(): ApiCallReport {
     return {
-      totalCalls: this.getTotalCallsInLastMinute(),
-      callsByEndpoint: new Map(this.callStats),
-      violationsByComponent: new Map(this.componentViolations),
-      requestBudgetStatus: { ...this.requestBudget }
+      ...this.metrics,
+      totalCalls,
+      duplicateCount,
+      efficiency: totalCalls > 0 ? (this.metrics.authorizedCalls / totalCalls) * 100 : 100
     };
   }
 
-  resetStats(): void {
-    this.callStats.clear();
-    this.componentViolations.clear();
-    this.requestBudget = { current: 0, maximum: 10, exceeded: false };
-    console.log('🔄 ApiCallMonitor: Stats reset');
+  reset() {
+    this.metrics = {
+      componentCalls: 0,
+      authorizedCalls: 0,
+      duplicateCalls: new Map(),
+      timestamp: Date.now()
+    };
   }
 }
 
-export const apiCallMonitor = ApiCallMonitor.getInstance();
-export type { ApiCallStats, ApiCallReport };
+export const apiCallMonitor = new ApiCallMonitor();
+
+// Wrap Supabase client to monitor calls
+const originalFrom = supabase.from;
+supabase.from = function(table: string) {
+  const stackTrace = new Error().stack || '';
+  const caller = stackTrace.split('\n')[2] || 'unknown';
+  
+  // Extract component/context name from stack trace
+  let source = 'unknown';
+  if (caller.includes('UserInteractionContext')) source = 'UserInteractionContext';
+  else if (caller.includes('AuthContext')) source = 'AuthContext';
+  else if (caller.includes('useParallelDataLoader')) source = 'useParallelDataLoader';
+  else if (caller.includes('ArticleCard')) source = 'ArticleCard';
+  else if (caller.includes('Dashboard')) source = 'Dashboard';
+  
+  apiCallMonitor.trackCall(source, `query-${table}`);
+  
+  return originalFrom.call(this, table);
+};

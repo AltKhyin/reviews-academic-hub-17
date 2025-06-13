@@ -1,6 +1,6 @@
 
 // ABOUTME: Refactored grid layout manager using focused sub-hooks
-// Main grid management coordination with better separation of concerns - FIXED: String ID support
+// Main grid management coordination with better separation of concerns
 
 import { useCallback } from 'react';
 import { ReviewBlock } from '@/types/review';
@@ -9,8 +9,8 @@ import { useGridRepair } from './grid/useGridRepair';
 
 interface UseGridLayoutManagerProps {
   blocks: ReviewBlock[];
-  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
-  onDeleteBlock: (blockId: string) => void;
+  onUpdateBlock: (blockId: number, updates: Partial<ReviewBlock>) => void;
+  onDeleteBlock: (blockId: number) => void;
 }
 
 export const useGridLayoutManager = ({
@@ -44,7 +44,7 @@ export const useGridLayoutManager = ({
     });
   }, [layoutState.rows, onUpdateBlock]);
   
-  const deleteBlockWithLayoutRepair = useCallback((blockId: string) => {
+  const deleteBlockWithLayoutRepair = useCallback((blockId: number) => {
     console.log('Deleting block with layout repair:', blockId);
     
     const blockToDelete = blocks.find(b => b.id === blockId);
@@ -73,13 +73,13 @@ export const useGridLayoutManager = ({
     onDeleteBlock(blockId);
   }, [blocks, layoutState.rows, onDeleteBlock, repairLayoutMetadata]);
   
-  const getRowByBlockId = useCallback((blockId: string) => {
+  const getRowByBlockId = useCallback((blockId: number) => {
     return layoutState.rows.find(row => 
       row.blocks.some(block => block.id === blockId)
     ) || null;
   }, [layoutState.rows]);
   
-  const isBlockInGrid = useCallback((blockId: string): boolean => {
+  const isBlockInGrid = useCallback((blockId: number): boolean => {
     const block = blocks.find(b => b.id === blockId);
     if (!block?.meta?.layout) return false;
     

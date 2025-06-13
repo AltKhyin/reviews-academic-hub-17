@@ -1,6 +1,6 @@
 
-// ABOUTME: Add block button component for inserting new blocks between existing ones
-// Provides drop zone and insertion functionality
+// ABOUTME: Add block button component with drop zone functionality
+// Provides interface for adding blocks between existing blocks
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ interface AddBlockButtonProps {
   onDragOver?: (e: React.DragEvent) => void;
   onDragLeave?: (e: React.DragEvent) => void;
   onDrop?: (e: React.DragEvent) => void;
+  className?: string;
 }
 
 export const AddBlockButton: React.FC<AddBlockButtonProps> = ({
@@ -22,31 +23,33 @@ export const AddBlockButton: React.FC<AddBlockButtonProps> = ({
   isDropZone = false,
   onDragOver,
   onDragLeave,
-  onDrop
+  onDrop,
+  className
 }) => {
   return (
-    <div
+    <div 
       className={cn(
-        "flex items-center justify-center py-2 transition-all duration-200",
-        isDropZone && "bg-green-500/10 border border-green-500 rounded-lg"
+        "flex justify-center py-2 opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity",
+        isDropZone && "opacity-100 bg-green-500/10 border border-green-500/50 rounded-lg",
+        className
       )}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
     >
       {isDropZone ? (
-        <div className="text-green-400 text-sm font-medium animate-pulse">
+        <div className="text-green-400 text-sm font-medium animate-pulse py-2">
           ↓ Soltar bloco aqui ↓
         </div>
       ) : (
         <Button
+          onClick={() => onAddBlock(position)}
           variant="ghost"
           size="sm"
-          onClick={() => onAddBlock(position)}
-          className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-white border border-dashed border-gray-600 hover:border-gray-500"
+          className="h-6 px-2 text-xs text-gray-500 hover:text-gray-300 hover:bg-gray-800 opacity-60 hover:opacity-100"
         >
-          <Plus className="w-4 h-4 mr-2" />
-          Adicionar Bloco
+          <Plus className="w-3 h-3 mr-1" />
+          Adicionar bloco
         </Button>
       )}
     </div>

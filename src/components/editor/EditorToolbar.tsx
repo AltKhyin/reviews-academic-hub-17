@@ -1,19 +1,18 @@
 
-// ABOUTME: Editor toolbar with mode switching and save controls
-// Provides editing mode controls and document management
+// ABOUTME: Editor toolbar with mode switching and action buttons
+// Centralized toolbar component for the native editor
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
+import { ImportExportManager } from './ImportExportManager';
 import { ReviewBlock } from '@/types/review';
 import { 
   Save, 
-  Undo2, 
-  Redo2, 
   Eye, 
-  Edit, 
-  Columns,
-  Upload,
-  Clock
+  Undo2, 
+  Redo2,
+  SplitSquareHorizontal,
+  Edit3
 } from 'lucide-react';
 
 interface EditorToolbarProps {
@@ -46,81 +45,94 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
   onImport
 }) => {
   return (
-    <div className="editor-toolbar flex items-center justify-between p-3 border-b bg-gray-900/50" style={{ borderColor: '#2a2a2a' }}>
-      <div className="flex items-center gap-2">
-        {/* Mode Toggle */}
-        <div className="flex border rounded overflow-hidden" style={{ borderColor: '#2a2a2a' }}>
-          <Button
-            variant={editorMode === 'edit' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => onModeChange('edit')}
-            className="rounded-none border-0"
-          >
-            <Edit className="w-4 h-4 mr-1" />
-            Editor
-          </Button>
-          <Button
-            variant={editorMode === 'split' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => onModeChange('split')}
-            className="rounded-none border-0"
-          >
-            <Columns className="w-4 h-4 mr-1" />
-            Dividir
-          </Button>
-          <Button
-            variant={editorMode === 'preview' ? 'default' : 'ghost'}
-            size="sm"
-            onClick={() => onModeChange('preview')}
-            className="rounded-none border-0"
-          >
-            <Eye className="w-4 h-4 mr-1" />
-            Preview
-          </Button>
-        </div>
-
-        {/* Undo/Redo */}
-        <div className="flex gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onUndo}
-            disabled={!canUndo}
-            title="Desfazer (Ctrl+Z)"
-          >
-            <Undo2 className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onRedo}
-            disabled={!canRedo}
-            title="Refazer (Ctrl+Y)"
-          >
-            <Redo2 className="w-4 h-4" />
-          </Button>
+    <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: '#2a2a2a' }}>
+      <div className="flex items-center gap-3">
+        {/* Save Status */}
+        <div className="flex items-center gap-2 text-xs" style={{ color: '#9ca3af' }}>
+          {hasUnsavedChanges && (
+            <span style={{ color: '#f59e0b' }}>● Não salvo</span>
+          )}
+          {isSaving && (
+            <span style={{ color: '#3b82f6' }}>Salvando...</span>
+          )}
+          {!isSaving && lastSaved && (
+            <span>Salvo {lastSaved.toLocaleTimeString()}</span>
+          )}
         </div>
       </div>
 
       <div className="flex items-center gap-2">
-        {/* Save Status */}
-        {lastSaved && (
-          <div className="flex items-center gap-1 text-xs text-gray-400">
-            <Clock className="w-3 h-3" />
-            Salvo às {lastSaved.toLocaleTimeString()}
-          </div>
-        )}
+        {/* Import/Export */}
+        <ImportExportManager
+          blocks={blocks}
+          onImport={onImport}
+        />
+
+        {/* Undo/Redo */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onUndo}
+          disabled={!canUndo}
+          className="h-8 w-8 p-0"
+          title="Desfazer (Ctrl+Z)"
+        >
+          <Undo2 className="w-4 h-4" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onRedo}
+          disabled={!canRedo}
+          className="h-8 w-8 p-0"
+          title="Refazer (Ctrl+Shift+Z)"
+        >
+          <Redo2 className="w-4 h-4" />
+        </Button>
+
+        {/* Mode Switcher */}
+        <div 
+          className="flex items-center rounded-lg p-1 mr-2"
+          style={{ backgroundColor: '#2a2a2a' }}
+        >
+          <Button
+            variant={editorMode === 'edit' ? "default" : "ghost"}
+            size="sm"
+            onClick={() => onModeChange('edit')}
+            className="flex items-center gap-2"
+          >
+            <Edit3 className="w-4 h-4" />
+            Editar
+          </Button>
+          <Button
+            variant={editorMode === 'split' ? "default" : "ghost"}
+            size="sm"
+            onClick={() => onModeChange('split')}
+            className="flex items-center gap-2"
+          >
+            <SplitSquareHorizontal className="w-4 h-4" />
+            Dividir
+          </Button>
+          <Button
+            variant={editorMode === 'preview' ? "default" : "ghost"}
+            size="sm"
+            onClick={() => onModeChange('preview')}
+            className="flex items-center gap-2"
+          >
+            <Eye className="w-4 h-4" />
+            Preview
+          </Button>
+        </div>
 
         {/* Save Button */}
         <Button
-          variant={hasUnsavedChanges ? 'default' : 'ghost'}
-          size="sm"
           onClick={onSave}
-          disabled={isSaving}
-          className={hasUnsavedChanges ? 'bg-blue-600 hover:bg-blue-700' : ''}
+          disabled={!hasUnsavedChanges}
+          className="flex items-center gap-2"
+          size="sm"
         >
-          <Save className="w-4 h-4 mr-1" />
-          {isSaving ? 'Salvando...' : hasUnsavedChanges ? 'Salvar' : 'Salvo'}
+          <Save className="w-4 h-4" />
+          Salvar
         </Button>
       </div>
     </div>
