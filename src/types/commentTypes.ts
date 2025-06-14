@@ -1,31 +1,17 @@
 
-// Comment types
-export interface BaseComment {
+// ABOUTME: Types for comments and related entities.
+
+export type EntityType = 'issue' | 'post' | 'article';
+
+export interface Comment {
   id: string;
   content: string;
-  user_id: string;
   created_at: string;
-  updated_at: string;
-  parent_id?: string;
-  article_id?: string;
-  issue_id?: string;
-  post_id?: string;
-  score: number;
-  userVote?: 1 | 0 | -1;
-  profiles?: {
-    full_name: string | null;
-    avatar_url: string | null;
-  };
-}
-
-export interface Comment extends BaseComment {
-  replies?: Comment[];
-}
-
-export type EntityType = 'article' | 'issue' | 'post';
-
-export interface CommentVote {
-  value: -1 | 0 | 1;
   user_id: string;
-  comment_id: string;
+  user_full_name: string;
+  user_avatar_url: string;
+  score: number;
+  userVote: 1 | -1 | 0;
+  replies: Comment[];
+  parent_id?: string;
 }

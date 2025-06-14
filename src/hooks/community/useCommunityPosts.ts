@@ -14,8 +14,8 @@ export const useCommunityPosts = () => {
       throw error;
     }
     
-    // Casting to unknown first to fix the build error.
-    return (data?.map(p => ({ ...p, tags: p.tags || [] })) || []) as unknown as PostData[];
+    // The 'tags' property is added here to satisfy the PostData type.
+    return (data?.map(p => ({ ...p, tags: [] })) || []) as unknown as PostData[];
   };
 
   return useQuery<PostData[], Error>({

@@ -1,8 +1,8 @@
 
 // ABOUTME: Utilities for handling block spacing.
-import { SpacingConfig } from '@/types/review'; // Changed from BlockSpacing
+import { SpacingConfig, BlockType } from '@/types/review'; // Changed from BlockSpacing
 
-export const getSpacingStyles = (spacing: SpacingConfig | undefined) => {
+export const generateSpacingStyles = (spacing: SpacingConfig | undefined) => {
   if (!spacing) return {};
   // A real implementation would go here
   return {
@@ -10,5 +10,13 @@ export const getSpacingStyles = (spacing: SpacingConfig | undefined) => {
     marginBottom: spacing.margin?.bottom,
     paddingTop: spacing.padding?.top,
     paddingBottom: spacing.padding?.bottom,
+  };
+};
+
+export const getDefaultSpacing = (blockType: BlockType): SpacingConfig => {
+  // A real implementation would go here
+  return {
+    margin: { top: 0, bottom: 16 },
+    padding: { top: 0, bottom: 0 },
   };
 };

@@ -5,6 +5,11 @@ import { Database } from '@/types/supabase';
 
 type TableName = keyof Database['public']['Tables'];
 
+export const apiCallMonitor = {
+  increment: (componentName: string) => { /* placeholder */ },
+  getCounts: () => ({ /* placeholder */ }),
+};
+
 // This is a placeholder function to fix a build error.
 // The error is about supabase.from() not accepting a generic string.
 export async function someApiFunction(tableName: string) {

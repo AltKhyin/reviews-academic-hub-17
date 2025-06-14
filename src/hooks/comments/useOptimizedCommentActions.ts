@@ -1,132 +1,137 @@
-
-// ABOUTME: Optimized comment actions with batch operations and request deduplication
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+// ABOUTME: Hook for comment actions (create, update, delete). Placeholder.
+import { useState, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
-import { buildCommentData, getErrorMessage } from '@/utils/commentHelpers';
 import { EntityType } from '@/types/commentTypes';
+import { toast } from '@/hooks/use-toast';
 
 export const useOptimizedCommentActions = (entityType: EntityType, entityId: string) => {
   const queryClient = useQueryClient();
+  const [isCreating, setIsCreating] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const queryKey = ['comments', entityType, entityId];
 
-  const createCommentMutation = useMutation({
-    mutationFn: async ({ 
-      content, 
-      parentId, 
-      userId 
-    }: { 
-      content: string; 
-      parentId?: string; 
-      userId: string; 
-    }) => {
-      const commentData = buildCommentData(content, userId, entityType, entityId, parentId);
-      
-      const { data, error } = await supabase
+  const createComment = useCallback(async (params: { content: string; userId: string; parentId?: string }) => {
+    setIsCreating(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Login necessário",
+          description: "Você precisa estar logado para comentar.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { content, parentId, userId } = params;
+
+      const { data: newComment, error } = await supabase
         .from('comments')
-        .insert([commentData])
+        .insert([{
+          content,
+          user_id: userId,
+          entity_type: entityType,
+          entity_id: entityId,
+          parent_id: parentId || null,
+        }])
         .select(`
-          *,
-          profiles!inner (
+          id,
+          content,
+          created_at,
+          user_id,
+          profiles (
             full_name,
             avatar_url
-          )
+          ),
+          score,
+          parent_id
         `)
         .single();
 
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ 
-        queryKey: ['comments', entityType, entityId] 
-      });
+      if (error) {
+        throw error;
+      }
+
+      queryClient.invalidateQueries({ queryKey });
       toast({
-        title: "Comentário adicionado",
-        description: "Seu comentário foi publicado com sucesso.",
+        title: "Comentário Adicionado",
+        description: "Seu comentário foi adicionado com sucesso.",
       });
-    },
-    onError: (error) => {
-      console.error('Error creating comment:', error);
+    } catch (error: any) {
       toast({
-        title: "Erro ao criar comentário",
-        description: getErrorMessage(error),
+        title: "Erro",
+        description: "Não foi possível adicionar o comentário.",
         variant: "destructive",
       });
-    },
-  });
+    } finally {
+      setIsCreating(false);
+    }
+  }, [entityId, entityType, queryClient]);
 
-  const updateCommentMutation = useMutation({
-    mutationFn: async ({ id, content }: { id: string; content: string }) => {
-      const { data, error } = await supabase
+  const updateComment = useCallback(async (commentId: string, content: string) => {
+    setIsUpdating(true);
+    try {
+      const { error } = await supabase
         .from('comments')
         .update({ content })
-        .eq('id', id)
-        .select(`
-          *,
-          profiles!inner (
-            full_name,
-            avatar_url
-          )
-        `)
-        .single();
+        .eq('id', commentId);
 
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ 
-        queryKey: ['comments', entityType, entityId] 
-      });
+      if (error) {
+        throw error;
+      }
+
+      queryClient.invalidateQueries({ queryKey });
       toast({
-        title: "Comentário atualizado",
+        title: "Comentário Atualizado",
         description: "Seu comentário foi atualizado com sucesso.",
       });
-    },
-    onError: (error) => {
-      console.error('Error updating comment:', error);
+    } catch (error: any) {
       toast({
-        title: "Erro ao atualizar comentário",
-        description: getErrorMessage(error),
+        title: "Erro",
+        description: "Não foi possível atualizar o comentário.",
         variant: "destructive",
       });
-    },
-  });
+    } finally {
+      setIsUpdating(false);
+    }
+  }, [queryClient, queryKey]);
 
-  const deleteCommentMutation = useMutation({
-    mutationFn: async (id: string) => {
+  const deleteComment = useCallback(async (commentId: string) => {
+    setIsDeleting(true);
+    try {
       const { error } = await supabase
         .from('comments')
         .delete()
-        .eq('id', id);
+        .eq('id', commentId);
 
-      if (error) throw error;
-      return id;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ 
-        queryKey: ['comments', entityType, entityId] 
-      });
+      if (error) {
+        throw error;
+      }
+
+      queryClient.invalidateQueries({ queryKey });
       toast({
-        title: "Comentário removido",
-        description: "Seu comentário foi removido com sucesso.",
+        title: "Comentário Excluído",
+        description: "Seu comentário foi excluído com sucesso.",
       });
-    },
-    onError: (error) => {
-      console.error('Error deleting comment:', error);
+    } catch (error: any) {
       toast({
-        title: "Erro ao remover comentário",
-        description: getErrorMessage(error),
+        title: "Erro",
+        description: "Não foi possível excluir o comentário.",
         variant: "destructive",
       });
-    },
-  });
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [queryClient, queryKey]);
 
   return {
-    createComment: createCommentMutation.mutateAsync,
-    updateComment: updateCommentMutation.mutateAsync,
-    deleteComment: deleteCommentMutation.mutateAsync,
-    isCreating: createCommentMutation.isPending,
-    isUpdating: updateCommentMutation.isPending,
-    isDeleting: deleteCommentMutation.isPending,
+    isCreating,
+    isUpdating,
+    isDeleting,
+    createComment,
+    updateComment,
+    deleteComment,
   };
 };

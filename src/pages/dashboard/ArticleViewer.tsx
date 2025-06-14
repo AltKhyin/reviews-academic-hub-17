@@ -28,3 +28,5 @@ export const ArticleViewer = () => {
     </div>
   );
 };
+
+export default ArticleViewer;
