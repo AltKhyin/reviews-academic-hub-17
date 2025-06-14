@@ -9,13 +9,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 // Lazy load pages for better performance
 const LandingPage = lazy(() => import('./pages/Index'));
-const LoginPage = lazy(() => import('./pages/auth/Login'));
-const RegisterPage = lazy(() => import('./pages/auth/Register'));
-const ProfilePage = lazy(() => import('./pages/dashboard/Profile'));
-const CommunityPage = lazy(() => import('./pages/dashboard/Community'));
+const AuthPage = lazy(() => import('./pages/auth/Login'));
+const HomePage = lazy(() => import('./pages/Index'));
 const ArchivePage = lazy(() => import('./pages/dashboard/ArchivePage'));
+const EditPage = lazy(() => import('./pages/dashboard/Edit'));
+const CommunityPage = lazy(() => import('./pages/dashboard/Community'));
+const SearchPage = lazy(() => import('./pages/dashboard/SearchPage'));
+const ProfilePage = lazy(() => import('./pages/dashboard/Profile'));
 const IssuePage = lazy(() => import('./pages/dashboard/ArticleViewer'));
-const Dashboard = lazy(() => import('./pages/dashboard/Dashboard'));
 const IssueEditor = lazy(() => import('./pages/dashboard/IssueEditor').then(module => ({ default: module.IssueEditor })));
 
 // Create a query client
@@ -43,12 +44,41 @@ function App() {
       <AuthProvider>
         <Suspense fallback={<Loading />}>
           <Routes>
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
+            {/* Core routes */}
+            <Route path="/" element={<HomePage />} />
+            <Route path="/homepage" element={<HomePage />} />
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/login" element={<AuthPage />} />
+            <Route path="/register" element={<AuthPage />} />
+            
+            {/* Archive routes */}
             <Route path="/archive" element={<ArchivePage />} />
+            <Route path="/acervo" element={<ArchivePage />} />
             <Route path="/archive/:id" element={<IssuePage />} />
+            <Route path="/review/:id" element={<IssuePage />} />
+            
+            {/* Community route */}
             <Route path="/community" element={<CommunityPage />} />
+            
+            {/* Search route - Admin protected */}
+            <Route 
+              path="/search" 
+              element={
+                <ProtectedRoute>
+                  <SearchPage />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Edit route - Admin protected */}
+            <Route 
+              path="/edit" 
+              element={
+                <ProtectedRoute>
+                  <EditPage />
+                </ProtectedRoute>
+              } 
+            />
             
             {/* Protected routes */}
             <Route
@@ -59,22 +89,20 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            
+            {/* Editor route */}
             <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-             <Route
-              path="/dashboard/editor/:id"
+              path="/editor/:id"
               element={
                 <ProtectedRoute>
                   <IssueEditor />
                 </ProtectedRoute>
               }
             />
+            
+            {/* Legacy dashboard routes - redirect to proper routes */}
+            <Route path="/dashboard" element={<HomePage />} />
+            <Route path="/dashboard/editor/:id" element={<IssueEditor />} />
           </Routes>
         </Suspense>
         <Toaster />
