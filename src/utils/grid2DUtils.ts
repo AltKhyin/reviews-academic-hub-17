@@ -1,8 +1,7 @@
-
 // ABOUTME: Utilities for 2D grid layout management
 // Provides functions for creating, manipulating, and validating 2D grids
 
-import { Grid2DLayout, GridRow, GridCell, GridPosition, GridBlockMeta } from '@/types/grid';
+import { Grid2DLayout, GridRow, GridCell, GridPosition } from '@/types/grid';
 import { ReviewBlock } from '@/types/review';
 
 /**
@@ -38,7 +37,7 @@ export const createEmptyGrid = (
   
   const gridRows: GridRow[] = Array.from({ length: rows }, (_, rowIndex) => ({
     id: generateRowId(gridId, rowIndex),
-    index: rowIndex,
+    columns: columns,
     cells: Array.from({ length: columns }, (_, colIndex) => ({
       id: generateCellId(gridId, rowIndex, colIndex),
       row: rowIndex,
@@ -69,7 +68,7 @@ export const addRowToGrid = (
   
   const newRow: GridRow = {
     id: generateRowId(grid.id, newRowIndex),
-    index: newRowIndex,
+    columns: grid.columns,
     cells: Array.from({ length: grid.columns }, (_, colIndex) => ({
       id: generateCellId(grid.id, newRowIndex, colIndex),
       row: newRowIndex,
@@ -83,7 +82,6 @@ export const addRowToGrid = (
   
   // Update row indices for rows after insertion
   updatedRows.forEach((row, index) => {
-    row.index = index;
     row.id = generateRowId(grid.id, index);
     row.cells.forEach((cell, colIndex) => {
       cell.row = index;
@@ -114,7 +112,6 @@ export const removeRowFromGrid = (
   
   // Update row indices
   updatedRows.forEach((row, index) => {
-    row.index = index;
     row.id = generateRowId(grid.id, index);
     row.cells.forEach((cell, colIndex) => {
       cell.row = index;
@@ -234,7 +231,7 @@ export const getBlocksFromGrid = (grid: Grid2DLayout): ReviewBlock[] => {
  */
 export const findBlockInGrid = (
   grid: Grid2DLayout, 
-  blockId: number
+  blockId: string
 ): GridPosition | null => {
   for (const row of grid.rows) {
     for (const cell of row.cells) {
@@ -270,7 +267,6 @@ export const validateGrid = (grid: Grid2DLayout): boolean => {
   // Check cell positions
   for (let rowIndex = 0; rowIndex < grid.rows.length; rowIndex++) {
     const row = grid.rows[rowIndex];
-    if (row.index !== rowIndex) return false;
     
     for (let colIndex = 0; colIndex < row.cells.length; colIndex++) {
       const cell = row.cells[colIndex];

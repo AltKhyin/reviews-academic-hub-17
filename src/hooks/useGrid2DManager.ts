@@ -3,7 +3,7 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import { ReviewBlock, BlockType } from '@/types/review';
-import { Grid2DLayout, GridPosition } from '@/types/grid';
+import { Grid2DLayout, GridPosition, GridRow } from '@/types/grid';
 import { 
   createEmptyGrid, 
   addRowToGrid, 
@@ -92,7 +92,7 @@ export const useGrid2DManager = ({
   }, [onDeleteBlock]);
 
   // Place block in grid
-  const placeBlockInGridById = useCallback((blockId: string, gridId: string, position: GridPosition) => { // Changed from number to string
+  const placeBlockInGridById = useCallback((blockId: string, gridId: string, position: GridPosition) => {
     console.log('Placing block in grid:', { blockId, gridId, position });
     
     setGrids(prev => {
@@ -139,7 +139,7 @@ export const useGrid2DManager = ({
   }, [onUpdateBlock, onDeleteBlock]);
 
   // Remove block from grid
-  const removeBlockFromGridById = useCallback((blockId: string, gridId: string) => { // Changed from number to string
+  const removeBlockFromGridById = useCallback((blockId: string, gridId: string) => {
     console.log('Removing block from grid:', { blockId, gridId });
     
     // Just delete the block - the grid will be updated by extractGridsFromBlocks
@@ -207,7 +207,7 @@ export const useGrid2DManager = ({
         rowHeights,
         rows: Array.from({ length: rows }, (_, rowIndex) => ({
           id: `${gridId}-row-${rowIndex}`,
-          index: rowIndex,
+          columns: columns,
           cells: Array.from({ length: columns }, (_, colIndex) => ({
             id: `${gridId}-cell-${rowIndex}-${colIndex}`,
             row: rowIndex,

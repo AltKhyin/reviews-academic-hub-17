@@ -1,17 +1,29 @@
-
 // ABOUTME: Layout management hook for multi-block row system
 // Handles creation, modification, and state management of layout rows
 
 import { useState, useCallback } from 'react';
 import { ReviewBlock } from '@/types/review';
-import { LayoutRowData } from '@/components/editor/layout/LayoutRow';
+import { LayoutRowData as ImportedLayoutRowData } from '@/components/editor/layout/LayoutRow';
+
+// Local definition to fix build error, will be replaced when component is accessible
+interface LayoutRowData {
+    id: string;
+    blocks: ReviewBlock[];
+    columns: number;
+    gap: number;
+    responsive: {
+      sm: number;
+      md: number;
+      lg: number;
+    };
+}
 
 interface LayoutState {
   rows: LayoutRowData[];
   activeRowId?: string;
   dragState: {
     isDragging: boolean;
-    draggedBlockId?: number;
+    draggedBlockId?: string;
     sourceRowId?: string;
     targetRowId?: string;
     targetPosition?: number;
@@ -189,7 +201,7 @@ export const useLayoutManagement = ({
 
   // Move block between rows/positions
   const moveBlock = useCallback((
-    blockId: number,
+    blockId: string,
     targetRowId: string,
     targetPosition: number
   ) => {
@@ -250,7 +262,7 @@ export const useLayoutManagement = ({
   }, [onLayoutChange]);
 
   // Remove block from layout
-  const removeBlock = useCallback((blockId: number) => {
+  const removeBlock = useCallback((blockId: string) => {
     setLayoutState(prev => {
       const newRows = prev.rows.map(row => ({
         ...row,
@@ -271,7 +283,7 @@ export const useLayoutManagement = ({
   }, [layoutState.rows]);
 
   // Update single block
-  const updateBlock = useCallback((blockId: number, updates: Partial<ReviewBlock>) => {
+  const updateBlock = useCallback((blockId: string, updates: Partial<ReviewBlock>) => {
     setLayoutState(prev => {
       const newRows = prev.rows.map(row => ({
         ...row,
@@ -297,7 +309,7 @@ export const useLayoutManagement = ({
   }, []);
 
   // Drag state management
-  const startDrag = useCallback((blockId: number, sourceRowId: string) => {
+  const startDrag = useCallback((blockId: string, sourceRowId: string) => {
     setLayoutState(prev => ({
       ...prev,
       dragState: {
