@@ -82,7 +82,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
             <div className="flex-1 overflow-y-auto p-4">
               <BlockList
                 blocks={blocks}
-                activeBlockId={activeBlockId}
+                activeBlockI
                 onActiveBlockChange={onActiveBlockChange}
                 onDeleteBlock={onDeleteBlock}
                 onMoveBlock={handleMove}
@@ -99,7 +99,6 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
       <div className="editor-main flex-1 flex flex-col">
         {/* Toolbar */}
         <EditorToolbar
-          activeBlock={activeBlock}
           onTogglePreview={() => setShowPreview(!showPreview)}
           onToggleFullscreen={onToggleFullscreen}
           onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}

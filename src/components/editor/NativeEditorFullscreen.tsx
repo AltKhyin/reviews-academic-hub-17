@@ -110,7 +110,6 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
         <div className="editor-main flex-1 flex flex-col">
           {/* Toolbar */}
           <EditorToolbar
-            activeBlock={activeBlock}
             onTogglePreview={() => setShowPreview(!showPreview)}
             onToggleFullscreen={onClose}
             onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}

@@ -101,43 +101,6 @@ export const useOptimizedSidebarData = (userId?: string) => {
               }
             }
 
-            // Get post bookmarks (if posts table exists)
-            try {
-              const { data: postBookmarks } = await supabase
-                .from('user_bookmarks')
-                .select('id, created_at, post_id')
-                .eq('user_id', effectiveUserId)
-                .not('post_id', 'is', null)
-                .limit(2);
-
-              if (postBookmarks) {
-                const postIds = postBookmarks.map(b => b.post_id).filter(Boolean);
-                if (postIds.length > 0) {
-                  const { data: posts } = await supabase
-                    .from('posts')
-                    .select('id, title')
-                    .in('id', postIds);
-
-                  if (posts) {
-                    bookmarks = bookmarks.concat(
-                      postBookmarks.map(bookmark => {
-                        const post = posts.find(p => p.id === bookmark.post_id);
-                        return post ? {
-                          id: post.id,
-                          title: post.title,
-                          type: 'post' as const,
-                          created_at: bookmark.created_at
-                        } : null;
-                      }).filter(Boolean)
-                    );
-                  }
-                }
-              }
-            } catch (postError) {
-              // Posts table might not exist, continue without post bookmarks
-              console.debug('Posts bookmarks not available:', postError);
-            }
-
           } catch (bookmarkError) {
             console.warn('Bookmark query failed:', bookmarkError);
           }

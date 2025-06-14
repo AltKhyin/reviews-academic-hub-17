@@ -5,8 +5,8 @@ import { ReviewBlock, BlockType } from '@/types/review';
 
 export interface BlockListProps {
   blocks: ReviewBlock[];
-  activeBlockId: string;
-  onActiveBlockChange: (blockId: string) => void;
+  activeBlockId: string | null;
+  onActiveBlockChange: (blockId: string | null) => void;
   onDeleteBlock: (blockId: string) => void;
   onDuplicateBlock?: (blockId: string) => void;
   onMoveBlock: (blockId: string, direction: 'up' | 'down') => void;

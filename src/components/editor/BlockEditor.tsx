@@ -1,8 +1,6 @@
 
 // ABOUTME: Enhanced block editor with comprehensive grid layout support and string ID compatibility
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { DndProvider } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
 import { useEditorLayout } from '@/hooks/useEditorLayout';
 import { useBlockOperations } from '@/hooks/useBlockOperations';
 import { useGridState } from '@/hooks/grid/useGridState';
@@ -86,8 +84,8 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     setSidebarCollapsed(prev => !prev);
   }, []);
 
-  const handleActiveBlockChange = useCallback((blockId: string) => {
-    setActiveBlockId(blockId);
+  const handleActiveBlockChange = useCallback((blockId: string | null) => {
+    setActiveBlockId(blockId || '');
   }, []);
 
   const handleUpdateBlock = useCallback((blockId: string, updates: Partial<ReviewBlock>) => {
@@ -134,65 +132,62 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
   }, [gridStateResult]);
 
   return (
-    <DndProvider backend={HTML5Backend}>
-      <div className="block-editor h-full flex flex-col">
-        {/* Toolbar */}
-        <EditorToolbar
-          onTogglePreview={handleTogglePreview}
-          onToggleFullscreen={handleToggleFullscreen}
-          onToggleSidebar={handleToggleSidebar}
-          showPreview={showPreview}
-          isFullscreen={isFullscreen}
-          sidebarCollapsed={sidebarCollapsed}
-          onLayoutToggle={handleLayoutToggle}
-          currentLayout={currentLayout}
-        />
+    <div className="block-editor h-full flex flex-col">
+      {/* Toolbar */}
+      <EditorToolbar
+        onTogglePreview={handleTogglePreview}
+        onToggleFullscreen={handleToggleFullscreen}
+        onToggleSidebar={handleToggleSidebar}
+        showPreview={showPreview}
+        isFullscreen={isFullscreen}
+        sidebarCollapsed={sidebarCollapsed}
+        onLayoutToggle={handleLayoutToggle}
+        currentLayout={currentLayout}
+      />
 
-        {/* Main editing area */}
-        <div className="flex-1 flex overflow-hidden">
-          {/* Block list or grid container */}
-          <div className="flex-1 overflow-auto">
-            {currentLayout === 'grid' && gridStateResult.grid ? (
-              <Grid2DContainer
-                blocks={blocks}
-                activeBlockId={activeBlockId}
-                onActiveBlockChange={handleActiveBlockChange}
-                onUpdateBlock={handleUpdateBlock}
-                onDeleteBlock={handleDeleteBlock}
-                onDuplicateBlock={handleDuplicateBlock}
-                onMoveBlock={handleMoveBlock}
-                onAddRow={handleGridAddRow}
-                onRemoveRow={handleGridRemoveRow}
-                onUpdateColumns={handleGridUpdateColumns}
-                gridState={gridStateResult}
-                onDrop={() => {}}
-              />
-            ) : (
-              <BlockList
-                blocks={blocks}
-                activeBlockId={activeBlockId}
-                onActiveBlockChange={handleActiveBlockChange}
-                onUpdateBlock={handleUpdateBlock}
-                onDeleteBlock={handleDeleteBlock}
-                onDuplicateBlock={handleDuplicateBlock}
-                onMoveBlock={handleMoveBlock}
-                onAddBlock={addBlock}
-              />
-            )}
-          </div>
-
-          {/* Block controls sidebar */}
-          {!sidebarCollapsed && activeBlock && (
-            <div className="w-80 border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
-              <BlockControls
-                block={activeBlock}
-                onUpdateBlock={(updates) => handleUpdateBlock(activeBlock.id, updates)}
-                onDeleteBlock={() => handleDeleteBlock(activeBlock.id)}
-              />
-            </div>
+      {/* Main editing area */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Block list or grid container */}
+        <div className="flex-1 overflow-auto">
+          {currentLayout === 'grid' && gridStateResult.grid ? (
+            <Grid2DContainer
+              blocks={blocks}
+              activeBlockId={activeBlockId}
+              onActiveBlockChange={handleActiveBlockChange}
+              onUpdateBlock={handleUpdateBlock}
+              onDeleteBlock={handleDeleteBlock}
+              onDuplicateBlock={handleDuplicateBlock}
+              onMoveBlock={handleMoveBlock}
+              onAddRow={handleGridAddRow}
+              onRemoveRow={handleGridRemoveRow}
+              onUpdateColumns={handleGridUpdateColumns}
+              gridState={gridStateResult}
+              onDrop={() => {}}
+            />
+          ) : (
+            <BlockList
+              blocks={blocks}
+              activeBlockId={activeBlockId}
+              onActiveBlockChange={handleActiveBlockChange}
+              onDeleteBlock={handleDeleteBlock}
+              onDuplicateBlock={handleDuplicateBlock}
+              onMoveBlock={handleMoveBlock}
+              onAddBlock={addBlock}
+            />
           )}
         </div>
+
+        {/* Block controls sidebar */}
+        {!sidebarCollapsed && activeBlock && (
+          <div className="w-80 border-l border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+            <BlockControls
+              block={activeBlock}
+              onUpdateBlock={(updates) => handleUpdateBlock(activeBlock.id, updates)}
+              onDeleteBlock={() => handleDeleteBlock(activeBlock.id)}
+            />
+          </div>
+        )}
       </div>
-    </DndProvider>
+    </div>
   );
 };

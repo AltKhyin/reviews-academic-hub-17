@@ -105,12 +105,12 @@ export interface DiagramConnection {
   targetNodeId: string;
   sourcePoint: 'top' | 'right' | 'bottom' | 'left';
   targetPoint: 'top' | 'right' | 'bottom' | 'left';
-  label?: string; // Added missing label property
+  label?: string;
   style: {
     strokeColor: string;
     strokeWidth: number;
     strokeStyle: 'solid' | 'dashed' | 'dotted';
-    arrowType: 'none' | 'arrow' | 'diamond' | 'double-arrow' | 'circle'; // Extended arrow types
+    arrowType: 'none' | 'arrow' | 'diamond' | 'double-arrow' | 'circle';
     curved: boolean;
     opacity: number;
   };

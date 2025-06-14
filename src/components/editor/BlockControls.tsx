@@ -8,29 +8,19 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 
 export interface BlockControlsProps {
-  blockId: string;
-  block?: ReviewBlock;
-  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
-  onDeleteBlock: (blockId: string) => void;
+  block: ReviewBlock;
+  onUpdateBlock: (updates: Partial<ReviewBlock>) => void;
+  onDeleteBlock: () => void;
 }
 
 export const BlockControls: React.FC<BlockControlsProps> = ({
-  blockId,
   block,
   onUpdateBlock,
   onDeleteBlock
 }) => {
   
-  if (!block) {
-    return (
-      <div className="p-4 text-gray-500">
-        No block selected
-      </div>
-    );
-  }
-
   const handleContentUpdate = (field: string, value: any) => {
-    onUpdateBlock(blockId, {
+    onUpdateBlock({
       content: {
         ...block.content,
         [field]: value
@@ -39,7 +29,7 @@ export const BlockControls: React.FC<BlockControlsProps> = ({
   };
 
   const handleVisibilityToggle = () => {
-    onUpdateBlock(blockId, {
+    onUpdateBlock({
       visible: !block.visible
     });
   };
@@ -146,7 +136,7 @@ export const BlockControls: React.FC<BlockControlsProps> = ({
       {/* Actions */}
       <div className="pt-4 border-t space-y-2">
         <Button
-          onClick={() => onDeleteBlock(blockId)}
+          onClick={onDeleteBlock}
           variant="destructive"
           size="sm"
           className="w-full"
