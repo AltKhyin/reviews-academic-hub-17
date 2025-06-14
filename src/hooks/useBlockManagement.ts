@@ -1,3 +1,4 @@
+
 // ABOUTME: Enhanced block management hook for a nested list of LayoutElements.
 // Manages block operations, undo/redo, and tree manipulation.
 import { useState, useCallback } from 'react';
@@ -224,13 +225,15 @@ export const useBlockManagement = (
   }, [elements, blocks, historyIndex]);
 
   const updateElement = useCallback((elementId: string, updates: Partial<LayoutElement>) => {
-      const index = elements.findIndex(el => el.id === elementId);
-      if (index === -1) return;
-      
-      const newElements = [...elements];
-      newElements[index] = { ...newElements[index], ...updates };
-      updateState(newElements, blocks);
-
+    const newElements = mapElementsTree(elements, (el) => {
+      if (el.id === elementId) {
+        // Using a type assertion as a workaround for a complex type error that arises
+        // from spreading a partial of a union type. This assumes the caller provides a valid update.
+        return { ...el, ...updates } as LayoutElement;
+      }
+      return el;
+    });
+    updateState(newElements, blocks);
   }, [elements, blocks, historyIndex]);
 
   return {
