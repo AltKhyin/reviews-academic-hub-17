@@ -1,4 +1,3 @@
-
 // ABOUTME: Renders a 2D grid layout element within the editor.
 // Manages cells and the blocks within them.
 import React from 'react';
@@ -48,7 +47,7 @@ export const LayoutGrid: React.FC<LayoutGridProps> = ({
         <React.Fragment key={row.id}>
           {row.cells.map((cell, colIndex) => {
             const block = cell.blockId ? blocks[cell.blockId] : null;
-            const position: GridPosition = { row: rowIndex, col: colIndex };
+            const position: GridPosition = { row: rowIndex, column: colIndex };
             
             return (
               <div

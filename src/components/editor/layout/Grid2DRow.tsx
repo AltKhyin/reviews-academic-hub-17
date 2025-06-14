@@ -64,17 +64,14 @@ export const Grid2DRow: React.FC<Grid2DRowProps> = ({
     <div 
       className={cn(
         "grid-2d-row flex gap-2",
-        // Tailwind CSS needs full class names, dynamic generation like `grid-cols-${numCols}` won't work directly for arbitrary numbers.
-        // Use inline style for dynamic columns or predefine limited set of grid-cols-X classes if numCols is bounded.
-        // For arbitrary numbers, style is the way to go.
       )}
       style={{ display: 'grid', gridTemplateColumns: `repeat(${numCols}, minmax(0, 1fr))` }}
       onDragLeave={handleDragLeaveGrid} // Clear drag over when leaving the row area
     >
       {displayCells.map((cell, colIndex) => {
         const block = cell.blockId ? blocks[cell.blockId] : null;
-        const position: GridPosition = { row: rowIndex, col: colIndex };
-        const isDragOver = dragOverCellPosition?.row === rowIndex && dragOverCellPosition?.col === colIndex;
+        const position: GridPosition = { row: rowIndex, column: colIndex };
+        const isDragOver = dragOverCellPosition?.row === rowIndex && dragOverCellPosition?.column === colIndex;
         
         return (
           <div key={cell.id || `cell-${colIndex}`} className="flex-1 min-w-0"> {/* Ensure cells can shrink and grow */}
