@@ -7,6 +7,7 @@ import { CommentForm } from './CommentForm';
 import { CommentList } from './CommentList';
 import { CommentSectionHeader } from './CommentSectionHeader';
 import { EntityType } from '@/types/commentTypes';
+import { toast } from '@/hooks/use-toast';
 
 interface CommentSectionProps {
   postId?: string;
@@ -63,8 +64,12 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, articleI
 
   // Wrapper functions to handle async operations properly
   const handleAddComment = async (content: string, imageUrl?: string): Promise<void> => {
+    if (!user) {
+      toast({ title: "Autenticação necessária", description: "Você precisa estar logado para comentar.", variant: "destructive" });
+      throw new Error("User not authenticated");
+    }
     try {
-      await addComment(content, imageUrl);
+      await addComment(content, user.id);
     } catch (error) {
       console.error('Error in handleAddComment:', error);
       throw error; // Re-throw to let the form handle the error display
@@ -81,8 +86,12 @@ export const CommentSection: React.FC<CommentSectionProps> = ({ postId, articleI
   };
 
   const handleReplyToComment = async (params: { parentId: string; content: string; imageUrl?: string }): Promise<void> => {
+    if (!user) {
+      toast({ title: "Autenticação necessária", description: "Você precisa estar logado para responder.", variant: "destructive" });
+      throw new Error("User not authenticated");
+    }
     try {
-      await replyToComment(params);
+      await replyToComment(params.content, params.parentId, user.id);
     } catch (error) {
       console.error('Error in handleReplyToComment:', error);
       throw error;
