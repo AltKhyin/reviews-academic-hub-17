@@ -1,10 +1,11 @@
+
 // ABOUTME: Core orchestrator for the block-based editor experience.
 // Manages block state, interactions, and renders the list of blocks.
 import React, { useState, useCallback, useEffect } from 'react';
 import { Review, ReviewBlock, BlockType, GridPosition, LayoutElement, AddBlockOptions } from '@/types/review';
 import { BlockList } from './BlockList';
-import { EditorToolbar, EditorToolbarProps } from './EditorToolbar'; 
-import { generateId } from '@/lib/utils'; 
+import { EditorToolbar, EditorToolbarProps } from './EditorToolbar';
+import { generateId } from '@/lib/utils';
 import { DragDropContext, DropResult, ResponderProvided, Droppable } from '@hello-pangea/dnd';
 import { useBlockManagement, UseBlockManagementReturn } from '@/hooks/useBlockManagement';
 import { useBlockDragDrop } from '@/hooks/useBlockDragDrop';
@@ -22,72 +23,45 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
   readonly = false,
   className,
 }) => {
-  const [currentReviewId, setCurrentReviewId] = useState(initialReview?.id || generateId());
-  const [currentReviewTitle, setCurrentReviewTitle] = useState(initialReview?.title || 'Nova Revisão');
-
   const blockManager: UseBlockManagementReturn = useBlockManagement(
-    initialReview?.elements, // useBlockManagement handles default empty array
-    initialReview?.blocks,  // useBlockManagement handles default empty object
-    // Optional onStateChange callback, not strictly needed for BlockEditor's current logic
-    // (newElements, newBlocks) => { /* console.log('State changed in useBlockManagement'); */ }
+    initialReview?.elements,
+    initialReview?.blocks,
   );
 
-  const { 
-    elements, 
-    blocks, 
-    activeBlockId, 
-    setActiveBlockId, 
-    addBlock, 
-    updateBlock, 
-    deleteBlock, 
+  const {
+    elements,
+    blocks,
+    activeBlockId,
+    setActiveBlockId,
+    addBlock,
+    updateBlock,
+    deleteBlock,
     moveElement,
     setElements,
-    setBlocks: setBlocksInManager,
   } = blockManager;
-  
-  const { onDragEnd } = useBlockDragDrop({ elements, setElements });
 
-  useEffect(() => {
-    if (initialReview) {
-      setCurrentReviewId(initialReview.id || generateId());
-      setCurrentReviewTitle(initialReview.title || 'Nova Revisão');
-      // useBlockManagement is re-initialized via its props if BlockEditor re-renders with new initialReview
-      // or if initialElements/initialBlocks are passed directly and change.
-      // The hook's own useEffect for initialization handles setting its internal state.
-      // If deep reset is needed, useBlockManagement would need a dedicated reset function or keying BlockEditor.
-      // For now, relying on hook's initialization.
-      // If initialReview comes from parent, this ensures manager always reflects it at start or on full prop change.
-      setElements(initialReview.elements || []);
-      setBlocksInManager(initialReview.blocks || {});
-    } else {
-      // Handle case where initialReview might become undefined (e.g. creating new)
-      setCurrentReviewId(generateId());
-      setCurrentReviewTitle('Nova Revisão');
-      setElements([]);
-      setBlocksInManager({});
-    }
-  }, [initialReview, setElements, setBlocksInManager]);
+  const { onDragEnd } = useBlockDragDrop({ elements, setElements });
 
   const handleSave = useCallback(() => {
     const reviewToSave: Review = {
-      id: currentReviewId,
-      title: currentReviewTitle,
-      elements: elements, 
-      blocks: blocks,     
+      id: initialReview?.id || generateId(),
+      title: initialReview?.title || 'Nova Revisão', // Title is not editable here, comes from parent
+      elements: elements,
+      blocks: blocks,
       version: initialReview?.version ? initialReview.version + 1 : 1,
-      status: 'draft', 
+      status: initialReview?.status || 'draft',
       createdAt: initialReview?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
     onSave(reviewToSave);
-  }, [currentReviewId, currentReviewTitle, elements, blocks, initialReview, onSave]);
+  }, [initialReview, elements, blocks, onSave]);
 
   const handleSelectBlock = useCallback((blockId: string | null) => {
     setActiveBlockId(blockId);
   }, [setActiveBlockId]);
-  
+
   const handleDndDragEnd = (result: DropResult, _provided: ResponderProvided) => {
-    onDragEnd(result); 
+    onDragEnd(result);
   };
 
   const handleAddBlock = useCallback((options: Partial<AddBlockOptions> & { type: BlockType }) => {

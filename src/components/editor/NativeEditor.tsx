@@ -1,3 +1,4 @@
+
 // ABOUTME: Native editor wrapper for non-fullscreen block editing.
 // Integrates BlockEditor for a standard, in-page editing experience.
 import React from 'react';

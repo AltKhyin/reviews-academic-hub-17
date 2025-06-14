@@ -1,27 +1,27 @@
-
 // ABOUTME: Refactored issue editor with improved component separation
 // Main editor page using focused sub-components for better maintainability
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Issue } from '@/types/issue';
-import { ReviewBlock } from '@/types/review';
+import { Review, ReviewBlock } from '@/types/review';
 import { IssueHeader } from './components/issue/IssueHeader';
 import { IssueActionButtons } from './components/issue/IssueActionButtons';
 import { ContentTypeSelector } from './components/editor/ContentTypeSelector';
 import { EditorTabs } from './components/editor/EditorTabs';
 import { useIssueEditor } from './hooks/useIssueEditor';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { transformBlocksToReview, transformReviewToBlocks } from '@/lib/editor-adapter';
 
 const IssueEditor = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const isNewIssue = id === 'new';
   
   const [contentType, setContentType] = useState<'pdf' | 'native'>('pdf');
-  const [nativeBlocks, setNativeBlocks] = useState<ReviewBlock[]>([]);
   
   const { 
     formValues,
@@ -65,7 +65,7 @@ const IssueEditor = () => {
   });
 
   // Fetch native blocks if this is a native review
-  const { data: blocks } = useQuery({
+  const { data: fetchedBlocks } = useQuery({
     queryKey: ['review-blocks', id],
     queryFn: async () => {
       if (!id || isNewIssue) return [];
@@ -92,6 +92,18 @@ const IssueEditor = () => {
     },
     enabled: !isNewIssue && !!id && contentType === 'native'
   });
+
+  const initialReview = useMemo(() => {
+    if (isNewIssue) {
+      return transformBlocksToReview([], {
+        title: 'Nova Revisão',
+      });
+    }
+    if (issue && fetchedBlocks) {
+      return transformBlocksToReview(fetchedBlocks, issue);
+    }
+    return undefined;
+  }, [issue, fetchedBlocks, isNewIssue]);
 
   // Update form values when issue data is loaded
   useEffect(() => {
@@ -152,12 +164,12 @@ const IssueEditor = () => {
 
   // Update native blocks when data is loaded
   useEffect(() => {
-    if (blocks) {
-      setNativeBlocks(blocks);
+    if (fetchedBlocks) {
+      setNativeBlocks(fetchedBlocks);
     }
-  }, [blocks]);
+  }, [fetchedBlocks]);
 
-  const handleSaveNativeBlocks = async (updatedBlocks: ReviewBlock[]) => {
+  const handleSaveNativeReview = async (updatedReview: Review) => {
     if (!id || isNewIssue) {
       toast({
         title: "Erro",
@@ -166,6 +178,8 @@ const IssueEditor = () => {
       });
       return;
     }
+
+    const updatedBlocks = transformReviewToBlocks(updatedReview);
 
     try {
       // Delete existing blocks
@@ -176,9 +190,9 @@ const IssueEditor = () => {
 
       // Insert new blocks
       if (updatedBlocks.length > 0) {
-        const blocksToInsert = updatedBlocks.map(block => ({
+        const blocksToInsert = updatedBlocks.map((block, index) => ({
           issue_id: id,
-          sort_index: block.sort_index,
+          sort_index: index, // Use index from transformed array
           type: block.type as string,
           payload: block.content as any,
           meta: block.meta as any,
@@ -201,28 +215,8 @@ const IssueEditor = () => {
         })
         .eq('id', id);
 
-      // Refetch the blocks to get the proper database IDs
-      const { data: newBlocks } = await supabase
-        .from('review_blocks')
-        .select('*')
-        .eq('issue_id', id)
-        .order('sort_index');
-
-      if (newBlocks) {
-        const transformedBlocks = newBlocks.map(dbBlock => ({
-          id: dbBlock.id,
-          type: dbBlock.type as any,
-          content: dbBlock.payload,
-          sort_index: dbBlock.sort_index,
-          visible: dbBlock.visible,
-          meta: dbBlock.meta as any,
-          issue_id: dbBlock.issue_id,
-          created_at: dbBlock.created_at,
-          updated_at: dbBlock.updated_at
-        })) as ReviewBlock[];
-        
-        setNativeBlocks(transformedBlocks);
-      }
+      // Invalidate query to refetch blocks
+      queryClient.invalidateQueries({ queryKey: ['review-blocks', id] });
       
       toast({
         title: "Conteúdo Salvo",
@@ -286,11 +280,11 @@ const IssueEditor = () => {
         contentType={contentType}
         issueId={id}
         formValues={formValues}
-        nativeBlocks={nativeBlocks}
+        nativeReview={initialReview} // Pass the full Review object
         onSubmit={onSubmit}
         onCancel={() => navigate('/edit')}
         isSubmitting={isSubmitting}
-        onSaveNativeBlocks={handleSaveNativeBlocks}
+        onSaveNativeReview={handleSaveNativeReview} // Pass the new save handler
       />
     </div>
   );
