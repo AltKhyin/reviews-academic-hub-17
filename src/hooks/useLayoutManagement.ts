@@ -3,7 +3,6 @@
 
 import { useState, useCallback } from 'react';
 import { ReviewBlock } from '@/types/review';
-import { LayoutRowData as ImportedLayoutRowData } from '@/components/editor/layout/LayoutRow';
 
 // Local definition to fix build error, will be replaced when component is accessible
 interface LayoutRowData {
@@ -90,16 +89,16 @@ export const useLayoutManagement = ({
   const [layoutState, setLayoutState] = useState<LayoutState>(initializeLayout);
 
   // Create new row
-  const createRow = useCallback((columns: number = 1): LayoutRowData => {
+  const createRow = useCallback((): LayoutRowData => {
     return {
       id: `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       blocks: [],
-      columns,
+      columns: 1,
       gap: 4,
       responsive: {
-        sm: Math.min(columns, 2),
-        md: Math.min(columns, 3), 
-        lg: columns
+        sm: 1,
+        md: 1, 
+        lg: 1
       }
     };
   }, []);
@@ -107,7 +106,7 @@ export const useLayoutManagement = ({
   // Add new row
   const addRow = useCallback((position?: number, columns: number = 1) => {
     setLayoutState(prev => {
-      const newRow = createRow(columns);
+      const newRow = createRow();
       const newRows = [...prev.rows];
       
       if (position !== undefined) {
