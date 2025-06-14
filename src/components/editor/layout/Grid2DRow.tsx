@@ -4,7 +4,7 @@
 
 import React, { useCallback } from 'react';
 import { GridRow, GridPosition } from '@/types/grid';
-import { ReviewBlock } from '@/types/review';
+import { ReviewBlock, BlockType } from '@/types/review';
 import { Grid2DCell } from './Grid2DCell';
 import { Button } from '@/components/ui/button';
 import { Plus, Minus } from 'lucide-react';
@@ -113,10 +113,13 @@ export const Grid2DRow: React.FC<Grid2DRowProps> = ({
       {row.cells.map((cell) => (
         <Grid2DCell
           key={cell.id}
-          position={{ row: rowIndex, column: cell.position || 0 }}
+          position={{ row: rowIndex, column: cell.position }}
           block={cell.block ? {
-            ...cell.block,
-            sort_index: cell.block.sort_index || 0
+            id: cell.block.id,
+            type: cell.block.type as BlockType,
+            content: cell.block.content,
+            visible: cell.block.visible,
+            sort_index: cell.block.sort_index
           } : null}
           activeBlockId={activeBlockId}
           onActiveBlockChange={onActiveBlockChange}

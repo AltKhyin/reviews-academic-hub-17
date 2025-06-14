@@ -27,7 +27,7 @@ export type BlockType =
   | 'reviewer_quote'
   | 'citation_list'
   | 'snapshot_card'
-  | 'diagram'; // Added missing diagram type
+  | 'diagram';
 
 export interface SpacingConfig {
   top?: number;
@@ -52,12 +52,12 @@ export interface LayoutConfig {
   columns?: number;
   columnWidths?: number[];
   grid_id?: string;
-  grid_position?: { row: number; column: number }; // Standardized to object format only
+  grid_position?: { row: number; column: number };
   row_id?: string;
   grid_rows?: number;
   gap?: number;
   rowHeights?: number[];
-  position?: number; // Added for backward compatibility
+  position?: number;
 }
 
 export interface AlignmentConfig {
@@ -78,32 +78,80 @@ export interface ReviewBlock {
   };
 }
 
-// Added missing content type interfaces
-export interface DiagramContent {
-  nodes: Array<{
-    id: string;
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    label: string;
-    type: 'rectangle' | 'circle' | 'diamond';
-    color?: string;
-  }>;
-  edges: Array<{
-    id: string;
-    source: string;
-    target: string;
-    label?: string;
-    type: 'straight' | 'curved';
-  }>;
-  title?: string;
-  description?: string;
+// Enhanced diagram types with complete interface definitions
+export interface DiagramNode {
+  id: string;
+  type: 'rectangle' | 'rounded-rect' | 'circle' | 'ellipse' | 'diamond' | 'triangle' | 'hexagon';
+  position: { x: number; y: number };
+  size: { width: number; height: number };
+  text: string;
+  style: {
+    backgroundColor: string;
+    borderColor: string;
+    textColor: string;
+    borderWidth: number;
+    borderStyle: 'solid' | 'dashed' | 'dotted';
+    fontSize: number;
+    fontWeight: 'normal' | 'bold';
+    textAlign: 'left' | 'center' | 'right';
+    opacity: number;
+    borderRadius?: number;
+  };
 }
 
-export interface SnapshotCardContent {
+export interface DiagramConnection {
+  id: string;
+  sourceNodeId: string;
+  targetNodeId: string;
+  sourcePoint: 'top' | 'right' | 'bottom' | 'left';
+  targetPoint: 'top' | 'right' | 'bottom' | 'left';
+  style: {
+    strokeColor: string;
+    strokeWidth: number;
+    strokeStyle: 'solid' | 'dashed' | 'dotted';
+    arrowType: 'none' | 'arrow' | 'diamond';
+    curved: boolean;
+    opacity: number;
+  };
+}
+
+export interface DiagramCanvas {
+  width: number;
+  height: number;
+  backgroundColor: string;
+  gridEnabled: boolean;
+  gridSize: number;
+  gridColor: string;
+  snapToGrid: boolean;
+}
+
+export interface DiagramContent {
   title: string;
   description?: string;
+  canvas: DiagramCanvas;
+  nodes: DiagramNode[];
+  connections: DiagramConnection[];
+  template?: string;
+  exportSettings?: {
+    format: 'svg' | 'png' | 'jpg';
+    quality: number;
+    transparentBackground: boolean;
+  };
+  accessibility?: {
+    altText: string;
+    longDescription: string;
+  };
+}
+
+// Enhanced snapshot card content with complete interface
+export interface SnapshotCardContent {
+  title: string;
+  subtitle?: string;
+  description?: string;
+  value?: string;
+  change?: string;
+  trend?: 'up' | 'down' | 'neutral';
+  icon?: string;
   imageUrl?: string;
   metrics?: Array<{
     label: string;
@@ -112,6 +160,14 @@ export interface SnapshotCardContent {
   }>;
   timestamp?: string;
   source?: string;
+  evidence_level?: 'high' | 'moderate' | 'low' | 'very_low';
+  recommendation_strength?: 'strong' | 'conditional' | 'expert_opinion';
+  population?: string;
+  intervention?: string;
+  comparison?: string;
+  outcome?: string;
+  design?: string;
+  key_findings?: string[];
 }
 
 export interface EnhancedIssue {

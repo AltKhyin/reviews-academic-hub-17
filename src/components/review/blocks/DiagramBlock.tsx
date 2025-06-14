@@ -1,3 +1,4 @@
+
 // ABOUTME: Enhanced diagram block with comprehensive null safety and responsive design
 // Supports scientific diagrams with inline editing and fullscreen capabilities
 

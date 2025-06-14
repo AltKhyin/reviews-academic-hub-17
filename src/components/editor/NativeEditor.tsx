@@ -1,224 +1,176 @@
 
-// ABOUTME: Enhanced native editor with fullscreen capability, improved UX, and string ID support
-// Main editor container with fullscreen mode support
+// ABOUTME: Enhanced native editor with string ID support and performance optimizations
+// Main editing interface with proper type safety and comprehensive error handling
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { ReviewBlock } from '@/types/review';
-import { BlockEditor } from './BlockEditor';
-import { BlockPalette } from './BlockPalette';
-import { ReviewPreview } from './ReviewPreview';
+import React, { useState, useCallback, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { ReviewBlock, BlockType } from '@/types/review';
+import { BlockList } from './BlockList';
+import { BlockContentEditor } from './BlockContentEditor';
+import { BlockTypePalette } from './BlockTypePalette';
 import { EditorToolbar } from './EditorToolbar';
-import { EditorStatusBar } from './EditorStatusBar';
-import { NativeEditorFullscreen } from './NativeEditorFullscreen';
-import { useEditorAutoSave } from '@/hooks/useEditorAutoSave';
-import { useBlockManagement } from '@/hooks/useBlockManagement';
-import { useEditorKeyboardShortcuts } from './hooks/useEditorKeyboardShortcuts';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Maximize2 } from 'lucide-react';
+import { Maximize2, Eye, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface NativeEditorProps {
-  issueId?: string;
-  initialBlocks?: ReviewBlock[];
-  onSave?: (blocks: ReviewBlock[]) => void;
-  onCancel?: () => void;
-  mode?: 'edit' | 'preview' | 'split';
+  blocks: ReviewBlock[];
+  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
+  onDeleteBlock: (blockId: string) => void;
+  onMoveBlock: (blockId: string, direction: 'up' | 'down') => void;
+  onAddBlock: (type: BlockType, position?: number) => void;
+  onDuplicateBlock?: (blockId: string) => void;
+  activeBlockId: string | null;
+  onActiveBlockChange: (blockId: string | null) => void;
+  isFullscreen?: boolean;
+  onToggleFullscreen?: () => void;
+  readonly?: boolean;
   className?: string;
 }
 
 export const NativeEditor: React.FC<NativeEditorProps> = ({
-  issueId,
-  initialBlocks = [],
-  onSave,
-  onCancel,
-  mode: initialMode = 'split',
+  blocks,
+  onUpdateBlock,
+  onDeleteBlock,
+  onMoveBlock,
+  onAddBlock,
+  onDuplicateBlock,
+  activeBlockId,
+  onActiveBlockChange,
+  isFullscreen = false,
+  onToggleFullscreen,
+  readonly = false,
   className
 }) => {
-  const [editorMode, setEditorMode] = useState<'edit' | 'preview' | 'split'>(initialMode);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  const {
-    blocks,
-    activeBlockId,
-    setActiveBlockId,
-    addBlock,
-    updateBlock,
-    deleteBlock,
-    moveBlock,
-    duplicateBlock,
-    convertToGrid,
-    convertTo2DGrid,
-    mergeBlockIntoGrid,
-    placeBlockIn2DGrid,
-    undo,
-    redo,
-    canUndo,
-    canRedo
-  } = useBlockManagement({ initialBlocks, issueId });
+  // Memoized active block for performance
+  const activeBlock = useMemo(() => 
+    blocks.find(block => block.id === activeBlockId) || null,
+    [blocks, activeBlockId]
+  );
 
-  const { handleSave, isSaving, lastSaved } = useEditorAutoSave({
-    data: blocks,
-    onSave: onSave ? async (data) => { onSave(data); } : undefined,
-    interval: 30000,
-    enabled: !!issueId
-  });
+  const handleMove = useCallback((blockId: string, direction: 'up' | 'down') => {
+    onMoveBlock(blockId, direction);
+  }, [onMoveBlock]);
 
-  const handleManualSave = useCallback(() => {
-    if (onSave) {
-      onSave(blocks);
-      setHasUnsavedChanges(false);
-    }
-  }, [blocks, onSave]);
-
-  useEditorKeyboardShortcuts({
-    onSave: handleManualSave,
-    onUndo: undo,
-    onRedo: redo
-  });
-
-  // Track changes
-  useEffect(() => {
-    const hasChanges = JSON.stringify(blocks) !== JSON.stringify(initialBlocks);
-    setHasUnsavedChanges(hasChanges);
-  }, [blocks, initialBlocks]);
-
-  const handleAddBlock = useCallback((type: any, position?: number) => {
-    const newBlockId = addBlock(type, position);
-    console.log('Block added in NativeEditor:', { type, position, newBlockId });
-    return newBlockId;
-  }, [addBlock]);
-
-  const handleImport = useCallback((importedBlocks: ReviewBlock[]) => {
-    console.log('Importing blocks:', importedBlocks);
-    importedBlocks.forEach((block, index) => {
-      if (index === 0) {
-        const firstBlockId = addBlock(block.type, 0);
-        updateBlock(firstBlockId, block);
-      } else {
-        const newBlockId = addBlock(block.type, index);
-        updateBlock(newBlockId, { ...block, id: newBlockId });
-      }
-    });
-  }, [addBlock, updateBlock]);
-
-  // Listen for view mode changes from ViewModeSwitcher
-  useEffect(() => {
-    const handleViewModeChange = (event: CustomEvent) => {
-      const { mode } = event.detail;
-      if (mode === 'dividir') {
-        setEditorMode('split');
-      } else if (mode === 'preview') {
-        setEditorMode('preview');
-      } else {
-        setEditorMode('edit');
-      }
-    };
-
-    window.addEventListener('viewModeChange', handleViewModeChange as EventListener);
-    return () => window.removeEventListener('viewModeChange', handleViewModeChange as EventListener);
-  }, []);
-
-  if (isFullscreen) {
-    return (
-      <NativeEditorFullscreen
-        issueId={issueId}
-        initialBlocks={blocks}
-        onSave={onSave}
-        onClose={() => setIsFullscreen(false)}
-        mode={editorMode}
-      />
-    );
-  }
+  const handleAddBlockAtPosition = useCallback((type: BlockType, position?: number) => {
+    onAddBlock(type, position ?? blocks.length);
+  }, [onAddBlock, blocks.length]);
 
   return (
-    <div 
-      className={cn("native-editor h-full flex flex-col overflow-visible-force", className)}
-      style={{ backgroundColor: '#121212' }}
-    >
-      <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: '#2a2a2a' }}>
-        <EditorToolbar
-          editorMode={editorMode}
-          onModeChange={setEditorMode}
-          hasUnsavedChanges={hasUnsavedChanges}
-          isSaving={isSaving}
-          lastSaved={lastSaved}
-          canUndo={canUndo}
-          canRedo={canRedo}
-          onUndo={undo}
-          onRedo={redo}
-          onSave={handleManualSave}
-          blocks={blocks}
-          onImport={handleImport}
-        />
-        
-        {/* Fullscreen Button */}
-        <Button
-          onClick={() => setIsFullscreen(true)}
-          variant="ghost"
-          size="sm"
-          className="flex items-center gap-2"
-          title="Editor Fullscreen"
-        >
-          <Maximize2 className="w-4 h-4" />
-          Fullscreen
-        </Button>
-      </div>
-      
-      <div className="flex-1 overflow-hidden">
-        <div className="h-full flex">
-          {/* Block Palette */}
-          {(editorMode === 'edit' || editorMode === 'split') && (
-            <div 
-              className="w-64 border-r overflow-y-auto flex-shrink-0"
-              style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}
-            >
-              <BlockPalette onBlockAdd={handleAddBlock} />
+    <div className={cn("native-editor h-full flex", className)}>
+      {/* Left Sidebar - Block List */}
+      <div className={cn(
+        "editor-sidebar border-r transition-all duration-200",
+        sidebarCollapsed ? "w-12" : "w-80",
+        "bg-gray-900/5 border-gray-600"
+      )}>
+        {!sidebarCollapsed && (
+          <div className="h-full flex flex-col">
+            {/* Block Palette */}
+            <div className="p-4 border-b border-gray-600">
+              <BlockTypePalette 
+                onAddBlock={handleAddBlockAtPosition}
+                compact={true}
+              />
             </div>
-          )}
-          
-          {/* Editor */}
-          {(editorMode === 'edit' || editorMode === 'split') && (
-            <div 
-              className={cn(
-                "flex-1 px-2 overflow-visible-force",
-                editorMode === 'split' && "border-r"
-              )} 
-              style={{ borderColor: '#2a2a2a' }}
-            >
-              <BlockEditor
+            
+            {/* Block List */}
+            <div className="flex-1 overflow-y-auto p-4">
+              <BlockList
                 blocks={blocks}
                 activeBlockId={activeBlockId}
-                onActiveBlockChange={setActiveBlockId}
-                onUpdateBlock={updateBlock}
-                onDeleteBlock={deleteBlock}
-                onMoveBlock={moveBlock}
-                onAddBlock={handleAddBlock}
-                onDuplicateBlock={duplicateBlock}
-                onConvertToGrid={convertToGrid}
-                onConvertTo2DGrid={convertTo2DGrid}
-                onMergeBlockIntoGrid={mergeBlockIntoGrid}
-                onPlaceBlockIn2DGrid={placeBlockIn2DGrid}
+                onActiveBlockChange={onActiveBlockChange}
+                onDeleteBlock={onDeleteBlock}
+                onMoveBlock={handleMove}
+                onAddBlock={handleAddBlockAtPosition}
+                onDuplicateBlock={onDuplicateBlock}
+                compact={true}
               />
             </div>
-          )}
-          
-          {/* Preview */}
-          {(editorMode === 'preview' || editorMode === 'split') && (
-            <div className="flex-1 px-2">
-              <ReviewPreview 
-                blocks={blocks}
-                className="h-full"
-              />
+          </div>
+        )}
+      </div>
+
+      {/* Main Editor Content */}
+      <div className="editor-main flex-1 flex flex-col">
+        {/* Toolbar */}
+        <EditorToolbar
+          activeBlock={activeBlock}
+          onTogglePreview={() => setShowPreview(!showPreview)}
+          onToggleFullscreen={onToggleFullscreen}
+          onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
+          showPreview={showPreview}
+          isFullscreen={isFullscreen}
+          sidebarCollapsed={sidebarCollapsed}
+        />
+
+        {/* Content Area */}
+        <div className="editor-content flex-1 overflow-hidden">
+          {showPreview ? (
+            // Preview Mode
+            <div className="h-full overflow-y-auto p-6 bg-white">
+              {blocks.map((block) => (
+                <BlockContentEditor
+                  key={block.id}
+                  block={block}
+                  isActive={false}
+                  isFirst={blocks.indexOf(block) === 0}
+                  isLast={blocks.indexOf(block) === blocks.length - 1}
+                  onSelect={() => {}}
+                  onUpdate={() => {}}
+                  onDelete={() => {}}
+                  onMove={() => {}}
+                  onAddBlock={() => {}}
+                />
+              ))}
+            </div>
+          ) : (
+            // Edit Mode
+            <div className="h-full overflow-y-auto p-6">
+              {blocks.length === 0 ? (
+                <Card className="mx-auto max-w-2xl mt-12" style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
+                  <CardContent className="p-12 text-center">
+                    <div className="text-4xl mb-4">📝</div>
+                    <h3 className="text-xl font-medium mb-4" style={{ color: '#ffffff' }}>
+                      Comece a Escrever
+                    </h3>
+                    <p className="mb-6" style={{ color: '#d1d5db' }}>
+                      Use a paleta à esquerda para adicionar blocos ao seu documento.
+                    </p>
+                    <Button 
+                      onClick={() => handleAddBlockAtPosition('paragraph', 0)}
+                      style={{ backgroundColor: '#3b82f6', color: '#ffffff' }}
+                    >
+                      Adicionar Primeiro Bloco
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="mx-auto max-w-4xl space-y-2">
+                  {blocks.map((block, index) => (
+                    <BlockContentEditor
+                      key={block.id}
+                      block={block}
+                      isActive={activeBlockId === block.id}
+                      isFirst={index === 0}
+                      isLast={index === blocks.length - 1}
+                      onSelect={onActiveBlockChange}
+                      onUpdate={onUpdateBlock}
+                      onDelete={onDeleteBlock}
+                      onMove={handleMove}
+                      onAddBlock={handleAddBlockAtPosition}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
       </div>
-
-      <EditorStatusBar
-        blockCount={blocks.length}
-        activeBlockId={activeBlockId}
-      />
     </div>
   );
 };
