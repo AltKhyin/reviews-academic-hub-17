@@ -1,3 +1,4 @@
+
 // ABOUTME: Optimized homepage data loading with request batching and deduplication
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -83,7 +84,7 @@ const fetchHomepageData = async (): Promise<HomepageData> => {
 
   return {
     issues: issues.data || [],
-    sectionVisibility: (Array.isArray(visibilityValue) ? visibilityValue : []) as SectionConfig[],
+    sectionVisibility: (Array.isArray(visibilityValue) ? visibilityValue : []) as unknown as SectionConfig[],
     featuredIssue: featuredIssue.data || null,
     reviewerComments: reviewerComments.data || [],
     errors: {
