@@ -1,7 +1,7 @@
 // ABOUTME: Enhanced block management hook for a flat list of ReviewBlocks.
 // Manages block operations, undo/redo.
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { ReviewBlock, BlockType, LayoutConfig, Review, LayoutElement, GridPosition, LayoutRowDefinition, ElementDefinition, LayoutColumn } from '@/types/review'; // Added Review, LayoutElement, GridPosition, LayoutRowDefinition
+import { ReviewBlock, BlockType, LayoutConfig, Review, LayoutElement, GridPosition, LayoutRowDefinition, ElementDefinition, LayoutColumn, AddBlockOptions } from '@/types/review'; // Added Review, LayoutElement, GridPosition, LayoutRowDefinition
 import { generateId } from '@/lib/utils'; // Assuming generateId is in utils
 
 export interface UseBlockManagementReturn {
@@ -9,13 +9,7 @@ export interface UseBlockManagementReturn {
   blocks: { [key: string]: ReviewBlock };
   activeBlockId: string | null;
   setActiveBlockId: (blockId: string | null) => void;
-  addBlock: (options: { 
-    type: BlockType; 
-    initialContent?: any; 
-    parentElementId?: string; // ID of parent LayoutElement (e.g., column, grid)
-    targetPosition?: GridPosition | number; // For grids or specific index in a column
-    insertAtIndex?: number; // For top-level elements array
-  }) => string | null; // Returns new block ID or null if error
+  addBlock: (options: AddBlockOptions) => string | null; // Returns new block ID or null if error
   updateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
   deleteBlock: (blockId: string) => void;
   moveElement: (elementId: string, direction: 'up' | 'down') => void; // Moves LayoutElement in elements array
@@ -77,14 +71,28 @@ export const useBlockManagement = (
     setActiveBlockIdState(blockId);
   }, []);
 
-  const addBlock = useCallback((options: { 
-    type: BlockType; 
-    initialContent?: any; 
-    parentElementId?: string; 
-    targetPosition?: GridPosition | number;
-    insertAtIndex?: number;
-  }): string | null => {
-    const { type, initialContent = {}, parentElementId, targetPosition, insertAtIndex } = options;
+  const addBlock = useCallback((options: AddBlockOptions): string | null => {
+    const { 
+      type, 
+      initialContent = {}, 
+      parentElementId, 
+      targetPosition, 
+      relativeToLayoutElementId, 
+      position 
+    } = options;
+    let { insertAtIndex } = options;
+
+    // Handle relative positioning to calculate insertAtIndex for root elements
+    if (relativeToLayoutElementId && position && !parentElementId) {
+        const relativeIndex = elements.findIndex(el => el.id === relativeToLayoutElementId);
+        if (relativeIndex !== -1) {
+            insertAtIndex = position === 'above' ? relativeIndex : relativeIndex + 1;
+        } else {
+            console.warn(`Could not find relative element with ID: ${relativeToLayoutElementId}. Appending to the end.`);
+            insertAtIndex = elements.length;
+        }
+    }
+
     const newBlockId = generateId();
     const newBlock: ReviewBlock = {
       id: newBlockId,

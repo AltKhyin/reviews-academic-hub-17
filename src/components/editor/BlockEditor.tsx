@@ -1,8 +1,7 @@
-
 // ABOUTME: Core orchestrator for the block-based editor experience.
 // Manages block state, interactions, and renders the list of blocks.
 import React, { useState, useCallback, useEffect } from 'react';
-import { Review, ReviewBlock, BlockType, GridPosition, LayoutElement } from '@/types/review';
+import { Review, ReviewBlock, BlockType, GridPosition, LayoutElement, AddBlockOptions } from '@/types/review';
 import { BlockList } from './BlockList';
 import { EditorToolbar, EditorToolbarProps } from './EditorToolbar'; 
 import { generateId } from '@/lib/utils'; 
@@ -43,7 +42,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     deleteBlock, 
     moveElement,
     setElements,
-    setBlocks: setBlocksInManager, // Renamed for clarity if BlockEditor has its own setBlocks
+    setBlocks: setBlocksInManager,
   } = blockManager;
   
   const { onDragEnd } = useBlockDragDrop({ elements, setElements });
@@ -87,15 +86,20 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     setActiveBlockId(blockId);
   }, [setActiveBlockId]);
   
-  // DND onDragEnd directly uses the one from useBlockDragDrop hook
   const handleDndDragEnd = (result: DropResult, _provided: ResponderProvided) => {
     onDragEnd(result); 
   };
 
+  const handleAddBlock = useCallback((options: Partial<AddBlockOptions> & { type: BlockType }) => {
+    const newBlockId = addBlock(options);
+    if (newBlockId) {
+      setActiveBlockId(newBlockId);
+    }
+  }, [addBlock, setActiveBlockId]);
+
   const toolbarProps: EditorToolbarProps = {
-    onAddBlock: (type: BlockType) => { // Simplified: Toolbar adds to root by default
-      const newBlockId = addBlock({ type, insertAtIndex: elements.length });
-      if (newBlockId) setActiveBlockId(newBlockId);
+    onAddBlock: (type: BlockType) => {
+      handleAddBlock({ type, insertAtIndex: elements.length });
     },
     onSave: handleSave,
     canUndo: blockManager.canUndo,
@@ -110,37 +114,22 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
 
       <div className="editor-content-area flex-grow p-4 md:p-6 lg:p-8 overflow-y-auto">
         <DragDropContext onDragEnd={handleDndDragEnd}>
-          <Droppable droppableId="main-editor-droppable" type="LAYOUT_ELEMENT"> {/* Standardized DND type */}
+          <Droppable droppableId="main-editor-droppable" type="LAYOUT_ELEMENT">
             {(provided) => (
               <div ref={provided.innerRef} {...provided.droppableProps}>
                 <BlockList
                   layoutElements={elements}
                   blocks={blocks}
                   onUpdateBlock={updateBlock}
-                  onDeleteBlock={deleteBlock} // This is deleteBlock from useBlockManagement
-                  onMoveElement={moveElement} // This is moveElement from useBlockManagement
+                  onDeleteBlock={deleteBlock}
+                  onMoveElement={moveElement}
                   onSelectBlock={handleSelectBlock}
                   activeBlockId={activeBlockId}
                   readonly={readonly}
                   onAddBlockToGrid={(type, gridId, position) => {
-                    const newBlockId = addBlock({ type, parentElementId: gridId, targetPosition: position });
-                    if (newBlockId) setActiveBlockId(newBlockId);
+                    handleAddBlock({ type, parentElementId: gridId, targetPosition: position });
                   }}
-                  // onAddBlock prop for BlockList is for adding relative to other blocks, e.g. from context menus
-                  // This is distinct from the main toolbar's add or grid cell's add.
-                  onAddBlock={(type, index, parentLayoutId, columnIndex) => {
-                      // Example: If adding to a column within a row
-                      if (parentLayoutId && columnIndex !== undefined) {
-                           const newBlockId = addBlock({ type, parentElementId: parentLayoutId, targetPosition: columnIndex });
-                           if (newBlockId) setActiveBlockId(newBlockId);
-                      } else if (index !== undefined) { // Adding to root at specific index
-                           const newBlockId = addBlock({type, insertAtIndex: index});
-                           if (newBlockId) setActiveBlockId(newBlockId);
-                      } else { // Default to end of root
-                           const newBlockId = addBlock({type, insertAtIndex: elements.length});
-                           if (newBlockId) setActiveBlockId(newBlockId);
-                      }
-                  }}
+                  onAddBlock={handleAddBlock}
                 />
                 {provided.placeholder}
               </div>
@@ -151,4 +140,3 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     </div>
   );
 };
-

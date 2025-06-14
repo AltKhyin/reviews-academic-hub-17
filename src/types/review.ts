@@ -1,3 +1,4 @@
+
 // ABOUTME: Enhanced review types with string IDs for database compatibility and complete type definitions
 export type BlockType =
   | 'text'
@@ -134,6 +135,16 @@ export interface Review {
   createdAt: string;
   updatedAt: string;
   // Any other fields related to the review metadata
+}
+
+export interface AddBlockOptions {
+    type: BlockType;
+    initialContent?: any;
+    parentElementId?: string; // ID of parent LayoutElement (e.g., column, grid)
+    targetPosition?: GridPosition | number; // For grids or specific index in a column
+    insertAtIndex?: number; // For top-level elements array
+    relativeToLayoutElementId?: string; // For adding above/below another element
+    position?: 'above' | 'below';
 }
 
 export interface DiagramNodeData {

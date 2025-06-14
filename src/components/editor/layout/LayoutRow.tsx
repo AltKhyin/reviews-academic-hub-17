@@ -1,26 +1,24 @@
-
 // ABOUTME: Component to render a layout row containing multiple columns/elements.
 // Each "column" in a LayoutRow can be a BlockElement or another LayoutElement (like a nested grid).
 import React from 'react';
-import { LayoutElement, ReviewBlock, BlockType, GridPosition, LayoutColumn, LayoutRowDefinition, ElementDefinition } from '@/types/review';
+import { LayoutElement, ReviewBlock, BlockType, GridPosition, LayoutColumn, LayoutRowDefinition, ElementDefinition, AddBlockOptions } from '@/types/review';
 import { SingleBlock } from '../blocks/SingleBlock';
 import { LayoutGrid } from './LayoutGrid'; 
 import { cn } from '@/lib/utils';
-import { Draggable, DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd'; // Import Draggable parts
+import { Draggable, DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd';
 
 export interface LayoutRowProps {
   layoutElement: LayoutElement & { type: 'row', columns?: LayoutColumn[] };
   blocks: { [key: string]: ReviewBlock };
   onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
-  onDeleteBlock: (blockId: string) => void; // Deletes the block and potentially its LayoutElement
-  onMoveElement: (layoutElementId: string, direction: 'up' | 'down') => void; // Moves the LayoutElement itself
+  onDeleteBlock: (blockId: string) => void;
+  onMoveElement: (layoutElementId: string, direction: 'up' | 'down') => void;
   onSelectBlock: (blockId: string | null) => void;
-  onAddBlock: (type: BlockType, options: { insertAtIndex?: number; parentElementId?: string; targetPosition?: GridPosition | number; relativeToLayoutElementId?: string; position?: 'above' | 'below' }) => void;
+  onAddBlock: (options: Partial<AddBlockOptions> & { type: BlockType }) => void;
   onAddBlockToGrid: (type: BlockType, gridId: string, position: GridPosition) => void;
   activeBlockId: string | null;
   readonly?: boolean;
-  // DND props are typically provided by BlockList if LayoutRow elements are draggable
-  index: number; // Index for Draggable
+  index: number;
 }
 
 export const LayoutRow: React.FC<LayoutRowProps> = ({
@@ -41,21 +39,15 @@ export const LayoutRow: React.FC<LayoutRowProps> = ({
     ? `${100 / Math.max(1, columns.length)}%`
     : undefined;
 
-  // Actions for the row itself, like delete row, move row, add column etc. would go here
-  // For now, focusing on rendering content.
-
-  // If the LayoutRow itself is draggable:
   return (
     <Draggable draggableId={layoutElement.id} index={index} isDragDisabled={readonly} type="LAYOUT_ELEMENT">
       {(provided: DraggableProvided, snapshot: DraggableStateSnapshot) => (
         <div 
           ref={provided.innerRef}
           {...provided.draggableProps}
-          // {...provided.dragHandleProps} // Drag handle could be specific part of row UI
           className={cn(
             "layout-row flex gap-4 my-2 p-2 border border-gray-800 rounded-lg bg-gray-950/30 relative",
             snapshot.isDragging && "opacity-70 shadow-xl",
-            // Add group class for hover effects if needed
           )}
           style={{ ...settings?.style }}
         >
@@ -71,36 +63,32 @@ export const LayoutRow: React.FC<LayoutRowProps> = ({
               style={{ flexBasis: columnFlexBasis || column.settings?.width || 'auto', ...column.settings?.style }}
             >
               {column.elements.map((elementDef, elIndex) => {
-                // Assuming elementDef is correctly typed as ElementDefinition
-                // If elementDef is a LayoutElement of type 'block_container'
                 if (elementDef.type === 'block' && elementDef.blockId && blocks[elementDef.blockId]) {
-                  // This 'block' ElementDefinition needs to be wrapped as a LayoutElement for SingleBlock
                   const syntheticLayoutElement: LayoutElement & { type: 'block_container', blockId: string } = {
-                    id: elementDef.id || `${layoutElement.id}-col${colIndex}-el${elIndex}`, // Ensure an ID for the synthetic element
-                    type: 'block_container', // Treat as block_container for SingleBlock
+                    id: elementDef.id || `${layoutElement.id}-col${colIndex}-el${elIndex}`,
+                    type: 'block_container',
                     blockId: elementDef.blockId,
                     settings: elementDef.settings,
                   };
                   return (
                     <SingleBlock
-                      key={elementDef.id || elementDef.blockId} // Use elementDef.id if available
+                      key={elementDef.id || elementDef.blockId}
                       layoutElement={syntheticLayoutElement}
                       block={blocks[elementDef.blockId]}
-                      index={elIndex} // Index within this column's elements
+                      index={elIndex}
                       onUpdateBlock={onUpdateBlock}
-                      onDeleteBlock={onDeleteBlock} // This deletes the block itself
+                      onDeleteBlock={onDeleteBlock}
                       onMoveElement={(elemId, dir) => {
-                        // Moving a block within a column is complex, not just up/down in root list.
-                        // This needs a new handler: onMoveBlockInColumn(columnId, elementDefId, direction)
                         console.warn("Moving block within column not directly supported by onMoveElement. Element ID:", elemId, "Block ID:", elementDef.blockId);
-                        // For now, onMoveElement here would refer to moving the whole LayoutRow if it's the one being moved.
                       }}
                       onSelectBlock={onSelectBlock}
                       activeBlockId={activeBlockId}
                       readonly={readonly}
-                      onAddBlock={(type, position, _relativeToId) => {
-                        // Adding block relative to another block within this column
-                        onAddBlock(type, { parentElementId: column.id, targetPosition: elIndex, position });
+                      onAddBlock={(options) => {
+                        onAddBlock({ 
+                            ...options, 
+                            parentElementId: column.id,
+                        });
                       }}
                     />
                   );
@@ -120,30 +108,30 @@ export const LayoutRow: React.FC<LayoutRowProps> = ({
                     />
                   );
                 }  else if (elementDef.type === 'row') { // Nested row
-                    const nestedRowElement = elementDef as LayoutElement & { type: 'row', columns?: LayoutColumn[] };
-                    return (
-                        <LayoutRow
-                            key={elementDef.id}
-                            layoutElement={nestedRowElement}
-                            blocks={blocks}
-                            onUpdateBlock={onUpdateBlock}
-                            onDeleteBlock={onDeleteBlock}
-                            onMoveElement={onMoveElement} // This moves the nested row itself if it were top-level
-                            onSelectBlock={onSelectBlock}
-                            onAddBlock={onAddBlock}
-                            onAddBlockToGrid={onAddBlockToGrid}
-                            activeBlockId={activeBlockId}
-                            readonly={readonly}
-                            index={elIndex} // Index if nested rows can be reordered within the column
-                        />
-                    );
+                  const nestedRowElement = elementDef as LayoutElement & { type: 'row', columns?: LayoutColumn[] };
+                  return (
+                    <LayoutRow
+                      key={elementDef.id}
+                      layoutElement={nestedRowElement}
+                      blocks={blocks}
+                      onUpdateBlock={onUpdateBlock}
+                      onDeleteBlock={onDeleteBlock}
+                      onMoveElement={onMoveElement}
+                      onSelectBlock={onSelectBlock}
+                      onAddBlock={onAddBlock}
+                      onAddBlockToGrid={onAddBlockToGrid}
+                      activeBlockId={activeBlockId}
+                      readonly={readonly}
+                      index={elIndex}
+                    />
+                  );
                 }
                 return <div key={elementDef.id || elIndex} className="text-xs text-red-500 p-1 bg-red-900/20 rounded">Unsupported element: {elementDef.type} (ID: {elementDef.id})</div>;
               })}
               {!readonly && column.elements.length === 0 && (
                  <div className="flex-grow flex items-center justify-center">
                     <button 
-                        onClick={() => onAddBlock("text", { parentElementId: column.id, targetPosition: 0 })}
+                        onClick={() => onAddBlock({ type: "text", parentElementId: column.id, targetPosition: 0 })}
                         className="text-gray-500 hover:text-blue-400 text-xs p-2 rounded border border-dashed border-gray-600 hover:border-blue-500"
                     >
                         + Add Block
@@ -157,4 +145,3 @@ export const LayoutRow: React.FC<LayoutRowProps> = ({
     </Draggable>
   );
 };
-

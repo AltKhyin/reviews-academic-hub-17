@@ -1,8 +1,9 @@
+
 // ABOUTME: Wrapper for a single draggable/editable block within a list or grid.
 // Handles drag handle, selection state, and renders BlockContentEditor.
 import React from 'react';
 import { Draggable, DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd';
-import { ReviewBlock, BlockType, LayoutElement } from '@/types/review';
+import { ReviewBlock, BlockType, LayoutElement, AddBlockOptions } from '@/types/review';
 import { BlockContentEditor } from '../BlockContentEditor';
 import { Button } from '@/components/ui/button';
 import { Trash2, ChevronUp, ChevronDown, PlusCircle } from 'lucide-react';
@@ -16,7 +17,7 @@ export interface SingleBlockProps {
   onDeleteBlock: (blockId: string) => void;
   onMoveElement: (layoutElementId: string, direction: 'up' | 'down') => void;
   onSelectBlock: (blockId: string | null) => void;
-  onAddBlock?: (type: BlockType, position?: 'above' | 'below' | number, relativeToLayoutElementId?: string) => void;
+  onAddBlock?: (options: Partial<AddBlockOptions> & { type: BlockType }) => void;
   activeBlockId: string | null;
   readonly?: boolean;
 }
@@ -37,7 +38,11 @@ export const SingleBlock: React.FC<SingleBlockProps> = ({
 
   const handleAddBlockAbove = () => {
     if (onAddBlock) {
-      onAddBlock("text", 'above', layoutElement.id);
+      onAddBlock({
+        type: "text", 
+        position: 'above', 
+        relativeToLayoutElementId: layoutElement.id
+      });
     }
   };
 
@@ -111,7 +116,7 @@ export const SingleBlock: React.FC<SingleBlockProps> = ({
             onUpdate={onUpdateBlock}
             onDelete={onDeleteBlock}
             onMove={(elementId, dir) => onMoveElement(elementId, dir)}
-            onAddBlock={(type, _pos, relId) => onAddBlock?.(type, undefined, relId)}
+            onAddBlock={(type) => onAddBlock?.({type})}
             readonly={readonly}
             dragHandleProps={provided.dragHandleProps} 
           />
