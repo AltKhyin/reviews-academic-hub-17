@@ -75,11 +75,11 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
 
       <TabsContent value="basic">
         <IssueFormContainer
-          initialValues={formValues}
+          issueId={issueId}
+          defaultValues={formValues}
           onSubmit={onSubmit}
           onCancel={onCancel}
           isSubmitting={isSubmitting}
-          isNewIssue={isNewIssue}
         />
       </TabsContent>
 
