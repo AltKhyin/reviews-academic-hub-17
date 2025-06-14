@@ -8,7 +8,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Upload } from 'lucide-react';
 import { IssueFormContainer } from '../issue/IssueFormContainer';
 import { NativeEditor } from '@/components/editor/NativeEditor';
-import { ReviewBlock } from '@/types/review';
+import { Review } from '@/types/review';
 import { IssueFormValues } from '@/schemas/issue-form-schema';
 
 interface EditorTabsProps {
@@ -16,11 +16,11 @@ interface EditorTabsProps {
   contentType: 'pdf' | 'native';
   issueId?: string;
   formValues: IssueFormValues;
-  nativeBlocks: ReviewBlock[];
+  nativeReview?: Review; // Changed from nativeBlocks
   onSubmit: (values: IssueFormValues) => Promise<void>;
   onCancel: () => void;
   isSubmitting: boolean;
-  onSaveNativeBlocks: (blocks: ReviewBlock[]) => Promise<void>;
+  onSaveNativeReview: (review: Review) => Promise<void>; // Changed from onSaveNativeBlocks
 }
 
 export const EditorTabs: React.FC<EditorTabsProps> = ({
@@ -28,11 +28,11 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
   contentType,
   issueId,
   formValues,
-  nativeBlocks,
+  nativeReview, // Changed from nativeBlocks
   onSubmit,
   onCancel,
   isSubmitting,
-  onSaveNativeBlocks
+  onSaveNativeReview, // Changed from onSaveNativeBlocks
 }) => {
   return (
     <Tabs defaultValue="basic" className="space-y-6">
@@ -51,139 +51,83 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
           Informações Básicas
         </TabsTrigger>
         <TabsTrigger 
-          value="content" 
-          disabled={isNewIssue}
-          style={{ 
-            color: isNewIssue ? '#6b7280' : '#ffffff',
-            backgroundColor: 'transparent'
-          }}
-          className="data-[state=active]:bg-blue-600 data-[state=active]:text-white disabled:opacity-50"
-        >
-          {contentType === 'native' ? 'Editor de Conteúdo Nativo' : 'Upload PDF'}
-        </TabsTrigger>
-        <TabsTrigger 
-          value="original"
+          value="content"
           style={{ 
             color: '#ffffff',
             backgroundColor: 'transparent'
           }}
           className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+          disabled={isNewIssue}
         >
-          Artigo Original
+          Conteúdo
+        </TabsTrigger>
+        <TabsTrigger 
+          value="seo"
+          style={{ 
+            color: '#ffffff',
+            backgroundColor: 'transparent'
+          }}
+          className="data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+          disabled={isNewIssue}
+        >
+          SEO
         </TabsTrigger>
       </TabsList>
 
       <TabsContent value="basic">
-        <Card 
-          className="issue-editor-card"
-          style={{ 
-            backgroundColor: '#1a1a1a',
-            borderColor: '#2a2a2a',
-            color: '#ffffff'
-          }}
-        >
-          <CardHeader>
-            <CardTitle style={{ color: '#ffffff' }}>Informações da Revisão</CardTitle>
-            <CardDescription style={{ color: '#d1d5db' }}>
-              Metadados e informações básicas da revisão
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <IssueFormContainer 
-              issueId={isNewIssue ? undefined : issueId}
-              defaultValues={formValues}
-              onSubmit={onSubmit} 
-              onCancel={onCancel} 
-              isSubmitting={isSubmitting}
-            />
-          </CardContent>
-        </Card>
+        <IssueFormContainer
+          initialValues={formValues}
+          onSubmit={onSubmit}
+          onCancel={onCancel}
+          isSubmitting={isSubmitting}
+          isNewIssue={isNewIssue}
+        />
       </TabsContent>
 
       <TabsContent value="content">
-        {isNewIssue ? (
-          <Card 
-            className="issue-editor-card"
-            style={{ 
-              backgroundColor: '#1a1a1a',
-              borderColor: '#2a2a2a',
-              color: '#ffffff'
-            }}
-          >
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <Upload className="w-12 h-12 text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium mb-2" style={{ color: '#ffffff' }}>
-                Salve Primeiro as Informações Básicas
-              </h3>
-              <p className="text-center max-w-md" style={{ color: '#d1d5db' }}>
-                Complete e salve as informações básicas na aba anterior antes de adicionar conteúdo.
-              </p>
-            </CardContent>
-          </Card>
-        ) : contentType === 'native' ? (
-          <Card 
-            className="issue-editor-card h-[800px] flex flex-col"
-            style={{ 
-              backgroundColor: '#1a1a1a',
-              borderColor: '#2a2a2a',
-              color: '#ffffff'
-            }}
-          >
-            <CardContent className="flex-1 p-0">
-              <NativeEditor
-                issueId={issueId}
-                initialBlocks={nativeBlocks}
-                onSave={onSaveNativeBlocks}
-                onCancel={() => {}}
-                mode="split"
-              />
-            </CardContent>
-          </Card>
-        ) : (
-          <Card 
-            className="issue-editor-card"
-            style={{ 
-              backgroundColor: '#1a1a1a',
-              borderColor: '#2a2a2a',
-              color: '#ffffff'
-            }}
-          >
-            <CardHeader>
-              <CardTitle style={{ color: '#ffffff' }}>Upload de PDF da Revisão</CardTitle>
-              <CardDescription style={{ color: '#d1d5db' }}>
-                Upload do arquivo PDF da revisão para visualização tradicional
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8" style={{ color: '#d1d5db' }}>
-                Componente de upload PDF será implementado aqui
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </TabsContent>
-
-      <TabsContent value="original">
-        <Card 
-          className="issue-editor-card"
-          style={{ 
-            backgroundColor: '#1a1a1a',
-            borderColor: '#2a2a2a',
-            color: '#ffffff'
-          }}
-        >
+        <Card style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
           <CardHeader>
-            <CardTitle style={{ color: '#ffffff' }}>Artigo Científico Original</CardTitle>
+            <CardTitle style={{ color: '#ffffff' }}>Conteúdo da Revisão</CardTitle>
             <CardDescription style={{ color: '#d1d5db' }}>
-              Upload do PDF do artigo original que está sendo revisado (recomendado)
+              {contentType === 'pdf'
+                ? "Faça upload do PDF da revisão."
+                : "Edite o conteúdo nativo da revisão usando o editor de blocos."}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8" style={{ color: '#d1d5db' }}>
-              Componente de upload do artigo original será implementado aqui
-            </div>
+            {contentType === 'pdf' ? (
+              <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-lg" style={{ borderColor: '#4b5563' }}>
+                <Upload className="w-12 h-12 mb-4" style={{ color: '#9ca3af' }} />
+                <p className="mb-2" style={{ color: '#d1d5db' }}>Arraste e solte o arquivo PDF aqui, ou clique para selecionar.</p>
+                <p className="text-sm" style={{ color: '#6b7280' }}>PDF (max 50MB)</p>
+              </div>
+            ) : (
+              <div style={{ height: '70vh', position: 'relative' }}>
+                <NativeEditor
+                  initialReview={nativeReview}
+                  onSave={onSaveNativeReview}
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
+      </TabsContent>
+
+      <TabsContent value="seo">
+        {/* SEO Form would go here */}
+        <Card style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
+           <CardHeader>
+             <CardTitle style={{ color: '#ffffff' }}>SEO e Metadados</CardTitle>
+             <CardDescription style={{ color: '#d1d5db' }}>
+               Otimize as configurações de SEO para esta revisão.
+             </CardDescription>
+           </CardHeader>
+           <CardContent>
+             <p className="text-center" style={{ color: '#9ca3af' }}>
+               (Formulário de SEO em desenvolvimento)
+             </p>
+           </CardContent>
+         </Card>
       </TabsContent>
     </Tabs>
   );

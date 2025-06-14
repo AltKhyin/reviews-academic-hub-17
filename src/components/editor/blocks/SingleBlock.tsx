@@ -1,4 +1,3 @@
-
 // ABOUTME: Wrapper for a single draggable/editable block within a list or grid.
 // Handles drag handle, selection state, and renders BlockContentEditor.
 import React from 'react';
@@ -80,7 +79,7 @@ export const SingleBlock: React.FC<SingleBlockProps> = ({
           onUpdate={onUpdateBlock}
           onDelete={onDeleteBlock} 
           onMove={(elementId, dir) => onMoveElement(elementId, dir)}
-          onAddBlock={(type, _pos, relId) => onAddBlock?.(type, undefined, relId)}
+          onAddBlock={(options) => onAddBlock?.(options)}
           readonly={true}
         />
       </div>
@@ -88,7 +87,7 @@ export const SingleBlock: React.FC<SingleBlockProps> = ({
   }
 
   return (
-    <Draggable draggableId={layoutElement.id} index={index} isDragDisabled={readonly} type="LAYOUT_ELEMENT">
+    <Draggable draggableId={layoutElement.id} index={index} isDragDisabled={readonly}>
       {(provided: DraggableProvided, snapshot: DraggableStateSnapshot) => (
         <div
           ref={provided.innerRef}
@@ -116,7 +115,7 @@ export const SingleBlock: React.FC<SingleBlockProps> = ({
             onUpdate={onUpdateBlock}
             onDelete={onDeleteBlock}
             onMove={(elementId, dir) => onMoveElement(elementId, dir)}
-            onAddBlock={(type) => onAddBlock?.({type})}
+            onAddBlock={(options) => onAddBlock?.(options)}
             readonly={readonly}
             dragHandleProps={provided.dragHandleProps} 
           />

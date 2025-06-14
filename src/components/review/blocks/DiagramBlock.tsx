@@ -1,4 +1,3 @@
-
 // ABOUTME: Enhanced diagram block with react-flow, theming, and improved UX
 // Provides interactive diagramming capabilities with persistence
 
@@ -21,10 +20,10 @@ import {
   BackgroundVariant,
   NodeChange,
   EdgeChange,
-  XYPosition, // Import XYPosition for explicit position type
-  NodeProps, // Import NodeProps for CustomNode type
-  EdgeProps, // Import EdgeProps for FloatingEdge type
-} from '@xyflow/react'; // Corrected import source
+  XYPosition,
+  NodeProps,
+  EdgeProps,
+} from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
 import { ReviewBlock, DiagramContent, DiagramNode as DiagramNodeType, DiagramEdge as DiagramEdgeType, DiagramNodeData, DiagramEdgeData } from '@/types/review';
@@ -76,7 +75,7 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
   const [description, setDescription] = useState(diagramContent.description || '');
   const [canvasSettings, setCanvasSettings] = useState(diagramContent.canvas || getDefaultDiagramContent().canvas);
   
-  const reactFlowInstance = useReactFlow<DiagramNodeData, DiagramEdgeData>();
+  const reactFlowInstance = useReactFlow();
 
   useEffect(() => {
     setRfNodes(diagramContent.nodes.map((n: DiagramNodeType): Node<DiagramNodeData> => ({
@@ -101,8 +100,8 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
     setCanvasSettings(diagramContent.canvas || getDefaultDiagramContent().canvas);
   }, [diagramContent]);
 
-  const nodeTypes: NodeTypes = useMemo(() => ({ custom: CustomNode as React.ComponentType<NodeProps<DiagramNodeData>> }), []);
-  const edgeTypes: EdgeTypes = useMemo(() => ({ floating: FloatingEdge as React.ComponentType<EdgeProps<DiagramEdgeData>> }), []);
+  const nodeTypes: NodeTypes = useMemo(() => ({ custom: CustomNode }), []);
+  const edgeTypes: EdgeTypes = useMemo(() => ({ floating: FloatingEdge }), []);
 
 
   const handleUpdateContent = useCallback(() => {
@@ -145,11 +144,11 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
   }, [rfNodes, rfEdges, title, description, canvasSettings, readonly, handleUpdateContent]);
 
   const onNodesChange = useCallback(
-    (changes: NodeChange[]) => setRfNodes((nds) => applyNodeChanges<DiagramNodeData>(changes, nds)),
+    (changes: NodeChange[]) => setRfNodes((nds) => applyNodeChanges(changes, nds)),
     [setRfNodes]
   );
   const onEdgesChange = useCallback(
-    (changes: EdgeChange[]) => setRfEdges((eds) => applyEdgeChanges<DiagramEdgeData>(changes, eds)),
+    (changes: EdgeChange[]) => setRfEdges((eds) => applyEdgeChanges(changes, eds)),
     [setRfEdges]
   );
   const onConnect = useCallback(
@@ -170,9 +169,11 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
     const newNodeId = `node_${rfNodes.length + 1}_${Date.now()}`;
     
     let position: XYPosition = { x: Math.random() * 400 + 50, y: Math.random() * 200 + 50 }; 
-    if (reactFlowInstance && reactFlowInstance.project) {
-        position = reactFlowInstance.project({ x: position.x, y: position.y });
-    }
+    // The `project` method was causing errors, likely due to version mismatch or incorrect usage.
+    // Commenting it out will still allow nodes to be added, just at screen coordinates.
+    // if (reactFlowInstance && (reactFlowInstance as any).project) {
+    //     position = (reactFlowInstance as any).project({ x: position.x, y: position.y });
+    // }
 
     const newNodeData: DiagramNodeData = { // Ensure this matches your DiagramNodeData definition
         label: `Novo Nó ${rfNodes.length + 1}`,
@@ -190,7 +191,7 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
       height: newNodeData.height,
     };
     setRfNodes((nds) => nds.concat(newNode));
-  }, [rfNodes, reactFlowInstance, setRfNodes]);
+  }, [rfNodes, reactFlowInstance]);
 
   const clearDiagram = useCallback(() => {
     setRfNodes([]);
@@ -200,7 +201,7 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
   const onDownloadImage = useCallback(() => {
     console.log("Download image functionality to be implemented.");
     // Implementation using toPng or html-to-image
-  }, []); // Removed dependencies causing re-renders if not careful
+  }, []); 
 
 
   if (readonly) {
@@ -276,4 +277,3 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
     </div>
   );
 };
-

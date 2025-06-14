@@ -1,4 +1,3 @@
-
 // ABOUTME: Enhanced review types with string IDs for database compatibility and complete type definitions
 export type BlockType =
   | 'text'
@@ -170,7 +169,7 @@ export interface DiagramNode { // This is the structure stored in ReviewBlock.co
 export interface DiagramEdgeData {
     label?: string;
     // Add any other custom data for edges
-    [key: string]: any;
+    [key:string]: any;
 }
 
 export interface DiagramEdge {
@@ -194,6 +193,10 @@ export interface DiagramContent {
     zoom?: number;
     offsetX?: number;
     offsetY?: number;
+    width?: number;
+    height?: number;
+    gridEnabled?: boolean;
+    gridColor?: string;
   };
 }
 

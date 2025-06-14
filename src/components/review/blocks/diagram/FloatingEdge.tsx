@@ -4,8 +4,9 @@
 
 import React from 'react';
 import { EdgeProps, getBezierPath, EdgeLabelRenderer } from '@xyflow/react';
+import { DiagramEdgeData } from '@/types/review';
 
-const FloatingEdge: React.FC<EdgeProps> = ({
+const FloatingEdge: React.FC<EdgeProps<DiagramEdgeData>> = ({
   id,
   sourceX,
   sourceY,

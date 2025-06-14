@@ -4,7 +4,7 @@
 
 import React, { memo } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
-import { DiagramNodeData } from '@/types/review'; // Use DiagramNodeData for the 'data' prop
+import { DiagramNodeData } from '@/types/review';
 
 const CustomNode: React.FC<NodeProps<DiagramNodeData>> = ({ data, selected, dragging }) => {
   // data is now DiagramNodeData

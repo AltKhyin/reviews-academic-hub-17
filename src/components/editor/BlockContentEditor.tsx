@@ -1,7 +1,8 @@
+
 // ABOUTME: Main editor for individual block content, switching between block types.
 // Handles rendering specific block editors (Text, Heading, Image, etc.)
 import React from 'react';
-import { ReviewBlock, BlockType } from '@/types/review';
+import { ReviewBlock, BlockType, AddBlockOptions } from '@/types/review';
 import { TextBlock, TextBlockProps } from './blocks/TextBlock';
 import { HeadingBlock, HeadingBlockProps } from './blocks/HeadingBlock';
 import { ImageBlock, ImageBlockProps } from './blocks/ImageBlock';
@@ -26,7 +27,7 @@ export interface BlockContentEditorProps {
   onUpdate: (blockId: string, updates: Partial<ReviewBlock>) => void;
   onDelete: (blockId: string) => void;
   onMove: (blockId: string, direction: 'up' | 'down') => void;
-  onAddBlock: (type: BlockType, position?: 'above' | 'below' | number) => void;
+  onAddBlock: (options: Partial<AddBlockOptions> & { type: BlockType }) => void;
   readonly?: boolean;
   className?: string;
   draggableProps?: any; 

@@ -4,9 +4,9 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 
-export interface ContentEditableProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface ContentEditableProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange'> {
   html: string;
-  onChange: (html: string) => void; // Changed to directly pass html string
+  onChange: (html: string) => void;
   tagName?: keyof JSX.IntrinsicElements;
   placeholder?: string;
   disabled?: boolean;

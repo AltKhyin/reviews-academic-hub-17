@@ -1,3 +1,4 @@
+
 // ABOUTME: Refactored issue editor with improved component separation
 // Main editor page using focused sub-components for better maintainability
 
@@ -162,12 +163,13 @@ const IssueEditor = () => {
     }
   }, [issue, isNewIssue, setFormValues]);
 
-  // Update native blocks when data is loaded
-  useEffect(() => {
-    if (fetchedBlocks) {
-      setNativeBlocks(fetchedBlocks);
-    }
-  }, [fetchedBlocks]);
+  // This useEffect was causing a runtime error because setNativeBlocks is not defined.
+  // The state is now managed within the BlockEditor component, so this is no longer needed.
+  // useEffect(() => {
+  //   if (fetchedBlocks) {
+  //     setNativeBlocks(fetchedBlocks);
+  //   }
+  // }, [fetchedBlocks]);
 
   const handleSaveNativeReview = async (updatedReview: Review) => {
     if (!id || isNewIssue) {
