@@ -96,13 +96,24 @@ export const useOptimizedArchiveData = (
           tags: [], // Will be populated from tags if needed
         }));
 
-        // Get metadata with fallback
-        const metadata: ArchiveMetadata = metadataResult.data || {
-          specialties: [],
-          years: [],
-          total_published: 0,
-          last_updated: new Date().toISOString()
-        };
+        // Get metadata with proper type handling and fallback
+        let metadata: ArchiveMetadata;
+        if (metadataResult.data && typeof metadataResult.data === 'object') {
+          const metaData = metadataResult.data as any;
+          metadata = {
+            specialties: Array.isArray(metaData.specialties) ? metaData.specialties : [],
+            years: Array.isArray(metaData.years) ? metaData.years : [],
+            total_published: Number(metaData.total_published) || 0,
+            last_updated: metaData.last_updated || new Date().toISOString()
+          };
+        } else {
+          metadata = {
+            specialties: [],
+            years: [],
+            total_published: 0,
+            last_updated: new Date().toISOString()
+          };
+        }
 
         return {
           issues,

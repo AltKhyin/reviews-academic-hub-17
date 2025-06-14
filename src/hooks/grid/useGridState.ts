@@ -6,7 +6,17 @@ import { useState, useCallback } from 'react';
 import { Grid2DLayout, GridRow, GridCell, GridPosition } from '@/types/grid';
 import { ReviewBlock } from '@/types/review';
 
-export const useGridState = (initialGrid?: Grid2DLayout) => {
+interface GridStateResult {
+  grid: Grid2DLayout;
+  setGrid: React.Dispatch<React.SetStateAction<Grid2DLayout>>;
+  addRow: (gridId: string, position?: number) => void;
+  removeRow: (gridId: string, rowIndex: number) => void;
+  addBlock: (gridId: string, position: GridPosition, block: ReviewBlock) => void;
+  removeBlock: (gridId: string, position: GridPosition) => void;
+  updateColumns: (gridId: string, columns: number) => void;
+}
+
+export const useGridState = (initialGrid?: Grid2DLayout): GridStateResult => {
   const [grid, setGrid] = useState<Grid2DLayout>(
     initialGrid || {
       id: `grid-${Date.now()}`,

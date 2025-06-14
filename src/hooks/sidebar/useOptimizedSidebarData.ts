@@ -48,43 +48,62 @@ export const useOptimizedSidebarData = (userId?: string) => {
           console.error('Stats query error:', statsError);
         }
 
-        // Get user bookmarks if user is authenticated
+        // Get user bookmarks if user is authenticated - Fix the relationship issue
         let bookmarks: any[] = [];
         if (effectiveUserId) {
-          const { data: bookmarkData, error: bookmarkError } = await supabase
-            .from('user_bookmarks')
-            .select(`
-              id, created_at,
-              issues!user_bookmarks_issue_id_fkey(id, title),
-              posts!user_bookmarks_post_id_fkey(id, title)
-            `)
-            .eq('user_id', effectiveUserId)
-            .limit(10);
+          // Separate queries to avoid relationship issues
+          const [issueBookmarks, postBookmarks] = await Promise.all([
+            supabase
+              .from('user_bookmarks')
+              .select(`
+                id, created_at,
+                issues:issue_id(id, title)
+              `)
+              .eq('user_id', effectiveUserId)
+              .not('issue_id', 'is', null)
+              .limit(5),
+            supabase
+              .from('user_bookmarks')
+              .select(`
+                id, created_at,
+                posts:post_id(id, title)
+              `)
+              .eq('user_id', effectiveUserId)
+              .not('post_id', 'is', null)
+              .limit(5)
+          ]);
 
-          if (!bookmarkError && bookmarkData) {
-            bookmarks = bookmarkData.map(bookmark => {
-              if (bookmark.issues) {
-                return {
+          // Process issue bookmarks
+          if (issueBookmarks.data) {
+            bookmarks = bookmarks.concat(
+              issueBookmarks.data
+                .filter(bookmark => bookmark.issues)
+                .map(bookmark => ({
                   id: bookmark.issues.id,
                   title: bookmark.issues.title,
                   type: 'issue' as const,
                   created_at: bookmark.created_at
-                };
-              } else if (bookmark.posts) {
-                return {
+                }))
+            );
+          }
+
+          // Process post bookmarks - but we need to handle the relationship differently
+          if (postBookmarks.data) {
+            for (const bookmark of postBookmarks.data) {
+              if (bookmark.posts) {
+                bookmarks.push({
                   id: bookmark.posts.id,
                   title: bookmark.posts.title,
                   type: 'post' as const,
                   created_at: bookmark.created_at
-                };
+                });
               }
-              return null;
-            }).filter(Boolean);
+            }
           }
         }
 
-        // Parse stats data safely
-        const stats = statsData ? {
+        // Parse stats data safely with proper type checking
+        const stats = statsData && typeof statsData === 'object' ? {
           totalPublishedIssues: Number(statsData.totalIssues) || 0,
           totalActiveUsers: Number(statsData.totalUsers) || 0,
           totalCommunityPosts: Number(statsData.totalPosts) || 0,

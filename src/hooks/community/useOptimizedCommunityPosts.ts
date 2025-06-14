@@ -51,16 +51,15 @@ export const useOptimizedCommunityPosts = (
   return useQuery({
     queryKey: ['community-posts-optimized', tab, searchTerm, limit, user?.id],
     queryFn: async (): Promise<OptimizedPostsResult> => {
-      // Single consolidated query for all post data with proper relationships
+      // Single consolidated query for all post data with corrected relationship names
       let query = supabase
         .from('posts')
         .select(`
           *,
-          profiles!posts_user_id_fkey(full_name, avatar_url),
+          profiles:user_id(full_name, avatar_url),
           post_flairs(name, color),
           post_votes!left(value),
-          post_bookmarks!left(created_at),
-          comments!left(count)
+          post_bookmarks!left(created_at)
         `)
         .eq('published', true);
 
@@ -96,13 +95,30 @@ export const useOptimizedCommunityPosts = (
         throw error;
       }
 
+      // Get comment counts separately to avoid complex joins
+      const postIds = rawPosts?.map(p => p.id) || [];
+      let commentCounts: Record<string, number> = {};
+      
+      if (postIds.length > 0) {
+        const { data: comments } = await supabase
+          .from('comments')
+          .select('post_id')
+          .in('post_id', postIds);
+          
+        if (comments) {
+          commentCounts = comments.reduce((acc, comment) => {
+            acc[comment.post_id] = (acc[comment.post_id] || 0) + 1;
+            return acc;
+          }, {} as Record<string, number>);
+        }
+      }
+
       // Process and normalize data safely
       const posts: OptimizedPost[] = (rawPosts || []).map(post => {
         const profiles = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
         const flair = Array.isArray(post.post_flairs) ? post.post_flairs[0] : post.post_flairs;
         const votes = Array.isArray(post.post_votes) ? post.post_votes : [];
         const bookmarks = Array.isArray(post.post_bookmarks) ? post.post_bookmarks : [];
-        const comments = Array.isArray(post.comments) ? post.comments : [];
 
         return {
           ...post,
@@ -112,7 +128,7 @@ export const useOptimizedCommunityPosts = (
           flair_color: flair?.color || null,
           user_vote: votes.find((v: any) => v.user_id === user?.id)?.value || null,
           bookmark_date: bookmarks.find((b: any) => b.user_id === user?.id)?.created_at || null,
-          comment_count: comments.length || 0,
+          comment_count: commentCounts[post.id] || 0,
         };
       });
 
