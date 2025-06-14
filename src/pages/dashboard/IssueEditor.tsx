@@ -1,75 +1,75 @@
 
-// ABOUTME: Issue editor with proper JSON serialization for Supabase compatibility
-import React, { useState, useEffect } from 'react';
+// ABOUTME: Refactored issue editor with improved component separation
+// Main editor page using focused sub-components for better maintainability
+
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
-import { ReviewBlock, BlockType } from '@/types/review';
+import { toast } from '@/hooks/use-toast';
+import { Issue } from '@/types/issue';
+import { ReviewBlock } from '@/types/review';
+import { IssueHeader } from './components/issue/IssueHeader';
+import { IssueActionButtons } from './components/issue/IssueActionButtons';
+import { ContentTypeSelector } from './components/editor/ContentTypeSelector';
+import { EditorTabs } from './components/editor/EditorTabs';
+import { useIssueEditor } from './hooks/useIssueEditor';
+import { useQuery } from '@tanstack/react-query';
 
-// Utility to ensure JSON serialization compatibility
-const serializeForSupabase = (obj: any): any => {
-  if (obj === null || obj === undefined) {
-    return null;
-  }
-  if (typeof obj === 'string' || typeof obj === 'number' || typeof obj === 'boolean') {
-    return obj;
-  }
-  if (Array.isArray(obj)) {
-    return obj.map(serializeForSupabase);
-  }
-  if (typeof obj === 'object') {
-    const serialized: any = {};
-    for (const [key, value] of Object.entries(obj)) {
-      serialized[key] = serializeForSupabase(value);
-    }
-    return serialized;
-  }
-  return obj;
-};
-
-export const IssueEditor: React.FC = () => {
+const IssueEditor = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const isNewIssue = id === 'new';
+  
+  const [contentType, setContentType] = useState<'pdf' | 'native'>('pdf');
+  const [nativeBlocks, setNativeBlocks] = useState<ReviewBlock[]>([]);
+  
+  const { 
+    formValues,
+    setFormValues,
+    isSubmitting, 
+    onSubmit,
+    handleDelete,
+    togglePublish,
+    toggleFeatured
+  } = useIssueEditor(isNewIssue ? undefined : id);
 
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [specialty, setSpecialty] = useState('');
-  const [authors, setAuthors] = useState('');
-  const [year, setYear] = useState('');
-  const [blocks, setBlocks] = useState<ReviewBlock[]>([]);
-
-  // Fetch issue data
-  const { data: issue, isLoading: issueLoading } = useQuery({
-    queryKey: ['issue', id],
+  // Fetch issue data only if editing existing issue
+  const { data: issue, isLoading, error } = useQuery({
+    queryKey: ['issue-edit', id],
     queryFn: async () => {
-      if (!id) throw new Error('No issue ID provided');
+      if (!id || id === 'new') return null;
 
-      const { data, error } = await supabase
-        .from('issues')
-        .select('*')
-        .eq('id', id)
-        .single();
+      try {
+        const { data, error } = await supabase
+          .from('issues')
+          .select('*')
+          .eq('id', id)
+          .single();
 
-      if (error) throw error;
-      return data;
+        if (error) {
+          toast({
+            title: "Error loading issue",
+            description: "Could not load the issue data. Please try again.",
+            variant: "destructive",
+          });
+          throw error;
+        }
+        
+        return data as Issue;
+      } catch (err) {
+        throw err;
+      }
     },
-    enabled: !!id,
+    enabled: !isNewIssue && !!id,
+    retry: 1,
   });
 
-  // Fetch blocks for this issue
-  const { data: blocksData, isLoading: blocksLoading } = useQuery({
-    queryKey: ['issue-blocks', id],
+  // Fetch native blocks if this is a native review
+  const { data: blocks } = useQuery({
+    queryKey: ['review-blocks', id],
     queryFn: async () => {
-      if (!id) return [];
-
+      if (!id || isNewIssue) return [];
+      
       const { data, error } = await supabase
         .from('review_blocks')
         .select('*')
@@ -77,215 +77,223 @@ export const IssueEditor: React.FC = () => {
         .order('sort_index');
 
       if (error) throw error;
-      return data || [];
+      
+      return (data || []).map(dbBlock => ({
+        id: dbBlock.id,
+        type: dbBlock.type as any,
+        content: dbBlock.payload,
+        sort_index: dbBlock.sort_index,
+        visible: dbBlock.visible,
+        meta: dbBlock.meta as any,
+        issue_id: dbBlock.issue_id,
+        created_at: dbBlock.created_at,
+        updated_at: dbBlock.updated_at
+      })) as ReviewBlock[];
     },
-    enabled: !!id,
+    enabled: !isNewIssue && !!id && contentType === 'native'
   });
 
-  // Update form when data loads
+  // Update form values when issue data is loaded
   useEffect(() => {
-    if (issue) {
-      setTitle(issue.title || '');
-      setDescription(issue.description || '');
-      setSpecialty(issue.specialty || '');
-      setAuthors(issue.authors || '');
-      setYear(issue.year || '');
-    }
-  }, [issue]);
+    if (isNewIssue) {
+      setFormValues({
+        id: '',
+        title: '',
+        description: '',
+        tags: '',
+        pdf_url: '',
+        article_pdf_url: '',
+        cover_image_url: '',
+        published: false,
+        featured: false,
+        authors: '',
+        search_title: '',
+        real_title: '',
+        real_title_ptbr: '',
+        search_description: '',
+        year: '',
+        design: '',
+        score: 0,
+        population: '',
+        backend_tags: '' // Initialize backend_tags for new issues
+      });
+    } else if (issue) {
+      const formattedTags = issue.specialty ? 
+        issue.specialty.split(', ').map(tag => `[tag:${tag}]`).join('') : '';
 
+      const issueContentType = issue.review_type === 'native' || issue.review_type === 'hybrid' 
+        ? 'native' 
+        : 'pdf';
+      setContentType(issueContentType);
+
+      setFormValues({
+        id: issue.id,
+        title: issue.title || '',
+        description: issue.description || '',
+        tags: formattedTags,
+        pdf_url: issue.pdf_url || '',
+        article_pdf_url: issue.article_pdf_url || '',
+        cover_image_url: issue.cover_image_url || '',
+        published: issue.published || false,
+        featured: issue.featured || false,
+        authors: issue.authors || '',
+        search_title: issue.search_title || '',
+        real_title: issue.real_title || '',
+        real_title_ptbr: issue.real_title_ptbr || '',
+        search_description: issue.search_description || '',
+        year: issue.year || '',
+        design: issue.design || '',
+        score: issue.score || 0,
+        population: issue.population || '',
+        backend_tags: issue.backend_tags || '' // Load backend_tags from database
+      });
+    }
+  }, [issue, isNewIssue, setFormValues]);
+
+  // Update native blocks when data is loaded
   useEffect(() => {
-    if (blocksData) {
-      const transformedBlocks: ReviewBlock[] = blocksData.map(block => ({
-        id: block.id.toString(),
-        type: block.type as BlockType,
-        content: block.payload,
-        sort_index: block.sort_index,
-        visible: block.visible ?? true,
-        meta: block.meta as any,
-      }));
-      setBlocks(transformedBlocks);
+    if (blocks) {
+      setNativeBlocks(blocks);
     }
-  }, [blocksData]);
+  }, [blocks]);
 
-  // Save issue mutation
-  const saveIssueMutation = useMutation({
-    mutationFn: async () => {
-      if (!id) throw new Error('No issue ID');
+  const handleSaveNativeBlocks = async (updatedBlocks: ReviewBlock[]) => {
+    if (!id || isNewIssue) {
+      toast({
+        title: "Erro",
+        description: "Salve primeiro as informações básicas antes de editar o conteúdo.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-      // Update issue metadata
-      const { error: issueError } = await supabase
-        .from('issues')
-        .update({
-          title,
-          description,
-          specialty,
-          authors,
-          year,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', id);
+    try {
+      // Delete existing blocks
+      await supabase
+        .from('review_blocks')
+        .delete()
+        .eq('issue_id', id);
 
-      if (issueError) throw issueError;
-
-      // Save blocks with proper serialization
-      if (blocks.length > 0) {
-        const blocksToInsert = blocks.map(block => ({
+      // Insert new blocks
+      if (updatedBlocks.length > 0) {
+        const blocksToInsert = updatedBlocks.map(block => ({
           issue_id: id,
-          type: block.type,
-          payload: serializeForSupabase(block.content),
           sort_index: block.sort_index,
-          visible: block.visible,
-          meta: serializeForSupabase(block.meta || {}),
+          type: block.type as string,
+          payload: block.content as any,
+          meta: block.meta as any,
+          visible: block.visible
         }));
 
-        // Delete existing blocks first
-        const { error: deleteError } = await supabase
-          .from('review_blocks')
-          .delete()
-          .eq('issue_id', id);
-
-        if (deleteError) throw deleteError;
-
-        // Insert new blocks
-        const { error: insertError } = await supabase
+        const { error } = await supabase
           .from('review_blocks')
           .insert(blocksToInsert);
 
-        if (insertError) throw insertError;
+        if (error) throw error;
       }
-    },
-    onSuccess: () => {
-      toast.success('Edição salva com sucesso!');
-      queryClient.invalidateQueries({ queryKey: ['issue', id] });
-      queryClient.invalidateQueries({ queryKey: ['issue-blocks', id] });
-    },
-    onError: (error) => {
-      console.error('Save error:', error);
-      toast.error('Erro ao salvar edição. Tente novamente.');
-    },
-  });
 
-  const handleSave = () => {
-    saveIssueMutation.mutate();
+      // Update issue to mark as native review
+      await supabase
+        .from('issues')
+        .update({ 
+          review_type: 'native',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      // Refetch the blocks to get the proper database IDs
+      const { data: newBlocks } = await supabase
+        .from('review_blocks')
+        .select('*')
+        .eq('issue_id', id)
+        .order('sort_index');
+
+      if (newBlocks) {
+        const transformedBlocks = newBlocks.map(dbBlock => ({
+          id: dbBlock.id,
+          type: dbBlock.type as any,
+          content: dbBlock.payload,
+          sort_index: dbBlock.sort_index,
+          visible: dbBlock.visible,
+          meta: dbBlock.meta as any,
+          issue_id: dbBlock.issue_id,
+          created_at: dbBlock.created_at,
+          updated_at: dbBlock.updated_at
+        })) as ReviewBlock[];
+        
+        setNativeBlocks(transformedBlocks);
+      }
+      
+      toast({
+        title: "Conteúdo Salvo",
+        description: "O conteúdo nativo foi salvo com sucesso.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro ao Salvar",
+        description: error.message || "Não foi possível salvar o conteúdo.",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleGoBack = () => {
-    navigate('/dashboard');
-  };
-
-  if (issueLoading || blocksLoading) {
+  if (!isNewIssue && isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin" />
+      <div className="p-8 text-center" style={{ backgroundColor: '#121212', color: '#ffffff' }}>
+        Carregando...
+      </div>
+    );
+  }
+
+  if (!isNewIssue && error) {
+    return (
+      <div className="p-8 text-center" style={{ backgroundColor: '#121212', color: '#ffffff' }}>
+        <h2 className="text-xl font-bold text-red-400 mb-2">Error loading issue</h2>
+        <p className="text-gray-300">Could not load the issue data. Please try again later.</p>
+        <button 
+          onClick={() => navigate('/edit')}
+          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+        >
+          Back to issues list
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
+    <div className="max-w-7xl mx-auto px-3 py-6 space-y-6" style={{ backgroundColor: '#121212', minHeight: '100vh', color: '#ffffff' }}>
       <div className="flex items-center justify-between">
-        <Button onClick={handleGoBack} variant="ghost" className="flex items-center gap-2">
-          <ArrowLeft className="w-4 h-4" />
-          Voltar ao Dashboard
-        </Button>
-        <Button 
-          onClick={handleSave} 
-          disabled={saveIssueMutation.isPending}
-          className="flex items-center gap-2"
-        >
-          {saveIssueMutation.isPending ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Save className="w-4 h-4" />
-          )}
-          Salvar Edição
-        </Button>
+        <IssueHeader />
+        {!isNewIssue && (
+          <IssueActionButtons
+            onDelete={handleDelete}
+            onTogglePublish={togglePublish}
+            onToggleFeatured={toggleFeatured}
+            isPublished={formValues.published}
+            isFeatured={formValues.featured}
+            isDisabled={isSubmitting}
+          />
+        )}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Editar Edição</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="title">Título</Label>
-            <Input
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Digite o título da edição"
-            />
-          </div>
-          
-          <div>
-            <Label htmlFor="description">Descrição</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Digite a descrição da edição"
-              rows={3}
-            />
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="specialty">Especialidade</Label>
-              <Input
-                id="specialty"
-                value={specialty}
-                onChange={(e) => setSpecialty(e.target.value)}
-                placeholder="ex: Cardiologia"
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="authors">Autores</Label>
-              <Input
-                id="authors"
-                value={authors}
-                onChange={(e) => setAuthors(e.target.value)}
-                placeholder="Nome dos autores"
-              />
-            </div>
-            
-            <div>
-              <Label htmlFor="year">Ano</Label>
-              <Input
-                id="year"
-                value={year}
-                onChange={(e) => setYear(e.target.value)}
-                placeholder="2024"
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <ContentTypeSelector
+        contentType={contentType}
+        onContentTypeChange={setContentType}
+      />
 
-      {/* Blocks preview */}
-      {blocks.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Blocos de Conteúdo ({blocks.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {blocks.map((block, index) => (
-                <div key={block.id} className="p-3 border rounded-lg">
-                  <div className="flex justify-between items-center">
-                    <span className="font-medium">
-                      {index + 1}. {block.type}
-                    </span>
-                    <span className="text-sm text-muted-foreground">
-                      {block.visible ? 'Visível' : 'Oculto'}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <EditorTabs
+        isNewIssue={isNewIssue}
+        contentType={contentType}
+        issueId={id}
+        formValues={formValues}
+        nativeBlocks={nativeBlocks}
+        onSubmit={onSubmit}
+        onCancel={() => navigate('/edit')}
+        isSubmitting={isSubmitting}
+        onSaveNativeBlocks={handleSaveNativeBlocks}
+      />
     </div>
   );
 };
+
+export default IssueEditor;

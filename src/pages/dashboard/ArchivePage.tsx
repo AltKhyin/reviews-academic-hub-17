@@ -1,49 +1,44 @@
 
-// ABOUTME: Archive page with optimized data fetching and zero visual changes
+// ABOUTME: Archive page with integrated navigation handlers and optimized data flow
 import React from 'react';
 import { ArchiveHeader } from '@/components/archive/ArchiveHeader';
 import { ResultsGrid } from '@/components/archive/ResultsGrid';
-import { useOptimizedArchiveSearch } from '@/hooks/useOptimizedArchiveSearch';
+import { useSimplifiedArchiveSearch } from '@/hooks/useSimplifiedArchiveSearch';
+import { useArchiveTagReordering } from '@/hooks/useArchiveTagReordering';
 import { useAppNavigation } from '@/hooks/useAppNavigation';
 
-// Define ArchiveIssue interface for compatibility
-interface ArchiveIssue {
-  id: string;
-  title: string;
-  cover_image_url?: string;
-  specialty: string;
-  published_at: string;
-  created_at: string;
-  authors?: string;
-  year?: string;
-  score?: number;
-  pdf_url: string;
-}
-
 const ArchivePage = () => {
+  const [searchQuery, setSearchQuery] = React.useState('');
   const { navigateToIssue } = useAppNavigation();
 
-  // Use optimized search hook
+  // Use simplified search for text filtering
   const {
-    issues,
+    issues: searchFilteredIssues,
     totalCount,
     filteredCount,
+    isLoading: isSearchLoading,
     specialties,
     years,
-    searchQuery,
-    selectedTags,
-    selectedSpecialty,
-    selectedYear,
-    setSearchQuery,
-    setSelectedTags,
-    setSelectedSpecialty,
-    setSelectedYear,
-    clearAllFilters,
-    isLoading,
-    error,
-  } = useOptimizedArchiveSearch();
+  } = useSimplifiedArchiveSearch({ searchQuery });
 
-  // Results counter text - only show for search queries
+  // Apply tag-based reordering to search-filtered results
+  const {
+    reorderedIssues,
+    parentCategories,
+    visibleSubtags,
+    selectedTags,
+    hasActiveTagSelection,
+    isLoading: isTagsLoading,
+    error: tagsError,
+    handleTagSelect,
+    clearAllTags,
+    getTagState,
+    tagMatchCount,
+  } = useArchiveTagReordering(searchFilteredIssues);
+
+  const isLoading = isSearchLoading || isTagsLoading;
+
+  // Results counter text - only show for search queries, not for tag selections
   const getResultsText = () => {
     if (searchQuery.trim()) {
       return `${filteredCount} edições encontradas para "${searchQuery}"`;
@@ -53,42 +48,25 @@ const ArchivePage = () => {
 
   const resultsText = getResultsText();
 
-  // Convert to expected format for ArchiveHeader (maintain compatibility)
-  const parentCategories = specialties; // Simple string array
-  const visibleSubtags = years; // Use years as subtags for now
-  const hasActiveTagSelection = selectedTags.length > 0 || !!selectedSpecialty || !!selectedYear;
-
-  // Simulate tag selection handlers for compatibility
-  const handleTagSelect = (tag: string) => {
-    if (specialties.includes(tag)) {
-      setSelectedSpecialty(selectedSpecialty === tag ? undefined : tag);
-    } else if (years.includes(tag)) {
-      setSelectedYear(selectedYear === tag ? undefined : tag);
-    } else {
-      // Handle as regular tag
-      const newTags = selectedTags.includes(tag)
-        ? selectedTags.filter(t => t !== tag)
-        : [...selectedTags, tag];
-      setSelectedTags(newTags);
-    }
+  // Convert ParentCategory to string array for ArchiveHeader
+  const categoryNames = parentCategories.map(cat => cat.name);
+  
+  // Convert Set to Array for selectedTags
+  const selectedTagsArray = Array.from(selectedTags);
+  
+  // Convert getTagState to match expected signature
+  const getTagStateForHeader = (tag: string): "selected" | "highlighted" | "unselected" => {
+    const state = getTagState(tag);
+    return state.selected ? "selected" : "unselected";
   };
 
-  const getTagState = (tag: string): "selected" | "highlighted" | "unselected" => {
-    if (selectedSpecialty === tag || selectedYear === tag || selectedTags.includes(tag)) {
-      return "selected";
-    }
-    return "unselected";
-  };
-
-  // Convert to ArchiveIssue format (maintain compatibility)
-  const archiveIssues: ArchiveIssue[] = issues.map(issue => ({
+  // Convert Issue[] to ArchiveIssue[] by ensuring published_at is present
+  const archiveIssues = reorderedIssues.map(issue => ({
     ...issue,
-    published_at: issue.published_at || new Date().toISOString(),
-    created_at: issue.published_at || new Date().toISOString(),
-    pdf_url: `/archive/${issue.id}` // Default PDF URL
+    published_at: issue.published_at || issue.created_at || new Date().toISOString()
   }));
 
-  // Handle issue navigation
+  // Handle issue navigation using unified NavigationService
   const handleIssueClick = (issueId: string) => {
     console.log('Archive: Navigating to issue:', issueId);
     navigateToIssue(issueId);
@@ -103,14 +81,14 @@ const ArchivePage = () => {
         <ArchiveHeader
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          parentCategories={parentCategories}
+          parentCategories={categoryNames}
           visibleSubtags={visibleSubtags}
-          selectedTags={selectedTags}
+          selectedTags={selectedTagsArray}
           hasActiveTagSelection={hasActiveTagSelection}
-          isTagsLoading={isLoading}
+          isTagsLoading={isTagsLoading}
           onTagSelect={handleTagSelect}
-          onClearAllTags={clearAllFilters}
-          getTagState={getTagState}
+          onClearAllTags={clearAllTags}
+          getTagState={getTagStateForHeader}
         />
         
         {/* Results counter - only show for search queries */}
@@ -119,9 +97,9 @@ const ArchivePage = () => {
             <p className="text-muted-foreground">
               {resultsText}
             </p>
-            {error && (
+            {tagsError && (
               <p className="text-sm text-destructive mt-1">
-                Erro ao carregar dados. Funcionalidade pode estar limitada.
+                Erro ao carregar categorias. Funcionalidade de reordenação pode estar limitada.
               </p>
             )}
           </div>

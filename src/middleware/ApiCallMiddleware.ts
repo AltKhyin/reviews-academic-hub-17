@@ -1,36 +1,14 @@
 
-// ABOUTME: API call middleware with proper type safety, error handling, and monitoring
-interface ApiCallOptions {
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
-  headers?: Record<string, string>;
-  body?: any;
-  timeout?: number;
-}
-
-interface ApiResponse<T = any> {
-  data?: T;
-  error?: string;
-  status: number;
-}
-
-interface ApiCallStats {
-  totalCalls: number;
-  successfulCalls: number;
-  failedCalls: number;
-  lastMinuteCalls: number;
-  averageResponseTime: number;
-}
+// ABOUTME: API access monitoring middleware to prevent unauthorized component database calls
+import { supabase } from '@/integrations/supabase/client';
 
 class ApiCallMonitor {
   private static instance: ApiCallMonitor;
-  private callHistory: Array<{ timestamp: number; success: boolean; duration: number }> = [];
-  private stats: ApiCallStats = {
-    totalCalls: 0,
-    successfulCalls: 0,
-    failedCalls: 0,
-    lastMinuteCalls: 0,
-    averageResponseTime: 0
-  };
+  private callLog: Map<string, { count: number; lastCall: number; component?: string }> = new Map();
+  private readonly MAX_CALLS_PER_MINUTE = 5;
+  private readonly ALERT_THRESHOLD = 10;
+
+  private constructor() {}
 
   static getInstance(): ApiCallMonitor {
     if (!ApiCallMonitor.instance) {
@@ -39,128 +17,95 @@ class ApiCallMonitor {
     return ApiCallMonitor.instance;
   }
 
-  trackApiCall(endpoint: string, duration: number, success: boolean) {
+  logApiCall(endpoint: string, component?: string): void {
+    const key = `${endpoint}-${component || 'unknown'}`;
     const now = Date.now();
+    const existing = this.callLog.get(key) || { count: 0, lastCall: 0 };
     
-    // Add to history
-    this.callHistory.push({ timestamp: now, success, duration });
-    
-    // Clean old entries (older than 1 minute)
-    this.callHistory = this.callHistory.filter(call => now - call.timestamp < 60000);
-    
-    // Update stats
-    this.stats.totalCalls++;
-    if (success) {
-      this.stats.successfulCalls++;
-    } else {
-      this.stats.failedCalls++;
+    // Reset counter if more than 1 minute has passed
+    if (now - existing.lastCall > 60000) {
+      existing.count = 0;
     }
     
-    this.stats.lastMinuteCalls = this.callHistory.length;
-    this.stats.averageResponseTime = this.callHistory.reduce((sum, call) => sum + call.duration, 0) / this.callHistory.length;
-    
-    console.log(`API Call: ${endpoint}, Duration: ${duration}ms, Success: ${success}`);
+    existing.count++;
+    existing.lastCall = now;
+    existing.component = component;
+    this.callLog.set(key, existing);
+
+    // Log excessive API calls
+    if (existing.count > this.ALERT_THRESHOLD) {
+      console.warn(`🚨 API CASCADE DETECTED: ${key} made ${existing.count} calls in last minute`);
+    }
+
+    // Development mode detailed logging
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`📡 API Call: ${endpoint} from ${component || 'unknown'} (${existing.count} calls)`);
+    }
+  }
+
+  getCallStats(): Record<string, { count: number; lastCall: number; component?: string }> {
+    const stats: Record<string, any> = {};
+    this.callLog.forEach((value, key) => {
+      stats[key] = value;
+    });
+    return stats;
   }
 
   getTotalCallsInLastMinute(): number {
     const now = Date.now();
-    return this.callHistory.filter(call => now - call.timestamp < 60000).length;
+    let total = 0;
+    this.callLog.forEach((value) => {
+      if (now - value.lastCall <= 60000) {
+        total += value.count;
+      }
+    });
+    return total;
   }
 
-  getStats(): ApiCallStats {
-    return { ...this.stats };
-  }
-}
-
-export class ApiCallMiddleware {
-  private static rateLimits = new Map<string, { count: number; reset: number }>();
-  private static readonly RATE_LIMIT = 100; // requests per minute
-  private static readonly RATE_WINDOW = 60 * 1000; // 1 minute in ms
-
-  static async makeApiCall<T = any>(
-    endpoint: string,
-    options: ApiCallOptions = {}
-  ): Promise<ApiResponse<T>> {
-    const startTime = Date.now();
-    const monitor = ApiCallMonitor.getInstance();
+  preventUnauthorizedCalls(component: string, endpoint: string): boolean {
+    const key = `${endpoint}-${component}`;
+    const existing = this.callLog.get(key) || { count: 0, lastCall: 0 };
     
-    try {
-      // Rate limiting check
-      const rateLimitKey = `api_${endpoint}`;
-      const now = Date.now();
-      const rateLimit = this.rateLimits.get(rateLimitKey);
-
-      if (rateLimit) {
-        if (now < rateLimit.reset) {
-          if (rateLimit.count >= this.RATE_LIMIT) {
-            monitor.trackApiCall(endpoint, Date.now() - startTime, false);
-            return {
-              error: 'Rate limit exceeded',
-              status: 429,
-            };
-          }
-          rateLimit.count++;
-        } else {
-          // Reset window
-          this.rateLimits.set(rateLimitKey, { count: 1, reset: now + this.RATE_WINDOW });
-        }
-      } else {
-        this.rateLimits.set(rateLimitKey, { count: 1, reset: now + this.RATE_WINDOW });
-      }
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), options.timeout || 30000);
-
-      const response = await fetch(endpoint, {
-        method: options.method || 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
-        body: options.body ? JSON.stringify(options.body) : undefined,
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        const duration = Date.now() - startTime;
-        monitor.trackApiCall(endpoint, duration, false);
-        return {
-          error: `HTTP ${response.status}: ${response.statusText}`,
-          status: response.status,
-        };
-      }
-
-      const data = await response.json();
-      const duration = Date.now() - startTime;
-      monitor.trackApiCall(endpoint, duration, true);
-      
-      return {
-        data,
-        status: response.status,
-      };
-    } catch (error) {
-      const duration = Date.now() - startTime;
-      monitor.trackApiCall(endpoint, duration, false);
-      console.error('API call error:', error);
-      return {
-        error: error instanceof Error ? error.message : 'Unknown error',
-        status: 500,
-      };
+    if (existing.count > this.MAX_CALLS_PER_MINUTE) {
+      console.error(`🚫 BLOCKED: ${component} attempted unauthorized API call to ${endpoint}`);
+      return false;
     }
+    
+    return true;
   }
 }
 
-// Export the monitor instance for external use
-export const apiCallMonitor = {
-  trackApiCall: (endpoint: string, duration: number, success: boolean) => {
-    ApiCallMonitor.getInstance().trackApiCall(endpoint, duration, success);
-  },
-  getTotalCallsInLastMinute: () => {
-    return ApiCallMonitor.getInstance().getTotalCallsInLastMinute();
-  },
-  getStats: () => {
-    return ApiCallMonitor.getInstance().getStats();
+// Enhanced Supabase client wrapper with monitoring
+class MonitoredSupabaseClient {
+  private monitor = ApiCallMonitor.getInstance();
+  private client = supabase;
+
+  from(table: string) {
+    const component = this.getCallingComponent();
+    this.monitor.logApiCall(`table:${table}`, component);
+    
+    return this.client.from(table);
   }
-};
+
+  auth = this.client.auth;
+  storage = this.client.storage;
+  functions = this.client.functions;
+  realtime = this.client.realtime;
+
+  private getCallingComponent(): string {
+    const stack = new Error().stack;
+    if (!stack) return 'unknown';
+    
+    const lines = stack.split('\n');
+    for (const line of lines) {
+      if (line.includes('.tsx') || line.includes('.ts')) {
+        const match = line.match(/([A-Z][a-zA-Z0-9]*(?:\.tsx?)?)/);
+        if (match) return match[1];
+      }
+    }
+    return 'unknown';
+  }
+}
+
+export const monitoredSupabase = new MonitoredSupabaseClient();
+export const apiCallMonitor = ApiCallMonitor.getInstance();

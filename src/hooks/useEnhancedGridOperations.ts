@@ -1,172 +1,424 @@
+// ABOUTME: Enhanced grid operations with optimized merge behavior
+// Provides stable grid resizing, merging, splitting, and cross-layout operations
 
-// ABOUTME: Enhanced grid operations hook with comprehensive block management and string ID support
 import { useCallback } from 'react';
-import { useGridState } from './grid/useGridState';
-import { useBlockOperations } from './useBlockOperations';
-import { ReviewBlock, BlockType } from '@/types/review';
-import { Grid2DLayout, GridPosition } from '@/types/grid';
-import { sanitizeBlockType } from '@/utils/typeGuards';
+import { ReviewBlock } from '@/types/review';
+import { useGridLayoutManager } from './useGridLayoutManager';
 
-interface EnhancedGridOperationsProps {
+interface UseEnhancedGridOperationsProps {
   blocks: ReviewBlock[];
-  onBlocksChange: (blocks: ReviewBlock[]) => void;
-  activeBlockId: string;
-  onActiveBlockChange: (blockId: string) => void;
-  gridLayout?: Grid2DLayout;
+  onUpdateBlock: (blockId: number, updates: Partial<ReviewBlock>) => void;
+  onDeleteBlock: (blockId: number) => void;
+  onAddBlock: (type: string, position?: number, layoutInfo?: any) => void;
 }
 
 export const useEnhancedGridOperations = ({
   blocks,
-  onBlocksChange,
-  activeBlockId,
-  onActiveBlockChange,
-  gridLayout
-}: EnhancedGridOperationsProps) => {
-  // Use grid state management
-  const gridState = useGridState(gridLayout);
-
-  // Use block operations with proper string ID handling
+  onUpdateBlock,
+  onDeleteBlock,
+  onAddBlock
+}: UseEnhancedGridOperationsProps) => {
+  
   const {
-    addBlock,
-    updateBlock: originalUpdateBlock,
-    deleteBlock: originalDeleteBlock,
-    moveBlock,
-    duplicateBlock
-  } = useBlockOperations({
+    layoutState,
+    updateColumnWidths,
+    getRowByBlockId,
+    isBlockInGrid
+  } = useGridLayoutManager({
     blocks,
-    onBlocksChange,
-    activeBlockId,
-    onActiveBlockChange
+    onUpdateBlock,
+    onDeleteBlock
   });
 
-  // Wrap block operations to handle string IDs properly
-  const updateBlock = useCallback((blockId: string, updates: Partial<ReviewBlock>) => {
-    originalUpdateBlock(blockId, updates);
-  }, [originalUpdateBlock]);
-
-  const deleteBlock = useCallback((blockId: string) => {
-    originalDeleteBlock(blockId);
-  }, [originalDeleteBlock]);
-
-  // Enhanced grid operations with proper type conversion
-  const addBlockToGrid = useCallback((position: GridPosition, block: ReviewBlock) => {
-    // Ensure block type is properly sanitized
-    const sanitizedBlock = {
-      ...block,
-      type: sanitizeBlockType(block.type)
-    };
-    
-    // First add the block to the blocks array
-    addBlock(sanitizedBlock.type, sanitizedBlock.content);
-    
-    // Then add it to the grid layout
-    if (gridState.grid) {
-      gridState.addBlock(gridState.grid.id, position, sanitizedBlock);
+  // Enhanced column addition that only adds blocks when needed
+  const addColumnToGrid = useCallback((rowId: string) => {
+    const row = layoutState.rows.find(r => r.id === rowId);
+    if (!row) {
+      console.error('Row not found for column addition:', rowId);
+      return { success: false, error: 'Row not found' };
     }
-  }, [addBlock, gridState]);
 
-  const removeBlockFromGrid = useCallback((position: GridPosition) => {
-    if (!gridState.grid) return;
-
-    const row = gridState.grid.rows[position.row];
-    if (row && row.cells[position.column] && row.cells[position.column].block) {
-      const blockId = row.cells[position.column].block!.id;
-      
-      // Remove from blocks array
-      deleteBlock(blockId);
-      
-      // Remove from grid layout
-      gridState.removeBlock(gridState.grid.id, position);
+    if (row.columns >= 6) {
+      console.warn('Maximum columns reached:', row.columns);
+      return { success: false, error: 'Maximum columns reached' };
     }
-  }, [deleteBlock, gridState]);
 
-  const moveBlockInGrid = useCallback((fromPosition: GridPosition, toPosition: GridPosition) => {
-    if (!gridState.grid) return;
+    const newColumns = row.columns + 1;
+    const newColumnWidths = Array(newColumns).fill(100 / newColumns);
 
-    const fromRow = gridState.grid.rows[fromPosition.row];
-    const toRow = gridState.grid.rows[toPosition.row];
+    console.log('Adding column to grid:', { rowId, oldColumns: row.columns, newColumns });
+
+    // Update all existing blocks in the row with new column count and widths
+    row.blocks.forEach(block => {
+      onUpdateBlock(block.id, {
+        meta: {
+          ...block.meta,
+          layout: {
+            ...block.meta?.layout,
+            columns: newColumns,
+            columnWidths: newColumnWidths
+          }
+        }
+      });
+    });
+
+    // Only add a new block if there are gaps in the grid
+    const currentPositions = row.blocks.map(b => b.meta?.layout?.position ?? 0);
+    const missingPositions = Array.from({ length: newColumns }, (_, i) => i)
+      .filter(pos => !currentPositions.includes(pos));
+
+    if (missingPositions.length > 0) {
+      const targetPosition = missingPositions[0];
+      const lastBlockInRow = row.blocks[row.blocks.length - 1];
+      const insertionIndex = lastBlockInRow ? 
+        blocks.findIndex(b => b.id === lastBlockInRow.id) + 1 : 
+        blocks.length;
+
+      onAddBlock('paragraph', insertionIndex, {
+        rowId,
+        gridPosition: targetPosition,
+        columns: newColumns
+      });
+    }
+
+    return { success: true, newColumns };
+  }, [layoutState.rows, onUpdateBlock, onAddBlock, blocks]);
+
+  // Safe column removal with proper cleanup
+  const removeColumnFromGrid = useCallback((rowId: string, columnIndex: number) => {
+    const row = layoutState.rows.find(r => r.id === rowId);
+    if (!row) {
+      console.error('Row not found for column removal:', rowId);
+      return { success: false, error: 'Row not found' };
+    }
+
+    if (row.columns <= 1) {
+      console.error('Cannot remove column: only one column remaining');
+      return { success: false, error: 'Cannot remove last column' };
+    }
+
+    const newColumns = row.columns - 1;
+    const blockToRemove = row.blocks.find(b => (b.meta?.layout?.position ?? 0) === columnIndex);
+
+    console.log('Removing column from grid:', { rowId, columnIndex, newColumns, blockToRemove: blockToRemove?.id });
+
+    // Remove the block at the specified column first
+    if (blockToRemove) {
+      onDeleteBlock(blockToRemove.id);
+    }
+
+    // Update remaining blocks with corrected positions and column count
+    const remainingBlocks = row.blocks.filter(b => (b.meta?.layout?.position ?? 0) !== columnIndex);
+    const newColumnWidths = Array(newColumns).fill(100 / newColumns);
+
+    remainingBlocks.forEach((block, index) => {
+      const currentPosition = block.meta?.layout?.position ?? 0;
+      const newPosition = currentPosition > columnIndex ? currentPosition - 1 : currentPosition;
+      
+      onUpdateBlock(block.id, {
+        meta: {
+          ...block.meta,
+          layout: {
+            ...block.meta?.layout,
+            position: newPosition,
+            columns: newColumns,
+            columnWidths: newColumnWidths
+          }
+        }
+      });
+    });
+
+    return { success: true, newColumns };
+  }, [layoutState.rows, onDeleteBlock, onUpdateBlock]);
+
+  // Enhanced block merging with content handling
+  const mergeGridBlocks = useCallback((rowId: string, leftIndex: number, rightIndex: number) => {
+    const row = layoutState.rows.find(r => r.id === rowId);
+    if (!row) {
+      console.error('Row not found for block merging:', rowId);
+      return;
+    }
+
+    const leftBlock = row.blocks.find(b => (b.meta?.layout?.position ?? 0) === leftIndex);
+    const rightBlock = row.blocks.find(b => (b.meta?.layout?.position ?? 0) === rightIndex);
+
+    if (!leftBlock || !rightBlock) {
+      console.error('Blocks not found for merging:', { leftIndex, rightIndex });
+      return;
+    }
+
+    console.log('Merging grid blocks:', { rowId, leftBlock: leftBlock.id, rightBlock: rightBlock.id });
+
+    // Merge content based on block types
+    let mergedContent;
+    if (leftBlock.type === 'paragraph' && rightBlock.type === 'paragraph') {
+      mergedContent = {
+        ...leftBlock.content,
+        content: `${leftBlock.content.content}<br><br>${rightBlock.content.content}`
+      };
+    } else {
+      // For other types, keep the left block's content
+      mergedContent = leftBlock.content;
+    }
+
+    // Update the left block with merged content
+    onUpdateBlock(leftBlock.id, {
+      content: mergedContent
+    });
+
+    // Remove the right block
+    onDeleteBlock(rightBlock.id);
+
+    return { success: true };
+  }, [layoutState.rows, onUpdateBlock, onDeleteBlock]);
+
+  // Optimized merge into grid - no empty blocks created
+  const mergeIntoGrid = useCallback((draggedBlockId: number, targetRowId: string, targetPosition?: number) => {
+    const draggedBlock = blocks.find(b => b.id === draggedBlockId);
+    if (!draggedBlock) {
+      console.error('Dragged block not found:', draggedBlockId);
+      return { success: false };
+    }
+
+    // Check if target is a single block or existing grid
+    const targetBlock = blocks.find(b => `single-${b.id}` === targetRowId);
+    const targetRow = layoutState.rows.find(r => r.id === targetRowId);
     
-    if (fromRow && toRow && fromRow.cells[fromPosition.column] && toRow.cells[toPosition.column]) {
-      const fromBlock = fromRow.cells[fromPosition.column].block;
-      const toBlock = toRow.cells[toPosition.column].block;
+    if (targetBlock && !targetRow?.blocks.find(b => b.meta?.layout?.columns && b.meta.layout.columns > 1)) {
+      // Merging with a single block - create new 2-column grid
+      const finalRowId = `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const newColumns = 2;
+      const columnWidths = [50, 50];
+      
+      console.log('Creating new grid by merging single blocks:', { 
+        draggedBlockId, 
+        targetBlockId: targetBlock.id,
+        finalRowId,
+        newColumns 
+      });
 
-      // Swap blocks in grid
-      gridState.removeBlock(gridState.grid.id, fromPosition);
-      gridState.removeBlock(gridState.grid.id, toPosition);
+      // Update target block to become position 0 in new grid
+      onUpdateBlock(targetBlock.id, {
+        meta: {
+          ...targetBlock.meta,
+          layout: {
+            row_id: finalRowId,
+            position: 0,
+            columns: newColumns,
+            gap: 4,
+            columnWidths
+          }
+        }
+      });
 
-      if (fromBlock) {
-        gridState.addBlock(gridState.grid.id, toPosition, {
-          id: fromBlock.id,
-          type: sanitizeBlockType(fromBlock.type),
-          content: fromBlock.content,
-          visible: fromBlock.visible,
-          sort_index: fromBlock.sort_index
+      // Update dragged block to become position 1 in new grid
+      onUpdateBlock(draggedBlockId, {
+        meta: {
+          ...draggedBlock.meta,
+          layout: {
+            row_id: finalRowId,
+            position: 1,
+            columns: newColumns,
+            gap: 4,
+            columnWidths
+          }
+        }
+      });
+
+      return { success: true };
+
+    } else if (targetRow && targetRow.blocks.length > 0) {
+      // Merging with existing grid - add as new column
+      const newColumns = targetRow.columns + 1;
+      const columnWidths = Array(newColumns).fill(100 / newColumns);
+      const finalPosition = targetPosition ?? targetRow.blocks.length;
+
+      console.log('Adding to existing grid:', { 
+        draggedBlockId, 
+        targetRowId, 
+        finalPosition, 
+        newColumns 
+      });
+
+      // Update dragged block to join target grid
+      onUpdateBlock(draggedBlockId, {
+        meta: {
+          ...draggedBlock.meta,
+          layout: {
+            row_id: targetRowId,
+            position: finalPosition,
+            columns: newColumns,
+            gap: targetRow.gap || 4,
+            columnWidths
+          }
+        }
+      });
+
+      // Update all existing blocks in target row
+      targetRow.blocks.forEach((block) => {
+        if (block.id !== draggedBlockId) {
+          onUpdateBlock(block.id, {
+            meta: {
+              ...block.meta,
+              layout: {
+                ...block.meta?.layout,
+                columns: newColumns,
+                columnWidths
+              }
+            }
+          });
+        }
+      });
+
+      return { success: true };
+    }
+
+    return { success: false };
+  }, [blocks, layoutState.rows, onUpdateBlock]);
+
+  // Split a block into two columns
+  const splitBlockIntoGrid = useCallback((blockId: number, splitContent: { left: any; right: any }) => {
+    const block = blocks.find(b => b.id === blockId);
+    if (!block || isBlockInGrid(blockId)) {
+      console.error('Cannot split block: not found or already in grid:', blockId);
+      return;
+    }
+
+    const blockIndex = blocks.findIndex(b => b.id === blockId);
+    const rowId = `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    console.log('Splitting block into grid:', { blockId, rowId });
+
+    // Update the original block to be the left column
+    onUpdateBlock(blockId, {
+      content: splitContent.left,
+      meta: {
+        ...block.meta,
+        layout: {
+          row_id: rowId,
+          position: 0,
+          columns: 2,
+          gap: 4,
+          columnWidths: [50, 50]
+        }
+      }
+    });
+
+    // Add the right column block
+    onAddBlock(block.type, blockIndex + 1, {
+      rowId,
+      gridPosition: 1,
+      columns: 2
+    });
+
+    // Update the new block with right content
+    setTimeout(() => {
+      const newBlocks = blocks.filter(b => b.meta?.layout?.row_id === rowId);
+      const rightBlock = newBlocks.find(b => (b.meta?.layout?.position ?? 0) === 1);
+      if (rightBlock) {
+        onUpdateBlock(rightBlock.id, {
+          content: splitContent.right
+        });
+      }
+    }, 100);
+  }, [blocks, isBlockInGrid, onUpdateBlock, onAddBlock]);
+
+  // Convert grid to single column
+  const convertGridToSingle = useCallback((rowId: string, mergeContent: boolean = false) => {
+    const row = layoutState.rows.find(r => r.id === rowId);
+    if (!row || row.columns === 1) {
+      console.error('Cannot convert grid to single: row not found or already single column:', rowId);
+      return;
+    }
+
+    console.log('Converting grid to single column:', { rowId, mergeContent });
+
+    if (mergeContent && row.blocks.length > 1) {
+      // Merge all blocks into the first one
+      const firstBlock = row.blocks[0];
+      const otherBlocks = row.blocks.slice(1);
+
+      if (firstBlock.type === 'paragraph') {
+        const mergedContent = row.blocks
+          .map(b => b.content.content || '')
+          .join('<br><br>');
+
+        onUpdateBlock(firstBlock.id, {
+          content: { ...firstBlock.content, content: mergedContent },
+          meta: {
+            ...firstBlock.meta,
+            layout: undefined // Remove layout metadata
+          }
+        });
+      } else {
+        // Keep first block, remove layout metadata
+        onUpdateBlock(firstBlock.id, {
+          meta: {
+            ...firstBlock.meta,
+            layout: undefined
+          }
         });
       }
 
-      if (toBlock) {
-        gridState.addBlock(gridState.grid.id, fromPosition, {
-          id: toBlock.id,
-          type: sanitizeBlockType(toBlock.type),
-          content: toBlock.content,
-          visible: toBlock.visible,
-          sort_index: toBlock.sort_index
+      // Delete other blocks
+      otherBlocks.forEach(block => onDeleteBlock(block.id));
+    } else {
+      // Keep all blocks as separate single-column blocks
+      row.blocks.forEach(block => {
+        onUpdateBlock(block.id, {
+          meta: {
+            ...block.meta,
+            layout: undefined // Remove layout metadata
+          }
+        });
+      });
+    }
+  }, [layoutState.rows, onUpdateBlock, onDeleteBlock]);
+
+  // Reorder columns within a grid
+  const reorderGridColumns = useCallback((rowId: string, fromIndex: number, toIndex: number) => {
+    const row = layoutState.rows.find(r => r.id === rowId);
+    if (!row) {
+      console.error('Row not found for column reordering:', rowId);
+      return;
+    }
+
+    console.log('Reordering grid columns:', { rowId, fromIndex, toIndex });
+
+    // Update positions of affected blocks
+    row.blocks.forEach(block => {
+      const currentPosition = block.meta?.layout?.position ?? 0;
+      let newPosition = currentPosition;
+
+      if (currentPosition === fromIndex) {
+        newPosition = toIndex;
+      } else if (fromIndex < toIndex && currentPosition > fromIndex && currentPosition <= toIndex) {
+        newPosition = currentPosition - 1;
+      } else if (fromIndex > toIndex && currentPosition >= toIndex && currentPosition < fromIndex) {
+        newPosition = currentPosition + 1;
+      }
+
+      if (newPosition !== currentPosition) {
+        onUpdateBlock(block.id, {
+          meta: {
+            ...block.meta,
+            layout: {
+              ...block.meta?.layout,
+              position: newPosition
+            }
+          }
         });
       }
-    }
-  }, [gridState]);
-
-  const duplicateBlockInGrid = useCallback((position: GridPosition) => {
-    if (!gridState.grid) return;
-
-    const row = gridState.grid.rows[position.row];
-    if (row && row.cells[position.column] && row.cells[position.column].block) {
-      const originalBlockId = row.cells[position.column].block!.id;
-      
-      // Find original block in blocks array
-      const originalBlock = blocks.find(b => b.id === originalBlockId);
-      if (originalBlock) {
-        // Duplicate in blocks array
-        duplicateBlock(originalBlockId);
-      }
-    }
-  }, [blocks, duplicateBlock, gridState]);
-
-  const getBlockAtPosition = useCallback((position: GridPosition): ReviewBlock | null => {
-    if (!gridState.grid) return null;
-
-    const row = gridState.grid.rows[position.row];
-    if (row && row.cells[position.column] && row.cells[position.column].block) {
-      const blockId = row.cells[position.column].block!.id;
-      return blocks.find(b => b.id === blockId) || null;
-    }
-    return null;
-  }, [blocks, gridState]);
-
-  const isPositionOccupied = useCallback((position: GridPosition): boolean => {
-    if (!gridState.grid) return false;
-
-    const row = gridState.grid.rows[position.row];
-    return !!(row && row.cells[position.column] && row.cells[position.column].block);
-  }, [gridState]);
+    });
+  }, [layoutState.rows, onUpdateBlock]);
 
   return {
-    // Grid state
-    gridState,
-    
-    // Block operations
-    addBlock,
-    updateBlock,
-    deleteBlock,
-    moveBlock,
-    duplicateBlock,
-    
-    // Enhanced grid operations
-    addBlockToGrid,
-    removeBlockFromGrid,
-    moveBlockInGrid,
-    duplicateBlockInGrid,
-    getBlockAtPosition,
-    isPositionOccupied,
+    addColumnToGrid,
+    removeColumnFromGrid,
+    mergeGridBlocks,
+    mergeIntoGrid,
+    splitBlockIntoGrid,
+    convertGridToSingle,
+    reorderGridColumns
   };
 };

@@ -5,6 +5,7 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { ReviewBlock, BlockType } from '@/types/review';
 import { BlockRenderer } from '@/components/review/BlockRenderer';
+import { BlockControls } from './BlockControls';
 import { BlockStatusIndicators } from './BlockStatusIndicators';
 import { InlineBlockSettings } from './inline/InlineBlockSettings';
 import { cn } from '@/lib/utils';
@@ -136,6 +137,21 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
+      <BlockControls
+        blockId={block.id}
+        isVisible={block.visible}
+        isActive={isActive}
+        isFirst={isFirst}
+        isLast={isLast}
+        editMode={editMode}
+        isDragging={isDragging}
+        onMove={onMove}
+        onToggleVisibility={handleToggleVisibility}
+        onToggleEditMode={handleToggleEditMode}
+        onDuplicate={onDuplicate}
+        onDelete={onDelete}
+      />
+
       {/* Inline Settings - Positioned close to block controls */}
       {isActive && (
         <InlineBlockSettings

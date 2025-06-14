@@ -1,140 +1,303 @@
 
-// ABOUTME: Grid 2D utilities with proper type definitions and exports
-import { Grid2DLayout, GridRow, GridCell } from '@/types/grid';
+// ABOUTME: Utilities for 2D grid layout management
+// Provides functions for creating, manipulating, and validating 2D grids
+
+import { Grid2DLayout, GridRow, GridCell, GridPosition, GridBlockMeta } from '@/types/grid';
 import { ReviewBlock } from '@/types/review';
 
-export interface GridBlockMeta {
-  spacing?: {
-    margin?: { top?: number; bottom?: number; left?: number; right?: number };
-    padding?: { top?: number; bottom?: number; left?: number; right?: number };
-  };
-  alignment?: {
-    horizontal?: 'left' | 'center' | 'right';
-    vertical?: 'top' | 'center' | 'bottom';
-  };
-  layout?: {
-    columns?: number;
-    columnWidths?: number[];
-    grid_id?: string;
-    grid_position?: { row: number; column: number };
-    row_id?: string;
-    grid_rows?: number;
-    gap?: number;
-    rowHeights?: number[];
-  };
-}
+/**
+ * Generate unique grid ID
+ */
+export const generateGridId = (): string => {
+  return `grid-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+};
 
-export const createEmptyGrid = (rows: number, columns: number): Grid2DLayout => {
-  const gridRows: GridRow[] = [];
+/**
+ * Generate unique row ID
+ */
+export const generateRowId = (gridId: string, rowIndex: number): string => {
+  return `${gridId}-row-${rowIndex}`;
+};
+
+/**
+ * Generate unique cell ID
+ */
+export const generateCellId = (gridId: string, row: number, column: number): string => {
+  return `${gridId}-cell-${row}-${column}`;
+};
+
+/**
+ * Create empty grid with specified dimensions
+ */
+export const createEmptyGrid = (
+  columns: number, 
+  rows: number = 1, 
+  gap: number = 4
+): Grid2DLayout => {
+  const gridId = generateGridId();
   
-  for (let rowIndex = 0; rowIndex < rows; rowIndex++) {
-    const cells: GridCell[] = [];
-    
-    for (let colIndex = 0; colIndex < columns; colIndex++) {
-      cells.push({
-        id: `cell-${rowIndex}-${colIndex}`,
-        row: rowIndex,
-        column: colIndex,
-        position: colIndex,
-        block: null
-      });
-    }
-    
-    gridRows.push({
-      id: `row-${rowIndex}`,
-      index: rowIndex,
-      cells
-    });
-  }
+  const gridRows: GridRow[] = Array.from({ length: rows }, (_, rowIndex) => ({
+    id: generateRowId(gridId, rowIndex),
+    index: rowIndex,
+    cells: Array.from({ length: columns }, (_, colIndex) => ({
+      id: generateCellId(gridId, rowIndex, colIndex),
+      row: rowIndex,
+      column: colIndex,
+      block: undefined
+    }))
+  }));
 
   return {
-    id: `grid-${Date.now()}`,
+    id: gridId,
     rows: gridRows,
     columns,
-    gap: 16
+    gap,
+    columnWidths: Array(columns).fill(100 / columns),
+    rowHeights: Array(rows).fill(100 / rows)
   };
 };
 
-export const validateGridStructure = (grid: Grid2DLayout): boolean => {
-  try {
-    // Check basic structure
-    if (!grid.rows || !Array.isArray(grid.rows)) return false;
-    
-    // Check each row
-    for (const row of grid.rows) {
-      if (!row.cells || !Array.isArray(row.cells)) return false;
-      if (row.cells.length !== grid.columns) return false;
-      
-      // Check each cell
-      for (const cell of row.cells) {
-        if (typeof cell.row !== 'number' || typeof cell.column !== 'number') return false;
-        if (!cell.id) return false;
-      }
-    }
-    
-    return true;
-  } catch (error) {
-    console.error('Grid validation error:', error);
-    return false;
-  }
+/**
+ * Add row to existing grid
+ */
+export const addRowToGrid = (
+  grid: Grid2DLayout, 
+  position: 'above' | 'below', 
+  targetRowIndex: number
+): Grid2DLayout => {
+  const newRowIndex = position === 'above' ? targetRowIndex : targetRowIndex + 1;
+  
+  const newRow: GridRow = {
+    id: generateRowId(grid.id, newRowIndex),
+    index: newRowIndex,
+    cells: Array.from({ length: grid.columns }, (_, colIndex) => ({
+      id: generateCellId(grid.id, newRowIndex, colIndex),
+      row: newRowIndex,
+      column: colIndex,
+      block: undefined
+    }))
+  };
+
+  const updatedRows = [...grid.rows];
+  updatedRows.splice(newRowIndex, 0, newRow);
+  
+  // Update row indices for rows after insertion
+  updatedRows.forEach((row, index) => {
+    row.index = index;
+    row.id = generateRowId(grid.id, index);
+    row.cells.forEach((cell, colIndex) => {
+      cell.row = index;
+      cell.id = generateCellId(grid.id, index, colIndex);
+    });
+  });
+
+  const newRowCount = updatedRows.length;
+  return {
+    ...grid,
+    rows: updatedRows,
+    rowHeights: Array(newRowCount).fill(100 / newRowCount)
+  };
 };
 
-export const serializeGridForStorage = (grid: Grid2DLayout): string => {
-  try {
-    return JSON.stringify(grid);
-  } catch (error) {
-    console.error('Grid serialization error:', error);
-    return '{}';
+/**
+ * Remove row from grid
+ */
+export const removeRowFromGrid = (
+  grid: Grid2DLayout, 
+  rowIndex: number
+): Grid2DLayout => {
+  if (grid.rows.length <= 1) {
+    throw new Error('Cannot remove the last row from grid');
   }
+
+  const updatedRows = grid.rows.filter((_, index) => index !== rowIndex);
+  
+  // Update row indices
+  updatedRows.forEach((row, index) => {
+    row.index = index;
+    row.id = generateRowId(grid.id, index);
+    row.cells.forEach((cell, colIndex) => {
+      cell.row = index;
+      cell.id = generateCellId(grid.id, index, colIndex);
+    });
+  });
+
+  const newRowCount = updatedRows.length;
+  return {
+    ...grid,
+    rows: updatedRows,
+    rowHeights: Array(newRowCount).fill(100 / newRowCount)
+  };
 };
 
-export const deserializeGridFromStorage = (data: string): Grid2DLayout | null => {
-  try {
-    const parsed = JSON.parse(data);
-    return validateGridStructure(parsed) ? parsed : null;
-  } catch (error) {
-    console.error('Grid deserialization error:', error);
-    return null;
-  }
-};
-
-export const addBlockToGrid = (
+/**
+ * Place block in grid cell
+ */
+export const placeBlockInGrid = (
   grid: Grid2DLayout,
   block: ReviewBlock,
-  row: number,
-  column: number
+  position: GridPosition
 ): Grid2DLayout => {
-  const newGrid = { ...grid };
+  const { row, column } = position;
   
-  if (newGrid.rows[row] && newGrid.rows[row].cells[column]) {
-    newGrid.rows[row].cells[column] = {
-      ...newGrid.rows[row].cells[column],
-      block: {
-        id: block.id,
-        type: block.type,
-        content: block.content,
-        visible: block.visible,
-        sort_index: block.sort_index
-      }
-    };
+  if (row >= grid.rows.length || column >= grid.columns) {
+    throw new Error('Position outside grid bounds');
   }
-  
-  return newGrid;
+
+  const updatedRows = grid.rows.map((gridRow, rowIndex) => {
+    if (rowIndex !== row) return gridRow;
+    
+    return {
+      ...gridRow,
+      cells: gridRow.cells.map((cell, colIndex) => {
+        if (colIndex !== column) return cell;
+        
+        return {
+          ...cell,
+          block: {
+            ...block,
+            meta: {
+              ...block.meta,
+              layout: {
+                ...block.meta?.layout,
+                grid_id: grid.id,
+                grid_position: position,
+                grid_rows: grid.rows.length,
+                columns: grid.columns,
+                gap: grid.gap,
+                columnWidths: grid.columnWidths,
+                rowHeights: grid.rowHeights
+              }
+            }
+          }
+        };
+      })
+    };
+  });
+
+  return {
+    ...grid,
+    rows: updatedRows
+  };
 };
 
+/**
+ * Remove block from grid
+ */
 export const removeBlockFromGrid = (
   grid: Grid2DLayout,
-  row: number,
-  column: number
+  position: GridPosition
 ): Grid2DLayout => {
-  const newGrid = { ...grid };
+  const { row, column } = position;
   
-  if (newGrid.rows[row] && newGrid.rows[row].cells[column]) {
-    newGrid.rows[row].cells[column] = {
-      ...newGrid.rows[row].cells[column],
-      block: null
+  const updatedRows = grid.rows.map((gridRow, rowIndex) => {
+    if (rowIndex !== row) return gridRow;
+    
+    return {
+      ...gridRow,
+      cells: gridRow.cells.map((cell, colIndex) => {
+        if (colIndex !== column) return cell;
+        
+        return {
+          ...cell,
+          block: undefined
+        };
+      })
     };
+  });
+
+  return {
+    ...grid,
+    rows: updatedRows
+  };
+};
+
+/**
+ * Get all blocks from grid in reading order
+ */
+export const getBlocksFromGrid = (grid: Grid2DLayout): ReviewBlock[] => {
+  const blocks: ReviewBlock[] = [];
+  
+  grid.rows.forEach((row) => {
+    row.cells.forEach((cell) => {
+      if (cell.block) {
+        blocks.push(cell.block);
+      }
+    });
+  });
+  
+  return blocks;
+};
+
+/**
+ * Find block position in grid
+ */
+export const findBlockInGrid = (
+  grid: Grid2DLayout, 
+  blockId: number
+): GridPosition | null => {
+  for (const row of grid.rows) {
+    for (const cell of row.cells) {
+      if (cell.block?.id === blockId) {
+        return { row: cell.row, column: cell.column };
+      }
+    }
+  }
+  return null;
+};
+
+/**
+ * Check if grid has any blocks
+ */
+export const gridHasBlocks = (grid: Grid2DLayout): boolean => {
+  return grid.rows.some(row => 
+    row.cells.some(cell => cell.block !== undefined)
+  );
+};
+
+/**
+ * Validate grid structure
+ */
+export const validateGrid = (grid: Grid2DLayout): boolean => {
+  // Check row consistency
+  if (grid.rows.length === 0) return false;
+  
+  // Check column consistency
+  for (const row of grid.rows) {
+    if (row.cells.length !== grid.columns) return false;
   }
   
-  return newGrid;
+  // Check cell positions
+  for (let rowIndex = 0; rowIndex < grid.rows.length; rowIndex++) {
+    const row = grid.rows[rowIndex];
+    if (row.index !== rowIndex) return false;
+    
+    for (let colIndex = 0; colIndex < row.cells.length; colIndex++) {
+      const cell = row.cells[colIndex];
+      if (cell.row !== rowIndex || cell.column !== colIndex) return false;
+    }
+  }
+  
+  return true;
+};
+
+/**
+ * Convert 1D grid to 2D grid structure
+ */
+export const convert1DTo2DGrid = (
+  blocks: ReviewBlock[],
+  columns: number,
+  rowId: string
+): Grid2DLayout => {
+  const grid = createEmptyGrid(columns, 1);
+  
+  // Place existing blocks in first row
+  blocks.forEach((block, index) => {
+    if (index < columns) {
+      const position: GridPosition = { row: 0, column: index };
+      placeBlockInGrid(grid, block, position);
+    }
+  });
+  
+  return grid;
 };

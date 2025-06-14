@@ -1,50 +1,65 @@
 
 import React from 'react';
-import { ArticleCard } from './ArticleCard';
 import { Issue } from '@/types/issue';
+import { ArticleCard } from './ArticleCard';
 
 interface ArticlesSectionProps {
-  featuredIssue?: Issue | null;
-  recentIssues?: Issue[];
-  stats?: {
-    totalIssues: number;
-    totalSpecialties: number;
-    totalAuthors: number;
-  };
+  issues: Issue[];
+  featuredIssueId?: string;
+  sectionTitle: string;
+  sectionType: 'recent' | 'recommended' | 'trending';
 }
 
-export const ArticlesSection: React.FC<ArticlesSectionProps> = ({ 
-  recentIssues = [] 
+export const ArticlesSection: React.FC<ArticlesSectionProps> = ({
+  issues,
+  featuredIssueId,
+  sectionTitle,
+  sectionType
 }) => {
-  console.log(`ArticlesSection: Rendering with ${recentIssues.length} recent issues`);
+  console.log(`ArticlesSection (${sectionType}): Rendering with ${issues.length} issues`);
 
-  if (recentIssues.length === 0) {
+  if (!issues || issues.length === 0) {
+    console.log(`ArticlesSection (${sectionType}): No issues to display`);
     return (
       <section className="mb-8">
-        <h2 className="text-2xl font-bold mb-6">Artigos Recentes</h2>
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
-          <p className="text-gray-500">
-            Nenhum artigo recente disponível no momento.
+        <h2 className="text-2xl font-bold mb-6">{sectionTitle}</h2>
+        <div className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-500/20 rounded-lg p-6 text-center">
+          <p className="text-gray-300">
+            Nenhum artigo disponível nesta seção no momento.
           </p>
         </div>
       </section>
     );
   }
 
+  // Filter out the featured issue from other sections to avoid duplication
+  const filteredIssues = featuredIssueId 
+    ? issues.filter(issue => issue.id !== featuredIssueId)
+    : issues;
+
+  console.log(`ArticlesSection (${sectionType}): Filtered to ${filteredIssues.length} issues (excluding featured)`);
+
   return (
     <section className="mb-8">
-      <h2 className="text-2xl font-bold mb-6">Artigos Recentes</h2>
+      <h2 className="text-2xl font-bold mb-6">{sectionTitle}</h2>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {recentIssues.map((issue) => (
-          <ArticleCard
-            key={issue.id}
-            issue={issue}
-            variant="default"
-            className="w-full"
-          />
-        ))}
-      </div>
+      {filteredIssues.length === 0 ? (
+        <div className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-500/20 rounded-lg p-6 text-center">
+          <p className="text-gray-300">
+            Todos os artigos desta seção estão sendo exibidos em destaque.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {filteredIssues.map((issue) => (
+            <ArticleCard
+              key={issue.id}
+              issue={issue}
+              variant="default"
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 };

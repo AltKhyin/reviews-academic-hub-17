@@ -29,6 +29,8 @@ interface ResizableGridProps {
   onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
   onDeleteBlock: (blockId: string) => void;
   activeBlockId: string | null;
+  onActive
+
   onActiveBlockChange: (blockId: string | null) => void;
   dragState: DragState;
   onDragOver: (e: React.DragEvent, targetRowId: string, targetPosition?: number, targetType?: 'grid' | 'single' | 'merge') => void;

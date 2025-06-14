@@ -14,10 +14,10 @@ interface LayoutGridProps {
   onUpdateRow: (rowId: string, updates: Partial<LayoutRowData>) => void;
   onDeleteRow: (rowId: string) => void;
   onAddRow: (position?: number, columns?: number) => void;
-  onAddBlock: (rowId: string, position: number, blockType?: string) => void;
-  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
-  onMoveBlock: (blockId: string, targetRowId: string, targetPosition: number) => void;
-  onDeleteBlock: (blockId: string) => void;
+  onAddBlock: (rowId: string, position: number, blockType: string) => void;
+  onUpdateBlock: (blockId: number, updates: Partial<ReviewBlock>) => void;
+  onMoveBlock: (blockId: number, targetRowId: string, targetPosition: number) => void;
+  onDeleteBlock: (blockId: number) => void;
   readonly?: boolean;
   className?: string;
 }

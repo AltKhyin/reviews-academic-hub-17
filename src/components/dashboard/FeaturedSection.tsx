@@ -1,25 +1,18 @@
 
 import React from 'react';
-import { ArticleCard } from './ArticleCard';
 import { Issue } from '@/types/issue';
+import { ArticleCard } from './ArticleCard';
 
 interface FeaturedSectionProps {
-  featuredIssue?: Issue | null;
-  recentIssues?: Issue[];
-  stats?: {
-    totalIssues: number;
-    totalSpecialties: number;
-    totalAuthors: number;
-  };
+  issues: Issue[];
 }
 
-export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ 
-  featuredIssue, 
-  recentIssues = [] 
-}) => {
-  console.log(`FeaturedSection: Rendering with featuredIssue:`, featuredIssue);
+export const FeaturedSection: React.FC<FeaturedSectionProps> = ({ issues }) => {
+  console.log(`FeaturedSection: Rendering with ${issues.length} issues`);
 
-  const displayIssue = featuredIssue || recentIssues[0];
+  const featuredIssue = issues?.find(issue => issue.featured);
+  const fallbackIssue = issues?.[0];
+  const displayIssue = featuredIssue || fallbackIssue;
 
   if (!displayIssue) {
     console.log("FeaturedSection: No issues to display");

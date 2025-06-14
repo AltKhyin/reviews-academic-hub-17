@@ -1,138 +1,100 @@
 
-// ABOUTME: Grid state management with proper typing and complete interface implementation
-import { useState, useCallback, useMemo } from 'react';
-import { Grid2DLayout, GridPosition, GridStateResult, GridRow, GridCell } from '@/types/grid';
+// ABOUTME: Grid state computation and management
+// Handles grid row extraction and layout state calculation
+
+import { useMemo } from 'react';
 import { ReviewBlock } from '@/types/review';
 
-export const useGridState = (initialLayout?: Grid2DLayout): GridStateResult & {
-  setGrid: React.Dispatch<React.SetStateAction<Grid2DLayout | null>>;
-  addRow: (gridId: string, position?: number) => void;
-  removeRow: (gridId: string, rowIndex: number) => void;
-  updateColumns: (gridId: string, columns: number) => void;
-} => {
-  const [grid, setGrid] = useState<Grid2DLayout | null>(initialLayout || null);
+interface GridRow {
+  id: string;
+  blocks: ReviewBlock[];
+  columns: number;
+  gap: number;
+  columnWidths?: number[];
+}
 
-  const addBlock = useCallback((gridId: string, position: GridPosition, block: ReviewBlock) => {
-    if (!grid || grid.id !== gridId) return;
+interface GridLayoutState {
+  rows: GridRow[];
+  totalBlocks: number;
+}
+
+export const useGridState = (blocks: ReviewBlock[]): GridLayoutState => {
+  return useMemo(() => {
+    const rowsMap = new Map<string, GridRow>();
+    const processedBlocks = new Set<number>();
     
-    const newRows = [...grid.rows];
-    const row = newRows[position.row];
+    console.log('Computing grid layout from blocks:', blocks.length);
     
-    if (row && row.cells[position.column]) {
-      row.cells[position.column] = {
-        ...row.cells[position.column],
-        block: {
-          id: block.id,
-          type: block.type,
-          content: block.content,
-          visible: block.visible,
-          sort_index: block.sort_index
-        }
-      };
+    const sortedBlocks = [...blocks].sort((a, b) => a.sort_index - b.sort_index);
+    
+    sortedBlocks.forEach((block) => {
+      if (processedBlocks.has(block.id)) return;
       
-      setGrid(prev => prev ? { ...prev, rows: newRows } : null);
-    }
-  }, [grid]);
-
-  const removeBlock = useCallback((gridId: string, position: GridPosition) => {
-    if (!grid || grid.id !== gridId) return;
-    
-    const newRows = [...grid.rows];
-    const row = newRows[position.row];
-    
-    if (row && row.cells[position.column]) {
-      row.cells[position.column] = {
-        ...row.cells[position.column],
-        block: null
-      };
+      const layout = block.meta?.layout;
       
-      setGrid(prev => prev ? { ...prev, rows: newRows } : null);
-    }
-  }, [grid]);
-
-  const updateGrid = useCallback((updates: Partial<Grid2DLayout>) => {
-    setGrid(prev => prev ? { ...prev, ...updates } : null);
-  }, []);
-
-  const addRow = useCallback((gridId: string, position?: number) => {
-    if (!grid || grid.id !== gridId) return;
-
-    const newRowIndex = position ?? grid.rows.length;
-    const newCells: GridCell[] = [];
-    
-    for (let i = 0; i < grid.columns; i++) {
-      newCells.push({
-        id: `cell-${newRowIndex}-${i}`,
-        row: newRowIndex,
-        column: i,
-        position: i,
-        block: null
-      });
-    }
-
-    const newRow: GridRow = {
-      id: `row-${newRowIndex}`,
-      index: newRowIndex,
-      cells: newCells
-    };
-
-    const newRows = [...grid.rows];
-    newRows.splice(newRowIndex, 0, newRow);
-    
-    setGrid(prev => prev ? { ...prev, rows: newRows } : null);
-  }, [grid]);
-
-  const removeRow = useCallback((gridId: string, rowIndex: number) => {
-    if (!grid || grid.id !== gridId) return;
-
-    const newRows = grid.rows.filter((_, index) => index !== rowIndex);
-    setGrid(prev => prev ? { ...prev, rows: newRows } : null);
-  }, [grid]);
-
-  const updateColumns = useCallback((gridId: string, columns: number) => {
-    if (!grid || grid.id !== gridId) return;
-
-    const newRows = grid.rows.map(row => {
-      const newCells: GridCell[] = [];
-      
-      for (let i = 0; i < columns; i++) {
-        if (i < row.cells.length) {
-          newCells.push({
-            ...row.cells[i],
-            column: i,
-            position: i
-          });
-        } else {
-          newCells.push({
-            id: `cell-${row.index}-${i}`,
-            row: row.index,
-            column: i,
-            position: i,
-            block: null
+      if (layout?.row_id && typeof layout.row_id === 'string' && layout.columns) {
+        const rowId = layout.row_id;
+        
+        if (!rowsMap.has(rowId)) {
+          rowsMap.set(rowId, {
+            id: rowId,
+            blocks: [],
+            columns: layout.columns,
+            gap: layout.gap || 4,
+            columnWidths: layout.columnWidths
           });
         }
+        
+        const row = rowsMap.get(rowId)!;
+        row.blocks.push(block);
+        processedBlocks.add(block.id);
+        
+        if (layout.columnWidths && layout.columnWidths.length === layout.columns) {
+          row.columnWidths = layout.columnWidths;
+        }
+        
+        if (layout.columns > row.columns) {
+          row.columns = layout.columns;
+        }
+      } else {
+        const singleRowId = `single-${block.id}`;
+        rowsMap.set(singleRowId, {
+          id: singleRowId,
+          blocks: [block],
+          columns: 1,
+          gap: 4
+        });
+        processedBlocks.add(block.id);
       }
-
-      return {
-        ...row,
-        cells: newCells
-      };
     });
-
-    setGrid(prev => prev ? { ...prev, rows: newRows, columns } : null);
-  }, [grid]);
-
-  const rows = useMemo(() => grid?.rows || [], [grid]);
-
-  return {
-    grid,
-    rows,
-    addBlock,
-    removeBlock,
-    updateGrid,
-    setGrid,
-    addRow,
-    removeRow,
-    updateColumns
-  };
+    
+    const rows = Array.from(rowsMap.values())
+      .filter(row => row.blocks.length > 0)
+      .map(row => ({
+        ...row,
+        blocks: row.blocks.sort((a, b) => {
+          const aPos = a.meta?.layout?.position ?? 0;
+          const bPos = b.meta?.layout?.position ?? 0;
+          return aPos - bPos;
+        })
+      }))
+      .sort((a, b) => {
+        const aMinSort = Math.min(...a.blocks.map(b => b.sort_index));
+        const bMinSort = Math.min(...b.blocks.map(b => b.sort_index));
+        return aMinSort - bMinSort;
+      });
+    
+    const totalBlocks = rows.reduce((sum, row) => sum + row.blocks.length, 0);
+    
+    console.log('Grid layout computed:', {
+      totalRows: rows.length,
+      gridRows: rows.filter(r => r.columns > 1).length,
+      singleRows: rows.filter(r => r.columns === 1).length,
+      totalBlocks,
+      originalBlocks: blocks.length,
+      rows: rows.map(r => ({ id: r.id, columns: r.columns, blocksCount: r.blocks.length }))
+    });
+    
+    return { rows, totalBlocks };
+  }, [blocks]);
 };

@@ -1,171 +1,304 @@
 
-// ABOUTME: Enhanced authentication context with complete interface and proper TypeScript definitions
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+// ABOUTME: Optimized authentication context with request deduplication and caching
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { Session, User } from '@supabase/supabase-js';
+import { toast } from '@/hooks/use-toast';
 
 interface UserProfile {
   id: string;
-  full_name?: string;
-  avatar_url?: string;
-  role?: string;
-  created_at?: string;
-  updated_at?: string;
+  role: 'user' | 'admin'; // Simplified: only admin or user
+  full_name: string | null;
+  avatar_url: string | null;
+  specialty: string | null;
+  bio: string | null;
+  institution: string | null;
 }
 
 interface AuthContextProps {
-  user: User | null;
   session: Session | null;
+  user: User | null;
   profile: UserProfile | null;
-  loading: boolean;
   isLoading: boolean;
-  isAdmin: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, metadata?: { full_name?: string }) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
-  updateProfile: (updates: Partial<UserProfile>) => Promise<{ error: any }>;
+  updateProfile: (data: Partial<UserProfile>) => Promise<void>;
+  isAdmin: boolean;
   refreshProfile: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextProps | null>(null);
+const AuthContext = createContext<AuthContextProps | undefined>(undefined);
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+// Global cache for auth-related data to prevent duplicate requests
+const authCache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+const pendingRequests = new Map<string, Promise<any>>();
+
+const CACHE_TTL = {
+  PROFILE: 5 * 60 * 1000, // 5 minutes
+  ADMIN_CHECK: 10 * 60 * 1000, // 10 minutes
 };
 
-interface AuthProviderProps {
-  children: React.ReactNode;
-}
+// Cache helper functions
+const getCachedData = (key: string) => {
+  const cached = authCache.get(key);
+  if (cached && Date.now() - cached.timestamp < cached.ttl) {
+    return cached.data;
+  }
+  authCache.delete(key);
+  return null;
+};
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+const setCachedData = (key: string, data: any, ttl: number) => {
+  authCache.set(key, { data, timestamp: Date.now(), ttl });
+};
 
-  // Fetch user profile
-  const fetchProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        console.error('Profile fetch error:', error);
-        return;
-      }
-
-      setProfile(data || null);
-    } catch (error) {
-      console.error('Profile fetch error:', error);
+const clearUserCache = (userId: string) => {
+  const keysToDelete = [];
+  for (const [key] of authCache) {
+    if (key.startsWith(`user_${userId}_`)) {
+      keysToDelete.push(key);
     }
-  };
+  }
+  keysToDelete.forEach(key => authCache.delete(key));
+};
 
-  useEffect(() => {
-    // Get initial session
-    const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        await fetchProfile(session.user.id);
-      }
-      
-      setLoading(false);
-    };
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-    getInitialSession();
+  // Simplified admin check - only admin role
+  const isAdmin = profile?.role === 'admin';
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          setTimeout(() => fetchProfile(session.user.id), 0);
-        } else {
-          setProfile(null);
+  // Deduplicated profile fetch with caching
+  const fetchProfile = useCallback(async (userId: string): Promise<UserProfile | null> => {
+    const cacheKey = `user_${userId}_profile`;
+    
+    // Check cache first
+    const cached = getCachedData(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
+    // Check for pending request
+    if (pendingRequests.has(cacheKey)) {
+      return pendingRequests.get(cacheKey);
+    }
+
+    // Create new request
+    const profilePromise = (async () => {
+      try {
+        const { data: profileData, error } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url, role, specialty, bio, institution')
+          .eq('id', userId)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Profile fetch error:', error);
+          return null;
         }
-        
-        setLoading(false);
-      }
-    );
 
-    return () => subscription.unsubscribe();
+        const userProfile: UserProfile = {
+          id: profileData?.id || userId,
+          role: profileData?.role === 'admin' ? 'admin' : 'user', // Simplified: only admin or user
+          full_name: profileData?.full_name || null,
+          avatar_url: profileData?.avatar_url || null,
+          specialty: profileData?.specialty || null,
+          bio: profileData?.bio || null,
+          institution: profileData?.institution || null,
+        };
+
+        // Cache the result
+        setCachedData(cacheKey, userProfile, CACHE_TTL.PROFILE);
+        return userProfile;
+      } catch (error: any) {
+        console.error('Error fetching profile:', error);
+        return null;
+      } finally {
+        // Remove from pending requests
+        pendingRequests.delete(cacheKey);
+      }
+    })();
+
+    // Store the promise to prevent duplicate requests
+    pendingRequests.set(cacheKey, profilePromise);
+    return profilePromise;
   }, []);
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+  const refreshProfile = useCallback(async () => {
+    if (!user) return;
+    
+    // Clear cache for this user
+    clearUserCache(user.id);
+    
+    // Fetch fresh profile
+    const freshProfile = await fetchProfile(user.id);
+    setProfile(freshProfile);
+  }, [user, fetchProfile]);
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+      console.log("Auth state change:", event);
+      setSession(currentSession);
+      setUser(currentSession?.user || null);
+      
+      if (event === 'SIGNED_IN' && currentSession?.user) {
+        // Defer profile fetch to avoid auth deadlocks
+        setTimeout(async () => {
+          const userProfile = await fetchProfile(currentSession.user.id);
+          setProfile(userProfile);
+          setIsLoading(false);
+        }, 100);
+      } else if (event === 'SIGNED_OUT') {
+        setProfile(null);
+        // Clear all cached data on signout
+        authCache.clear();
+        pendingRequests.clear();
+        setIsLoading(false);
+      } else {
+        setIsLoading(false);
+      }
     });
-    return { error };
-  };
 
-  const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/`,
-      },
+    // Initial session check
+    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      setSession(currentSession);
+      setUser(currentSession?.user || null);
+      if (currentSession?.user) {
+        fetchProfile(currentSession.user.id).then(userProfile => {
+          setProfile(userProfile);
+          setIsLoading(false);
+        });
+      } else {
+        setIsLoading(false);
+      }
     });
-    return { error };
-  };
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    setProfile(null);
-  };
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [fetchProfile]);
 
-  const updateProfile = async (updates: Partial<UserProfile>) => {
-    if (!user) return { error: new Error('No user logged in') };
+  const signIn = useCallback(async (email: string, password: string): Promise<void> => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    const { error } = await supabase
-      .from('profiles')
-      .upsert({ id: user.id, ...updates });
-
-    if (!error) {
-      setProfile(prev => prev ? { ...prev, ...updates } : null);
+      if (error) throw error;
+      
+      // Session will be updated automatically via onAuthStateChange
+    } catch (error: any) {
+      console.error('Error signing in:', error.message);
+      throw error;
     }
+  }, []);
 
-    return { error };
-  };
-
-  const refreshProfile = async () => {
-    if (user) {
-      await fetchProfile(user.id);
+  const signOut = useCallback(async () => {
+    try {
+      // Clear cache before signing out
+      authCache.clear();
+      pendingRequests.clear();
+      
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      console.log("Signed out successfully");
+    } catch (error: any) {
+      console.error("Sign out error:", error);
+      toast({
+        title: "Sign out failed",
+        description: error.message,
+        variant: "destructive"
+      });
     }
-  };
+  }, []);
 
-  // Check if user is admin
-  const isAdmin = profile?.role === 'admin' || false;
+  const signUp = useCallback(async (email: string, password: string, metadata?: { full_name?: string }) => {
+    try {
+      const { error } = await supabase.auth.signUp({ 
+        email, 
+        password,
+        options: {
+          data: metadata
+        }
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Account created",
+        description: "Please check your email for verification instructions.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Sign up failed",
+        description: error.message,
+        variant: "destructive"
+      });
+      throw error;
+    }
+  }, []);
 
-  const value: AuthContextProps = {
-    user,
-    session,
-    profile,
-    loading,
-    isLoading: loading,
-    isAdmin,
-    signIn,
-    signUp,
-    signOut,
-    updateProfile,
-    refreshProfile,
-  };
+  const updateProfile = useCallback(async (data: Partial<UserProfile>) => {
+    if (!user || !profile) return;
+    
+    try {
+      const updateData = { ...data, id: profile.id };
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update(updateData)
+        .eq('id', profile.id);
+      
+      if (error) throw error;
+      
+      // Update local state
+      const updatedProfile = { ...profile, ...data };
+      setProfile(updatedProfile);
+      
+      // Update cache
+      setCachedData(`user_${user.id}_profile`, updatedProfile, CACHE_TTL.PROFILE);
+      
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been updated successfully."
+      });
+    } catch (error: any) {
+      toast({
+        title: "Update failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  }, [user, profile]);
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{
+      session,
+      user,
+      profile,
+      isLoading,
+      signUp,
+      signIn,
+      signOut,
+      updateProfile,
+      isAdmin,
+      refreshProfile
+    }}>
       {children}
     </AuthContext.Provider>
   );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 };

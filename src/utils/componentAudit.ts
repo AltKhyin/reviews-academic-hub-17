@@ -1,141 +1,85 @@
 
-// ABOUTME: Component audit utility with corrected API call monitoring methods
-import React from 'react';
+// ABOUTME: Component audit utility to identify unauthorized API calls
 import { apiCallMonitor } from '@/middleware/ApiCallMiddleware';
 
-interface ComponentViolation {
+interface ComponentAuditResult {
   componentName: string;
-  violationType: 'unauthorized_api_call' | 'excessive_requests' | 'performance_issue';
-  details: string;
-  timestamp: number;
-  severity: 'low' | 'medium' | 'high' | 'critical';
+  violations: string[];
+  apiCallCount: number;
+  recommendations: string[];
 }
 
-class ComponentAuditor {
-  private static instance: ComponentAuditor;
-  private violations: ComponentViolation[] = [];
-  private monitoringActive = true;
+export class ComponentAuditor {
+  private static violations: ComponentAuditResult[] = [];
 
-  static getInstance(): ComponentAuditor {
-    if (!ComponentAuditor.instance) {
-      ComponentAuditor.instance = new ComponentAuditor();
+  static auditComponent(componentName: string, hasDirectSupabaseImport: boolean, hasIndividualHooks: boolean): void {
+    const violations: string[] = [];
+    const recommendations: string[] = [];
+
+    if (hasDirectSupabaseImport) {
+      violations.push('Direct Supabase import detected');
+      recommendations.push('Use shared context instead of direct Supabase calls');
     }
-    return ComponentAuditor.instance;
-  }
 
-  logViolation(violation: Omit<ComponentViolation, 'timestamp'>) {
-    if (!this.monitoringActive) return;
-
-    this.violations.push({
-      ...violation,
-      timestamp: Date.now(),
-    });
-
-    // Keep only recent violations (last hour)
-    this.violations = this.violations.filter(
-      v => Date.now() - v.timestamp < 60 * 60 * 1000
-    );
-
-    console.warn(`Component Violation: ${violation.componentName} - ${violation.violationType}`, {
-      details: violation.details,
-      severity: violation.severity,
-    });
-  }
-
-  checkApiCallCompliance(componentName: string): boolean {
-    try {
-      const stats = apiCallMonitor.getStats();
-      const callsPerMinute = stats.totalCalls || 0;
-
-      if (callsPerMinute > 10) {
-        this.logViolation({
-          componentName,
-          violationType: 'excessive_requests',
-          details: `Component making ${callsPerMinute.toFixed(2)} requests per minute`,
-          severity: callsPerMinute > 50 ? 'critical' : 'high',
-        });
-        return false;
-      }
-
-      return true;
-    } catch (error) {
-      console.error('API compliance check failed:', error);
-      return true; // Assume compliant if check fails
+    if (hasIndividualHooks) {
+      violations.push('Individual data fetching hooks detected');
+      recommendations.push('Migrate to shared data providers or context');
     }
-  }
 
-  getViolationReport(): {
-    totalViolations: number;
-    violationsByType: Record<string, number>;
-    violationsBySeverity: Record<string, number>;
-    recentViolations: ComponentViolation[];
-  } {
-    const violationsByType: Record<string, number> = {};
-    const violationsBySeverity: Record<string, number> = {};
+    const stats = apiCallMonitor.getCallStats();
+    const componentCalls = Object.entries(stats)
+      .filter(([key]) => key.includes(componentName))
+      .reduce((sum, [, value]) => sum + value.count, 0);
 
-    this.violations.forEach(violation => {
-      violationsByType[violation.violationType] = (violationsByType[violation.violationType] || 0) + 1;
-      violationsBySeverity[violation.severity] = (violationsBySeverity[violation.severity] || 0) + 1;
-    });
+    if (componentCalls > 5) {
+      violations.push(`Excessive API calls: ${componentCalls} in last minute`);
+      recommendations.push('Implement request batching or use shared context');
+    }
 
-    return {
-      totalViolations: this.violations.length,
-      violationsByType,
-      violationsBySeverity,
-      recentViolations: this.violations.slice(-10), // Last 10 violations
-    };
-  }
-
-  checkPerformanceCompliance(componentName: string, renderTime: number): boolean {
-    const threshold = 100; // ms
-
-    if (renderTime > threshold) {
-      this.logViolation({
+    if (violations.length > 0) {
+      this.violations.push({
         componentName,
-        violationType: 'performance_issue',
-        details: `Component render took ${renderTime}ms (threshold: ${threshold}ms)`,
-        severity: renderTime > 500 ? 'critical' : renderTime > 200 ? 'high' : 'medium',
+        violations,
+        apiCallCount: componentCalls,
+        recommendations
       });
-      return false;
+
+      console.warn(`🔍 AUDIT: ${componentName}`, {
+        violations,
+        apiCallCount: componentCalls,
+        recommendations
+      });
     }
-
-    return true;
   }
 
-  enableMonitoring() {
-    this.monitoringActive = true;
+  static getViolationReport(): ComponentAuditResult[] {
+    return this.violations;
   }
 
-  disableMonitoring() {
-    this.monitoringActive = false;
-  }
-
-  clearViolations() {
+  static clearViolations(): void {
     this.violations = [];
   }
+
+  static logPerformanceMetrics(): void {
+    const totalCalls = apiCallMonitor.getTotalCallsInLastMinute();
+    const stats = apiCallMonitor.getCallStats();
+    
+    console.group('📊 API Performance Metrics');
+    console.log(`Total API calls in last minute: ${totalCalls}`);
+    console.log('Component breakdown:', stats);
+    console.log(`Components with violations: ${this.violations.length}`);
+    console.groupEnd();
+
+    if (totalCalls > 10) {
+      console.error(`🚨 PERFORMANCE ALERT: ${totalCalls} API calls detected (target: <10)`);
+    }
+  }
 }
 
-export const componentAuditor = ComponentAuditor.getInstance();
-
-// Higher-order component for automatic auditing
-export const withComponentAudit = <P extends object>(
-  WrappedComponent: React.ComponentType<P>,
-  componentName: string
-) => {
-  const AuditedComponent = React.forwardRef<any, P>((props, ref) => {
-    const startTime = performance.now();
-
-    React.useEffect(() => {
-      const endTime = performance.now();
-      const renderTime = endTime - startTime;
-      
-      componentAuditor.checkPerformanceCompliance(componentName, renderTime);
-      componentAuditor.checkApiCallCompliance(componentName);
-    });
-
-    return React.createElement(WrappedComponent, { ...props, ref } as any);
-  });
-
-  AuditedComponent.displayName = `withComponentAudit(${componentName})`;
-  return AuditedComponent;
-};
+// Development mode automatic auditing
+if (process.env.NODE_ENV === 'development') {
+  // Log performance metrics every 30 seconds
+  setInterval(() => {
+    ComponentAuditor.logPerformanceMetrics();
+  }, 30000);
+}

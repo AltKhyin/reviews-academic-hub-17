@@ -1,83 +1,67 @@
 
-// ABOUTME: Grid repair utilities with proper GridCell interface compliance
+// ABOUTME: Grid layout repair and validation utilities
+// Handles metadata validation and repair operations
+
 import { useCallback } from 'react';
-import { Grid2DLayout, GridCell, GridRow } from '@/types/grid';
 import { ReviewBlock } from '@/types/review';
 
-export const useGridRepair = () => {
-  const repairGrid = useCallback((grid: Grid2DLayout, blocks: ReviewBlock[]): Grid2DLayout => {
-    const repairedRows: GridRow[] = grid.rows.map((row, rowIndex) => {
-      const repairedCells: GridCell[] = row.cells.map((cell, colIndex) => ({
-        id: cell.id || `cell-${rowIndex}-${colIndex}`,
-        row: rowIndex,
-        column: colIndex,
-        position: colIndex,
-        block: cell.block
-      }));
+interface UseGridRepairProps {
+  onUpdateBlock: (blockId: number, updates: Partial<ReviewBlock>) => void;
+}
 
-      return {
-        ...row,
-        cells: repairedCells
-      };
-    });
-
-    return {
-      ...grid,
-      rows: repairedRows
-    };
-  }, []);
-
-  const validateGridIntegrity = useCallback((grid: Grid2DLayout, blocks: ReviewBlock[]): boolean => {
-    try {
-      // Check if all rows have proper cell structure
-      for (const row of grid.rows) {
-        for (const cell of row.cells) {
-          if (!cell.id || typeof cell.row !== 'number' || typeof cell.column !== 'number') {
-            return false;
-          }
-        }
-      }
-      return true;
-    } catch (error) {
-      console.error('Grid integrity validation failed:', error);
-      return false;
-    }
-  }, []);
-
-  const generateEmptyGrid = useCallback((rows: number, columns: number): Grid2DLayout => {
-    const gridRows: GridRow[] = [];
+export const useGridRepair = ({ onUpdateBlock }: UseGridRepairProps) => {
+  const validateLayoutMetadata = useCallback((block: ReviewBlock): boolean => {
+    const layout = block.meta?.layout;
+    if (!layout) return true;
     
-    for (let rowIndex = 0; rowIndex < rows; rowIndex++) {
-      const cells: GridCell[] = [];
+    const isValid = !!(layout.row_id && 
+                      typeof layout.position === 'number' && 
+                      typeof layout.columns === 'number' && 
+                      layout.columns > 0);
+    
+    if (!isValid) {
+      console.warn('Invalid layout metadata detected:', { blockId: block.id, layout });
+    }
+    
+    return isValid;
+  }, []);
+  
+  const repairLayoutMetadata = useCallback((rowId: string, blocks: ReviewBlock[]) => {
+    console.log('Repairing layout metadata for row:', rowId);
+    
+    blocks.forEach((block, index) => {
+      const currentLayout = block.meta?.layout;
+      const expectedLayout = {
+        row_id: rowId,
+        position: index,
+        columns: blocks.length,
+        gap: currentLayout?.gap || 4,
+        columnWidths: currentLayout?.columnWidths
+      };
       
-      for (let colIndex = 0; colIndex < columns; colIndex++) {
-        cells.push({
-          id: `cell-${rowIndex}-${colIndex}`,
-          row: rowIndex,
-          column: colIndex,
-          position: colIndex,
-          block: null
+      if (!currentLayout || 
+          currentLayout.row_id !== expectedLayout.row_id ||
+          currentLayout.position !== expectedLayout.position ||
+          currentLayout.columns !== expectedLayout.columns) {
+        
+        console.log('Updating block layout metadata:', { 
+          blockId: block.id, 
+          oldLayout: currentLayout, 
+          newLayout: expectedLayout 
+        });
+        
+        onUpdateBlock(block.id, {
+          meta: {
+            ...block.meta,
+            layout: expectedLayout
+          }
         });
       }
-      
-      gridRows.push({
-        id: `row-${rowIndex}`,
-        index: rowIndex,
-        cells
-      });
-    }
-
-    return {
-      id: `grid-${Date.now()}`,
-      rows: gridRows,
-      columns,
-      gap: 16
-    };
-  }, []);
+    });
+  }, [onUpdateBlock]);
 
   return {
-    repairGrid,
-    validateGridIntegrity,
-    generateEmptyGrid
+    validateLayoutMetadata,
+    repairLayoutMetadata
   };
 };

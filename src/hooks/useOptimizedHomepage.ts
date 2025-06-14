@@ -1,116 +1,112 @@
 
-// ABOUTME: Optimized homepage data hook with proper type definitions and RPC function name
-import { useOptimizedQuery, queryKeys, queryConfigs } from './useOptimizedQuery';
+// ABOUTME: Optimized homepage data loading with request batching and deduplication
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useRequestBatcher } from './useRequestBatcher';
+import { useCallback } from 'react';
 
-interface HomepageData {
-  featuredIssue: {
-    id: string;
-    title: string;
-    cover_image_url?: string;
-    specialty: string;
-    published_at: string;
-    authors?: string;
-    description?: string;
-  } | null;
-  recentIssues: Array<{
-    id: string;
-    title: string;
-    cover_image_url?: string;
-    specialty: string;
-    published_at: string;
-    authors?: string;
-    score?: number;
-  }>;
-  stats: {
-    totalIssues: number;
-    totalSpecialties: number;
-    totalAuthors: number;
-  };
-}
+// Centralized homepage data fetcher to prevent cascade
+const fetchHomepageData = async () => {
+  const [issues, sectionVisibility, featuredIssue, reviewerComments] = await Promise.all([
+    supabase
+      .from('issues')
+      .select('id, title, cover_image_url, specialty, published_at, created_at, featured, published, score')
+      .eq('published', true)
+      .order('created_at', { ascending: false })
+      .limit(20),
+    
+    supabase
+      .from('site_meta')
+      .select('value')
+      .eq('key', 'homepage_sections')
+      .single(),
+      
+    supabase
+      .from('issues')
+      .select('id, title, cover_image_url, specialty, published_at, created_at, featured, published, score')
+      .eq('published', true)
+      .eq('featured', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(), // Use maybeSingle to handle no results gracefully
 
-interface HomepageResult extends HomepageData {
-  isLoading: boolean;
-  error: any;
-  hasError: boolean;
-  data?: HomepageData;
-  refetch?: () => void;
-}
-
-export const useOptimizedHomepage = (): HomepageResult => {
-  const { data, isLoading, error, refetch } = useOptimizedQuery<HomepageData>(
-    queryKeys.homepage(),
-    async (): Promise<HomepageData> => {
-      try {
-        // Fetch featured issue
-        const { data: featuredIssue } = await supabase
-          .from('issues')
-          .select('id, title, cover_image_url, specialty, published_at, authors, description')
-          .eq('published', true)
-          .eq('featured', true)
-          .order('published_at', { ascending: false })
-          .limit(1)
-          .single();
-
-        // Fetch recent issues
-        const { data: recentIssues } = await supabase
-          .from('issues')
-          .select('id, title, cover_image_url, specialty, published_at, authors, score')
-          .eq('published', true)
-          .order('published_at', { ascending: false })
-          .limit(6);
-
-        // Fetch stats using the correct RPC function name
-        const { data: statsData } = await supabase.rpc('get_archive_metadata');
-
-        // Parse stats with proper type handling
-        const parseStats = (data: any) => {
-          if (!data || typeof data !== 'object') {
-            return { totalIssues: 0, totalSpecialties: 0, totalAuthors: 0 };
-          }
-          return {
-            totalIssues: Number(data.total_published || data.total_issues || 0),
-            totalSpecialties: Number(data.total_specialties || 0),
-            totalAuthors: Number(data.total_authors || 0),
-          };
-        };
-
-        return {
-          featuredIssue: featuredIssue || null,
-          recentIssues: recentIssues || [],
-          stats: parseStats(statsData),
-        };
-      } catch (error) {
-        console.warn('Homepage data fetch error:', error);
-        return {
-          featuredIssue: null,
-          recentIssues: [],
-          stats: {
-            totalIssues: 0,
-            totalSpecialties: 0,
-            totalAuthors: 0,
-          },
-        };
-      }
-    },
-    {
-      ...queryConfigs.static,
-      enabled: true,
-    }
-  );
-
-  const result = data || {
-    featuredIssue: null,
-    recentIssues: [],
-    stats: { totalIssues: 0, totalSpecialties: 0, totalAuthors: 0 },
-  };
+    supabase
+      .from('reviewer_comments')
+      .select('id, reviewer_name, reviewer_avatar, comment, created_at')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(10)
+  ]);
 
   return {
-    ...result,
-    isLoading,
-    error,
-    hasError: Boolean(error),
-    data: result,
-    refetch,
+    issues: issues.data || [],
+    sectionVisibility: sectionVisibility.data?.value || [],
+    featuredIssue: featuredIssue.data || null,
+    reviewerComments: reviewerComments.data || [],
+    errors: {
+      issues: issues.error,
+      sectionVisibility: sectionVisibility.error,
+      featuredIssue: featuredIssue.error,
+      reviewerComments: reviewerComments.error,
+    }
+  };
+};
+
+export const useOptimizedHomepage = () => {
+  const { batchRequest } = useRequestBatcher();
+
+  const query = useQuery({
+    queryKey: ['homepage-data'],
+    queryFn: fetchHomepageData,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 15 * 60 * 1000, // 15 minutes
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    retry: 1,
+  });
+
+  // Batched individual data fetchers for components that need specific data
+  const batchFetchIssue = useCallback(async (issueId: string) => {
+    return batchRequest(
+      'issues',
+      issueId,
+      async (ids: string[]) => {
+        const { data } = await supabase
+          .from('issues')
+          .select('*')
+          .in('id', ids);
+        
+        const result: Record<string, any> = {};
+        data?.forEach(issue => {
+          result[issue.id] = issue;
+        });
+        return result;
+      }
+    );
+  }, [batchRequest]);
+
+  const batchFetchProfile = useCallback(async (userId: string) => {
+    return batchRequest(
+      'profiles',
+      userId,
+      async (ids: string[]) => {
+        const { data } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('id', ids);
+        
+        const result: Record<string, any> = {};
+        data?.forEach(profile => {
+          result[profile.id] = profile;
+        });
+        return result;
+      }
+    );
+  }, [batchRequest]);
+
+  return {
+    ...query,
+    batchFetchIssue,
+    batchFetchProfile,
   };
 };
