@@ -1,12 +1,10 @@
-
 // ABOUTME: Component to render a layout row containing multiple columns/elements.
 // Each "column" in a LayoutRow can be a BlockElement or another LayoutElement (like a nested grid).
 import React from 'react';
-import { LayoutElement, ReviewBlock, BlockType, GridPosition, LayoutColumn, ElementDefinition, AddBlockOptions } from '@/types/review';
+import { LayoutElement, ReviewBlock, BlockType, GridPosition, LayoutColumn, AddBlockOptions } from '@/types/review';
 import { BlockContentEditor } from '../BlockContentEditor';
 import { LayoutGrid } from './LayoutGrid'; 
 import { cn } from '@/lib/utils';
-import { Draggable, DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd';
 import { GripVertical } from 'lucide-react';
 
 export interface LayoutRowProps {
@@ -24,18 +22,13 @@ export interface LayoutRowProps {
 }
 
 const renderElement = (
-  element: ElementDefinition,
+  element: LayoutElement,
   props: Omit<LayoutRowProps, 'layoutElement' | 'index'>,
   elementIndex: number
 ) => {
-  const { blocks, activeBlockId, onSelectBlock, onUpdateBlock, onDeleteBlock, onAddBlock, onAddBlockToGrid, readonly, onMoveElement } = props;
+  const { blocks, activeBlockId, onSelectBlock, onUpdateBlock, onDeleteBlock, onAddBlock, onAddBlockToGrid, readonly } = props;
 
-  // This is a type assertion because ElementDefinition can be one of two things.
-  // One has `type` from LayoutElement, the other has `type: 'block'`.
-  const elementType = (element as any).type;
-
-  switch (elementType) {
-    case 'block':
+  switch (element.type) {
     case 'block_container':
       const blockId = (element as any).blockId;
       if (!blockId || !blocks[blockId]) {
@@ -83,54 +76,46 @@ const renderElement = (
       );
 
     default:
-      return <div key={element.id || elementIndex} className="text-xs text-yellow-400 p-1">Unsupported element: {elementType}</div>;
+      return <div key={element.id || elementIndex} className="text-xs text-yellow-400 p-1">Unsupported element: {element.type}</div>;
   }
 };
 
 export const LayoutRow: React.FC<LayoutRowProps> = (props) => {
-  const { layoutElement, index, readonly } = props;
+  const { layoutElement, readonly } = props;
   const { columns = [], settings } = layoutElement;
   const columnFlexBasis = settings?.columnDistribution === 'even' 
     ? `${100 / Math.max(1, columns.length)}%`
     : undefined;
 
   return (
-    <Draggable draggableId={layoutElement.id} index={index} isDragDisabled={readonly}>
-      {(provided: DraggableProvided, snapshot: DraggableStateSnapshot) => (
-        <div 
-          ref={provided.innerRef}
-          {...provided.draggableProps}
-          className={cn(
-            "layout-row flex gap-4 my-2 p-2 border border-gray-800/50 rounded-lg bg-gray-900/20 relative group/row",
-            snapshot.isDragging && "opacity-80 shadow-2xl bg-gray-800/50",
-          )}
-          style={{ ...settings?.style }}
-        >
-          {!readonly && (
-            <div 
-              {...provided.dragHandleProps} 
-              className="absolute top-1/2 -left-3 -translate-y-1/2 p-1 cursor-grab opacity-0 group-hover/row:opacity-100 text-gray-500 hover:text-gray-300 z-10 bg-gray-700/80 rounded-sm transition-opacity"
-              aria-label="Move row"
-            >
-              <GripVertical size={16} />
-            </div>
-          )}
-          {columns.map((column, colIndex) => (
-            <div 
-              key={column.id || `col-${colIndex}`} 
-              className="layout-column flex-1 flex flex-col gap-2"
-              style={{
-                flexBasis: column.settings?.width || columnFlexBasis,
-                ...column.settings?.style,
-              }}
-            >
-              {column.elements.map((element, elementIndex) => 
-                renderElement(element, props, elementIndex)
-              )}
-            </div>
-          ))}
-        </div>
+    <div 
+      className={cn(
+        "layout-row flex gap-4 my-2 p-2 border border-gray-800/50 rounded-lg bg-gray-900/20 relative group/row",
       )}
-    </Draggable>
+      style={{ ...settings?.style }}
+    >
+      {/* Drag handle is now managed by the parent Draggable wrapper in BlockList */}
+      {!readonly && (
+          <div className="absolute top-1/2 -left-8 -translate-y-1/2 p-1 cursor-grab opacity-0 group-hover/row:opacity-100 text-gray-500 hover:text-gray-300 z-10 bg-gray-700/80 rounded-sm transition-opacity"
+            aria-label="Move row"
+          >
+            <GripVertical size={16} />
+          </div>
+      )}
+      {columns.map((column, colIndex) => (
+        <div 
+          key={column.id || `col-${colIndex}`} 
+          className="layout-column flex-1 flex flex-col gap-2 min-w-0" // Added min-w-0 to prevent overflow
+          style={{
+            flexBasis: column.settings?.width || columnFlexBasis,
+            ...column.settings?.style,
+          }}
+        >
+          {column.elements.map((element, elementIndex) => 
+            renderElement(element, props, elementIndex)
+          )}
+        </div>
+      ))}
+    </div>
   );
 };

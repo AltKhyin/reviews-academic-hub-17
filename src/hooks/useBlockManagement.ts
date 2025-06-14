@@ -1,8 +1,8 @@
-// ABOUTME: Enhanced block management hook for a flat list of ReviewBlocks.
-// Manages block operations, undo/redo.
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { ReviewBlock, BlockType, LayoutConfig, Review, LayoutElement, GridPosition, LayoutRowDefinition, ElementDefinition, LayoutColumn, AddBlockOptions } from '@/types/review'; // Added Review, LayoutElement, GridPosition, LayoutRowDefinition
-import { generateId } from '@/lib/utils'; // Assuming generateId is in utils
+// ABOUTME: Enhanced block management hook for a nested list of LayoutElements.
+// Manages block operations, undo/redo, and tree manipulation.
+import { useState, useCallback } from 'react';
+import { ReviewBlock, BlockType, LayoutElement, GridPosition, AddBlockOptions } from '@/types/review';
+import { generateId } from '@/lib/utils';
 
 export interface UseBlockManagementReturn {
   elements: LayoutElement[];
@@ -27,10 +27,31 @@ interface BlockManagementHistory {
   blocks: { [key: string]: ReviewBlock };
 }
 
+// Helper function to recursively traverse and map elements in the tree
+const mapElementsTree = (elements: LayoutElement[], callback: (el: LayoutElement) => LayoutElement): LayoutElement[] => {
+    return elements.map(element => {
+        let newElement = { ...element };
+
+        if (newElement.columns) {
+            newElement.columns = newElement.columns.map(column => ({
+                ...column,
+                elements: mapElementsTree(column.elements, callback)
+            }));
+        }
+        
+        // This is a placeholder for 2D grid traversal if needed later
+        if (newElement.rows) {
+            // Deeper traversal logic for 2D grids can be added here
+        }
+        
+        return callback(newElement);
+    });
+};
+
 
 export const useBlockManagement = (
   initialElements: LayoutElement[] = [],
-  initialBlocks: { [key: string]: ReviewBlock } = {},
+  initialBlocks: { [key:string]: ReviewBlock } = {},
   historyLimit = 100
 ): UseBlockManagementReturn => {
   const [history, setHistory] = useState<BlockManagementHistory[]>([{ elements: initialElements, blocks: initialBlocks }]);
@@ -79,35 +100,57 @@ export const useBlockManagement = (
       id: newBlockId,
       type: options.type,
       content: options.initialContent || {},
-      sort_index: -1, // Will be re-indexed later
+      sort_index: -1, // sort_index is less relevant in a tree, but kept for compatibility
       visible: true,
       meta: {},
     };
 
-    if (options.targetPosition && typeof options.targetPosition === 'object') {
-        newBlock.meta = {
-            ...newBlock.meta,
-            layout: {
-                ...newBlock.meta?.layout,
-                grid_position: {
-                    row: options.targetPosition.row,
-                    column: options.targetPosition.column, // Fixed typo here
-                }
-            }
-        };
-    }
-    
-    const newBlocks = { ...blocks, [newBlockId]: newBlock };
-    
-    // This is a simplified insertion logic. A real implementation
-    // would need to traverse the elements tree to find the correct
-    // parent and insertion point.
     const newLayoutElement: LayoutElement = {
       type: 'block_container',
       id: generateId(),
       blockId: newBlockId,
     };
-    const newElements = [...elements, newLayoutElement];
+    
+    let newElements = [...elements];
+    const newBlocks = { ...blocks, [newBlockId]: newBlock };
+
+    // If a parent is specified, insert into it
+    if (options.parentElementId) {
+        newElements = mapElementsTree(newElements, (el) => {
+            if (el.id === options.parentElementId) {
+                const newEl = { ...el };
+                // Handle insertion into a 2D grid cell
+                if (newEl.type === 'grid' && options.targetPosition && typeof options.targetPosition !== 'number') {
+                    const { row, column } = options.targetPosition;
+                    if (newEl.rows && newEl.rows[row] && newEl.rows[row].cells[column]) {
+                        // We need a new block and to update the cell
+                        newEl.rows[row].cells[column].blockId = newBlockId;
+                        newBlock.meta = { ...newBlock.meta, layout: { grid_position: { row, column }}};
+                    }
+                }
+                // Handle insertion into a column (simplified: add to first column)
+                else if (newEl.type === 'row' && newEl.columns && newEl.columns.length > 0) {
+                    const targetColumnIndex = (typeof options.targetPosition === 'number') ? options.targetPosition : 0;
+                    if (newEl.columns[targetColumnIndex]) {
+                       newEl.columns[targetColumnIndex].elements.push(newLayoutElement);
+                    }
+                }
+                return newEl;
+            }
+            return el;
+        });
+    } else if (options.relativeToLayoutElementId) {
+        const targetIndex = newElements.findIndex(el => el.id === options.relativeToLayoutElementId);
+        if (targetIndex !== -1) {
+            const insertIndex = options.position === 'above' ? targetIndex : targetIndex + 1;
+            newElements.splice(insertIndex, 0, newLayoutElement);
+        } else {
+            newElements.push(newLayoutElement); // Fallback
+        }
+    } else {
+        const insertIndex = options.insertAtIndex ?? newElements.length;
+        newElements.splice(insertIndex, 0, newLayoutElement);
+    }
 
     updateState(newElements, newBlocks);
     setActiveBlockId(newBlockId);
@@ -128,21 +171,35 @@ export const useBlockManagement = (
     const newBlocks = { ...blocks };
     delete newBlocks[blockId];
     
-    // Also remove from elements tree
-    const filterElements = (els: ElementDefinition[]): ElementDefinition[] => {
-        return els.filter(el => {
-            if (el.type === 'block' && el.blockId === blockId) return false;
-            if ('columns' in el && el.columns) {
-                el.columns.forEach(c => c.elements = filterElements(c.elements));
+    const removeBlockFromElements = (els: LayoutElement[]): LayoutElement[] => {
+        let elsWithBlocksRemoved = els.map(el => {
+            const newEl = {...el};
+            if (newEl.columns) {
+                newEl.columns = newEl.columns.map(c => ({
+                    ...c,
+                    elements: removeBlockFromElements(c.elements)
+                }));
             }
-            if ('rows' in el && el.rows) {
-                // Logic for 2D grids would be more complex
+            if (newEl.rows) {
+                newEl.rows = newEl.rows.map(r => ({
+                    ...r,
+                    cells: r.cells.map(cell => {
+                        if (cell.blockId === blockId) {
+                            return { ...cell, blockId: null };
+                        }
+                        return cell;
+                    })
+                }));
             }
-            return true;
-        })
+            return newEl;
+        });
+
+        return elsWithBlocksRemoved.filter(el => {
+            return !(el.type === 'block_container' && el.blockId === blockId);
+        });
     }
     
-    const newElements = filterElements([...elements]) as LayoutElement[];
+    const newElements = removeBlockFromElements([...elements]);
 
     updateState(newElements, newBlocks);
     if (activeBlockId === blockId) {

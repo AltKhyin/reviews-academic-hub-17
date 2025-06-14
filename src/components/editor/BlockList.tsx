@@ -7,6 +7,7 @@ import { SingleBlock } from './blocks/SingleBlock';
 import { LayoutRow } from './layout/LayoutRow';
 import { LayoutGrid } from './layout/LayoutGrid';
 import { Button } from '@/components/ui/button';
+import { Draggable, Droppable, DroppableProvided } from '@hello-pangea/dnd';
 
 export interface BlockListProps {
   layoutElements: LayoutElement[];
@@ -49,63 +50,89 @@ export const BlockList: React.FC<BlockListProps> = ({
   }
 
   return (
-    <div className="block-list-renderer">
-      {layoutElements.map((element, index) => {
-        switch (element.type) {
-          case 'block_container':
-            if (!element.blockId || !blocks[element.blockId]) {
-              return <div key={element.id} className="text-red-500 p-2 bg-red-900/20 rounded">Erro: Bloco não encontrado para o container. ID do bloco: {element.blockId}</div>;
-            }
+    <Droppable droppableId="main-editor-droppable" type="LAYOUT_ELEMENT" isDropDisabled={readonly}>
+      {(provided: DroppableProvided) => (
+        <div 
+            className="block-list-renderer space-y-1"
+            ref={provided.innerRef}
+            {...provided.droppableProps}
+        >
+          {layoutElements.map((element, index) => {
+            const renderComponent = () => {
+              switch (element.type) {
+                case 'block_container':
+                  if (!element.blockId || !blocks[element.blockId]) {
+                    return <div key={element.id} className="text-red-500 p-2 bg-red-900/20 rounded">Erro: Bloco não encontrado para o container. ID do bloco: {element.blockId}</div>;
+                  }
+                  return (
+                    <SingleBlock
+                      key={element.id}
+                      layoutElement={element as LayoutElement & { type: 'block_container', blockId: string }}
+                      block={blocks[element.blockId]}
+                      index={index}
+                      onUpdateBlock={onUpdateBlock}
+                      onDeleteBlock={onDeleteBlock}
+                      onMoveElement={onMoveElement}
+                      onSelectBlock={onSelectBlock}
+                      activeBlockId={activeBlockId}
+                      readonly={readonly}
+                      onAddBlock={onAddBlock}
+                    />
+                  );
+                case 'row':
+                   return (
+                     <LayoutRow
+                       key={element.id}
+                       layoutElement={element as LayoutElement & { type: 'row' }}
+                       blocks={blocks}
+                       index={index}
+                       onUpdateBlock={onUpdateBlock}
+                       onDeleteBlock={onDeleteBlock}
+                       onMoveElement={onMoveElement}
+                       onSelectBlock={onSelectBlock}
+                       onAddBlock={onAddBlock}
+                       onAddBlockToGrid={onAddBlockToGrid}
+                       activeBlockId={activeBlockId}
+                       readonly={readonly}
+                     />
+                   );
+                case 'grid':
+                  return (
+                    <LayoutGrid
+                      key={element.id}
+                      layoutElement={element as LayoutElement & { type: 'grid' }}
+                      blocks={blocks}
+                      onUpdateBlock={onUpdateBlock}
+                      onDeleteBlock={onDeleteBlock}
+                      onAddBlockToGrid={onAddBlockToGrid}
+                      onActiveBlockChange={onSelectBlock}
+                      activeBlockId={activeBlockId}
+                      readonly={readonly}
+                    />
+                  );
+                default:
+                  return <div key={element.id || index} className="text-xs text-red-500 p-1 bg-red-900/20 rounded">Unsupported layout element type: {(element as any).type}</div>;
+              }
+            };
+
+            // Wrap each top-level element in a Draggable
             return (
-              <SingleBlock
-                key={element.id}
-                layoutElement={element as LayoutElement & { type: 'block_container', blockId: string }}
-                block={blocks[element.blockId]}
-                index={index}
-                onUpdateBlock={onUpdateBlock}
-                onDeleteBlock={onDeleteBlock}
-                onMoveElement={onMoveElement}
-                onSelectBlock={onSelectBlock}
-                activeBlockId={activeBlockId}
-                readonly={readonly}
-                onAddBlock={onAddBlock}
-              />
+              <Draggable key={element.id} draggableId={element.id} index={index} isDragDisabled={readonly}>
+                {(dragProvided) => (
+                  <div
+                    ref={dragProvided.innerRef}
+                    {...dragProvided.draggableProps}
+                    {...dragProvided.dragHandleProps}
+                  >
+                    {renderComponent()}
+                  </div>
+                )}
+              </Draggable>
             );
-          case 'row':
-             return (
-               <LayoutRow
-                 key={element.id}
-                 layoutElement={element as LayoutElement & { type: 'row' }}
-                 blocks={blocks}
-                 index={index}
-                 onUpdateBlock={onUpdateBlock}
-                 onDeleteBlock={onDeleteBlock}
-                 onMoveElement={onMoveElement}
-                 onSelectBlock={onSelectBlock}
-                 onAddBlock={onAddBlock}
-                 onAddBlockToGrid={onAddBlockToGrid}
-                 activeBlockId={activeBlockId}
-                 readonly={readonly}
-               />
-             );
-          case 'grid':
-            return (
-              <LayoutGrid
-                key={element.id}
-                layoutElement={element as LayoutElement & { type: 'grid' }}
-                blocks={blocks}
-                onUpdateBlock={onUpdateBlock}
-                onDeleteBlock={onDeleteBlock}
-                onAddBlockToGrid={onAddBlockToGrid}
-                onActiveBlockChange={onSelectBlock}
-                activeBlockId={activeBlockId}
-                readonly={readonly}
-              />
-            );
-          default:
-            return <div key={element.id || index} className="text-xs text-red-500 p-1 bg-red-900/20 rounded">Unsupported layout element type: {(element as any).type}</div>;
-        }
-      })}
-    </div>
+          })}
+          {provided.placeholder}
+        </div>
+      )}
+    </Droppable>
   );
 };

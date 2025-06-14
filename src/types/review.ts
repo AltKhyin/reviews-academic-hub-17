@@ -1,4 +1,3 @@
-
 // ABOUTME: Enhanced review types with string IDs for database compatibility and complete type definitions
 export type BlockType =
   | 'text'
@@ -95,14 +94,12 @@ export interface GridCell {
   settings?: any;
 }
 
-// ElementDefinition can be a block ID placeholder or a nested layout structure
-export type ElementDefinition =
-  | { type: 'block'; blockId: string; id: string; settings?: any; } // Added id and settings for consistency
-  | LayoutElement;
+// ElementDefinition is now an alias for LayoutElement, unifying our tree structure.
+export type ElementDefinition = LayoutElement;
 
 export interface LayoutColumn {
   id: string;
-  elements: ElementDefinition[]; // Can contain blocks or nested LayoutElements
+  elements: LayoutElement[]; // Can contain blocks or nested LayoutElements
   settings?: {
     width?: string; // e.g., '50%', '2fr'
     style?: React.CSSProperties;

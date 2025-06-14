@@ -1,11 +1,10 @@
-// ABOUTME: Wrapper for a single draggable/editable block within a list or grid.
-// Handles drag handle, selection state, and renders BlockContentEditor.
+// ABOUTME: Wrapper for a single editable block within a list or grid.
+// Handles selection state, actions, and renders BlockContentEditor.
 import React from 'react';
-import { Draggable, DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd';
 import { ReviewBlock, BlockType, LayoutElement, AddBlockOptions } from '@/types/review';
 import { BlockContentEditor } from '../BlockContentEditor';
 import { Button } from '@/components/ui/button';
-import { Trash2, ChevronUp, ChevronDown, PlusCircle } from 'lucide-react';
+import { Trash2, ChevronUp, ChevronDown, PlusCircle, GripVertical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface SingleBlockProps {
@@ -69,6 +68,12 @@ export const SingleBlock: React.FC<SingleBlockProps> = ({
     </div>
   );
 
+  const containerClasses = cn(
+    "single-block group/singleblock relative my-1 transition-shadow duration-150",
+    !readonly && "hover:shadow-md",
+    isActive && !readonly && "shadow-lg"
+  );
+
   if (readonly) {
     return (
       <div className="single-block-readonly mb-2">
@@ -87,40 +92,32 @@ export const SingleBlock: React.FC<SingleBlockProps> = ({
   }
 
   return (
-    <Draggable draggableId={layoutElement.id} index={index} isDragDisabled={readonly}>
-      {(provided: DraggableProvided, snapshot: DraggableStateSnapshot) => (
-        <div
-          ref={provided.innerRef}
-          {...provided.draggableProps}
-          className={cn(
-            "single-block group/singleblock relative mb-3 transition-shadow duration-150",
-            snapshot.isDragging && "shadow-2xl outline-dashed outline-2 outline-blue-600 bg-gray-800/50",
-          )}
-          onClickCapture={(e) => { 
-            if (!isActive) {
-              onSelectBlock(block.id);
-            }
-            const target = e.target as HTMLElement;
-            if (target.closest('input, textarea, button, [contenteditable=true], select, .ProseMirror')) {
-              return;
-            }
-          }}
-        >
-          {!readonly && renderBlockActions()}
-          
-          <BlockContentEditor
-            block={block}
-            isActive={isActive}
-            onSelect={() => onSelectBlock(block.id)}
-            onUpdate={onUpdateBlock}
-            onDelete={onDeleteBlock}
-            onMove={(elementId, dir) => onMoveElement(elementId, dir)}
-            onAddBlock={(options) => onAddBlock?.(options)}
-            readonly={readonly}
-            dragHandleProps={provided.dragHandleProps} 
-          />
-        </div>
-      )}
-    </Draggable>
+    <div
+      className={containerClasses}
+      onClickCapture={(e) => { 
+        if (!isActive && !readonly) {
+          onSelectBlock(block.id);
+          // Prevent event from bubbling up and closing modals, etc.
+          e.stopPropagation();
+        }
+        const target = e.target as HTMLElement;
+        if (target.closest('input, textarea, button, [contenteditable=true], select, .ProseMirror')) {
+          return;
+        }
+      }}
+    >
+      {!readonly && renderBlockActions()}
+      
+      <BlockContentEditor
+        block={block}
+        isActive={isActive}
+        onSelect={() => onSelectBlock(block.id)}
+        onUpdate={onUpdateBlock}
+        onDelete={onDeleteBlock}
+        onMove={(elementId, dir) => onMoveElement(elementId, dir)}
+        onAddBlock={(options) => onAddBlock?.(options)}
+        readonly={readonly}
+      />
+    </div>
   );
 };
