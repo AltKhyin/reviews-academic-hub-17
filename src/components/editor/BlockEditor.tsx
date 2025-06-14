@@ -4,7 +4,9 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { ReviewBlock, BlockType } from '@/types/review';
 import { SingleBlock } from './blocks/SingleBlock';
-import { ResizableGrid, ResizableGridProps } from './layout/ResizableGrid'; // Ensure ResizableGridProps is imported if needed, or defined inline
+// Import ResizableGridProps from LayoutGrid where it's now defined (or keep it local if preferred)
+import { ResizableGridProps } from './layout/LayoutGrid'; // Use the one from LayoutGrid
+import { ResizableGrid } from './layout/ResizableGrid';
 import { Grid2DContainer } from './layout/Grid2DContainer';
 import { useGridLayoutManager } from '@/hooks/useGridLayoutManager';
 import { useGrid2DManager } from '@/hooks/useGrid2DManager';
@@ -30,13 +32,17 @@ interface BlockEditorProps {
   className?: string;
 }
 
+// DragState definition (can be moved to a types file if shared)
 interface DragState {
   draggedBlockId: string | null;
-  dragOverRowId: string | null;
-  dragOverPosition: number | null;
+  dragOverRowId: string | null; // For 1D grid rows
+  dragOverGridId: string | null; // For 2D grids
+  dragOverPosition: number | GridPosition | null; // Index for 1D, GridPosition for 2D
   isDragging: boolean;
-  draggedFromRowId: string | null;
-  dropTargetType: 'grid' | 'single' | 'merge' | null;
+  draggedFromRowId: string | null; // Source row_id for 1D
+  draggedFromGridId: string | null; // Source grid_id for 2D
+  draggedFromPosition: GridPosition | null; // Source position in 2D grid
+  dropTargetType: 'grid' | '2d-grid-cell' | 'single' | 'merge' | null;
 }
 
 export const BlockEditor: React.FC<BlockEditorProps> = ({
@@ -57,9 +63,12 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
   const [dragState, setDragState] = useState<DragState>({
     draggedBlockId: null,
     dragOverRowId: null,
+    dragOverGridId: null,
     dragOverPosition: null,
     isDragging: false,
     draggedFromRowId: null,
+    draggedFromGridId: null,
+    draggedFromPosition: null,
     dropTargetType: null
   });
 
@@ -74,40 +83,53 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     layoutState,
     updateColumnWidths,
     getRowByBlockId,
-    isBlockInGrid
+    isBlockInGrid,
+    // Add missing functions if needed based on ResizableGrid usage
+    handleDragStart: handleGridDragStart,
+    handleDragOver: handleGridDragOver,
+    handleDrop: handleGridDrop,
+    moveBlockToRow, // Assuming this exists or is part of the hook
   } = useGridLayoutManager({
     blocks,
     onUpdateBlock,
-    onDeleteBlock
+    onDeleteBlock,
+    // onMoveBlock, // If grid manager handles internal moves
   });
-
+  
   // 2D Grid management
   const {
-    grids,
+    grids, // This is likely the state from the hook
     createGrid,
     addRowToGridById,
     removeRowFromGridById,
     placeBlockInGridById,
     removeBlockFromGridById,
     updateGridLayout,
-    extractGridsFromBlocks
+    extractGridsFromBlocks,
+    // Add drag handlers from useGrid2DManager
+    handle2DGridDragStart,
+    handle2DGridDragOverCell,
+    handle2DGridDropInCell,
+    handleAddBlockToGrid, // Added this based on Grid2DContainer usage
   } = useGrid2DManager({
+    blocks, // Pass blocks to useGrid2DManager
     onUpdateBlock,
     onDeleteBlock,
-    onAddBlock
+    onAddBlock // Pass onAddBlock
   });
 
   // Extract 2D grids from current blocks
   React.useEffect(() => {
     const extracted2DGrids = extractGridsFromBlocks(blocks);
     console.log('Extracted 2D grids from blocks:', extracted2DGrids.length);
+    // The hook should internally manage the `grids` state based on `blocks`
   }, [blocks, extractGridsFromBlocks]);
 
   // Organize blocks into layout groups
   const layoutGroups = React.useMemo(() => {
     const groups: Array<{
       type: '1d-grid' | '2d-grid' | 'single';
-      id: string; // Group ID should be string
+      id: string; 
       blocks: ReviewBlock[];
       config?: any;
     }> = [];
@@ -115,53 +137,52 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     const processedBlockIds = new Set<string>();
 
     // First, handle 2D grids
-    const grid2DIds = new Set<string>();
-    blocks.forEach(block => {
-      const gridId = block.meta?.layout?.grid_id;
-      if (gridId && !grid2DIds.has(gridId)) {
-        grid2DIds.add(gridId);
-        const gridBlocks = blocks.filter(b => b.meta?.layout?.grid_id === gridId);
-        
-        const validGridBlocks = gridBlocks.filter(b => {
-          const pos = b.meta?.layout?.grid_position;
-          return pos && (typeof pos === 'object' && typeof pos.row === 'number' && typeof pos.column === 'number');
-        });
-        
-        if (validGridBlocks.length > 0) {
-          validGridBlocks.forEach(b => processedBlockIds.add(b.id));
-          
+    const currentGridsFromHook = extractGridsFromBlocks(blocks); // Use the hook's extraction
+    currentGridsFromHook.forEach(grid => {
+      if (grid.id && grid.rows.length > 0) { // Check if grid has an ID and rows
+        const gridBlocks: ReviewBlock[] = [];
+        grid.rows.forEach(row => row.cells.forEach(cell => {
+          if (cell.block) {
+            const fullBlock = blocks.find(b => b.id === cell.block?.id);
+            if (fullBlock) {
+              gridBlocks.push(fullBlock);
+              processedBlockIds.add(fullBlock.id);
+            }
+          }
+        }));
+
+        if (gridBlocks.length > 0) {
           groups.push({
             type: '2d-grid',
-            id: gridId,
-            blocks: validGridBlocks,
-            config: validGridBlocks[0]?.meta?.layout
+            id: grid.id, // grid.id from Grid2DLayout
+            blocks: gridBlocks, // All blocks belonging to this 2D grid
+            config: { // Construct config for Grid2DContainer
+              columns: grid.columns,
+              columnWidths: grid.columnWidths,
+              grid_rows: grid.grid_rows, // Renamed from rows
+              gap: grid.gap,
+              rowHeights: grid.rowHeights,
+            }
           });
         }
       }
     });
-
-    // Then handle 1D grids
-    const rowIds = new Set<string>();
-    blocks.forEach(block => {
-      const rowId = block.meta?.layout?.row_id;
-      if (rowId && !rowIds.has(rowId) && !processedBlockIds.has(block.id)) {
-        rowIds.add(rowId);
-        const rowBlocks = blocks.filter(b => 
-          b.meta?.layout?.row_id === rowId && !processedBlockIds.has(b.id)
-        );
-        
-        if (rowBlocks.length > 0) {
-          rowBlocks.forEach(b => processedBlockIds.add(b.id));
-          
-          if (rowBlocks.length > 1 || (rowBlocks[0]?.meta?.layout?.columns ?? 1) > 1) {
-            groups.push({
-              type: '1d-grid',
-              id: rowId,
-              blocks: rowBlocks,
-              config: rowBlocks[0]?.meta?.layout
-            });
+    
+    // Then handle 1D grids (rows from layoutState)
+    layoutState.rows.forEach(row => {
+      const rowBlocks = row.blocks.filter(b => !processedBlockIds.has(b.id));
+      if (rowBlocks.length > 0) {
+        rowBlocks.forEach(b => processedBlockIds.add(b.id));
+        groups.push({
+          type: '1d-grid',
+          id: row.id,
+          blocks: rowBlocks,
+          config: {
+            columns: row.columns,
+            columnWidths: row.columnWidths,
+            gap: layoutState.gap
           }
-        }
+        });
       }
     });
 
@@ -170,366 +191,227 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       if (!processedBlockIds.has(block.id)) {
         groups.push({
           type: 'single',
-          id: `single-${block.id}`, // Ensure single block group IDs are strings
+          id: `single-${block.id}`,
           blocks: [block]
         });
+        processedBlockIds.add(block.id); // Ensure it's added here too
       }
     });
-
-    // Sort by minimum sort_index within each group
+    
     return groups.sort((a, b) => {
-      const aMinSort = Math.min(...a.blocks.map(block => block.sort_index));
-      const bMinSort = Math.min(...b.blocks.map(block => block.sort_index));
+      const aMinSort = Math.min(...a.blocks.map(block => block.sort_index).filter(idx => idx !== undefined));
+      const bMinSort = Math.min(...b.blocks.map(block => block.sort_index).filter(idx => idx !== undefined));
+      if (isNaN(aMinSort) || isNaN(bMinSort)) return 0; // Handle cases where sort_index might be missing
       return aMinSort - bMinSort;
     });
-  }, [blocks]);
+  }, [blocks, layoutState, extractGridsFromBlocks]);
 
-  const addBlockBetween = useCallback((position: number, type: BlockType = 'paragraph') => {
+  const addBlockBetween = useCallback((position: number, type: BlockType = 'paragraph'): string => {
     return onAddBlock(type, position);
   }, [onAddBlock]);
 
-  const addBlockToGrid = useCallback((rowId: string, position: number) => {
-    const row = layoutState.rows.find(r => r.id === rowId);
-    if (!row) return;
+  // Drag and Drop Handlers
+  const handleSingleBlockDragStart = (e: React.DragEvent, blockId: string) => {
+    e.dataTransfer.setData('text/plain', blockId);
+    e.dataTransfer.effectAllowed = 'move';
+    setDragState(prev => ({ ...prev, draggedBlockId: blockId, isDragging: true, dropTargetType: null, draggedFromRowId: null, draggedFromGridId: null, draggedFromPosition: null }));
+    console.log('Drag Start Single:', blockId);
+  };
+  
+  // ... keep existing drag/drop handlers, to be refined later
+  // Placeholder for combined drop logic
+  const handleGlobalDrop = (e: React.DragEvent, targetType: 'single' | '1d-grid' | '2d-grid-cell', targetInfo: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (processingDropRef.current) return;
+    processingDropRef.current = true;
 
-    let insertionIndex: number;
-    
-    if (position === 0 && row.blocks.length === 0) {
-      const allSingleRows = layoutState.rows.filter(r => r.id.startsWith('single-'));
-      const rowBlocks = layoutState.rows
-        .filter(r => !r.id.startsWith('single-'))
-        .sort((a, b) => {
-          const aMinSort = Math.min(...a.blocks.map(b => b.sort_index));
-          const bMinSort = Math.min(...b.blocks.map(b => b.sort_index));
-          return aMinSort - bMinSort;
-        });
-      
-      const targetRowIndex = rowBlocks.findIndex(r => r.id === rowId);
-      insertionIndex = targetRowIndex > 0 ? 
-        Math.max(...rowBlocks[targetRowIndex - 1].blocks.map(b => blocks.findIndex(bl => bl.id === b.id))) + 1 :
-        0;
-    } else if (position < row.blocks.length) {
-      const blockAtPosition = row.blocks[position];
-      insertionIndex = blocks.findIndex(b => b.id === blockAtPosition.id);
-    } else {
-      const lastBlockInRow = row.blocks[row.blocks.length - 1];
-      insertionIndex = lastBlockInRow ? 
-        blocks.findIndex(b => b.id === lastBlockInRow.id) + 1 : 
-        blocks.length;
-    }
-
-    return onAddBlock('paragraph' as BlockType, insertionIndex);
-  }, [layoutState.rows, blocks, onAddBlock]);
-
-  // 2D Grid operations - FIXED: Proper block creation and placement
-  const handleAddBlockTo2DGrid = useCallback((gridId: string, position: GridPosition) => {
-    console.log('Adding block to 2D grid:', { gridId, position });
-    
-    // Create a new block first
-    const newBlockId = onAddBlock('paragraph' as BlockType, blocks.length);
-    
-    // Place it in the 2D grid immediately using the returned block ID
-    if (onPlaceBlockIn2DGrid && newBlockId) {
-      console.log('Placing newly created block in 2D grid:', { newBlockId, gridId, position });
-      onPlaceBlockIn2DGrid(newBlockId, gridId, position);
-    } else {
-      console.error('Failed to place block in 2D grid:', { newBlockId, onPlaceBlockIn2DGrid });
-    }
-  }, [blocks, onAddBlock, onPlaceBlockIn2DGrid]);
-
-  const handleAddRowAbove = useCallback((gridId: string, rowIndex: number) => {
-    addRowToGridById(gridId, 'above', rowIndex);
-  }, [addRowToGridById]);
-
-  const handleAddRowBelow = useCallback((gridId: string, rowIndex: number) => {
-    addRowToGridById(gridId, 'below', rowIndex);
-  }, [addRowToGridById]);
-
-  const handleRemoveRow = useCallback((gridId: string, rowIndex: number) => {
-    removeRowFromGridById(gridId, rowIndex);
-  }, [removeRowFromGridById]);
-
-  // Handle drag start
-  const handleDragStart = useCallback((e: React.DragEvent, blockId: string) => {
-    if (processingDropRef.current) {
-      e.preventDefault();
+    const draggedBlockId = e.dataTransfer.getData('text/plain') || dragState.draggedBlockId;
+    if (!draggedBlockId) {
+      processingDropRef.current = false;
       return;
     }
-    
-    const sourceRow = getRowByBlockId(blockId);
-    const sourceGrid = blocks.find(b => b.id === blockId)?.meta?.layout?.grid_id;
-    
-    setDragState({
-      draggedBlockId: blockId,
-      draggedFromRowId: sourceRow?.id || sourceGrid || null,
-      dragOverRowId: null,
-      dragOverPosition: null,
-      isDragging: true,
-      dropTargetType: null
-    });
 
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', blockId);
-    e.dataTransfer.setData('application/json', JSON.stringify({
-      blockId,
-      sourceRowId: sourceRow?.id || null,
-      sourceGridId: sourceGrid || null
-    }));
+    console.log(`Global Drop: Block ${draggedBlockId} onto ${targetType}`, targetInfo);
 
-    document.body.classList.add('dragging');
-  }, [getRowByBlockId, blocks]);
+    // Logic to handle drop based on targetType and targetInfo
+    // This will involve calling onMergeBlockIntoGrid, onPlaceBlockIn2DGrid, or onMoveBlock
 
-  // Handle drag over for 1D grids
-  const handleDragOver1D = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number, targetType: 'grid' | 'single' | 'merge' = 'merge') => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    
-    if (!dragState.isDragging || !dragState.draggedBlockId) return;
-    if (dragState.draggedFromRowId === targetRowId) return;
-    
-    setDragState(prev => ({
-      ...prev,
-      dragOverRowId: targetRowId,
-      dragOverPosition: targetPosition || null,
-      dropTargetType: targetType
-    }));
-  }, [dragState.isDragging, dragState.draggedBlockId, dragState.draggedFromRowId]);
-
-  // Handle drag over for 2D grids
-  const handleDragOver2D = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number, targetType?: 'grid' | 'single' | 'merge') => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    
-    if (!dragState.isDragging || !dragState.draggedBlockId) return;
-    if (dragState.draggedFromRowId === targetRowId) return;
-    
-    setDragState(prev => ({
-      ...prev,
-      dragOverRowId: targetRowId,
-      dragOverPosition: targetPosition || null,
-      dropTargetType: targetType || 'merge'
-    }));
-  }, [dragState.isDragging, dragState.draggedBlockId, dragState.draggedFromRowId]);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX;
-    const y = e.clientY;
-    
-    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-      setDragState(prev => ({
-        ...prev,
-        dragOverRowId: null,
-        dragOverPosition: null,
-        dropTargetType: null
-      }));
-    }
-  }, []);
-
-  // Handle drop for both 1D and 2D grids - FIXED: Proper 2D grid integration
-  const handleDrop = useCallback((e: React.DragEvent, targetRowId: string, targetPosition?: number, dropType: 'grid' | 'single' | 'merge' = 'merge') => {
-    e.preventDefault();
-    
-    if (!dragState.draggedBlockId || processingDropRef.current) return;
-    
-    processingDropRef.current = true;
-    
-    try {
-      console.log('Drop operation:', { 
-        draggedBlockId: dragState.draggedBlockId, 
-        targetRowId, 
-        targetPosition, 
-        dropType 
-      });
-
-      // Handle 2D grid drops
-      if (targetRowId.startsWith('grid-') && onPlaceBlockIn2DGrid && targetPosition !== undefined) {
-        // Find the grid configuration to convert linear position to grid position
-        const gridBlocks = blocks.filter(b => b.meta?.layout?.grid_id === targetRowId);
-        const columns = gridBlocks[0]?.meta?.layout?.columns || 2;
-        const gridPosition: GridPosition = {
-          row: Math.floor(targetPosition / columns),
-          column: targetPosition % columns
-        };
-        
-        console.log('Placing block in 2D grid:', { 
-          blockId: dragState.draggedBlockId, 
-          gridId: targetRowId, 
-          position: gridPosition 
-        });
-        
-        onPlaceBlockIn2DGrid(dragState.draggedBlockId, targetRowId, gridPosition);
-      } 
-      // Handle 1D grid drops
-      else if (onMergeBlockIntoGrid) {
-        console.log('Merging block into 1D grid:', { 
-          blockId: dragState.draggedBlockId, 
-          targetRowId, 
-          targetPosition 
-        });
-        
-        onMergeBlockIntoGrid(dragState.draggedBlockId, targetRowId, targetPosition);
+    if (targetType === '1d-grid' && onMergeBlockIntoGrid && targetInfo.rowId) {
+      onMergeBlockIntoGrid(draggedBlockId, targetInfo.rowId, targetInfo.position);
+    } else if (targetType === '2d-grid-cell' && onPlaceBlockIn2DGrid && targetInfo.gridId && targetInfo.position) {
+      onPlaceBlockIn2DGrid(draggedBlockId, targetInfo.gridId, targetInfo.position);
+    } else if (targetType === 'single' && targetInfo.targetBlockId) {
+      // Find indices and call onMoveBlock
+      const draggedBlockIndex = blocks.findIndex(b => b.id === draggedBlockId);
+      const targetBlockIndex = blocks.findIndex(b => b.id === targetInfo.targetBlockId);
+      if (draggedBlockIndex !== -1 && targetBlockIndex !== -1) {
+        // Simplified: move relative to target. This needs better index management or specific "move to position" logic.
+        // For now, this call to onMoveBlock might not be suitable for all single block drop scenarios.
+        // onMoveBlock(draggedBlockId, draggedBlockIndex < targetBlockIndex ? 'down' : 'up');
+        // A more robust solution would be to insert at target position and re-index.
+        // For now, let's rely on specific handlers in ResizableGrid or Grid2DContainer
       }
-    } catch (error) {
-      console.error('Drop operation failed:', error);
-    } finally {
-      setDragState({
-        draggedBlockId: null,
-        dragOverRowId: null,
-        dragOverPosition: null,
-        isDragging: false,
-        draggedFromRowId: null,
-        dropTargetType: null
-      });
-      
-      document.body.classList.remove('dragging');
-      
-      setTimeout(() => {
-        processingDropRef.current = false;
-      }, 200);
     }
-  }, [dragState.draggedBlockId, onMergeBlockIntoGrid, onPlaceBlockIn2DGrid, blocks]);
 
-  const handleDragEnd = useCallback(() => {
-    document.body.classList.remove('dragging');
-    
-    if (dragTimeoutRef.current) {
-      clearTimeout(dragTimeoutRef.current);
-    }
-    
-    setDragState({
-      draggedBlockId: null,
-      dragOverRowId: null,
-      dragOverPosition: null,
-      isDragging: false,
-      draggedFromRowId: null,
-      dropTargetType: null
+
+    setDragState({ 
+        draggedBlockId: null, 
+        dragOverRowId: null, 
+        dragOverGridId: null,
+        dragOverPosition: null, 
+        isDragging: false, 
+        draggedFromRowId: null,
+        draggedFromGridId: null,
+        draggedFromPosition: null,
+        dropTargetType: null 
     });
     
-    processingDropRef.current = false;
-  }, []);
+    // Debounce processingDropRef.current = false;
+    setTimeout(() => {
+      processingDropRef.current = false;
+    }, 100);
+  };
+
+  const handleGlobalDragOver = (e: React.DragEvent, targetType: 'single' | '1d-grid' | '2d-grid-cell', targetInfo: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "move";
+
+    if(dragTimeoutRef.current) clearTimeout(dragTimeoutRef.current);
+    dragTimeoutRef.current = setTimeout(() => {
+        setDragState(prev => ({
+            ...prev,
+            dropTargetType: targetType,
+            dragOverRowId: targetType === '1d-grid' ? targetInfo.rowId : null,
+            dragOverGridId: targetType === '2d-grid-cell' ? targetInfo.gridId : null,
+            dragOverPosition: targetType === '1d-grid' ? targetInfo.position : (targetType === '2d-grid-cell' ? targetInfo.position : null),
+        }));
+    }, 50);
+  };
 
   return (
-    <div 
-      className={cn("block-editor py-3 overflow-hidden w-full max-w-full", className)}
-      style={{
-        backgroundColor: '#121212',
-        color: '#ffffff',
-        wordWrap: 'break-word',
-        wordBreak: 'break-word',
-        overflowWrap: 'break-word',
-        hyphens: 'auto'
-      }}
-    >
-      {/* Dynamic width indicator for Dividir mode */}
-      {isDividirMode && (
-        <div className="mb-2 text-center">
-          <div className="inline-flex items-center px-3 py-1 bg-gray-900/20 border border-gray-600/30 rounded-full text-gray-400 text-sm">
-            <span className="w-2 h-2 bg-gray-400 rounded-full mr-2 animate-pulse"></span>
-            Modo Dividir Ativo • Editor Expandido
+    <div className={cn("block-editor overflow-y-auto p-1 space-y-1 h-full", className)} style={getEditorStyles()}>
+      {layoutGroups.map((group, groupIndex) => (
+        <div key={group.id} className="layout-group">
+          {/* Insertion point before each group */}
+          <div className="insert-point-group my-0.5">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full h-6 text-xs text-gray-500 hover:text-gray-400 opacity-50 hover:opacity-100 flex items-center justify-center"
+              onClick={() => addBlockBetween(group.blocks[0]?.sort_index ?? blocks.length)}
+            >
+              <Plus className="w-3 h-3 mr-1" /> Insertar Bloque Aquí
+            </Button>
           </div>
+
+          {group.type === '1d-grid' && group.config && (
+            <ResizableGrid
+              rowId={group.id}
+              blocks={group.blocks}
+              columns={group.config.columns}
+              columnWidths={group.config.columnWidths}
+              gap={group.config.gap || 4}
+              onUpdateLayout={(rowId, updates) => updateColumnWidths(rowId, updates.columnWidths || [])}
+              onAddBlock={(rowId, position, blockType) => onAddBlock(blockType || 'paragraph', position)} // Simplified for ResizableGrid for now
+              onUpdateBlock={onUpdateBlock}
+              onDeleteBlock={onDeleteBlock}
+              onMoveBlockToRow={moveBlockToRow} // Prop from useGridLayoutManager
+              activeBlockId={activeBlockId}
+              onActiveBlockChange={onActiveBlockChange} // Added prop
+              // Drag and Drop related props
+              dragState={dragState}
+              onDragStart={(e, blockId, rowId) => handleGridDragStart(e, blockId, rowId)}
+              onDragOver={(e, targetRowId, targetPosition) => handleGridDragOver(e, targetRowId, targetPosition)}
+              onDrop={() => handleGridDrop()} // Simplified, original was (e, targetRowId, targetPosition) => handleGridDrop(e, targetRowId, targetPosition, dragState.draggedBlockId!)
+            />
+          )}
+
+          {group.type === '2d-grid' && group.config && (
+            <Grid2DContainer
+              gridId={group.id}
+              initialLayout={{ // Construct Grid2DLayout from group.config
+                id: group.id,
+                columns: group.config.columns,
+                columnWidths: group.config.columnWidths,
+                grid_rows: group.config.grid_rows,
+                rowHeights: group.config.rowHeights,
+                gap: group.config.gap,
+                rows: grids.find(g => g.id === group.id)?.rows || [] // Get rows from useGrid2DManager state
+              }}
+              blocksInGrid={group.blocks}
+              onUpdateLayout={(gridId, layoutUpdates) => updateGridLayout(gridId, layoutUpdates)}
+              onAddRow={(gridId, rowIndex) => addRowToGridById(gridId, rowIndex)}
+              onRemoveRow={(gridId, rowIndex) => removeRowFromGridById(gridId, rowIndex)}
+              onAddBlock={(gridId, position, blockType) => handleAddBlockToGrid(gridId, position, blockType)}
+              onUpdateBlock={onUpdateBlock}
+              onDeleteBlock={onDeleteBlock}
+              activeBlockId={activeBlockId}
+              onActiveBlockChange={onActiveBlockChange}
+              // Drag and Drop for 2D grid cells
+              dragState={dragState}
+              onDragStartCell={(blockId, gridId, position) => handle2DGridDragStart(blockId, gridId, position)}
+              onDragOverCell={(gridId, position) => handle2DGridDragOverCell(gridId, position)}
+              onDropInCell={(gridId, position) => handle2DGridDropInCell(gridId, position, dragState.draggedBlockId!)}
+              onPlaceBlockInGrid={onPlaceBlockIn2DGrid} // Propagate this
+            />
+          )}
+
+          {group.type === 'single' && group.blocks.map((block, blockIndex) => (
+            <div 
+              key={block.id} 
+              className="single-block-wrapper"
+              onDragOver={(e) => handleGlobalDragOver(e, 'single', { targetBlockId: block.id, position: block.sort_index })}
+              onDrop={(e) => handleGlobalDrop(e, 'single', { targetBlockId: block.id, position: block.sort_index })}
+            >
+              <SingleBlock
+                block={block}
+                activeBlockId={activeBlockId}
+                onActiveBlockChange={onActiveBlockChange}
+                onUpdateBlock={onUpdateBlock}
+                onDeleteBlock={onDeleteBlock}
+                onMoveBlock={onMoveBlock}
+                onDuplicateBlock={onDuplicateBlock}
+                onAddBlockBetween={(position, type) => addBlockBetween(position, type)}
+                onConvertToGrid={onConvertToGrid}
+                onConvertTo2DGrid={onConvertTo2DGrid}
+                globalIndex={blocks.findIndex(b => b.id === block.id)} // Calculate global index
+                isDragging={dragState.draggedBlockId === block.id && dragState.isDragging}
+                dragState={dragState} // Pass full drag state
+                onDragStart={(e) => handleSingleBlockDragStart(e, block.id)}
+              />
+            </div>
+          ))}
+        </div>
+      ))}
+      {blocks.length === 0 && (
+        <div className="flex flex-col items-center justify-center h-40 text-gray-500">
+          <Plus className="w-10 h-10 mb-2" />
+          <p>Nenhum bloco adicionado ainda.</p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-2"
+            onClick={() => addBlockBetween(0)}
+          >
+            Adicionar Primeiro Bloco
+          </Button>
         </div>
       )}
-
-      {/* Render layout groups in order */}
-      <div className="w-full max-w-full overflow-hidden">
-        {layoutGroups.map((group, groupIndex) => {
-          const globalIndex = group.blocks.length > 0 ? 
-            blocks.findIndex(b => b.id === group.blocks[0].id) : 0;
-
-          if (group.type === '2d-grid') {
-            // Find the grid from extracted grids
-            const grid = grids.find(g => g.id === group.id);
-            if (grid) {
-              return (
-                <div key={group.id} className="mx-2 mb-4 w-full max-w-full overflow-hidden">
-                  <Grid2DContainer
-                    grid={grid}
-                    activeBlockId={activeBlockId}
-                    onActiveBlockChange={onActiveBlockChange}
-                    onUpdateBlock={onUpdateBlock}
-                    onDeleteBlock={onDeleteBlock}
-                    onAddBlock={handleAddBlockTo2DGrid}
-                    onAddRowAbove={handleAddRowAbove}
-                    onAddRowBelow={handleAddRowBelow}
-                    onRemoveRow={handleRemoveRow}
-                    onUpdateGridLayout={updateGridLayout}
-                    dragState={dragState}
-                    onDragOver={() => {}}
-                    onDragLeave={() => {}}
-                    onDrop={() => {}}
-                  />
-                </div>
-              );
-            } else {
-              console.warn('Grid not found for group:', group.id);
-              return null;
-            }
-          } else if (group.type === '1d-grid') {
-            return (
-              <div key={group.id} className="mx-2 mb-3 w-full max-w-full overflow-hidden">
-                <ResizableGrid
-                  rowId={group.id}
-                  blocks={group.blocks}
-                  columns={group.config?.columns || group.blocks.length}
-                  gap={group.config?.gap || 4}
-                  columnWidths={group.config?.columnWidths}
-                  onUpdateLayout={updateColumnWidths}
-                  onAddBlock={addBlockToGrid}
-                  onUpdateBlock={onUpdateBlock}
-                  onDeleteBlock={onDeleteBlock}
-                  activeBlockId={activeBlockId}
-                  onActiveBlockChange={onActiveBlockChange} // Fixed: Renamed from onActive to onActiveBlockChange
-                  dragState={dragState}
-                  onDragOver={() => {}} // Placeholder, implement actual logic if needed
-                  onDragLeave={() => {}} // Placeholder
-                  onDrop={() => {}} // Placeholder
-                />
-              </div>
-            );
-          } else {
-            // Single block
-            const block = group.blocks[0];
-            return (
-              <div key={block.id} className="w-full max-w-full overflow-hidden">
-                <SingleBlock
-                  block={block}
-                  globalIndex={globalIndex} // This seems to be a number, ensure it's used correctly
-                  activeBlockId={activeBlockId}
-                  dragState={dragState}
-                  onActiveBlockChange={onActiveBlockChange}
-                  onUpdateBlock={onUpdateBlock}
-                  onDeleteBlock={onDeleteBlock}
-                  onDuplicateBlock={onDuplicateBlock}
-                  onConvertToGrid={onConvertToGrid!}
-                  onConvertTo2DGrid={onConvertTo2DGrid}
-                  onAddBlockBetween={addBlockBetween}
-                  onDragStart={() => {}} // Placeholder
-                  onDragEnd={() => {}} // Placeholder
-                  onDragOver={() => {}} // Placeholder
-                  onDragLeave={() => {}} // Placeholder
-                  onDrop={() => {}} // Placeholder
-                />
-              </div>
-            );
-          }
-        })}
-      </div>
-
-      <div className="flex justify-center mt-4 pt-2">
-        <Button
-          onClick={() => addBlockBetween(blocks.length)}
-          variant="outline"
-          className="text-gray-400 border-gray-600 hover:border-gray-500 hover:text-white"
-          style={{
-            backgroundColor: '#212121',
-            borderColor: '#2a2a2a'
-          }}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Adicionar Bloco
-        </Button>
-      </div>
+       {/* Final insertion point if list is not empty */}
+       {blocks.length > 0 && (
+         <div className="insert-point-group my-0.5">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full h-6 text-xs text-gray-500 hover:text-gray-400 opacity-50 hover:opacity-100 flex items-center justify-center"
+              onClick={() => addBlockBetween(blocks.length)}
+            >
+              <Plus className="w-3 h-3 mr-1" /> Insertar Bloque Aquí
+            </Button>
+          </div>
+       )}
     </div>
   );
 };

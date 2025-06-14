@@ -19,6 +19,28 @@ interface SnapshotCardProps {
   isActive: boolean;
 }
 
+const defaultSnapshotCardContent: SnapshotCardContent = {
+  title: 'Snapshot Card',
+  description: '',
+  imageUrl: '',
+  metrics: [],
+  timestamp: '',
+  source: '',
+  subtitle: '',
+  value: '',
+  change: '',
+  trend: 'neutral',
+  icon: '',
+  evidence_level: '',
+  recommendation_strength: '',
+  population: '',
+  intervention: '',
+  comparison: '',
+  outcome: '',
+  design: '',
+  key_findings: [],
+};
+
 const getTrendIcon = (trend?: 'up' | 'down' | 'neutral') => {
   if (trend === 'up') return <TrendingUp className="w-4 h-4 text-green-500" />;
   if (trend === 'down') return <TrendingDown className="w-4 h-4 text-red-500" />;
@@ -26,7 +48,11 @@ const getTrendIcon = (trend?: 'up' | 'down' | 'neutral') => {
 };
 
 export const SnapshotCardBlock: React.FC<SnapshotCardProps> = ({ block, onUpdateBlock, onDeleteBlock, isActive }) => {
-  const content = block.content as SnapshotCardContent || {};
+  // Ensure content is always SnapshotCardContent, merging with defaults
+  const content: SnapshotCardContent = { 
+    ...defaultSnapshotCardContent, 
+    ...(block.content as Partial<SnapshotCardContent> || {}) 
+  };
   const [isEditing, setIsEditing] = useState(false);
 
   const handleContentChange = (field: keyof SnapshotCardContent, value: any) => {
@@ -34,7 +60,7 @@ export const SnapshotCardBlock: React.FC<SnapshotCardProps> = ({ block, onUpdate
   };
   
   const handleMetricChange = (index: number, field: 'label' | 'value' | 'unit', value: string) => {
-    const updatedMetrics = [...(content.metrics || [])];
+    const updatedMetrics = [...(content.metrics || [])]; // Ensure metrics is an array
     if (updatedMetrics[index]) {
       updatedMetrics[index] = { ...updatedMetrics[index], [field]: value };
       handleContentChange('metrics', updatedMetrics);
@@ -77,10 +103,10 @@ export const SnapshotCardBlock: React.FC<SnapshotCardProps> = ({ block, onUpdate
               <Input placeholder="Label" value={metric.label} onChange={(e) => handleMetricChange(index, 'label', e.target.value)} className="text-xs bg-gray-800 border-gray-700 text-white focus:border-blue-500"/>
               <Input placeholder="Value" value={String(metric.value)} onChange={(e) => handleMetricChange(index, 'value', e.target.value)} className="text-xs bg-gray-800 border-gray-700 text-white focus:border-blue-500"/>
               <Input placeholder="Unit" value={metric.unit || ''} onChange={(e) => handleMetricChange(index, 'unit', e.target.value)} className="text-xs w-20 bg-gray-800 border-gray-700 text-white focus:border-blue-500"/>
-              <Button variant="ghost" size="xs" onClick={() => removeMetric(index)} className="text-red-400 hover:text-red-300"><Trash2 className="w-3 h-3"/></Button>
+              <Button variant="ghost" size="sm" onClick={() => removeMetric(index)} className="text-red-400 hover:text-red-300"><Trash2 className="w-3 h-3"/></Button>
             </div>
           ))}
-          <Button variant="outline" size="xs" onClick={addMetric} className="text-green-400 border-green-400 hover:bg-green-400/10">Add Metric</Button>
+          <Button variant="outline" size="sm" onClick={addMetric} className="text-green-400 border-green-400 hover:bg-green-400/10">Add Metric</Button>
 
           <div>
             <Label htmlFor={`evidence-${block.id}`} className="text-xs text-gray-400">Evidence Level</Label>
@@ -139,7 +165,7 @@ export const SnapshotCardBlock: React.FC<SnapshotCardProps> = ({ block, onUpdate
           
           <div>
             <Label htmlFor={`value-${block.id}`} className="text-xs text-gray-400">Main Value</Label>
-            <Input id={`value-${block.id}`} value={content.value || ''} onChange={(e) => handleContentChange('value', e.target.value)} className="text-sm bg-gray-800 border-gray-700 text-white focus:border-blue-500" />
+            <Input id={`value-${block.id}`} value={String(content.value || '')} onChange={(e) => handleContentChange('value', e.target.value)} className="text-sm bg-gray-800 border-gray-700 text-white focus:border-blue-500" />
           </div>
           
           <div>
@@ -151,7 +177,7 @@ export const SnapshotCardBlock: React.FC<SnapshotCardProps> = ({ block, onUpdate
             <Label htmlFor={`trend-${block.id}`} className="text-xs text-gray-400">Trend</Label>
             <Select 
               value={content.trend || 'neutral'} 
-              onValueChange={(value) => handleContentChange('trend', value)}
+              onValueChange={(value: 'up' | 'down' | 'neutral') => handleContentChange('trend', value)}
             >
               <SelectTrigger id={`trend-${block.id}`} className="text-sm bg-gray-800 border-gray-700 text-white focus:border-blue-500">
                 <SelectValue placeholder="Select trend" />
@@ -182,8 +208,8 @@ export const SnapshotCardBlock: React.FC<SnapshotCardProps> = ({ block, onUpdate
     <Card className={cn("snapshot-card-display group", isActive && "ring-2 ring-blue-500", "bg-gray-800 border-gray-700 text-white")}>
       <CardHeader className="relative pt-2 pb-1 px-3">
         <div className="absolute top-1 right-1 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            <Button variant="ghost" size="icon_xs" onClick={() => setIsEditing(true)} className="text-blue-400 hover:text-blue-300"><Edit3 className="w-3 h-3" /></Button>
-            <Button variant="ghost" size="icon_xs" onClick={() => onDeleteBlock(block.id)} className="text-red-400 hover:text-red-300"><Trash2 className="w-3 h-3" /></Button>
+            <Button variant="ghost" size="icon" onClick={() => setIsEditing(true)} className="text-blue-400 hover:text-blue-300 h-6 w-6"><Edit3 className="w-3 h-3" /></Button>
+            <Button variant="ghost" size="icon" onClick={() => onDeleteBlock(block.id)} className="text-red-400 hover:text-red-300 h-6 w-6"><Trash2 className="w-3 h-3" /></Button>
         </div>
         <CardTitle className="text-base font-semibold leading-tight text-gray-100">{content.title || 'Snapshot Card'}</CardTitle>
         {content.subtitle && <CardDescription className="text-xs text-gray-400">{content.subtitle}</CardDescription>}

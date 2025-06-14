@@ -15,15 +15,15 @@ import {
   Trash2, 
   Plus,
   FileText,
-  Heading,
+  Heading as HeadingIcon,
   Type,
-  Image,
-  Table,
+  Image as ImageIconLucide,
+  Table as TableIcon,
   AlertCircle,
   Hash,
-  Quote,
+  Quote as QuoteIcon,
   BarChart3,
-  List,
+  List as ListIcon,
   FlaskConical,
   ArrowUp,
   ArrowDown
@@ -46,23 +46,23 @@ const getBlockIcon = (type: string) => {
     case 'snapshot_card':
       return FlaskConical;
     case 'heading':
-      return Heading;
+      return HeadingIcon;
     case 'paragraph':
       return Type;
     case 'figure':
-      return Image;
+      return ImageIconLucide;
     case 'table':
-      return Table;
+      return TableIcon;
     case 'callout':
       return AlertCircle;
     case 'number_card':
       return Hash;
     case 'reviewer_quote':
-      return Quote;
+      return QuoteIcon;
     case 'poll':
       return BarChart3;
     case 'citation_list':
-      return List;
+      return ListIcon;
     default:
       return FileText;
   }
@@ -98,23 +98,23 @@ const getBlockColor = (type: string) => {
 const getBlockTitle = (block: ReviewBlock) => {
   switch (block.type) {
     case 'heading':
-      return block.content.text || 'Título sem texto';
+      return block.content?.text || 'Título sem texto';
     case 'paragraph':
-      const content = block.content.content || '';
-      const textContent = content.replace(/<[^>]*>/g, ''); // Strip HTML
+      const content = block.content?.content || '';
+      const textContent = typeof content === 'string' ? content.replace(/<[^>]*>/g, '') : ''; // Strip HTML
       return textContent.length > 50 ? `${textContent.substring(0, 50)}...` : textContent || 'Parágrafo vazio';
     case 'figure':
-      return block.content.caption || block.content.alt || 'Figura sem título';
+      return block.content?.caption || block.content?.alt || 'Figura sem título';
     case 'callout':
-      return block.content.title || `Callout (${block.content.type || 'info'})`;
+      return block.content?.title || `Callout (${block.content?.type || 'info'})`;
     case 'table':
-      return block.content.title || 'Tabela';
+      return block.content?.title || 'Tabela';
     case 'number_card':
-      return `${block.content.number || '0'} - ${block.content.label || 'Métrica'}`;
+      return `${block.content?.number || '0'} - ${block.content?.label || 'Métrica'}`;
     case 'reviewer_quote':
-      return `"${(block.content.quote || '').substring(0, 30)}..." - ${block.content.author || 'Autor'}`;
+      return `"${(block.content?.quote || '').substring(0, 30)}..." - ${block.content?.author || 'Autor'}`;
     case 'poll':
-      return block.content.question || 'Enquete';
+      return block.content?.question || 'Enquete';
     default:
       return `Bloco ${block.type}`;
   }
@@ -131,14 +131,12 @@ export const BlockList: React.FC<BlockListProps> = ({
   compact = false
 }) => {
   const { dragState, handleDragStart, handleDragEnd, handleDragOver, handleDragEnter } = 
-    useBlockDragDrop((draggedIndexOrId: string | number, targetIndexOrId: string | number) => {
-      if (typeof draggedIndexOrId === 'number' && typeof targetIndexOrId === 'number') {
-        const draggedBlock = blocks[draggedIndexOrId];
-        if (draggedBlock) {
-          onMoveBlock(draggedBlock.id, draggedIndexOrId < targetIndexOrId ? 'down' : 'up');
-        }
-      } else if (typeof draggedIndexOrId === 'string') {
-        onMoveBlock(draggedIndexOrId, /* determine direction based on targetIndexOrId or internal state */);
+    useBlockDragDrop((draggedIndex: number, targetIndex: number) => { // Assuming hook provides numbers
+      const draggedBlock = blocks[draggedIndex];
+      if (draggedBlock) {
+        // Determine direction based on indices
+        const direction = draggedIndex < targetIndex ? 'down' : 'up';
+        onMoveBlock(draggedBlock.id, direction); // Correctly call with two arguments
       }
     });
 
@@ -330,7 +328,8 @@ export const BlockList: React.FC<BlockListProps> = ({
                       variant="ghost"
                       onClick={(e) => {
                         e.stopPropagation();
-                        // Toggle visibility logic here
+                        // Toggle visibility logic here - requires onUpdateBlock access
+                        // Example: onUpdateBlock(block.id, { visible: !block.visible });
                       }}
                       className="w-6 h-6 p-0"
                     >

@@ -10,6 +10,13 @@ import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+// Minimal DragState for SingleBlock if full state not needed from Grid2DRow context
+interface MinimalDragStateForSingleBlock {
+  draggedBlockId: string | null;
+  isDragging: boolean;
+  // Add other fields if SingleBlock specifically uses them from DragState
+}
+
 interface Grid2DRowProps {
   gridId: string;
   rowIndex: number;
@@ -18,8 +25,8 @@ interface Grid2DRowProps {
   onActiveBlockChange: (blockId: string | null) => void;
   onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
   onDeleteBlock: (blockId: string) => void;
-  onAddBlock: (gridId: string, position: GridPosition) => void; // Corrected signature
-  dragState?: any; // Define more specifically if possible
+  onAddBlock: (gridId: string, position: GridPosition, blockType?: BlockType) => string | void; // Allow string or void return
+  dragState?: any; // Define more specifically if possible, e.g. the DragState from BlockEditor
   onDragOverCell?: (gridId: string, position: GridPosition) => void;
   onDropInCell?: (gridId: string, position: GridPosition) => void;
   onDragStartCell?: (blockId: string, gridId: string, position: GridPosition) => void;
@@ -34,24 +41,29 @@ export const Grid2DRow: React.FC<Grid2DRowProps> = ({
   onUpdateBlock,
   onDeleteBlock,
   onAddBlock,
-  dragState,
+  dragState, // Full dragState from BlockEditor context
   onDragOverCell,
   onDropInCell,
   onDragStartCell,
 }) => {
   const handleAddBlockToCell = (colIndex: number) => {
-    onAddBlock(gridId, { row: rowIndex, column: colIndex }); // Pass gridId and full GridPosition
+    onAddBlock(gridId, { row: rowIndex, column: colIndex });
   };
 
   return (
     <div 
       className="grid-2d-row flex w-full" 
-      style={{ gridTemplateColumns: `repeat(${row.columns}, 1fr)`, gap: '0.5rem' /* Reduced gap */ }}
+      // Using flex basis for columns instead of gridTemplateColumns for finer control with potential gaps
+      // style={{ gridTemplateColumns: `repeat(${row.columns}, 1fr)`, gap: '0.5rem' }}
     >
       {Array.from({ length: row.columns }).map((_, colIndex) => {
         const cell = row.cells.find(c => {
-            // Access grid_position from block's meta if cell itself doesn't store row/col
-            // Or, if GridCell type was updated to include row/column directly:
+            // Check block's meta.layout.grid_position
+            const blockMetaPos = c.block?.meta?.layout?.grid_position;
+            if (blockMetaPos) {
+                return blockMetaPos.row === rowIndex && blockMetaPos.column === colIndex;
+            }
+            // Fallback to cell's direct row/column if they exist (they do per GridCell type)
             return c.row === rowIndex && c.column === colIndex;
         });
         
@@ -61,13 +73,15 @@ export const Grid2DRow: React.FC<Grid2DRowProps> = ({
           content: cell.block.content,
           visible: cell.block.visible,
           meta: cell.block.meta,
-          sort_index: cell.block.sort_index // Ensure sort_index is present
+          sort_index: cell.block.sort_index // Ensured in type
         } as ReviewBlock : null;
 
         const cellPosition: GridPosition = { row: rowIndex, column: colIndex };
+        
+        // Use the full dragState from BlockEditor for consistency
         const isDragOver = dragState?.dropTargetType === '2d-grid-cell' && 
                            dragState?.dragOverGridId === gridId &&
-                           dragState?.dragOverPosition?.row === rowIndex &&
+                           dragState?.dragOverPosition?.row === rowIndex && // Check if dragOverPosition is GridPosition
                            dragState?.dragOverPosition?.column === colIndex;
 
         return (
@@ -78,8 +92,10 @@ export const Grid2DRow: React.FC<Grid2DRowProps> = ({
               isDragOver ? "border-blue-500 bg-blue-500/10" : "border-gray-700 hover:border-gray-500"
             )}
             style={{
-              borderColor: isDragOver ? '#3b82f6' : '#4b5563', // Darker borders
-              backgroundColor: isDragOver ? 'rgba(59, 130, 246, 0.1)' : '#1e1e1e' // Darker bg
+              flexBasis: `calc(${100 / row.columns}% - 0.25rem)`, // Example for gap handling with flex
+              margin: '0.125rem', // Half of the desired gap
+              borderColor: isDragOver ? '#3b82f6' : '#4b5563',
+              backgroundColor: isDragOver ? 'rgba(59, 130, 246, 0.1)' : '#1e1e1e'
             }}
             onDragOver={(e) => {
               e.preventDefault();
@@ -100,23 +116,22 @@ export const Grid2DRow: React.FC<Grid2DRowProps> = ({
                 onActiveBlockChange={onActiveBlockChange}
                 onUpdateBlock={onUpdateBlock}
                 onDeleteBlock={onDeleteBlock}
-                // Simplified props for SingleBlock in this context
-                // Pass only essential props, or define a variant for grid usage
-                globalIndex={0} // This might not be relevant here or needs context
-                dragState={{}} // Pass appropriate drag state if SingleBlock handles internal drag
-                onDuplicateBlock={() => {}} // Placeholder
-                onAddBlockBetween={() => {}} // Placeholder
+                globalIndex={0} // Needs context or removal
+                dragState={dragState as MinimalDragStateForSingleBlock || { draggedBlockId: null, isDragging: false }} // Pass down relevant part of dragState or a default
+                onDuplicateBlock={() => { console.log('Duplicate in Grid2D cell (NYI)'); }}
+                onAddBlockBetween={(pos, type) => { console.log('Add between in Grid2D cell (NYI)'); return ''; }} // Return string
                 onDragStart={(e) => {
                   e.stopPropagation();
                   onDragStartCell?.(blockInCell.id, gridId, cellPosition);
                 }}
+                // onConvertToGrid, onConvertTo2DGrid not typically used for blocks *already* in a 2D grid cell
               />
             ) : (
               <Button 
                 variant="ghost" 
                 size="sm" 
                 className="text-gray-500 hover:text-gray-300"
-                onClick={() => handleAddBlockToCell(colIndex)}
+                // onClick prop removed from here, parent div handles it
               >
                 <Plus className="w-4 h-4 mr-1" /> Add Block
               </Button>
@@ -127,3 +142,4 @@ export const Grid2DRow: React.FC<Grid2DRowProps> = ({
     </div>
   );
 };
+

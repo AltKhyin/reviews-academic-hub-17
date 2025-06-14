@@ -1,3 +1,4 @@
+
 // ABOUTME: Enhanced review types with string IDs for database compatibility and complete type definitions
 export type BlockType = 
   | 'text' 
@@ -67,7 +68,7 @@ export interface AlignmentConfig {
 export interface ReviewBlock {
   id: string; // Ensure IDs are strings
   type: BlockType;
-  content: any;
+  content: any; // Kept as any for flexibility, specific blocks will cast
   sort_index: number;
   visible: boolean;
   meta?: {
@@ -77,7 +78,6 @@ export interface ReviewBlock {
   };
 }
 
-// Added missing content type interfaces
 export interface DiagramNode {
   id: string;
   x: number;
@@ -87,7 +87,6 @@ export interface DiagramNode {
   label: string;
   type: 'rectangle' | 'circle' | 'diamond';
   color?: string;
-  // Adding properties that were used in DiagramBlock but not defined
   style?: {
     backgroundColor?: string;
     borderColor?: string;
@@ -95,32 +94,33 @@ export interface DiagramNode {
     borderWidth?: number;
     fontSize?: number;
     fontFamily?: string;
-    textAlign?: string;
+    textAlign?: 'left' | 'center' | 'right'; // More specific
     opacity?: number;
   };
-  position?: { x: number; y: number }; // Often used with x, y
-  size?: { width: number; height: number }; // Often used with width, height
-  text?: string; // Alternative to label
+  position?: { x: number; y: number };
+  size?: { width: number; height: number };
+  text?: string;
 }
 
 export interface DiagramEdge {
   id: string;
-  source: string;
-  target: string;
+  source: string; // Node ID
+  target: string; // Node ID
   label?: string;
-  type: 'straight' | 'curved';
+  type: 'straight' | 'curved'; // Simplified, actual lib would have more
   style?: {
     strokeColor?: string;
     strokeWidth?: number;
-    arrowhead?: 'default' | 'none';
+    arrowhead?: 'default' | 'none'; // Simplified
   };
 }
+
 export interface DiagramContent {
-  nodes: Array<DiagramNode>;
-  edges: Array<DiagramEdge>; // Renamed from 'connections' to 'edges' to match common usage
+  nodes: DiagramNode[];
+  edges: DiagramEdge[]; // Changed from connections to edges
   title?: string;
   description?: string;
-  canvas?: { // Adding canvas based on usage in DiagramBlock
+  canvas?: { // Added canvas based on usage in DiagramBlock
     backgroundColor?: string;
     gridSize?: number;
     zoomLevel?: number;
@@ -140,12 +140,11 @@ export interface SnapshotCardContent {
   }>;
   timestamp?: string;
   source?: string;
-  // Adding properties that were used in SnapshotCard but not defined
   subtitle?: string;
-  value?: string | number; // General value if not in metrics
-  change?: string; // e.g., "+5%"
+  value?: string | number;
+  change?: string;
   trend?: 'up' | 'down' | 'neutral';
-  icon?: string; // Icon name or URL
+  icon?: string; // Icon name or URL from a library like lucide-react
   evidence_level?: string;
   recommendation_strength?: string;
   population?: string;
@@ -168,3 +167,4 @@ export interface EnhancedIssue {
   article_pdf_url?: string;
   pdf_url?: string;
 }
+
