@@ -1,4 +1,3 @@
-
 // ABOUTME: Community page with advanced caching and memoization optimizations (zero visual changes)
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -15,7 +14,7 @@ import { useOptimizedSidebarData } from '@/hooks/sidebar/useOptimizedSidebarData
 import { Search } from 'lucide-react';
 import { MemoizedPostsList, MemoizedCommunityHeader } from '@/components/community/CommunityMemoized';
 import { useAPIRateLimit } from '@/hooks/useAPIRateLimit';
-import { useAdvancedCaching } from '@/hooks/useAdvancedCaching';
+import { useAdvancedCaching } from '@/hooks/useAdvancedCaching'; // Corrected import name
 import { usePerformanceMonitor } from '@/utils/performanceMonitor';
 
 const Community = () => {
@@ -28,7 +27,7 @@ const Community = () => {
 
   // Performance monitoring and optimization hooks
   const rateLimiter = useAPIRateLimit('community-posts', { maxRequests: 20, windowMs: 60000 });
-  const cache = useAdvancedCache({ maxSize: 50, ttl: 3 * 60 * 1000 }); // 3 minutes
+  const cache = useAdvancedCaching({ maxSize: 50, ttl: 3 * 60 * 1000 }); // 3 minutes
   const { measureAPICall, recordMetric } = usePerformanceMonitor();
 
   // Initialize optimized data hooks with performance monitoring
