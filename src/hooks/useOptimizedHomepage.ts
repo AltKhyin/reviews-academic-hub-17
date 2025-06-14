@@ -1,3 +1,4 @@
+
 // ABOUTME: Optimized homepage data loading with request batching and deduplication
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -46,8 +47,8 @@ interface HomepageData {
   };
 }
 
-// Centralized homepage data fetcher to prevent cascade
-const fetchHomepageData = async (): Promise<HomepageData> => {
+// Renamed to _fetchHomepageData to allow for a typed wrapper that breaks TS inference loop
+const _fetchHomepageData = async (): Promise<HomepageData> => {
   const [issues, sectionVisibility, featuredIssue, reviewerComments] = await Promise.all([
     supabase
       .from('issues')
@@ -94,6 +95,9 @@ const fetchHomepageData = async (): Promise<HomepageData> => {
     }
   };
 };
+
+// Typed wrapper to prevent TypeScript from deep-inspecting the implementation, which causes an infinite type instantiation error.
+const fetchHomepageData: () => Promise<HomepageData> = _fetchHomepageData;
 
 export const useOptimizedHomepage = () => {
   const { batchRequest } = useRequestBatcher();
