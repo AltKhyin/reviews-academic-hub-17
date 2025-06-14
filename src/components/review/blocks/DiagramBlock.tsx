@@ -21,8 +21,6 @@ import {
   NodeChange,
   EdgeChange,
   XYPosition,
-  NodeProps,
-  EdgeProps,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -75,7 +73,7 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
   const [description, setDescription] = useState(diagramContent.description || '');
   const [canvasSettings, setCanvasSettings] = useState(diagramContent.canvas || getDefaultDiagramContent().canvas);
   
-  const reactFlowInstance = useReactFlow();
+  const reactFlowInstance = useReactFlow<DiagramNodeData, DiagramEdgeData>();
 
   useEffect(() => {
     setRfNodes(diagramContent.nodes.map((n: DiagramNodeType): Node<DiagramNodeData> => ({
@@ -106,7 +104,7 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
 
   const handleUpdateContent = useCallback(() => {
     if (onUpdate) {
-      const updatedDiagramNodes: DiagramNodeType[] = rfNodes.map((n: Node<DiagramNodeData>): DiagramNodeType => ({
+      const updatedDiagramNodes: DiagramNodeType[] = reactFlowInstance.getNodes().map((n): DiagramNodeType => ({
         id: n.id,
         x: n.position.x,
         y: n.position.y,
@@ -114,7 +112,7 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
         height: n.height || n.data?.height || 50,
         data: n.data,
       }));
-      const updatedDiagramEdges: DiagramEdgeType[] = rfEdges.map((e: Edge<DiagramEdgeData>): DiagramEdgeType => ({
+      const updatedDiagramEdges: DiagramEdgeType[] = reactFlowInstance.getEdges().map((e): DiagramEdgeType => ({
           id: e.id,
           source: e.source,
           target: e.target,
@@ -133,7 +131,7 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
       };
       onUpdate({ content: updatedContent });
     }
-  }, [rfNodes, rfEdges, title, description, canvasSettings, onUpdate]);
+  }, [title, description, canvasSettings, onUpdate, reactFlowInstance]);
 
   useEffect(() => {
     if (readonly) return;
@@ -152,14 +150,14 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
     [setRfEdges]
   );
   const onConnect = useCallback(
-    (connection: Connection | Edge) => { // connection can be a partial Edge when dnd
+    (connection: Connection) => {
       const newEdge: Edge<DiagramEdgeData> = {
-        id: `edge-${Date.now()}`, // Ensure new edges get a unique ID
+        id: `edge-${Date.now()}`,
         ...connection,
-        type: 'floating', // Default new connections to floating
+        type: 'floating',
         animated: true,
-        data: { label: '' }, // Provide initial data for the edge
-      } as Edge<DiagramEdgeData>; // Cast because Connection type is less specific
+        data: { label: '' },
+      };
       setRfEdges((eds) => addEdge(newEdge, eds));
     },
     [setRfEdges]
@@ -168,17 +166,22 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
   const addNode = useCallback(() => {
     const newNodeId = `node_${rfNodes.length + 1}_${Date.now()}`;
     
+    // Default position if reactFlowInstance isn't ready
     let position: XYPosition = { x: Math.random() * 400 + 50, y: Math.random() * 200 + 50 }; 
-    // The `project` method was causing errors, likely due to version mismatch or incorrect usage.
-    // Commenting it out will still allow nodes to be added, just at screen coordinates.
-    // if (reactFlowInstance && (reactFlowInstance as any).project) {
-    //     position = (reactFlowInstance as any).project({ x: position.x, y: position.y });
-    // }
+    
+    // The `project` method is deprecated. This is a robust way to add nodes in the current view.
+    if (reactFlowInstance) {
+        const pane = reactFlowInstance.getViewport();
+        position = {
+            x: (Math.random() * 400 - 200) - (pane.x / pane.zoom),
+            y: (Math.random() * 200 - 100) - (pane.y / pane.zoom),
+        };
+    }
 
-    const newNodeData: DiagramNodeData = { // Ensure this matches your DiagramNodeData definition
+    const newNodeData: DiagramNodeData = {
         label: `Novo Nó ${rfNodes.length + 1}`,
-        type: 'rectangle', // Example: default type for custom node
-        color: '#777',    // Example: default color
+        type: 'rectangle',
+        color: '#777',
         width: 150,
         height: 50
     };

@@ -1,4 +1,3 @@
-
 // ABOUTME: Custom floating edge component for React Flow diagrams
 // Provides a simple styled edge with an optional label
 
@@ -14,7 +13,7 @@ const FloatingEdge: React.FC<EdgeProps<DiagramEdgeData>> = ({
   targetY,
   sourcePosition,
   targetPosition,
-  style = {},
+  style, // Make style optional to match base props
   data,
   markerEnd,
 }) => {

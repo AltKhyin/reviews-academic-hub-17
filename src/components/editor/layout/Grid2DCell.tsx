@@ -57,12 +57,12 @@ export const Grid2DCell: React.FC<Grid2DCellProps> = ({
     onUpdate: onUpdateBlock,
     onDelete: onDeleteBlock,
     onMove: handleMovePlaceholder, 
-    onAddBlock: (type, _pos) => { 
-        console.log("Adding block from BCE within grid cell. Type:", type, "GridId:", gridId, "Pos:", position);
-        onAddBlockToGrid(type, gridId, position);
+    onAddBlock: (options) => { 
+        console.log("Adding block from within a grid cell is not supported via this action. Options:", options);
     },
-    readonly: readonly,
+    readonly: !!readonly,
   } : null;
+
 
   return (
     <div
@@ -74,42 +74,25 @@ export const Grid2DCell: React.FC<Grid2DCellProps> = ({
         readonly && block && "border-transparent bg-transparent p-0", 
         readonly && !block && "border-gray-800 bg-gray-900/20" 
       )}
-      style={{ borderColor: isDragOver && !readonly ? '#3b82f6' : (block && !(activeBlockId === block.id) ? '#374151' : (activeBlockId === block.id && !readonly ? '#3b82f6' : '#1f2937')) }} 
-      onDragOver={(e) => {
-        if (onDragOverCell && !readonly) {
-            e.preventDefault(); 
-            onDragOverCell(e, position);
-        }
-      }}
-      onDrop={(e) => {
-        if (onDropInCell && !readonly) {
-            e.preventDefault();
-            onDropInCell(e, position);
-        }
-      }}
-      onClick={!block && !readonly ? handleAddClick : (block && !readonly ? handleSelectBlock : undefined)} 
-      role={!readonly ? "button" : undefined}
-      tabIndex={!readonly ? 0 : undefined}
-      aria-label={block ? `Conteúdo da célula: ${block.type}` : "Célula vazia, clique para adicionar bloco"}
+      onClick={handleSelectBlock}
+      onDragOver={(e) => onDragOverCell?.(e, position)}
+      onDrop={(e) => onDropInCell?.(e, position)}
     >
       {block && blockContentEditorProps ? (
         <BlockContentEditor {...blockContentEditorProps} />
       ) : (
-        !readonly && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleAddClick} 
-            className="text-gray-500 hover:text-gray-300 hover:bg-gray-700/50 flex flex-col items-center h-auto py-3"
-            aria-label="Adicionar novo bloco nesta célula"
-          >
-            <Plus className="w-5 h-5 mb-1" />
-            <span className="text-xs">Adicionar Bloco</span>
-          </Button>
-        )
-      )}
-      {readonly && !block && (
-         <div className="text-xs text-gray-600 italic">Célula vazia</div>
+        <div className="w-full h-full flex items-center justify-center p-2">
+          {!readonly && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full h-full border-2 border-dashed border-gray-700 hover:border-blue-500 hover:bg-gray-800/50 text-gray-500 hover:text-blue-400"
+              onClick={handleAddClick}
+            >
+              <Plus size={18} />
+            </Button>
+          )}
+        </div>
       )}
     </div>
   );
