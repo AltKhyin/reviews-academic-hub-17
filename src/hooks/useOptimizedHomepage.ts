@@ -102,7 +102,7 @@ const fetchHomepageData: () => Promise<HomepageData> = _fetchHomepageData;
 export const useOptimizedHomepage = () => {
   const { batchRequest } = useRequestBatcher();
 
-  const query = useQuery({
+  const query = useQuery<HomepageData>({
     queryKey: ['homepage-data'],
     queryFn: fetchHomepageData,
     staleTime: 5 * 60 * 1000, // 5 minutes
@@ -157,3 +157,4 @@ export const useOptimizedHomepage = () => {
     batchFetchProfile,
   };
 };
+
