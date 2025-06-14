@@ -1,4 +1,3 @@
-
 // ABOUTME: Defines the core data structures for the block-based review editor.
 // This file establishes the unified type system for blocks, layouts, and content.
 
@@ -138,6 +137,7 @@ export interface SnapshotCardContent {
   subtitle?: string;
   description?: string;
   icon?: string;
+  imageUrl?: string; // Added imageUrl
   value?: string | number;
   change?: string;
   trend?: 'up' | 'down' | 'neutral';
@@ -161,10 +161,12 @@ export interface DiagramNodeData {
   color?: string;
   width?: number;
   height?: number;
+  [key: string]: any; // Added index signature for React Flow compatibility
 }
 
 export interface DiagramEdgeData {
   label?: string;
+  [key: string]: any; // Added index signature for React Flow compatibility
 }
 
 export interface DiagramNode {
@@ -172,6 +174,8 @@ export interface DiagramNode {
   type?: string;
   position: { x: number; y: number };
   data: DiagramNodeData;
+  width?: number;
+  height?: number;
 }
 
 export interface DiagramEdge {
@@ -179,14 +183,25 @@ export interface DiagramEdge {
   source: string;
   target: string;
   type?: string;
+  label?: string; // Added label
   data?: DiagramEdgeData;
   animated?: boolean;
+  style?: CSSProperties; // Added style
 }
 
 export interface DiagramContent {
   nodes: DiagramNode[];
   edges: DiagramEdge[];
   viewport?: any;
+  title?: string;
+  description?: string;
+  canvas?: {
+    backgroundColor?: string;
+    gridSize?: number;
+    zoom?: number;
+    offsetX?: number;
+    offsetY?: number;
+  };
 }
 
 export interface DiagramTemplateNode {

@@ -1,4 +1,3 @@
-
 // ABOUTME: Refactored inline block settings with centered popup positioning and spacing controls
 // Main settings interface using focused sub-components with proper modal-style positioning
 
@@ -10,7 +9,7 @@ import { Settings, Type, AlignLeft, Palette, Move } from 'lucide-react';
 import { InlineAlignmentControls } from './InlineAlignmentControls';
 import { GeneralSettings } from './settings/GeneralSettings';
 import { ColorSettings } from './settings/ColorSettings';
-import { SpacingControls } from './SpacingControls';
+import { SpacingControls } from './settings/SpacingControls';
 import { cn } from '@/lib/utils';
 
 interface InlineBlockSettingsProps {

@@ -26,8 +26,7 @@ export const SnapshotCardBlock: React.FC<SnapshotCardBlockProps> = ({
   const handleContentChange = (field: keyof SnapshotCardContentType, value: any) => {
     if (onUpdate) {
       onUpdate({
-        ...block, // Keep other block properties
-        content: {
+        content: { // Only update content, not the whole block
           ...content,
           [field]: value,
         }
@@ -73,11 +72,11 @@ export const SnapshotCardBlock: React.FC<SnapshotCardBlockProps> = ({
           />
         </div>
         <div>
-          <Label htmlFor={`sc-img-${block.id}`} className="text-xs text-gray-400">URL da Imagem</Label>
+          <Label htmlFor={`sc-img-${block.id}`} className="text-xs text-gray-400">URL do Ícone</Label>
           <Input
             id={`sc-img-${block.id}`}
-            value={content.imageUrl || ''}
-            onChange={(e) => handleContentChange('imageUrl', e.target.value)}
+            value={content.icon || ''}
+            onChange={(e) => handleContentChange('icon', e.target.value)}
             className="bg-gray-800 border-gray-600 text-white"
           />
         </div>

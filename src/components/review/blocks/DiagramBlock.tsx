@@ -79,8 +79,8 @@ const DiagramBlockInternal: React.FC<DiagramBlockProps> = ({
   useEffect(() => {
     setRfNodes(diagramContent.nodes.map((n: DiagramNodeType): Node<DiagramNodeData> => ({
       id: n.id,
-      position: { x: n.x, y: n.y },
-      type: 'custom', // Assuming all nodes are custom for now
+      position: n.position,
+      type: 'custom', 
       data: n.data,
       width: n.width,
       height: n.height,
@@ -90,7 +90,7 @@ const DiagramBlockInternal: React.FC<DiagramBlockProps> = ({
       source: e.source,
       target: e.target,
       label: e.label,
-      type: e.type || 'floating', // Default to floating if type is not specified
+      type: e.type || 'floating',
       data: e.data, 
       style: e.style,
       animated: e.animated,
@@ -108,8 +108,7 @@ const DiagramBlockInternal: React.FC<DiagramBlockProps> = ({
     if (onUpdate && reactFlowInstance) {
       const updatedDiagramNodes: DiagramNodeType[] = reactFlowInstance.getNodes().map((n): DiagramNodeType => ({
         id: n.id,
-        x: n.position.x,
-        y: n.position.y,
+        position: n.position,
         width: n.width || (n.data as DiagramNodeData)?.width || 150, 
         height: n.height || (n.data as DiagramNodeData)?.height || 50,
         data: n.data as DiagramNodeData,
