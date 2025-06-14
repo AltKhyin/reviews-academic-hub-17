@@ -9,8 +9,8 @@ import { useGridRepair } from './grid/useGridRepair';
 
 interface UseGridLayoutManagerProps {
   blocks: ReviewBlock[];
-  onUpdateBlock: (blockId: number, updates: Partial<ReviewBlock>) => void;
-  onDeleteBlock: (blockId: number) => void;
+  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
+  onDeleteBlock: (blockId: string) => void;
 }
 
 export const useGridLayoutManager = ({
@@ -44,7 +44,7 @@ export const useGridLayoutManager = ({
     });
   }, [layoutState.rows, onUpdateBlock]);
   
-  const deleteBlockWithLayoutRepair = useCallback((blockId: number) => {
+  const deleteBlockWithLayoutRepair = useCallback((blockId: string) => {
     console.log('Deleting block with layout repair:', blockId);
     
     const blockToDelete = blocks.find(b => b.id === blockId);
@@ -73,13 +73,13 @@ export const useGridLayoutManager = ({
     onDeleteBlock(blockId);
   }, [blocks, layoutState.rows, onDeleteBlock, repairLayoutMetadata]);
   
-  const getRowByBlockId = useCallback((blockId: number) => {
+  const getRowByBlockId = useCallback((blockId: string) => {
     return layoutState.rows.find(row => 
       row.blocks.some(block => block.id === blockId)
     ) || null;
   }, [layoutState.rows]);
   
-  const isBlockInGrid = useCallback((blockId: number): boolean => {
+  const isBlockInGrid = useCallback((blockId: string): boolean => {
     const block = blocks.find(b => b.id === blockId);
     if (!block?.meta?.layout) return false;
     

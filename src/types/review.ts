@@ -3,6 +3,7 @@
 export type BlockType = 
   | 'text' 
   | 'heading' 
+  | 'paragraph' // Added missing type
   | 'image' 
   | 'video' 
   | 'quote' 
@@ -20,7 +21,12 @@ export type BlockType =
   | 'timeline'
   | 'comparison'
   | 'accordion'
-  | 'tabs';
+  | 'tabs'
+  | 'figure' // Added missing type
+  | 'number_card' // Added missing type
+  | 'reviewer_quote' // Added missing type
+  | 'citation_list' // Added missing type
+  | 'snapshot_card'; // Added missing type
 
 export interface SpacingConfig {
   top?: number;
@@ -45,7 +51,7 @@ export interface LayoutConfig {
   columns?: number;
   columnWidths?: number[];
   grid_id?: string;
-  grid_position?: number;
+  grid_position?: number | { row: number; column: number }; // Support both formats
   row_id?: string;
   grid_rows?: number;
   gap?: number;
@@ -58,7 +64,7 @@ export interface AlignmentConfig {
 }
 
 export interface ReviewBlock {
-  id: string; // Changed from number to string for database compatibility
+  id: string; // Consistently string for database compatibility
   type: BlockType;
   content: any;
   sort_index: number;
