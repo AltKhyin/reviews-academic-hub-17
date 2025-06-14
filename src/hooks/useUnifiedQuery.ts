@@ -1,7 +1,8 @@
+
 // ABOUTME: Enhanced unified query system with rate limiting and comprehensive error handling
 import { useQuery, UseQueryOptions, QueryKey } from '@tanstack/react-query';
 import { useCallback, useRef } from 'react';
-import { useAPIRateLimit } from './useAPIRateLimit';
+import { useAPIRateLimit, RateLimitConfig } from './useAPIRateLimit';
 
 type QueryPriority = 'critical' | 'normal' | 'background';
 
@@ -102,7 +103,7 @@ export const useUnifiedQuery = <TData = unknown>(
     startTimeRef.current = now;
 
     // Rate limiting check
-    if (rateLimit && !rateLimitHook.checkRateLimit(rateLimit.endpoint)) {
+    if (rateLimit && !rateLimitHook.checkRateLimit(rateLimit)) {
       queryMetrics.rateLimitBlocks++;
       throw new Error(`Rate limit exceeded for ${rateLimit.endpoint}`);
     }

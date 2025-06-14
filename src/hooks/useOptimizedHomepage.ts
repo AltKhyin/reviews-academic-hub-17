@@ -1,4 +1,3 @@
-
 // ABOUTME: Optimized homepage data loading with request batching and deduplication
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,7 +27,7 @@ interface ReviewerComment {
 
 interface HomepageData {
   issues: HomepageIssue[];
-  sectionVisibility: any;
+  sectionVisibility: any[]; // Changed from 'any' to 'any[]' to help TS compiler
   featuredIssue: HomepageIssue | null;
   reviewerComments: ReviewerComment[];
   errors: {
