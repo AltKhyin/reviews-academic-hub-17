@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Save, Loader2 } from 'lucide-react';
-import { ReviewBlock } from '@/types/review';
+import { ReviewBlock, BlockType } from '@/types/review';
 
 // Utility to ensure JSON serialization compatibility
 const serializeForSupabase = (obj: any): any => {
@@ -97,7 +97,7 @@ export const IssueEditor: React.FC = () => {
     if (blocksData) {
       const transformedBlocks: ReviewBlock[] = blocksData.map(block => ({
         id: block.id.toString(),
-        type: block.type,
+        type: block.type as BlockType,
         content: block.payload,
         sort_index: block.sort_index,
         visible: block.visible ?? true,

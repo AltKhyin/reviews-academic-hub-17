@@ -47,7 +47,7 @@ const Register: React.FC = () => {
 
   const onSubmit = async (data: RegisterFormValues) => {
     try {
-      await signUp(data.email, data.password, { full_name: data.fullName });
+      await signUp(data.email, data.password);
       navigate('/login');
     } catch (error) {
       // Error is handled in the auth context

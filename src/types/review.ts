@@ -28,6 +28,21 @@ export type BlockType =
   | 'snapshot_card'
   | 'diagram';
 
+export interface BlockSpacing {
+  margin?: {
+    top?: number;
+    bottom?: number;
+    left?: number;
+    right?: number;
+  };
+  padding?: {
+    top?: number;
+    bottom?: number;
+    left?: number;
+    right?: number;
+  };
+}
+
 export interface SpacingConfig {
   top?: number;
   bottom?: number;

@@ -44,7 +44,7 @@ class ComponentAuditor {
   checkApiCallCompliance(componentName: string): boolean {
     try {
       const stats = apiCallMonitor.getStats();
-      const callsPerMinute = stats.requestsPerMinute || 0;
+      const callsPerMinute = stats.totalCalls || 0;
 
       if (callsPerMinute > 10) {
         this.logViolation({
@@ -132,6 +132,6 @@ export const withComponentAudit = <P extends object>(
       componentAuditor.checkApiCallCompliance(componentName);
     });
 
-    return React.createElement(WrappedComponent, { ...props, ref });
+    return React.createElement(WrappedComponent, props);
   });
 };
