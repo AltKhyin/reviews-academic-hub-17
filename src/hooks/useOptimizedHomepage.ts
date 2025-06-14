@@ -1,4 +1,3 @@
-
 // ABOUTME: Optimized homepage data loading with request batching and deduplication
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -85,8 +84,9 @@ const _fetchHomepageData = async (): Promise<HomepageData> => {
   const featured = featuredIssue.data ? (featuredIssue.data as HomepageIssue) : null;
   let sectionVisibilityArr: SectionConfig[] = [];
   try {
+    // Try to coerce and check at runtime
     if (Array.isArray(sectionVisibility.data?.value)) {
-      sectionVisibilityArr = sectionVisibility.data.value as SectionConfig[];
+      sectionVisibilityArr = sectionVisibility.data.value as unknown as SectionConfig[];
     }
   } catch (e) {
     sectionVisibilityArr = [];
@@ -107,6 +107,7 @@ const _fetchHomepageData = async (): Promise<HomepageData> => {
   };
 };
 
+// Ensure explicit type
 const fetchHomepageData: () => Promise<HomepageData> = _fetchHomepageData;
 
 export const useOptimizedHomepage = () => {
