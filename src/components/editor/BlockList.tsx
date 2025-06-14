@@ -132,7 +132,7 @@ export const BlockList: React.FC<BlockListProps> = ({
   compact = false
 }) => {
   const { dragState, handleDragStart, handleDragEnd, handleDragOver, handleDragEnter } = 
-    useBlockDragDrop(onMoveBlock);
+    useBlockDragDrop((blockId: string, direction: 'up' | 'down') => onMoveBlock(blockId, direction));
 
   // Handle block selection with proper event handling
   const handleBlockClick = (e: React.MouseEvent, blockId: string) => {

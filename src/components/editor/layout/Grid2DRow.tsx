@@ -28,7 +28,7 @@ interface Grid2DRowProps {
   onActiveBlockChange: (blockId: string | null) => void;
   onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
   onDeleteBlock: (blockId: string) => void;
-  onAddBlock: (position: GridPosition) => void;
+  onAddBlock: (gridId: string, position: GridPosition) => void;
   onAddRowAbove: (gridId: string, rowIndex: number) => void;
   onAddRowBelow: (gridId: string, rowIndex: number) => void;
   onRemoveRow: (gridId: string, rowIndex: number) => void;
@@ -63,8 +63,8 @@ export const Grid2DRow: React.FC<Grid2DRowProps> = ({
   canRemoveRow
 }) => {
   const handleAddBlock = useCallback((position: GridPosition) => {
-    onAddBlock(position);
-  }, [onAddBlock]);
+    onAddBlock(gridId, position);
+  }, [onAddBlock, gridId]);
 
   return (
     <>
@@ -113,8 +113,11 @@ export const Grid2DRow: React.FC<Grid2DRowProps> = ({
       {row.cells.map((cell) => (
         <Grid2DCell
           key={cell.id}
-          position={{ row: cell.row, column: cell.column }}
-          block={cell.block}
+          position={{ row: rowIndex, column: cell.position || 0 }}
+          block={cell.block ? {
+            ...cell.block,
+            sort_index: cell.block.sort_index || 0
+          } : null}
           activeBlockId={activeBlockId}
           onActiveBlockChange={onActiveBlockChange}
           onUpdateBlock={onUpdateBlock}
