@@ -1,5 +1,58 @@
 
-{
-  "file_path": "src/lib/editor-adapter.ts",
-  "content": "// ABOUTME: Provides adapter functions to bridge the old flat block array data structure\n// with the new LayoutElement-based structure for the editor.\nimport { Review, ReviewBlock, LayoutElement } from '@/types/review';\nimport { generateId } from './utils';\n\nexport interface EditorState {\n  elements: LayoutElement[];\n  blocks: { [key: string]: ReviewBlock };\n}\n\n// Converts the legacy flat array of blocks into the new editor state.\nexport const transformBlocksToReview = (blocks: ReviewBlock[], initialReviewData: Partial<Review>): Review => {\n  const editorBlocks: { [key: string]: ReviewBlock } = {};\n  const elements: LayoutElement[] = (blocks || [])\n    .sort((a, b) => a.sort_index - b.sort_index)\n    .map(block => {\n      editorBlocks[block.id] = block;\n      return {\n        id: generateId(), // LayoutElements need their own unique ID for D&D\n        type: 'block_container',\n        blockId: block.id,\n      };\n    });\n\n  return {\n    id: initialReviewData.id || generateId(),\n    title: initialReviewData.title || 'Nova Revisão',\n    elements,\n    blocks: editorBlocks,\n    version: initialReviewData.version || 1,\n    status: initialReviewData.status || 'draft',\n    createdAt: initialReviewData.createdAt || new Date().toISOString(),\n    updatedAt: new Date().toISOString(),\n  };\n};\n\n// Converts the new editor Review object back into a flat array for saving.\nexport const transformReviewToBlocks = (review: Review): ReviewBlock[] => {\n  if (!review || !review.elements || !review.blocks) {\n    return [];\n  }\n\n  return review.elements\n    .map((element, index) => {\n      if (element.type === 'block_container' && element.blockId && review.blocks[element.blockId]) {\n        const block = review.blocks[element.blockId];\n        return {\n          ...block,\n          sort_index: index, // Re-calculate sort_index based on the new order\n        };\n      }\n      // This simplistic transform doesn't handle nested layouts (rows/grids) yet.\n      // It would need to be extended to recursively flatten those structures if they are used.\n      return null;\n    })\n    .filter((block): block is ReviewBlock => block !== null);\n};\n"
+// ABOUTME: Provides adapter functions to bridge the old flat block array data structure
+// with the new LayoutElement-based structure for the editor.
+import { Review, ReviewBlock, LayoutElement } from '@/types/review';
+import { generateId } from './utils';
+
+export interface EditorState {
+  elements: LayoutElement[];
+  blocks: { [key: string]: ReviewBlock };
 }
+
+// Converts the legacy flat array of blocks into the new editor state.
+export const transformBlocksToReview = (blocks: ReviewBlock[], initialReviewData: Partial<Review>): Review => {
+  const editorBlocks: { [key: string]: ReviewBlock } = {};
+  const elements: LayoutElement[] = (blocks || [])
+    .sort((a, b) => a.sort_index - b.sort_index)
+    .map(block => {
+      editorBlocks[block.id] = block;
+      return {
+        id: generateId(), // LayoutElements need their own unique ID for D&D
+        type: 'block_container',
+        blockId: block.id,
+      };
+    });
+
+  return {
+    id: initialReviewData.id || generateId(),
+    title: initialReviewData.title || 'Nova Revisão',
+    elements,
+    blocks: editorBlocks,
+    version: initialReviewData.version || 1,
+    status: initialReviewData.status || 'draft',
+    createdAt: initialReviewData.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+};
+
+// Converts the new editor Review object back into a flat array for saving.
+export const transformReviewToBlocks = (review: Review): ReviewBlock[] => {
+  if (!review || !review.elements || !review.blocks) {
+    return [];
+  }
+
+  return review.elements
+    .map((element, index) => {
+      if (element.type === 'block_container' && element.blockId && review.blocks[element.blockId]) {
+        const block = review.blocks[element.blockId];
+        return {
+          ...block,
+          sort_index: index, // Re-calculate sort_index based on the new order
+        };
+      }
+      // This simplistic transform doesn't handle nested layouts (rows/grids) yet.
+      // It would need to be extended to recursively flatten those structures if they are used.
+      return null;
+    })
+    .filter((block): block is ReviewBlock => block !== null);
+};
