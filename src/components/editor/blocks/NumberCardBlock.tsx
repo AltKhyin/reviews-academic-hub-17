@@ -1,4 +1,75 @@
 
-{
-  "content": "// ABOUTME: Editor component for number card blocks.\nimport React from 'react';\nimport { ReviewBlock } from '@/types/review';\nimport { Input } from '@/components/ui/input';\nimport { Label } from '@/components/ui/label';\n\nexport interface NumberCardBlockProps {\n  block: ReviewBlock;\n  onUpdate: (blockId: string, updates: Partial<ReviewBlock>) => void;\n  readonly?: boolean;\n  content: { number?: string | number; label?: string; description?: string };\n  onUpdateContent: (newContent: { number?: string | number; label?: string; description?: string }) => void;\n}\n\nexport const NumberCardBlock: React.FC<NumberCardBlockProps> = ({ block, content, onUpdateContent, readonly }) => {\n  const { number = '0', label = 'Rótulo', description = '' } = content || {};\n\n  const handleChange = (field: keyof NumberCardBlockProps['content'], value: string) => {\n    onUpdateContent({ ...content, [field]: field === 'number' ? value : value });\n  };\n\n  if (readonly) {\n    return (\n      <div className=\"p-4 my-2 bg-gray-800 rounded-lg shadow text-center\">\n        <div className=\"text-4xl font-bold text-blue-400\">{number}</div>\n        <div className=\"text-sm text-gray-300 mt-1\">{label}</div>\n        {description && <p className=\"text-xs text-gray-500 mt-2\">{description}</p>}\n      </div>\n    );\n  }\n\n  return (\n    <div className=\"p-3 space-y-2 border border-gray-700 rounded bg-gray-850\">\n      <div>\n        <Label htmlFor={`nc-number-${block.id}`} className=\"text-xs text-gray-400\">Número/Valor</Label>\n        <Input \n          id={`nc-number-${block.id}`} \n          value={String(number)} \n          onChange={(e) => handleChange('number', e.target.value)} \n          placeholder=\"100\"\n          className=\"bg-gray-800 border-gray-600 text-white text-sm\"\n        />\n      </div>\n      <div>\n        <Label htmlFor={`nc-label-${block.id}`} className=\"text-xs text-gray-400\">Rótulo Principal</Label>\n        <Input \n          id={`nc-label-${block.id}`} \n          value={label} \n          onChange={(e) => handleChange('label', e.target.value)} \n          placeholder=\"Ex: Pacientes Atendidos\"\n          className=\"bg-gray-800 border-gray-600 text-white text-sm\"\n        />\n      </div>\n      <div>\n        <Label htmlFor={`nc-desc-${block.id}`} className=\"text-xs text-gray-400\">Descrição (Opcional)</Label>\n        <Input \n          id={`nc-desc-${block.id}`} \n          value={description} \n          onChange={(e) => handleChange('description', e.target.value)} \n          placeholder=\"Detalhes adicionais\"\n          className=\"bg-gray-800 border-gray-600 text-white text-sm\"\n        />\n      </div>\n       <div className=\"mt-2 p-3 border border-dashed border-gray-600 rounded bg-gray-900/50 text-center\">\n        <p className=\"text-xs text-gray-500 mb-1\">Pré-visualização:</p>\n        <div className=\"text-3xl font-bold text-blue-400\">{number}</div>\n        <div className=\"text-xs text-gray-300 mt-0.5\">{label}</div>\n        {description && <p className=\"text-xxs text-gray-500 mt-1\">{description}</p>}\n      </div>\n    </div>\n  );\n};\n"
+// ABOUTME: Editor component for number card blocks.
+// Displays a prominent number, a label, and an optional description.
+import React from 'react';
+import { ReviewBlock } from '@/types/review';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+
+export interface NumberCardBlockProps {
+  block: ReviewBlock;
+  onUpdate: (blockId: string, updates: Partial<ReviewBlock>) => void;
+  readonly?: boolean;
+  content: { number?: string | number; label?: string; description?: string };
+  onUpdateContent: (newContent: { number?: string | number; label?: string; description?: string }) => void;
 }
+
+export const NumberCardBlock: React.FC<NumberCardBlockProps> = ({ block, content, onUpdateContent, readonly }) => {
+  const { number = '0', label = 'Rótulo', description = '' } = content || {};
+
+  const handleChange = (field: keyof NumberCardBlockProps['content'], value: string) => {
+    onUpdateContent({ ...content, [field]: value });
+  };
+
+  if (readonly) {
+    return (
+      <div className="p-4 my-2 bg-gradient-to-br from-blue-700 via-blue-800 to-gray-900 rounded-lg shadow-xl text-center text-white">
+        <div className="text-5xl font-bold tracking-tight">{String(number)}</div>
+        <div className="text-md text-blue-200 mt-1">{label}</div>
+        {description && <p className="text-xs text-blue-300/80 mt-2 px-2">{description}</p>}
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-3 space-y-3 border border-gray-700 rounded bg-gray-850">
+      <div>
+        <Label htmlFor={`nc-number-${block.id}`} className="text-xs text-gray-400">Número/Valor</Label>
+        <Input 
+          id={`nc-number-${block.id}`} 
+          value={String(number)} 
+          onChange={(e) => handleChange('number', e.target.value)} 
+          placeholder="100"
+          className="bg-gray-800 border-gray-600 text-white text-sm font-semibold"
+        />
+      </div>
+      <div>
+        <Label htmlFor={`nc-label-${block.id}`} className="text-xs text-gray-400">Rótulo Principal</Label>
+        <Input 
+          id={`nc-label-${block.id}`} 
+          value={label} 
+          onChange={(e) => handleChange('label', e.target.value)} 
+          placeholder="Ex: Pacientes Atendidos"
+          className="bg-gray-800 border-gray-600 text-white text-sm"
+        />
+      </div>
+      <div>
+        <Label htmlFor={`nc-desc-${block.id}`} className="text-xs text-gray-400">Descrição (Opcional)</Label>
+        <Input 
+          id={`nc-desc-${block.id}`} 
+          value={description} 
+          onChange={(e) => handleChange('description', e.target.value)} 
+          placeholder="Detalhes adicionais sobre o número"
+          className="bg-gray-800 border-gray-600 text-white text-sm"
+        />
+      </div>
+       <div className="mt-3 p-3 border border-dashed border-gray-600 rounded bg-gray-900/60 text-center">
+        <p className="text-xs text-gray-500 mb-1">Pré-visualização:</p>
+        <div className="text-3xl font-bold text-blue-400">{String(number)}</div>
+        <div className="text-sm text-gray-300 mt-0.5">{label}</div>
+        {description && <p className="text-xxs text-gray-400/80 mt-1">{description}</p>}
+      </div>
+    </div>
+  );
+};
+

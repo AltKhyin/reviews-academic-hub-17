@@ -1,4 +1,94 @@
 
-{
-  "content": "// ABOUTME: A simple content editable component for React.\nimport React, { useRef, useEffect } from 'react';\n\ninterface ContentEditableProps extends React.HTMLAttributes<HTMLDivElement> {\n  html: string;\n  onChange: (event: React.ChangeEvent<HTMLDivElement & { target: { value: string } }>) => void;\n  tagName?: keyof JSX.IntrinsicElements;\n  placeholder?: string;\n}\n\nexport const ContentEditable: React.FC<ContentEditableProps> = ({\n  html,\n  onChange,\n  tagName = 'div',\n  placeholder,\n  className,\n  ...props\n}) => {\n  const ref = useRef<HTMLDivElement>(null);\n  const placeholderRef = useRef<HTMLSpanElement>(null);\n\n  useEffect(() => {\n    if (ref.current && ref.current.innerHTML !== html) {\n      ref.current.innerHTML = html;\n    }\n  }, [html]);\n\n  useEffect(() => {\n    if (placeholderRef.current) {\n        placeholderRef.current.style.display = html ? 'none' : 'inline-block';\n    }\n  }, [html]);\n\n  const emitChange = () => {\n    if (ref.current) {\n      const newHtml = ref.current.innerHTML;\n      if (onChange && newHtml !== html) {\n        // Simulate a change event with a value property\n        const event = {\n          target: { value: newHtml }\n        } as React.ChangeEvent<HTMLDivElement & { target: { value: string } }>;\n        onChange(event);\n      }\n      if (placeholderRef.current) {\n        placeholderRef.current.style.display = newHtml ? 'none' : 'inline-block';\n      }\n    }\n  };\n\n  const Tag = tagName as React.ElementType; // Cast to allow dynamic tag\n\n  return (\n    <div style={{ position: 'relative' }} className={className}>\n        {placeholder && (\n            <span\n            ref={placeholderRef}\n            style={{\n                position: 'absolute',\n                top: '50%',\n                left: '0.25rem', // Corresponds to p-1 for text input\n                transform: 'translateY(-50%)',\n                color: '#6b7280', // gray-500\n                pointerEvents: 'none',\n                display: html ? 'none' : 'inline-block',\n                fontSize: 'inherit',\n            }}\n            >\n            {placeholder}\n            </span>\n        )}\n        <Tag\n            {...props}\n            ref={ref}\n            onInput={emitChange}\n            onBlur={emitChange} // Also emit on blur to catch final changes\n            contentEditable={!props.contentEditable === false} // Allow disabling contentEditable via props\n            dangerouslySetInnerHTML={{ __html: html }} // Initial content\n            // className merged from props\n        />\n    </div>\n  );\n};\n"
+// ABOUTME: A simple content editable component for React.
+// Wraps a div with contentEditable, managing HTML content and change events.
+import React, { useRef, useEffect, useCallback } from 'react';
+
+interface ContentEditableProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'onChange'> {
+  html: string;
+  onChange: (event: React.ChangeEvent<HTMLDivElement & { target: { value: string } }>) => void;
+  tagName?: keyof JSX.IntrinsicElements;
+  placeholder?: string;
+  disabled?: boolean; // To control contentEditable attribute
 }
+
+export const ContentEditable: React.FC<ContentEditableProps> = ({
+  html,
+  onChange,
+  tagName = 'div',
+  placeholder,
+  className,
+  disabled = false, // Default to false (editable)
+  ...props
+}) => {
+  const ref = useRef<HTMLElement>(null); // More generic for tagName
+  const placeholderRef = useRef<HTMLSpanElement>(null);
+  const lastHtml = useRef(html);
+
+  // Update innerHTML when html prop changes externally
+  useEffect(() => {
+    if (ref.current && html !== ref.current.innerHTML) {
+      ref.current.innerHTML = html;
+      lastHtml.current = html; // Sync lastHtml
+    }
+  }, [html]);
+
+  // Update placeholder visibility based on content
+  useEffect(() => {
+    if (placeholderRef.current) {
+      const currentContent = ref.current?.innerHTML || '';
+      placeholderRef.current.style.display = currentContent ? 'none' : 'inline-block';
+    }
+  }, [html, ref.current?.innerHTML]); // Re-check on html or direct DOM changes
+
+  const emitChange = useCallback(() => {
+    if (ref.current) {
+      const newHtml = ref.current.innerHTML;
+      if (newHtml !== lastHtml.current) {
+        const event = {
+          target: { value: newHtml },
+        } as React.ChangeEvent<HTMLDivElement & { target: { value: string } }>;
+        onChange(event);
+        lastHtml.current = newHtml; // Update lastHtml after emitting change
+      }
+      // Update placeholder after potential change
+      if (placeholderRef.current) {
+        placeholderRef.current.style.display = newHtml ? 'none' : 'inline-block';
+      }
+    }
+  }, [onChange]);
+
+  const Tag = tagName as React.ElementType;
+
+  return (
+    <div style={{ position: 'relative' }} className={className}>
+      {placeholder && (
+        <span
+          ref={placeholderRef}
+          style={{
+            position: 'absolute',
+            top: '0.25rem', // Adjust if padding changes (p-1)
+            left: '0.25rem',
+            color: '#6b7280', // gray-500
+            pointerEvents: 'none',
+            display: (ref.current?.innerHTML || html) ? 'none' : 'inline-block', // Initial check
+            fontSize: 'inherit', // Inherit font size from parent
+            lineHeight: 'inherit', // Inherit line height for better alignment
+          }}
+          className="italic text-gray-500" // Added some Tailwind classes
+        >
+          {placeholder}
+        </span>
+      )}
+      <Tag
+        {...props}
+        ref={ref}
+        onInput={emitChange}
+        onBlur={emitChange} // Emit on blur to catch final changes
+        contentEditable={!disabled} // Control editability
+        dangerouslySetInnerHTML={{ __html: html }} // Initial content
+        // className is passed via ...props, so it's merged if provided
+      />
+    </div>
+  );
+};
+

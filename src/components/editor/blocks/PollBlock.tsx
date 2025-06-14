@@ -1,4 +1,117 @@
 
-{
-  "content": "// ABOUTME: Editor component for poll blocks.\nimport React from 'react';\nimport { ReviewBlock } from '@/types/review';\nimport { Input } from '@/components/ui/input';\nimport { Button } from '@/components/ui/button';\nimport { Label } from '@/components/ui/label';\nimport { PlusCircle, Trash2 } from 'lucide-react';\n\nexport interface PollOption {\n  id: string;\n  text: string;\n  votes?: number; // Optional, for displaying results if needed\n}\n\nexport interface PollBlockProps {\n  block: ReviewBlock;\n  onUpdate: (blockId: string, updates: Partial<ReviewBlock>) => void;\n  readonly?: boolean;\n  content: { question?: string; options?: PollOption[] };\n  onUpdateContent: (newContent: { question?: string; options?: PollOption[] }) => void;\n}\n\nexport const PollBlock: React.FC<PollBlockProps> = ({ block, content, onUpdateContent, readonly }) => {\n  const { question = '', options = [] } = content || {};\n\n  const handleQuestionChange = (newQuestion: string) => {\n    onUpdateContent({ ...content, question: newQuestion });\n  };\n\n  const handleOptionChange = (index: number, newText: string) => {\n    const newOptions = [...options];\n    newOptions[index] = { ...newOptions[index], text: newText };\n    onUpdateContent({ ...content, options: newOptions });\n  };\n\n  const addOption = () => {\n    const newOption: PollOption = { id: `opt-${Date.now()}-${Math.random().toString(36).substr(2,5)}`, text: '' };\n    onUpdateContent({ ...content, options: [...options, newOption] });\n  };\n\n  const removeOption = (index: number) => {\n    const newOptions = options.filter((_, i) => i !== index);\n    onUpdateContent({ ...content, options: newOptions });\n  };\n\n  if (readonly) {\n    return (\n      <div className=\"my-2 p-3 border border-cyan-700 rounded-md bg-cyan-900/20 text-cyan-300\">\n        <p className=\"font-semibold mb-2 text-cyan-200\">{question || 'Enquete sem pergunta'}</p>\n        <ul className=\"space-y-1.5\">\n          {options.map((option) => (\n            <li key={option.id} className=\"p-2 border border-cyan-600 rounded bg-cyan-800/30 text-sm\">\n              {option.text || 'Opção vazia'}\n            </li>\n          ))}\n        </ul>\n      </div>\n    );\n  }\n\n  return (\n    <div className=\"p-3 space-y-3 border border-gray-700 rounded bg-gray-850\">\n      <div>\n        <Label htmlFor={`poll-question-${block.id}`} className=\"text-xs text-gray-400\">Pergunta da Enquete</Label>\n        <Input \n          id={`poll-question-${block.id}`} \n          value={question} \n          onChange={(e) => handleQuestionChange(e.target.value)} \n          placeholder=\"Qual sua opção favorita?\"\n          className=\"bg-gray-800 border-gray-600 text-white text-sm\"\n        />\n      </div>\n      <div>\n        <Label className=\"text-xs text-gray-400\">Opções</Label>\n        {options.map((option, index) => (\n          <div key={option.id} className=\"flex items-center gap-1.5 mt-1\">\n            <Input \n              value={option.text} \n              onChange={(e) => handleOptionChange(index, e.target.value)} \n              placeholder={`Opção ${index + 1}`}\n              className=\"flex-grow bg-gray-800 border-gray-600 text-white text-xs h-8\"\n            />\n            {options.length > 1 && (\n              <Button variant=\"ghost\" size=\"icon_xs\" onClick={() => removeOption(index)} className=\"text-red-500 hover:text-red-400 hover:bg-red-900/30 w-7 h-7 p-1\">\n                <Trash2 className=\"w-3.5 h-3.5\" />\n              </Button>\n            )}\n          </div>\n        ))}\n        <Button variant=\"outline\" size=\"sm\" onClick={addOption} className=\"mt-2 text-xs h-8 border-green-500 text-green-500 hover:bg-green-500/10 hover:text-green-400\">\n          <PlusCircle className=\"w-3.5 h-3.5 mr-1.5\" /> Adicionar Opção\n        </Button>\n      </div>\n    </div>\n  );\n};\n"
+// ABOUTME: Editor component for poll blocks.
+// Allows creating questions with multiple choice options.
+import React from 'react';
+import { ReviewBlock } from '@/types/review';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { PlusCircle, Trash2 } from 'lucide-react';
+
+export interface PollOptionEditor { // Renamed to avoid conflict with PollOption in review/blocks
+  id: string;
+  text: string;
+  // votes are handled by the backend or display component, not part of this basic editor's content model
 }
+
+export interface PollBlockProps {
+  block: ReviewBlock;
+  onUpdate: (blockId: string, updates: Partial<ReviewBlock>) => void;
+  readonly?: boolean;
+  content: { question?: string; options?: PollOptionEditor[] };
+  onUpdateContent: (newContent: { question?: string; options?: PollOptionEditor[] }) => void;
+}
+
+export const PollBlock: React.FC<PollBlockProps> = ({ block, content, onUpdateContent, readonly }) => {
+  const { question = '', options = [{id: 'opt1', text: ''}] } = content || {};
+
+  const handleQuestionChange = (newQuestion: string) => {
+    onUpdateContent({ ...content, question: newQuestion });
+  };
+
+  const handleOptionChange = (index: number, newText: string) => {
+    const newOptions = [...(options || [])];
+    newOptions[index] = { ...newOptions[index], text: newText };
+    onUpdateContent({ ...content, options: newOptions });
+  };
+
+  const addOption = () => {
+    const newOptions = [...(options || []), { id: `opt-${Date.now()}`, text: '' }];
+    onUpdateContent({ ...content, options: newOptions });
+  };
+
+  const removeOption = (index: number) => {
+    if ((options || []).length <= 1) return; // Keep at least one option
+    const newOptions = (options || []).filter((_, i) => i !== index);
+    onUpdateContent({ ...content, options: newOptions });
+  };
+
+  if (readonly) {
+    return (
+      <div className="my-2 p-4 border border-gray-700 rounded-lg bg-gray-800 shadow">
+        <h4 className="font-semibold text-md text-white mb-3">{question || "Enquete não configurada"}</h4>
+        {options && options.length > 0 && options[0].text ? (
+          <ul className="space-y-2">
+            {options.map((opt) => (
+              <li key={opt.id} className="p-2 border border-gray-600 rounded bg-gray-700/50 text-sm text-gray-300">
+                {opt.text}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-xs text-gray-500 italic">Nenhuma opção de enquete fornecida.</p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-3 space-y-3 border border-gray-700 rounded bg-gray-850">
+      <div>
+        <Label htmlFor={`poll-question-${block.id}`} className="text-xs text-gray-400">Pergunta da Enquete</Label>
+        <Textarea
+          id={`poll-question-${block.id}`}
+          value={question}
+          onChange={(e) => handleQuestionChange(e.target.value)}
+          placeholder="Qual sua opinião sobre...?"
+          className="bg-gray-800 border-gray-600 text-white text-sm min-h-[60px]"
+          rows={2}
+        />
+      </div>
+      <div>
+        <Label className="text-xs text-gray-400 mb-1 block">Opções da Enquete</Label>
+        {options && options.map((opt, index) => (
+          <div key={opt.id || index} className="flex items-center gap-2 mb-2">
+            <Input
+              value={opt.text}
+              onChange={(e) => handleOptionChange(index, e.target.value)}
+              placeholder={`Opção ${index + 1}`}
+              className="bg-gray-800 border-gray-600 text-white text-sm flex-grow"
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => removeOption(index)}
+              disabled={options.length <= 1}
+              className="text-red-500 hover:text-red-400 disabled:text-gray-600"
+              aria-label="Remover opção"
+            >
+              <Trash2 size={16} />
+            </Button>
+          </div>
+        ))}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={addOption}
+          className="mt-1 text-blue-400 border-blue-500 hover:bg-blue-500/10 hover:text-blue-300"
+        >
+          <PlusCircle size={14} className="mr-2" />
+          Adicionar Opção
+        </Button>
+      </div>
+    </div>
+  );
+};
+

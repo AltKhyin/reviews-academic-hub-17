@@ -1,4 +1,148 @@
+// ABOUTME: Core orchestrator for the block-based editor experience.
+// Manages block state, interactions, and renders the list of blocks.
+import React, { useState, useCallback, useEffect } from 'react';
+import { Review, ReviewBlock, BlockType, GridPosition, LayoutElement } from '@/types/review';
+import { BlockList } from './BlockList';
+import { EditorToolbar } from './EditorToolbar'; // Placeholder for toolbar
+import { generateId } from '@/lib/utils'; 
+import { DragDropContext, DropResult, ResponderProvided, Droppable } from '@hello-pangea/dnd'; // Using hello-pangea fork
+import { useBlockManagement } from '@/hooks/useBlockManagement'; // Centralized logic
+import { useBlockDragDrop } from '@/hooks/useBlockDragDrop';
 
-{
-  "content": "// ABOUTME: Core block editor component with drag-and-drop, string ID support, and layout management\n// Handles rendering and interaction of various review blocks.\n\nimport React, { useCallback, useRef } from 'react';\nimport { ReviewBlock, BlockType } from '@/types/review';\nimport { GridPosition, LayoutRowData, Grid2DLayout } from '@/types/grid';\nimport { SingleBlock } from './blocks/SingleBlock';\n// BlockList is not directly used here anymore, individual blocks are rendered with drag targets\n// import { BlockList } from './BlockList'; \nimport { LayoutGrid, LayoutGridProps } from './layout/LayoutGrid'; // Import LayoutGridProps\nimport { Grid2DContainer, Grid2DContainerProps } from './layout/Grid2DContainer'; // Import Grid2DContainerProps\nimport { useBlockDragDrop } from '@/hooks/useBlockDragDrop';\nimport { cn } from '@/lib/utils';\nimport { Plus } from 'lucide-react';\nimport { Button } from '@/components/ui/button';\n\ninterface BlockEditorProps {\n  blocks: ReviewBlock[];\n  activeBlockId: string | null;\n  onActiveBlockChange: (blockId: string | null) => void;\n  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;\n  onDeleteBlock: (blockId: string) => void;\n  onMoveBlock: (blockId: string, directionOrIndex: 'up' | 'down' | number) => void;\n  onAddBlock: (type: BlockType, position?: number) => string;\n  onDuplicateBlock: (blockId: string) => void;\n  onConvertToGrid: (blockId: string, columns: number) => void;\n  onConvertTo2DGrid: (blockId: string, columns: number, rows: number) => void;\n  onMergeBlockIntoGrid: (draggedBlockId: string, targetRowId: string, targetPosition?: number) => void;\n  onPlaceBlockIn2DGrid: (blockId: string, gridId: string, position: GridPosition) => void;\n  className?: string;\n  readonly?: boolean;\n}\n\nconst isLayoutBlock = (block: ReviewBlock): boolean => {\n  return block.type === 'layout_grid' || block.type === 'grid_2d';\n};\n\nexport const BlockEditor: React.FC<BlockEditorProps> = ({\n  blocks,\n  activeBlockId,\n  onActiveBlockChange,\n  onUpdateBlock,\n  onDeleteBlock,\n  onMoveBlock,\n  onAddBlock,\n  onDuplicateBlock,\n  onConvertToGrid,\n  onConvertTo2DGrid,\n  onMergeBlockIntoGrid,\n  onPlaceBlockIn2DGrid,\n  className,\n  readonly = false,\n}) => {\n  const editorRef = useRef<HTMLDivElement>(null);\n\n  const handleInternalMove = useCallback((draggedBlockId: string, targetBlockId: string | null, dropPosition: 'before' | 'after' | 'over') => {\n    const targetIndex = blocks.findIndex(b => b.id === targetBlockId);\n\n    if (draggedBlockId === targetBlockId && dropPosition !== 'over') {\n      return;\n    }\n\n    // Simplified logic for 'over' - primarily for reordering if not a specific merge action\n    if (dropPosition === 'over' && targetBlockId) {\n        const targetBlock = blocks.find(b => b.id === targetBlockId);\n        const draggedBlock = blocks.find(b => b.id === draggedBlockId);\n        // If target is a layout grid, and dragged is not, try to merge\n        if (targetBlock?.type === 'layout_grid' && draggedBlock && !isLayoutBlock(draggedBlock)) {\n            // Attempt to merge into the first row of the target layout_grid\n            // This is a heuristic and might need refinement for specific row targeting\n            const firstRowId = targetBlock.content?.rows?.[0]?.id;\n            if (firstRowId) {\n                onMergeBlockIntoGrid(draggedBlockId, firstRowId, 0); // Merge at the start of the first row\n                return;\n            }\n        } else if (targetBlock?.type === 'grid_2d' && draggedBlock && !isLayoutBlock(draggedBlock)) {\n            // Attempt to place into the first cell of the target grid_2d\n            // This is also a heuristic\n             onPlaceBlockIn2DGrid(draggedBlockId, targetBlock.id, { row: 0, column: 0 });\n             return;\n        }\n        // Default 'over' to 'after' for simple reordering if not a specific merge case\n        if (targetIndex !== -1) {\n            onMoveBlock(draggedBlockId, targetIndex + (targetBlockId === draggedBlockId ? 0 : 1));\n        }\n        return;\n    }\n    \n    if (targetBlockId === null) { \n        if (dropPosition === 'before') { \n             onMoveBlock(draggedBlockId, 0);\n        } else { \n             onMoveBlock(draggedBlockId, blocks.length);\n        }\n        return;\n    }\n\n    if (targetIndex !== -1) {\n      if (dropPosition === 'before') {\n        onMoveBlock(draggedBlockId, targetIndex);\n      } else { // 'after'\n        onMoveBlock(draggedBlockId, targetIndex + 1);\n      }\n    } else {\n      if (blocks.length === 0 && dropPosition === 'before') {\n        onMoveBlock(draggedBlockId, 0);\n      } else {\n        onMoveBlock(draggedBlockId, blocks.length);\n      }\n    }\n  }, [blocks, onMoveBlock, onMergeBlockIntoGrid, onPlaceBlockIn2DGrid]);\n\n  const { dragState, handleDragStart, handleDragEnd, handleDragOver, handleDragEnter, handleDrop, handleDragLeave } =\n    useBlockDragDrop({ onMove: handleInternalMove });\n\n  const handleBlockListItemDragStart = useCallback((e: React.DragEvent, blockId: string) => {\n    handleDragStart(e, blockId);\n  }, [handleDragStart]);\n\n  const handleEditorDrop = useCallback((e: React.DragEvent) => {\n    handleDrop(e); \n  }, [handleDrop]);\n\n  const handleEditorDragOver = (e: React.DragEvent) => {\n    e.preventDefault(); \n  };\n  \n  const handleAddBlockToList = useCallback((type: BlockType, index?: number) => {\n    onAddBlock(type, index);\n  }, [onAddBlock]);\n\n  const renderLayoutGrid = (block: ReviewBlock) => {\n    if (block.type !== 'layout_grid' || !block.content?.rows) {\n      console.warn('renderLayoutGrid called with invalid block:', block);\n      return null;\n    }\n    const layoutRows = block.content.rows as LayoutRowData[];\n\n    const layoutGridProps: LayoutGridProps = {\n        // key: block.id, // Key is applied by React, not a prop for LayoutGrid itself\n        gridId: block.id,\n        rows: layoutRows,\n        onUpdateRow: (rowId, updates) => {\n          const updatedRows = layoutRows.map(r => r.id === rowId ? { ...r, ...updates } : r);\n          onUpdateBlock(block.id, { content: { ...block.content, rows: updatedRows } });\n        },\n        onDeleteRow: (rowId) => {\n          const updatedRows = layoutRows.filter(r => r.id !== rowId);\n          const rowToDelete = layoutRows.find(r => r.id === rowId);\n          if (rowToDelete) {\n            rowToDelete.blocks.forEach(b => onDeleteBlock(b.id));\n          }\n          onUpdateBlock(block.id, { content: { ...block.content, rows: updatedRows } });\n          if (updatedRows.length === 0) { \n            onDeleteBlock(block.id);\n          }\n        },\n        onAddRow: (position, columns = 1) => {\n          const newRowId = `row-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;\n          const newRow: LayoutRowData = { \n            id: newRowId, \n            blocks: [], \n            columns, \n            columnWidths: Array(columns).fill(100/columns),\n            gap: 4\n          };\n          const insertAt = position !== undefined ? position : layoutRows.length;\n          const updatedRows = [...layoutRows.slice(0, insertAt), newRow, ...layoutRows.slice(insertAt)];\n          onUpdateBlock(block.id, { content: { ...block.content, rows: updatedRows } });\n        },\n        onAddBlockToRow: (rowId, blockPositionInRow, blockType) => {\n          const newBlockId = onAddBlock(blockType as BlockType, undefined);\n          onMergeBlockIntoGrid(newBlockId, rowId, blockPositionInRow);\n        },\n        onUpdateBlockInRow: onUpdateBlock, \n        onMoveBlockInGrid: onMergeBlockIntoGrid, \n        onDeleteBlockInRow: (blockIdToDelete, rowId) => {\n            const updatedRows = layoutRows.map(r => {\n                if (r.id === rowId) {\n                    return { ...r, blocks: r.blocks.filter(b => b.id !== blockIdToDelete) };\n                }\n                return r;\n            });\n            onUpdateBlock(block.id, { content: { ...block.content, rows: updatedRows }});\n            onDeleteBlock(blockIdToDelete); \n        },\n        readonly: readonly,\n        activeBlockId: activeBlockId, \n        onActiveBlockChange: onActiveBlockChange, \n      };\n\n    return <LayoutGrid {...layoutGridProps} />;\n  };\n\n  const renderGrid2DContainer = (block: ReviewBlock) => {\n    if (block.type !== 'grid_2d' || !block.content) {\n      console.warn('renderGrid2DContainer called with invalid block:', block);\n      return null;\n    }\n    const gridLayout = block.content as Grid2DLayout;\n\n    const grid2DProps: Grid2DContainerProps = {\n        gridId: block.id, // gridId is the ID of the grid_2d block itself\n        initialLayout: gridLayout, // This is Grid2DLayout\n        activeBlockId: activeBlockId,\n        onActiveBlockChange: onActiveBlockChange,\n        onUpdateBlock: onUpdateBlock, // Pass the main onUpdateBlock\n        onDeleteBlock: onDeleteBlock, // Pass the main onDeleteBlock\n        onAddBlock: (targetGridId, position) => { // targetGridId is the grid_2d block's ID\n          const newBlockId = onAddBlock('paragraph', undefined); // Add new block to main list\n          onPlaceBlockIn2DGrid(newBlockId, targetGridId, position); // Then place it\n        },\n        onLayoutChange: (newLayout) => {\n          onUpdateBlock(block.id, { content: newLayout });\n        },\n        readonly: readonly,\n      };\n\n    return <Grid2DContainer {...grid2DProps} />;\n  };\n\n  const DEFAULT_BLOCK_TYPE: BlockType = 'paragraph';\n  \n  const topLevelBlocks = blocks.filter(block => {\n    if (block.meta?.layout?.row_id) { \n        const parentGrid = blocks.find(b => b.type === 'layout_grid' && b.content?.rows?.some((r: LayoutRowData) => r.id === block.meta?.layout?.row_id));\n        return !parentGrid; \n    }\n    if (block.meta?.layout?.grid_id && block.meta?.layout?.grid_position) { \n        const parent2DGrid = blocks.find(b => b.id === block.meta?.layout?.grid_id && b.type === 'grid_2d');\n        return !parent2DGrid; \n    }\n    return true; \n  });\n\n\n  return (\n    <div\n      ref={editorRef}\n      className={cn(\"block-editor relative p-2 space-y-1 overflow-y-auto h-full flex-grow block-editor-droppable-area\", className)}\n      onDragOver={handleEditorDragOver}\n      onDrop={handleEditorDrop} \n      onDragLeave={handleDragLeave}\n    >\n      {topLevelBlocks.map((block, index) => (\n        <div key={block.id} className=\"block-wrapper\">\n           <div \n                className=\"insert-point-editor group w-full h-3 my-0.5\"\n                onDragOver={(e) => handleDragOver(e, block.id, 'before')}\n                onDragEnter={(e) => handleDragEnter(e, block.id, 'before')}\n                onDrop={handleEditorDrop} \n            >\n                {dragState.isDragging && dragState.dragOverItemId === block.id && dragState.dropPosition === 'before' && (\n                     <div className=\"h-full w-full bg-blue-500/30 rounded opacity-100 transition-opacity\" />\n                )}\n            </div>\n\n          {isLayoutBlock(block) ? (\n            block.type === 'layout_grid' ? renderLayoutGrid(block) : renderGrid2DContainer(block)\n          ) : (\n            <div \n              draggable={!readonly} // Make individual non-layout blocks draggable if not readonly\n              onDragStart={(e) => handleBlockListItemDragStart(e, block.id)}\n              onDragEnd={handleDragEnd}\n              onDragOver={(e) => handleDragOver(e, block.id, 'over')}\n              onDrop={handleEditorDrop} // Drop on the block itself can be for merging\n            >\n              <SingleBlock\n                block={block}\n                activeBlockId={activeBlockId} // Pass activeBlockId to SingleBlock\n                onSelect={() => onActiveBlockChange(block.id)}\n                onUpdateBlock={onUpdateBlock}\n                onDeleteBlock={onDeleteBlock}\n                onMoveBlock={onMoveBlock} \n                onDuplicateBlock={onDuplicateBlock}\n                onConvertToGrid={onConvertToGrid}\n                onConvertTo2DGrid={onConvertTo2DGrid}\n                isFirst={index === 0}\n                isLast={index === topLevelBlocks.length - 1}\n                readonly={readonly}\n              />\n            </div>\n          )}\n        </div>\n      ))}\n      <div \n        className=\"insert-point-editor group w-full h-3 my-0.5\"\n        onDragOver={(e) => handleDragOver(e, null, 'after')} \n        onDragEnter={(e) => handleDragEnter(e, null, 'after')}\n        onDrop={handleEditorDrop}\n      >\n        {dragState.isDragging && dragState.dragOverItemId === null && dragState.dropPosition === 'after' && (\n            <div className=\"h-full w-full bg-blue-500/30 rounded opacity-100 transition-opacity\" />\n        )}\n      </div>\n\n      {blocks.length === 0 && !readonly && (\n        <div className=\"flex flex-col items-center justify-center h-full text-gray-500\">\n          <div className=\"text-center p-6 border-2 border-dashed border-gray-700 rounded-lg\">\n            <Plus className=\"w-12 h-12 mx-auto mb-3 text-gray-600\" />\n            <h3 className=\"text-lg font-medium text-gray-300 mb-1\">Editor Vazio</h3>\n            <p className=\"mb-3 text-sm\">Arraste blocos da paleta ou clique abaixo para adicionar.</p>\n            <Button\n              onClick={() => handleAddBlockToList(DEFAULT_BLOCK_TYPE, 0)}\n              variant=\"outline\"\n              className=\"border-blue-500 text-blue-500 hover:bg-blue-500/10 hover:text-blue-400\"\n            >\n              <Plus className=\"w-4 h-4 mr-2\" />\n              Adicionar Primeiro Bloco\n            </Button>\n          </div>\n        </div>\n      )}\n    </div>\n  );\n};\n"
+export interface BlockEditorProps {
+  initialReview?: Review;
+  onSave: (review: Review) => void;
+  readonly?: boolean;
+  className?: string;
 }
+
+export const BlockEditor: React.FC<BlockEditorProps> = ({
+  initialReview,
+  onSave,
+  readonly = false,
+  className,
+}) => {
+  const [review, setReview] = useState<Review>(
+    initialReview || {
+      id: generateId(),
+      title: 'Nova Revisão',
+      elements: [], // Initialize with an empty layout
+      version: 1,
+      status: 'draft',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+  );
+
+  const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
+
+  const {
+    elements,
+    blocks,
+    updateBlock,
+    addBlock,
+    deleteBlock,
+    moveBlockInList,
+    setElements,
+  } = useBlockManagement(review.elements, review.blocks || {}, (newElements, newBlocks) => {
+    setReview(prev => ({ ...prev, elements: newElements, blocks: newBlocks }));
+  });
+  
+  const { onDragEnd } = useBlockDragDrop(elements, blocks, moveBlockInList, setElements);
+
+
+  useEffect(() => {
+    if (initialReview) {
+      setReview(initialReview);
+      // Initialize elements and blocks from useBlockManagement based on new initialReview
+    }
+  }, [initialReview]);
+
+  const handleSave = useCallback(() => {
+    onSave(review);
+  }, [review, onSave]);
+
+  const handleSelectBlock = useCallback((blockId: string | null) => {
+    setActiveBlockId(blockId);
+  }, []);
+  
+  // Find a block by its ID from the centralized 'blocks' state
+  const findBlockById = (blockId: string): ReviewBlock | undefined => {
+    return blocks[blockId];
+  };
+
+  // If using dnd-kit or react-beautiful-dnd, this would be the onDragEnd handler
+  const handleDragEnd = (result: DropResult, _provided: ResponderProvided) => {
+    onDragEnd(result); // Delegate to the hook
+  };
+
+  return (
+    <div className={`block-editor-container bg-gray-900 text-white min-h-screen flex flex-col ${className}`}>
+      {!readonly && (
+        <EditorToolbar
+          onAddBlock={(type, layoutElementId) => {
+             // For simplicity, adding to the first layout element if layoutElementId is not specified
+             // Or, if layoutElementId is 'root', add directly to elements array
+            if (layoutElementId === 'root' || !layoutElementId && elements.length === 0) {
+                const newBlockId = addBlock(type, {content: {}}); // Assuming addBlock returns new block's ID or handles it
+                if (newBlockId) {
+                   const newLayoutElement: LayoutElement = { id: generateId(), type: 'block', blockId: newBlockId, settings: {}};
+                   setElements(prev => [...prev, newLayoutElement]);
+                }
+
+            } else if (layoutElementId) {
+                // Find the layout element (e.g., a grid) and add the block there.
+                // This part needs to be implemented based on how blocks are added to grids.
+                console.warn(`Adding block to layout element ${layoutElementId} not fully implemented.`);
+                // Potentially call addBlockToGrid or similar from useBlockManagement here.
+                // For now, let's assume addBlock can take a parentId or position.
+                addBlock(type, { parentId: layoutElementId, content: {} });
+            } else if (elements.length > 0 && elements[0].type === 'block'){
+                // Fallback: add after the first block if no specific layout target.
+                // This is a simplification. Ideally, user indicates where to add.
+                addBlock(type, { afterBlockId: elements[0].blockId, content: {} });
+            } else {
+                // Fallback for empty or non-block first element
+                const newBlockId = addBlock(type, {content: {}});
+                 if (newBlockId) {
+                   const newLayoutElement: LayoutElement = { id: generateId(), type: 'block', blockId: newBlockId, settings: {}};
+                   setElements(prev => [...prev, newLayoutElement]);
+                }
+            }
+          }}
+          onSave={handleSave}
+        />
+      )}
+
+      <div className="editor-content-area flex-grow p-4 md:p-6 lg:p-8 overflow-y-auto">
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId="main-editor-droppable" type="BLOCK_LIST">
+            {(provided) => (
+              <div ref={provided.innerRef} {...provided.droppableProps}>
+                <BlockList
+                  layoutElements={elements}
+                  blocks={blocks}
+                  onUpdateBlock={updateBlock}
+                  onDeleteBlock={deleteBlock}
+                  onMoveBlock={moveBlockInList}
+                  onSelectBlock={handleSelectBlock}
+                  activeBlockId={activeBlockId}
+                  readonly={readonly}
+                  // For grid/layout elements, onAddBlockToGrid might be needed
+                  onAddBlockToGrid={(type, gridId, position) => {
+                    console.log('Attempting to add block to grid:', type, gridId, position);
+                    // This should ideally call a function like addBlockToGrid from useBlockManagement
+                    // Example: addBlockToGrid(type, gridId, position, {});
+                    // For now, using the general addBlock and assuming it can handle grid context or will be adapted
+                    addBlock(type, { content: {}, parentId: gridId, position: position as any }); 
+                  }}
+                />
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
+      </div>
+    </div>
+  );
+};

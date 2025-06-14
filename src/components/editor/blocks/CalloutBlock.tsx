@@ -1,4 +1,76 @@
 
-{
-  "content": "// ABOUTME: Editor component for callout blocks.\nimport React from 'react';\nimport { ReviewBlock } from '@/types/review';\nimport { Textarea } from '@/components/ui/textarea';\nimport { Input } from '@/components/ui/input';\nimport { Label } from '@/components/ui/label';\nimport { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';\nimport { Info, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';\n\nexport type CalloutType = 'info' | 'warning' | 'success' | 'danger';\n\nexport interface CalloutBlockProps {\n  block: ReviewBlock;\n  onUpdate: (blockId: string, updates: Partial<ReviewBlock>) => void;\n  readonly?: boolean;\n  content: { title?: string; text?: string; type?: CalloutType };\n  onUpdateContent: (newContent: { title?: string; text?: string; type?: CalloutType }) => void;\n}\n\nconst calloutStyles: Record<CalloutType, { icon: React.ElementType; bg: string; border: string; text: string; iconColor: string }> = {\n  info: { icon: Info, bg: 'bg-blue-900/30', border: 'border-blue-500', text: 'text-blue-300', iconColor: 'text-blue-400' },\n  warning: { icon: AlertTriangle, bg: 'bg-yellow-900/30', border: 'border-yellow-500', text: 'text-yellow-300', iconColor: 'text-yellow-400' },\n  success: { icon: CheckCircle, bg: 'bg-green-900/30', border: 'border-green-500', text: 'text-green-300', iconColor: 'text-green-400' },\n  danger: { icon: XCircle, bg: 'bg-red-900/30', border: 'border-red-500', text: 'text-red-300', iconColor: 'text-red-400' },\n};\n\nexport const CalloutBlock: React.FC<CalloutBlockProps> = ({ block, content, onUpdateContent, readonly }) => {\n  const { title = '', text = '', type = 'info' } = content || {};\n  const style = calloutStyles[type];\n  const IconComponent = style.icon;\n\n  const handleChange = (field: 'title' | 'text', value: string) => {\n    onUpdateContent({ ...content, type, [field]: value });\n  };\n\n  const handleTypeChange = (newType: CalloutType) => {\n    onUpdateContent({ ...content, type: newType });\n  };\n\n  if (readonly) {\n    return (\n      <div className={`my-2 p-3 border-l-4 rounded-r-md ${style.bg} ${style.border} ${style.text}`}>\n        <div className=\"flex items-start\">\n          <IconComponent className={`w-5 h-5 mr-2 flex-shrink-0 ${style.iconColor}`} />\n          <div className=\"flex-grow\">\n            {title && <strong className=\"block font-semibold mb-0.5\">{title}</strong>}\n            <p className=\"text-sm leading-relaxed\">{text}</p>\n          </div>\n        </div>\n      </div>\n    );\n  }\n\n  return (\n    <div className={`p-3 space-y-2 border rounded ${style.border} ${style.bg} bg-opacity-50`}>\n      <div className=\"flex items-center gap-2\">\n        <IconComponent className={`w-5 h-5 flex-shrink-0 ${style.iconColor}`} />\n        <Label htmlFor={`callout-type-${block.id}`} className={`text-xs ${style.text}`}>Tipo</Label>\n        <Select value={type} onValueChange={(value: string) => handleTypeChange(value as CalloutType)}>\n          <SelectTrigger className={`w-[120px] h-8 text-xs bg-gray-800 border-gray-600 ${style.text} focus:ring-offset-gray-900`}>\n            <SelectValue placeholder=\"Tipo\" />\n          </SelectTrigger>\n          <SelectContent className=\"bg-gray-800 border-gray-700 text-gray-300\">\n            {Object.keys(calloutStyles).map(key => (\n              <SelectItem key={key} value={key} className=\"text-xs hover:bg-gray-700 focus:bg-gray-700\">{key.charAt(0).toUpperCase() + key.slice(1)}</SelectItem>\n            ))}\n          </SelectContent>\n        </Select>\n      </div>\n      <div>\n        <Label htmlFor={`callout-title-${block.id}`} className={`text-xs ${style.text}`}>Título (Opcional)</Label>\n        <Input \n          id={`callout-title-${block.id}`} \n          value={title} \n          onChange={(e) => handleChange('title', e.target.value)} \n          placeholder=\"Título do callout\"\n          className={`bg-gray-800 border-gray-600 ${style.text} placeholder-gray-500 text-sm focus:ring-offset-gray-900`}\n        />\n      </div>\n      <div>\n        <Label htmlFor={`callout-text-${block.id}`} className={`text-xs ${style.text}`}>Texto</Label>\n        <Textarea \n          id={`callout-text-${block.id}`} \n          value={text} \n          onChange={(e) => handleChange('text', e.target.value)} \n          placeholder=\"Conteúdo do callout...\"\n          className={`bg-gray-800 border-gray-600 ${style.text} placeholder-gray-500 text-sm min-h-[60px] focus:ring-offset-gray-900`}\n          rows={3}\n        />\n      </div>\n    </div>\n  );\n};\n"
+// ABOUTME: Editor component for callout blocks (info, warning, etc.).
+// Allows configuring callout type, title, and content.
+import React from 'react';
+import { ReviewBlock } from '@/types/review';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'; // Assuming shadcn/ui
+
+export interface CalloutBlockProps {
+  block: ReviewBlock;
+  onUpdate: (blockId: string, updates: Partial<ReviewBlock>) => void;
+  readonly?: boolean;
+  content: { type?: 'info' | 'warning' | 'success' | 'error'; title?: string; text?: string };
+  onUpdateContent: (newContent: { type?: 'info' | 'warning' | 'success' | 'error'; title?: string; text?: string }) => void;
 }
+
+export const CalloutBlock: React.FC<CalloutBlockProps> = ({ block, content, onUpdateContent, readonly }) => {
+  const { type = 'info', title = '', text = '' } = content || {};
+
+  const handleChange = (field: keyof CalloutBlockProps['content'], value: string) => {
+    onUpdateContent({ ...content, [field]: value });
+  };
+
+  if (readonly) {
+    // Basic readonly display, can be enhanced with icons and colors based on type
+    return (
+      <div className={`my-2 p-3 border-l-4 ${type === 'warning' ? 'border-yellow-500 bg-yellow-500/10' : type === 'error' ? 'border-red-500 bg-red-500/10' : type === 'success' ? 'border-green-500 bg-green-500/10' : 'border-blue-500 bg-blue-500/10'} rounded-r-md`}>
+        {title && <h5 className="font-semibold mb-1 text-white">{title}</h5>}
+        <p className="text-sm text-gray-300" dangerouslySetInnerHTML={{__html: text || ''}}></p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-3 space-y-2 border border-gray-700 rounded bg-gray-850">
+      <div>
+        <Label htmlFor={`callout-type-${block.id}`} className="text-xs text-gray-400">Tipo</Label>
+        <Select value={type} onValueChange={(value) => handleChange('type', value as CalloutBlockProps['content']['type'])}>
+          <SelectTrigger id={`callout-type-${block.id}`} className="bg-gray-800 border-gray-600 text-white text-sm">
+            <SelectValue placeholder="Selecione o tipo" />
+          </SelectTrigger>
+          <SelectContent className="bg-gray-800 border-gray-600 text-white">
+            <SelectItem value="info">Info</SelectItem>
+            <SelectItem value="warning">Atenção</SelectItem>
+            <SelectItem value="success">Sucesso</SelectItem>
+            <SelectItem value="error">Erro</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label htmlFor={`callout-title-${block.id}`} className="text-xs text-gray-400">Título (Opcional)</Label>
+        <Input
+          id={`callout-title-${block.id}`}
+          value={title}
+          onChange={(e) => handleChange('title', e.target.value)}
+          placeholder="Título do Callout"
+          className="bg-gray-800 border-gray-600 text-white text-sm"
+        />
+      </div>
+      <div>
+        <Label htmlFor={`callout-text-${block.id}`} className="text-xs text-gray-400">Texto do Callout</Label>
+        <Textarea
+          id={`callout-text-${block.id}`}
+          value={text}
+          onChange={(e) => handleChange('text', e.target.value)}
+          placeholder="Conteúdo do callout..."
+          className="bg-gray-800 border-gray-600 text-white text-sm min-h-[80px]"
+          rows={3}
+        />
+      </div>
+    </div>
+  );
+};
+

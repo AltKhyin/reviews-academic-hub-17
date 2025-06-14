@@ -1,4 +1,122 @@
 
-{
-  "content": "// ABOUTME: Represents a single cell in a 2D grid, capable of holding a block.\nimport React from 'react';\nimport { ReviewBlock } from '@/types/review';\nimport { GridPosition } from '@/types/grid';\nimport { BlockContentEditor, BlockContentEditorProps } from '../BlockContentEditor';\nimport { Button } from '@/components/ui/button';\nimport { Plus } from 'lucide-react';\nimport { cn } from '@/lib/utils';\n\nexport interface Grid2DCellProps {\n  position: GridPosition;\n  block: ReviewBlock | null; \n  activeBlockId: string | null;\n  onActiveBlockChange: (blockId: string | null) => void;\n  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;\n  onDeleteBlock: (blockId: string) => void;\n  onAddBlock: (position: GridPosition) => void; \n  gridId: string; \n  onDragOverCell?: (e: React.DragEvent, position: GridPosition) => void;\n  onDropInCell?: (e: React.DragEvent, position: GridPosition) => void;\n  isDragOver?: boolean; \n  readonly?: boolean;\n}\n\nexport const Grid2DCell: React.FC<Grid2DCellProps> = ({\n  position,\n  block,\n  activeBlockId,\n  onActiveBlockChange,\n  onUpdateBlock,\n  onDeleteBlock,\n  onAddBlock,\n  // gridId, // gridId is passed but BlockContentEditor doesn't directly use it\n  onDragOverCell,\n  onDropInCell,\n  isDragOver,\n  readonly,\n}) => {\n  const handleAddClick = () => {\n    onAddBlock(position);\n  };\n\n  const handleSelectBlock = () => {\n    if (block) {\n      onActiveBlockChange(block.id);\n    }\n  };\n  \n  const handleMovePlaceholder = () => console.log(\"Move within cell not implemented directly here\");\n\n  const blockContentEditorProps: BlockContentEditorProps = {\n    block: block as ReviewBlock, // Cast because it can be null\n    isActive: !!block && activeBlockId === block.id,\n    onSelect: handleSelectBlock,\n    onUpdate: onUpdateBlock,\n    onDelete: onDeleteBlock,\n    onMove: (id, dir) => console.log('Move from Grid2DCell BDE: ', id, dir), // Placeholder\n    onAddBlock: (type, pos) => console.log('Add from Grid2DCell BDE: ', type, pos), // Placeholder\n    readonly: readonly,\n  };\n\n  return (\n    <div\n      className={cn(\n        \"grid-2d-cell border-2 border-dashed rounded min-h-[100px] p-1 flex flex-col justify-center items-center transition-all duration-150\",\n        block ? \"border-gray-700 bg-gray-900/30\" : \"border-gray-800 hover:border-gray-700\",\n        activeBlockId && block && activeBlockId === block.id && \"ring-2 ring-blue-500 border-blue-500\",\n        isDragOver && \"bg-blue-900/30 border-blue-500\"\n      )}\n      style={{ borderColor: isDragOver ? '#3b82f6' : (block ? '#374151' : '#2b3245') }}\n      onDragOver={(e) => {\n        if (onDragOverCell) {\n            e.preventDefault(); \n            onDragOverCell(e, position);\n        }\n      }}\n      onDrop={(e) => {\n        if (onDropInCell) {\n            e.preventDefault();\n            onDropInCell(e, position);\n        }\n      }}\n      onClick={!block ? handleAddClick : undefined} \n    >\n      {block ? (\n        <BlockContentEditor {...blockContentEditorProps} />\n      ) : (\n        !readonly && (\n          <Button\n            variant=\"ghost\"\n            size=\"sm\"\n            onClick={handleAddClick}\n            className=\"text-gray-400 hover:text-gray-300 hover:bg-gray-800\"\n          >\n            <Plus className=\"w-4 h-4 mr-1\" />\n            Bloco\n          </Button>\n        )\n      )}\n    </div>\n  );\n};\n"
+// ABOUTME: Represents a single cell in a 2D grid, capable of holding a block.
+// Handles block rendering, adding new blocks to empty cells, and drag/drop interactions.
+import React from 'react';
+import { ReviewBlock, BlockType, GridPosition } from '@/types/review';
+import { BlockContentEditor, BlockContentEditorProps } from '../BlockContentEditor';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+export interface Grid2DCellProps {
+  position: GridPosition;
+  block: ReviewBlock | null; 
+  activeBlockId: string | null;
+  onActiveBlockChange: (blockId: string | null) => void;
+  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
+  onDeleteBlock: (blockId: string) => void;
+  onAddBlockToGrid: (type: BlockType, gridId: string, position: GridPosition) => void; // More specific for grids
+  gridId: string; 
+  onDragOverCell?: (e: React.DragEvent<HTMLDivElement>, position: GridPosition) => void;
+  onDropInCell?: (e: React.DragEvent<HTMLDivElement>, position: GridPosition) => void;
+  isDragOver?: boolean; 
+  readonly?: boolean;
 }
+
+export const Grid2DCell: React.FC<Grid2DCellProps> = ({
+  position,
+  block,
+  activeBlockId,
+  onActiveBlockChange,
+  onUpdateBlock,
+  onDeleteBlock,
+  onAddBlockToGrid,
+  gridId,
+  onDragOverCell,
+  onDropInCell,
+  isDragOver,
+  readonly,
+}) => {
+  const handleAddClick = () => {
+    // For now, default to TEXT type. Could be enhanced with a type selector popover.
+    onAddBlockToGrid(BlockType.TEXT, gridId, position);
+  };
+
+  const handleSelectBlock = () => {
+    if (block && !readonly) {
+      onActiveBlockChange(block.id);
+    }
+  };
+  
+  // Placeholder, actual move logic handled by BlockContentEditor or higher-level components
+  const handleMovePlaceholder = (id: string, dir: 'up' | 'down') => {
+      console.log("Move within cell via BlockContentEditor not directly handled here; blockId, direction:", id, dir);
+  };
+
+  // Ensure block is not null before passing to BlockContentEditor
+  const blockContentEditorProps: BlockContentEditorProps | null = block ? {
+    block: block,
+    isActive: activeBlockId === block.id,
+    onSelect: handleSelectBlock,
+    onUpdate: onUpdateBlock,
+    onDelete: onDeleteBlock,
+    onMove: handleMovePlaceholder, 
+    onAddBlock: (type, _pos) => { 
+        // Adding a block from within BCE in a grid cell might need context of gridId/position
+        console.log("Adding block from BCE within grid cell. Type:", type, "GridId:", gridId, "Pos:", position);
+        onAddBlockToGrid(type, gridId, position); // Example: Add to current cell's grid/pos
+    },
+    readonly: readonly,
+  } : null;
+
+  return (
+    <div
+      className={cn(
+        "grid-2d-cell border-2 border-dashed rounded min-h-[120px] p-2 flex flex-col justify-center items-center transition-all duration-150 relative", // Added relative for potential absolute positioned elements
+        block ? "border-gray-700 bg-gray-900/50 hover:bg-gray-850/60" : "border-gray-800 hover:border-gray-700 hover:bg-gray-850/30",
+        activeBlockId && block && activeBlockId === block.id && !readonly && "ring-2 ring-blue-500 border-blue-500 shadow-md",
+        isDragOver && !readonly && "bg-blue-900/40 border-blue-500 ring-2 ring-blue-400",
+        readonly && block && "border-transparent bg-transparent p-0", // No special styling for readonly filled cells
+        readonly && !block && "border-gray-800 bg-gray-900/20" // Subtle indication of empty readonly cell
+      )}
+      style={{ borderColor: isDragOver && !readonly ? '#3b82f6' : (block && !(activeBlockId === block.id) ? '#374151' : (activeBlockId === block.id && !readonly ? '#3b82f6' : '#1f2937')) }} // Adjusted logic
+      onDragOver={(e) => {
+        if (onDragOverCell && !readonly) {
+            e.preventDefault(); 
+            onDragOverCell(e, position);
+        }
+      }}
+      onDrop={(e) => {
+        if (onDropInCell && !readonly) {
+            e.preventDefault();
+            onDropInCell(e, position);
+        }
+      }}
+      onClick={!block && !readonly ? handleAddClick : (block && !readonly ? handleSelectBlock : undefined)} 
+      role={!readonly ? "button" : undefined}
+      tabIndex={!readonly ? 0 : undefined}
+      aria-label={block ? `Conteúdo da célula: ${block.type}` : "Célula vazia, clique para adicionar bloco"}
+    >
+      {block && blockContentEditorProps ? (
+        <BlockContentEditor {...blockContentEditorProps} />
+      ) : (
+        !readonly && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleAddClick} // Already handled by parent div's onClick if !block
+            className="text-gray-500 hover:text-gray-300 hover:bg-gray-700/50 flex flex-col items-center h-auto py-3"
+            aria-label="Adicionar novo bloco nesta célula"
+          >
+            <Plus className="w-5 h-5 mb-1" />
+            <span className="text-xs">Adicionar Bloco</span>
+          </Button>
+        )
+      )}
+      {readonly && !block && (
+         <div className="text-xs text-gray-600 italic">Célula vazia</div>
+      )}
+    </div>
+  );
+};
+

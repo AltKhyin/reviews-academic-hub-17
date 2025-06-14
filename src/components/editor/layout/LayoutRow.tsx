@@ -1,4 +1,112 @@
 
-{
-  "content": "// ABOUTME: Represents a single row within a 1D Layout Grid.\n// Handles rendering of blocks within columns and row-specific actions.\n\nimport React from 'react';\nimport { LayoutRowData, BlockInLayout } from '@/types/grid';\nimport { ReviewBlock, BlockType } from '@/types/review'; \nimport { SingleBlock } from '../blocks/SingleBlock';\nimport { Button } from '@/components/ui/button';\nimport { Plus, Settings2, Trash2, Minus, Maximize2, Minimize2, GripVertical } from 'lucide-react';\nimport { cn } from '@/lib/utils';\n\nexport interface LayoutRowProps {\n  row: LayoutRowData;\n  gridId: string; // ID of the parent LayoutGrid block\n  // Callbacks to modify the LayoutGrid structure or content\n  onUpdateRowConfig: (rowId: string, config: Pick<LayoutRowData, 'columns' | 'columnWidths' | 'gap'>) => void;\n  onDeleteRow: (rowId: string) => void;\n  onAddBlockToRow: (rowId: string, positionInRow: number, blockType: BlockType) => void;\n  // Callbacks for block operations, passed up to BlockEditor\n  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;\n  onDeleteBlockInRow: (blockId: string, rowId: string) => void; // Specific for deleting a block from this row\n  onMoveBlockInGrid: (draggedBlockId: string, targetRowId: string, targetPositionInRow?: number) => void;\n  \n  activeBlockId: string | null;\n  onActiveBlockChange: (blockId: string | null) => void;\n  readonly?: boolean;\n}\n\nexport const LayoutRow: React.FC<LayoutRowProps> = ({\n  row,\n  gridId,\n  onUpdateRowConfig,\n  onDeleteRow,\n  onAddBlockToRow,\n  onUpdateBlock,\n  onDeleteBlockInRow,\n  onMoveBlockInGrid, // This will be used for drag-drop between columns/rows eventually\n  activeBlockId,\n  onActiveBlockChange,\n  readonly,\n}) => {\n  const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);\n  const [tempColumns, setTempColumns] = React.useState(row.columns);\n  const [tempGap, setTempGap] = React.useState(row.gap || 4);\n\n  const handleSaveSettings = () => {\n    // Basic validation for columnWidths if needed\n    onUpdateRowConfig(row.id, { \n      columns: tempColumns, \n      // For simplicity, redistribute widths equally. Advanced editor could allow manual widths.\n      columnWidths: Array(tempColumns).fill(100 / tempColumns),\n      gap: tempGap \n    });\n    setIsSettingsOpen(false);\n  };\n\n  const getColumnStyle = (columnIndex: number): React.CSSProperties => {\n    const widthPercentage = row.columnWidths?.[columnIndex] || (100 / row.columns);\n    return {\n      flexBasis: `${widthPercentage}%`,\n      // padding: `0 ${row.gap || 0 / 2}px` // If gap is applied as padding\n    };\n  };\n\n  return (\n    <div className={cn(\"layout-row-wrapper my-2 p-2 border border-dashed rounded-md relative group\",\n      readonly ? \"border-gray-700\" : \"border-gray-600 hover:border-gray-500\"\n    )}>\n      {!readonly && (\n        <div className=\"absolute top-1 right-1 z-20 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity\">\n          <Button variant=\"ghost\" size=\"icon_xs\" onClick={() => setIsSettingsOpen(!isSettingsOpen)} title=\"Configurar Linha\">\n            {isSettingsOpen ? <Minimize2 className=\"w-3 h-3\" /> : <Settings2 className=\"w-3 h-3\" />}\n          </Button>\n          <Button variant=\"ghost\" size=\"icon_xs\" onClick={() => onDeleteRow(row.id)} className=\"text-red-500 hover:text-red-400\" title=\"Deletar Linha\">\n            <Trash2 className=\"w-3 h-3\" />\n          </Button>\n           {/* Add drag handle for row itself if needed for reordering rows within LayoutGrid */}\n           {/* <div className=\"drag-handle-row cursor-grab p-0.5\" title=\"Mover Linha (Em breve)\"> <GripVertical className=\"w-3 h-3 text-gray-500\" /> </div>*/}\n        </div>\n      )}\n\n      {isSettingsOpen && !readonly && (\n        <div className=\"layout-row-settings bg-gray-800 p-2 mb-2 rounded shadow-lg space-y-2\">\n          <div className=\"flex items-center gap-2\">\n            <label htmlFor={`columns-${row.id}`} className=\"text-xs text-gray-300 whitespace-nowrap\">Colunas:</label>\n            <input \n              type=\"number\" \n              id={`columns-${row.id}`} \n              value={tempColumns} \n              min={1} \n              max={12} \n              onChange={(e) => setTempColumns(Math.max(1, Math.min(12, parseInt(e.target.value) || 1)))} \n              className=\"w-16 h-7 text-xs bg-gray-700 border-gray-600 rounded px-1.5 text-white\"\n            />\n          </div>\n          <div className=\"flex items-center gap-2\">\n            <label htmlFor={`gap-${row.id}`} className=\"text-xs text-gray-300 whitespace-nowrap\">Espaçamento (Gap):</label>\n            <input \n              type=\"number\" \n              id={`gap-${row.id}`} \n              value={tempGap} \n              min={0} \n              max={16} \n              step={1} \n              onChange={(e) => setTempGap(parseInt(e.target.value) || 0)} \n              className=\"w-16 h-7 text-xs bg-gray-700 border-gray-600 rounded px-1.5 text-white\"\n            />\n             <span className=\"text-xs text-gray-400\"> (0-16, Tailwind units * 0.25rem)</span>\n          </div>\n          {/* Column widths editor could be added here for more granular control */}\n          <Button size=\"xs\" onClick={handleSaveSettings} className=\"h-7 text-xs\">Salvar Configs da Linha</Button>\n        </div>\n      )}\n\n      <div \n        className=\"layout-row-content flex flex-wrap\" \n        style={{ gap: `${(row.gap || 0) * 0.25}rem` }} // Using Tailwind-like gap units\n      >\n        {Array.from({ length: row.columns }).map((_, colIndex) => {\n          const blockInColumn = row.blocks.find(b => b.position === colIndex);\n          return (\n            <div \n              key={colIndex} \n              className={cn(\"layout-column flex-grow p-1 border border-dashed rounded min-h-[80px] flex flex-col justify-center items-center\",\n                readonly ? \"border-gray-700\" : \"border-gray-600 hover:border-gray-500/70\"\n              )}\n              style={getColumnStyle(colIndex)}\n              // Add drag-over/drop handlers here for moving blocks into this column\n            >\n              {blockInColumn ? (\n                <SingleBlock\n                  block={blockInColumn.block}\n                  activeBlockId={activeBlockId}\n                  onSelect={() => onActiveBlockChange(blockInColumn.block.id)}\n                  onUpdateBlock={onUpdateBlock}\n                  onDeleteBlock={() => onDeleteBlockInRow(blockInColumn.block.id, row.id)}\n                  onMoveBlock={(blockId, direction) => {\n                    // Moving within a layout row is complex. \n                    // For now, let's assume 'up'/'down' tries to move out of the grid or to adjacent row item.\n                    // True column-to-column move within row needs onMoveBlockInGrid.\n                    console.log(\"Move from LayoutRow's SingleBlock: \", blockId, direction);\n                    // Simplistic: if it's a number, it might be an index for onMoveBlockInGrid\n                    if (typeof direction === 'number') {\n                        onMoveBlockInGrid(blockId, row.id, direction);\n                    } else {\n                        // Standard up/down could be handled by parent BlockEditor if it means moving out of grid\n                        // For now, this might be a no-op or needs more specific logic.\n                    }\n                  }}\n                  onDuplicateBlock={(blockId) => console.log(\"Duplicate from LayoutRow's SingleBlock: \", blockId) /* TODO */ }\n                  onConvertToGrid={(blockId, cols) => console.log(\"Convert to Grid from LayoutRow: \", blockId, cols) /* TODO */}\n                  onConvertTo2DGrid={(blockId, cols, r) => console.log(\"Convert to 2D Grid from LayoutRow: \", blockId, cols, r) /* TODO */}\n                  isFirst={colIndex === 0 && row.blocks.filter(b => b.block).length === 1} // Approximate\n                  isLast={colIndex === row.columns -1 && row.blocks.filter(b => b.block).length === 1} // Approximate\n                  readonly={readonly}\n                  className=\"w-full h-full\"\n                />\n              ) : (\n                !readonly && (\n                  <Button \n                    variant=\"ghost\" \n                    size=\"sm\" \n                    onClick={() => onAddBlockToRow(row.id, colIndex, 'paragraph')}\n                    className=\"text-gray-500 hover:text-gray-400 h-full w-full text-xs\"\n                  >\n                    <Plus className=\"w-3.5 h-3.5 mr-1\" /> Adicionar Bloco\n                  </Button>\n                )\n              )}\n            </div>\n          );\n        })}\n      </div>\n    </div>\n  );\n};\n"
+// ABOUTME: Component to render a layout row containing multiple columns/elements.
+// Each "column" in a LayoutRow can be a BlockElement or another LayoutElement (like a nested grid).
+import React from 'react';
+import { LayoutElement, ReviewBlock, BlockType, GridPosition } from '@/types/review'; // GridPosition for onAddBlockToGrid
+import { SingleBlock } from '../blocks/SingleBlock';
+import { LayoutGrid } from './LayoutGrid'; // For nested grids
+import { cn } from '@/lib/utils';
+import { DraggableProvided } from '@hello-pangea/dnd'; // If rows are draggable
+
+export interface LayoutRowProps {
+  layoutElement: LayoutElement & { type: 'row' };
+  blocks: { [key: string]: ReviewBlock };
+  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
+  onDeleteBlock: (blockId: string) => void;
+  onMoveBlock: (blockId: string, direction: 'up' | 'down') => void; // If blocks within a row column are movable
+  onSelectBlock: (blockId: string | null) => void;
+  onAddBlock: (type: BlockType, position?: 'above' | 'below' | number, parentLayoutId?: string, columnIndex?: number) => void;
+  onAddBlockToGrid: (type: BlockType, gridId: string, position: GridPosition) => void; // For grids within rows
+  activeBlockId: string | null;
+  readonly?: boolean;
+  // DND props if the row itself or its columns are draggable/droppable targets
+  draggableProvided?: DraggableProvided; // If the whole row is draggable
+  isDragging?: boolean; // Visual feedback for dragging
 }
+
+export const LayoutRow: React.FC<LayoutRowProps> = ({
+  layoutElement,
+  blocks,
+  onUpdateBlock,
+  onDeleteBlock,
+  onMoveBlock, // For blocks within a simple column
+  onSelectBlock,
+  onAddBlock, // For adding blocks to a column in the row
+  onAddBlockToGrid, // Specifically for grids nested in this row
+  activeBlockId,
+  readonly,
+  draggableProvided,
+  isDragging,
+}) => {
+  const { columns = [], settings } = layoutElement;
+  const columnFlexBasis = settings?.columnDistribution === 'even' 
+    ? `${100 / Math.max(1, columns.length)}%`
+    : undefined; // undefined will let flex-grow handle it or use custom styles
+
+  return (
+    <div 
+      ref={draggableProvided?.innerRef}
+      {...draggableProvided?.draggableProps}
+      {...draggableProvided?.dragHandleProps} // Assuming row drag handle is this div
+      className={cn(
+        "layout-row flex gap-4 my-4 p-2 border border-gray-800 rounded-lg bg-gray-950/30",
+        isDragging && "opacity-50 shadow-xl"
+      )}
+      style={{ ...settings?.style }} // Apply custom styles from layout settings
+    >
+      {columns.map((column, colIndex) => (
+        <div 
+          key={column.id || `col-${colIndex}`} 
+          className="layout-column flex-grow p-1 border border-dashed border-gray-700/50 rounded min-h-[80px] flex flex-col gap-2" // Added min-h and gap
+          style={{ flexBasis: columnFlexBasis || column.settings?.width || 'auto', ...column.settings?.style }}
+        >
+          {column.elements.map((element, elIndex) => {
+            if (element.type === 'block' && element.blockId && blocks[element.blockId]) {
+              return (
+                <SingleBlock
+                  key={element.blockId}
+                  block={blocks[element.blockId]}
+                  index={elIndex} // This index is local to the column's elements
+                  onUpdateBlock={onUpdateBlock}
+                  onDeleteBlock={onDeleteBlock}
+                  onMoveBlock={(blockId, dir) => onMoveBlock(blockId, dir)} // Assuming move within this column context
+                  onSelectBlock={onSelectBlock}
+                  activeBlockId={activeBlockId}
+                  readonly={readonly}
+                  onAddBlock={(type, pos) => onAddBlock(type, pos, column.id, colIndex)} // Pass column context
+                />
+              );
+            } else if (element.type === 'grid') {
+              return (
+                <LayoutGrid
+                  key={element.id}
+                  layoutElement={element as LayoutElement & { type: 'grid' }}
+                  blocks={blocks}
+                  onUpdateBlock={onUpdateBlock}
+                  onDeleteBlock={onDeleteBlock}
+                  onAddBlockToGrid={onAddBlockToGrid}
+                  onActiveBlockChange={onSelectBlock}
+                  activeBlockId={activeBlockId}
+                  readonly={readonly}
+                />
+              );
+            }
+            // Add rendering for other LayoutElement types if they can be nested in columns
+            return <div key={element.id || elIndex} className="text-xs text-red-500">Unsupported element type in column: {element.type}</div>;
+          })}
+          {!readonly && column.elements.length === 0 && (
+             <div className="flex-grow flex items-center justify-center">
+                <button 
+                    onClick={() => onAddBlock(BlockType.TEXT, undefined, column.id, colIndex)}
+                    className="text-gray-500 hover:text-blue-400 text-xs p-2 rounded border border-dashed border-gray-600 hover:border-blue-500"
+                >
+                    + Add Block to Column
+                </button>
+             </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+};
+

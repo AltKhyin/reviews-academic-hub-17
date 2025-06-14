@@ -1,4 +1,78 @@
 
-{
-  "content": "// ABOUTME: Manages a 2D grid layout, including rows and cells.\n// Handles structural changes like adding/removing rows/columns and placing blocks.\n\nimport React, { useState, useCallback, useEffect } from 'react';\nimport { Grid2DLayout, GridRow as GridRowType, GridCell as GridCellType, GridPosition } from '@/types/grid';\nimport { ReviewBlock } from '@/types/review';\nimport { Grid2DRow } from './Grid2DRow';\nimport { Button } from '@/components/ui/button';\nimport { PlusCircle, Settings2, Minimize2, Save, Columns, Rows } from 'lucide-react';\nimport { Input } from '@/components/ui/input';\nimport { Label } from '@/components/ui/label';\nimport { nanoid } from 'nanoid';\nimport { cn } from '@/lib/utils';\n\nexport interface Grid2DContainerProps {\n  gridId: string; // ID of the grid_2d block itself\n  initialLayout: Grid2DLayout;\n  activeBlockId: string | null;\n  onActiveBlockChange: (blockId: string | null) => void;\n  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;\n  onDeleteBlock: (blockId: string) => void;\n  onAddBlock: (gridId: string, position: GridPosition) => void; // Called when a cell requests a new block\n  onLayoutChange: (newLayout: Grid2DLayout) => void; // Called when grid structure (rows/cols) changes\n  readonly?: boolean;\n}\n\nexport const Grid2DContainer: React.FC<Grid2DContainerProps> = ({\n  gridId,\n  initialLayout,\n  activeBlockId,\n  onActiveBlockChange,\n  onUpdateBlock,\n  onDeleteBlock,\n  onAddBlock,\n  onLayoutChange,\n  readonly,\n}) => {\n  const [layout, setLayout] = useState<Grid2DLayout>(initialLayout);\n  const [isSettingsOpen, setIsSettingsOpen] = useState(false);\n  const [tempCols, setTempCols] = useState(layout.columns);\n  const [tempRows, setTempRows] = useState(layout.rows.length);\n  const [tempGap, setTempGap] = useState(layout.gap || 2);\n\n  useEffect(() => {\n    setLayout(initialLayout);\n    setTempCols(initialLayout.columns);\n    setTempRows(initialLayout.rows.length);\n    setTempGap(initialLayout.gap || 2);\n  }, [initialLayout]);\n\n  const updateParentLayout = useCallback((newLayout: Grid2DLayout) => {\n    setLayout(newLayout);\n    onLayoutChange(newLayout);\n  }, [onLayoutChange]);\n\n  const handleAddRow = (rowIndex: number, above: boolean) => {\n    const newRow: GridRowType = {\n      id: `g2drow-${nanoid(6)}`,\n      cells: Array.from({ length: layout.columns }, (_, colIdx) => ({\n        id: `g2dcell-${nanoid(8)}`,\n        row: above ? rowIndex : rowIndex + 1,\n        column: colIdx,\n        block: null,\n      })),\n    };\n    const newRows = [...layout.rows];\n    newRows.splice(above ? rowIndex : rowIndex + 1, 0, newRow);\n    // Re-index rows for all subsequent rows\n    for (let i = (above ? rowIndex : rowIndex + 1) + 1; i < newRows.length; i++) {\n      newRows[i].cells.forEach(cell => cell.row = i);\n    }\n    updateParentLayout({ ...layout, rows: newRows });\n  };\n\n  const handleRemoveRow = (rowIndex: number) => {\n    if (layout.rows.length <= 1) return; // Prevent removing the last row\n    const rowToRemove = layout.rows[rowIndex];\n    rowToRemove.cells.forEach(cell => {\n      if (cell.block) onDeleteBlock(cell.block.id); // Delete blocks within the row\n    });\n    const newRows = layout.rows.filter((_, idx) => idx !== rowIndex);\n     // Re-index rows\n    for (let i = rowIndex; i < newRows.length; i++) {\n      newRows[i].cells.forEach(cell => cell.row = i);\n    }\n    updateParentLayout({ ...layout, rows: newRows });\n  };\n\n  const handleAddBlockToCell = useCallback((position: GridPosition) => {\n    // This callback is for Grid2DRow -> Grid2DCell, cell requests a block at its position\n    onAddBlock(gridId, position); // gridId is the ID of this Grid2DContainer block\n  }, [gridId, onAddBlock]);\n\n  const handleSaveSettings = () => {\n    const newRowsCount = tempRows;\n    const newColsCount = tempCols;\n    const currentRowsCount = layout.rows.length;\n    const currentColCount = layout.columns;\n    let newRows = [...layout.rows];\n\n    // Adjust rows\n    if (newRowsCount > currentRowsCount) {\n      for (let i = currentRowsCount; i < newRowsCount; i++) {\n        newRows.push({\n          id: `g2drow-${nanoid(6)}`,\n          cells: Array.from({ length: newColsCount }, (_, colIdx) => ({\n            id: `g2dcell-${nanoid(8)}`,\n            row: i, column: colIdx, block: null\n          }))\n        });\n      }\n    } else if (newRowsCount < currentRowsCount) {\n      const rowsToRemove = newRows.slice(newRowsCount);\n      rowsToRemove.forEach(row => row.cells.forEach(cell => cell.block && onDeleteBlock(cell.block.id)));\n      newRows = newRows.slice(0, newRowsCount);\n    }\n\n    // Adjust columns for all rows\n    newRows = newRows.map((row, rowIndex) => {\n      let newCells = [...row.cells];\n      if (newColsCount > currentColCount) {\n        for (let j = currentColCount; j < newColsCount; j++) {\n          newCells.push({ id: `g2dcell-${nanoid(8)}`, row: rowIndex, column: j, block: null });\n        }\n      } else if (newColsCount < currentColCount) {\n        const cellsToRemove = newCells.slice(newColsCount);\n        cellsToRemove.forEach(cell => cell.block && onDeleteBlock(cell.block.id));\n        newCells = newCells.slice(0, newColsCount);\n      }\n      return { ...row, cells: newCells };\n    });\n\n    updateParentLayout({ ...layout, rows: newRows, columns: newColsCount, gap: tempGap });\n    setIsSettingsOpen(false);\n  };\n\n  // D&D related, placeholder for now.\n  // These would be passed down to Grid2DRow and then Grid2DCell.\n  const handleCellDragOver = (e: React.DragEvent, position: GridPosition) => {\n    // console.log('Dragging over cell:', position);\n    e.preventDefault(); \n  };\n  const handleCellDrop = (e: React.DragEvent, position: GridPosition) => {\n    // console.log('Dropped on cell:', position);\n    const draggedBlockId = e.dataTransfer.getData('text/plain');\n    if (draggedBlockId) {\n      onAddBlock(gridId, position); // This is not quite right, should be onPlaceBlock\n                                  // For now, it'll add a new default block. True DnD needs onPlaceBlockIn2DGrid.\n      console.warn(\"Dropped existing block ID: \", draggedBlockId, \" into cell \", position, \". Full DnD placement logic pending.\");\n    }\n  };\n\n  return (\n    <div className={cn(\"grid-2d-container bg-gray-900/50 p-2 rounded-lg border border-gray-700 my-2\",\n        activeBlockId === gridId && \"ring-2 ring-blue-600 ring-offset-1 ring-offset-background\"\n    )}>\n      <div className=\"flex justify-between items-center mb-2\">\n        <h4 className=\"text-sm font-semibold text-gray-300\">Grid 2D ({layout.rows.length}x{layout.columns})</h4>\n        {!readonly && (\n          <Button variant=\"ghost\" size=\"icon_xs\" onClick={() => setIsSettingsOpen(!isSettingsOpen)} title=\"Configurar Grid\">\n            {isSettingsOpen ? <Minimize2 className=\"w-3.5 h-3.5\" /> : <Settings2 className=\"w-3.5 h-3.5\" />}\n          </Button>\n        )}\n      </div>\n\n      {isSettingsOpen && !readonly && (\n        <div className=\"grid-2d-settings bg-gray-800 p-3 mb-3 rounded-md shadow-lg space-y-3 border border-gray-700\">\n            <div className=\"flex items-center gap-3\">\n                <div>\n                    <Label htmlFor={`grid-rows-${gridId}`} className=\"text-xs text-gray-400 block mb-0.5\">Linhas:</Label>\n                    <Input type=\"number\" id={`grid-rows-${gridId}`} value={tempRows} min={1} max={20} onChange={(e) => setTempRows(parseInt(e.target.value) || 1)} className=\"w-20 h-8 text-xs bg-gray-700 border-gray-600 rounded px-2 text-white\" />\n                </div>\n                <div>\n                    <Label htmlFor={`grid-cols-${gridId}`} className=\"text-xs text-gray-400 block mb-0.5\">Colunas:</Label>\n                    <Input type=\"number\" id={`grid-cols-${gridId}`} value={tempCols} min={1} max={12} onChange={(e) => setTempCols(parseInt(e.target.value) || 1)} className=\"w-20 h-8 text-xs bg-gray-700 border-gray-600 rounded px-2 text-white\" />\n                </div>\n                <div>\n                    <Label htmlFor={`grid-gap-${gridId}`} className=\"text-xs text-gray-400 block mb-0.5\">Gap (px):</Label>\n                    <Input type=\"number\" id={`grid-gap-${gridId}`} value={tempGap} min={0} max={32} step={1} onChange={(e) => setTempGap(parseInt(e.target.value) || 0)} className=\"w-20 h-8 text-xs bg-gray-700 border-gray-600 rounded px-2 text-white\" />\n                </div>\n            </div>\n          <Button size=\"xs\" onClick={handleSaveSettings} className=\"h-7 text-xs\"><Save className=\"w-3 h-3 mr-1.5\"/>Aplicar Mudanças no Grid</Button>\n        </div>\n      )}\n\n      <div \n        className=\"grid\" \n        style={{\n          display: 'grid',\n          gridTemplateColumns: `repeat(${layout.columns}, minmax(0, 1fr))`,\n          gap: `${layout.gap || 0}px`,\n        }}\n      >\n        {layout.rows.map((row, rowIndex) => (\n          <Grid2DRow\n            key={row.id}\n            row={row}\n            rowIndex={rowIndex}\n            gridId={gridId}\n            columns={layout.columns} // Pass current number of columns\n            activeBlockId={activeBlockId}\n            onActiveBlockChange={onActiveBlockChange}\n            onUpdateBlock={onUpdateBlock}\n            onDeleteBlock={onDeleteBlock}\n            onAddBlockToCell={handleAddBlockToCell} // This is (position: GridPosition) => void\n            onAddRowAbove={() => handleAddRow(rowIndex, true)}\n            onAddRowBelow={() => handleAddRow(rowIndex, false)}\n            onRemoveRow={() => handleRemoveRow(rowIndex)}\n            canRemoveRow={layout.rows.length > 1}\n            onCellDragOver={handleCellDragOver}\n            onCellDrop={handleCellDrop}\n            // dragOverCellPosition, // This would come from a higher level drag state if needed for visual feedback\n            readonly={readonly}\n          />\n        ))}\n      </div>\n    </div>\n  );\n};\n"
+// ABOUTME: Container for a 2D grid layout, managing rows and cells.
+// Handles overall grid structure and passes props down to Grid2DRow.
+import React from 'react';
+import { ReviewBlock, LayoutElement, GridPosition, BlockType } from '@/types/review';
+import { Grid2DRow } from './Grid2DRow';
+import { Button } from '@/components/ui/button'; // Assuming Button component
+import { PlusCircle } from 'lucide-react';
+
+export interface Grid2DContainerProps {
+  layoutElement: LayoutElement & { type: 'grid' }; // Grid specific layout element
+  blocks: { [key: string]: ReviewBlock };
+  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
+  onDeleteBlock: (blockId: string) => void;
+  onAddBlockToGrid: (type: BlockType, gridId: string, position: GridPosition) => void;
+  onActiveBlockChange: (blockId: string | null) => void;
+  activeBlockId: string | null;
+  readonly?: boolean;
+  // Drag and drop related props if managed at this level
+  onCellDragOver?: (e: React.DragEvent<HTMLDivElement>, position: GridPosition) => void;
+  onCellDrop?: (e: React.DragEvent<HTMLDivElement>, position: GridPosition) => void;
+  draggedBlockType?: BlockType | null; // To indicate what's being dragged over
 }
+
+export const Grid2DContainer: React.FC<Grid2DContainerProps> = ({
+  layoutElement,
+  blocks,
+  onUpdateBlock,
+  onDeleteBlock,
+  onAddBlockToGrid,
+  onActiveBlockChange,
+  activeBlockId,
+  readonly = false,
+  onCellDragOver,
+  onCellDrop,
+  // draggedBlockType, // This prop might be used for visual feedback
+}) => {
+  const { id: gridId, rows = [], settings } = layoutElement;
+  const numCols = settings?.columns || Math.max(1, ...rows.map(row => row.cells.length)); // Calculate from rows or default
+
+  const handleAddRow = () => {
+    // This function would need to update the main 'elements' state via a callback
+    console.log("Add row to grid", gridId, "- Implementation needed in parent (e.g., BlockEditor/useBlockManagement)");
+    // Example: onUpdateLayoutElement(gridId, { rows: [...rows, { id: newRowId, cells: new Array(numCols).fill(null).map(() => ({ id: newCellId, blockId: null})) }] });
+  };
+
+  return (
+    <div className="grid-2d-container my-4 p-2 border border-gray-800 rounded-lg bg-gray-950/50 space-y-2">
+      {rows.map((row, rowIndex) => (
+        <Grid2DRow
+          key={row.id || `row-${rowIndex}`}
+          gridId={gridId}
+          rowIndex={rowIndex}
+          cells={row.cells}
+          numCols={numCols} // Pass numCols for consistent row structure
+          blocks={blocks}
+          onUpdateBlock={onUpdateBlock}
+          onDeleteBlock={onDeleteBlock}
+          onAddBlockToGrid={onAddBlockToGrid}
+          onActiveBlockChange={onActiveBlockChange}
+          activeBlockId={activeBlockId}
+          readonly={readonly}
+          onCellDragOver={onCellDragOver}
+          onCellDrop={onCellDrop}
+        />
+      ))}
+      {!readonly && (
+        <div className="mt-2 flex justify-center">
+          <Button variant="outline" size="sm" onClick={handleAddRow} className="text-gray-400 border-gray-700 hover:bg-gray-800 hover:text-white">
+            <PlusCircle size={16} className="mr-2" />
+            Adicionar Linha à Grade
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+};
+

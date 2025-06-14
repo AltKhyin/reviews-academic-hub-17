@@ -1,4 +1,62 @@
 
-{
-  "content": "// ABOUTME: Editor component for heading blocks.\nimport React from 'react';\nimport { ReviewBlock } from '@/types/review';\nimport { ContentEditable } from '@/components/editor/common/ContentEditable';\n\nexport interface HeadingBlockProps {\n  block: ReviewBlock;\n  onUpdate: (blockId: string, updates: Partial<ReviewBlock>) => void;\n  readonly?: boolean;\n  content: { text?: string; level?: 1 | 2 | 3 | 4 | 5 | 6 };\n  onUpdateContent: (newContent: { text: string; level?: 1 | 2 | 3 | 4 | 5 | 6 }) => void;\n}\n\nexport const HeadingBlock: React.FC<HeadingBlockProps> = ({ block, content, onUpdateContent, readonly }) => {\n  const currentText = content?.text || '';\n  const level = content?.level || 2;\n\n  const handleChange = (newText: string) => {\n    onUpdateContent({ text: newText, level });\n  };\n\n  const Tag = `h${level}` as keyof JSX.IntrinsicElements;\n\n  if (readonly) {\n    return <Tag dangerouslySetInnerHTML={{ __html: currentText }} className={`font-bold prose prose-sm dark:prose-invert max-w-none`} />;\n  }\n\n  return (\n    <ContentEditable\n      html={currentText}\n      onChange={(e) => handleChange(e.target.value)}\n      tagName={Tag}\n      className=\"p-1 focus:outline-none focus:ring-1 focus:ring-blue-500 rounded font-bold min-h-[24px] prose prose-sm dark:prose-invert max-w-none\"\n      placeholder=\"Digite o título...\"\n    />\n  );\n};\n"
+// ABOUTME: Editor component for heading blocks.
+// Allows editing heading text and level (H1-H6).
+import React from 'react';
+import { ReviewBlock } from '@/types/review';
+import { ContentEditable } from '@/components/editor/common/ContentEditable';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+
+export interface HeadingBlockProps {
+  block: ReviewBlock;
+  onUpdate: (blockId: string, updates: Partial<ReviewBlock>) => void;
+  readonly?: boolean;
+  content: { text?: string; content?: string; level?: 1 | 2 | 3 | 4 | 5 | 6 }; // Allow 'content' for backward compat.
+  onUpdateContent: (newContent: { text: string; level?: 1 | 2 | 3 | 4 | 5 | 6 }) => void;
 }
+
+export const HeadingBlock: React.FC<HeadingBlockProps> = ({ block, content, onUpdateContent, readonly }) => {
+  const currentText = content?.text || content?.content || ''; // Prioritize 'text', fallback to 'content'
+  const level = content?.level || 2; // Default to H2
+
+  const handleChange = (newText: string) => {
+    onUpdateContent({ text: newText, level });
+  };
+
+  const handleLevelChange = (newLevel: string) => {
+    onUpdateContent({ text: currentText, level: parseInt(newLevel, 10) as HeadingBlockProps['content']['level'] });
+  };
+
+  const Tag = `h${level}` as keyof JSX.IntrinsicElements;
+
+  if (readonly) {
+    return <Tag dangerouslySetInnerHTML={{ __html: currentText }} className={`font-bold prose prose-sm dark:prose-invert max-w-none py-1`} />;
+  }
+
+  return (
+    <div className="space-y-2">
+       <ContentEditable
+        html={currentText}
+        onChange={(e) => handleChange(e.target.value)}
+        tagName={Tag}
+        className="p-1 focus:outline-none focus:ring-1 focus:ring-blue-500 rounded font-bold min-h-[24px] prose prose-sm dark:prose-invert max-w-none w-full"
+        placeholder="Digite o título..."
+        style={{ fontSize: `${2.25 - (level * 0.25)}rem` }} // Basic dynamic sizing
+      />
+      <div className="mt-1">
+        <Label htmlFor={`heading-level-${block.id}`} className="text-xs text-gray-400">Nível</Label>
+        <Select value={String(level)} onValueChange={handleLevelChange}>
+          <SelectTrigger id={`heading-level-${block.id}`} className="w-[80px] h-8 text-xs bg-gray-800 border-gray-600 text-white">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent className="bg-gray-800 border-gray-600 text-white">
+            {[1, 2, 3, 4, 5, 6].map(l => (
+              <SelectItem key={l} value={String(l)} className="text-xs">{`H${l}`}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+    </div>
+  );
+};
+

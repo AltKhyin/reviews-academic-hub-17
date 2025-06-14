@@ -1,4 +1,72 @@
 
-{
-  "content": "// ABOUTME: Fullscreen native editor with immersive editing experience and string ID support\n// Provides dedicated workspace for complex review creation\n\nimport React, { useCallback, useEffect, useState, Dispatch, SetStateAction } from 'react';\nimport { ReviewBlock, BlockType } from '@/types/review';\nimport { BlockEditor } from './BlockEditor';\nimport { BlockPalette } from './BlockPalette';\nimport { ReviewPreview } from './ReviewPreview';\nimport { EditorToolbar, EditorToolbarProps } from './EditorToolbar'; \nimport { EditorStatusBar, EditorStatusBarProps } from './EditorStatusBar'; \nimport { useBlockManagement } from '@/hooks/useBlockManagement';\nimport { useEditorAutoSave } from '@/hooks/useEditorAutoSave';\nimport { useEditorKeyboardShortcuts } from './hooks/useEditorKeyboardShortcuts';\nimport { cn } from '@/lib/utils';\nimport { Button } from '@/components/ui/button';\nimport { Minimize2 } from 'lucide-react';\nimport { GridPosition } from '@/types/grid';\n\ninterface NativeEditorFullscreenProps {\n  issueId?: string;\n  initialBlocks?: ReviewBlock[];\n  onSave?: (blocks: ReviewBlock[]) => void;\n  onClose: () => void;\n  mode?: 'edit' | 'preview' | 'split';\n}\n\nexport const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({\n  issueId,\n  initialBlocks = [],\n  onSave,\n  onClose,\n  mode: initialMode = 'split'\n}) => {\n  const [editorMode, setEditorMode] = useState<'edit' | 'preview' | 'split'>(initialMode);\n  const [hasUnsavedChangesLocal, setHasUnsavedChangesLocal] = useState(false);\n\n  // Use initialBlocks for useBlockManagement to ensure it's self-contained or reflects the entry state\n  const {\n    blocks,\n    setBlocks, // Added to allow updating blocks state from parent or initial load\n    activeBlockId,\n    setActiveBlockId,\n    addBlock,\n    updateBlock,\n    deleteBlock,\n    moveBlock, \n    duplicateBlock,\n    convertToGrid,\n    convertTo2DGrid,\n    mergeBlockIntoGrid,\n    placeBlockIn2DGrid,\n    undo,\n    redo,\n    canUndo,\n    canRedo\n  } = useBlockManagement({ initialBlocks, issueId }); // Use initialBlocks passed to fullscreen editor\n\n  // Effect to update local blocks if initialBlocks prop changes (e.g. parent state sync)\n  useEffect(() => {\n    setBlocks(initialBlocks);\n  }, [initialBlocks, setBlocks]);\n\n  const { handleSave: triggerAutoSave, isSaving, lastSaved } = useEditorAutoSave({\n    data: blocks,\n    onSave: onSave ? async (dataToSave) => { \n        if(onSave) onSave(dataToSave); \n        setHasUnsavedChangesLocal(false); // Reset local unsaved changes after save\n    } : undefined,\n    interval: 30000,\n    enabled: !!issueId && !!onSave\n  });\n\n  const handleManualSave = useCallback(() => {\n    if (onSave) {\n      onSave(blocks);\n      setHasUnsavedChangesLocal(false);\n    }\n    triggerAutoSave(); // This will also call onSave and setHasUnsavedChanges to false\n  }, [blocks, onSave, triggerAutoSave]);\n\n  useEditorKeyboardShortcuts({\n    onSave: handleManualSave,\n    onUndo: undo,\n    onRedo: redo\n  });\n\n  useEffect(() => {\n    // Compare current blocks with the initialBlocks received when fullscreen opened\n    const changed = JSON.stringify(blocks) !== JSON.stringify(initialBlocks);\n    setHasUnsavedChangesLocal(changed);\n  }, [blocks, initialBlocks]);\n\n  const handleAddBlock = useCallback((type: BlockType, position?: number): string => {\n    const newBlockId = addBlock(type, position);\n    return newBlockId;\n  }, [addBlock]);\n\n  const handleBlockUpdate = useCallback((blockId: string, updates: Partial<ReviewBlock>) => {\n    updateBlock(blockId, updates);\n  }, [updateBlock]);\n\n  const handleBlockDelete = useCallback((blockId: string) => {\n    deleteBlock(blockId);\n  }, [deleteBlock]);\n\n  const handleBlockMove = useCallback((blockId: string, directionOrIndex: 'up' | 'down' | number) => {\n    moveBlock(blockId, directionOrIndex); // Correctly typed parameter\n  }, [moveBlock]);\n\n  const handleDuplicateBlock = useCallback((blockId: string) => {\n    duplicateBlock(blockId);\n  }, [duplicateBlock]);\n\n  const handleConvertToGrid = useCallback((blockId: string, columns: number) => {\n    convertToGrid(blockId, columns);\n  }, [convertToGrid]);\n\n  const handleConvertTo2DGrid = useCallback((blockId: string, columns: number, rows: number) => {\n    convertTo2DGrid(blockId, columns, rows);\n  }, [convertTo2DGrid]);\n\n  const handleMergeBlockIntoGrid = useCallback((draggedBlockId: string, targetRowId: string, targetPosition?: number) => {\n    mergeBlockIntoGrid(draggedBlockId, targetRowId, targetPosition);\n  }, [mergeBlockIntoGrid]);\n\n  const handlePlaceBlockIn2DGrid = useCallback((blockId: string, gridId: string, position: GridPosition) => {\n    placeBlockIn2DGrid(blockId, gridId, position);\n  }, [placeBlockIn2DGrid]);\n\n  const handleImport = useCallback((importedBlocks: ReviewBlock[]) => {\n    let currentPos = blocks.length;\n    importedBlocks.forEach((block) => {\n      const newId = addBlock(block.type, currentPos++);\n      updateBlock(newId, { ...block, id: newId }); // Ensure imported block content is spread correctly\n    });\n  }, [addBlock, updateBlock, blocks.length]);\n\n  useEffect(() => {\n    const handleKeyDown = (event: KeyboardEvent) => {\n      if (event.key === 'Escape') {\n        if (hasUnsavedChangesLocal && onSave) {\n          // Consider prompting user or auto-saving before closing\n          // onSave(blocks); \n        }\n        onClose();\n      }\n    };\n    document.addEventListener('keydown', handleKeyDown);\n    return () => document.removeEventListener('keydown', handleKeyDown);\n  }, [onClose, blocks, hasUnsavedChangesLocal, onSave]);\n\n  const editorToolbarProps: EditorToolbarProps = {\n    editorMode,\n    onModeChange: setEditorMode as Dispatch<SetStateAction<\"edit\" | \"preview\" | \"split\">>,\n    hasUnsavedChanges: hasUnsavedChangesLocal, // Use local state for unsaved changes indication\n    isSaving,\n    lastSaved,\n    canUndo,\n    canRedo,\n    onUndo: undo,\n    onRedo: redo,\n    onSave: handleManualSave,\n    blocks,\n    onImport: handleImport,\n  };\n  \n  const editorStatusBarProps: EditorStatusBarProps = {\n      blockCount: blocks.length,\n      activeBlockId: activeBlockId,\n  };\n\n  // ... keep existing code (JSX structure)\n  return (\n    <div\n      className=\"fixed inset-0 z-[100] bg-background flex flex-col\"\n      style={{ backgroundColor: '#121212' }}\n    >\n      <div\n        className=\"h-14 border-b flex items-center justify-between px-4 flex-shrink-0\"\n        style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}\n      >\n        <h2 className=\"text-lg font-semibold\" style={{ color: '#ffffff' }}>\n          Editor de Revisão Nativa - Fullscreen\n        </h2>\n        <Button\n          onClick={onClose}\n          variant=\"ghost\"\n          size=\"sm\"\n          className=\"text-gray-300 hover:text-white\"\n        >\n          <Minimize2 className=\"w-4 h-4 mr-2\" />\n          Sair do Fullscreen\n        </Button>\n      </div>\n\n      <EditorToolbar {...editorToolbarProps} />\n\n      <div className=\"flex flex-1 overflow-hidden\">\n        {(editorMode === 'edit' || editorMode === 'split') && (\n          <div\n            className=\"w-64 border-r overflow-y-auto flex-shrink-0\"\n            style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}\n          >\n            <BlockPalette onBlockAdd={handleAddBlock} />\n          </div>\n        )}\n\n        {(editorMode === 'edit' || editorMode === 'split') && (\n          <div\n            className={cn(\n              \"flex-1 px-2 overflow-y-auto\",\n              editorMode === 'split' && \"border-r\"\n            )}\n            style={{ borderColor: '#2a2a2a', backgroundColor: '#121212' }}\n          >\n            <BlockEditor\n              blocks={blocks}\n              activeBlockId={activeBlockId}\n              onActiveBlockChange={setActiveBlockId}\n              onUpdateBlock={handleBlockUpdate}\n              onDeleteBlock={handleBlockDelete}\n              onMoveBlock={handleBlockMove}\n              onAddBlock={handleAddBlock}\n              onDuplicateBlock={handleDuplicateBlock}\n              onConvertToGrid={handleConvertToGrid}\n              onConvertTo2DGrid={handleConvertTo2DGrid}\n              onMergeBlockIntoGrid={handleMergeBlockIntoGrid}\n              onPlaceBlockIn2DGrid={handlePlaceBlockIn2DGrid}\n            />\n          </div>\n        )}\n\n        {(editorMode === 'preview' || editorMode === 'split') && (\n          <div className=\"flex-1 px-2 overflow-y-auto\" style={{ backgroundColor: '#121212' }}>\n            <ReviewPreview\n              blocks={blocks}\n              className=\"h-full\"\n            />\n          </div>\n        )}\n      </div>\n      <EditorStatusBar {...editorStatusBarProps} />\n    </div>\n  );\n\n};\n"
+// ABOUTME: Fullscreen editor experience wrapper using BlockEditor.
+// Provides a distraction-free, immersive editing environment.
+import React, { useState, useEffect } from 'react';
+import { BlockEditor, BlockEditorProps } from './BlockEditor';
+import { Review } from '@/types/review';
+import { Button } from '@/components/ui/button';
+import { X, Save } from 'lucide-react'; // Icons for close and save
+
+export interface NativeEditorFullscreenProps extends Omit<BlockEditorProps, 'readonly' | 'className'> {
+  initialReview?: Review;
+  onSave: (review: Review) => void;
+  onClose: () => void;
+  isOpen: boolean; // Control visibility from parent
 }
+
+export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
+  initialReview,
+  onSave,
+  onClose,
+  isOpen,
+}) => {
+  const [internalReview, setInternalReview] = useState<Review | undefined>(initialReview);
+
+  useEffect(() => {
+    setInternalReview(initialReview);
+  }, [initialReview, isOpen]); // Reset when opened or initialReview changes
+
+  if (!isOpen) {
+    return null;
+  }
+
+  const handleSaveAndClose = () => {
+    if (internalReview) {
+      onSave(internalReview);
+    }
+    onClose();
+  };
+  
+  const handleSaveInternal = (reviewToSave: Review) => {
+    setInternalReview(reviewToSave); // Keep internal state updated
+    onSave(reviewToSave); // Propagate save to parent immediately as well
+  };
+
+
+  return (
+    <div className="fixed inset-0 bg-gray-950 z-50 flex flex-col p-0 m-0 overflow-hidden">
+      <header className="flex items-center justify-between p-3 bg-gray-900 border-b border-gray-800">
+        <h2 className="text-lg font-semibold text-white">Editor em Tela Cheia</h2>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleSaveAndClose} className="text-gray-300 border-gray-700 hover:bg-gray-800 hover:text-white">
+            <Save size={16} className="mr-2" />
+            Salvar e Fechar
+          </Button>
+          <Button variant="ghost" size="icon" onClick={onClose} className="text-gray-400 hover:text-white hover:bg-gray-800">
+            <X size={20} />
+          </Button>
+        </div>
+      </header>
+      
+      <div className="flex-grow overflow-y-auto"> {/* Ensure this div allows scrolling for BlockEditor content */}
+        <BlockEditor
+          initialReview={internalReview}
+          onSave={handleSaveInternal} // Use internal save handler
+          readonly={false}
+          className="h-full" // Critical for allowing BlockEditor to manage its own scroll if needed
+        />
+      </div>
+    </div>
+  );
+};
+

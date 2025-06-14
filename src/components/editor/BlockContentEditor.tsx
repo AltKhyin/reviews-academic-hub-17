@@ -1,4 +1,125 @@
 
-{
-  "content": "// ABOUTME: Renders the appropriate editor for a given block type.\n// This is a placeholder for BlockContentEditor.tsx to define its props.\nimport React from 'react';\nimport { ReviewBlock, BlockType } from '@/types/review';\nimport { Button } from '@/components/ui/button'; // Added import for Button\nimport { TextBlock } from './blocks/TextBlock';\nimport { HeadingBlock } from './blocks/HeadingBlock';\nimport { ImageBlock } from './blocks/ImageBlock';\nimport { TableBlock } from './blocks/TableBlock';\nimport { CalloutBlock } from './blocks/CalloutBlock';\nimport { NumberCardBlock } from './blocks/NumberCardBlock';\nimport { ReviewerQuoteBlock } from './blocks/ReviewerQuoteBlock';\nimport { PollBlock } from './blocks/PollBlock';\nimport { CitationListBlock } from './blocks/CitationListBlock';\nimport { SnapshotCardBlock } from '../review/blocks/SnapshotCardBlock';\nimport { DiagramBlock } from '../review/blocks/DiagramBlock'; \n// ... import other specific block components\n\nexport interface BlockContentEditorProps {\n  block: ReviewBlock;\n  isActive: boolean;\n  onSelect: () => void;\n  onUpdate: (blockId: string, updates: Partial<ReviewBlock>) => void;\n  onDelete: (blockId: string) => void;\n  onMove: (blockId: string, direction: 'up' | 'down' | number) => void; // Updated to include number\n  onAddBlock: (type: BlockType, position?: number) => void; // To add blocks relative to this one\n  readonly?: boolean;\n  isFirst?: boolean;\n  isLast?: boolean;\n  // Add any other common props your block editors might need\n}\n\nexport const BlockContentEditor: React.FC<BlockContentEditorProps> = ({\n  block,\n  isActive,\n  onSelect,\n  onUpdate,\n  onDelete,\n  // onMove, // onMove might be handled by BlockList buttons directly\n  // onAddBlock, // onAddBlock might be handled by BlockList buttons directly\n  readonly,\n}) => {\n  const handleUpdateContent = (contentUpdates: any) => {\n    // For blocks like TextBlock, contentUpdates is { text: '...' }\n    // For others, it might be the full new content object.\n    // Ensure we merge correctly based on how individual block editors send updates.\n    // A common pattern is that newContent is the complete content object for that block type.\n    onUpdate(block.id, { content: contentUpdates }); \n  };\n\n  // Basic click handler to select the block\n  const handleClick = (e: React.MouseEvent) => {\n    // Prevent click propagation if interacting with inner editable elements\n    if ((e.target as HTMLElement).closest('[contenteditable=\"true\"], input, textarea, button, select')) {\n      return;\n    }\n    if (!isActive) {\n      onSelect();\n    }\n  };\n\n  const commonBlockProps = {\n    block,\n    onUpdate: (updates: Partial<ReviewBlock>) => onUpdate(block.id, updates),\n    readonly,\n  };\n\n  // Outer div to handle selection click\n  // Add a visual cue for active state if desired (e.g., border)\n  return (\n    <div \n      onClick={handleClick} \n      className={`block-content-editor-wrapper w-full ${isActive ? 'outline outline-2 outline-blue-500 outline-offset-2' : ''} rounded`}\n      role=\"button\" // Make it keyboard accessible for selection\n      tabIndex={0} // Make it focusable\n      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { handleClick(e as any); }}}\n    >\n      {(() => {\n        switch (block.type) {\n          case 'paragraph': // Assuming 'paragraph' uses TextBlock\n          case 'text':\n            return <TextBlock {...commonBlockProps} content={block.content} onUpdateContent={handleUpdateContent} />;\n          case 'heading':\n            return <HeadingBlock {...commonBlockProps} content={block.content} onUpdateContent={handleUpdateContent} />;\n          case 'image':\n          case 'figure': // Assuming 'figure' uses ImageBlock\n            return <ImageBlock {...commonBlockProps} content={block.content} onUpdateContent={handleUpdateContent} />;\n          case 'table':\n            return <TableBlock {...commonBlockProps} content={block.content} onUpdateContent={handleUpdateContent} />;\n          case 'callout':\n            return <CalloutBlock {...commonBlockProps} content={block.content} onUpdateContent={handleUpdateContent} />;\n          case 'number_card':\n            return <NumberCardBlock {...commonBlockProps} content={block.content} onUpdateContent={handleUpdateContent} />;\n          case 'reviewer_quote':\n            return <ReviewerQuoteBlock {...commonBlockProps} content={block.content} onUpdateContent={handleUpdateContent} />;\n          case 'poll':\n            return <PollBlock {...commonBlockProps} content={block.content} onUpdateContent={handleUpdateContent} />;\n          case 'citation_list':\n            return <CitationListBlock {...commonBlockProps} content={block.content} onUpdateContent={handleUpdateContent} />;\n          case 'snapshot_card':\n            // SnapshotCardBlock might wrap SnapshotCard and handle editing logic itself\n            return <SnapshotCardBlock block={block} onUpdate={(updates) => onUpdate(block.id, updates)} readonly={readonly} />;\n          case 'diagram':\n             return <DiagramBlock block={block} onUpdate={(updates) => onUpdate(block.id, updates)} readonly={readonly} />;\n          // ... cases for other block types\n          default:\n            return (\n              <div className=\"p-4 border border-dashed border-red-400 rounded bg-red-900/20 text-red-300\">\n                <p className=\"font-semibold\">Unsupported block type: \"{block.type}\"</p>\n                <p className=\"text-xs mt-1\">ID: {block.id}</p>\n                <pre className=\"mt-2 text-xs bg-black/30 p-2 rounded overflow-auto\">\n                  {JSON.stringify(block.content, null, 2)}\n                </pre>\n                 {!readonly && <Button size=\"sm\" variant=\"destructive\" className=\"mt-2\" onClick={() => onDelete(block.id)}>Delete this block</Button>}\n              </div>\n            );\n        }\n      })()}\n    </div>\n  );\n};\n"
+// ABOUTME: Main editor for individual block content, switching between block types.
+// Handles rendering specific block editors (Text, Heading, Image, etc.)
+import React from 'react';
+import { ReviewBlock, BlockType } from '@/types/review';
+import { TextBlock, TextBlockProps } from './blocks/TextBlock';
+import { HeadingBlock, HeadingBlockProps } from './blocks/HeadingBlock';
+import { ImageBlock, ImageBlockProps } from './blocks/ImageBlock';
+import { TableBlock, TableBlockProps } from './blocks/TableBlock';
+import { CalloutBlock, CalloutBlockProps } from './blocks/CalloutBlock'; // Assuming CalloutBlock exists
+import { NumberCardBlock, NumberCardBlockProps } from './blocks/NumberCardBlock'; // Assuming NumberCardBlock exists
+import { ReviewerQuoteBlock, ReviewerQuoteBlockProps } from './blocks/ReviewerQuoteBlock'; // Assuming ReviewerQuoteBlock exists
+import { PollBlock, PollBlockProps } from './blocks/PollBlock'; // Assuming PollBlock exists
+import { CitationListBlock, CitationListBlockProps } from './blocks/CitationListBlock'; // Assuming CitationListBlock exists
+
+// REVIEW_BLOCKS_FROM_REVIEW_FOLDER_BELOW
+import { DiagramBlock } from '@/components/review/blocks/DiagramBlock';
+import { SnapshotCardBlock } from '@/components/review/blocks/SnapshotCardBlock';
+
+import { cn } from '@/lib/utils';
+import { GripVertical } from 'lucide-react';
+
+export interface BlockContentEditorProps {
+  block: ReviewBlock;
+  isActive: boolean;
+  onSelect: (blockId: string) => void;
+  onUpdate: (blockId: string, updates: Partial<ReviewBlock>) => void;
+  onDelete: (blockId: string) => void;
+  onMove: (blockId: string, direction: 'up' | 'down') => void; // Or more complex move logic
+  onAddBlock: (type: BlockType, position?: 'above' | 'below' | number) => void; // Position relative to current block or index
+  readonly?: boolean;
+  className?: string;
+  draggableProps?: any; // For react-beautiful-dnd or other libraries
+  dragHandleProps?: any; // For react-beautiful-dnd or other libraries
 }
+
+export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
+  block,
+  isActive,
+  onSelect,
+  onUpdate,
+  // onDelete, // onDelete is passed but not used directly, might be for a wrapper
+  // onMove, // onMove is passed but not used directly
+  // onAddBlock, // onAddBlock is passed but not used directly
+  readonly,
+  className,
+  // draggableProps, // draggableProps is passed but not used directly
+  dragHandleProps,
+}) => {
+  const handleUpdateContent = (newContent: any) => {
+    onUpdate(block.id, { content: { ...block.content, ...newContent } });
+  };
+
+  const renderBlock = () => {
+    const commonProps = {
+      block,
+      onUpdate: (id: string, updates: Partial<ReviewBlock>) => onUpdate(id, updates),
+      onUpdateContent: handleUpdateContent,
+      readonly,
+    };
+
+    // Consolidate content access
+    const content = block.content || {};
+
+    switch (block.type) {
+      case BlockType.TEXT:
+        return <TextBlock {...commonProps as TextBlockProps} content={content} />;
+      case BlockType.HEADING:
+        return <HeadingBlock {...commonProps as HeadingBlockProps} content={content} />;
+      case BlockType.IMAGE:
+        return <ImageBlock {...commonProps as ImageBlockProps} content={content} />;
+      case BlockType.TABLE:
+        return <TableBlock {...commonProps as TableBlockProps} content={content} />;
+      case BlockType.DIAGRAM: // Ensure DiagramBlock is correctly typed and handled
+         return <DiagramBlock block={block} onUpdate={(updates) => onUpdate(block.id, updates)} readonly={readonly} />;
+      case BlockType.SNAPSHOT_CARD:
+        return <SnapshotCardBlock block={block} onUpdate={(updates) => onUpdate(block.id, updates)} readonly={readonly} />;
+      case BlockType.CALLOUT:
+        return <CalloutBlock {...commonProps as CalloutBlockProps} content={content} />;
+      case BlockType.NUMBER_CARD:
+        return <NumberCardBlock {...commonProps as NumberCardBlockProps} content={content} />;
+      case BlockType.REVIEWER_QUOTE:
+        return <ReviewerQuoteBlock {...commonProps as ReviewerQuoteBlockProps} content={content} />;
+      case BlockType.POLL:
+        return <PollBlock {...commonProps as PollBlockProps} content={content} />;
+      case BlockType.CITATION_LIST:
+        return <CitationListBlock {...commonProps as CitationListBlockProps} content={content} />;
+      default:
+        return <div className="text-red-500 p-2 bg-red-100 border border-red-300 rounded">Tipo de bloco desconhecido: {block.type}</div>;
+    }
+  };
+
+  return (
+    <div
+      onClick={() => !readonly && onSelect(block.id)}
+      className={cn(
+        "block-content-editor relative group/blockeditor",
+        "transition-all duration-150 ease-in-out",
+        isActive && !readonly && "ring-2 ring-blue-500 shadow-lg bg-gray-800/30",
+        !readonly && "cursor-pointer hover:bg-gray-800/20",
+        readonly && "p-0", // No padding in readonly, block itself handles it
+        !readonly && "p-2 rounded-md border border-transparent group-hover/blockeditor:border-gray-700", // Padding and border for edit mode
+        className
+      )}
+      // {...draggableProps} // Apply draggable props here
+    >
+      {!readonly && dragHandleProps && (
+        <div
+          {...dragHandleProps}
+          className={cn(
+            "absolute -left-2 top-1/2 -translate-y-1/2 p-0.5 rounded text-gray-500 cursor-grab",
+            "opacity-0 group-hover/blockeditor:opacity-100 transition-opacity",
+            "hover:bg-gray-700 hover:text-gray-300"
+            )}
+            style={{ zIndex: 10 }} // Ensure drag handle is above content for easier grabbing
+            aria-label="Mover bloco"
+        >
+          <GripVertical size={16} />
+        </div>
+      )}
+      {renderBlock()}
+    </div>
+  );
+};
+

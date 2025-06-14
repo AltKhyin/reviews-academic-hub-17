@@ -1,4 +1,55 @@
 
-{
-  "content": "// ABOUTME: Container for 1D Layout Grid, managing multiple LayoutRow components.\n// Handles overall grid structure, adding/removing rows, and distributing blocks.\n\nimport React from 'react';\nimport { LayoutRowData, BlockInLayout } from '@/types/grid';\nimport { ReviewBlock, BlockType } from '@/types/review';\nimport { LayoutRow, LayoutRowProps } from './LayoutRow'; // Import LayoutRowProps\nimport { Button } from '@/components/ui/button';\nimport { PlusCircle } from 'lucide-react';\nimport { cn } from '@/lib/utils';\n\nexport interface LayoutGridProps {\n  gridId: string; // ID of this LayoutGrid block itself\n  rows: LayoutRowData[];\n  onUpdateRow: (rowId: string, updates: Partial<LayoutRowData>) => void;\n  onDeleteRow: (rowId: string) => void;\n  onAddRow: (position?: number, columns?: number) => void;\n  onAddBlockToRow: (rowId: string, positionInRow: number, blockType: BlockType) => void;\n  \n  // Block operations that might be proxied or handled\n  onUpdateBlockInRow: (blockId: string, updates: Partial<ReviewBlock>) => void;\n  onMoveBlockInGrid: (draggedBlockId: string, targetRowId: string, targetPositionInRow?: number) => void;\n  onDeleteBlockInRow: (blockId: string, rowId: string) => void;\n\n  activeBlockId: string | null;\n  onActiveBlockChange: (blockId: string | null) => void;\n  readonly?: boolean;\n  className?: string;\n}\n\nexport const LayoutGrid: React.FC<LayoutGridProps> = ({\n  gridId,\n  rows,\n  onUpdateRow,\n  onDeleteRow,\n  onAddRow,\n  onAddBlockToRow,\n  onUpdateBlockInRow,\n  onMoveBlockInGrid,\n  onDeleteBlockInRow,\n  activeBlockId,\n  onActiveBlockChange,\n  readonly,\n  className,\n}) => {\n  const handleUpdateRowConfig = (rowId: string, config: Pick<LayoutRowData, 'columns' | 'columnWidths' | 'gap'>) => {\n    const updatedRows = rows.map(r => \n      r.id === rowId ? { ...r, ...config } : r\n    );\n    // This should trigger an update to the LayoutGrid block's content\n    // The parent (BlockEditor) will call onUpdateBlock for the LayoutGrid itself\n    // For now, this function is more of a direct mutator of LayoutRowData structure.\n    // We need a way to signal parent to update this grid's content.\n    // Let's assume onUpdateRow handles this in parent by updating the whole grid block.\n    onUpdateRow(rowId, config); // This implies the parent (BlockEditor) is responsible for updating the grid content\n  };\n\n  // Prepare props for each LayoutRow, ensuring they match LayoutRowProps\n  const getLayoutRowProps = (row: LayoutRowData): LayoutRowProps => ({\n    row,\n    gridId,\n    onUpdateRowConfig: handleUpdateRowConfig, // Changed from onUpdateRow to onUpdateRowConfig\n    onDeleteRow: onDeleteRow,\n    onAddBlockToRow: onAddBlockToRow,\n    onUpdateBlock: onUpdateBlockInRow, // Specific handler for blocks within this grid\n    onDeleteBlockInRow: onDeleteBlockInRow,\n    onMoveBlockInGrid: onMoveBlockInGrid,\n    activeBlockId: activeBlockId,\n    onActiveBlockChange: onActiveBlockChange,\n    readonly: readonly,\n  });\n\n  return (\n    <div className={cn(\"layout-grid-container bg-gray-900/30 p-2 rounded-lg border border-gray-700 space-y-2\", className)}>\n      {rows.map((row, index) => (\n        <React.Fragment key={row.id}>\n          {!readonly && (\n             <div className=\"insert-point-layout-grid group w-full h-3 my-0.5 relative flex justify-center\">\n                <Button\n                    size=\"xs\"\n                    variant=\"ghost\"\n                    onClick={() => onAddRow(index)} // Add row before current\n                    className=\"h-full w-auto px-2 opacity-0 group-hover:opacity-100 transition-opacity text-xs flex items-center justify-center text-gray-500 hover:text-blue-400 hover:bg-blue-900/20\"\n                >\n                    <PlusCircle className=\"w-3 h-3 mr-1\" /> Inserir Linha Aqui\n                </Button>\n            </div>\n          )}\n          <LayoutRow {...getLayoutRowProps(row)} />\n        </React.Fragment>\n      ))}\n      {!readonly && (\n        <div className=\"flex justify-center mt-2 pt-2 border-t border-gray-700/50\">\n          <Button \n            variant=\"outline\"\n            size=\"sm\"\n            onClick={() => onAddRow(rows.length)} // Add to end\n            className=\"text-blue-400 border-blue-500/50 hover:bg-blue-900/30 hover:text-blue-300 text-xs h-8\"\n          >\n            <PlusCircle className=\"w-4 h-4 mr-1.5\" /> Adicionar Nova Linha ao Grid\n          </Button>\n        </div>\n      )}\n      {rows.length === 0 && !readonly && (\n        <div className=\"text-center py-4\">\n            <p className=\"text-xs text-gray-500\">Este Grid Layout está vazio.</p>\n            <Button \n                variant=\"link\"\n                size=\"sm\"\n                onClick={() => onAddRow(0, 2)} // Add a default 2-column row\n                className=\"text-blue-400 hover:text-blue-300 text-xs h-8 mt-1\"\n            >\n                <PlusCircle className=\"w-3.5 h-3.5 mr-1\" /> Adicionar primeira linha (2 colunas)\n            </Button>\n        </div>\n      )}\n    </div>\n  );\n};\n"
+// ABOUTME: Component to render a generic layout grid (e.g. for sections).
+// This is a placeholder for a more complex grid system if needed.
+import React from 'react';
+import { LayoutElement, ReviewBlock, BlockType, GridPosition } from '@/types/review'; // Assuming GridPosition is defined
+import { Grid2DContainer } from './Grid2DContainer'; // The actual 2D grid implementation
+
+export interface LayoutGridProps {
+  layoutElement: LayoutElement & { type: 'grid' }; // Explicitly a grid type
+  blocks: { [key: string]: ReviewBlock };
+  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
+  onDeleteBlock: (blockId: string) => void;
+  onAddBlockToGrid: (type: BlockType, gridId: string, position: GridPosition) => void; // For adding to cells
+  onActiveBlockChange: (blockId: string | null) => void;
+  activeBlockId: string | null;
+  readonly?: boolean;
 }
+
+export const LayoutGrid: React.FC<LayoutGridProps> = ({
+  layoutElement,
+  blocks,
+  onUpdateBlock,
+  onDeleteBlock,
+  onAddBlockToGrid,
+  onActiveBlockChange,
+  activeBlockId,
+  readonly,
+}) => {
+  // If it's a 2D grid, delegate to Grid2DContainer
+  if (layoutElement.settings?.type === '2d' || !layoutElement.settings?.type) { // Default to 2D if not specified
+    return (
+      <Grid2DContainer
+        layoutElement={layoutElement} // Already type 'grid'
+        blocks={blocks}
+        onUpdateBlock={onUpdateBlock}
+        onDeleteBlock={onDeleteBlock}
+        onAddBlockToGrid={onAddBlockToGrid}
+        onActiveBlockChange={onActiveBlockChange}
+        activeBlockId={activeBlockId}
+        readonly={readonly}
+      />
+    );
+  }
+
+  // Placeholder for other grid types (e.g., masonry, etc.)
+  return (
+    <div className="p-4 border border-dashed border-yellow-500 rounded-md my-2">
+      <p className="text-yellow-400 text-sm">
+        Layout Grid Type: {layoutElement.settings?.type || 'Default/2D'} (ID: {layoutElement.id}) - Rendering not fully implemented for this specific grid type.
+      </p>
+      <pre className="text-xs text-gray-500 mt-2">{JSON.stringify(layoutElement, null, 2)}</pre>
+    </div>
+  );
+};
+
