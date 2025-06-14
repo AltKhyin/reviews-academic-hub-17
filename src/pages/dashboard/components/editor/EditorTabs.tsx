@@ -75,7 +75,7 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
 
       <TabsContent value="basic">
         <IssueFormContainer
-          values={formValues}
+          initialValues={formValues}
           onSubmit={onSubmit}
           onCancel={onCancel}
           isSubmitting={isSubmitting}

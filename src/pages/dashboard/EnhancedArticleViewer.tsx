@@ -1,7 +1,7 @@
 // ABOUTME: Enhanced article viewer with unified controls and structured sections
 // Implements the 4-section layout: Header, Review Content, Recommendations, Comments
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,7 @@ import { RecommendedArticles } from '@/components/article/RecommendedArticles';
 import { ExternalLectures } from '@/components/article/ExternalLectures';
 import { ArticleComments } from '@/components/article/ArticleComments';
 import { ArticleActions } from '@/components/article/ArticleActions';
-import { EnhancedIssue } from '@/types/review';
+import { EnhancedIssue, BlockType } from '@/types/review';
 import { cn } from '@/lib/utils';
 
 const EnhancedArticleViewer: React.FC = () => {
@@ -86,6 +86,11 @@ const EnhancedArticleViewer: React.FC = () => {
 
   // Get review data for native content
   const { reviewData, trackAnalytics, voteOnPoll } = useNativeReview(issue?.id || '');
+
+  const typedBlocks = useMemo(() => {
+    if (!reviewData?.blocks) return [];
+    return reviewData.blocks.map(b => ({ ...b, type: b.type as BlockType }));
+  }, [reviewData?.blocks]);
 
   // Handle scroll detection for floating controls - simplified to trigger on any scroll
   useEffect(() => {
@@ -315,8 +320,8 @@ const EnhancedArticleViewer: React.FC = () => {
         {/* Content Area with improved reading mode support */}
         {viewMode === 'native' && (
           <div className="native-content space-y-6">
-            {reviewData?.blocks && reviewData.blocks.length > 0 ? (
-              reviewData.blocks.map((block) => (
+            {typedBlocks && typedBlocks.length > 0 ? (
+              typedBlocks.map((block) => (
                 <BlockRenderer
                   key={block.id}
                   block={block}
@@ -365,7 +370,7 @@ const EnhancedArticleViewer: React.FC = () => {
                 Revisão
               </h3>
               <div className="space-y-4 max-h-[80vh] overflow-y-auto pr-4">
-                {reviewData?.blocks?.map((block) => (
+                {typedBlocks?.map((block) => (
                   <BlockRenderer
                     key={block.id}
                     block={block}
