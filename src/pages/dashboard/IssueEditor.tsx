@@ -1,4 +1,3 @@
-
 // ABOUTME: Refactored issue editor with improved component separation
 // Main editor page using focused sub-components for better maintainability
 
@@ -194,11 +193,13 @@ const IssueEditor = () => {
       if (updatedBlocks.length > 0) {
         const blocksToInsert = updatedBlocks.map((block, index) => ({
           issue_id: id,
-          sort_index: index, // Use index from transformed array
-          type: block.type as string,
-          payload: block.content as any,
-          meta: block.meta as any,
-          visible: block.visible
+          sort_index: index,
+          type: block.type,
+          payload: block.content, // Map frontend 'content' to db 'payload'
+          meta: block.meta,
+          visible: block.visible,
+          // The 'id' field is intentionally omitted here.
+          // The database will auto-generate it since it's an identity column.
         }));
 
         const { error } = await supabase
