@@ -1,7 +1,7 @@
 // ABOUTME: Enhanced block list with proper click handling and inline editing
 // Prevents unwanted block creation and provides intuitive interaction patterns - UPDATED: Reduced spacing by 50%
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,7 +17,7 @@ import {
   FileText,
   Heading,
   Type,
-  Image as ImageIcon, // Renamed to avoid conflict with Image component
+  Image as ImageIcon,
   Table,
   AlertCircle,
   Hash,
@@ -27,8 +27,8 @@ import {
   FlaskConical,
   ArrowUp,
   ArrowDown,
-  Grid, // For generic grid/layout indication
-  LayoutGrid // For 2D grid specific
+  Grid, 
+  LayoutGrid as LayoutGridIcon // Renamed to avoid conflict with LayoutGrid component
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -37,17 +37,15 @@ interface BlockListProps {
   activeBlockId: string | null;
   onActiveBlockChange: (blockId: string | null) => void;
   onDeleteBlock: (blockId: string) => void;
-  onMoveBlock: (blockId: string, direction: 'up' | 'down') => void; // string ID
-  onAddBlock: (type: BlockType, position?: number) => void; // string ID for new block, but returns void here
-  onDuplicateBlock?: (blockId: string) => void; // string ID
+  onMoveBlock: (blockId: string, directionOrIndex: 'up' | 'down' | number) => void; // String ID for block, number for index
+  onAddBlock: (type: BlockType, position?: number) => void;
+  onDuplicateBlock?: (blockId: string) => void;
   compact?: boolean;
-  // TODO: Add onToggleVisibility if needed
   onToggleVisibility?: (blockId: string, isVisible: boolean) => void;
 }
 
-const getBlockIcon = (block: ReviewBlock) => { // Changed to accept whole block
-  // Check for layout types first
-  if (block.meta?.layout?.grid_id) return LayoutGrid;
+const getBlockIcon = (block: ReviewBlock) => {
+  if (block.meta?.layout?.grid_id) return LayoutGridIcon; // Use renamed LayoutGridIcon
   if (block.meta?.layout?.row_id) return Grid;
 
   switch (block.type) {
@@ -74,7 +72,7 @@ const getBlockIcon = (block: ReviewBlock) => { // Changed to accept whole block
     case 'citation_list':
       return List;
     case 'diagram':
-      return FlaskConical; // Or a more specific diagram icon
+      return FlaskConical; 
     default:
       return FileText;
   }
@@ -96,7 +94,7 @@ const getBlockColor = (type: string) => {
     case 'diagram': return '#a855f7'; // Purple (same as reviewer_quote for now)
     // Layout block types
     case 'grid': return '#f97316'; // Orange for 1D Grid
-    case 'layout_grid': return '#ec4899'; // Pink for 2D Grid
+    case 'layout_grid': return '#ec4899'; // Pink for 2D Grid // Matches icon LayoutGridIcon
     default: return '#6b7280'; // Gray
   }
 };
@@ -139,14 +137,47 @@ export const BlockList: React.FC<BlockListProps> = ({
   activeBlockId,
   onActiveBlockChange,
   onDeleteBlock,
-  onMoveBlock,
+  onMoveBlock, // This prop expects (blockId: string, newIndex: number) or (blockId: string, direction: 'up'|'down')
   onAddBlock,
   onDuplicateBlock,
-  onToggleVisibility, // Added prop
+  onToggleVisibility,
   compact = false
 }) => {
+  // Assuming useBlockDragDrop's onMove callback expects (draggedId: string, targetId: string | null, position: 'before' | 'after')
+  // And onMoveBlock is (movedItemId: string, newIndex: number)
+  // This requires an adapter or consistent signature.
+  // For now, let's assume useBlockDragDrop's onMove is (string, string|null, 'before'|'after') and we adapt
+  
+  const handleInternalMove = useCallback((draggedId: string, targetId: string | null, position: 'before' | 'after') => {
+    const draggedIndex = blocks.findIndex(b => b.id === draggedId);
+    if (draggedIndex === -1) return;
+
+    if (targetId === null) { // Dropped on an empty area or an insert line not related to a specific block
+      if (position === 'before') { // Typically means top of the list
+        onMoveBlock(draggedId, 0);
+      } else { // Typically means bottom of the list
+        onMoveBlock(draggedId, blocks.length);
+      }
+      return;
+    }
+
+    const targetIndex = blocks.findIndex(b => b.id === targetId);
+    if (targetIndex === -1) return;
+
+    let newIndex = targetIndex;
+    if (position === 'after') {
+      newIndex = targetIndex + 1;
+    }
+    // Adjust newIndex if dragging downwards past original position
+    if (draggedIndex < newIndex) {
+        newIndex--;
+    }
+    onMoveBlock(draggedId, newIndex);
+
+  }, [blocks, onMoveBlock]);
+  
   const { dragState, handleDragStart, handleDragEnd, handleDragOver, handleDragEnter } = 
-    useBlockDragDrop(onMoveBlock); // Ensure useBlockDragDrop correctly handles string IDs if it's generic
+    useBlockDragDrop(handleInternalMove); // Pass the adapter
 
   const handleBlockClick = (e: React.MouseEvent, blockId: string) => {
     const target = e.target as HTMLElement;
@@ -168,13 +199,11 @@ export const BlockList: React.FC<BlockListProps> = ({
     if (onToggleVisibility) {
       onToggleVisibility(blockId, !currentVisibility);
     } else {
-      // Fallback or direct update if onUpdateBlock is available and meta is part of ReviewBlock
       console.warn("onToggleVisibility not provided to BlockList. Visibility change might not persist.");
     }
   };
 
   if (blocks.length === 0) {
-    // ... keep existing code (empty state JSX)
     return (
       <div className="block-list-empty text-center py-6 w-full max-w-full">
         <FileText className="w-12 h-12 mx-auto mb-2" style={{ color: '#6b7280' }} />
@@ -205,15 +234,15 @@ export const BlockList: React.FC<BlockListProps> = ({
         const Icon = getBlockIcon(block);
         const iconColor = getBlockColor(block.meta?.layout?.grid_id ? 'layout_grid' : block.meta?.layout?.row_id ? 'grid' : block.type);
         const isActive = block.id === activeBlockId;
-        const isDraggedOver = dragState.draggedOver === index; // This needs to work with string IDs from block.id
-        const isDragging = dragState.draggedIndex === index; // This needs to work with string IDs from block.id
+        // Assuming dragState from useBlockDragDrop uses string IDs
+        const isDraggedOver = dragState.dragOverItemId === block.id;
+        const isDragging = dragState.draggedItemId === block.id;
         const isFirst = index === 0;
         const isLast = index === blocks.length - 1;
 
         return (
           <div key={block.id} className="space-y-1 w-full max-w-full overflow-hidden">
             {index === 0 && (
-              // ... keep existing code (insert point top)
               <div className="insert-point group w-full">
                 <Button
                   size="sm"
@@ -221,6 +250,8 @@ export const BlockList: React.FC<BlockListProps> = ({
                   onClick={(e) => handleAddBlockClick(e, 0)}
                   className="w-full h-5 opacity-30 hover:opacity-100 transition-opacity text-xs"
                   style={{ color: '#6b7280' }}
+                  onDragOver={(e) => handleDragOver(e, null, 'before')} // Drop at the very top
+                  onDragEnter={(e) => handleDragEnter(e, null, 'before')} // Drop at the very top
                 >
                   <Plus className="w-3 h-3 mr-1" />
                   Inserir bloco aqui
@@ -232,25 +263,25 @@ export const BlockList: React.FC<BlockListProps> = ({
               className={cn(
                 "block-list-item cursor-pointer transition-all duration-200 group w-full max-w-full overflow-hidden",
                 isActive && "ring-2 ring-blue-500",
-                isDraggedOver && "border-blue-400", // This may need adjustment if dragOver compares block IDs
+                isDraggedOver && dragState.dropPosition === 'over' && "border-blue-400", // Highlight for 'over' drop
                 isDragging && "opacity-50 scale-95"
               )}
               style={{
                 backgroundColor: isActive ? '#1e3a8a' : '#1a1a1a',
-                borderColor: isActive ? '#3b82f6' : '#2a2a2a'
+                borderColor: isActive ? '#3b82f6' : (isDraggedOver && dragState.dropPosition === 'over' ? '#3b82f6' : '#2a2a2a')
               }}
               draggable
-              onDragStart={(e) => handleDragStart(e, block.id)} // Pass block.id (string)
-              onDragEnd={(e) => handleDragEnd(e)} // handleDragEnd might not need blocks directly
-              onDragOver={(e) => handleDragOver(e, block.id)} // Pass block.id
-              onDragEnter={(e) => handleDragEnter(e, block.id)} // Pass block.id
+              onDragStart={(e) => handleDragStart(e, block.id)}
+              onDragEnd={(e) => handleDragEnd(e)} // Adjusted: handleDragEnd might not need args from error
+              onDragOver={(e) => handleDragOver(e, block.id, 'over')} // Pass 'over' for dropping onto block
+              onDragEnter={(e) => handleDragEnter(e, block.id, 'over')} // Pass 'over'
               onClick={(e) => handleBlockClick(e, block.id)}
             >
               <CardContent className={cn("p-2 w-full max-w-full overflow-hidden", compact && "p-1.5")}>
                 <div className="flex items-center gap-2 w-full max-w-full overflow-hidden">
                   <div 
                     className="drag-handle cursor-grab active:cursor-grabbing flex-shrink-0"
-                    onMouseDown={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()} // Prevent card click when grabbing handle
                   >
                     <GripVertical className="w-4 h-4" style={{ color: '#6b7280' }} />
                   </div>
@@ -330,13 +361,17 @@ export const BlockList: React.FC<BlockListProps> = ({
             </Card>
 
             <div className="insert-point group w-full">
-              {/* ... keep existing code (insert point after each block) */}
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={(e) => handleAddBlockClick(e, index + 1)}
-                className="w-full h-5 opacity-0 group-hover:opacity-100 transition-opacity text-xs"
+                className={cn(
+                    "w-full h-5 transition-opacity text-xs",
+                    dragState.isDragging ? "opacity-30 hover:opacity-100" : "opacity-0 group-hover:opacity-100"
+                )}
                 style={{ color: '#6b7280' }}
+                onDragOver={(e) => handleDragOver(e, block.id, 'after')} // Drop after this block
+                onDragEnter={(e) => handleDragEnter(e, block.id, 'after')} // Drop after this block
               >
                 <Plus className="w-3 h-3 mr-1" />
                 Inserir bloco aqui

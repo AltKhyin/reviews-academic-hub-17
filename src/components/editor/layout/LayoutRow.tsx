@@ -1,50 +1,45 @@
-
 // ABOUTME: Enhanced layout row component with complete string ID support
 // Manages individual rows in grid layouts with proper drag and drop functionality
 
 import React, { useCallback } from 'react';
 import { ReviewBlock, BlockType } from '@/types/review';
-import { LayoutRowData } from '@/types/grid'; // Import LayoutRowData
-import { BlockContentEditor } from '../BlockContentEditor';
+import { LayoutRowData } from '@/types/grid'; 
+import { BlockContentEditor } from '../BlockContentEditor'; // Assuming BlockContentEditorProps accepts readonly
 import { Button } from '@/components/ui/button';
 import { Plus, Grid3X3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface LayoutRowProps {
-  row: LayoutRowData; // Changed to accept a single row object
+  row: LayoutRowData; 
   activeBlockId: string | null;
   onActiveBlockChange: (blockId: string | null) => void;
   onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
   onDeleteBlock: (blockId: string) => void;
-  onAddBlock: (rowId: string, position: number, blockType: BlockType) => void; // Expects blockType
-  onUpdateRow: (rowId: string, updates: Partial<LayoutRowData>) => void; // Added for consistency if needed
-  onDeleteRow: (rowId: string) => void; // Added for consistency if needed
-  onMoveBlock: (blockId: string, targetRowId: string, targetPosition: number) => void; // Added for consistency
+  onAddBlock: (rowId: string, position: number, blockType: BlockType) => void; 
+  onUpdateRow: (rowId: string, updates: Partial<LayoutRowData>) => void; 
+  onDeleteRow: (rowId: string) => void; 
+  onMoveBlock: (blockId: string, targetRowId: string, targetPosition: number) => void; 
   readonly?: boolean;
   className?: string;
 }
 
 export const LayoutRow: React.FC<LayoutRowProps> = ({
-  row, // Destructure from row object
+  row, 
   activeBlockId,
   onActiveBlockChange,
   onUpdateBlock,
   onDeleteBlock,
   onAddBlock,
-  // onUpdateRow, // Not used in this version of LayoutRow rendering
-  // onDeleteRow, // Not used for rendering cells, but for row management
-  // onMoveBlock, // For block movement between rows/positions
   readonly,
   className
 }) => {
   const { id: rowId, blocks, columns, columnWidths, gap = 4 } = row;
 
   const handleMoveWithinRow = useCallback((blockId: string, direction: 'up' | 'down') => {
-    // This specific movement ('up'/'down') might imply reordering within the row's blocks array
-    // or be handled by a higher-level drag-drop. For now, log.
     console.log('LayoutRow block movement (within row context):', { blockId, direction, rowId });
-    // If onMoveBlock is intended for inter-row movement, it's handled by parent.
-    // If it's for reordering *within* this ResizableGrid-like structure, logic would be here.
+    // This would typically involve finding the block's current index in `row.blocks`
+    // and then calling a passed-in `onMoveBlockInRowArray(rowId, blockId, newIndex)` or similar.
+    // For now, it's a placeholder as `onMoveBlock` prop is for inter-row moves.
   }, [rowId]);
 
   const handleAddBlockAtPosition = useCallback((type: BlockType, position?: number) => {
@@ -52,9 +47,7 @@ export const LayoutRow: React.FC<LayoutRowProps> = ({
     onAddBlock(rowId, targetPosition, type);
   }, [onAddBlock, rowId, blocks.length]);
 
-  // Simplified for direct add, assumes a default type or gets type from elsewhere if needed by onAddBlock
   const handleAddBlockToColumn = useCallback((columnIndex: number) => {
-    // Defaulting to 'paragraph'. If a type picker is involved, this would change.
     onAddBlock(rowId, columnIndex, 'paragraph' as BlockType);
   }, [onAddBlock, rowId]);
 
@@ -80,7 +73,7 @@ export const LayoutRow: React.FC<LayoutRowProps> = ({
         }}
       >
         {Array.from({ length: columns }).map((_, index) => {
-          const block = blocks[index]; // Assuming blocks array is ordered by column
+          const block = blocks[index]; 
           
           return (
             <div
@@ -91,20 +84,20 @@ export const LayoutRow: React.FC<LayoutRowProps> = ({
                 "transition-all duration-200",
                 activeBlockId && block && activeBlockId === block.id && "ring-2 ring-blue-500 border-blue-500"
               )}
-              style={{ borderColor: block ? '#374151' : '#2b3245' }} // Slightly different border for empty/filled
+              style={{ borderColor: block ? '#374151' : '#2b3245' }}
             >
               {block ? (
                 <BlockContentEditor
                   block={block}
                   isActive={activeBlockId === block.id}
-                  isFirst={index === 0} // This concept might change with complex grids
-                  isLast={index === columns - 1} // Ditto
-                  onSelect={onActiveBlockChange}
+                  isFirst={index === 0} 
+                  isLast={index === columns - 1} 
+                  onSelect={() => onActiveBlockChange(block.id)} // Corrected: pass block.id
                   onUpdate={onUpdateBlock}
                   onDelete={onDeleteBlock}
-                  onMove={handleMoveWithinRow} // For movements specific to BlockContentEditor's context
-                  onAddBlock={handleAddBlockAtPosition} // For adding blocks via BlockContentEditor's UI
-                  readonly={readonly}
+                  onMove={handleMoveWithinRow} 
+                  onAddBlock={handleAddBlockAtPosition} 
+                  readonly={readonly} // Assuming BlockContentEditorProps accepts this
                 />
               ) : (
                 <div className="h-full flex items-center justify-center p-4">

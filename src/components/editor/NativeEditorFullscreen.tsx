@@ -1,16 +1,13 @@
-
 // ABOUTME: Fullscreen native editor with immersive editing experience and string ID support
 // Provides dedicated workspace for complex review creation
 
-import React, { useCallback, useEffect, useState } from 'react'; // Added useState
+import React, { useCallback, useEffect, useState, Dispatch, SetStateAction } from 'react'; // Added Dispatch, SetStateAction
 import { ReviewBlock, BlockType } from '@/types/review'; // Added BlockType
 import { BlockEditor } from './BlockEditor';
 import { BlockPalette } from './BlockPalette';
 import { ReviewPreview } from './ReviewPreview';
-import { EditorToolbar } from './EditorToolbar';
+import { EditorToolbar, EditorToolbarProps } from './EditorToolbar'; // Import EditorToolbarProps
 import { EditorStatusBar } from './EditorStatusBar';
-// import { Button } from '@/components/ui/button'; // Already imported below
-// import { X, Minimize2 } from 'lucide-react'; // X not used, Minimize2 used
 import { useBlockManagement } from '@/hooks/useBlockManagement';
 import { useEditorAutoSave } from '@/hooks/useEditorAutoSave';
 import { useEditorKeyboardShortcuts } from './hooks/useEditorKeyboardShortcuts';
@@ -99,8 +96,8 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
     deleteBlock(blockId);
   }, [deleteBlock]);
 
-  const handleBlockMove = useCallback((blockId: string, direction: 'up' | 'down') => {
-    moveBlock(blockId, direction);
+  const handleBlockMove = useCallback((blockId: string, directionOrIndex: 'up' | 'down' | number) => {
+    moveBlock(blockId, directionOrIndex);
   }, [moveBlock]);
 
   const handleDuplicateBlock = useCallback((blockId: string) => {
@@ -148,6 +145,21 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose, blocks, hasUnsavedChanges, onSave]); // Added dependencies
 
+  const editorToolbarProps: EditorToolbarProps = {
+    editorMode,
+    onModeChange: setEditorMode as Dispatch<SetStateAction<"edit" | "preview" | "split">>, // Cast if necessary
+    hasUnsavedChanges,
+    isSaving,
+    lastSaved,
+    canUndo,
+    canRedo,
+    onUndo: undo,
+    onRedo: redo,
+    onSave: handleManualSave,
+    blocks,
+    onImport: handleImport,
+  };
+
   return (
     <div 
       className="fixed inset-0 z-[100] bg-background flex flex-col" // Increased z-index
@@ -171,21 +183,8 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
         </Button>
       </div>
 
-      <EditorToolbar
-        editorMode={editorMode}
-        onModeChange={setEditorMode}
-        hasUnsavedChanges={hasUnsavedChanges}
-        isSaving={isSaving}
-        lastSaved={lastSaved}
-        canUndo={canUndo}
-        canRedo={canRedo}
-        onUndo={undo}
-        onRedo={redo}
-        onSave={handleManualSave}
-        blocks={blocks}
-        onImport={handleImport}
-        className="flex-shrink-0"
-      />
+      {/* Removed className from EditorToolbar as it might not be a valid prop */}
+      <EditorToolbar {...editorToolbarProps} /> 
       
       <div className="flex flex-1 overflow-hidden"> {/* Main content area takes remaining space and handles overflow */}
         {(editorMode === 'edit' || editorMode === 'split') && (
@@ -235,7 +234,7 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
       <EditorStatusBar
         blockCount={blocks.length}
         activeBlockId={activeBlockId} // activeBlockId is string | null
-        className="flex-shrink-0"
+        // className="flex-shrink-0" // Removed if not a valid prop
       />
     </div>
   );
