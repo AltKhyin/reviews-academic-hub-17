@@ -1,4 +1,3 @@
-
 # **Scientific Review Platform Ground-Truth Diagnostic Report**
 
 ## **Part 1: Data-Fetching & State Management Analysis**
@@ -642,6 +641,7 @@ Edit Tabs → Specialized Management Panels → Direct Database Operations → R
 3. **Database Schema Reconstruction:** Generated accurate CREATE TABLE statements from actual schema analysis rather than assumptions
 4. **Performance Bottleneck Identification:** Identified specific areas where code splitting and optimization would provide immediate benefits
 5. **Security Gap Analysis:** Highlighted missing RLS policies and provided actionable security recommendations
-6. **Build Stability Enhancement:** Resolved a critical `Type instantiation is excessively deep and possibly infinite` build error within `useOptimizedHomepage.ts`. The fix involved applying a type boundary isolation strategy by explicitly specifying the generic data type (`<HomepageData>`) on the `useQuery` hook. This prevents the TypeScript compiler from entering an inference loop with Supabase's recursive `Json` types, thereby stabilizing the build and unblocking further development.
+6. **Build Stability Enhancement:**  
+   After several attempts at generic typing on the useQuery hook, the final solution to the `Type instantiation is excessively deep and possibly infinite` error was to cast data objects received from Supabase directly to concrete types (e.g., `as HomepageIssue[]`, `as SectionConfig[]`) at the database-fetch boundary inside the fetcher. This creates a "type boundary" that prevents deep Json recursion leaking into React Query/TypeScript type inference, stabilizing the build and restoring full editor functionality.
 
 **✅ Max-Accuracy response complete.**

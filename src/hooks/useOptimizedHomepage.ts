@@ -26,7 +26,6 @@ interface ReviewerComment {
   created_at: string;
 }
 
-// Define a concrete type for section visibility to prevent deep type instantiation errors.
 interface SectionConfig {
   id: string;
   visible: boolean;
@@ -47,7 +46,8 @@ interface HomepageData {
   };
 }
 
-// Renamed to _fetchHomepageData to allow for a typed wrapper that breaks TS inference loop
+// "Type boundary" fix: Cast all supabase .data directly to concrete types before returning.
+// This prevents TS from recursing into deep/unknown Json types in react-query inference.
 const _fetchHomepageData = async (): Promise<HomepageData> => {
   const [issues, sectionVisibility, featuredIssue, reviewerComments] = await Promise.all([
     supabase
@@ -70,7 +70,7 @@ const _fetchHomepageData = async (): Promise<HomepageData> => {
       .eq('featured', true)
       .order('created_at', { ascending: false })
       .limit(1)
-      .maybeSingle(), // Use maybeSingle to handle no results gracefully
+      .maybeSingle(),
 
     supabase
       .from('reviewer_comments')
@@ -80,13 +80,24 @@ const _fetchHomepageData = async (): Promise<HomepageData> => {
       .limit(10)
   ]);
 
-  const visibilityValue = sectionVisibility.data?.value;
+  // Defensive cast for each field to break recursive type inference
+  const issuesArr = (issues.data ?? []) as HomepageIssue[];
+  const featured = featuredIssue.data ? (featuredIssue.data as HomepageIssue) : null;
+  let sectionVisibilityArr: SectionConfig[] = [];
+  try {
+    if (Array.isArray(sectionVisibility.data?.value)) {
+      sectionVisibilityArr = sectionVisibility.data.value as SectionConfig[];
+    }
+  } catch (e) {
+    sectionVisibilityArr = [];
+  }
+  const reviewerCommentsArr = (reviewerComments.data ?? []) as ReviewerComment[];
 
   return {
-    issues: issues.data || [],
-    sectionVisibility: JSON.parse(JSON.stringify(Array.isArray(visibilityValue) ? visibilityValue : [])),
-    featuredIssue: featuredIssue.data || null,
-    reviewerComments: reviewerComments.data || [],
+    issues: issuesArr,
+    sectionVisibility: sectionVisibilityArr,
+    featuredIssue: featured,
+    reviewerComments: reviewerCommentsArr,
     errors: {
       issues: issues.error,
       sectionVisibility: sectionVisibility.error,
@@ -96,7 +107,6 @@ const _fetchHomepageData = async (): Promise<HomepageData> => {
   };
 };
 
-// Typed wrapper to prevent TypeScript from deep-inspecting the implementation, which causes an infinite type instantiation error.
 const fetchHomepageData: () => Promise<HomepageData> = _fetchHomepageData;
 
 export const useOptimizedHomepage = () => {
@@ -105,14 +115,13 @@ export const useOptimizedHomepage = () => {
   const query = useQuery<HomepageData>({
     queryKey: ['homepage-data'],
     queryFn: fetchHomepageData,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 15 * 60 * 1000, // 15 minutes
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
     retry: 1,
   });
 
-  // Batched individual data fetchers for components that need specific data
   const batchFetchIssue = useCallback(async (issueId: string) => {
     return batchRequest(
       'issues',
@@ -122,9 +131,8 @@ export const useOptimizedHomepage = () => {
           .from('issues')
           .select('*')
           .in('id', ids);
-        
         const result: Record<string, any> = {};
-        data?.forEach(issue => {
+        (data ?? []).forEach(issue => {
           result[issue.id] = issue;
         });
         return result;
@@ -141,9 +149,8 @@ export const useOptimizedHomepage = () => {
           .from('profiles')
           .select('*')
           .in('id', ids);
-        
         const result: Record<string, any> = {};
-        data?.forEach(profile => {
+        (data ?? []).forEach(profile => {
           result[profile.id] = profile;
         });
         return result;
@@ -157,4 +164,3 @@ export const useOptimizedHomepage = () => {
     batchFetchProfile,
   };
 };
-
