@@ -123,7 +123,7 @@ export const ImportExportManager: React.FC<ImportExportManagerProps> = ({
       const parsedData = JSON.parse(importData);
       const validation = validateImportData(parsedData);
 
-      if (!validation.isValid) {
+      if (!validation.valid) {
         toast({
           title: "Dados Inválidos",
           description: validation.errors.join('; '),
@@ -186,7 +186,7 @@ export const ImportExportManager: React.FC<ImportExportManagerProps> = ({
         const parsedData = JSON.parse(content);
         const validation = validateImportData(parsedData);
 
-        if (!validation.isValid) {
+        if (!validation.valid) {
           toast({
             title: "Arquivo Inválido",
             description: validation.errors.join('; '),

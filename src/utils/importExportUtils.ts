@@ -1,4 +1,3 @@
-
 // ABOUTME: Import/export utilities for review blocks with proper type handling
 import { ReviewBlock, BlockType } from '@/types/review';
 
@@ -20,6 +19,7 @@ export interface ExportData {
     version: string;
     totalBlocks: number;
   };
+  version: string; // Add version at root level for backward compatibility
 }
 
 // Helper function to generate a unique ID
@@ -118,17 +118,19 @@ export const exportReviewBlocks = (blocks: ReviewBlock[], options: ExportOptions
 
 // Export blocks with metadata
 export const exportBlocks = (blocks: ReviewBlock[], options: ExportOptions = {}): ExportData => {
+  const version = '2.0.1';
   return {
     blocks,
+    version, // Add at root level
     metadata: {
       exportedAt: new Date().toISOString(),
-      version: '1.0.0',
+      version: version,
       totalBlocks: blocks.length
     }
   };
 };
 
-// Validate import data
+// Validate import data - fix the return type to match usage
 export const validateImportData = (data: any): { valid: boolean; errors: string[] } => {
   const errors: string[] = [];
   
