@@ -77,7 +77,7 @@ export const useOptimizedSidebarData = (userId?: string) => {
               .not('issue_id', 'is', null)
               .limit(3);
 
-            if (iss'ueBookmarks) {
+            if (issueBookmarks) {
               const issueIds = issueBookmarks.map(b => b.issue_id).filter(Boolean);
               if (issueIds.length > 0) {
                 const { data: issues } = await supabase
