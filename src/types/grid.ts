@@ -1,4 +1,3 @@
-
 // ABOUTME: Grid layout types with string IDs for database compatibility
 export interface GridPosition {
   row: number;
@@ -6,14 +5,19 @@ export interface GridPosition {
 }
 
 export interface GridCell {
-  id: string;
-  block?: {
+  id: string; // Cell ID should be string
+  block?: { // block content is a ReviewBlock, which has string ID
     id: string;
     type: string;
     content: any;
     visible: boolean;
     meta?: any;
+    sort_index: number; // Added missing sort_index
   };
+  // Adding row and column here if they are direct properties of a cell in some contexts
+  // However, grid_position in ReviewBlock.meta.layout is the primary way
+  row?: number; 
+  column?: number;
 }
 
 export interface GridRow {

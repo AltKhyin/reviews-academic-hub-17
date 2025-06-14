@@ -1,128 +1,129 @@
 
-// ABOUTME: Enhanced 2D grid row component with string ID support and proper event handling
-// Manages individual rows within 2D grid layouts
+// ABOUTME: Renders a single row within a 2D grid layout, handling block placement and interactions.
+// Supports dynamic column rendering and responsive adjustments.
 
-import React, { useCallback } from 'react';
-import { GridRow, GridPosition } from '@/types/grid';
-import { ReviewBlock } from '@/types/review';
-import { Grid2DCell } from './Grid2DCell';
+import React from 'react';
+import { GridCell, GridPosition } from '@/types/grid';
+import { ReviewBlock, BlockType } from '@/types/review';
+import { SingleBlock } from '../blocks/SingleBlock';
 import { Button } from '@/components/ui/button';
-import { Plus, Minus } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface DragState {
-  draggedBlockId: string | null;
-  dragOverRowId: string | null;
-  dragOverPosition: number | null;
-  isDragging: boolean;
-  draggedFromRowId: string | null;
-  dropTargetType: 'grid' | 'single' | 'merge' | null;
-}
-
 interface Grid2DRowProps {
-  row: GridRow;
-  rowIndex: number;
   gridId: string;
-  columns: number;
+  rowIndex: number;
+  row: { id: string; cells: GridCell[]; columns: number };
   activeBlockId: string | null;
   onActiveBlockChange: (blockId: string | null) => void;
   onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
   onDeleteBlock: (blockId: string) => void;
-  onAddBlock: (position: GridPosition) => void;
-  onAddRowAbove: (gridId: string, rowIndex: number) => void;
-  onAddRowBelow: (gridId: string, rowIndex: number) => void;
-  onRemoveRow: (gridId: string, rowIndex: number) => void;
-  onMove: (blockId: string, direction: 'up' | 'down') => void;
-  onAddBlockAtPosition: (type: any, position?: number) => void;
-  dragState: DragState;
-  onDragOver: (e: React.DragEvent, targetRowId: string, targetPosition?: number, targetType?: 'grid' | 'single' | 'merge') => void;
-  onDragLeave: (e: React.DragEvent) => void;
-  onDrop: (e: React.DragEvent, targetRowId: string, targetPosition?: number, dropType?: 'grid' | 'single' | 'merge') => void;
-  canRemoveRow: boolean;
+  onAddBlock: (gridId: string, position: GridPosition) => void; // Corrected signature
+  dragState?: any; // Define more specifically if possible
+  onDragOverCell?: (gridId: string, position: GridPosition) => void;
+  onDropInCell?: (gridId: string, position: GridPosition) => void;
+  onDragStartCell?: (blockId: string, gridId: string, position: GridPosition) => void;
 }
 
 export const Grid2DRow: React.FC<Grid2DRowProps> = ({
-  row,
-  rowIndex,
   gridId,
-  columns,
+  rowIndex,
+  row,
   activeBlockId,
   onActiveBlockChange,
   onUpdateBlock,
   onDeleteBlock,
   onAddBlock,
-  onAddRowAbove,
-  onAddRowBelow,
-  onRemoveRow,
-  onMove,
-  onAddBlockAtPosition,
   dragState,
-  onDragOver,
-  onDragLeave,
-  onDrop,
-  canRemoveRow
+  onDragOverCell,
+  onDropInCell,
+  onDragStartCell,
 }) => {
-  const handleAddBlock = useCallback((position: GridPosition) => {
-    onAddBlock(position);
-  }, [onAddBlock]);
+  const handleAddBlockToCell = (colIndex: number) => {
+    onAddBlock(gridId, { row: rowIndex, column: colIndex }); // Pass gridId and full GridPosition
+  };
 
   return (
-    <>
-      {/* Row Controls */}
-      <div className="grid-2d-row-controls col-span-full flex items-center justify-between py-1 mb-2">
-        <span className="text-xs text-gray-500 font-mono">
-          Linha {rowIndex + 1}
-        </span>
+    <div 
+      className="grid-2d-row flex w-full" 
+      style={{ gridTemplateColumns: `repeat(${row.columns}, 1fr)`, gap: '0.5rem' /* Reduced gap */ }}
+    >
+      {Array.from({ length: row.columns }).map((_, colIndex) => {
+        const cell = row.cells.find(c => {
+            // Access grid_position from block's meta if cell itself doesn't store row/col
+            // Or, if GridCell type was updated to include row/column directly:
+            return c.row === rowIndex && c.column === colIndex;
+        });
         
-        <div className="flex items-center gap-1">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => onAddRowAbove(gridId, rowIndex)}
-            className="w-6 h-6 p-0 text-blue-400 hover:text-blue-300 hover:bg-blue-900/20"
-            title="Adicionar linha acima"
-          >
-            <Plus className="w-3 h-3" />
-          </Button>
-          
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => onAddRowBelow(gridId, rowIndex)}
-            className="w-6 h-6 p-0 text-green-400 hover:text-green-300 hover:bg-green-900/20"
-            title="Adicionar linha abaixo"
-          >
-            <Plus className="w-3 h-3" />
-          </Button>
-          
-          {canRemoveRow && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => onRemoveRow(gridId, rowIndex)}
-              className="w-6 h-6 p-0 text-red-400 hover:text-red-300 hover:bg-red-900/20"
-              title="Remover linha"
-            >
-              <Minus className="w-3 h-3" />
-            </Button>
-          )}
-        </div>
-      </div>
+        const blockInCell = cell?.block ? {
+          id: cell.block.id,
+          type: cell.block.type as BlockType,
+          content: cell.block.content,
+          visible: cell.block.visible,
+          meta: cell.block.meta,
+          sort_index: cell.block.sort_index // Ensure sort_index is present
+        } as ReviewBlock : null;
 
-      {/* Row Cells */}
-      {row.cells.map((cell) => (
-        <Grid2DCell
-          key={cell.id}
-          position={{ row: cell.row, column: cell.column }}
-          block={cell.block}
-          activeBlockId={activeBlockId}
-          onActiveBlockChange={onActiveBlockChange}
-          onUpdateBlock={onUpdateBlock}
-          onDeleteBlock={onDeleteBlock}
-          onAddBlock={handleAddBlock}
-          gridId={gridId}
-        />
-      ))}
-    </>
+        const cellPosition: GridPosition = { row: rowIndex, column: colIndex };
+        const isDragOver = dragState?.dropTargetType === '2d-grid-cell' && 
+                           dragState?.dragOverGridId === gridId &&
+                           dragState?.dragOverPosition?.row === rowIndex &&
+                           dragState?.dragOverPosition?.column === colIndex;
+
+        return (
+          <div
+            key={`${gridId}-${rowIndex}-${colIndex}`}
+            className={cn(
+              "grid-2d-cell flex-1 p-1 border border-dashed rounded-md min-h-[80px] flex flex-col justify-center items-center",
+              isDragOver ? "border-blue-500 bg-blue-500/10" : "border-gray-700 hover:border-gray-500"
+            )}
+            style={{
+              borderColor: isDragOver ? '#3b82f6' : '#4b5563', // Darker borders
+              backgroundColor: isDragOver ? 'rgba(59, 130, 246, 0.1)' : '#1e1e1e' // Darker bg
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onDragOverCell?.(gridId, cellPosition);
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onDropInCell?.(gridId, cellPosition);
+            }}
+            onClick={() => !blockInCell && handleAddBlockToCell(colIndex)}
+          >
+            {blockInCell ? (
+              <SingleBlock
+                block={blockInCell}
+                activeBlockId={activeBlockId}
+                onActiveBlockChange={onActiveBlockChange}
+                onUpdateBlock={onUpdateBlock}
+                onDeleteBlock={onDeleteBlock}
+                // Simplified props for SingleBlock in this context
+                // Pass only essential props, or define a variant for grid usage
+                globalIndex={0} // This might not be relevant here or needs context
+                dragState={{}} // Pass appropriate drag state if SingleBlock handles internal drag
+                onDuplicateBlock={() => {}} // Placeholder
+                onAddBlockBetween={() => {}} // Placeholder
+                onDragStart={(e) => {
+                  e.stopPropagation();
+                  onDragStartCell?.(blockInCell.id, gridId, cellPosition);
+                }}
+              />
+            ) : (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-gray-500 hover:text-gray-300"
+                onClick={() => handleAddBlockToCell(colIndex)}
+              >
+                <Plus className="w-4 h-4 mr-1" /> Add Block
+              </Button>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 };

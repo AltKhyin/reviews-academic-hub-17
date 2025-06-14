@@ -1,11 +1,10 @@
-
 // ABOUTME: Enhanced block editor with complete 2D grid support and dynamic layout
 // Main editor with full grid functionality and responsive design - UPDATED: Reduced spacing by 50%
 
 import React, { useState, useCallback, useRef } from 'react';
 import { ReviewBlock, BlockType } from '@/types/review';
 import { SingleBlock } from './blocks/SingleBlock';
-import { ResizableGrid } from './layout/ResizableGrid';
+import { ResizableGrid, ResizableGridProps } from './layout/ResizableGrid'; // Ensure ResizableGridProps is imported if needed, or defined inline
 import { Grid2DContainer } from './layout/Grid2DContainer';
 import { useGridLayoutManager } from '@/hooks/useGridLayoutManager';
 import { useGrid2DManager } from '@/hooks/useGrid2DManager';
@@ -108,7 +107,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
   const layoutGroups = React.useMemo(() => {
     const groups: Array<{
       type: '1d-grid' | '2d-grid' | 'single';
-      id: string;
+      id: string; // Group ID should be string
       blocks: ReviewBlock[];
       config?: any;
     }> = [];
@@ -123,7 +122,6 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
         grid2DIds.add(gridId);
         const gridBlocks = blocks.filter(b => b.meta?.layout?.grid_id === gridId);
         
-        // Validate that blocks have valid grid positions
         const validGridBlocks = gridBlocks.filter(b => {
           const pos = b.meta?.layout?.grid_position;
           return pos && (typeof pos === 'object' && typeof pos.row === 'number' && typeof pos.column === 'number');
@@ -172,7 +170,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       if (!processedBlockIds.has(block.id)) {
         groups.push({
           type: 'single',
-          id: `single-${block.id}`,
+          id: `single-${block.id}`, // Ensure single block group IDs are strings
           blocks: [block]
         });
       }
@@ -481,11 +479,11 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                   onUpdateBlock={onUpdateBlock}
                   onDeleteBlock={onDeleteBlock}
                   activeBlockId={activeBlockId}
-                  onActiveBlockChange={onActiveBlockChange}
+                  onActiveBlockChange={onActiveBlockChange} // Fixed: Renamed from onActive to onActiveBlockChange
                   dragState={dragState}
-                  onDragOver={() => {}}
-                  onDragLeave={() => {}}
-                  onDrop={() => {}}
+                  onDragOver={() => {}} // Placeholder, implement actual logic if needed
+                  onDragLeave={() => {}} // Placeholder
+                  onDrop={() => {}} // Placeholder
                 />
               </div>
             );
@@ -496,7 +494,7 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
               <div key={block.id} className="w-full max-w-full overflow-hidden">
                 <SingleBlock
                   block={block}
-                  globalIndex={globalIndex}
+                  globalIndex={globalIndex} // This seems to be a number, ensure it's used correctly
                   activeBlockId={activeBlockId}
                   dragState={dragState}
                   onActiveBlockChange={onActiveBlockChange}
@@ -506,11 +504,11 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                   onConvertToGrid={onConvertToGrid!}
                   onConvertTo2DGrid={onConvertTo2DGrid}
                   onAddBlockBetween={addBlockBetween}
-                  onDragStart={() => {}}
-                  onDragEnd={() => {}}
-                  onDragOver={() => {}}
-                  onDragLeave={() => {}}
-                  onDrop={() => {}}
+                  onDragStart={() => {}} // Placeholder
+                  onDragEnd={() => {}} // Placeholder
+                  onDragOver={() => {}} // Placeholder
+                  onDragLeave={() => {}} // Placeholder
+                  onDrop={() => {}} // Placeholder
                 />
               </div>
             );

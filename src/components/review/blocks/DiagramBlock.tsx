@@ -1,299 +1,202 @@
-// ABOUTME: Enhanced diagram block with comprehensive null safety and responsive design
-// Supports scientific diagrams with inline editing and fullscreen capabilities
 
-import React, { useState } from 'react';
-import { Card } from '@/components/ui/card';
+// ABOUTME: Diagram block component for creating and displaying visual diagrams.
+// Supports nodes, edges, and interactive canvas for review content.
+
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ReviewBlock, DiagramContent } from '@/types/review';
-import { DiagramCanvas } from './diagram/DiagramCanvas';
-import { DiagramToolbar } from './diagram/DiagramToolbar';
-import { DiagramFullscreenViewer } from './diagram/DiagramFullscreenViewer';
-import { InlineBlockSettings } from '@/components/editor/inline/InlineBlockSettings';
-import { generateSpacingStyles, getDefaultSpacing } from '@/utils/spacingUtils';
-import { cn } from '@/lib/utils';
-import { Maximize2, Edit3 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { HexColorPicker } from 'react-colorful';
+import { DiagramContent, DiagramNode, DiagramEdge, ReviewBlock } from '@/types/review'; // Updated types
+import { Trash2, Edit3, PlusCircle, Save, Palette, Settings2, ZoomIn, ZoomOut, Hand } from 'lucide-react';
+// Mock or simple implementation of a diagramming library interface
+// In a real scenario, you'd use a library like React Flow, Excalidraw, etc.
 
-interface DiagramBlockProps {
-  block: ReviewBlock;
-  readonly?: boolean;
-  onUpdate?: (updates: Partial<ReviewBlock>) => void;
+interface DiagramCanvasProps {
+  content: DiagramContent;
+  onContentChange: (newContent: DiagramContent) => void;
+  readOnly?: boolean;
 }
 
-export const DiagramBlock: React.FC<DiagramBlockProps> = ({ 
-  block, 
-  readonly = false,
-  onUpdate
-}) => {
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [selectedTool, setSelectedTool] = useState('select');
-  const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
+const DiagramCanvas: React.FC<DiagramCanvasProps> = ({ content, onContentChange, readOnly }) => {
+  // This is a very simplified canvas representation.
+  // A real implementation would involve complex state management for nodes, edges, zooming, panning etc.
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
-  // Safe access to content with comprehensive fallbacks
-  const content = block.content || {};
+  const handleNodeUpdate = (nodeId: string, updates: Partial<DiagramNode>) => {
+    onContentChange({
+      ...content,
+      nodes: content.nodes.map(n => n.id === nodeId ? { ...n, ...updates } : n),
+    });
+  };
   
-  // Create complete diagram content with all required fields and fallbacks
-  const diagramContent: DiagramContent = {
-    title: content.title || 'Untitled Diagram',
-    description: content.description || '',
-    canvas: {
-      width: content.canvas?.width || 800,
-      height: content.canvas?.height || 600,
-      backgroundColor: content.canvas?.backgroundColor || '#ffffff',
-      gridEnabled: content.canvas?.gridEnabled ?? true,
-      gridSize: content.canvas?.gridSize || 20,
-      gridColor: content.canvas?.gridColor || '#e5e7eb',
-      snapToGrid: content.canvas?.snapToGrid ?? true,
-      ...content.canvas
-    },
-    nodes: Array.isArray(content.nodes) ? content.nodes : [],
-    connections: Array.isArray(content.connections) ? content.connections : [],
-    template: content.template || undefined,
-    exportSettings: {
-      format: 'svg',
-      quality: 1,
-      transparentBackground: false,
-      ...content.exportSettings
-    },
-    accessibility: {
-      altText: content.accessibility?.altText || 'Scientific diagram',
-      longDescription: content.accessibility?.longDescription || '',
-      ...content.accessibility
-    }
-  };
-
-  // Spacing system integration
-  const customSpacing = block.meta?.spacing;
-  const defaultSpacing = getDefaultSpacing('diagram');
-  const finalSpacing = customSpacing || defaultSpacing;
-  const spacingStyles = generateSpacingStyles(finalSpacing);
-
-  const handleContentUpdate = (updates: Partial<DiagramContent>) => {
-    if (onUpdate) {
-      onUpdate({
-        content: {
-          ...content,
-          ...updates
-        }
-      });
-    }
-  };
-
-  const handleSave = () => {
-    // Save action that doesn't require parameters
-    console.log('Diagram saved');
-  };
-
-  const handleNodeAdd = (nodeType: string, position: { x: number; y: number }) => {
-    const newNode = {
-      id: `node_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      type: nodeType as any,
-      position,
-      size: { width: 120, height: 60 },
-      text: 'New Node',
-      style: {
-        backgroundColor: '#3b82f6',
-        borderColor: '#1e40af',
-        textColor: '#ffffff',
-        borderWidth: 2,
-        borderStyle: 'solid' as const,
-        fontSize: 14,
-        fontWeight: 'normal' as const,
-        textAlign: 'center' as const,
-        opacity: 1
-      }
-    };
-
-    handleContentUpdate({
-      nodes: [...diagramContent.nodes, newNode]
-    });
-  };
-
-  const handleNodeUpdate = (nodeId: string, updates: any) => {
-    const updatedNodes = diagramContent.nodes.map(node =>
-      node.id === nodeId ? { ...node, ...updates } : node
-    );
-    
-    handleContentUpdate({
-      nodes: updatedNodes
-    });
-  };
-
-  const handleNodeDelete = (nodeId: string) => {
-    const updatedNodes = diagramContent.nodes.filter(node => node.id !== nodeId);
-    const updatedConnections = diagramContent.connections.filter(
-      conn => conn.sourceNodeId !== nodeId && conn.targetNodeId !== nodeId
-    );
-    
-    handleContentUpdate({
-      nodes: updatedNodes,
-      connections: updatedConnections
-    });
-  };
-
-  const handleConnectionAdd = (connection: any) => {
-    handleContentUpdate({
-      connections: [...diagramContent.connections, connection]
-    });
-  };
-
-  const handleConnectionDelete = (connectionId: string) => {
-    const updatedConnections = diagramContent.connections.filter(
-      conn => conn.id !== connectionId
-    );
-    
-    handleContentUpdate({
-      connections: updatedConnections
-    });
-  };
-
-  if (readonly) {
-    return (
-      <div className="diagram-block w-full max-w-full overflow-hidden" style={spacingStyles}>
-        <Card className="w-full max-w-full overflow-hidden" style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
-          <div className="p-4 border-b" style={{ borderColor: '#2a2a2a' }}>
-            <div className="flex items-center justify-between">
-              <div className="min-w-0 flex-1">
-                <h3 className="text-lg font-medium truncate" style={{ color: '#ffffff' }}>
-                  {diagramContent.title}
-                </h3>
-                {diagramContent.description && (
-                  <p className="text-sm mt-1 break-words" style={{ color: '#d1d5db' }}>
-                    {diagramContent.description}
-                  </p>
-                )}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsFullscreen(true)}
-                style={{ borderColor: '#3b82f6', color: '#3b82f6' }}
-              >
-                <Maximize2 className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-          
-          <div className="aspect-[4/3] w-full max-w-full overflow-hidden">
-            <DiagramCanvas
-              content={diagramContent}
-              mode="preview"
-              selectedTool={selectedTool}
-              selectedNodes={selectedNodes}
-              onNodeAdd={handleNodeAdd}
-              onNodeUpdate={handleNodeUpdate}
-              onNodeDelete={handleNodeDelete}
-              onConnectionAdd={handleConnectionAdd}
-              onConnectionDelete={handleConnectionDelete}
-              onSelectionChange={setSelectedNodes}
-              readonly={true}
-            />
-          </div>
-        </Card>
-
-        {isFullscreen && (
-          <DiagramFullscreenViewer
-            content={diagramContent}
-            selectedTool={selectedTool}
-            selectedNodes={selectedNodes}
-            onContentUpdate={handleContentUpdate}
-            onToolChange={setSelectedTool}
-            onSelectionChange={setSelectedNodes}
-            onSave={handleSave}
-            onClose={() => setIsFullscreen(false)}
-          />
-        )}
-      </div>
-    );
-  }
+  const { nodes = [], edges = [], canvas = {} } = content; // Destructure with defaults
 
   return (
-    <div className="diagram-block group relative w-full max-w-full overflow-hidden" style={spacingStyles}>
-      {/* Inline Settings */}
-      <div className="absolute -top-2 -right-2 z-10">
-        <InlineBlockSettings
-          block={block}
-          onUpdate={onUpdate}
-        />
-      </div>
-
-      <Card className="w-full max-w-full overflow-hidden" style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
-        {/* Header */}
-        <div className="p-4 border-b" style={{ borderColor: '#2a2a2a' }}>
-          <div className="flex items-center justify-between gap-4">
-            <div className="min-w-0 flex-1">
-              <input
-                type="text"
-                value={diagramContent.title}
-                onChange={(e) => handleContentUpdate({ title: e.target.value })}
-                className="text-lg font-medium bg-transparent border-none outline-none w-full"
-                style={{ color: '#ffffff' }}
-                placeholder="Diagram Title"
-              />
-              <textarea
-                value={diagramContent.description}
-                onChange={(e) => handleContentUpdate({ description: e.target.value })}
-                className="text-sm mt-1 bg-transparent border-none outline-none w-full resize-none"
-                style={{ color: '#d1d5db' }}
-                placeholder="Optional description..."
-                rows={2}
-              />
-            </div>
+    <div 
+      className="relative w-full h-[400px] border rounded-md overflow-hidden" 
+      style={{ backgroundColor: canvas.backgroundColor || '#f0f0f0' }}
+    >
+      {/* Render Edges */}
+      {edges.map(edge => (
+        <svg key={edge.id} className="absolute top-0 left-0 w-full h-full pointer-events-none">
+          {/* Basic line rendering - a real library would handle curves, arrows etc. */}
+          {(() => {
+            const sourceNode = nodes.find(n => n.id === edge.source);
+            const targetNode = nodes.find(n => n.id === edge.target);
+            if (!sourceNode || !targetNode) return null;
             
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsFullscreen(true)}
-                style={{ borderColor: '#3b82f6', color: '#3b82f6' }}
-              >
-                <Edit3 className="w-4 h-4 mr-1" />
-                Edit
-              </Button>
-            </div>
+            const sourceX = (sourceNode.x || sourceNode.position?.x || 0) + (sourceNode.width || sourceNode.size?.width || 0) / 2;
+            const sourceY = (sourceNode.y || sourceNode.position?.y || 0) + (sourceNode.height || sourceNode.size?.height || 0) / 2;
+            const targetX = (targetNode.x || targetNode.position?.x || 0) + (targetNode.width || targetNode.size?.width || 0) / 2;
+            const targetY = (targetNode.y || targetNode.position?.y || 0) + (targetNode.height || targetNode.size?.height || 0) / 2;
+
+            return (
+              <line 
+                x1={sourceX} y1={sourceY} 
+                x2={targetX} y2={targetY} 
+                stroke={edge.style?.strokeColor || "black"} 
+                strokeWidth={edge.style?.strokeWidth || 2} 
+              />
+            );
+          })()}
+        </svg>
+      ))}
+
+      {/* Render Nodes */}
+      {nodes.map(node => (
+        <div
+          key={node.id}
+          className="absolute p-2 border cursor-grab"
+          style={{
+            left: `${node.x || node.position?.x || 0}px`,
+            top: `${node.y || node.position?.y || 0}px`,
+            width: `${node.width || node.size?.width || 100}px`,
+            height: `${node.height || node.size?.height || 50}px`,
+            backgroundColor: node.color || node.style?.backgroundColor || 'white',
+            borderColor: node.style?.borderColor || 'black',
+            color: node.style?.textColor || 'black',
+            borderRadius: node.type === 'circle' ? '50%' : (node.type === 'diamond' ? '0' : '4px'), // Basic diamond shape
+            transform: node.type === 'diamond' ? 'rotate(45deg)' : 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textAlign: 'center',
+            fontSize: `${node.style?.fontSize || 14}px`,
+          }}
+          onClick={() => !readOnly && setSelectedNodeId(node.id)}
+        >
+          <div style={{ transform: node.type === 'diamond' ? 'rotate(-45deg)' : 'none' }}>
+            {node.label || node.text || `Node ${node.id}`}
           </div>
         </div>
+      ))}
 
-        {/* Toolbar */}
-        <DiagramToolbar
-          selectedTool={selectedTool}
-          onToolChange={setSelectedTool}
-          selectedNodes={selectedNodes}
-          canvas={diagramContent.canvas}
-          onCanvasUpdate={(updates) => handleContentUpdate({ canvas: { ...diagramContent.canvas, ...updates } })}
-          onNodesUpdate={(nodes) => handleContentUpdate({ nodes })}
-        />
-        
-        {/* Canvas */}
-        <div className="aspect-[4/3] w-full max-w-full overflow-hidden">
-          <DiagramCanvas
-            content={diagramContent}
-            mode="edit"
-            selectedTool={selectedTool}
-            selectedNodes={selectedNodes}
-            onNodeAdd={handleNodeAdd}
-            onNodeUpdate={handleNodeUpdate}
-            onNodeDelete={handleNodeDelete}
-            onConnectionAdd={handleConnectionAdd}
-            onConnectionDelete={handleConnectionDelete}
-            onSelectionChange={setSelectedNodes}
-            readonly={false}
+      {/* Simplified Node Editor (Example) */}
+      {selectedNodeId && !readOnly && (
+        <div className="absolute top-2 right-2 bg-white p-2 border rounded shadow-lg w-64">
+          <Label>Edit Node: {selectedNodeId}</Label>
+          <Input 
+            value={nodes.find(n=>n.id===selectedNodeId)?.label || ''} 
+            onChange={(e) => handleNodeUpdate(selectedNodeId, { label: e.target.value })}
+            className="mt-1"
           />
+          <Button size="sm" variant="outline" onClick={() => setSelectedNodeId(null)} className="mt-2">Close</Button>
         </div>
-      </Card>
-
-      {/* Fullscreen Editor */}
-      {isFullscreen && (
-        <DiagramFullscreenViewer
-          content={diagramContent}
-          selectedTool={selectedTool}
-          selectedNodes={selectedNodes}
-          onContentUpdate={handleContentUpdate}
-          onToolChange={setSelectedTool}
-          onSelectionChange={setSelectedNodes}
-          onSave={handleSave}
-          onClose={() => setIsFullscreen(false)}
-        />
       )}
     </div>
+  );
+};
+
+
+interface DiagramBlockProps {
+  block: ReviewBlock; // ReviewBlock already has string ID
+  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
+  onDeleteBlock: (blockId: string) => void;
+  isActive: boolean;
+}
+
+export const DiagramBlock: React.FC<DiagramBlockProps> = ({ block, onUpdateBlock, onDeleteBlock, isActive }) => {
+  const content = block.content as DiagramContent || { nodes: [], edges: [], canvas: {} }; // Ensure content and its fields are initialized
+
+  const handleContentChange = (newContent: Partial<DiagramContent>) => {
+    onUpdateBlock(block.id, { content: { ...content, ...newContent } });
+  };
+
+  const addNode = () => {
+    const newNode: DiagramNode = {
+      id: `node-${Date.now()}`,
+      type: 'rectangle',
+      x: 50, y: 50, width: 120, height: 60,
+      label: 'New Node',
+      color: '#ffffff',
+    };
+    handleContentChange({ nodes: [...(content.nodes || []), newNode] });
+  };
+
+  const addEdge = () => {
+    if ((content.nodes || []).length < 2) {
+      alert("Need at least two nodes to create an edge.");
+      return;
+    }
+    const newEdge: DiagramEdge = {
+      id: `edge-${Date.now()}`,
+      source: content.nodes[0].id,
+      target: content.nodes[content.nodes.length - 1].id,
+      type: 'straight',
+    };
+    handleContentChange({ edges: [...(content.edges || []), newEdge] });
+  };
+  
+  const handleCanvasSettingsChange = (updates: Partial<DiagramContent['canvas']>) => {
+    handleContentChange({ canvas: { ...(content.canvas || {}), ...updates } });
+  };
+
+
+  return (
+    <Card className={cn("diagram-block", isActive && "ring-2 ring-blue-500")}>
+      <CardHeader className="flex flex-row items-center justify-between py-2 px-3 bg-gray-800/50 border-b border-gray-700">
+        <CardTitle className="text-base font-medium text-gray-200">Diagram Block</CardTitle>
+        <div className="flex items-center space-x-1">
+          <Button variant="ghost" size="xs" onClick={addNode} title="Add Node">
+            <PlusCircle className="w-4 h-4 text-green-400" />
+          </Button>
+          <Button variant="ghost" size="xs" onClick={addEdge} title="Add Edge" disabled={(content.nodes || []).length < 2}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-git-fork text-blue-400"><circle cx="12" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><path d="M18 9v1a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V9"/><path d="M12 12v3"/></svg>
+          </Button>
+          <Button variant="ghost" size="xs" onClick={() => onDeleteBlock(block.id)} title="Delete Block">
+            <Trash2 className="w-4 h-4 text-red-400" />
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="p-2 space-y-2 bg-gray-900/30">
+        <div className="grid grid-cols-2 gap-2 mb-2">
+          <div>
+            <Label htmlFor={`diagram-title-${block.id}`} className="text-xs text-gray-400">Title</Label>
+            <Input
+              id={`diagram-title-${block.id}`}
+              value={content.title || ''}
+              onChange={(e) => handleContentChange({ title: e.target.value })}
+              placeholder="Diagram Title"
+              className="text-sm bg-gray-800 border-gray-700 text-white focus:border-blue-500"
+            />
+          </div>
+          <div>
+            <Label htmlFor={`diagram-bg-${block.id}`} className="text-xs text-gray-400">Canvas BG</Label>
+            <Input
+              id={`diagram-bg-${block.id}`}
+              type="color"
+              value={content.canvas?.backgroundColor || '#f0f0f0'}
+              onChange={(e) => handleCanvasSettingsChange({ backgroundColor: e.target.value })}
+              className="w-full h-9 p-1 bg-gray-800 border-gray-700"
+            />
+          </div>
+        </div>
+        <DiagramCanvas content={content} onContentChange={(newDiagramContent) => handleContentChange(newDiagramContent)} />
+      </CardContent>
+    </Card>
   );
 };

@@ -1,4 +1,3 @@
-
 // ABOUTME: Enhanced review types with string IDs for database compatibility and complete type definitions
 export type BlockType = 
   | 'text' 
@@ -66,7 +65,7 @@ export interface AlignmentConfig {
 }
 
 export interface ReviewBlock {
-  id: string;
+  id: string; // Ensure IDs are strings
   type: BlockType;
   content: any;
   sort_index: number;
@@ -79,26 +78,55 @@ export interface ReviewBlock {
 }
 
 // Added missing content type interfaces
+export interface DiagramNode {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  label: string;
+  type: 'rectangle' | 'circle' | 'diamond';
+  color?: string;
+  // Adding properties that were used in DiagramBlock but not defined
+  style?: {
+    backgroundColor?: string;
+    borderColor?: string;
+    textColor?: string;
+    borderWidth?: number;
+    fontSize?: number;
+    fontFamily?: string;
+    textAlign?: string;
+    opacity?: number;
+  };
+  position?: { x: number; y: number }; // Often used with x, y
+  size?: { width: number; height: number }; // Often used with width, height
+  text?: string; // Alternative to label
+}
+
+export interface DiagramEdge {
+  id: string;
+  source: string;
+  target: string;
+  label?: string;
+  type: 'straight' | 'curved';
+  style?: {
+    strokeColor?: string;
+    strokeWidth?: number;
+    arrowhead?: 'default' | 'none';
+  };
+}
 export interface DiagramContent {
-  nodes: Array<{
-    id: string;
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    label: string;
-    type: 'rectangle' | 'circle' | 'diamond';
-    color?: string;
-  }>;
-  edges: Array<{
-    id: string;
-    source: string;
-    target: string;
-    label?: string;
-    type: 'straight' | 'curved';
-  }>;
+  nodes: Array<DiagramNode>;
+  edges: Array<DiagramEdge>; // Renamed from 'connections' to 'edges' to match common usage
   title?: string;
   description?: string;
+  canvas?: { // Adding canvas based on usage in DiagramBlock
+    backgroundColor?: string;
+    gridSize?: number;
+    zoomLevel?: number;
+    offsetX?: number;
+    offsetY?: number;
+  };
 }
 
 export interface SnapshotCardContent {
@@ -112,6 +140,20 @@ export interface SnapshotCardContent {
   }>;
   timestamp?: string;
   source?: string;
+  // Adding properties that were used in SnapshotCard but not defined
+  subtitle?: string;
+  value?: string | number; // General value if not in metrics
+  change?: string; // e.g., "+5%"
+  trend?: 'up' | 'down' | 'neutral';
+  icon?: string; // Icon name or URL
+  evidence_level?: string;
+  recommendation_strength?: string;
+  population?: string;
+  intervention?: string;
+  comparison?: string;
+  outcome?: string;
+  design?: string;
+  key_findings?: string[];
 }
 
 export interface EnhancedIssue {

@@ -1,4 +1,3 @@
-
 // ABOUTME: Fullscreen native editor with immersive editing experience and string ID support
 // Provides dedicated workspace for complex review creation
 
@@ -11,13 +10,13 @@ import { EditorToolbar } from './EditorToolbar';
 import { EditorStatusBar } from './EditorStatusBar';
 import { Button } from '@/components/ui/button';
 import { X, Minimize2 } from 'lucide-react';
-import { useBlockManagement } from '@/hooks/useBlockManagement';
+import { useBlockManagement } from '@/hooks/useBlockManagement'; // Ensure this hook uses string IDs
 import { useEditorAutoSave } from '@/hooks/useEditorAutoSave';
 import { useEditorKeyboardShortcuts } from './hooks/useEditorKeyboardShortcuts';
 import { cn } from '@/lib/utils';
 
 interface NativeEditorFullscreenProps {
-  issueId?: string;
+  issueId?: string; // string
   initialBlocks?: ReviewBlock[];
   onSave?: (blocks: ReviewBlock[]) => void;
   onClose: () => void;
@@ -36,22 +35,22 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
 
   const {
     blocks,
-    activeBlockId,
+    activeBlockId, // Should be string | null
     setActiveBlockId,
-    addBlock,
-    updateBlock,
-    deleteBlock,
-    moveBlock,
-    duplicateBlock,
-    convertToGrid,
-    convertTo2DGrid,
-    mergeBlockIntoGrid,
-    placeBlockIn2DGrid,
+    addBlock, // Returns string
+    updateBlock, // Accepts string ID
+    deleteBlock, // Accepts string ID
+    moveBlock, // Accepts string ID
+    duplicateBlock, // Accepts string ID
+    convertToGrid, // Accepts string ID
+    convertTo2DGrid, // Accepts string ID
+    mergeBlockIntoGrid, // Accepts string IDs
+    placeBlockIn2DGrid, // Accepts string IDs
     undo,
     redo,
     canUndo,
     canRedo
-  } = useBlockManagement({ initialBlocks, issueId });
+  } = useBlockManagement({ initialBlocks, issueId }); // Ensure issueId (string) is compatible
 
   const { handleSave, isSaving, lastSaved } = useEditorAutoSave({
     data: blocks,
@@ -80,7 +79,7 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
   }, [blocks, initialBlocks]);
 
   const handleAddBlock = useCallback((type: any, position?: number) => {
-    const newBlockId = addBlock(type, position);
+    const newBlockId = addBlock(type, position); // addBlock returns string
     console.log('Block added in fullscreen editor:', { type, position, newBlockId });
     return newBlockId;
   }, [addBlock]);
@@ -88,12 +87,13 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
   const handleImport = useCallback((importedBlocks: ReviewBlock[]) => {
     console.log('Importing blocks in fullscreen:', importedBlocks);
     importedBlocks.forEach((block, index) => {
+      const newBlockData = { ...block, id: String(block.id || Date.now()) }; // Ensure string ID
       if (index === 0) {
-        const firstBlockId = addBlock(block.type, 0);
-        updateBlock(firstBlockId, block);
+        const firstBlockId = addBlock(newBlockData.type, 0); // addBlock returns string
+        updateBlock(firstBlockId, newBlockData); // updateBlock takes string ID
       } else {
-        const newBlockId = addBlock(block.type, index);
-        updateBlock(newBlockId, { ...block, id: newBlockId });
+        const newBlockId = addBlock(newBlockData.type, index); // addBlock returns string
+        updateBlock(newBlockId, { ...newBlockData, id: newBlockId }); // updateBlock takes string ID
       }
     });
   }, [addBlock, updateBlock]);
@@ -178,17 +178,17 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
           >
             <BlockEditor
               blocks={blocks}
-              activeBlockId={activeBlockId}
-              onActiveBlockChange={setActiveBlockId}
-              onUpdateBlock={updateBlock}
-              onDeleteBlock={deleteBlock}
-              onMoveBlock={moveBlock}
-              onAddBlock={handleAddBlock}
-              onDuplicateBlock={duplicateBlock}
-              onConvertToGrid={convertToGrid}
-              onConvertTo2DGrid={convertTo2DGrid}
-              onMergeBlockIntoGrid={mergeBlockIntoGrid}
-              onPlaceBlockIn2DGrid={placeBlockIn2DGrid}
+              activeBlockId={activeBlockId} // string | null
+              onActiveBlockChange={setActiveBlockId} // (string | null) => void
+              onUpdateBlock={updateBlock} // (string, Partial<ReviewBlock>) => void
+              onDeleteBlock={deleteBlock} // (string) => void
+              onMoveBlock={moveBlock} // (string, 'up' | 'down') => void
+              onAddBlock={handleAddBlock} // (BlockType, number?) => string
+              onDuplicateBlock={duplicateBlock} // (string) => void
+              onConvertToGrid={convertToGrid} // (string, number) => void
+              onConvertTo2DGrid={convertTo2DGrid} // (string, number, number) => void
+              onMergeBlockIntoGrid={mergeBlockIntoGrid} // (string, string, number?) => void
+              onPlaceBlockIn2DGrid={placeBlockIn2DGrid} // (string, string, GridPosition) => void
             />
           </div>
         )}
@@ -206,7 +206,7 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
 
       <EditorStatusBar
         blockCount={blocks.length}
-        activeBlockId={activeBlockId}
+        activeBlockId={activeBlockId} // string | null
       />
     </div>
   );

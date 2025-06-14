@@ -1,4 +1,3 @@
-
 // ABOUTME: Enhanced block list with proper click handling and inline editing
 // Prevents unwanted block creation and provides intuitive interaction patterns - UPDATED: Reduced spacing by 50%
 
@@ -132,11 +131,18 @@ export const BlockList: React.FC<BlockListProps> = ({
   compact = false
 }) => {
   const { dragState, handleDragStart, handleDragEnd, handleDragOver, handleDragEnter } = 
-    useBlockDragDrop(onMoveBlock);
+    useBlockDragDrop((draggedIndexOrId: string | number, targetIndexOrId: string | number) => {
+      if (typeof draggedIndexOrId === 'number' && typeof targetIndexOrId === 'number') {
+        const draggedBlock = blocks[draggedIndexOrId];
+        if (draggedBlock) {
+          onMoveBlock(draggedBlock.id, draggedIndexOrId < targetIndexOrId ? 'down' : 'up');
+        }
+      } else if (typeof draggedIndexOrId === 'string') {
+        onMoveBlock(draggedIndexOrId, /* determine direction based on targetIndexOrId or internal state */);
+      }
+    });
 
-  // Handle block selection with proper event handling
   const handleBlockClick = (e: React.MouseEvent, blockId: string) => {
-    // Prevent triggering on button clicks or other interactive elements
     const target = e.target as HTMLElement;
     if (target.closest('button') || target.closest('[role="button"]')) {
       return;
@@ -146,7 +152,6 @@ export const BlockList: React.FC<BlockListProps> = ({
     onActiveBlockChange(blockId);
   };
 
-  // Handle add block with explicit positioning
   const handleAddBlockClick = (e: React.MouseEvent, position: number, type: BlockType = 'paragraph') => {
     e.stopPropagation();
     e.preventDefault();
@@ -191,7 +196,6 @@ export const BlockList: React.FC<BlockListProps> = ({
 
         return (
           <div key={block.id} className="space-y-1 w-full max-w-full overflow-hidden">
-            {/* Insert point at the top for first block */}
             {index === 0 && (
               <div className="insert-point group w-full">
                 <Button
@@ -227,7 +231,6 @@ export const BlockList: React.FC<BlockListProps> = ({
             >
               <CardContent className={cn("p-2 w-full max-w-full overflow-hidden", compact && "p-1.5")}>
                 <div className="flex items-center gap-2 w-full max-w-full overflow-hidden">
-                  {/* Drag Handle */}
                   <div 
                     className="drag-handle cursor-grab active:cursor-grabbing flex-shrink-0"
                     onMouseDown={(e) => e.stopPropagation()}
@@ -238,7 +241,6 @@ export const BlockList: React.FC<BlockListProps> = ({
                     />
                   </div>
 
-                  {/* Block Icon */}
                   <div className="flex-shrink-0">
                     <Icon 
                       className="w-4 h-4" 
@@ -246,7 +248,6 @@ export const BlockList: React.FC<BlockListProps> = ({
                     />
                   </div>
 
-                  {/* Block Info */}
                   <div className="flex-1 min-w-0 overflow-hidden">
                     <div className="flex items-center gap-1 mb-0.5 overflow-hidden">
                       <h4 
@@ -293,9 +294,7 @@ export const BlockList: React.FC<BlockListProps> = ({
                     </div>
                   </div>
 
-                  {/* Action Buttons */}
                   <div className="flex items-center gap-0.5 flex-shrink-0">
-                    {/* Up Arrow */}
                     {!isFirst && (
                       <Button
                         size="sm"
@@ -311,7 +310,6 @@ export const BlockList: React.FC<BlockListProps> = ({
                       </Button>
                     )}
 
-                    {/* Down Arrow */}
                     {!isLast && (
                       <Button
                         size="sm"
@@ -373,7 +371,6 @@ export const BlockList: React.FC<BlockListProps> = ({
               </CardContent>
             </Card>
 
-            {/* Insert Point After Each Block */}
             <div className="insert-point group w-full">
               <Button
                 size="sm"
