@@ -1,3 +1,4 @@
+
 // ABOUTME: Community page with integrated sidebar using optimized data bridge
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -8,10 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NewPostModal } from '@/components/community/NewPostModal';
 import { PostsList } from '@/components/community/PostsList';
-import { useCommunityPosts, usePostFlairs } from '@/hooks/useCommunityPosts';
+import { usePostFlairs } from '@/hooks/useCommunityPosts';
 import { CommunityHeader } from '@/components/community/CommunityHeader';
 import { RightSidebar } from '@/components/sidebar/RightSidebar';
-import { useSidebarDataBridge } from '@/hooks/sidebar/useSidebarDataBridge';
+import { useOptimizedCommunityPosts } from '@/hooks/community/useOptimizedCommunityPosts';
+import { useOptimizedSidebarData } from '@/hooks/sidebar/useOptimizedSidebarData';
 import { Search } from 'lucide-react';
 
 const Community = () => {
@@ -22,11 +24,10 @@ const Community = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('latest');
 
-  // Initialize sidebar data bridge
-  useSidebarDataBridge(user?.id);
-
+  // Initialize optimized data hooks
+  const { data: optimizedPosts, refetch: refetchPosts, isLoading, error } = useOptimizedCommunityPosts(activeTab, searchTerm);
+  const { data: sidebarData } = useOptimizedSidebarData(user?.id);
   const { data: flairs } = usePostFlairs();
-  const { data: posts, refetch: refetchPosts, isLoading, error } = useCommunityPosts(activeTab, searchTerm);
 
   const handleCreatePost = () => {
     if (!user) {
@@ -45,6 +46,24 @@ const Community = () => {
     e.preventDefault();
     refetchPosts();
   };
+
+  // Transform optimized posts to legacy format for PostsList compatibility
+  const transformedPosts = optimizedPosts?.posts.map(post => ({
+    ...post,
+    author: {
+      full_name: post.author_name,
+      avatar_url: post.author_avatar,
+    },
+    flair: post.flair_name ? {
+      name: post.flair_name,
+      color: post.flair_color,
+    } : null,
+    vote_value: post.user_vote,
+    is_bookmarked: post.bookmark_date !== null,
+    _count: {
+      comments: post.comment_count,
+    },
+  })) || [];
 
   return (
     <div className="max-w-6xl mx-auto py-6 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: '#121212', minHeight: '100vh' }}>
@@ -99,7 +118,7 @@ const Community = () => {
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsContent value="latest" className="mt-0">
                   <PostsList 
-                    posts={posts} 
+                    posts={transformedPosts} 
                     emptyMessage="Nenhuma publicação encontrada." 
                     onVoteChange={refetchPosts}
                     isLoading={isLoading}
@@ -109,7 +128,7 @@ const Community = () => {
 
                 <TabsContent value="popular" className="mt-0">
                   <PostsList 
-                    posts={posts} 
+                    posts={transformedPosts} 
                     emptyMessage="Nenhuma publicação encontrada." 
                     onVoteChange={refetchPosts}
                     isLoading={isLoading}
@@ -119,7 +138,7 @@ const Community = () => {
 
                 <TabsContent value="oldest" className="mt-0">
                   <PostsList 
-                    posts={posts} 
+                    posts={transformedPosts} 
                     emptyMessage="Nenhuma publicação encontrada." 
                     onVoteChange={refetchPosts}
                     isLoading={isLoading}
@@ -130,7 +149,7 @@ const Community = () => {
                 {user && (
                   <TabsContent value="my" className="mt-0">
                     <PostsList 
-                      posts={posts} 
+                      posts={transformedPosts} 
                       emptyMessage="Você ainda não criou publicações." 
                       onVoteChange={refetchPosts}
                       isLoading={isLoading}
@@ -143,7 +162,7 @@ const Community = () => {
           </div>
         </div>
 
-        {/* Integrated sidebar - desktop only, now uses consistent background */}
+        {/* Integrated sidebar - desktop only */}
         <div className="hidden lg:block">
           <div style={{ backgroundColor: '#121212' }} className="overflow-hidden">
             <RightSidebar isMobile={false} className="border-0 bg-transparent" />
@@ -151,7 +170,7 @@ const Community = () => {
         </div>
       </div>
       
-      {/* Mobile Right Sidebar Drawer - preserving mobile functionality */}
+      {/* Mobile Right Sidebar Drawer */}
       <RightSidebar isMobile={true} />
       
       {isNewPostModalOpen && (
