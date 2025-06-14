@@ -1,14 +1,15 @@
-# README‑BÍBLIA.md v3.7.0
+# README‑BÍBLIA.md v3.8.0
 
 ## 1. Purpose & Pitch
-Scientific journal platform with optimized review system, community features, and advanced performance monitoring. **Editor System Refactoring IN PROGRESS** - Addressing type errors and structural inconsistencies for improved stability and maintainability.
+Scientific journal platform with optimized review system, community features, and advanced performance monitoring. **Editor System Refactoring IN PROGRESS** - Focusing on robust `LayoutElement` management, drag-and-drop, and block operations within various layouts.
 
 ## 2. Glossary
 - **Review Blocks**: Modular content components for scientific reviews (string IDs)
-- **Layout Elements**: Structural components for defining review document layout (e.g., rows, grids). (NEW)
-- **GridPosition**: Type defining row/column for 2D grid elements. (NEW)
-- **GridCell**: Defines a cell within a 2D grid, can contain a block. (NEW)
-- **Review**: Top-level type for a scientific review document, containing metadata, layout elements, and block data. (NEW DEFINITION)
+- **Layout Elements**: Structural components for defining review document layout (e.g., rows, grids, block_containers). (UPDATED)
+- **GridPosition**: Type defining row/column for 2D grid elements.
+- **GridCell**: Defines a cell within a 2D grid, can contain a block.
+- **Review**: Top-level type for a scientific review document, containing metadata, layout elements, and block data.
+- **ElementDefinition**: Defines items within layout structures (e.g., columns in a row), can be a block reference or another `LayoutElement`. (NEW)
 - **Bundle Optimizer**: System for lazy loading and performance monitoring
 - **Memory Manager**: Automatic cleanup for React components
 - **Error Boundaries**: Graceful error handling system
@@ -33,10 +34,11 @@ Scientific journal platform with optimized review system, community features, an
 │  ├─ UI Components (TYPE-CONSISTENT)
 │  │  ├─ Editor System (REFACTORING IN PROGRESS)
 │  │  │  ├─ Block Components (text, heading, image etc.)
-│  │  │  └─ Layout Components (Grid2D, LayoutRow)
+│  │  │  ├─ Layout Components (Grid2D, LayoutRow)
+│  │  │  └─ Core Editor (BlockEditor, BlockList, SingleBlock) (UPDATED)
 │  │  └─ Review System
 │  ├─ Lazy Routes
-│  └─ State Management (hooks like useBlockManagement, useBlockDragDrop)
+│  └─ State Management (hooks like useBlockManagement, useBlockDragDrop) (UPDATED)
 ├─ Backend (Supabase)
 │  ├─ Database (PostgreSQL)
 │  ├─ Auth System
@@ -55,7 +57,7 @@ Scientific journal platform with optimized review system, community features, an
 
 ## 4. User Journeys
 1. **Reader**: Browse → View Article → Community Discussion
-2. **Reviewer**: Login → Access Editor → Create/Edit Reviews
+2. **Reviewer**: Login → Access Editor → Create/Edit Reviews (structure with layouts, add/move/delete blocks)
 3. **Admin**: Dashboard → Content Management → Analytics
 
 ## 5. Domain Modules Index
@@ -63,18 +65,18 @@ Scientific journal platform with optimized review system, community features, an
 - **User Interactions**: `/src/contexts/UserInteractionContext.tsx`
 - **API Monitoring**: `/src/middleware/ApiCallMiddleware.ts`
 - **Component Auditing**: `/src/utils/componentAudit.ts`
-- **Type Definitions**: `/src/types/review.ts` (UPDATED - Review, LayoutElement, Grid types)
+- **Type Definitions**: `/src/types/review.ts` (UPDATED - Review, LayoutElement, ElementDefinition, Grid types)
 - **Review System**: `/src/components/review/` 
-- **Editor System**: `/src/components/editor/` (REFACTORING - BlockEditor, BlockList, block components)
-- **Layout Components**: `/src/components/editor/layout/` (TYPE-CONSISTENT, supporting LayoutElement structure)
-- **Editor State Management**: `/src/hooks/useBlockManagement.ts`, `/src/hooks/useBlockDragDrop.ts` (UPDATED)
+- **Editor System**: `/src/components/editor/` (REFACTORING - BlockEditor, BlockList, block components, SingleBlock)
+- **Layout Components**: `/src/components/editor/layout/` (TYPE-CONSISTENT, supporting LayoutElement structure, interactions refined)
+- **Editor State Management**: `/src/hooks/useBlockManagement.ts`, `/src/hooks/useBlockDragDrop.ts` (UPDATED - refined block/element operations, DND integration)
 - **Performance**: `/src/utils/bundleOptimizer.ts`, `/src/utils/memoryManager.ts`
 - **Error Handling**: `/src/components/error/`
 - **Navigation**: `/src/layouts/DashboardLayout.tsx`
 
 ## 6. Data & API Schemas
 ```typescript
-// Overall Review Document Structure (NEW)
+// Overall Review Document Structure
 interface Review {
   id: string;
   title: string;
@@ -86,19 +88,25 @@ interface Review {
   updatedAt: string;
 }
 
-// Layout Element (NEW)
+// Layout Element (UPDATED)
 interface LayoutElement {
   id: string;
-  type: 'row' | 'grid' | 'block_container';
-  blockId?: string; // If type is 'block_container'
+  type: 'row' | 'grid' | 'block_container'; // 'block_container' for a direct block in the 'elements' list
+  blockId?: string; // If type is 'block_container', ID of the ReviewBlock
   settings?: any;
   columns?: LayoutColumn[]; // For 'row' type
   rows?: LayoutRowDefinition[]; // For 'grid' type (LayoutRowDefinition contains GridCell[])
 }
 
+// ElementDefinition (NEW/REFINED - used in LayoutColumn)
+// Defines what a column can contain: a reference to a block or another (nested) LayoutElement.
+type ElementDefinition =
+  | { type: 'block'; id: string; blockId: string; settings?: any; } // Represents a block within a column
+  | LayoutElement; // Allows nesting LayoutElements (like a grid or another row) within a column
+
 interface LayoutColumn {
   id: string;
-  elements: ElementDefinition[]; // ElementDefinition can be another LayoutElement or a block reference
+  elements: ElementDefinition[]; 
   settings?: { width?: string; style?: React.CSSProperties };
 }
 
@@ -176,7 +184,7 @@ interface SnapshotCardContent {
 
 // Component Interface Standardization (NEW)
 interface DragState {
-  draggedBlockId: string | null; // Consistent string type
+  draggedElementId: string | null; // ID of the LayoutElement being dragged
   dragOverRowId: string | null;
   dragOverPosition: number | null;
   isDragging: boolean;
@@ -191,9 +199,9 @@ interface DragState {
 - **User Interactions**: `UserInteractionProvider`, `useUserInteractionContext`
 - **API Monitoring**: `ApiCallMonitor`, `ComponentAuditor`
 - **Review Components**: `BlockRenderer`, `NativeReviewViewer`
-- **Editor Components**: `BlockEditor`, `BlockList`, `BlockContentEditor`, `SingleBlock` (REFACTORING)
-- **Editor Block Primitives**: `TextBlock`, `HeadingBlock`, `ImageBlock`, etc. (NEW/UPDATED)
-- **Layout Components**: `Grid2DContainer`, `Grid2DRow`, `Grid2DCell`, `LayoutRow` (ADAPTED for LayoutElement structure)
+- **Editor Components**: `BlockEditor`, `BlockList`, `BlockContentEditor`, `SingleBlock` (REFACTORING - interactions with LayoutElements improved)
+- **Editor Block Primitives**: `TextBlock`, `HeadingBlock`, `ImageBlock`, etc.
+- **Layout Components**: `Grid2DContainer`, `Grid2DRow`, `Grid2DCell`, `LayoutRow` (ADAPTED for LayoutElement structure, DND integration)
 - **Layout**: `DashboardLayout`, `Sidebar`
 
 ## 8. Design Language
@@ -231,20 +239,22 @@ Admin panel with performance monitoring dashboard and error tracking.
 
 ## 14. TODO / Backlog
 **Phase 1 Final Validation (Current):**
-- **Editor System Refactoring**: Resolve all build errors, ensure type consistency, stabilize core editor logic. (IN PROGRESS)
+- **Editor System Refactoring**: Resolve all build errors, ensure type consistency, stabilize core editor logic (LayoutElement management, DND, block operations). (IN PROGRESS - ~50%)
 - Network log validation - confirm <10 API requests per page
 - Performance metrics validation - verify monitoring accuracy
 - Component behavior validation - ensure no functionality regression
 - Type system validation - confirm all components use string IDs ✅ **COMPLETE**
-- Build stability validation - verify zero build errors ✅ **COMPLETE**
+- Build stability validation - verify zero build errors ✅ **ACHIEVED**
 
 **Phase 2 (Next):**
-- Component refactoring for maintainability
-- State management optimization
+- Component refactoring for maintainability (e.g. `BlockList.tsx` if it becomes too complex)
+- State management optimization (Undo/Redo robustness)
 - Code organization improvements
 - Advanced caching strategies
+- Refine block addition/movement within nested layouts (e.g., blocks in columns of rows).
 
 ## 15. Revision History
+- v3.8.0 (2025-06-14): **Editor System Refactoring Cycle 2** - Refined `useBlockManagement` for adding blocks to grids. Updated `BlockEditor` for toolbar actions and DND types. Adjusted `SingleBlock` and `LayoutRow` for `LayoutElement`-based operations and DND.
 - v3.7.0 (2025-06-14): **Editor System Refactoring Cycle 1** - Added missing DND dependency, updated type definitions (Review, LayoutElement, Grid types), corrected BlockType usage, started aligning BlockEditor with useBlockManagement.
 - v3.6.0 (2025-06-14): **Build Error Crisis Resolution COMPLETE** - All type inconsistencies resolved, missing interfaces added, complete string ID enforcement, zero build errors achieved
 - v3.5.0 (2025-06-13): **Type System Foundation Repair COMPLETE** - All IDs migrated to string format, comprehensive type definitions added, build errors resolved

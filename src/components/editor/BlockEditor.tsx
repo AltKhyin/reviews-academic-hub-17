@@ -1,3 +1,4 @@
+
 // ABOUTME: Core orchestrator for the block-based editor experience.
 // Manages block state, interactions, and renders the list of blocks.
 import React, { useState, useCallback, useEffect } from 'react';
@@ -22,19 +23,14 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
   readonly = false,
   className,
 }) => {
-  // Initial state setup for the review, including elements and blocks
   const [currentReviewId, setCurrentReviewId] = useState(initialReview?.id || generateId());
   const [currentReviewTitle, setCurrentReviewTitle] = useState(initialReview?.title || 'Nova Revisão');
-  // Other review metadata can be managed here if needed
 
   const blockManager: UseBlockManagementReturn = useBlockManagement(
-    initialReview?.elements || [],
-    initialReview?.blocks || {},
-    (newElements, newBlocks) => {
-      // This callback can be used to sync with a higher-level state or trigger saves
-      // For now, the hook manages its internal state which we access directly.
-      // If we need to reconstruct the `Review` object for saving, we'll do it in handleSave.
-    }
+    initialReview?.elements, // useBlockManagement handles default empty array
+    initialReview?.blocks,  // useBlockManagement handles default empty object
+    // Optional onStateChange callback, not strictly needed for BlockEditor's current logic
+    // (newElements, newBlocks) => { /* console.log('State changed in useBlockManagement'); */ }
   );
 
   const { 
@@ -45,8 +41,9 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     addBlock, 
     updateBlock, 
     deleteBlock, 
-    moveElement, // Renamed from moveBlockInList for clarity (operates on elements)
-    setElements // For DND
+    moveElement,
+    setElements,
+    setBlocks: setBlocksInManager, // Renamed for clarity if BlockEditor has its own setBlocks
   } = blockManager;
   
   const { onDragEnd } = useBlockDragDrop({ elements, setElements });
@@ -55,23 +52,31 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     if (initialReview) {
       setCurrentReviewId(initialReview.id || generateId());
       setCurrentReviewTitle(initialReview.title || 'Nova Revisão');
-      // Reset blockManager's internal state if initialReview changes significantly
-      // This might require a reset function in useBlockManagement or re-instantiating the hook
-      // For simplicity, assuming useBlockManagement initializes correctly with new initial values.
-      // If useBlockManagement doesn't internally reset with new initial props, we might need to use a key on BlockEditor or manage reset more explicitly.
+      // useBlockManagement is re-initialized via its props if BlockEditor re-renders with new initialReview
+      // or if initialElements/initialBlocks are passed directly and change.
+      // The hook's own useEffect for initialization handles setting its internal state.
+      // If deep reset is needed, useBlockManagement would need a dedicated reset function or keying BlockEditor.
+      // For now, relying on hook's initialization.
+      // If initialReview comes from parent, this ensures manager always reflects it at start or on full prop change.
       setElements(initialReview.elements || []);
-      blockManager.setBlocks(initialReview.blocks || {}); // Expose setBlocks from hook
+      setBlocksInManager(initialReview.blocks || {});
+    } else {
+      // Handle case where initialReview might become undefined (e.g. creating new)
+      setCurrentReviewId(generateId());
+      setCurrentReviewTitle('Nova Revisão');
+      setElements([]);
+      setBlocksInManager({});
     }
-  }, [initialReview, setElements, blockManager]);
+  }, [initialReview, setElements, setBlocksInManager]);
 
   const handleSave = useCallback(() => {
     const reviewToSave: Review = {
       id: currentReviewId,
       title: currentReviewTitle,
-      elements: elements, // Current elements from blockManager
-      blocks: blocks,     // Current blocks from blockManager
+      elements: elements, 
+      blocks: blocks,     
       version: initialReview?.version ? initialReview.version + 1 : 1,
-      status: 'draft', // Or derive from actual status
+      status: 'draft', 
       createdAt: initialReview?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -82,28 +87,17 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     setActiveBlockId(blockId);
   }, [setActiveBlockId]);
   
-  const handleDragEnd = (result: DropResult, _provided: ResponderProvided) => {
+  // DND onDragEnd directly uses the one from useBlockDragDrop hook
+  const handleDndDragEnd = (result: DropResult, _provided: ResponderProvided) => {
     onDragEnd(result); 
   };
 
   const toolbarProps: EditorToolbarProps = {
-    onAddBlock: (type: BlockType, layoutElementId?: string) => {
-      let newBlockId: string | null = null;
-      if (layoutElementId === 'root' || !layoutElementId && elements.length === 0) {
-        newBlockId = addBlock({ type, insertAtIndex: elements.length });
-      } else if (layoutElementId) {
-        console.warn(`Adding block to layout element ${layoutElementId} requires specific parent handling.`);
-        newBlockId = addBlock({ type, parentElementId: layoutElementId });
-      } else if (elements.length > 0) {
-         // Add to the end of the top-level elements by default
-        newBlockId = addBlock({ type, insertAtIndex: elements.length });
-      } else {
-        newBlockId = addBlock({ type, insertAtIndex: 0 });
-      }
+    onAddBlock: (type: BlockType) => { // Simplified: Toolbar adds to root by default
+      const newBlockId = addBlock({ type, insertAtIndex: elements.length });
       if (newBlockId) setActiveBlockId(newBlockId);
     },
     onSave: handleSave,
-    // Add other props like canUndo, canRedo, onUndo, onRedo if toolbar handles them
     canUndo: blockManager.canUndo,
     canRedo: blockManager.canRedo,
     onUndo: blockManager.undo,
@@ -115,24 +109,16 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
       {!readonly && <EditorToolbar {...toolbarProps} />}
 
       <div className="editor-content-area flex-grow p-4 md:p-6 lg:p-8 overflow-y-auto">
-        <DragDropContext onDragEnd={handleDragEnd}>
-          <Droppable droppableId="main-editor-droppable" type="ELEMENT_LIST"> {/* Changed type */}
+        <DragDropContext onDragEnd={handleDndDragEnd}>
+          <Droppable droppableId="main-editor-droppable" type="LAYOUT_ELEMENT"> {/* Standardized DND type */}
             {(provided) => (
               <div ref={provided.innerRef} {...provided.droppableProps}>
                 <BlockList
-                  layoutElements={elements} // Pass LayoutElement[]
-                  blocks={blocks} // Pass { [id: string]: ReviewBlock }
+                  layoutElements={elements}
+                  blocks={blocks}
                   onUpdateBlock={updateBlock}
-                  onDeleteBlock={deleteBlock} // This should delete the block and its containing LayoutElement if it's a 'block_container'
-                  onMoveBlock={(blockId, dir) => {
-                      // Find the LayoutElement containing this blockId if it's a 'block_container'
-                      // And then move that LayoutElement.
-                      // This is simplified; a direct block move might be complex with layouts.
-                      const elementToMove = elements.find(el => el.type === 'block_container' && el.blockId === blockId);
-                      if (elementToMove) {
-                        moveElement(elementToMove.id, dir);
-                      }
-                  }}
+                  onDeleteBlock={deleteBlock} // This is deleteBlock from useBlockManagement
+                  onMoveElement={moveElement} // This is moveElement from useBlockManagement
                   onSelectBlock={handleSelectBlock}
                   activeBlockId={activeBlockId}
                   readonly={readonly}
@@ -140,13 +126,20 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
                     const newBlockId = addBlock({ type, parentElementId: gridId, targetPosition: position });
                     if (newBlockId) setActiveBlockId(newBlockId);
                   }}
-                  // onAddBlock might be needed for BlockList to add blocks relative to others
+                  // onAddBlock prop for BlockList is for adding relative to other blocks, e.g. from context menus
+                  // This is distinct from the main toolbar's add or grid cell's add.
                   onAddBlock={(type, index, parentLayoutId, columnIndex) => {
-                      // This is getting complex. AddBlock in toolbar is simpler.
-                      // For adding within layouts, specific handlers in LayoutRow/Grid might be better.
-                      console.log("Request to add block from BlockList:", {type, index, parentLayoutId, columnIndex});
-                      // Example: addBlock({type, parentElementId: parentLayoutId, targetPosition: index})
-                      // For now, prefer adding via toolbar or context menus on layout elements.
+                      // Example: If adding to a column within a row
+                      if (parentLayoutId && columnIndex !== undefined) {
+                           const newBlockId = addBlock({ type, parentElementId: parentLayoutId, targetPosition: columnIndex });
+                           if (newBlockId) setActiveBlockId(newBlockId);
+                      } else if (index !== undefined) { // Adding to root at specific index
+                           const newBlockId = addBlock({type, insertAtIndex: index});
+                           if (newBlockId) setActiveBlockId(newBlockId);
+                      } else { // Default to end of root
+                           const newBlockId = addBlock({type, insertAtIndex: elements.length});
+                           if (newBlockId) setActiveBlockId(newBlockId);
+                      }
                   }}
                 />
                 {provided.placeholder}
@@ -158,3 +151,4 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
     </div>
   );
 };
+

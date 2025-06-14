@@ -2,36 +2,44 @@
 // Handles drag handle, selection state, and renders BlockContentEditor.
 import React from 'react';
 import { Draggable, DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd';
-import { ReviewBlock, BlockType } from '@/types/review';
+import { ReviewBlock, BlockType, LayoutElement } from '@/types/review';
 import { BlockContentEditor } from '../BlockContentEditor';
 import { Button } from '@/components/ui/button';
 import { Trash2, ChevronUp, ChevronDown, PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface SingleBlockProps {
+  layoutElement: LayoutElement & { type: 'block_container', blockId: string };
   block: ReviewBlock;
   index: number; 
   onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
   onDeleteBlock: (blockId: string) => void;
-  onMoveBlock: (blockId: string, direction: 'up' | 'down') => void;
+  onMoveElement: (layoutElementId: string, direction: 'up' | 'down') => void;
   onSelectBlock: (blockId: string | null) => void;
-  onAddBlock?: (type: BlockType, position?: 'above' | 'below' | number, relativeToBlockId?: string) => void;
+  onAddBlock?: (type: BlockType, position?: 'above' | 'below' | number, relativeToLayoutElementId?: string) => void;
   activeBlockId: string | null;
   readonly?: boolean;
 }
 
 export const SingleBlock: React.FC<SingleBlockProps> = ({
+  layoutElement,
   block,
   index,
   onUpdateBlock,
   onDeleteBlock,
-  onMoveBlock,
+  onMoveElement,
   onSelectBlock,
   onAddBlock,
   activeBlockId,
   readonly = false,
 }) => {
   const isActive = activeBlockId === block.id;
+
+  const handleAddBlockAbove = () => {
+    if (onAddBlock) {
+      onAddBlock("text", 'above', layoutElement.id);
+    }
+  };
 
   const renderBlockActions = () => (
     <div className={cn(
@@ -41,17 +49,17 @@ export const SingleBlock: React.FC<SingleBlockProps> = ({
       )}
     >
       {onAddBlock && (
-         <Button variant="ghost" size="icon" onClick={() => onAddBlock("text", 'above', block.id)} className="text-gray-400 hover:text-blue-400 h-6 w-6"> {/* Changed size to "icon", using "text" */}
+         <Button variant="ghost" size="icon" onClick={handleAddBlockAbove} className="text-gray-400 hover:text-blue-400 h-6 w-6">
            <PlusCircle size={14} />
          </Button>
       )}
-      <Button variant="ghost" size="icon" onClick={() => onMoveBlock(block.id, 'up')} className="text-gray-400 hover:text-gray-200 h-6 w-6"> {/* Changed size to "icon" */}
+      <Button variant="ghost" size="icon" onClick={() => onMoveElement(layoutElement.id, 'up')} className="text-gray-400 hover:text-gray-200 h-6 w-6">
         <ChevronUp size={16} />
       </Button>
-      <Button variant="ghost" size="icon" onClick={() => onMoveBlock(block.id, 'down')} className="text-gray-400 hover:text-gray-200 h-6 w-6"> {/* Changed size to "icon" */}
+      <Button variant="ghost" size="icon" onClick={() => onMoveElement(layoutElement.id, 'down')} className="text-gray-400 hover:text-gray-200 h-6 w-6">
         <ChevronDown size={16} />
       </Button>
-      <Button variant="ghost" size="icon" onClick={() => onDeleteBlock(block.id)} className="text-red-500 hover:text-red-400 h-6 w-6"> {/* Changed size to "icon" */}
+      <Button variant="ghost" size="icon" onClick={() => onDeleteBlock(block.id)} className="text-red-500 hover:text-red-400 h-6 w-6">
         <Trash2 size={14} />
       </Button>
     </div>
@@ -59,15 +67,15 @@ export const SingleBlock: React.FC<SingleBlockProps> = ({
 
   if (readonly) {
     return (
-      <div className="single-block-readonly mb-2"> {/* Added margin for readonly separation */}
+      <div className="single-block-readonly mb-2">
         <BlockContentEditor
           block={block}
-          isActive={false} // No active state in readonly
-          onSelect={() => {}} // No selection in readonly
+          isActive={false}
+          onSelect={() => {}}
           onUpdate={onUpdateBlock}
           onDelete={onDeleteBlock} 
-          onMove={onMoveBlock} 
-          onAddBlock={(type, _pos) => onAddBlock?.(type, undefined, block.id)}
+          onMove={(elementId, dir) => onMoveElement(elementId, dir)}
+          onAddBlock={(type, _pos, relId) => onAddBlock?.(type, undefined, relId)}
           readonly={true}
         />
       </div>
@@ -75,7 +83,7 @@ export const SingleBlock: React.FC<SingleBlockProps> = ({
   }
 
   return (
-    <Draggable draggableId={block.id} index={index} isDragDisabled={readonly}>
+    <Draggable draggableId={layoutElement.id} index={index} isDragDisabled={readonly} type="LAYOUT_ELEMENT">
       {(provided: DraggableProvided, snapshot: DraggableStateSnapshot) => (
         <div
           ref={provided.innerRef}
@@ -89,21 +97,21 @@ export const SingleBlock: React.FC<SingleBlockProps> = ({
               onSelectBlock(block.id);
             }
             const target = e.target as HTMLElement;
-            if (target.closest('input, textarea, button, [contenteditable=true], select')) {
+            if (target.closest('input, textarea, button, [contenteditable=true], select, .ProseMirror')) {
               return;
             }
           }}
         >
-          {renderBlockActions()}
+          {!readonly && renderBlockActions()}
           
           <BlockContentEditor
             block={block}
             isActive={isActive}
-            onSelect={onSelectBlock}
+            onSelect={() => onSelectBlock(block.id)}
             onUpdate={onUpdateBlock}
             onDelete={onDeleteBlock}
-            onMove={onMoveBlock}
-            onAddBlock={(type, _pos) => onAddBlock?.(type, undefined, block.id)}
+            onMove={(elementId, dir) => onMoveElement(elementId, dir)}
+            onAddBlock={(type, _pos, relId) => onAddBlock?.(type, undefined, relId)}
             readonly={readonly}
             dragHandleProps={provided.dragHandleProps} 
           />
