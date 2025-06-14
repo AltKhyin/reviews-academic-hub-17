@@ -1,4 +1,4 @@
-# README‑BÍBLIA.md v3.8.0
+# README‑BÍBLIA.md v3.9.0
 
 ## 1. Purpose & Pitch
 Scientific journal platform with optimized review system, community features, and advanced performance monitoring. **Editor System Refactoring IN PROGRESS** - Focusing on robust `LayoutElement` management, drag-and-drop, and block operations within various layouts.
@@ -69,7 +69,7 @@ Scientific journal platform with optimized review system, community features, an
 - **Review System**: `/src/components/review/` 
 - **Editor System**: `/src/components/editor/` (REFACTORING - BlockEditor, BlockList, block components, SingleBlock)
 - **Layout Components**: `/src/components/editor/layout/` (TYPE-CONSISTENT, supporting LayoutElement structure, interactions refined)
-- **Editor State Management**: `/src/hooks/useBlockManagement.ts`, `/src/hooks/useBlockDragDrop.ts` (UPDATED - refined block/element operations, DND integration)
+- **Editor State Management**: `/src/hooks/useBlockManagement.ts`, `/src/hooks/useBlockDragDrop.ts` (UPDATED - Rearchitected `addBlock` and `deleteBlock` to be recursive, safely handling nested layouts like rows and grids.)
 - **Performance**: `/src/utils/bundleOptimizer.ts`, `/src/utils/memoryManager.ts`
 - **Error Handling**: `/src/components/error/`
 - **Navigation**: `/src/layouts/DashboardLayout.tsx`
@@ -202,6 +202,7 @@ interface DragState {
 - **Editor Components**: `BlockEditor`, `BlockList`, `BlockContentEditor`, `SingleBlock` (REFACTORING - interactions with LayoutElements improved)
 - **Editor Block Primitives**: `TextBlock`, `HeadingBlock`, `ImageBlock`, etc.
 - **Layout Components**: `Grid2DContainer`, `Grid2DRow`, `Grid2DCell`, `LayoutRow` (ADAPTED for LayoutElement structure, DND integration)
+- **Toolbar**: `EditorToolbar` (REFACTORED - Simplified to align with `BlockEditor` scope, removing mode-switching and import/export.)
 - **Layout**: `DashboardLayout`, `Sidebar`
 
 ## 8. Design Language
@@ -239,7 +240,7 @@ Admin panel with performance monitoring dashboard and error tracking.
 
 ## 14. TODO / Backlog
 **Phase 1 Final Validation (Current):**
-- **Editor System Refactoring**: Resolve all build errors, ensure type consistency, stabilize core editor logic (LayoutElement management, DND, block operations). (IN PROGRESS - ~50%)
+- **Editor System Refactoring**: Resolve all build errors, ensure type consistency, stabilize core editor logic (LayoutElement management, DND, block operations). (IN PROGRESS - ~75%, core add/delete in nested layouts is now robust.)
 - Network log validation - confirm <10 API requests per page
 - Performance metrics validation - verify monitoring accuracy
 - Component behavior validation - ensure no functionality regression
@@ -251,9 +252,10 @@ Admin panel with performance monitoring dashboard and error tracking.
 - State management optimization (Undo/Redo robustness)
 - Code organization improvements
 - Advanced caching strategies
-- Refine block addition/movement within nested layouts (e.g., blocks in columns of rows).
+- Refine block addition/movement within nested layouts (e.g., blocks in columns of rows). (Movement, i.e., reordering, is the main remaining task here).
 
 ## 15. Revision History
+- v3.9.0 (2025-06-14): **Editor System Refactoring Cycle 3** - Rearchitected `useBlockManagement` `addBlock`/`deleteBlock` functions with recursive logic to robustly handle nested layouts. Simplified and refactored `EditorToolbar` to match its usage context within `BlockEditor`.
 - v3.8.0 (2025-06-14): **Editor System Refactoring Cycle 2** - Refined `useBlockManagement` for adding blocks to grids. Updated `BlockEditor` for toolbar actions and DND types. Adjusted `SingleBlock` and `LayoutRow` for `LayoutElement`-based operations and DND.
 - v3.7.0 (2025-06-14): **Editor System Refactoring Cycle 1** - Added missing DND dependency, updated type definitions (Review, LayoutElement, Grid types), corrected BlockType usage, started aligning BlockEditor with useBlockManagement.
 - v3.6.0 (2025-06-14): **Build Error Crisis Resolution COMPLETE** - All type inconsistencies resolved, missing interfaces added, complete string ID enforcement, zero build errors achieved
@@ -263,3 +265,8 @@ Admin panel with performance monitoring dashboard and error tracking.
 - v3.2.0 (2025-06-13): Phase 1 completion - bundle optimization, memory management, error boundaries
 - v3.1.0 (2025-06-13): Performance monitoring and query optimization
 - v3.0.0 (2025-06-13): Major architecture improvements with unified systems
+
+## 16. Release Notes
+- **Editor System Refactoring Cycle 3**: Rearchitected `useBlockManagement` `addBlock`/`deleteBlock` functions with recursive logic to robustly handle nested layouts. Simplified and refactored `EditorToolbar` to match its usage context within `BlockEditor`.
+- **Editor System Refactoring Cycle 2**: Refined `useBlockManagement` for adding blocks to grids. Updated `BlockEditor` for toolbar actions and DND types. Adjusted `SingleBlock` and `LayoutRow` for `LayoutElement`-based operations and DND.
+- **Editor System Refactoring Cycle 1**: Added missing DND dependency, updated type definitions (Review, LayoutElement, Grid types), corrected BlockType usage, started aligning BlockEditor with useBlockManagement.

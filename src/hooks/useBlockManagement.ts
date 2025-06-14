@@ -37,7 +37,7 @@ interface BlockManagementHistory {
 export const useBlockManagement = (
   initialElements: LayoutElement[] = [],
   initialBlocks: { [key: string]: ReviewBlock } = {},
-  onStateChange?: (newElements: LayoutElement[], newBlocks: { [key: string]: ReviewBlock }) => void
+  onStateChange?: (newElements: LayoutElement[], newBlocks: { [key:string]: ReviewBlock }) => void
 ): UseBlockManagementReturn => {
   const [elements, setInternalElements] = useState<LayoutElement[]>(initialElements);
   const [blocks, setInternalBlocks] = useState<{ [key: string]: ReviewBlock }>(initialBlocks);
@@ -47,7 +47,6 @@ export const useBlockManagement = (
   const historyIndex = useRef(-1);
 
   const updateStateAndHistory = useCallback((newElements: LayoutElement[], newBlocks: { [key: string]: ReviewBlock }) => {
-    // ... keep existing code (setInternalElements, setInternalBlocks, onStateChange, history update)
     setInternalElements(newElements);
     setInternalBlocks(newBlocks);
 
@@ -65,7 +64,6 @@ export const useBlockManagement = (
   }, [onStateChange]);
   
   useEffect(() => { // Initialize history
-    // Ensure initial state is also part of history
     const currentHistoryState = { elements: initialElements, blocks: initialBlocks };
     history.current = [currentHistoryState];
     historyIndex.current = 0;
@@ -98,65 +96,69 @@ export const useBlockManagement = (
     };
 
     let success = false;
-    let finalElements = [...elements];
-    let finalBlocks = { ...blocks };
+    const newBlocks = { ...blocks, [newBlockId]: newBlock };
 
     if (parentElementId) {
-      let parentFoundAndUpdated = false;
-      // Function to recursively find and update parent. For now, simplified to top-level.
-      // More robust solution would handle deeply nested layouts.
-      finalElements = finalElements.map(el => {
-        if (el.id === parentElementId) {
-          if (el.type === 'grid' && typeof targetPosition === 'object' && targetPosition !== null && 'row' in targetPosition && 'col' in targetPosition) {
-            const gridEl = el as LayoutElement & { type: 'grid', rows: LayoutRowDefinition[] }; // Make sure rows is not undefined
-            const { row, col } = targetPosition as GridPosition;
-            if (gridEl.rows && gridEl.rows[row] && gridEl.rows[row].cells && gridEl.rows[row].cells[col]) {
-              gridEl.rows[row].cells[col].blockId = newBlockId;
-              newBlock.meta = { 
-                ...newBlock.meta, 
-                layout: { ...(newBlock.meta?.layout || {}), grid_id: parentElementId, grid_position: targetPosition as GridPosition }
-              };
-              parentFoundAndUpdated = true;
-              return gridEl;
-            } else {
-              console.error("Target cell not found in grid or grid structure incomplete:", parentElementId, targetPosition, gridEl);
-            }
-          } else if (el.type === 'row' && el.columns && typeof targetPosition === 'number') {
-             const rowEl = el as LayoutElement & { type: 'row', columns: LayoutColumn[] };
-             const columnIndex = targetPosition as number;
-             if (rowEl.columns[columnIndex]) {
-                const newElementInColumn: ElementDefinition = { id: generateId(), type: 'block', blockId: newBlockId, settings: {} };
-                // Ensure elements array exists on the column
-                if (!rowEl.columns[columnIndex].elements) {
-                    rowEl.columns[columnIndex].elements = [];
-                }
-                rowEl.columns[columnIndex].elements.push(newElementInColumn);
-                newBlock.meta = {
-                    ...newBlock.meta,
-                    layout: { ...(newBlock.meta?.layout || {}), row_id: parentElementId, position: columnIndex } // Simplified, might need more detail
-                };
-                parentFoundAndUpdated = true;
-                return rowEl;
-             } else {
-                console.error("Target column not found in row:", parentElementId, targetPosition);
-             }
-          } else {
-            console.warn("Unhandled parent type for block addition or mismatched targetPosition:", el.type);
-          }
-        }
-        return el;
-      });
+        let parentFoundAndUpdated = false;
 
-      if (parentFoundAndUpdated) {
-        finalBlocks[newBlockId] = newBlock;
-        success = true;
-      } else {
-        console.warn("Could not add block to specified parent element:", parentElementId);
-        return null; // Indicate failure, block not added to map or elements
-      }
+        const addRecursively = (currentElements: ElementDefinition[]): ElementDefinition[] => {
+            return currentElements.map(el => {
+                if (el.type === 'block') return el;
+
+                if (el.id === parentElementId && el.type === 'grid' && typeof targetPosition === 'object' && targetPosition !== null && 'row' in targetPosition && 'col' in targetPosition) {
+                    const gridEl = el as LayoutElement & { type: 'grid', rows: LayoutRowDefinition[] };
+                    const { row, col } = targetPosition as GridPosition;
+                    if (gridEl.rows?.[row]?.cells?.[col]) {
+                        const newGridEl = { ...gridEl, rows: [...gridEl.rows] };
+                        newGridEl.rows[row] = { ...newGridEl.rows[row], cells: [...newGridEl.rows[row].cells] };
+                        newGridEl.rows[row].cells[col] = { ...newGridEl.rows[row].cells[col], blockId: newBlockId };
+                        
+                        newBlock.meta = { ...newBlock.meta, layout: { ...(newBlock.meta?.layout || {}), grid_id: parentElementId, grid_position: targetPosition as GridPosition } };
+                        parentFoundAndUpdated = true;
+                        return newGridEl;
+                    }
+                }
+
+                if (el.type === 'row' && el.columns) {
+                    const newRowEl = { ...el, columns: [...el.columns] };
+                    let columnUpdated = false;
+                    newRowEl.columns = newRowEl.columns.map(col => {
+                        if (col.id === parentElementId) {
+                            columnUpdated = true;
+                            const newCol = { ...col, elements: col.elements ? [...col.elements] : [] };
+                            const newElementInColumn: ElementDefinition = { id: generateId(), type: 'block', blockId: newBlockId, settings: {} };
+
+                            const insertionIndex = typeof targetPosition === 'number' ? targetPosition : newCol.elements.length;
+                            newCol.elements.splice(insertionIndex, 0, newElementInColumn);
+                            
+                            newBlock.meta = { ...newBlock.meta, layout: { ...(newBlock.meta?.layout || {}), row_id: el.id, position: insertionIndex } };
+                            return newCol;
+                        }
+                        return col;
+                    });
+
+                    if (columnUpdated) {
+                        parentFoundAndUpdated = true;
+                        return newRowEl;
+                    }
+                }
+                
+                return el;
+            });
+        };
+        
+        const finalElements = addRecursively(elements) as LayoutElement[];
+        
+        if (parentFoundAndUpdated) {
+            success = true;
+            updateStateAndHistory(finalElements, newBlocks);
+        } else {
+            console.warn("Could not add block to specified parent element:", parentElementId);
+            return null;
+        }
+
     } else {
-      // Add as a new top-level LayoutElement of type 'block_container'
-      finalBlocks[newBlockId] = newBlock; // Add block to map first
+      const finalElements = [...elements];
       const newLayoutElement: LayoutElement = {
         id: generateId(),
         type: 'block_container',
@@ -168,18 +170,17 @@ export const useBlockManagement = (
         finalElements.push(newLayoutElement);
       }
       success = true;
+      updateStateAndHistory(finalElements, newBlocks);
     }
     
     if (success) {
-      updateStateAndHistory(finalElements, finalBlocks);
       setActiveBlockId(newBlockId);
       return newBlockId;
     }
-    return null; // Should not be reached if logic is correct, implies failure
+    return null;
   }, [elements, blocks, updateStateAndHistory, setActiveBlockId]);
 
   const updateBlock = useCallback((blockId: string, updates: Partial<ReviewBlock>) => {
-    // ... keep existing code
     if (!blocks[blockId]) return;
     const newBlocks = {
       ...blocks,
@@ -189,7 +190,6 @@ export const useBlockManagement = (
   }, [elements, blocks, updateStateAndHistory]);
   
   const updateElement = useCallback((elementId: string, updates: Partial<LayoutElement>) => {
-    // ... keep existing code
     const newElements = elements.map(el => 
       el.id === elementId ? { ...el, ...updates } : el
     );
@@ -198,57 +198,55 @@ export const useBlockManagement = (
 
 
   const deleteBlock = useCallback((blockId: string) => {
-    // ... keep existing code for removing block from blocks map
     const { [blockId]: _deletedBlock, ...remainingBlocks } = blocks;
     
-    let newElements = [...elements];
-    
-    // Filter out top-level block_container elements
-    newElements = newElements.filter(el => el.type !== 'block_container' || el.blockId !== blockId);
+    const removeBlockReferenceRecursively = (currentElements: ElementDefinition[]): ElementDefinition[] => {
+        return currentElements
+            .filter(el => !(el.type === 'block' && el.blockId === blockId))
+            .map(el => {
+                if (el.type === 'row' && el.columns) {
+                    const newEl = { ...el };
+                    newEl.columns = el.columns.map(col => ({
+                        ...col,
+                        elements: removeBlockReferenceRecursively(col.elements || [])
+                    }));
+                    newEl.columns = newEl.columns.filter(col => col.elements.length > 0 || Object.keys(col.settings || {}).length > 0);
+                    return newEl;
+                }
+                
+                if (el.type === 'grid' && el.rows) {
+                    const newEl = { ...el };
+                    newEl.rows = el.rows.map(r => ({
+                        ...r,
+                        cells: r.cells.map(cell => cell.blockId === blockId ? { ...cell, blockId: null } : cell)
+                    }));
+                    return newEl;
+                }
+                
+                return el;
+            })
+            .filter(el => {
+                if (el.type === 'row' && (!el.columns || el.columns.length === 0)) {
+                    return !!el.settings && Object.keys(el.settings).length > 0;
+                }
+                if (el.type === 'grid' && (!el.rows || el.rows.every(r => r.cells.every(c => !c.blockId)))) {
+                    return !!el.settings && Object.keys(el.settings).length > 0;
+                }
+                return true;
+            });
+    };
 
-    // Recursively nullify blockId in nested structures (grids, rows > columns)
-    function clearBlockIdRecursively(currentElements: LayoutElement[]): LayoutElement[] {
-        return currentElements.map(el => {
-            let newEl = { ...el };
-            if (newEl.type === 'block_container' && newEl.blockId === blockId) {
-                // This case should ideally be filtered out earlier if it's a top-level element.
-                // If it's nested (though 'block_container' is mainly for top-level), it should be removed or its blockId nulled.
-                // For simplicity, we assume 'block_container' is top-level and handled by the filter.
-                // If a 'block' ElementDefinition is found in a column, it should be removed.
-                return null; // Mark for removal, will be filtered out later
-            } else if (newEl.type === 'row' && newEl.columns) {
-                newEl.columns = newEl.columns.map(col => {
-                    const updatedColElements = col.elements ? 
-                        (clearBlockIdRecursively(col.elements.filter(e => e.type !== 'block' || e.blockId !== blockId) as LayoutElement[]) as ElementDefinition[])
-                        : [];
-                    return { ...col, elements: updatedColElements };
-                }).filter(col => col.elements.length > 0 || Object.keys(col.settings || {}).length > 0 ); // Keep column if it has elements or settings
-                 // If all columns become empty and row has no specific settings, row could also be removed.
-                 if (newEl.columns.length === 0 && !Object.keys(newEl.settings || {}).length) return null;
+    const newElements = removeBlockReferenceRecursively(elements) as LayoutElement[];
+    const finalElements = newElements.filter(el => el.type !== 'block_container' || el.blockId !== blockId);
 
-            } else if (newEl.type === 'grid' && newEl.rows) {
-                newEl.rows = newEl.rows.map(r => ({
-                    ...r,
-                    cells: r.cells.map(cell => cell.blockId === blockId ? { ...cell, blockId: null } : cell)
-                }));
-                // Potentially remove grid if all cells become empty and it has no specific settings.
-                // const isEmptyGrid = newEl.rows.every(r => r.cells.every(c => !c.blockId));
-                // if (isEmptyGrid && !Object.keys(newEl.settings || {}).length) return null;
-            }
-            return newEl;
-        }).filter(el => el !== null) as LayoutElement[];
-    }
-    
-    newElements = clearBlockIdRecursively(newElements);
+    updateStateAndHistory(finalElements, remainingBlocks);
 
-    updateStateAndHistory(newElements, remainingBlocks);
     if (activeBlockId === blockId) {
       setActiveBlockId(null);
     }
   }, [elements, blocks, activeBlockId, updateStateAndHistory, setActiveBlockId]);
 
   const moveElement = useCallback((elementId: string, direction: 'up' | 'down') => {
-    // ... keep existing code
     const elementIndex = elements.findIndex(el => el.id === elementId);
     if (elementIndex === -1) return;
 
@@ -262,18 +260,15 @@ export const useBlockManagement = (
   }, [elements, blocks, updateStateAndHistory]);
 
   const setElementsState = useCallback((newElements: LayoutElement[]) => {
-    // ... keep existing code
      updateStateAndHistory(newElements, blocks);
   }, [blocks, updateStateAndHistory]);
 
   const setBlocksState = useCallback((newBlocks: { [key: string]: ReviewBlock }) => {
-    // ... keep existing code
       updateStateAndHistory(elements, newBlocks);
   }, [elements, updateStateAndHistory]);
 
 
   const undo = useCallback(() => {
-    // ... keep existing code
     if (historyIndex.current > 0) {
       historyIndex.current--;
       const prevState = history.current[historyIndex.current];
@@ -285,7 +280,6 @@ export const useBlockManagement = (
   }, [onStateChange]);
 
   const redo = useCallback(() => {
-    // ... keep existing code
     if (historyIndex.current < history.current.length - 1) {
       historyIndex.current++;
       const nextState = history.current[historyIndex.current];
@@ -310,7 +304,7 @@ export const useBlockManagement = (
     setBlocks: setBlocksState,
     undo,
     redo,
-    canUndo: historyIndex.current > 0 && history.current.length > 1, // Ensure there's something to undo to
+    canUndo: historyIndex.current > 0 && history.current.length > 1,
     canRedo: historyIndex.current < history.current.length - 1,
   };
 };
