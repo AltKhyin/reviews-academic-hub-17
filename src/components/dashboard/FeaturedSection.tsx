@@ -1,26 +1,11 @@
 
 import React from 'react';
 import { ArticleCard } from './ArticleCard';
+import { Issue } from '@/types/issue';
 
 interface FeaturedSectionProps {
-  featuredIssue?: {
-    id: string;
-    title: string;
-    cover_image_url?: string;
-    specialty: string;
-    published_at: string;
-    authors?: string;
-    description?: string;
-  } | null;
-  recentIssues?: Array<{
-    id: string;
-    title: string;
-    cover_image_url?: string;
-    specialty: string;
-    published_at: string;
-    authors?: string;
-    score?: number;
-  }>;
+  featuredIssue?: Issue | null;
+  recentIssues?: Issue[];
   stats?: {
     totalIssues: number;
     totalSpecialties: number;

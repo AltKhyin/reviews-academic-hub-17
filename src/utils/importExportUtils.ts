@@ -1,3 +1,4 @@
+
 // ABOUTME: Import/export utilities for review blocks with proper type handling
 import { ReviewBlock, BlockType } from '@/types/review';
 
@@ -10,6 +11,15 @@ interface ImportResult {
 interface ExportOptions {
   includeIds?: boolean;
   prettyPrint?: boolean;
+}
+
+export interface ExportData {
+  blocks: ReviewBlock[];
+  metadata: {
+    exportedAt: string;
+    version: string;
+    totalBlocks: number;
+  };
 }
 
 // Helper function to generate a unique ID
@@ -104,6 +114,46 @@ export const exportReviewBlocks = (blocks: ReviewBlock[], options: ExportOptions
   });
 
   return prettyPrint ? JSON.stringify(exportedBlocks, null, 2) : JSON.stringify(exportedBlocks);
+};
+
+// Export blocks with metadata
+export const exportBlocks = (blocks: ReviewBlock[], options: ExportOptions = {}): ExportData => {
+  return {
+    blocks,
+    metadata: {
+      exportedAt: new Date().toISOString(),
+      version: '1.0.0',
+      totalBlocks: blocks.length
+    }
+  };
+};
+
+// Validate import data
+export const validateImportData = (data: any): { valid: boolean; errors: string[] } => {
+  const errors: string[] = [];
+  
+  if (!Array.isArray(data)) {
+    errors.push('Data must be an array');
+    return { valid: false, errors };
+  }
+
+  data.forEach((block, index) => {
+    if (!block.type) {
+      errors.push(`Block ${index}: Missing type`);
+    }
+    if (block.content === undefined) {
+      errors.push(`Block ${index}: Missing content`);
+    }
+  });
+
+  return { valid: errors.length === 0, errors };
+};
+
+// Migrate import data to current format
+export const migrateImportData = (data: any): ReviewBlock[] => {
+  if (!Array.isArray(data)) return [];
+  
+  return data.map((blockData, index) => createReviewBlockFromImport(blockData, index));
 };
 
 // Fix the block type defaults to include all required BlockType values

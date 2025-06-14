@@ -1,7 +1,8 @@
 
-// ABOUTME: Homepage/landing page with navigation sidebar integration
+// ABOUTME: Homepage/landing page with navigation sidebar integration and UserInteractionProvider
 import React, { useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { UserInteractionProvider } from '@/contexts/UserInteractionContext';
 import { Sidebar } from '@/components/navigation/Sidebar';
 import { useOptimizedHomepage } from '@/hooks/useOptimizedHomepage';
 import { FeaturedSection } from '@/components/dashboard/FeaturedSection';
@@ -19,6 +20,14 @@ interface SectionConfig {
 const Index: React.FC = () => {
   const { user, isLoading: authLoading } = useAuth();
   const { featuredIssue, recentIssues, stats, isLoading, hasError } = useOptimizedHomepage();
+
+  // Extract issue IDs for UserInteractionProvider
+  const issueIds = useMemo(() => {
+    const ids: string[] = [];
+    if (featuredIssue) ids.push(featuredIssue.id);
+    if (recentIssues) ids.push(...recentIssues.map(issue => issue.id));
+    return ids;
+  }, [featuredIssue, recentIssues]);
 
   // Section configuration logic
   const sectionConfigs: SectionConfig[] = useMemo(() => {
@@ -108,35 +117,37 @@ const Index: React.FC = () => {
   console.log('Index: Rendering homepage with sections:', sectionConfigs.map(s => s.id));
 
   return (
-    <div className="flex h-screen bg-background">
-      {user && <Sidebar />}
-      <div className={`flex-1 overflow-auto ${user ? 'ml-64' : ''}`}>
-        <main className="container mx-auto px-4 py-8">
-          {!user && (
-            <div className="text-center mb-8">
-              <Logo dark={false} size="xlarge" />
+    <UserInteractionProvider issueIds={issueIds}>
+      <div className="flex h-screen bg-background">
+        {user && <Sidebar />}
+        <div className={`flex-1 overflow-auto ${user ? 'ml-64' : ''}`}>
+          <main className="container mx-auto px-4 py-8">
+            {!user && (
+              <div className="text-center mb-8">
+                <Logo dark={false} size="xlarge" />
+              </div>
+            )}
+            
+            <div className="space-y-12">
+              {sectionConfigs.map((config) => {
+                if (!config.visible) return null;
+                
+                const SectionComponent = config.component;
+                return (
+                  <div key={config.id}>
+                    <SectionComponent 
+                      featuredIssue={featuredIssue}
+                      recentIssues={recentIssues}
+                      stats={stats}
+                    />
+                  </div>
+                );
+              })}
             </div>
-          )}
-          
-          <div className="space-y-12">
-            {sectionConfigs.map((config) => {
-              if (!config.visible) return null;
-              
-              const SectionComponent = config.component;
-              return (
-                <div key={config.id}>
-                  <SectionComponent 
-                    featuredIssue={featuredIssue}
-                    recentIssues={recentIssues}
-                    stats={stats}
-                  />
-                </div>
-              );
-            })}
-          </div>
-        </main>
+          </main>
+        </div>
       </div>
-    </div>
+    </UserInteractionProvider>
   );
 };
 
