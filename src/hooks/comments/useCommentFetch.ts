@@ -1,16 +1,52 @@
-// ABOUTME: Hook for fetching comments. Placeholder.
-import { useQuery } from '@tanstack/react-query';
+
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Comment, EntityType } from '@/types/commentTypes';
+import { Comment, EntityType, BaseComment } from '@/types/commentTypes';
+import { toast } from '@/components/ui/use-toast';
+import { organizeCommentsInTree } from '@/utils/commentOrganize';
+import { fetchCommentsData } from '@/utils/commentFetch';
 
-const fetchComments = async (entityType: EntityType, entityId: string): Promise<Comment[]> => {
-  // This is a placeholder. A real implementation would fetch and structure comments.
-  return []; 
-};
+export const useCommentFetch = (entityId: string, entityType: EntityType = 'article') => {
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  const fetchComments = async () => {
+    if (!entityId) return;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const { comments: fetchedComments, userVotes } = await fetchCommentsData(entityId, entityType);
+      
+      // Append user votes to comments and organize them
+      const commentsWithVotes = fetchedComments.map(comment => {
+        const userVote = userVotes.find(vote => vote.comment_id === comment.id);
+        return {
+          ...comment,
+          userVote: userVote ? userVote.value as 1 | -1 : 0 as 0
+        };
+      });
+      
+      const processedComments = organizeCommentsInTree(commentsWithVotes as BaseComment[]);
+      setComments(processedComments);
+    } catch (err) {
+      console.error('Error fetching comments:', err);
+      setError('Failed to load comments');
+      toast({
+        title: 'Error',
+        description: 'Failed to load comments',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-export const useCommentFetch = (entityType: EntityType, entityId: string) => {
-  return useQuery({
-    queryKey: ['comments', entityType, entityId],
-    queryFn: () => fetchComments(entityType, entityId),
-  });
+  useEffect(() => {
+    fetchComments();
+  }, [entityId, entityType]);
+
+  return { comments, loading, error, fetchComments };
 };

@@ -1,28 +1,17 @@
+
 // ABOUTME: Layout management hook for multi-block row system
 // Handles creation, modification, and state management of layout rows
 
 import { useState, useCallback } from 'react';
 import { ReviewBlock } from '@/types/review';
-
-// Local definition to fix build error, will be replaced when component is accessible
-interface LayoutRowData {
-    id: string;
-    blocks: ReviewBlock[];
-    columns: number;
-    gap: number;
-    responsive: {
-      sm: number;
-      md: number;
-      lg: number;
-    };
-}
+import { LayoutRowData } from '@/components/editor/layout/LayoutRow';
 
 interface LayoutState {
   rows: LayoutRowData[];
   activeRowId?: string;
   dragState: {
     isDragging: boolean;
-    draggedBlockId?: string;
+    draggedBlockId?: number;
     sourceRowId?: string;
     targetRowId?: string;
     targetPosition?: number;
@@ -89,16 +78,16 @@ export const useLayoutManagement = ({
   const [layoutState, setLayoutState] = useState<LayoutState>(initializeLayout);
 
   // Create new row
-  const createRow = useCallback((): LayoutRowData => {
+  const createRow = useCallback((columns: number = 1): LayoutRowData => {
     return {
       id: `row-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       blocks: [],
-      columns: 1,
+      columns,
       gap: 4,
       responsive: {
-        sm: 1,
-        md: 1, 
-        lg: 1
+        sm: Math.min(columns, 2),
+        md: Math.min(columns, 3), 
+        lg: columns
       }
     };
   }, []);
@@ -106,7 +95,7 @@ export const useLayoutManagement = ({
   // Add new row
   const addRow = useCallback((position?: number, columns: number = 1) => {
     setLayoutState(prev => {
-      const newRow = createRow();
+      const newRow = createRow(columns);
       const newRows = [...prev.rows];
       
       if (position !== undefined) {
@@ -200,7 +189,7 @@ export const useLayoutManagement = ({
 
   // Move block between rows/positions
   const moveBlock = useCallback((
-    blockId: string,
+    blockId: number,
     targetRowId: string,
     targetPosition: number
   ) => {
@@ -261,7 +250,7 @@ export const useLayoutManagement = ({
   }, [onLayoutChange]);
 
   // Remove block from layout
-  const removeBlock = useCallback((blockId: string) => {
+  const removeBlock = useCallback((blockId: number) => {
     setLayoutState(prev => {
       const newRows = prev.rows.map(row => ({
         ...row,
@@ -282,7 +271,7 @@ export const useLayoutManagement = ({
   }, [layoutState.rows]);
 
   // Update single block
-  const updateBlock = useCallback((blockId: string, updates: Partial<ReviewBlock>) => {
+  const updateBlock = useCallback((blockId: number, updates: Partial<ReviewBlock>) => {
     setLayoutState(prev => {
       const newRows = prev.rows.map(row => ({
         ...row,
@@ -308,7 +297,7 @@ export const useLayoutManagement = ({
   }, []);
 
   // Drag state management
-  const startDrag = useCallback((blockId: string, sourceRowId: string) => {
+  const startDrag = useCallback((blockId: number, sourceRowId: string) => {
     setLayoutState(prev => ({
       ...prev,
       dragState: {

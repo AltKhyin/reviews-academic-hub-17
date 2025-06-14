@@ -1,3 +1,4 @@
+
 // ABOUTME: Unified comment management with optimized data fetching and comprehensive interface
 import { useOptimizedCommentActions } from './useOptimizedCommentActions';
 import { useOptimizedCommentVoting } from './useOptimizedCommentVoting';
@@ -7,7 +8,7 @@ import { EntityType } from '@/types/commentTypes';
 export const useOptimizedComments = (entityType: EntityType, entityId: string) => {
   const commentFetch = useCommentFetch(entityType, entityId);
   const commentActions = useOptimizedCommentActions(entityType, entityId);
-  const commentVoting = useOptimizedCommentVoting(entityType, entityId);
+  const commentVoting = useOptimizedCommentVoting();
 
   // Create unified interface with proper method names
   const addComment = async (content: string, userId: string) => {
