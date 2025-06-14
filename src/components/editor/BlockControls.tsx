@@ -1,4 +1,3 @@
-
 // ABOUTME: Compact block controls for drag, visibility, and actions with up/down arrows
 // Extracted from BlockContentEditor for better modularity
 
@@ -16,18 +15,18 @@ import {
 import { cn } from '@/lib/utils';
 
 interface BlockControlsProps {
-  blockId: number;
+  blockId: string; // Changed from number to string
   isVisible: boolean;
   isActive: boolean;
   isFirst: boolean;
   isLast: boolean;
   editMode: boolean;
   isDragging: boolean;
-  onMove: (blockId: number, direction: 'up' | 'down') => void;
+  onMove: (blockId: string, direction: 'up' | 'down') => void; // Changed from number to string
   onToggleVisibility: () => void;
   onToggleEditMode: () => void;
-  onDuplicate?: (blockId: number) => void;
-  onDelete: (blockId: number) => void;
+  onDuplicate?: (blockId: string) => void; // Changed from number to string
+  onDelete: (blockId: string) => void; // Changed from number to string
 }
 
 export const BlockControls: React.FC<BlockControlsProps> = ({

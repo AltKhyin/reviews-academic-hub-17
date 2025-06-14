@@ -1,4 +1,3 @@
-
 // ABOUTME: Enhanced 2D grid manager with complete block integration
 // Manages 2D grid state with proper block lifecycle management
 
@@ -16,9 +15,9 @@ import {
 } from '@/utils/grid2DUtils';
 
 interface UseGrid2DManagerProps {
-  onUpdateBlock: (blockId: number, updates: Partial<ReviewBlock>) => void;
-  onDeleteBlock: (blockId: number) => void;
-  onAddBlock: (type: BlockType, position?: number) => number;
+  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void; // Changed from number to string
+  onDeleteBlock: (blockId: string) => void; // Changed from number to string
+  onAddBlock: (type: BlockType, position?: number) => string; // Changed return type from number to string
 }
 
 export const useGrid2DManager = ({ 
@@ -93,7 +92,7 @@ export const useGrid2DManager = ({
   }, [onDeleteBlock]);
 
   // Place block in grid
-  const placeBlockInGridById = useCallback((blockId: number, gridId: string, position: GridPosition) => {
+  const placeBlockInGridById = useCallback((blockId: string, gridId: string, position: GridPosition) => { // Changed from number to string
     console.log('Placing block in grid:', { blockId, gridId, position });
     
     setGrids(prev => {
@@ -140,7 +139,7 @@ export const useGrid2DManager = ({
   }, [onUpdateBlock, onDeleteBlock]);
 
   // Remove block from grid
-  const removeBlockFromGridById = useCallback((blockId: number, gridId: string) => {
+  const removeBlockFromGridById = useCallback((blockId: string, gridId: string) => { // Changed from number to string
     console.log('Removing block from grid:', { blockId, gridId });
     
     // Just delete the block - the grid will be updated by extractGridsFromBlocks
