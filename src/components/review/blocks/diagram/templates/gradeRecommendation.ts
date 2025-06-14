@@ -2,7 +2,7 @@
 // ABOUTME: GRADE recommendation pathway template for evidence-based recommendations
 // Shows logical path from evidence quality to recommendation strength
 
-import { DiagramNode, DiagramConnection } from '@/types/review';
+import { DiagramTemplateNode, DiagramTemplateConnection } from '@/types/review';
 
 export const gradeRecommendationTemplate = {
   id: 'grade-recommendation',
@@ -208,7 +208,7 @@ export const gradeRecommendationTemplate = {
         opacity: 1
       }
     }
-  ] as DiagramNode[],
+  ] as DiagramTemplateNode[],
   connections: [
     {
       id: 'conn1',
@@ -390,5 +390,5 @@ export const gradeRecommendationTemplate = {
         opacity: 1
       }
     }
-  ] as DiagramConnection[]
+  ] as DiagramTemplateConnection[]
 };

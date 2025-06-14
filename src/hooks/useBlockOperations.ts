@@ -17,7 +17,7 @@ export const useBlockOperations = () => {
     }));
   }, []);
 
-  const findBlockIndex = useCallback((blocks: ReviewBlock[], blockId: number): number => {
+  const findBlockIndex = useCallback((blocks: ReviewBlock[], blockId: string): number => {
     return blocks.findIndex(block => block.id === blockId);
   }, []);
 
