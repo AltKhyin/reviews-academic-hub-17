@@ -1,4 +1,4 @@
-# README‑BÍBLIA.md v3.10.0
+# README‑BÍBLIA.md v3.11.0
 
 ## 1. Purpose & Pitch
 Scientific journal platform with optimized review system, community features, and advanced performance monitoring. **Editor System Refactoring IN PROGRESS** - Focusing on robust `LayoutElement` management, drag-and-drop, and block operations within various layouts.
@@ -6,6 +6,8 @@ Scientific journal platform with optimized review system, community features, an
 ## 2. Glossary
 - **Review Blocks**: Modular content components for scientific reviews (string IDs)
 - **Layout Elements**: Structural components for defining review document layout (e.g., rows, grids, block_containers).
+- **LayoutGrid**: Component for rendering 2D grid layouts. (NEW)
+- **BlockList**: Component that renders the main editor canvas by processing `LayoutElement`s. (REFACTORED)
 - **GridPosition**: Type defining row/column for 2D grid elements.
 - **GridCell**: Defines a cell within a 2D grid, can contain a block.
 - **Review**: Top-level type for a scientific review document, containing metadata, layout elements, and block data.
@@ -35,11 +37,11 @@ Scientific journal platform with optimized review system, community features, an
 │  ├─ UI Components (TYPE-CONSISTENT)
 │  │  ├─ Editor System (REFACTORING IN PROGRESS)
 │  │  │  ├─ Block Components (text, heading, image etc.)
-│  │  │  ├─ Layout Components (Grid2D, LayoutRow)
+│  │  │  ├─ Layout Components (LayoutGrid, LayoutRow) (UPDATED)
 │  │  │  └─ Core Editor (BlockEditor, BlockList, SingleBlock) (UPDATED)
 │  │  └─ Review System
 │  ├─ Lazy Routes
-│  └─ State Management (hooks like useBlockManagement, useBlockDragDrop) (UPDATED)
+│  └─ State Management (hooks like useBlockManagement, useBlockDragDrop)
 ├─ Backend (Supabase)
 │  ├─ Database (PostgreSQL)
 │  ├─ Auth System
@@ -68,8 +70,8 @@ Scientific journal platform with optimized review system, community features, an
 - **Component Auditing**: `/src/utils/componentAudit.ts`
 - **Type Definitions**: `/src/types/review.ts` (UPDATED - Added unified `AddBlockOptions` type)
 - **Review System**: `/src/components/review/` 
-- **Editor System**: `/src/components/editor/` (REFACTORING - BlockEditor, SingleBlock, LayoutRow aligned with unified `onAddBlock` handler)
-- **Layout Components**: `/src/components/editor/layout/` (TYPE-CONSISTENT, supporting LayoutElement structure, interactions refined)
+- **Editor System**: `/src/components/editor/` (REFACTORING - BlockList refactored as main renderer)
+- **Layout Components**: `/src/components/editor/layout/` (UPDATED - Added LayoutGrid, interactions refined)
 - **Editor State Management**: `/src/hooks/useBlockManagement.ts` (UPDATED - `addBlock` now handles relative positioning and uses unified `AddBlockOptions`)
 - **Performance**: `/src/utils/bundleOptimizer.ts`, `/src/utils/memoryManager.ts`
 - **Error Handling**: `/src/components/error/`
@@ -211,10 +213,10 @@ interface DragState {
 - **User Interactions**: `UserInteractionProvider`, `useUserInteractionContext`
 - **API Monitoring**: `ApiCallMonitor`, `ComponentAuditor`
 - **Review Components**: `BlockRenderer`, `NativeReviewViewer`
-- **Editor Components**: `BlockEditor`, `BlockList`, `BlockContentEditor`, `SingleBlock` (REFACTORING - interactions with LayoutElements improved)
+- **Editor Components**: `BlockEditor`, `BlockList`, `BlockContentEditor`, `SingleBlock` (UPDATED - `BlockList` is now the layout-aware canvas renderer)
 - **Editor Block Primitives**: `TextBlock`, `HeadingBlock`, `ImageBlock`, etc.
-- **Layout Components**: `Grid2DContainer`, `Grid2DRow`, `Grid2DCell`, `LayoutRow` (ADAPTED for LayoutElement structure, DND integration)
-- **Toolbar**: `EditorToolbar` (REFACTORED - Simplified to align with `BlockEditor` scope, removing mode-switching and import/export.)
+- **Layout Components**: `LayoutGrid`, `LayoutRow` (UPDATED for LayoutElement structure, DND integration)
+- **Toolbar**: `EditorToolbar`
 - **Layout**: `DashboardLayout`, `Sidebar`
 
 ## 8. Design Language
@@ -252,7 +254,7 @@ Admin panel with performance monitoring dashboard and error tracking.
 
 ## 14. TODO / Backlog
 **Phase 1 Final Validation (Current):**
-- **Editor System Refactoring**: Resolve all build errors, ensure type consistency, stabilize core editor logic. (IN PROGRESS - ~85%, unified `addBlock` logic implemented, fixing major inconsistencies.)
+- **Editor System Refactoring**: Resolve all build errors, ensure type consistency, stabilize core editor logic. (IN PROGRESS - ~95%, rendering architecture now consistent with `LayoutElement` model.)
 - Network log validation - confirm <10 API requests per page
 - Performance metrics validation - verify monitoring accuracy
 - Component behavior validation - ensure no functionality regression
@@ -260,13 +262,14 @@ Admin panel with performance monitoring dashboard and error tracking.
 - Build stability validation - verify zero build errors ✅ **ACHIEVED**
 
 **Phase 2 (Next):**
-- Component refactoring for maintainability (e.g. `BlockList.tsx` if it becomes too complex)
+- Component refactoring for maintainability
 - State management optimization (Undo/Redo robustness)
 - Code organization improvements
 - Advanced caching strategies
-- Refine block movement within nested layouts (e.g., reordering blocks within columns).
+- Refine block movement within nested layouts (e.g., reordering blocks within columns or grid cells).
 
 ## 15. Revision History
+- v3.11.0 (2025-06-14): **Editor System Refactoring Cycle 5** - Replaced `BlockList.tsx` with a new implementation that correctly renders `LayoutElement` structures (rows, grids, blocks). Created `LayoutGrid.tsx` to handle 2D grid rendering. This resolves a major architectural inconsistency in the editor's rendering pipeline.
 - v3.10.0 (2025-06-14): **Editor System Refactoring Cycle 4** - Implemented a unified `onAddBlock` handler with a consistent `AddBlockOptions` type across the editor components. This fixes inconsistent prop signatures and buggy block creation logic in `useBlockManagement`, `BlockEditor`, `SingleBlock`, and `LayoutRow`.
 - v3.9.0 (2025-06-14): **Editor System Refactoring Cycle 3** - Rearchitected `useBlockManagement` `addBlock`/`deleteBlock` functions with recursive logic to robustly handle nested layouts. Simplified and refactored `EditorToolbar` to match its usage context within `BlockEditor`.
 - v3.8.0 (2025-06-14): **Editor System Refactoring Cycle 2** - Refined `useBlockManagement` for adding blocks to grids. Updated `BlockEditor` for toolbar actions and DND types. Adjusted `SingleBlock` and `LayoutRow` for `LayoutElement`-based operations and DND.
@@ -280,6 +283,7 @@ Admin panel with performance monitoring dashboard and error tracking.
 - v3.0.0 (2025-06-13): Major architecture improvements with unified systems
 
 ## 16. Release Notes
+- **Editor System Refactoring Cycle 5**: Replaced `BlockList.tsx` with a new implementation that correctly renders `LayoutElement` structures (rows, grids, blocks). Created `LayoutGrid.tsx` to handle 2D grid rendering. This resolves a major architectural inconsistency in the editor's rendering pipeline.
 - **Editor System Refactoring Cycle 4**: Implemented a unified `onAddBlock` handler with a consistent `AddBlockOptions` type across the editor components. This fixes inconsistent prop signatures and buggy block creation logic in `useBlockManagement`, `BlockEditor`, `SingleBlock`, and `LayoutRow`.
 - **Editor System Refactoring Cycle 3**: Rearchitected `useBlockManagement` `addBlock`/`deleteBlock` functions with recursive logic to robustly handle nested layouts. Simplified and refactored `EditorToolbar` to match its usage context within `BlockEditor`.
 - **Editor System Refactoring Cycle 2**: Refined `useBlockManagement` for adding blocks to grids. Updated `BlockEditor` for toolbar actions and DND types. Adjusted `SingleBlock` and `LayoutRow` for `LayoutElement`-based operations and DND.
