@@ -3,7 +3,7 @@
 export type BlockType = 
   | 'text' 
   | 'heading' 
-  | 'paragraph' // Added missing type
+  | 'paragraph'
   | 'image' 
   | 'video' 
   | 'quote' 
@@ -22,11 +22,12 @@ export type BlockType =
   | 'comparison'
   | 'accordion'
   | 'tabs'
-  | 'figure' // Added missing type
-  | 'number_card' // Added missing type
-  | 'reviewer_quote' // Added missing type
-  | 'citation_list' // Added missing type
-  | 'snapshot_card'; // Added missing type
+  | 'figure'
+  | 'number_card'
+  | 'reviewer_quote'
+  | 'citation_list'
+  | 'snapshot_card'
+  | 'diagram'; // Added missing diagram type
 
 export interface SpacingConfig {
   top?: number;
@@ -51,11 +52,12 @@ export interface LayoutConfig {
   columns?: number;
   columnWidths?: number[];
   grid_id?: string;
-  grid_position?: number | { row: number; column: number }; // Support both formats
+  grid_position?: { row: number; column: number }; // Standardized to object format only
   row_id?: string;
   grid_rows?: number;
   gap?: number;
   rowHeights?: number[];
+  position?: number; // Added for backward compatibility
 }
 
 export interface AlignmentConfig {
@@ -64,7 +66,7 @@ export interface AlignmentConfig {
 }
 
 export interface ReviewBlock {
-  id: string; // Consistently string for database compatibility
+  id: string;
   type: BlockType;
   content: any;
   sort_index: number;
@@ -74,6 +76,42 @@ export interface ReviewBlock {
     alignment?: AlignmentConfig;
     layout?: LayoutConfig;
   };
+}
+
+// Added missing content type interfaces
+export interface DiagramContent {
+  nodes: Array<{
+    id: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    label: string;
+    type: 'rectangle' | 'circle' | 'diamond';
+    color?: string;
+  }>;
+  edges: Array<{
+    id: string;
+    source: string;
+    target: string;
+    label?: string;
+    type: 'straight' | 'curved';
+  }>;
+  title?: string;
+  description?: string;
+}
+
+export interface SnapshotCardContent {
+  title: string;
+  description?: string;
+  imageUrl?: string;
+  metrics?: Array<{
+    label: string;
+    value: string | number;
+    unit?: string;
+  }>;
+  timestamp?: string;
+  source?: string;
 }
 
 export interface EnhancedIssue {

@@ -46,156 +46,108 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
     ...block,
     // Handle both 'content' and 'payload' properties from database
     content: block.content || (block as any).payload || {},
-    id: block.id // ID is now consistently string type
+    // Ensure sort_index exists
+    sort_index: block.sort_index ?? 0,
+    // Ensure visible property exists
+    visible: block.visible ?? true
   };
 
-  // Get vertical alignment from block metadata
-  const verticalAlign = normalizedBlock.meta?.alignment?.vertical || 'top';
-  
-  // Get spacing from block metadata or use defaults
-  const customSpacing = normalizedBlock.meta?.spacing;
-  const defaultSpacing = getDefaultSpacing(normalizedBlock.type);
-  const finalSpacing = customSpacing || defaultSpacing;
-  const spacingStyles = generateSpacingStyles(finalSpacing);
-  
-  // Convert alignment to CSS classes
-  const getAlignmentClass = (alignment: string) => {
-    switch (alignment) {
-      case 'center':
-        return 'flex items-center';
-      case 'bottom':
-        return 'flex items-end';
-      default:
-        return 'flex items-start';
+  const handleUpdate = (updates: Partial<ReviewBlock>) => {
+    if (onUpdate) {
+      onUpdate(updates);
     }
   };
 
-  // Handle interaction events
   const handleInteraction = (interactionType: string, data?: any) => {
     if (onInteraction) {
       onInteraction(normalizedBlock.id, interactionType, data);
     }
   };
 
-  // Handle section view tracking
-  const handleSectionView = () => {
-    if (onSectionView) {
-      onSectionView(normalizedBlock.id);
-    }
-  };
-
-  // If rendering as grid, render the grid blocks
-  if (renderAsGrid && gridBlocks.length > 0) {
-    const layout = normalizedBlock.meta?.layout;
-    const columns = layout?.columns || gridBlocks.length;
-    const columnWidths = layout?.columnWidths || [];
-    
-    return (
-      <div className={cn("grid-renderer", className)} style={spacingStyles}>
-        <div 
-          className="grid gap-4"
-          style={{ 
-            gridTemplateColumns: columnWidths.length > 0 
-              ? columnWidths.map(w => `${w}%`).join(' ')
-              : `repeat(${columns}, 1fr)`
-          }}
-        >
-          {gridBlocks.map((gridBlock) => (
-            <div key={gridBlock.id} className={getAlignmentClass(gridBlock.meta?.alignment?.vertical || 'top')}>
-              <BlockRenderer
-                block={gridBlock}
-                onUpdate={onUpdate}
-                readonly={readonly}
-                onInteraction={onInteraction}
-                onSectionView={onSectionView}
-              />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  // Generate spacing styles
+  const spacingStyles = generateSpacingStyles(
+    normalizedBlock.meta?.spacing || getDefaultSpacing(normalizedBlock.type)
+  );
 
   const renderBlockContent = () => {
+    const commonProps = {
+      block: normalizedBlock,
+      onUpdate: handleUpdate,
+      readonly,
+      onInteraction: handleInteraction
+    };
+
     switch (normalizedBlock.type) {
       case 'heading':
-        return <HeadingBlock block={normalizedBlock} onUpdate={onUpdate} readonly={readonly} />;
+        return <HeadingBlock {...commonProps} />;
+      
       case 'paragraph':
-        return <ParagraphBlock block={normalizedBlock} onUpdate={onUpdate} readonly={readonly} />;
+      case 'text':
+        return <ParagraphBlock {...commonProps} />;
+      
       case 'figure':
-        return <FigureBlock block={normalizedBlock} onUpdate={onUpdate} readonly={readonly} />;
+      case 'image':
+        return <FigureBlock {...commonProps} />;
+      
       case 'table':
-        return <TableBlock block={normalizedBlock} onUpdate={onUpdate} readonly={readonly} />;
+        return <TableBlock {...commonProps} />;
+      
       case 'callout':
-        return <CalloutBlock block={normalizedBlock} onUpdate={onUpdate} readonly={readonly} />;
+        return <CalloutBlock {...commonProps} />;
+      
       case 'snapshot_card':
-        return <SnapshotCardBlock block={normalizedBlock} onUpdate={onUpdate} readonly={readonly} />;
+        return <SnapshotCardBlock {...commonProps} />;
+      
       case 'number_card':
-        return <NumberCard block={normalizedBlock} onUpdate={onUpdate} readonly={readonly} />;
+        return <NumberCard {...commonProps} />;
+      
       case 'reviewer_quote':
-        return <ReviewerQuote block={normalizedBlock} onUpdate={onUpdate} readonly={readonly} />;
+        return <ReviewerQuote {...commonProps} />;
+      
       case 'poll':
-        return (
-          <PollBlock 
-            block={normalizedBlock} 
-            onUpdate={onUpdate} 
-            readonly={readonly}
-            onVote={(optionId) => handleInteraction('poll_vote', { optionId })}
-          />
-        );
+        return <PollBlock {...commonProps} />;
+      
       case 'citation_list':
-        return <CitationListBlock block={normalizedBlock} onUpdate={onUpdate} readonly={readonly} />;
+        return <CitationListBlock {...commonProps} />;
+      
       case 'divider':
-        return (
-          <DividerBlock 
-            block={normalizedBlock} 
-            onUpdate={onUpdate}
-            onInteraction={handleInteraction} 
-            onSectionView={handleSectionView} 
-            readonly={readonly} 
-          />
-        );
+        return <DividerBlock {...commonProps} />;
+      
       case 'diagram':
-        return <DiagramBlock block={normalizedBlock} onUpdate={onUpdate} readonly={readonly} />;
+        return <DiagramBlock {...commonProps} />;
+      
       default:
+        // Fallback for unknown block types
         return (
-          <div className="p-4 border border-red-500 rounded bg-red-500/10">
-            <p className="text-red-400">Tipo de bloco desconhecido: {normalizedBlock.type}</p>
-            <p className="text-red-300 text-sm mt-2">
-              Block ID: {normalizedBlock.id}
-            </p>
-            {normalizedBlock.content && (
-              <details className="mt-2">
-                <summary className="text-red-300 cursor-pointer">Debug Info</summary>
-                <pre className="text-xs mt-2 text-red-200 overflow-auto">
-                  {JSON.stringify(normalizedBlock.content, null, 2)}
-                </pre>
-              </details>
-            )}
+          <div className="unknown-block p-4 bg-yellow-900/20 border border-yellow-600 rounded">
+            <div className="text-yellow-400 text-sm font-medium mb-2">
+              Tipo de bloco não suportado: {normalizedBlock.type}
+            </div>
+            <pre className="text-xs text-yellow-300 overflow-auto">
+              {JSON.stringify(normalizedBlock.content, null, 2)}
+            </pre>
           </div>
         );
     }
   };
 
-  // For heading and paragraph blocks, spacing is handled internally
-  // For other blocks, apply spacing to the container
-  const shouldApplyContainerSpacing = !['heading', 'paragraph'].includes(normalizedBlock.type);
-  const containerStyle = shouldApplyContainerSpacing ? spacingStyles : {};
-
   return (
     <BlockErrorBoundary blockId={normalizedBlock.id} blockType={normalizedBlock.type}>
-      <div 
+      <div
         className={cn(
-          "block-renderer h-full",
-          getAlignmentClass(verticalAlign),
+          "block-renderer",
+          `block-type-${normalizedBlock.type}`,
+          renderAsGrid && "grid-block",
           className
         )}
-        style={containerStyle}
-        onClick={handleSectionView}
+        style={{
+          ...spacingStyles,
+          opacity: normalizedBlock.visible ? 1 : 0.5
+        }}
+        data-block-id={normalizedBlock.id}
+        data-block-type={normalizedBlock.type}
       >
-        <div className="w-full">
-          {renderBlockContent()}
-        </div>
+        {renderBlockContent()}
       </div>
     </BlockErrorBoundary>
   );

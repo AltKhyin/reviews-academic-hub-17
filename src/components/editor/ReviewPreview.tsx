@@ -1,3 +1,4 @@
+
 // ABOUTME: Enhanced preview component with complete 2D grid support
 // Shows real-time preview of both 1D and 2D grid layouts with proper rendering
 
@@ -51,7 +52,7 @@ export const ReviewPreview: React.FC<ReviewPreviewProps> = ({
   // Enhanced layout grouping with 2D grid support
   const layoutGroups: LayoutGroup[] = useMemo(() => {
     const groups: LayoutGroup[] = [];
-    const processedBlockIds = new Set<number>();
+    const processedBlockIds = new Set<string>();
     
     const sortedBlocks = [...visibleBlocks].sort((a, b) => a.sort_index - b.sort_index);
 
@@ -77,7 +78,7 @@ export const ReviewPreview: React.FC<ReviewPreviewProps> = ({
           const columnWidths = layout?.columnWidths;
           const rowHeights = layout?.rowHeights;
           
-          // Create 2D grid structure
+          // Create 2D grid structure - handle position normalization
           const grid2DStructure: Grid2DStructure = {
             id: gridId,
             columns,
@@ -85,10 +86,29 @@ export const ReviewPreview: React.FC<ReviewPreviewProps> = ({
             gap,
             columnWidths,
             rowHeights,
-            blocks: gridBlocks.map(block => ({
-              block,
-              position: block.meta?.layout?.grid_position || { row: 0, column: 0 }
-            })).filter(item => 
+            blocks: gridBlocks.map(block => {
+              const position = block.meta?.layout?.grid_position;
+              // Normalize position to always be an object
+              let normalizedPosition: { row: number; column: number };
+              
+              if (typeof position === 'object' && position !== null && 'row' in position && 'column' in position) {
+                normalizedPosition = position;
+              } else if (typeof position === 'number') {
+                // Convert linear position to grid position
+                normalizedPosition = {
+                  row: Math.floor(position / columns),
+                  column: position % columns
+                };
+              } else {
+                // Default position
+                normalizedPosition = { row: 0, column: 0 };
+              }
+              
+              return {
+                block,
+                position: normalizedPosition
+              };
+            }).filter(item => 
               item.position.row >= 0 && 
               item.position.column >= 0 &&
               item.position.row < rows &&
