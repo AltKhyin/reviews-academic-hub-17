@@ -1,3 +1,3 @@
 
-export { usePosts } from './usePosts';
-export { enhancePostsWithDetails } from './usePostEnhancement';
+// ABOUTME: Barrel file for community-related hooks.
+export {};

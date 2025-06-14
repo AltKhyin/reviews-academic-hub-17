@@ -1,3 +1,4 @@
+
 // ABOUTME: Enhanced grid operations with optimized merge behavior
 // Provides stable grid resizing, merging, splitting, and cross-layout operations
 
@@ -7,8 +8,8 @@ import { useGridLayoutManager } from './useGridLayoutManager';
 
 interface UseEnhancedGridOperationsProps {
   blocks: ReviewBlock[];
-  onUpdateBlock: (blockId: number, updates: Partial<ReviewBlock>) => void;
-  onDeleteBlock: (blockId: number) => void;
+  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
+  onDeleteBlock: (blockId: string) => void;
   onAddBlock: (type: string, position?: number, layoutInfo?: any) => void;
 }
 
@@ -173,7 +174,7 @@ export const useEnhancedGridOperations = ({
   }, [layoutState.rows, onUpdateBlock, onDeleteBlock]);
 
   // Optimized merge into grid - no empty blocks created
-  const mergeIntoGrid = useCallback((draggedBlockId: number, targetRowId: string, targetPosition?: number) => {
+  const mergeIntoGrid = useCallback((draggedBlockId: string, targetRowId: string, targetPosition?: number) => {
     const draggedBlock = blocks.find(b => b.id === draggedBlockId);
     if (!draggedBlock) {
       console.error('Dragged block not found:', draggedBlockId);
@@ -277,7 +278,7 @@ export const useEnhancedGridOperations = ({
   }, [blocks, layoutState.rows, onUpdateBlock]);
 
   // Split a block into two columns
-  const splitBlockIntoGrid = useCallback((blockId: number, splitContent: { left: any; right: any }) => {
+  const splitBlockIntoGrid = useCallback((blockId: string, splitContent: { left: any; right: any }) => {
     const block = blocks.find(b => b.id === blockId);
     if (!block || isBlockInGrid(blockId)) {
       console.error('Cannot split block: not found or already in grid:', blockId);
