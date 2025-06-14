@@ -1,3 +1,4 @@
+
 // ABOUTME: Study timeline template for temporal visualization of interventions and measurements
 // Horizontal timeline showing when events occur during study period
 
@@ -13,8 +14,9 @@ export const studyTimelineTemplate = {
       id: 'baseline',
       type: 'circle',
       position: { x: 100, y: 200 },
-      size: { width: 80, height: 80 },
-      text: 'Baseline\nT0',
+      width: 80,
+      height: 80,
+      label: 'Baseline\nT0',
       style: {
         backgroundColor: '#3b82f6',
         borderColor: '#1d4ed8',
@@ -31,8 +33,9 @@ export const studyTimelineTemplate = {
       id: 'baseline-measures',
       type: 'rectangle',
       position: { x: 50, y: 320 },
-      size: { width: 180, height: 80 },
-      text: 'Medidas Baseline:\n• Demografia\n• Critérios elegibilidade\n• Desfechos primários',
+      width: 180,
+      height: 80,
+      label: 'Medidas Baseline:\n• Demografia\n• Critérios elegibilidade\n• Desfechos primários',
       style: {
         backgroundColor: '#6b7280',
         borderColor: '#4b5563',
@@ -49,8 +52,9 @@ export const studyTimelineTemplate = {
       id: 'intervention-start',
       type: 'circle',
       position: { x: 300, y: 200 },
-      size: { width: 80, height: 80 },
-      text: 'Início\nT1',
+      width: 80,
+      height: 80,
+      label: 'Início\nT1',
       style: {
         backgroundColor: '#10b981',
         borderColor: '#059669',
@@ -67,8 +71,9 @@ export const studyTimelineTemplate = {
       id: 'intervention-details',
       type: 'rectangle',
       position: { x: 250, y: 320 },
-      size: { width: 180, height: 80 },
-      text: 'Início da Intervenção:\n• Randomização\n• Alocação para grupos\n• Início do tratamento',
+      width: 180,
+      height: 80,
+      label: 'Início da Intervenção:\n• Randomização\n• Alocação para grupos\n• Início do tratamento',
       style: {
         backgroundColor: '#059669',
         borderColor: '#047857',
@@ -85,8 +90,9 @@ export const studyTimelineTemplate = {
       id: 'follow-up-1',
       type: 'circle',
       position: { x: 500, y: 200 },
-      size: { width: 80, height: 80 },
-      text: '1º Follow\nT2',
+      width: 80,
+      height: 80,
+      label: '1º Follow\nT2',
       style: {
         backgroundColor: '#f59e0b',
         borderColor: '#d97706',
@@ -103,8 +109,9 @@ export const studyTimelineTemplate = {
       id: 'follow-up-1-measures',
       type: 'rectangle',
       position: { x: 450, y: 80 },
-      size: { width: 180, height: 80 },
-      text: 'Medidas (4 semanas):\n• Desfechos primários\n• Eventos adversos\n• Adesão ao tratamento',
+      width: 180,
+      height: 80,
+      label: 'Medidas (4 semanas):\n• Desfechos primários\n• Eventos adversos\n• Adesão ao tratamento',
       style: {
         backgroundColor: '#d97706',
         borderColor: '#b45309',
@@ -121,8 +128,9 @@ export const studyTimelineTemplate = {
       id: 'follow-up-2',
       type: 'circle',
       position: { x: 700, y: 200 },
-      size: { width: 80, height: 80 },
-      text: '2º Follow\nT3',
+      width: 80,
+      height: 80,
+      label: '2º Follow\nT3',
       style: {
         backgroundColor: '#f59e0b',
         borderColor: '#d97706',
@@ -139,8 +147,9 @@ export const studyTimelineTemplate = {
       id: 'follow-up-2-measures',
       type: 'rectangle',
       position: { x: 650, y: 320 },
-      size: { width: 180, height: 80 },
-      text: 'Medidas (12 semanas):\n• Desfechos primários\n• Qualidade de vida\n• Biomarcadores',
+      width: 180,
+      height: 80,
+      label: 'Medidas (12 semanas):\n• Desfechos primários\n• Qualidade de vida\n• Biomarcadores',
       style: {
         backgroundColor: '#d97706',
         borderColor: '#b45309',
@@ -157,8 +166,9 @@ export const studyTimelineTemplate = {
       id: 'endpoint',
       type: 'circle',
       position: { x: 900, y: 200 },
-      size: { width: 80, height: 80 },
-      text: 'Final\nT4',
+      width: 80,
+      height: 80,
+      label: 'Final\nT4',
       style: {
         backgroundColor: '#dc2626',
         borderColor: '#991b1b',
@@ -175,8 +185,9 @@ export const studyTimelineTemplate = {
       id: 'final-measures',
       type: 'rectangle',
       position: { x: 850, y: 80 },
-      size: { width: 180, height: 80 },
-      text: 'Medidas Finais (24 sem):\n• Desfechos primários\n• Análise final\n• Seguimento longo prazo',
+      width: 180,
+      height: 80,
+      label: 'Medidas Finais (24 sem):\n• Desfechos primários\n• Análise final\n• Seguimento longo prazo',
       style: {
         backgroundColor: '#991b1b',
         borderColor: '#7f1d1d',
@@ -193,8 +204,9 @@ export const studyTimelineTemplate = {
       id: 'timeline-line',
       type: 'rectangle',
       position: { x: 90, y: 235 },
-      size: { width: 820, height: 10 },
-      text: '',
+      width: 820,
+      height: 10,
+      label: '',
       style: {
         backgroundColor: '#4b5563',
         borderColor: '#374151',
@@ -210,11 +222,8 @@ export const studyTimelineTemplate = {
   ] as DiagramTemplateNode[],
   connections: [
     {
-      id: 'conn1',
-      sourceNodeId: 'baseline',
-      targetNodeId: 'baseline-measures',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
+      source: 'baseline',
+      target: 'baseline-measures',
       style: {
         strokeColor: '#3b82f6',
         strokeWidth: 2,
@@ -225,11 +234,8 @@ export const studyTimelineTemplate = {
       }
     },
     {
-      id: 'conn2',
-      sourceNodeId: 'intervention-start',
-      targetNodeId: 'intervention-details',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
+      source: 'intervention-start',
+      target: 'intervention-details',
       style: {
         strokeColor: '#10b981',
         strokeWidth: 2,
@@ -240,11 +246,8 @@ export const studyTimelineTemplate = {
       }
     },
     {
-      id: 'conn3',
-      sourceNodeId: 'follow-up-1',
-      targetNodeId: 'follow-up-1-measures',
-      sourcePoint: 'top',
-      targetPoint: 'bottom',
+      source: 'follow-up-1',
+      target: 'follow-up-1-measures',
       style: {
         strokeColor: '#f59e0b',
         strokeWidth: 2,
@@ -255,11 +258,8 @@ export const studyTimelineTemplate = {
       }
     },
     {
-      id: 'conn4',
-      sourceNodeId: 'follow-up-2',
-      targetNodeId: 'follow-up-2-measures',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
+      source: 'follow-up-2',
+      target: 'follow-up-2-measures',
       style: {
         strokeColor: '#f59e0b',
         strokeWidth: 2,
@@ -270,11 +270,8 @@ export const studyTimelineTemplate = {
       }
     },
     {
-      id: 'conn5',
-      sourceNodeId: 'endpoint',
-      targetNodeId: 'final-measures',
-      sourcePoint: 'top',
-      targetPoint: 'bottom',
+      source: 'endpoint',
+      target: 'final-measures',
       style: {
         strokeColor: '#dc2626',
         strokeWidth: 2,

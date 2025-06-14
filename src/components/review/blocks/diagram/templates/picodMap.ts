@@ -1,3 +1,4 @@
+
 // ABOUTME: PICOD map template for research question structure visualization
 // Organizes Population, Intervention, Comparison, Outcome, Design elements
 
@@ -13,8 +14,9 @@ export const picodMapTemplate = {
       id: 'research-question',
       type: 'circle',
       position: { x: 400, y: 50 },
-      size: { width: 160, height: 80 },
-      text: 'Pergunta de\nPesquisa',
+      width: 160,
+      height: 80,
+      label: 'Pergunta de\nPesquisa',
       style: {
         backgroundColor: '#1d4ed8',
         borderColor: '#1e40af',
@@ -31,8 +33,9 @@ export const picodMapTemplate = {
       id: 'population',
       type: 'rectangle',
       position: { x: 100, y: 200 },
-      size: { width: 180, height: 120 },
-      text: 'POPULAÇÃO (P)\n• Idade: ___\n• Sexo: ___\n• Condição: ___\n• Critérios: ___',
+      width: 180,
+      height: 120,
+      label: 'POPULAÇÃO (P)\n• Idade: ___\n• Sexo: ___\n• Condição: ___\n• Critérios: ___',
       style: {
         backgroundColor: '#059669',
         borderColor: '#047857',
@@ -49,8 +52,9 @@ export const picodMapTemplate = {
       id: 'intervention',
       type: 'rectangle',
       position: { x: 320, y: 200 },
-      size: { width: 180, height: 120 },
-      text: 'INTERVENÇÃO (I)\n• Tipo: ___\n• Dose/Intensidade: ___\n• Duração: ___\n• Via/Método: ___',
+      width: 180,
+      height: 120,
+      label: 'INTERVENÇÃO (I)\n• Tipo: ___\n• Dose/Intensidade: ___\n• Duração: ___\n• Via/Método: ___',
       style: {
         backgroundColor: '#dc2626',
         borderColor: '#991b1b',
@@ -67,8 +71,9 @@ export const picodMapTemplate = {
       id: 'comparison',
       type: 'rectangle',
       position: { x: 540, y: 200 },
-      size: { width: 180, height: 120 },
-      text: 'COMPARAÇÃO (C)\n• Controle: ___\n• Placebo: ___\n• Tratamento padrão: ___\n• Sem intervenção: ___',
+      width: 180,
+      height: 120,
+      label: 'COMPARAÇÃO (C)\n• Controle: ___\n• Placebo: ___\n• Tratamento padrão: ___\n• Sem intervenção: ___',
       style: {
         backgroundColor: '#7c3aed',
         borderColor: '#6d28d9',
@@ -85,8 +90,9 @@ export const picodMapTemplate = {
       id: 'outcomes',
       type: 'rectangle',
       position: { x: 100, y: 380 },
-      size: { width: 180, height: 120 },
-      text: 'DESFECHOS (O)\n• Primário: ___\n• Secundários: ___\n• Tempo de medida: ___\n• Instrumentos: ___',
+      width: 180,
+      height: 120,
+      label: 'DESFECHOS (O)\n• Primário: ___\n• Secundários: ___\n• Tempo de medida: ___\n• Instrumentos: ___',
       style: {
         backgroundColor: '#f59e0b',
         borderColor: '#d97706',
@@ -103,8 +109,9 @@ export const picodMapTemplate = {
       id: 'design',
       type: 'rectangle',
       position: { x: 320, y: 380 },
-      size: { width: 180, height: 120 },
-      text: 'DESENHO (D)\n• Tipo: ___\n• Randomização: ___\n• Cegamento: ___\n• Follow-up: ___',
+      width: 180,
+      height: 120,
+      label: 'DESENHO (D)\n• Tipo: ___\n• Randomização: ___\n• Cegamento: ___\n• Follow-up: ___',
       style: {
         backgroundColor: '#0891b2',
         borderColor: '#0e7490',
@@ -121,8 +128,9 @@ export const picodMapTemplate = {
       id: 'context',
       type: 'rectangle',
       position: { x: 540, y: 380 },
-      size: { width: 180, height: 120 },
-      text: 'CONTEXTO\n• Setting: ___\n• País/Região: ___\n• Sistema de saúde: ___\n• Recursos: ___',
+      width: 180,
+      height: 120,
+      label: 'CONTEXTO\n• Setting: ___\n• País/Região: ___\n• Sistema de saúde: ___\n• Recursos: ___',
       style: {
         backgroundColor: '#6b7280',
         borderColor: '#4b5563',
@@ -138,11 +146,8 @@ export const picodMapTemplate = {
   ] as DiagramTemplateNode[],
   connections: [
     {
-      id: 'conn1',
-      sourceNodeId: 'research-question',
-      targetNodeId: 'population',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
+      source: 'research-question',
+      target: 'population',
       style: {
         strokeColor: '#1d4ed8',
         strokeWidth: 3,
@@ -153,11 +158,8 @@ export const picodMapTemplate = {
       }
     },
     {
-      id: 'conn2',
-      sourceNodeId: 'research-question',
-      targetNodeId: 'intervention',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
+      source: 'research-question',
+      target: 'intervention',
       style: {
         strokeColor: '#1d4ed8',
         strokeWidth: 3,
@@ -168,11 +170,8 @@ export const picodMapTemplate = {
       }
     },
     {
-      id: 'conn3',
-      sourceNodeId: 'research-question',
-      targetNodeId: 'comparison',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
+      source: 'research-question',
+      target: 'comparison',
       style: {
         strokeColor: '#1d4ed8',
         strokeWidth: 3,
@@ -183,11 +182,8 @@ export const picodMapTemplate = {
       }
     },
     {
-      id: 'conn4',
-      sourceNodeId: 'population',
-      targetNodeId: 'outcomes',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
+      source: 'population',
+      target: 'outcomes',
       style: {
         strokeColor: '#059669',
         strokeWidth: 2,
@@ -198,11 +194,8 @@ export const picodMapTemplate = {
       }
     },
     {
-      id: 'conn5',
-      sourceNodeId: 'intervention',
-      targetNodeId: 'design',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
+      source: 'intervention',
+      target: 'design',
       style: {
         strokeColor: '#dc2626',
         strokeWidth: 2,
@@ -213,11 +206,8 @@ export const picodMapTemplate = {
       }
     },
     {
-      id: 'conn6',
-      sourceNodeId: 'comparison',
-      targetNodeId: 'context',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
+      source: 'comparison',
+      target: 'context',
       style: {
         strokeColor: '#7c3aed',
         strokeWidth: 2,
@@ -228,11 +218,8 @@ export const picodMapTemplate = {
       }
     },
     {
-      id: 'conn7',
-      sourceNodeId: 'outcomes',
-      targetNodeId: 'design',
-      sourcePoint: 'right',
-      targetPoint: 'left',
+      source: 'outcomes',
+      target: 'design',
       style: {
         strokeColor: '#6b7280',
         strokeWidth: 1,
@@ -243,11 +230,8 @@ export const picodMapTemplate = {
       }
     },
     {
-      id: 'conn8',
-      sourceNodeId: 'design',
-      targetNodeId: 'context',
-      sourcePoint: 'right',
-      targetPoint: 'left',
+      source: 'design',
+      target: 'context',
       style: {
         strokeColor: '#6b7280',
         strokeWidth: 1,

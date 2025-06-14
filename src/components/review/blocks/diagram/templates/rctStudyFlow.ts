@@ -1,3 +1,4 @@
+
 // ABOUTME: RCT study flow template with randomization and group allocation
 // Standard CONSORT-style flow diagram for clinical trials
 
@@ -13,8 +14,9 @@ export const rctStudyFlowTemplate = {
       id: 'assessed',
       type: 'rectangle',
       position: { x: 350, y: 50 },
-      size: { width: 220, height: 70 },
-      text: 'Avaliados para elegibilidade\n(n = ___)',
+      width: 220,
+      height: 70,
+      label: 'Avaliados para elegibilidade\n(n = ___)',
       style: {
         backgroundColor: '#3b82f6',
         borderColor: '#1d4ed8',
@@ -31,8 +33,9 @@ export const rctStudyFlowTemplate = {
       id: 'excluded',
       type: 'rectangle',
       position: { x: 620, y: 180 },
-      size: { width: 200, height: 100 },
-      text: 'Excluídos (n = ___)\n• Não atenderam critérios (n = ___)\n• Recusaram participar (n = ___)\n• Outras razões (n = ___)',
+      width: 200,
+      height: 100,
+      label: 'Excluídos (n = ___)\n• Não atenderam critérios (n = ___)\n• Recusaram participar (n = ___)\n• Outras razões (n = ___)',
       style: {
         backgroundColor: '#ef4444',
         borderColor: '#dc2626',
@@ -49,8 +52,9 @@ export const rctStudyFlowTemplate = {
       id: 'randomized',
       type: 'rectangle',
       position: { x: 350, y: 220 },
-      size: { width: 220, height: 70 },
-      text: 'Randomizados\n(n = ___)',
+      width: 220,
+      height: 70,
+      label: 'Randomizados\n(n = ___)',
       style: {
         backgroundColor: '#10b981',
         borderColor: '#059669',
@@ -67,8 +71,9 @@ export const rctStudyFlowTemplate = {
       id: 'intervention-group',
       type: 'rectangle',
       position: { x: 200, y: 360 },
-      size: { width: 180, height: 90 },
-      text: 'Alocados para Intervenção\n(n = ___)\n• Receberam intervenção (n = ___)\n• Não receberam (n = ___)',
+      width: 180,
+      height: 90,
+      label: 'Alocados para Intervenção\n(n = ___)\n• Receberam intervenção (n = ___)\n• Não receberam (n = ___)',
       style: {
         backgroundColor: '#8b5cf6',
         borderColor: '#7c3aed',
@@ -85,8 +90,9 @@ export const rctStudyFlowTemplate = {
       id: 'control-group',
       type: 'rectangle',
       position: { x: 520, y: 360 },
-      size: { width: 180, height: 90 },
-      text: 'Alocados para Controle\n(n = ___)\n• Receberam controle (n = ___)\n• Não receberam (n = ___)',
+      width: 180,
+      height: 90,
+      label: 'Alocados para Controle\n(n = ___)\n• Receberam controle (n = ___)\n• Não receberam (n = ___)',
       style: {
         backgroundColor: '#f59e0b',
         borderColor: '#d97706',
@@ -103,8 +109,9 @@ export const rctStudyFlowTemplate = {
       id: 'lost-intervention',
       type: 'rectangle',
       position: { x: 80, y: 500 },
-      size: { width: 160, height: 70 },
-      text: 'Perdas de seguimento\n(n = ___)\nMotivos: ___',
+      width: 160,
+      height: 70,
+      label: 'Perdas de seguimento\n(n = ___)\nMotivos: ___',
       style: {
         backgroundColor: '#dc2626',
         borderColor: '#991b1b',
@@ -121,8 +128,9 @@ export const rctStudyFlowTemplate = {
       id: 'lost-control',
       type: 'rectangle',
       position: { x: 660, y: 500 },
-      size: { width: 160, height: 70 },
-      text: 'Perdas de seguimento\n(n = ___)\nMotivos: ___',
+      width: 160,
+      height: 70,
+      label: 'Perdas de seguimento\n(n = ___)\nMotivos: ___',
       style: {
         backgroundColor: '#dc2626',
         borderColor: '#991b1b',
@@ -139,8 +147,9 @@ export const rctStudyFlowTemplate = {
       id: 'analyzed-intervention',
       type: 'rectangle',
       position: { x: 200, y: 620 },
-      size: { width: 180, height: 80 },
-      text: 'Analisados\n(n = ___)\n• ITT: (n = ___)\n• Per protocol: (n = ___)',
+      width: 180,
+      height: 80,
+      label: 'Analisados\n(n = ___)\n• ITT: (n = ___)\n• Per protocol: (n = ___)',
       style: {
         backgroundColor: '#059669',
         borderColor: '#047857',
@@ -157,8 +166,9 @@ export const rctStudyFlowTemplate = {
       id: 'analyzed-control',
       type: 'rectangle',
       position: { x: 520, y: 620 },
-      size: { width: 180, height: 80 },
-      text: 'Analisados\n(n = ___)\n• ITT: (n = ___)\n• Per protocol: (n = ___)',
+      width: 180,
+      height: 80,
+      label: 'Analisados\n(n = ___)\n• ITT: (n = ___)\n• Per protocol: (n = ___)',
       style: {
         backgroundColor: '#059669',
         borderColor: '#047857',
@@ -174,11 +184,8 @@ export const rctStudyFlowTemplate = {
   ] as DiagramTemplateNode[],
   connections: [
     {
-      id: 'conn1',
-      sourceNodeId: 'assessed',
-      targetNodeId: 'excluded',
-      sourcePoint: 'right',
-      targetPoint: 'top',
+      source: 'assessed',
+      target: 'excluded',
       style: {
         strokeColor: '#ef4444',
         strokeWidth: 2,
@@ -189,11 +196,8 @@ export const rctStudyFlowTemplate = {
       }
     },
     {
-      id: 'conn2',
-      sourceNodeId: 'assessed',
-      targetNodeId: 'randomized',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
+      source: 'assessed',
+      target: 'randomized',
       style: {
         strokeColor: '#10b981',
         strokeWidth: 3,
@@ -204,11 +208,8 @@ export const rctStudyFlowTemplate = {
       }
     },
     {
-      id: 'conn3',
-      sourceNodeId: 'randomized',
-      targetNodeId: 'intervention-group',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
+      source: 'randomized',
+      target: 'intervention-group',
       style: {
         strokeColor: '#8b5cf6',
         strokeWidth: 2,
@@ -219,11 +220,8 @@ export const rctStudyFlowTemplate = {
       }
     },
     {
-      id: 'conn4',
-      sourceNodeId: 'randomized',
-      targetNodeId: 'control-group',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
+      source: 'randomized',
+      target: 'control-group',
       style: {
         strokeColor: '#f59e0b',
         strokeWidth: 2,
@@ -234,11 +232,8 @@ export const rctStudyFlowTemplate = {
       }
     },
     {
-      id: 'conn5',
-      sourceNodeId: 'intervention-group',
-      targetNodeId: 'lost-intervention',
-      sourcePoint: 'left',
-      targetPoint: 'top',
+      source: 'intervention-group',
+      target: 'lost-intervention',
       style: {
         strokeColor: '#dc2626',
         strokeWidth: 2,
@@ -249,11 +244,8 @@ export const rctStudyFlowTemplate = {
       }
     },
     {
-      id: 'conn6',
-      sourceNodeId: 'control-group',
-      targetNodeId: 'lost-control',
-      sourcePoint: 'right',
-      targetPoint: 'top',
+      source: 'control-group',
+      target: 'lost-control',
       style: {
         strokeColor: '#dc2626',
         strokeWidth: 2,
@@ -264,11 +256,8 @@ export const rctStudyFlowTemplate = {
       }
     },
     {
-      id: 'conn7',
-      sourceNodeId: 'intervention-group',
-      targetNodeId: 'analyzed-intervention',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
+      source: 'intervention-group',
+      target: 'analyzed-intervention',
       style: {
         strokeColor: '#059669',
         strokeWidth: 2,
@@ -279,11 +268,8 @@ export const rctStudyFlowTemplate = {
       }
     },
     {
-      id: 'conn8',
-      sourceNodeId: 'control-group',
-      targetNodeId: 'analyzed-control',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
+      source: 'control-group',
+      target: 'analyzed-control',
       style: {
         strokeColor: '#059669',
         strokeWidth: 2,

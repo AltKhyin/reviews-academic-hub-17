@@ -1,3 +1,4 @@
+
 // ABOUTME: Defines the core data structures for the block-based review editor.
 // This file establishes the unified type system for blocks, layouts, and content.
 
@@ -207,17 +208,19 @@ export interface DiagramContent {
 export interface DiagramTemplateNode {
   id: string;
   label: string;
-  type?: 'rectangle' | 'circle' | 'diamond' | 'group';
+  type?: 'rectangle' | 'circle' | 'diamond' | 'group' | 'ellipse';
   position: { x: number; y: number };
   parentId?: string;
   width?: number;
   height?: number;
+  style?: any;
 }
 
 export interface DiagramTemplateConnection {
   source: string;
   target: string;
   label?: string;
+  style?: any;
 }
 
 // Helper type for enhanced issue data in viewer

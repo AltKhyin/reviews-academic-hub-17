@@ -1,3 +1,4 @@
+
 // ABOUTME: PRISMA flow diagram template for systematic review study selection
 // Standard flowchart for documenting search and selection process
 
@@ -13,8 +14,9 @@ export const prismaFlowTemplate = {
       id: 'identification',
       type: 'rectangle',
       position: { x: 350, y: 50 },
-      size: { width: 200, height: 60 },
-      text: 'IDENTIFICAÇÃO\nRegistros identificados\nn = ___',
+      width: 200,
+      height: 60,
+      label: 'IDENTIFICAÇÃO\nRegistros identificados\nn = ___',
       style: {
         backgroundColor: '#1e40af',
         borderColor: '#1d4ed8',
@@ -31,8 +33,9 @@ export const prismaFlowTemplate = {
       id: 'additional-records',
       type: 'rectangle',
       position: { x: 600, y: 50 },
-      size: { width: 160, height: 60 },
-      text: 'Registros adicionais\n(outras fontes)\nn = ___',
+      width: 160,
+      height: 60,
+      label: 'Registros adicionais\n(outras fontes)\nn = ___',
       style: {
         backgroundColor: '#3b82f6',
         borderColor: '#2563eb',
@@ -49,8 +52,9 @@ export const prismaFlowTemplate = {
       id: 'after-duplicates',
       type: 'rectangle',
       position: { x: 350, y: 150 },
-      size: { width: 200, height: 60 },
-      text: 'TRIAGEM\nApós remoção duplicatas\nn = ___',
+      width: 200,
+      height: 60,
+      label: 'TRIAGEM\nApós remoção duplicatas\nn = ___',
       style: {
         backgroundColor: '#059669',
         borderColor: '#047857',
@@ -67,8 +71,9 @@ export const prismaFlowTemplate = {
       id: 'excluded-screening',
       type: 'rectangle',
       position: { x: 600, y: 150 },
-      size: { width: 160, height: 60 },
-      text: 'Excluídos na triagem\nn = ___\nMotivo: ___',
+      width: 160,
+      height: 60,
+      label: 'Excluídos na triagem\nn = ___\nMotivo: ___',
       style: {
         backgroundColor: '#dc2626',
         borderColor: '#991b1b',
@@ -85,8 +90,9 @@ export const prismaFlowTemplate = {
       id: 'full-text-assessed',
       type: 'rectangle',
       position: { x: 350, y: 250 },
-      size: { width: 200, height: 60 },
-      text: 'ELEGIBILIDADE\nTexto completo avaliado\nn = ___',
+      width: 200,
+      height: 60,
+      label: 'ELEGIBILIDADE\nTexto completo avaliado\nn = ___',
       style: {
         backgroundColor: '#f59e0b',
         borderColor: '#d97706',
@@ -103,8 +109,9 @@ export const prismaFlowTemplate = {
       id: 'excluded-full-text',
       type: 'rectangle',
       position: { x: 600, y: 250 },
-      size: { width: 160, height: 80 },
-      text: 'Excluídos texto completo\nn = ___\nMotivos:\n• ___\n• ___',
+      width: 160,
+      height: 80,
+      label: 'Excluídos texto completo\nn = ___\nMotivos:\n• ___\n• ___',
       style: {
         backgroundColor: '#dc2626',
         borderColor: '#991b1b',
@@ -121,8 +128,9 @@ export const prismaFlowTemplate = {
       id: 'included',
       type: 'rectangle',
       position: { x: 350, y: 370 },
-      size: { width: 200, height: 80 },
-      text: 'INCLUÍDOS\nEstudos na síntese\nqualitativa\nn = ___',
+      width: 200,
+      height: 80,
+      label: 'INCLUÍDOS\nEstudos na síntese\nqualitativa\nn = ___',
       style: {
         backgroundColor: '#7c3aed',
         borderColor: '#6d28d9',
@@ -139,8 +147,9 @@ export const prismaFlowTemplate = {
       id: 'meta-analysis',
       type: 'rectangle',
       position: { x: 350, y: 480 },
-      size: { width: 200, height: 60 },
-      text: 'Estudos na síntese\nquantitativa\n(meta-análise)\nn = ___',
+      width: 200,
+      height: 60,
+      label: 'Estudos na síntese\nquantitativa\n(meta-análise)\nn = ___',
       style: {
         backgroundColor: '#0891b2',
         borderColor: '#0e7490',
@@ -156,11 +165,8 @@ export const prismaFlowTemplate = {
   ] as DiagramTemplateNode[],
   connections: [
     {
-      id: 'conn1',
-      sourceNodeId: 'identification',
-      targetNodeId: 'after-duplicates',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
+      source: 'identification',
+      target: 'after-duplicates',
       style: {
         strokeColor: '#1e40af',
         strokeWidth: 3,
@@ -171,11 +177,8 @@ export const prismaFlowTemplate = {
       }
     },
     {
-      id: 'conn2',
-      sourceNodeId: 'additional-records',
-      targetNodeId: 'after-duplicates',
-      sourcePoint: 'bottom',
-      targetPoint: 'right',
+      source: 'additional-records',
+      target: 'after-duplicates',
       style: {
         strokeColor: '#3b82f6',
         strokeWidth: 2,
@@ -186,11 +189,8 @@ export const prismaFlowTemplate = {
       }
     },
     {
-      id: 'conn3',
-      sourceNodeId: 'after-duplicates',
-      targetNodeId: 'full-text-assessed',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
+      source: 'after-duplicates',
+      target: 'full-text-assessed',
       style: {
         strokeColor: '#059669',
         strokeWidth: 3,
@@ -201,11 +201,8 @@ export const prismaFlowTemplate = {
       }
     },
     {
-      id: 'conn4',
-      sourceNodeId: 'after-duplicates',
-      targetNodeId: 'excluded-screening',
-      sourcePoint: 'right',
-      targetPoint: 'left',
+      source: 'after-duplicates',
+      target: 'excluded-screening',
       style: {
         strokeColor: '#dc2626',
         strokeWidth: 2,
@@ -216,11 +213,8 @@ export const prismaFlowTemplate = {
       }
     },
     {
-      id: 'conn5',
-      sourceNodeId: 'full-text-assessed',
-      targetNodeId: 'included',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
+      source: 'full-text-assessed',
+      target: 'included',
       style: {
         strokeColor: '#f59e0b',
         strokeWidth: 3,
@@ -231,11 +225,8 @@ export const prismaFlowTemplate = {
       }
     },
     {
-      id: 'conn6',
-      sourceNodeId: 'full-text-assessed',
-      targetNodeId: 'excluded-full-text',
-      sourcePoint: 'right',
-      targetPoint: 'left',
+      source: 'full-text-assessed',
+      target: 'excluded-full-text',
       style: {
         strokeColor: '#dc2626',
         strokeWidth: 2,
@@ -246,11 +237,8 @@ export const prismaFlowTemplate = {
       }
     },
     {
-      id: 'conn7',
-      sourceNodeId: 'included',
-      targetNodeId: 'meta-analysis',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
+      source: 'included',
+      target: 'meta-analysis',
       style: {
         strokeColor: '#7c3aed',
         strokeWidth: 2,

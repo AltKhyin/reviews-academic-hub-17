@@ -1,3 +1,4 @@
+
 // ABOUTME: Network meta-analysis diagram template for comparing multiple interventions
 // Shows interconnected treatment comparisons in systematic reviews
 
@@ -13,8 +14,9 @@ export const networkMetaAnalysisTemplate = {
       id: 'placebo',
       type: 'circle',
       position: { x: 400, y: 300 },
-      size: { width: 100, height: 100 },
-      text: 'Placebo',
+      width: 100,
+      height: 100,
+      label: 'Placebo',
       style: {
         backgroundColor: '#6b7280',
         borderColor: '#4b5563',
@@ -31,8 +33,9 @@ export const networkMetaAnalysisTemplate = {
       id: 'treatment-a',
       type: 'circle',
       position: { x: 200, y: 150 },
-      size: { width: 120, height: 120 },
-      text: 'Tratamento A',
+      width: 120,
+      height: 120,
+      label: 'Tratamento A',
       style: {
         backgroundColor: '#dc2626',
         borderColor: '#991b1b',
@@ -49,8 +52,9 @@ export const networkMetaAnalysisTemplate = {
       id: 'treatment-b',
       type: 'circle',
       position: { x: 600, y: 150 },
-      size: { width: 120, height: 120 },
-      text: 'Tratamento B',
+      width: 120,
+      height: 120,
+      label: 'Tratamento B',
       style: {
         backgroundColor: '#059669',
         borderColor: '#047857',
@@ -67,8 +71,9 @@ export const networkMetaAnalysisTemplate = {
       id: 'treatment-c',
       type: 'circle',
       position: { x: 200, y: 450 },
-      size: { width: 120, height: 120 },
-      text: 'Tratamento C',
+      width: 120,
+      height: 120,
+      label: 'Tratamento C',
       style: {
         backgroundColor: '#7c3aed',
         borderColor: '#6d28d9',
@@ -85,8 +90,9 @@ export const networkMetaAnalysisTemplate = {
       id: 'treatment-d',
       type: 'circle',
       position: { x: 600, y: 450 },
-      size: { width: 120, height: 120 },
-      text: 'Tratamento D',
+      width: 120,
+      height: 120,
+      label: 'Tratamento D',
       style: {
         backgroundColor: '#f59e0b',
         borderColor: '#d97706',
@@ -102,11 +108,8 @@ export const networkMetaAnalysisTemplate = {
   ] as DiagramTemplateNode[],
   connections: [
     {
-      id: 'conn1',
-      sourceNodeId: 'placebo',
-      targetNodeId: 'treatment-a',
-      sourcePoint: 'left',
-      targetPoint: 'right',
+      source: 'placebo',
+      target: 'treatment-a',
       style: {
         strokeColor: '#1d4ed8',
         strokeWidth: 4,
@@ -117,11 +120,8 @@ export const networkMetaAnalysisTemplate = {
       }
     },
     {
-      id: 'conn2',
-      sourceNodeId: 'placebo',
-      targetNodeId: 'treatment-b',
-      sourcePoint: 'right',
-      targetPoint: 'left',
+      source: 'placebo',
+      target: 'treatment-b',
       style: {
         strokeColor: '#1d4ed8',
         strokeWidth: 4,
@@ -132,11 +132,8 @@ export const networkMetaAnalysisTemplate = {
       }
     },
     {
-      id: 'conn3',
-      sourceNodeId: 'treatment-a',
-      targetNodeId: 'treatment-c',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
+      source: 'treatment-a',
+      target: 'treatment-c',
       style: {
         strokeColor: '#dc2626',
         strokeWidth: 2,
@@ -147,11 +144,8 @@ export const networkMetaAnalysisTemplate = {
       }
     },
     {
-      id: 'conn4',
-      sourceNodeId: 'treatment-b',
-      targetNodeId: 'treatment-d',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
+      source: 'treatment-b',
+      target: 'treatment-d',
       style: {
         strokeColor: '#059669',
         strokeWidth: 2,
@@ -162,11 +156,8 @@ export const networkMetaAnalysisTemplate = {
       }
     },
     {
-      id: 'conn5',
-      sourceNodeId: 'treatment-a',
-      targetNodeId: 'treatment-b',
-      sourcePoint: 'right',
-      targetPoint: 'left',
+      source: 'treatment-a',
+      target: 'treatment-b',
       style: {
         strokeColor: '#6b7280',
         strokeWidth: 1,
@@ -177,11 +168,8 @@ export const networkMetaAnalysisTemplate = {
       }
     },
     {
-      id: 'conn6',
-      sourceNodeId: 'treatment-c',
-      targetNodeId: 'treatment-d',
-      sourcePoint: 'right',
-      targetPoint: 'left',
+      source: 'treatment-c',
+      target: 'treatment-d',
       style: {
         strokeColor: '#6b7280',
         strokeWidth: 1,

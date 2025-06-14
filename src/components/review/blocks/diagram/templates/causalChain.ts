@@ -1,3 +1,4 @@
+
 // ABOUTME: Causal chain template for intervention mechanism visualization
 // Shows logical progression from intervention to outcomes
 
@@ -13,8 +14,9 @@ export const causalChainTemplate = {
       id: 'intervention',
       type: 'rectangle',
       position: { x: 50, y: 200 },
-      size: { width: 140, height: 80 },
-      text: 'INTERVENÇÃO\n(O que fazemos)',
+      width: 140,
+      height: 80,
+      label: 'INTERVENÇÃO\n(O que fazemos)',
       style: {
         backgroundColor: '#dc2626',
         borderColor: '#991b1b',
@@ -31,8 +33,9 @@ export const causalChainTemplate = {
       id: 'immediate-effect',
       type: 'rectangle',
       position: { x: 250, y: 120 },
-      size: { width: 120, height: 60 },
-      text: 'Efeito\nImediato',
+      width: 120,
+      height: 60,
+      label: 'Efeito\nImediato',
       style: {
         backgroundColor: '#f59e0b',
         borderColor: '#d97706',
@@ -49,8 +52,9 @@ export const causalChainTemplate = {
       id: 'mechanism',
       type: 'diamond',
       position: { x: 250, y: 200 },
-      size: { width: 160, height: 80 },
-      text: 'MECANISMO\n(Como funciona)',
+      width: 160,
+      height: 80,
+      label: 'MECANISMO\n(Como funciona)',
       style: {
         backgroundColor: '#059669',
         borderColor: '#047857',
@@ -67,8 +71,9 @@ export const causalChainTemplate = {
       id: 'mediator',
       type: 'rectangle',
       position: { x: 250, y: 280 },
-      size: { width: 120, height: 60 },
-      text: 'Mediador\n(Processo)',
+      width: 120,
+      height: 60,
+      label: 'Mediador\n(Processo)',
       style: {
         backgroundColor: '#7c3aed',
         borderColor: '#6d28d9',
@@ -85,8 +90,9 @@ export const causalChainTemplate = {
       id: 'proximal-outcome',
       type: 'rectangle',
       position: { x: 450, y: 120 },
-      size: { width: 120, height: 60 },
-      text: 'Desfecho\nProximal',
+      width: 120,
+      height: 60,
+      label: 'Desfecho\nProximal',
       style: {
         backgroundColor: '#3b82f6',
         borderColor: '#1d4ed8',
@@ -103,8 +109,9 @@ export const causalChainTemplate = {
       id: 'primary-outcome',
       type: 'rectangle',
       position: { x: 450, y: 200 },
-      size: { width: 140, height: 80 },
-      text: 'DESFECHO\nPRIMÁRIO\n(O que medimos)',
+      width: 140,
+      height: 80,
+      label: 'DESFECHO\nPRIMÁRIO\n(O que medimos)',
       style: {
         backgroundColor: '#1d4ed8',
         borderColor: '#1e40af',
@@ -121,8 +128,9 @@ export const causalChainTemplate = {
       id: 'distal-outcome',
       type: 'rectangle',
       position: { x: 450, y: 280 },
-      size: { width: 120, height: 60 },
-      text: 'Desfecho\nDistal',
+      width: 120,
+      height: 60,
+      label: 'Desfecho\nDistal',
       style: {
         backgroundColor: '#0891b2',
         borderColor: '#0e7490',
@@ -139,8 +147,9 @@ export const causalChainTemplate = {
       id: 'moderator',
       type: 'ellipse',
       position: { x: 320, y: 50 },
-      size: { width: 140, height: 60 },
-      text: 'MODERADOR\n(Contexto)',
+      width: 140,
+      height: 60,
+      label: 'MODERADOR\n(Contexto)',
       style: {
         backgroundColor: '#6b7280',
         borderColor: '#4b5563',
@@ -156,11 +165,8 @@ export const causalChainTemplate = {
   ] as DiagramTemplateNode[],
   connections: [
     {
-      id: 'conn1',
-      sourceNodeId: 'intervention',
-      targetNodeId: 'immediate-effect',
-      sourcePoint: 'right',
-      targetPoint: 'left',
+      source: 'intervention',
+      target: 'immediate-effect',
       style: {
         strokeColor: '#dc2626',
         strokeWidth: 3,
@@ -171,11 +177,8 @@ export const causalChainTemplate = {
       }
     },
     {
-      id: 'conn2',
-      sourceNodeId: 'intervention',
-      targetNodeId: 'mechanism',
-      sourcePoint: 'right',
-      targetPoint: 'left',
+      source: 'intervention',
+      target: 'mechanism',
       style: {
         strokeColor: '#dc2626',
         strokeWidth: 4,
@@ -186,11 +189,8 @@ export const causalChainTemplate = {
       }
     },
     {
-      id: 'conn3',
-      sourceNodeId: 'intervention',
-      targetNodeId: 'mediator',
-      sourcePoint: 'right',
-      targetPoint: 'left',
+      source: 'intervention',
+      target: 'mediator',
       style: {
         strokeColor: '#dc2626',
         strokeWidth: 3,
@@ -201,11 +201,8 @@ export const causalChainTemplate = {
       }
     },
     {
-      id: 'conn4',
-      sourceNodeId: 'mechanism',
-      targetNodeId: 'proximal-outcome',
-      sourcePoint: 'right',
-      targetPoint: 'left',
+      source: 'mechanism',
+      target: 'proximal-outcome',
       style: {
         strokeColor: '#059669',
         strokeWidth: 3,
@@ -216,11 +213,8 @@ export const causalChainTemplate = {
       }
     },
     {
-      id: 'conn5',
-      sourceNodeId: 'mechanism',
-      targetNodeId: 'primary-outcome',
-      sourcePoint: 'right',
-      targetPoint: 'left',
+      source: 'mechanism',
+      target: 'primary-outcome',
       style: {
         strokeColor: '#059669',
         strokeWidth: 4,
@@ -231,11 +225,8 @@ export const causalChainTemplate = {
       }
     },
     {
-      id: 'conn6',
-      sourceNodeId: 'mechanism',
-      targetNodeId: 'distal-outcome',
-      sourcePoint: 'right',
-      targetPoint: 'left',
+      source: 'mechanism',
+      target: 'distal-outcome',
       style: {
         strokeColor: '#059669',
         strokeWidth: 3,
@@ -246,11 +237,8 @@ export const causalChainTemplate = {
       }
     },
     {
-      id: 'conn7',
-      sourceNodeId: 'moderator',
-      targetNodeId: 'mechanism',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
+      source: 'moderator',
+      target: 'mechanism',
       style: {
         strokeColor: '#6b7280',
         strokeWidth: 2,

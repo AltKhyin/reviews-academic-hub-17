@@ -14,8 +14,9 @@ export const gradeRecommendationTemplate = {
       id: 'evidence-base',
       type: 'rectangle',
       position: { x: 100, y: 50 },
-      size: { width: 180, height: 80 },
-      text: 'Base de Evidência\n• RCTs: ___\n• Estudos observacionais: ___\n• Outros: ___',
+      width: 180,
+      height: 80,
+      label: 'Base de Evidência\n• RCTs: ___\n• Estudos observacionais: ___\n• Outros: ___',
       style: {
         backgroundColor: '#6b7280',
         borderColor: '#4b5563',
@@ -32,8 +33,9 @@ export const gradeRecommendationTemplate = {
       id: 'risk-bias',
       type: 'diamond',
       position: { x: 350, y: 60 },
-      size: { width: 160, height: 80 },
-      text: 'Risco de Viés\nBaixo?',
+      width: 160,
+      height: 80,
+      label: 'Risco de Viés\nBaixo?',
       style: {
         backgroundColor: '#f59e0b',
         borderColor: '#d97706',
@@ -50,8 +52,9 @@ export const gradeRecommendationTemplate = {
       id: 'inconsistency',
       type: 'diamond',
       position: { x: 580, y: 60 },
-      size: { width: 160, height: 80 },
-      text: 'Consistência\nEntre Estudos?',
+      width: 160,
+      height: 80,
+      label: 'Consistência\nEntre Estudos?',
       style: {
         backgroundColor: '#f59e0b',
         borderColor: '#d97706',
@@ -68,8 +71,9 @@ export const gradeRecommendationTemplate = {
       id: 'directness',
       type: 'diamond',
       position: { x: 350, y: 200 },
-      size: { width: 160, height: 80 },
-      text: 'Evidência\nDireta?',
+      width: 160,
+      height: 80,
+      label: 'Evidência\nDireta?',
       style: {
         backgroundColor: '#f59e0b',
         borderColor: '#d97706',
@@ -86,8 +90,9 @@ export const gradeRecommendationTemplate = {
       id: 'precision',
       type: 'diamond',
       position: { x: 580, y: 200 },
-      size: { width: 160, height: 80 },
-      text: 'Precisão\nAdequada?',
+      width: 160,
+      height: 80,
+      label: 'Precisão\nAdequada?',
       style: {
         backgroundColor: '#f59e0b',
         borderColor: '#d97706',
@@ -104,8 +109,9 @@ export const gradeRecommendationTemplate = {
       id: 'quality-high',
       type: 'rectangle',
       position: { x: 150, y: 340 },
-      size: { width: 120, height: 60 },
-      text: 'Qualidade\nALTA\n⊕⊕⊕⊕',
+      width: 120,
+      height: 60,
+      label: 'Qualidade\nALTA\n⊕⊕⊕⊕',
       style: {
         backgroundColor: '#059669',
         borderColor: '#047857',
@@ -122,8 +128,9 @@ export const gradeRecommendationTemplate = {
       id: 'quality-moderate',
       type: 'rectangle',
       position: { x: 300, y: 340 },
-      size: { width: 120, height: 60 },
-      text: 'Qualidade\nMODERADA\n⊕⊕⊕⊝',
+      width: 120,
+      height: 60,
+      label: 'Qualidade\nMODERADA\n⊕⊕⊕⊝',
       style: {
         backgroundColor: '#10b981',
         borderColor: '#059669',
@@ -140,8 +147,9 @@ export const gradeRecommendationTemplate = {
       id: 'quality-low',
       type: 'rectangle',
       position: { x: 450, y: 340 },
-      size: { width: 120, height: 60 },
-      text: 'Qualidade\nBAIXA\n⊕⊕⊝⊝',
+      width: 120,
+      height: 60,
+      label: 'Qualidade\nBAIXA\n⊕⊕⊝⊝',
       style: {
         backgroundColor: '#f59e0b',
         borderColor: '#d97706',
@@ -158,8 +166,9 @@ export const gradeRecommendationTemplate = {
       id: 'quality-very-low',
       type: 'rectangle',
       position: { x: 600, y: 340 },
-      size: { width: 120, height: 60 },
-      text: 'Qualidade\nMUITO BAIXA\n⊕⊝⊝⊝',
+      width: 120,
+      height: 60,
+      label: 'Qualidade\nMUITO BAIXA\n⊕⊝⊝⊝',
       style: {
         backgroundColor: '#dc2626',
         borderColor: '#991b1b',
@@ -176,8 +185,9 @@ export const gradeRecommendationTemplate = {
       id: 'recommendation-strong',
       type: 'rectangle',
       position: { x: 250, y: 480 },
-      size: { width: 160, height: 80 },
-      text: 'Recomendação\nFORTE\n"Recomendamos"',
+      width: 160,
+      height: 80,
+      label: 'Recomendação\nFORTE\n"Recomendamos"',
       style: {
         backgroundColor: '#1d4ed8',
         borderColor: '#1e40af',
@@ -194,8 +204,9 @@ export const gradeRecommendationTemplate = {
       id: 'recommendation-weak',
       type: 'rectangle',
       position: { x: 450, y: 480 },
-      size: { width: 160, height: 80 },
-      text: 'Recomendação\nFRACA\n"Sugerimos"',
+      width: 160,
+      height: 80,
+      label: 'Recomendação\nFRACA\n"Sugerimos"',
       style: {
         backgroundColor: '#7c3aed',
         borderColor: '#6d28d9',
@@ -211,11 +222,8 @@ export const gradeRecommendationTemplate = {
   ] as DiagramTemplateNode[],
   connections: [
     {
-      id: 'conn1',
-      sourceNodeId: 'evidence-base',
-      targetNodeId: 'risk-bias',
-      sourcePoint: 'right',
-      targetPoint: 'left',
+      source: 'evidence-base',
+      target: 'risk-bias',
       style: {
         strokeColor: '#6b7280',
         strokeWidth: 2,
@@ -226,11 +234,8 @@ export const gradeRecommendationTemplate = {
       }
     },
     {
-      id: 'conn2',
-      sourceNodeId: 'risk-bias',
-      targetNodeId: 'inconsistency',
-      sourcePoint: 'right',
-      targetPoint: 'left',
+      source: 'risk-bias',
+      target: 'inconsistency',
       style: {
         strokeColor: '#6b7280',
         strokeWidth: 2,
@@ -241,11 +246,8 @@ export const gradeRecommendationTemplate = {
       }
     },
     {
-      id: 'conn3',
-      sourceNodeId: 'risk-bias',
-      targetNodeId: 'directness',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
+      source: 'risk-bias',
+      target: 'directness',
       style: {
         strokeColor: '#6b7280',
         strokeWidth: 2,
@@ -256,11 +258,8 @@ export const gradeRecommendationTemplate = {
       }
     },
     {
-      id: 'conn4',
-      sourceNodeId: 'inconsistency',
-      targetNodeId: 'precision',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
+      source: 'inconsistency',
+      target: 'precision',
       style: {
         strokeColor: '#6b7280',
         strokeWidth: 2,
@@ -271,11 +270,20 @@ export const gradeRecommendationTemplate = {
       }
     },
     {
-      id: 'conn5',
-      sourceNodeId: 'directness',
-      targetNodeId: 'quality-high',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
+      source: 'directness',
+      target: 'precision',
+      style: {
+        strokeColor: '#6b7280',
+        strokeWidth: 2,
+        strokeStyle: 'solid',
+        arrowType: 'arrow',
+        curved: false,
+        opacity: 1
+      }
+    },
+    {
+      source: 'quality-high',
+      target: 'recommendation-strong',
       style: {
         strokeColor: '#059669',
         strokeWidth: 2,
@@ -286,26 +294,32 @@ export const gradeRecommendationTemplate = {
       }
     },
     {
-      id: 'conn6',
-      sourceNodeId: 'directness',
-      targetNodeId: 'quality-moderate',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
+      source: 'quality-moderate',
+      target: 'recommendation-strong',
+      style: {
+        strokeColor: '#10b981',
+        strokeWidth: 2,
+        strokeStyle: 'dashed',
+        arrowType: 'arrow',
+        curved: true,
+        opacity: 1
+      }
+    },
+    {
+      source: 'quality-moderate',
+      target: 'recommendation-weak',
       style: {
         strokeColor: '#10b981',
         strokeWidth: 2,
         strokeStyle: 'solid',
         arrowType: 'arrow',
-        curved: false,
+        curved: true,
         opacity: 1
       }
     },
     {
-      id: 'conn7',
-      sourceNodeId: 'precision',
-      targetNodeId: 'quality-low',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
+      source: 'quality-low',
+      target: 'recommendation-weak',
       style: {
         strokeColor: '#f59e0b',
         strokeWidth: 2,
@@ -316,75 +330,12 @@ export const gradeRecommendationTemplate = {
       }
     },
     {
-      id: 'conn8',
-      sourceNodeId: 'precision',
-      targetNodeId: 'quality-very-low',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
+      source: 'quality-very-low',
+      target: 'recommendation-weak',
       style: {
         strokeColor: '#dc2626',
         strokeWidth: 2,
-        strokeStyle: 'solid',
-        arrowType: 'arrow',
-        curved: false,
-        opacity: 1
-      }
-    },
-    {
-      id: 'conn9',
-      sourceNodeId: 'quality-high',
-      targetNodeId: 'recommendation-strong',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
-      style: {
-        strokeColor: '#1d4ed8',
-        strokeWidth: 3,
-        strokeStyle: 'solid',
-        arrowType: 'arrow',
-        curved: true,
-        opacity: 1
-      }
-    },
-    {
-      id: 'conn10',
-      sourceNodeId: 'quality-moderate',
-      targetNodeId: 'recommendation-strong',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
-      style: {
-        strokeColor: '#1d4ed8',
-        strokeWidth: 2,
-        strokeStyle: 'solid',
-        arrowType: 'arrow',
-        curved: false,
-        opacity: 1
-      }
-    },
-    {
-      id: 'conn11',
-      sourceNodeId: 'quality-low',
-      targetNodeId: 'recommendation-weak',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
-      style: {
-        strokeColor: '#7c3aed',
-        strokeWidth: 2,
-        strokeStyle: 'solid',
-        arrowType: 'arrow',
-        curved: false,
-        opacity: 1
-      }
-    },
-    {
-      id: 'conn12',
-      sourceNodeId: 'quality-very-low',
-      targetNodeId: 'recommendation-weak',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
-      style: {
-        strokeColor: '#7c3aed',
-        strokeWidth: 2,
-        strokeStyle: 'solid',
+        strokeStyle: 'dashed',
         arrowType: 'arrow',
         curved: true,
         opacity: 1

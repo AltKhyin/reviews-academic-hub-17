@@ -1,3 +1,4 @@
+
 // ABOUTME: Barriers and facilitators map template for implementation challenges
 // Visual organization of obstacles vs solutions in implementation studies
 
@@ -13,8 +14,9 @@ export const barriersAndFacilitatorsTemplate = {
       id: 'implementation-goal',
       type: 'circle',
       position: { x: 400, y: 50 },
-      size: { width: 180, height: 80 },
-      text: 'Meta de\nImplementação',
+      width: 180,
+      height: 80,
+      label: 'Meta de\nImplementação',
       style: {
         backgroundColor: '#1d4ed8',
         borderColor: '#1e40af',
@@ -31,8 +33,9 @@ export const barriersAndFacilitatorsTemplate = {
       id: 'barriers-header',
       type: 'rectangle',
       position: { x: 150, y: 180 },
-      size: { width: 200, height: 60 },
-      text: '⚠️ BARREIRAS',
+      width: 200,
+      height: 60,
+      label: '⚠️ BARREIRAS',
       style: {
         backgroundColor: '#dc2626',
         borderColor: '#991b1b',
@@ -49,8 +52,9 @@ export const barriersAndFacilitatorsTemplate = {
       id: 'facilitators-header',
       type: 'rectangle',
       position: { x: 550, y: 180 },
-      size: { width: 200, height: 60 },
-      text: '✅ FACILITADORES',
+      width: 200,
+      height: 60,
+      label: '✅ FACILITADORES',
       style: {
         backgroundColor: '#059669',
         borderColor: '#047857',
@@ -67,8 +71,9 @@ export const barriersAndFacilitatorsTemplate = {
       id: 'barrier-organizational',
       type: 'rectangle',
       position: { x: 50, y: 280 },
-      size: { width: 160, height: 80 },
-      text: 'Organizacionais:\n• Recursos limitados\n• Falta de tempo\n• Resistência à mudança',
+      width: 160,
+      height: 80,
+      label: 'Organizacionais:\n• Recursos limitados\n• Falta de tempo\n• Resistência à mudança',
       style: {
         backgroundColor: '#ef4444',
         borderColor: '#dc2626',
@@ -85,8 +90,9 @@ export const barriersAndFacilitatorsTemplate = {
       id: 'barrier-individual',
       type: 'rectangle',
       position: { x: 250, y: 280 },
-      size: { width: 160, height: 80 },
-      text: 'Individuais:\n• Falta de conhecimento\n• Baixa motivação\n• Sobrecarga de trabalho',
+      width: 160,
+      height: 80,
+      label: 'Individuais:\n• Falta de conhecimento\n• Baixa motivação\n• Sobrecarga de trabalho',
       style: {
         backgroundColor: '#ef4444',
         borderColor: '#dc2626',
@@ -103,8 +109,9 @@ export const barriersAndFacilitatorsTemplate = {
       id: 'facilitator-organizational',
       type: 'rectangle',
       position: { x: 490, y: 280 },
-      size: { width: 160, height: 80 },
-      text: 'Organizacionais:\n• Liderança engajada\n• Cultura de apoio\n• Recursos disponíveis',
+      width: 160,
+      height: 80,
+      label: 'Organizacionais:\n• Liderança engajada\n• Cultura de apoio\n• Recursos disponíveis',
       style: {
         backgroundColor: '#059669',
         borderColor: '#047857',
@@ -121,8 +128,9 @@ export const barriersAndFacilitatorsTemplate = {
       id: 'facilitator-individual',
       type: 'rectangle',
       position: { x: 690, y: 280 },
-      size: { width: 160, height: 80 },
-      text: 'Individuais:\n• Treinamento e capacitação\n• Feedback construtivo\n• Percepção de benefício',
+      width: 160,
+      height: 80,
+      label: 'Individuais:\n• Treinamento e capacitação\n• Feedback construtivo\n• Percepção de benefício',
       style: {
         backgroundColor: '#059669',
         borderColor: '#047857',
@@ -139,8 +147,9 @@ export const barriersAndFacilitatorsTemplate = {
       id: 'barrier-technical',
       type: 'rectangle',
       position: { x: 50, y: 400 },
-      size: { width: 160, height: 80 },
-      text: 'Técnicas:\n• Tecnologia inadequada\n• Complexidade alta\n• Falta de suporte técnico',
+      width: 160,
+      height: 80,
+      label: 'Técnicas:\n• Tecnologia inadequada\n• Complexidade alta\n• Falta de suporte técnico',
       style: {
         backgroundColor: '#ef4444',
         borderColor: '#dc2626',
@@ -157,8 +166,9 @@ export const barriersAndFacilitatorsTemplate = {
       id: 'barrier-contextual',
       type: 'rectangle',
       position: { x: 250, y: 400 },
-      size: { width: 160, height: 80 },
-      text: 'Contextuais:\n• Políticas conflitantes\n• Financiamento instável\n• Mudanças frequentes',
+      width: 160,
+      height: 80,
+      label: 'Contextuais:\n• Políticas conflitantes\n• Financiamento instável\n• Mudanças frequentes',
       style: {
         backgroundColor: '#ef4444',
         borderColor: '#dc2626',
@@ -175,8 +185,9 @@ export const barriersAndFacilitatorsTemplate = {
       id: 'facilitator-technical',
       type: 'rectangle',
       position: { x: 490, y: 400 },
-      size: { width: 160, height: 80 },
-      text: 'Técnicas:\n• Tecnologia amigável\n• Suporte técnico\n• Interface intuitiva',
+      width: 160,
+      height: 80,
+      label: 'Técnicas:\n• Tecnologia amigável\n• Suporte técnico\n• Interface intuitiva',
       style: {
         backgroundColor: '#10b981',
         borderColor: '#059669',
@@ -193,8 +204,9 @@ export const barriersAndFacilitatorsTemplate = {
       id: 'facilitator-contextual',
       type: 'rectangle',
       position: { x: 690, y: 400 },
-      size: { width: 160, height: 80 },
-      text: 'Contextuais:\n• Políticas favoráveis\n• Financiamento estável\n• Ambiente favorável',
+      width: 160,
+      height: 80,
+      label: 'Contextuais:\n• Políticas favoráveis\n• Financiamento estável\n• Ambiente favorável',
       style: {
         backgroundColor: '#10b981',
         borderColor: '#059669',
@@ -211,8 +223,9 @@ export const barriersAndFacilitatorsTemplate = {
       id: 'strategies',
       type: 'rectangle',
       position: { x: 350, y: 520 },
-      size: { width: 200, height: 80 },
-      text: 'ESTRATÉGIAS DE\nMITIGAÇÃO\n• Treinamento\n• Incentivos\n• Suporte contínuo',
+      width: 200,
+      height: 80,
+      label: 'ESTRATÉGIAS DE\nMITIGAÇÃO\n• Treinamento\n• Incentivos\n• Suporte contínuo',
       style: {
         backgroundColor: '#7c3aed',
         borderColor: '#6d28d9',
@@ -228,11 +241,8 @@ export const barriersAndFacilitatorsTemplate = {
   ] as DiagramTemplateNode[],
   connections: [
     {
-      id: 'conn1',
-      sourceNodeId: 'implementation-goal',
-      targetNodeId: 'barriers-header',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
+      source: 'implementation-goal',
+      target: 'barriers-header',
       style: {
         strokeColor: '#dc2626',
         strokeWidth: 2,
@@ -243,11 +253,8 @@ export const barriersAndFacilitatorsTemplate = {
       }
     },
     {
-      id: 'conn2',
-      sourceNodeId: 'implementation-goal',
-      targetNodeId: 'facilitators-header',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
+      source: 'implementation-goal',
+      target: 'facilitators-header',
       style: {
         strokeColor: '#059669',
         strokeWidth: 2,
@@ -258,11 +265,8 @@ export const barriersAndFacilitatorsTemplate = {
       }
     },
     {
-      id: 'conn3',
-      sourceNodeId: 'barriers-header',
-      targetNodeId: 'barrier-organizational',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
+      source: 'barriers-header',
+      target: 'barrier-organizational',
       style: {
         strokeColor: '#ef4444',
         strokeWidth: 2,
@@ -273,11 +277,8 @@ export const barriersAndFacilitatorsTemplate = {
       }
     },
     {
-      id: 'conn4',
-      sourceNodeId: 'barriers-header',
-      targetNodeId: 'barrier-individual',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
+      source: 'barriers-header',
+      target: 'barrier-individual',
       style: {
         strokeColor: '#ef4444',
         strokeWidth: 2,
@@ -288,11 +289,8 @@ export const barriersAndFacilitatorsTemplate = {
       }
     },
     {
-      id: 'conn5',
-      sourceNodeId: 'facilitators-header',
-      targetNodeId: 'facilitator-organizational',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
+      source: 'facilitators-header',
+      target: 'facilitator-organizational',
       style: {
         strokeColor: '#10b981',
         strokeWidth: 2,
@@ -303,11 +301,8 @@ export const barriersAndFacilitatorsTemplate = {
       }
     },
     {
-      id: 'conn6',
-      sourceNodeId: 'facilitators-header',
-      targetNodeId: 'facilitator-individual',
-      sourcePoint: 'bottom',
-      targetPoint: 'top',
+      source: 'facilitators-header',
+      target: 'facilitator-individual',
       style: {
         strokeColor: '#10b981',
         strokeWidth: 2,
@@ -318,11 +313,8 @@ export const barriersAndFacilitatorsTemplate = {
       }
     },
     {
-      id: 'conn7',
-      sourceNodeId: 'barrier-organizational',
-      targetNodeId: 'strategies',
-      sourcePoint: 'bottom',
-      targetPoint: 'left',
+      source: 'barrier-organizational',
+      target: 'strategies',
       style: {
         strokeColor: '#7c3aed',
         strokeWidth: 2,
@@ -333,11 +325,8 @@ export const barriersAndFacilitatorsTemplate = {
       }
     },
     {
-      id: 'conn8',
-      sourceNodeId: 'facilitator-organizational',
-      targetNodeId: 'strategies',
-      sourcePoint: 'bottom',
-      targetPoint: 'right',
+      source: 'facilitator-organizational',
+      target: 'strategies',
       style: {
         strokeColor: '#7c3aed',
         strokeWidth: 2,
