@@ -1,12 +1,11 @@
 
-// ABOUTME: Article viewer router - delegates to appropriate viewer based on content type
-// Handles routing logic and maintains backward compatibility
-
+// ABOUTME: Article viewer router with proper type handling and backward compatibility
 import React from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { EnhancedIssue } from '@/types/review';
+import { sanitizeReviewType } from '@/utils/typeGuards';
 import EnhancedArticleViewer from './EnhancedArticleViewer';
 import { PDFViewer } from '@/components/pdf/PDFViewer';
 import { Card } from '@/components/ui/card';
@@ -48,7 +47,7 @@ const ArticleViewer: React.FC = () => {
         specialty: data.specialty || '',
         year: data.year ? parseInt(data.year) : undefined,
         population: data.population || '',
-        review_type: data.review_type || 'native',
+        review_type: sanitizeReviewType(data.review_type),
         article_pdf_url: data.article_pdf_url || '',
         pdf_url: data.pdf_url || ''
       };
@@ -91,8 +90,8 @@ const ArticleViewer: React.FC = () => {
     );
   }
 
-  // Route to enhanced viewer for native and hybrid content (our new default)
-  if (issue.review_type === 'native' || issue.review_type === 'hybrid' || !issue.review_type) {
+  // Route to enhanced viewer for native and mixed content (our new default)
+  if (issue.review_type === 'native' || issue.review_type === 'mixed' || !issue.review_type) {
     return <EnhancedArticleViewer />;
   }
 

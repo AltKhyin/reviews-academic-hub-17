@@ -1,112 +1,94 @@
 
-// ABOUTME: Optimized homepage data loading with request batching and deduplication
-import { useQuery } from '@tanstack/react-query';
+// ABOUTME: Optimized homepage data hook with proper type definitions
+import { useOptimizedQuery, queryKeys, queryConfigs } from './useOptimizedQuery';
 import { supabase } from '@/integrations/supabase/client';
-import { useRequestBatcher } from './useRequestBatcher';
-import { useCallback } from 'react';
 
-// Centralized homepage data fetcher to prevent cascade
-const fetchHomepageData = async () => {
-  const [issues, sectionVisibility, featuredIssue, reviewerComments] = await Promise.all([
-    supabase
-      .from('issues')
-      .select('id, title, cover_image_url, specialty, published_at, created_at, featured, published, score')
-      .eq('published', true)
-      .order('created_at', { ascending: false })
-      .limit(20),
-    
-    supabase
-      .from('site_meta')
-      .select('value')
-      .eq('key', 'homepage_sections')
-      .single(),
-      
-    supabase
-      .from('issues')
-      .select('id, title, cover_image_url, specialty, published_at, created_at, featured, published, score')
-      .eq('published', true)
-      .eq('featured', true)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle(), // Use maybeSingle to handle no results gracefully
-
-    supabase
-      .from('reviewer_comments')
-      .select('id, reviewer_name, reviewer_avatar, comment, created_at')
-      .eq('is_active', true)
-      .order('created_at', { ascending: false })
-      .limit(10)
-  ]);
-
-  return {
-    issues: issues.data || [],
-    sectionVisibility: sectionVisibility.data?.value || [],
-    featuredIssue: featuredIssue.data || null,
-    reviewerComments: reviewerComments.data || [],
-    errors: {
-      issues: issues.error,
-      sectionVisibility: sectionVisibility.error,
-      featuredIssue: featuredIssue.error,
-      reviewerComments: reviewerComments.error,
-    }
+interface HomepageData {
+  featuredIssue: {
+    id: string;
+    title: string;
+    cover_image_url?: string;
+    specialty: string;
+    published_at: string;
+    authors?: string;
+    description?: string;
+  } | null;
+  recentIssues: Array<{
+    id: string;
+    title: string;
+    cover_image_url?: string;
+    specialty: string;
+    published_at: string;
+    authors?: string;
+    score?: number;
+  }>;
+  stats: {
+    totalIssues: number;
+    totalSpecialties: number;
+    totalAuthors: number;
   };
-};
+}
 
 export const useOptimizedHomepage = () => {
-  const { batchRequest } = useRequestBatcher();
-
-  const query = useQuery({
-    queryKey: ['homepage-data'],
-    queryFn: fetchHomepageData,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 15 * 60 * 1000, // 15 minutes
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    retry: 1,
-  });
-
-  // Batched individual data fetchers for components that need specific data
-  const batchFetchIssue = useCallback(async (issueId: string) => {
-    return batchRequest(
-      'issues',
-      issueId,
-      async (ids: string[]) => {
-        const { data } = await supabase
+  const { data, isLoading, error } = useOptimizedQuery<HomepageData>(
+    queryKeys.homepage(),
+    async (): Promise<HomepageData> => {
+      try {
+        // Fetch featured issue
+        const { data: featuredIssue } = await supabase
           .from('issues')
-          .select('*')
-          .in('id', ids);
-        
-        const result: Record<string, any> = {};
-        data?.forEach(issue => {
-          result[issue.id] = issue;
-        });
-        return result;
-      }
-    );
-  }, [batchRequest]);
+          .select('id, title, cover_image_url, specialty, published_at, authors, description')
+          .eq('published', true)
+          .eq('featured', true)
+          .order('published_at', { ascending: false })
+          .limit(1)
+          .single();
 
-  const batchFetchProfile = useCallback(async (userId: string) => {
-    return batchRequest(
-      'profiles',
-      userId,
-      async (ids: string[]) => {
-        const { data } = await supabase
-          .from('profiles')
-          .select('*')
-          .in('id', ids);
-        
-        const result: Record<string, any> = {};
-        data?.forEach(profile => {
-          result[profile.id] = profile;
-        });
-        return result;
+        // Fetch recent issues
+        const { data: recentIssues } = await supabase
+          .from('issues')
+          .select('id, title, cover_image_url, specialty, published_at, authors, score')
+          .eq('published', true)
+          .order('published_at', { ascending: false })
+          .limit(6);
+
+        // Fetch stats
+        const { data: stats } = await supabase.rpc('get_homepage_stats');
+
+        return {
+          featuredIssue: featuredIssue || null,
+          recentIssues: recentIssues || [],
+          stats: {
+            totalIssues: stats?.total_issues || 0,
+            totalSpecialties: stats?.total_specialties || 0,
+            totalAuthors: stats?.total_authors || 0,
+          },
+        };
+      } catch (error) {
+        console.warn('Homepage data fetch error:', error);
+        return {
+          featuredIssue: null,
+          recentIssues: [],
+          stats: {
+            totalIssues: 0,
+            totalSpecialties: 0,
+            totalAuthors: 0,
+          },
+        };
       }
-    );
-  }, [batchRequest]);
+    },
+    {
+      ...queryConfigs.static,
+      enabled: true,
+    }
+  );
 
   return {
-    ...query,
-    batchFetchIssue,
-    batchFetchProfile,
+    featuredIssue: data?.featuredIssue || null,
+    recentIssues: data?.recentIssues || [],
+    stats: data?.stats || { totalIssues: 0, totalSpecialties: 0, totalAuthors: 0 },
+    isLoading,
+    error,
+    hasError: Boolean(error),
   };
 };

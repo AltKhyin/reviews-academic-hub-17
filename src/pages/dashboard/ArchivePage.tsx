@@ -3,13 +3,27 @@
 import React from 'react';
 import { ArchiveHeader } from '@/components/archive/ArchiveHeader';
 import { ResultsGrid } from '@/components/archive/ResultsGrid';
-import { useOptimizedArchiveSearch } from '@/hooks/archive/useOptimizedArchiveSearch';
+import { useOptimizedArchiveSearch } from '@/hooks/useOptimizedArchiveSearch';
 import { useAppNavigation } from '@/hooks/useAppNavigation';
+
+// Define ArchiveIssue interface for compatibility
+interface ArchiveIssue {
+  id: string;
+  title: string;
+  cover_image_url?: string;
+  specialty: string;
+  published_at: string;
+  created_at: string;
+  authors?: string;
+  year?: string;
+  score?: number;
+  pdf_url: string;
+}
 
 const ArchivePage = () => {
   const { navigateToIssue } = useAppNavigation();
 
-  // Use optimized search hook instead of multiple individual hooks
+  // Use optimized search hook
   const {
     issues,
     totalCount,
@@ -67,9 +81,11 @@ const ArchivePage = () => {
   };
 
   // Convert to ArchiveIssue format (maintain compatibility)
-  const archiveIssues = issues.map(issue => ({
+  const archiveIssues: ArchiveIssue[] = issues.map(issue => ({
     ...issue,
-    published_at: issue.published_at || issue.created_at || new Date().toISOString()
+    published_at: issue.published_at || new Date().toISOString(),
+    created_at: issue.published_at || new Date().toISOString(),
+    pdf_url: `/archive/${issue.id}` // Default PDF URL
   }));
 
   // Handle issue navigation

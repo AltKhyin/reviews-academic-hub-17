@@ -90,7 +90,7 @@ export const IssueEditor: React.FC = () => {
       if (blocks.length > 0) {
         const blocksToInsert = blocks.map((block, index) => ({
           issue_id: id,
-          type: block.type,
+          type: block.type as string, // Convert BlockType to string for database
           payload: block.content,
           sort_index: index,
           visible: block.visible,

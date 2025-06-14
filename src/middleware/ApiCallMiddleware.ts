@@ -1,5 +1,5 @@
 
-// ABOUTME: API call middleware with proper type safety and error handling
+// ABOUTME: API call middleware with proper type safety, error handling, and monitoring
 interface ApiCallOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   headers?: Record<string, string>;
@@ -13,6 +13,65 @@ interface ApiResponse<T = any> {
   status: number;
 }
 
+interface ApiCallStats {
+  totalCalls: number;
+  successfulCalls: number;
+  failedCalls: number;
+  lastMinuteCalls: number;
+  averageResponseTime: number;
+}
+
+class ApiCallMonitor {
+  private static instance: ApiCallMonitor;
+  private callHistory: Array<{ timestamp: number; success: boolean; duration: number }> = [];
+  private stats: ApiCallStats = {
+    totalCalls: 0,
+    successfulCalls: 0,
+    failedCalls: 0,
+    lastMinuteCalls: 0,
+    averageResponseTime: 0
+  };
+
+  static getInstance(): ApiCallMonitor {
+    if (!ApiCallMonitor.instance) {
+      ApiCallMonitor.instance = new ApiCallMonitor();
+    }
+    return ApiCallMonitor.instance;
+  }
+
+  trackApiCall(endpoint: string, duration: number, success: boolean) {
+    const now = Date.now();
+    
+    // Add to history
+    this.callHistory.push({ timestamp: now, success, duration });
+    
+    // Clean old entries (older than 1 minute)
+    this.callHistory = this.callHistory.filter(call => now - call.timestamp < 60000);
+    
+    // Update stats
+    this.stats.totalCalls++;
+    if (success) {
+      this.stats.successfulCalls++;
+    } else {
+      this.stats.failedCalls++;
+    }
+    
+    this.stats.lastMinuteCalls = this.callHistory.length;
+    this.stats.averageResponseTime = this.callHistory.reduce((sum, call) => sum + call.duration, 0) / this.callHistory.length;
+    
+    console.log(`API Call: ${endpoint}, Duration: ${duration}ms, Success: ${success}`);
+  }
+
+  getTotalCallsInLastMinute(): number {
+    const now = Date.now();
+    return this.callHistory.filter(call => now - call.timestamp < 60000).length;
+  }
+
+  getStats(): ApiCallStats {
+    return { ...this.stats };
+  }
+}
+
 export class ApiCallMiddleware {
   private static rateLimits = new Map<string, { count: number; reset: number }>();
   private static readonly RATE_LIMIT = 100; // requests per minute
@@ -22,6 +81,9 @@ export class ApiCallMiddleware {
     endpoint: string,
     options: ApiCallOptions = {}
   ): Promise<ApiResponse<T>> {
+    const startTime = Date.now();
+    const monitor = ApiCallMonitor.getInstance();
+    
     try {
       // Rate limiting check
       const rateLimitKey = `api_${endpoint}`;
@@ -31,6 +93,7 @@ export class ApiCallMiddleware {
       if (rateLimit) {
         if (now < rateLimit.reset) {
           if (rateLimit.count >= this.RATE_LIMIT) {
+            monitor.trackApiCall(endpoint, Date.now() - startTime, false);
             return {
               error: 'Rate limit exceeded',
               status: 429,
@@ -61,6 +124,8 @@ export class ApiCallMiddleware {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
+        const duration = Date.now() - startTime;
+        monitor.trackApiCall(endpoint, duration, false);
         return {
           error: `HTTP ${response.status}: ${response.statusText}`,
           status: response.status,
@@ -68,11 +133,16 @@ export class ApiCallMiddleware {
       }
 
       const data = await response.json();
+      const duration = Date.now() - startTime;
+      monitor.trackApiCall(endpoint, duration, true);
+      
       return {
         data,
         status: response.status,
       };
     } catch (error) {
+      const duration = Date.now() - startTime;
+      monitor.trackApiCall(endpoint, duration, false);
       console.error('API call error:', error);
       return {
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -80,32 +150,17 @@ export class ApiCallMiddleware {
       };
     }
   }
-
-  static async makeSupabaseCall<T = any>(
-    tableName: string,
-    operation: 'select' | 'insert' | 'update' | 'delete',
-    options: any = {}
-  ): Promise<ApiResponse<T>> {
-    try {
-      // This would be implemented with proper Supabase client calls
-      // For now, return a placeholder structure
-      return {
-        data: [] as T,
-        status: 200,
-      };
-    } catch (error) {
-      console.error('Supabase call error:', error);
-      return {
-        error: error instanceof Error ? error.message : 'Database error',
-        status: 500,
-      };
-    }
-  }
 }
 
-// Export for monitoring - this was the missing export causing App.tsx error
+// Export the monitor instance for external use
 export const apiCallMonitor = {
   trackApiCall: (endpoint: string, duration: number, success: boolean) => {
-    console.log(`API Call: ${endpoint}, Duration: ${duration}ms, Success: ${success}`);
+    ApiCallMonitor.getInstance().trackApiCall(endpoint, duration, success);
+  },
+  getTotalCallsInLastMinute: () => {
+    return ApiCallMonitor.getInstance().getTotalCallsInLastMinute();
+  },
+  getStats: () => {
+    return ApiCallMonitor.getInstance().getStats();
   }
 };

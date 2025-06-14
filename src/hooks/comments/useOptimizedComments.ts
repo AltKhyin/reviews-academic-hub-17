@@ -1,80 +1,101 @@
 
-// ABOUTME: Optimized comments hook with consolidated queries and proper type safety
-// Reduces comment-related API calls and improves performance
-
-import { useQuery } from '@tanstack/react-query';
+// ABOUTME: Optimized comments hook with proper type definitions and caching
+import { useOptimizedQuery, queryKeys, queryConfigs } from '../useOptimizedQuery';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 
-export type EntityType = 'post' | 'issue' | 'article';
-
-export interface OptimizedComment {
+interface Comment {
   id: string;
   content: string;
-  created_at: string;
-  updated_at: string;
   user_id: string;
-  parent_id: string | null;
   score: number;
-  // Enhanced fields
-  author_name: string | null;
-  author_avatar: string | null;
-  user_vote: number | null;
-  reply_count: number;
+  created_at: string;
+  parent_id?: string;
+  author?: {
+    full_name?: string;
+    avatar_url?: string;
+  };
 }
 
-export const useOptimizedComments = (entityId: string, entityType: EntityType) => {
-  const { user } = useAuth();
+interface UseOptimizedCommentsProps {
+  entityId: string;
+  entityType: 'issue' | 'post' | 'article';
+  limit?: number;
+  orderBy?: 'created_at' | 'score';
+  ascending?: boolean;
+}
 
-  return useQuery({
-    queryKey: ['optimized-comments', entityId, entityType, user?.id],
-    queryFn: async (): Promise<OptimizedComment[]> => {
-      if (!entityId) return [];
-
+export const useOptimizedComments = ({
+  entityId,
+  entityType,
+  limit = 50,
+  orderBy = 'created_at',
+  ascending = false
+}: UseOptimizedCommentsProps) => {
+  const { data, isLoading, error } = useOptimizedQuery<Comment[]>(
+    queryKeys.comments(entityId, entityType),
+    async (): Promise<Comment[]> => {
       try {
-        // Build query based on entity type
-        const columnMap = {
-          post: 'post_id',
-          issue: 'issue_id', 
-          article: 'article_id'
-        };
-
-        const column = columnMap[entityType];
-        if (!column) throw new Error(`Invalid entity type: ${entityType}`);
-
-        const { data: comments, error } = await supabase
+        let query = supabase
           .from('comments')
           .select(`
-            *,
-            profiles!comments_user_id_fkey(full_name, avatar_url),
-            comment_votes!left(value, user_id)
-          `)
-          .eq(column, entityId)
-          .order('created_at', { ascending: true });
+            id,
+            content,
+            user_id,
+            score,
+            created_at,
+            parent_id,
+            profiles:user_id (
+              full_name,
+              avatar_url
+            )
+          `);
 
-        if (error) throw error;
+        // Add entity-specific filters
+        if (entityType === 'issue') {
+          query = query.eq('issue_id', entityId);
+        } else if (entityType === 'post') {
+          query = query.eq('post_id', entityId);
+        } else if (entityType === 'article') {
+          query = query.eq('article_id', entityId);
+        }
 
-        // Process comments with enhanced data
-        const processedComments: OptimizedComment[] = (comments || []).map(comment => {
-          const profile = Array.isArray(comment.profiles) ? comment.profiles[0] : comment.profiles;
-          const votes = Array.isArray(comment.comment_votes) ? comment.comment_votes : [];
-          
-          return {
-            ...comment,
-            author_name: profile?.full_name || null,
-            author_avatar: profile?.avatar_url || null,
-            user_vote: votes.find((v: any) => v.user_id === user?.id)?.value || null,
-            reply_count: 0, // Will be calculated if needed
-          };
-        });
+        const { data: comments, error } = await query
+          .order(orderBy, { ascending })
+          .limit(limit);
 
-        return processedComments;
+        if (error) {
+          console.warn('Comments fetch error:', error);
+          return [];
+        }
+
+        // Transform the data to match our interface
+        return (comments || []).map(comment => ({
+          id: comment.id,
+          content: comment.content,
+          user_id: comment.user_id,
+          score: comment.score,
+          created_at: comment.created_at,
+          parent_id: comment.parent_id,
+          author: comment.profiles ? {
+            full_name: comment.profiles.full_name,
+            avatar_url: comment.profiles.avatar_url,
+          } : undefined,
+        }));
       } catch (error) {
-        console.error('Comments fetch error:', error);
-        throw error;
+        console.warn('Comments fetch error:', error);
+        return [];
       }
     },
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    enabled: !!entityId,
-  });
+    {
+      ...queryConfigs.realtime,
+      enabled: Boolean(entityId && entityType),
+    }
+  );
+
+  return {
+    comments: data || [],
+    isLoading,
+    error,
+    hasError: Boolean(error),
+  };
 };
