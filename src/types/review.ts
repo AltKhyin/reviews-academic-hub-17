@@ -59,6 +59,8 @@ export interface LayoutConfig {
   gap?: number;
   rowHeights?: number[];
   position?: number; // Generic position, e.g., order within a 1D row
+  width?: number;
+  height?: number;
 }
 
 export interface AlignmentConfig {
@@ -81,7 +83,7 @@ export interface ReviewBlock {
 
 export interface GridPosition {
   row: number;
-  col: number;
+  column: number;
 }
 
 export interface GridCell {
@@ -180,6 +182,7 @@ export interface DiagramEdge {
   type: 'straight' | 'curved' | 'step' | 'floating'; 
   style?: any;
   data?: DiagramEdgeData; // For edge labels with FloatingEdge or other custom edge data
+  animated?: boolean;
 }
 
 export interface DiagramContent {

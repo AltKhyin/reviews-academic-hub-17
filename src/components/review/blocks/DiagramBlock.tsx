@@ -1,3 +1,4 @@
+
 // ABOUTME: Enhanced diagram block with react-flow, theming, and improved UX
 // Provides interactive diagramming capabilities with persistence
 
@@ -21,6 +22,7 @@ import {
   NodeChange,
   EdgeChange,
   XYPosition,
+  ReactFlowProvider, // Import ReactFlowProvider
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -46,7 +48,7 @@ interface DiagramBlockProps {
   readonly?: boolean;
 }
 
-export const DiagramBlock: React.FC<DiagramBlockProps> = ({ 
+const DiagramBlockInternal: React.FC<DiagramBlockProps> = ({ 
   block,
   onUpdate,
   readonly = false,
@@ -103,7 +105,7 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
 
 
   const handleUpdateContent = useCallback(() => {
-    if (onUpdate) {
+    if (onUpdate && reactFlowInstance) {
       const updatedDiagramNodes: DiagramNodeType[] = reactFlowInstance.getNodes().map((n): DiagramNodeType => ({
         id: n.id,
         x: n.position.x,
@@ -120,6 +122,7 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
           type: (e.type as DiagramEdgeType['type']) || 'floating',
           data: e.data,
           style: e.style,
+          animated: e.animated,
       }));
       
       const updatedContent: DiagramContent = {
@@ -280,3 +283,9 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
     </div>
   );
 };
+
+export const DiagramBlock: React.FC<DiagramBlockProps> = (props) => (
+  <ReactFlowProvider>
+    <DiagramBlockInternal {...props} />
+  </ReactFlowProvider>
+);

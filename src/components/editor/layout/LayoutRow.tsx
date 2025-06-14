@@ -40,7 +40,7 @@ export const LayoutRow: React.FC<LayoutRowProps> = ({
     : undefined;
 
   return (
-    <Draggable draggableId={layoutElement.id} index={index} isDragDisabled={readonly} type="LAYOUT_ELEMENT">
+    <Draggable draggableId={layoutElement.id} index={index} isDragDisabled={readonly}>
       {(provided: DraggableProvided, snapshot: DraggableStateSnapshot) => (
         <div 
           ref={provided.innerRef}

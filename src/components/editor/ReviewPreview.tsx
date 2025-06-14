@@ -1,9 +1,8 @@
-
 // ABOUTME: Enhanced preview component with complete 2D grid support
 // Shows real-time preview of both 1D and 2D grid layouts with proper rendering
 
 import React, { useMemo } from 'react';
-import { ReviewBlock } from '@/types/review';
+import { ReviewBlock, GridPosition } from '@/types/review';
 import { BlockRenderer } from '../review/BlockRenderer';
 import { Card, CardContent } from '@/components/ui/card';
 import { Eye, FileText } from 'lucide-react';
@@ -17,7 +16,7 @@ interface ReviewPreviewProps {
 
 interface Grid2DBlock {
   block: ReviewBlock;
-  position: { row: number; column: number };
+  position: GridPosition;
 }
 
 interface Grid2DStructure {
@@ -89,10 +88,10 @@ export const ReviewPreview: React.FC<ReviewPreviewProps> = ({
             blocks: gridBlocks.map(block => {
               const position = block.meta?.layout?.grid_position;
               // Normalize position to always be an object
-              let normalizedPosition: { row: number; column: number };
+              let normalizedPosition: GridPosition;
               
               if (typeof position === 'object' && position !== null && 'row' in position && 'column' in position) {
-                normalizedPosition = position;
+                normalizedPosition = position as GridPosition;
               } else if (typeof position === 'number') {
                 // Convert linear position to grid position
                 normalizedPosition = {

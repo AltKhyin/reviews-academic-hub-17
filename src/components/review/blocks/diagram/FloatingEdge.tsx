@@ -1,3 +1,4 @@
+
 // ABOUTME: Custom floating edge component for React Flow diagrams
 // Provides a simple styled edge with an optional label
 
@@ -5,7 +6,7 @@ import React from 'react';
 import { EdgeProps, getBezierPath, EdgeLabelRenderer } from '@xyflow/react';
 import { DiagramEdgeData } from '@/types/review';
 
-const FloatingEdge: React.FC<EdgeProps<DiagramEdgeData>> = ({
+const FloatingEdge: React.FC<EdgeProps> = ({
   id,
   sourceX,
   sourceY,
@@ -13,10 +14,12 @@ const FloatingEdge: React.FC<EdgeProps<DiagramEdgeData>> = ({
   targetY,
   sourcePosition,
   targetPosition,
-  style, // Make style optional to match base props
+  style = {},
   data,
   markerEnd,
 }) => {
+  const edgeData = data as DiagramEdgeData | undefined;
+
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,
     sourceY,
@@ -35,7 +38,7 @@ const FloatingEdge: React.FC<EdgeProps<DiagramEdgeData>> = ({
         d={edgePath}
         markerEnd={markerEnd}
       />
-      {data?.label && (
+      {edgeData?.label && (
         <EdgeLabelRenderer>
           <div
             style={{
@@ -50,7 +53,7 @@ const FloatingEdge: React.FC<EdgeProps<DiagramEdgeData>> = ({
             }}
             className="nodrag nopan"
           >
-            {data.label}
+            {edgeData.label}
           </div>
         </EdgeLabelRenderer>
       )}

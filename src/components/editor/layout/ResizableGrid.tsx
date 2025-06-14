@@ -3,7 +3,7 @@
 // Given the error, it seems to use BlockContentEditor internally.
 
 import React from 'react';
-import { ReviewBlock } from '@/types/review';
+import { ReviewBlock, AddBlockOptions, BlockType } from '@/types/review';
 import { BlockContentEditor, BlockContentEditorProps } from '../BlockContentEditor';
 import { Button } from '@/components/ui/button';
 import { Maximize2, Minimize2, Move } from 'lucide-react';
@@ -118,7 +118,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
     onUpdate: onUpdateBlock,
     onDelete: onDeleteBlock,
     onMove: (id, dir) => console.log('Move from ResizableGrid BDE', id, dir), // Placeholder
-    onAddBlock: (type, pos) => console.log('Add from ResizableGrid BDE', type, pos), // Placeholder
+    onAddBlock: (options: Partial<AddBlockOptions> & { type: BlockType; }) => console.log('Add from ResizableGrid BDE', options), // Placeholder
     readonly: readonly,
   };
 
@@ -191,7 +191,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
           <div className="absolute top-1 right-1 flex gap-1">
             <Button 
               variant="ghost" 
-              size="icon_xs" 
+              size="icon" 
               className="w-5 h-5 bg-gray-800/80 text-gray-300 hover:bg-gray-700"
               onClick={() => {
                 setWidth(initialWidth);
@@ -212,7 +212,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
             </Button>
             <Button 
               variant="ghost" 
-              size="icon_xs" 
+              size="icon" 
               className="w-5 h-5 bg-gray-800/80 text-gray-300 hover:bg-gray-700"
               onClick={() => {
                 const newWidth = maxWidth;
