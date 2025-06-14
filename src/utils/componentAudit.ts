@@ -1,4 +1,5 @@
 // ABOUTME: Component audit utility with corrected API call monitoring methods
+import React from 'react';
 import { apiCallMonitor } from '@/middleware/ApiCallMiddleware';
 
 interface ComponentViolation {
@@ -100,28 +101,6 @@ class ComponentAuditor {
     return true;
   }
 
-  checkApiCallCompliance(componentName: string): boolean {
-    try {
-      const stats = apiCallMonitor.getStats();
-      const callsInLastMinute = apiCallMonitor.getTotalCallsInLastMinute();
-
-      if (callsInLastMinute > 10) {
-        this.logViolation({
-          componentName,
-          violationType: 'excessive_requests',
-          details: `Component triggered ${callsInLastMinute} API calls in the last minute`,
-          severity: callsInLastMinute > 50 ? 'critical' : 'high',
-        });
-        return false;
-      }
-
-      return true;
-    } catch (error) {
-      console.error('API compliance check failed:', error);
-      return true; // Assume compliant if check fails
-    }
-  }
-
   enableMonitoring() {
     this.monitoringActive = true;
   }
@@ -153,6 +132,6 @@ export const withComponentAudit = <P extends object>(
       componentAuditor.checkApiCallCompliance(componentName);
     });
 
-    return <WrappedComponent {...props} ref={ref} />;
+    return React.createElement(WrappedComponent, { ...props, ref });
   });
 };
