@@ -27,7 +27,7 @@ export type BlockType =
   | 'reviewer_quote'
   | 'citation_list'
   | 'snapshot_card'
-  | 'diagram'; // Added missing diagram type
+  | 'diagram';
 
 export interface SpacingConfig {
   top?: number;
@@ -52,12 +52,12 @@ export interface LayoutConfig {
   columns?: number;
   columnWidths?: number[];
   grid_id?: string;
-  grid_position?: { row: number; column: number }; // Standardized to object format only
+  grid_position?: { row: number; column: number };
   row_id?: string;
   grid_rows?: number;
   gap?: number;
   rowHeights?: number[];
-  position?: number; // Added for backward compatibility
+  position?: number;
 }
 
 export interface AlignmentConfig {
@@ -66,7 +66,7 @@ export interface AlignmentConfig {
 }
 
 export interface ReviewBlock {
-  id: string;
+  id: string; // Already string, good.
   type: BlockType;
   content: any;
   sort_index: number;
@@ -78,27 +78,42 @@ export interface ReviewBlock {
   };
 }
 
-// Added missing content type interfaces
+export interface DiagramNode {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  label: string;
+  type: 'rectangle' | 'circle' | 'diamond'; // Keep this consistent
+  color?: string;
+  // Ensure any other properties used by DiagramBlock for nodes are here
+}
+
+export interface DiagramEdge { // Renamed from 'connections' if it serves the same purpose
+  id: string;
+  source: string; // node id
+  target: string; // node id
+  label?: string;
+  type: 'straight' | 'curved' | 'step'; // Example types
+  style?: any;
+}
+
 export interface DiagramContent {
-  nodes: Array<{
-    id: string;
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    label: string;
-    type: 'rectangle' | 'circle' | 'diamond';
-    color?: string;
-  }>;
-  edges: Array<{
-    id: string;
-    source: string;
-    target: string;
-    label?: string;
-    type: 'straight' | 'curved';
-  }>;
+  nodes: Array<DiagramNode>;
+  edges: Array<DiagramEdge>; // Changed from connections if appropriate
   title?: string;
   description?: string;
+  canvas?: {
+    backgroundColor?: string;
+    gridSize?: number;
+    zoom?: number;
+    offsetX?: number;
+    offsetY?: number;
+  };
+  // If 'connections' is a separate concept from 'edges', define it here.
+  // For now, assuming errors pointed to 'edges' being referred to as 'connections'.
+  // If DiagramBlock truly uses a separate `connections` array with a different structure, add it here.
 }
 
 export interface SnapshotCardContent {
@@ -112,6 +127,20 @@ export interface SnapshotCardContent {
   }>;
   timestamp?: string;
   source?: string;
+  // Added missing properties based on SnapshotCard.tsx errors
+  subtitle?: string;
+  value?: string | number; // Can be string or number
+  change?: string | number; // Can be string or number
+  trend?: 'up' | 'down' | 'neutral' | string; // More flexible trend
+  icon?: string; // e.g., name of a lucide icon
+  evidence_level?: 'high' | 'moderate' | 'low' | 'very_low' | string;
+  recommendation_strength?: 'strong' | 'conditional' | 'expert_opinion' | string;
+  population?: string;
+  intervention?: string;
+  comparison?: string;
+  outcome?: string;
+  design?: string;
+  key_findings?: string[];
 }
 
 export interface EnhancedIssue {

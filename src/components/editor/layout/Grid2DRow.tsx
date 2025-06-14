@@ -1,9 +1,8 @@
-
 // ABOUTME: Enhanced 2D grid row component with string ID support and proper event handling
 // Manages individual rows within 2D grid layouts
 
 import React, { useCallback } from 'react';
-import { GridRow, GridPosition } from '@/types/grid';
+import { GridRow, GridPosition, GridCell as GridCellType } from '@/types/grid'; // Renamed GridCell to GridCellType to avoid conflict
 import { ReviewBlock } from '@/types/review';
 import { Grid2DCell } from './Grid2DCell';
 import { Button } from '@/components/ui/button';
@@ -23,21 +22,21 @@ interface Grid2DRowProps {
   row: GridRow;
   rowIndex: number;
   gridId: string;
-  columns: number;
+  columns: number; // This might be derivable from row.columns or row.cells.length / row.grid_rows
   activeBlockId: string | null;
   onActiveBlockChange: (blockId: string | null) => void;
   onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
   onDeleteBlock: (blockId: string) => void;
-  onAddBlock: (position: GridPosition) => void;
+  onAddBlock: (gridId: string, position: GridPosition) => void; // Changed signature
   onAddRowAbove: (gridId: string, rowIndex: number) => void;
   onAddRowBelow: (gridId: string, rowIndex: number) => void;
   onRemoveRow: (gridId: string, rowIndex: number) => void;
-  onMove: (blockId: string, direction: 'up' | 'down') => void;
-  onAddBlockAtPosition: (type: any, position?: number) => void;
-  dragState: DragState;
-  onDragOver: (e: React.DragEvent, targetRowId: string, targetPosition?: number, targetType?: 'grid' | 'single' | 'merge') => void;
-  onDragLeave: (e: React.DragEvent) => void;
-  onDrop: (e: React.DragEvent, targetRowId: string, targetPosition?: number, dropType?: 'grid' | 'single' | 'merge') => void;
+  onMove?: (blockId: string, direction: 'up' | 'down') => void; // Made optional as not used in this file
+  onAddBlockAtPosition?: (type: any, position?: number) => void; // Made optional
+  dragState?: DragState; // Made optional
+  onDragOver?: (e: React.DragEvent, targetRowId: string, targetPosition?: number, targetType?: 'grid' | 'single' | 'merge') => void; // Made optional
+  onDragLeave?: (e: React.DragEvent) => void; // Made optional
+  onDrop?: (e: React.DragEvent, targetRowId: string, targetPosition?: number, dropType?: 'grid' | 'single' | 'merge') => void; // Made optional
   canRemoveRow: boolean;
 }
 
@@ -45,33 +44,29 @@ export const Grid2DRow: React.FC<Grid2DRowProps> = ({
   row,
   rowIndex,
   gridId,
-  columns,
+  // columns, // This can be derived from row.columns
   activeBlockId,
   onActiveBlockChange,
   onUpdateBlock,
   onDeleteBlock,
-  onAddBlock,
+  onAddBlock, // This is (gridId: string, position: GridPosition) => void;
   onAddRowAbove,
   onAddRowBelow,
   onRemoveRow,
-  onMove,
-  onAddBlockAtPosition,
-  dragState,
-  onDragOver,
-  onDragLeave,
-  onDrop,
   canRemoveRow
+  // ... other props are optional and not used directly here for cell iteration logic
 }) => {
-  const handleAddBlock = useCallback((position: GridPosition) => {
-    onAddBlock(position);
-  }, [onAddBlock]);
+  // This callback is for a cell wanting to add a block at its position
+  const handleAddBlockInCell = useCallback((cellPosition: GridPosition) => {
+    onAddBlock(gridId, cellPosition);
+  }, [onAddBlock, gridId]);
 
   return (
     <>
       {/* Row Controls */}
       <div className="grid-2d-row-controls col-span-full flex items-center justify-between py-1 mb-2">
         <span className="text-xs text-gray-500 font-mono">
-          Linha {rowIndex + 1}
+          Linha {rowIndex + 1} (ID: {row.id})
         </span>
         
         <div className="flex items-center gap-1">
@@ -110,17 +105,18 @@ export const Grid2DRow: React.FC<Grid2DRowProps> = ({
       </div>
 
       {/* Row Cells */}
-      {row.cells.map((cell) => (
+      {/* Assuming row.cells are correctly populated with GridCellType which includes row/column and ReviewBlock */}
+      {row.cells.map((cell: GridCellType) => (
         <Grid2DCell
           key={cell.id}
-          position={{ row: cell.row, column: cell.column }}
-          block={cell.block}
+          position={{ row: cell.row, column: cell.column }} // cell.row and cell.column now exist from updated GridCellType
+          block={cell.block} // cell.block is now ReviewBlock | undefined
           activeBlockId={activeBlockId}
           onActiveBlockChange={onActiveBlockChange}
           onUpdateBlock={onUpdateBlock}
           onDeleteBlock={onDeleteBlock}
-          onAddBlock={handleAddBlock}
-          gridId={gridId}
+          onAddBlock={handleAddBlockInCell} // Passed the adapted handler
+          gridId={gridId} // Grid2DCell might need gridId for some operations
         />
       ))}
     </>

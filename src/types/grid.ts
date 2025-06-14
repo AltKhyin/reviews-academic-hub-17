@@ -5,27 +5,26 @@ export interface GridPosition {
   column: number;
 }
 
-export interface GridCell {
+export interface ReviewBlock { // Forward declaration or import from '@/types/review'
   id: string;
-  block?: {
-    id: string;
-    type: string;
-    content: any;
-    visible: boolean;
-    meta?: any;
-  };
+  type: any; // Replace 'any' with actual BlockType from review.ts
+  content: any;
+  sort_index: number;
+  visible: boolean;
+  meta?: any;
+}
+
+export interface GridCell {
+  id: string; // cell's unique ID
+  row: number; // row index within the grid
+  column: number; // column index within the grid
+  block?: ReviewBlock; // The actual block in this cell
 }
 
 export interface GridRow {
   id: string;
   cells: GridCell[];
-  blocks: Array<{
-    id: string;
-    type: string;
-    content: any;
-    visible: boolean;
-    meta?: any;
-  }>;
+  // blocks: Array<ReviewBlock>; // This might be redundant if GridCell.block is the source of truth
   columns: number;
 }
 
@@ -37,4 +36,14 @@ export interface Grid2DLayout {
   grid_rows?: number;
   gap?: number;
   rowHeights?: number[];
+}
+
+// Added for LayoutGrid component
+export interface LayoutRowData {
+  id: string;
+  blocks: ReviewBlock[]; // Ensure ReviewBlock is correctly typed/imported
+  columns: number;
+  columnWidths?: number[];
+  gap?: number;
+  // Add any other properties that LayoutGrid's row objects might have
 }

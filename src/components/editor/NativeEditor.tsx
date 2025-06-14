@@ -3,7 +3,7 @@
 // Main editor container with fullscreen mode support
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { ReviewBlock } from '@/types/review';
+import { ReviewBlock, BlockType } from '@/types/review'; // Added BlockType
 import { BlockEditor } from './BlockEditor';
 import { BlockPalette } from './BlockPalette';
 import { ReviewPreview } from './ReviewPreview';
@@ -16,6 +16,7 @@ import { useEditorKeyboardShortcuts } from './hooks/useEditorKeyboardShortcuts';
 import { Button } from '@/components/ui/button';
 import { Maximize2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { GridPosition } from '@/types/grid'; // Added
 
 interface NativeEditorProps {
   issueId?: string;
@@ -30,7 +31,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
   issueId,
   initialBlocks = [],
   onSave,
-  onCancel,
+  // onCancel, // Not used in this component's logic
   mode: initialMode = 'split',
   className
 }) => {
@@ -57,64 +58,96 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
     canRedo
   } = useBlockManagement({ initialBlocks, issueId });
 
-  const { handleSave, isSaving, lastSaved } = useEditorAutoSave({
+  // Auto-save setup
+  const { handleSave: triggerAutoSave, isSaving, lastSaved } = useEditorAutoSave({
     data: blocks,
-    onSave: onSave ? async (data) => { onSave(data); } : undefined,
-    interval: 30000,
-    enabled: !!issueId
+    onSave: onSave ? async (dataToSave) => { onSave(dataToSave); } : undefined,
+    interval: 30000, // 30 seconds
+    enabled: !!issueId && !!onSave // Only enable if issueId and onSave are provided
   });
 
+  // Manual save handler
   const handleManualSave = useCallback(() => {
     if (onSave) {
       onSave(blocks);
-      setHasUnsavedChanges(false);
+      setHasUnsavedChanges(false); // Reset after manual save
     }
-  }, [blocks, onSave]);
+    // Also trigger auto-save logic if needed, or rely on its interval
+    triggerAutoSave(); 
+  }, [blocks, onSave, triggerAutoSave]);
 
+  // Keyboard shortcuts
   useEditorKeyboardShortcuts({
     onSave: handleManualSave,
     onUndo: undo,
     onRedo: redo
   });
 
-  // Track changes
+  // Track unsaved changes
   useEffect(() => {
-    const hasChanges = JSON.stringify(blocks) !== JSON.stringify(initialBlocks);
-    setHasUnsavedChanges(hasChanges);
+    // Compare current blocks with the initial state or last saved state
+    // For simplicity, comparing with initialBlocks. A more robust check might compare with last successfully saved blocks.
+    const changed = JSON.stringify(blocks) !== JSON.stringify(initialBlocks);
+    setHasUnsavedChanges(changed);
   }, [blocks, initialBlocks]);
 
-  const handleAddBlock = useCallback((type: any, position?: number) => {
+  const handleAddBlock = useCallback((type: BlockType, position?: number): string => {
     const newBlockId = addBlock(type, position);
     console.log('Block added in NativeEditor:', { type, position, newBlockId });
-    return newBlockId;
+    return newBlockId; // addBlock now returns string ID
   }, [addBlock]);
+  
+  const handleBlockUpdate = useCallback((blockId: string, updates: Partial<ReviewBlock>) => {
+    updateBlock(blockId, updates);
+  }, [updateBlock]);
+
+  const handleBlockDelete = useCallback((blockId: string) => {
+    deleteBlock(blockId);
+  }, [deleteBlock]);
+
+  const handleBlockMove = useCallback((blockId: string, direction: 'up' | 'down') => {
+    moveBlock(blockId, direction);
+  }, [moveBlock]);
+  
+  const handleDuplicateBlock = useCallback((blockId: string) => {
+    duplicateBlock(blockId); // duplicateBlock now returns new ID, but not used here
+  }, [duplicateBlock]);
+
+  const handleConvertToGrid = useCallback((blockId: string, columns: number) => {
+    convertToGrid(blockId, columns);
+  }, [convertToGrid]);
+
+  const handleConvertTo2DGrid = useCallback((blockId: string, columns: number, rows: number) => {
+    convertTo2DGrid(blockId, columns, rows);
+  }, [convertTo2DGrid]);
+
+  const handleMergeBlockIntoGrid = useCallback((draggedBlockId: string, targetRowId: string, targetPosition?: number) => {
+    mergeBlockIntoGrid(draggedBlockId, targetRowId, targetPosition);
+  }, [mergeBlockIntoGrid]);
+
+  const handlePlaceBlockIn2DGrid = useCallback((blockId: string, gridId: string, position: GridPosition) => {
+    placeBlockIn2DGrid(blockId, gridId, position);
+  }, [placeBlockIn2DGrid]);
+
 
   const handleImport = useCallback((importedBlocks: ReviewBlock[]) => {
     console.log('Importing blocks:', importedBlocks);
-    importedBlocks.forEach((block, index) => {
-      if (index === 0) {
-        const firstBlockId = addBlock(block.type, 0);
-        updateBlock(firstBlockId, block);
-      } else {
-        const newBlockId = addBlock(block.type, index);
-        updateBlock(newBlockId, { ...block, id: newBlockId });
-      }
+    // A more sophisticated import might involve clearing existing blocks or merging.
+    // For now, append and re-initialize. This is a destructive import.
+    let currentPos = blocks.length;
+    importedBlocks.forEach((block) => {
+      const newId = addBlock(block.type, currentPos++);
+      updateBlock(newId, { ...block, id: newId }); // Ensure imported block uses new ID
     });
-  }, [addBlock, updateBlock]);
+  }, [addBlock, updateBlock, blocks.length]);
 
-  // Listen for view mode changes from ViewModeSwitcher
   useEffect(() => {
     const handleViewModeChange = (event: CustomEvent) => {
-      const { mode } = event.detail;
-      if (mode === 'dividir') {
-        setEditorMode('split');
-      } else if (mode === 'preview') {
-        setEditorMode('preview');
-      } else {
-        setEditorMode('edit');
+      const { mode: newMode } = event.detail;
+      if (['edit', 'preview', 'split'].includes(newMode)) {
+        setEditorMode(newMode as 'edit' | 'preview' | 'split');
       }
     };
-
     window.addEventListener('viewModeChange', handleViewModeChange as EventListener);
     return () => window.removeEventListener('viewModeChange', handleViewModeChange as EventListener);
   }, []);
@@ -123,8 +156,8 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
     return (
       <NativeEditorFullscreen
         issueId={issueId}
-        initialBlocks={blocks}
-        onSave={onSave}
+        initialBlocks={blocks} // Pass current blocks
+        onSave={onSave} // Pass save handler
         onClose={() => setIsFullscreen(false)}
         mode={editorMode}
       />
@@ -151,13 +184,11 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
           blocks={blocks}
           onImport={handleImport}
         />
-        
-        {/* Fullscreen Button */}
         <Button
           onClick={() => setIsFullscreen(true)}
           variant="ghost"
           size="sm"
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 text-gray-300 hover:text-white"
           title="Editor Fullscreen"
         >
           <Maximize2 className="w-4 h-4" />
@@ -167,7 +198,6 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
       
       <div className="flex-1 overflow-hidden">
         <div className="h-full flex">
-          {/* Block Palette */}
           {(editorMode === 'edit' || editorMode === 'split') && (
             <div 
               className="w-64 border-r overflow-y-auto flex-shrink-0"
@@ -177,38 +207,36 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
             </div>
           )}
           
-          {/* Editor */}
           {(editorMode === 'edit' || editorMode === 'split') && (
             <div 
               className={cn(
-                "flex-1 px-2 overflow-visible-force",
+                "flex-1 px-2 overflow-visible-force", // Ensure editor content can overflow if needed for popups etc.
                 editorMode === 'split' && "border-r"
               )} 
-              style={{ borderColor: '#2a2a2a' }}
+              style={{ borderColor: '#2a2a2a', backgroundColor: '#121212' }} // Main editor area background
             >
               <BlockEditor
                 blocks={blocks}
                 activeBlockId={activeBlockId}
                 onActiveBlockChange={setActiveBlockId}
-                onUpdateBlock={updateBlock}
-                onDeleteBlock={deleteBlock}
-                onMoveBlock={moveBlock}
+                onUpdateBlock={handleBlockUpdate}
+                onDeleteBlock={handleBlockDelete}
+                onMoveBlock={handleBlockMove}
                 onAddBlock={handleAddBlock}
-                onDuplicateBlock={duplicateBlock}
-                onConvertToGrid={convertToGrid}
-                onConvertTo2DGrid={convertTo2DGrid}
-                onMergeBlockIntoGrid={mergeBlockIntoGrid}
-                onPlaceBlockIn2DGrid={placeBlockIn2DGrid}
+                onDuplicateBlock={handleDuplicateBlock}
+                onConvertToGrid={handleConvertToGrid}
+                onConvertTo2DGrid={handleConvertTo2DGrid}
+                onMergeBlockIntoGrid={handleMergeBlockIntoGrid}
+                onPlaceBlockIn2DGrid={handlePlaceBlockIn2DGrid}
               />
             </div>
           )}
           
-          {/* Preview */}
           {(editorMode === 'preview' || editorMode === 'split') && (
-            <div className="flex-1 px-2">
+            <div className="flex-1 px-2 overflow-y-auto" style={{ backgroundColor: '#121212' }}> {/* Preview area background */}
               <ReviewPreview 
                 blocks={blocks}
-                className="h-full"
+                className="h-full" // Ensure preview takes full height of its container
               />
             </div>
           )}
@@ -217,7 +245,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
 
       <EditorStatusBar
         blockCount={blocks.length}
-        activeBlockId={activeBlockId}
+        activeBlockId={activeBlockId} // activeBlockId is string | null
       />
     </div>
   );

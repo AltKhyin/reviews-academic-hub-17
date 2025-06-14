@@ -1,10 +1,10 @@
-
 // ABOUTME: Layout grid container managing multiple layout rows
 // Orchestrates row creation, deletion, and block distribution
 
-import React from 'react';
-import { ReviewBlock } from '@/types/review';
-import { LayoutRow, LayoutRowData } from './LayoutRow';
+import React, { useCallback } from 'react';
+import { ReviewBlock, BlockType } from '@/types/review';
+import { LayoutRowData } from '@/types/grid'; // Import LayoutRowData
+import { LayoutRow } from './LayoutRow';
 import { Button } from '@/components/ui/button';
 import { Plus, Columns2, Columns3, Columns4 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -14,10 +14,10 @@ interface LayoutGridProps {
   onUpdateRow: (rowId: string, updates: Partial<LayoutRowData>) => void;
   onDeleteRow: (rowId: string) => void;
   onAddRow: (position?: number, columns?: number) => void;
-  onAddBlock: (rowId: string, position: number, blockType: string) => void;
-  onUpdateBlock: (blockId: number, updates: Partial<ReviewBlock>) => void;
-  onMoveBlock: (blockId: number, targetRowId: string, targetPosition: number) => void;
-  onDeleteBlock: (blockId: number) => void;
+  onAddBlock: (rowId: string, position: number, blockType: string) => void; // blockType is string
+  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void; // ID is string
+  onMoveBlock: (blockId: string, targetRowId: string, targetPosition: number) => void; // IDs are string
+  onDeleteBlock: (blockId: string) => void; // ID is string
   readonly?: boolean;
   className?: string;
 }
@@ -27,7 +27,7 @@ export const LayoutGrid: React.FC<LayoutGridProps> = ({
   onUpdateRow,
   onDeleteRow,
   onAddRow,
-  onAddBlock,
+  onAddBlock, // Original: (rowId: string, position: number, blockType: string) => void
   onUpdateBlock,
   onMoveBlock,
   onDeleteBlock,
@@ -38,6 +38,12 @@ export const LayoutGrid: React.FC<LayoutGridProps> = ({
     onAddRow(undefined, columns);
   };
 
+  // Adapter for LayoutRow's onAddBlock prop which expects (rowId, position, blockType)
+  const handleAddBlockInLayoutRow = useCallback((rowId: string, position: number, blockType: BlockType) => {
+    onAddBlock(rowId, position, blockType);
+  }, [onAddBlock]);
+
+
   if (readonly) {
     return (
       <div className={cn("layout-grid space-y-6", className)}>
@@ -47,11 +53,14 @@ export const LayoutGrid: React.FC<LayoutGridProps> = ({
             row={row}
             onUpdateRow={onUpdateRow}
             onDeleteRow={onDeleteRow}
-            onAddBlock={onAddBlock}
+            onAddBlock={handleAddBlockInLayoutRow} // Use adapter
             onUpdateBlock={onUpdateBlock}
-            onMoveBlock={onMoveBlock}
+            onMoveBlock={onMoveBlock} // Pass through if LayoutRow handles it
             onDeleteBlock={onDeleteBlock}
             readonly={true}
+            // Ensure all required props for LayoutRow are passed
+            activeBlockId={null} // Or pass the actual activeBlockId if available and relevant here
+            onActiveBlockChange={() => {}} // Ditto
           />
         ))}
       </div>
@@ -130,11 +139,14 @@ export const LayoutGrid: React.FC<LayoutGridProps> = ({
           row={row}
           onUpdateRow={onUpdateRow}
           onDeleteRow={onDeleteRow}
-          onAddBlock={onAddBlock}
+          onAddBlock={handleAddBlockInLayoutRow} // Use adapter
           onUpdateBlock={onUpdateBlock}
-          onMoveBlock={onMoveBlock}
+          onMoveBlock={onMoveBlock} // Pass through
           onDeleteBlock={onDeleteBlock}
           readonly={false}
+          // Ensure all required props for LayoutRow are passed
+          activeBlockId={null} // Or pass the actual activeBlockId
+          onActiveBlockChange={() => {}} // Or pass the actual handler
         />
       ))}
 
