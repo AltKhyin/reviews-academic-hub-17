@@ -1,91 +1,115 @@
 
-// ABOUTME: Drag and drop functionality for block reordering
-// Provides comprehensive drag-and-drop state management and operations
+// ABOUTME: Manages drag and drop state and logic for block manipulation.
+import { useState, useCallback } from 'react';
 
-import { useState, useRef, useCallback } from 'react';
-
-interface DragState {
-  draggedIndex: number | null;
-  draggedOver: number | null;
+export interface DragState {
+  draggedItemId: string | null;
+  dragOverItemId: string | null;
+  dropPosition: 'before' | 'after' | 'over' | null; // 'over' for dropping onto a block itself
   isDragging: boolean;
 }
 
-export const useBlockDragDrop = (onMoveBlock: (blockId: number, direction: 'up' | 'down') => void) => {
-  const [dragState, setDragState] = useState<DragState>({
-    draggedIndex: null,
-    draggedOver: null,
-    isDragging: false
-  });
-  
-  const dragItemRef = useRef<number | null>(null);
-  const dragOverItemRef = useRef<number | null>(null);
+interface UseBlockDragDropOptions {
+  onMove: (draggedId: string, targetId: string | null, position: 'before' | 'after' | 'over') => void;
+}
 
-  const handleDragStart = useCallback((e: React.DragEvent, index: number) => {
-    dragItemRef.current = index;
-    setDragState(prev => ({
-      ...prev,
-      draggedIndex: index,
-      isDragging: true
-    }));
-    
+export const useBlockDragDrop = ({ onMove }: UseBlockDragDropOptions) => {
+  const [dragState, setDragState] = useState<DragState>({
+    draggedItemId: null,
+    dragOverItemId: null,
+    dropPosition: null,
+    isDragging: false,
+  });
+
+  const handleDragStart = useCallback((e: React.DragEvent, itemId: string) => {
     e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/html', e.currentTarget.outerHTML);
-    
-    if (e.currentTarget instanceof HTMLElement) {
-      e.currentTarget.style.opacity = '0.5';
-    }
+    e.dataTransfer.setData('text/plain', itemId);
+    setDragState({
+      draggedItemId: itemId,
+      dragOverItemId: null,
+      dropPosition: null,
+      isDragging: true,
+    });
   }, []);
 
-  const handleDragEnd = useCallback((e: React.DragEvent, blocks: any[]) => {
-    if (e.currentTarget instanceof HTMLElement) {
-      e.currentTarget.style.opacity = '1';
-    }
-    
-    if (dragItemRef.current !== null && dragOverItemRef.current !== null && 
-        dragItemRef.current !== dragOverItemRef.current) {
-      
-      const fromIndex = dragItemRef.current;
-      const toIndex = dragOverItemRef.current;
-      
-      if (fromIndex < toIndex) {
-        for (let i = fromIndex; i < toIndex; i++) {
-          onMoveBlock(blocks[fromIndex].id, 'down');
-        }
-      } else {
-        for (let i = fromIndex; i > toIndex; i--) {
-          onMoveBlock(blocks[fromIndex].id, 'up');
-        }
-      }
-    }
-    
-    setDragState({
-      draggedIndex: null,
-      draggedOver: null,
-      isDragging: false
-    });
-    dragItemRef.current = null;
-    dragOverItemRef.current = null;
-  }, [onMoveBlock]);
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
+  const handleDragOver = useCallback((e: React.DragEvent, targetItemId: string | null, position: 'before' | 'after' | 'over') => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
+    if (dragState.draggedItemId && (dragState.draggedItemId !== targetItemId || position === 'over')) {
+      setDragState(prev => ({
+        ...prev,
+        dragOverItemId: targetItemId,
+        dropPosition: position,
+      }));
+    }
+  }, [dragState.draggedItemId]);
+  
+  // handleDragEnter is often similar to handleDragOver for immediate feedback
+  const handleDragEnter = useCallback((e: React.DragEvent, targetItemId: string | null, position: 'before' | 'after' | 'over') => {
+    e.preventDefault();
+     if (dragState.draggedItemId && (dragState.draggedItemId !== targetItemId || position === 'over')) {
+      setDragState(prev => ({
+        ...prev,
+        dragOverItemId: targetItemId,
+        dropPosition: position,
+      }));
+    }
+  }, [dragState.draggedItemId]);
+
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    if (!dragState.draggedItemId || dragState.dragOverItemId === undefined || dragState.dropPosition === null) { // dragOverItemId can be null
+      // Reset if drop is not valid or not on a registered target
+      setDragState({ draggedItemId: null, dragOverItemId: null, dropPosition: null, isDragging: false });
+      return;
+    }
+    
+    // Prevent dropping an item onto itself unless it's a specific 'over' action (handled by onMove)
+    if (dragState.draggedItemId === dragState.dragOverItemId && dragState.dropPosition !== 'over') {
+        setDragState({ draggedItemId: null, dragOverItemId: null, dropPosition: null, isDragging: false });
+        return;
+    }
+
+    onMove(dragState.draggedItemId, dragState.dragOverItemId, dragState.dropPosition);
+    setDragState({
+      draggedItemId: null,
+      dragOverItemId: null,
+      dropPosition: null,
+      isDragging: false,
+    });
+  }, [dragState, onMove]);
+
+  const handleDragEnd = useCallback((e: React.DragEvent) => {
+    e.preventDefault(); // Prevent default to avoid issues
+    // Reset drag state regardless of drop success, usually after onDrop handles the logic
+    setDragState({
+      draggedItemId: null,
+      dragOverItemId: null,
+      dropPosition: null,
+      isDragging: false,
+    });
+  }, []);
+  
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    // Only reset if leaving the broader draggable context, not just moving between elements within it
+    // This can be tricky. A common approach is to check relatedTarget.
+    const editorElement = (e.currentTarget as HTMLElement).closest('.block-editor-droppable-area'); // Add this class to your main droppable container
+    if (editorElement && !editorElement.contains(e.relatedTarget as Node)) {
+      setDragState(prev => ({ ...prev, dragOverItemId: null, dropPosition: null }));
+    } else if (!e.relatedTarget) { // handles leaving the window
+        setDragState(prev => ({ ...prev, dragOverItemId: null, dropPosition: null }));
+    }
   }, []);
 
-  const handleDragEnter = useCallback((e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    dragOverItemRef.current = index;
-    setDragState(prev => ({
-      ...prev,
-      draggedOver: index
-    }));
-  }, []);
 
   return {
     dragState,
     handleDragStart,
-    handleDragEnd,
     handleDragOver,
-    handleDragEnter
+    handleDragEnter,
+    handleDrop,
+    handleDragEnd,
+    handleDragLeave,
   };
 };

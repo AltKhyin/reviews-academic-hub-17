@@ -5,7 +5,8 @@ import React from 'react';
 import { SnapshotCardContent } from '@/types/review';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, Minus, Info, CheckCircle, AlertTriangle, ExternalLink, LucideIcon } from 'lucide-react'; // Changed LucideIconType to LucideIcon
+import { Button } from '@/components/ui/button'; // Added Button import
+import { TrendingUp, TrendingDown, Minus, Info, CheckCircle, AlertTriangle, ExternalLink, LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SnapshotCardProps {
@@ -14,17 +15,25 @@ interface SnapshotCardProps {
   onInteraction?: (interactionType: string, data?: any) => void;
 }
 
-const getTrendIcon = (trend?: SnapshotCardContent['trend']): LucideIcon | null => { // Changed to LucideIcon
+// Helper to map string icon names to Lucide components (example)
+const iconMap: { [key: string]: LucideIcon } = {
+  info: Info,
+  check: CheckCircle,
+  alert: AlertTriangle,
+  // Add more mappings as needed
+};
+
+const getTrendIcon = (trend?: SnapshotCardContent['trend']): LucideIcon | null => {
   if (!trend) return null;
   if (typeof trend === 'string') {
     switch (trend.toLowerCase()) {
       case 'up': return TrendingUp;
       case 'down': return TrendingDown;
       case 'neutral': return Minus;
-      default: return Info; // For custom string trends
+      default: return Info; 
     }
   }
-  return Info; // Fallback
+  return Info; 
 };
 
 const getEvidenceLevelColor = (level?: SnapshotCardContent['evidence_level']): string => {
@@ -46,7 +55,7 @@ const getRecommendationStrengthText = (strength?: SnapshotCardContent['recommend
       case 'strong': return 'Forte';
       case 'conditional': return 'Condicional';
       case 'expert_opinion': return 'Opinião de Especialista';
-      default: return strength; // Show custom string
+      default: return strength; 
     }
   }
   return 'N/A';
@@ -54,7 +63,8 @@ const getRecommendationStrengthText = (strength?: SnapshotCardContent['recommend
 
 export const SnapshotCard: React.FC<SnapshotCardProps> = ({ content, className, onInteraction }) => {
   const TrendIcon = getTrendIcon(content.trend);
-  const IconComponent = content.icon ? Info : null; // Needs mapping from string to LucideIcon
+  // Map content.icon string to actual LucideIcon component
+  const IconComponent = content.icon && iconMap[content.icon.toLowerCase()] ? iconMap[content.icon.toLowerCase()] : null;
 
   const handleSourceClick = () => {
     if (content.source && onInteraction) {
@@ -67,7 +77,7 @@ export const SnapshotCard: React.FC<SnapshotCardProps> = ({ content, className, 
   return (
     <Card className={cn("snapshot-card w-full shadow-lg bg-gray-800 border-gray-700 text-white", className)}>
       <CardHeader className="pb-3">
-        {content.icon && IconComponent && (
+        {IconComponent && ( // Use the mapped IconComponent
           <IconComponent className="w-6 h-6 mb-2 text-blue-400" />
         )}
         <CardTitle className="text-xl font-semibold text-gray-100">{content.title}</CardTitle>
@@ -152,7 +162,7 @@ export const SnapshotCard: React.FC<SnapshotCardProps> = ({ content, className, 
         <CardFooter className="flex justify-between items-center text-xs text-gray-500 pt-3 border-t border-gray-700">
           {content.timestamp && <span>{new Date(content.timestamp).toLocaleDateString()}</span>}
           {content.source && (
-            <Button
+            <Button // Ensured Button is imported and used
               variant="link"
               className="p-0 h-auto text-blue-400 hover:text-blue-300 text-xs"
               onClick={handleSourceClick}

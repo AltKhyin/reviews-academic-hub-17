@@ -1,20 +1,19 @@
-
 // ABOUTME: Enhanced review types with string IDs for database compatibility and complete type definitions
-export type BlockType = 
-  | 'text' 
-  | 'heading' 
+export type BlockType =
+  | 'text'
+  | 'heading'
   | 'paragraph'
-  | 'image' 
-  | 'video' 
-  | 'quote' 
-  | 'list' 
-  | 'code' 
-  | 'table' 
-  | 'divider' 
-  | 'callout' 
-  | 'embed' 
-  | 'poll' 
-  | 'chart' 
+  | 'image'
+  | 'video'
+  | 'quote'
+  | 'list'
+  | 'code'
+  | 'table'
+  | 'divider'
+  | 'callout'
+  | 'embed'
+  | 'poll'
+  | 'chart'
   | 'audio'
   | 'file'
   | 'gallery'
@@ -27,7 +26,9 @@ export type BlockType =
   | 'reviewer_quote'
   | 'citation_list'
   | 'snapshot_card'
-  | 'diagram';
+  | 'diagram'
+  | 'layout_grid' // Added
+  | 'grid_2d';    // Added
 
 export interface SpacingConfig {
   top?: number;
@@ -66,7 +67,7 @@ export interface AlignmentConfig {
 }
 
 export interface ReviewBlock {
-  id: string; // Already string, good.
+  id: string;
   type: BlockType;
   content: any;
   sort_index: number;
@@ -78,30 +79,41 @@ export interface ReviewBlock {
   };
 }
 
-export interface DiagramNode {
+export interface DiagramNodeData {
+  label: string;
+  type: 'rectangle' | 'circle' | 'diamond'; // Original node type for rendering shape/style
+  color?: string;
+  width?: number;
+  height?: number;
+  // Add any other custom properties your nodes might need
+}
+
+export interface DiagramNode { // This is the structure stored in ReviewBlock.content.nodes
   id: string;
   x: number;
   y: number;
+  // width and height here might be for the persisted size,
+  // React Flow node's width/height can also be dynamic or set on the Node object.
+  // Let's assume these are the base dimensions for persistence.
   width: number;
   height: number;
-  label: string;
-  type: 'rectangle' | 'circle' | 'diamond'; // Keep this consistent
-  color?: string;
-  // Ensure any other properties used by DiagramBlock for nodes are here
+  // The 'data' field will hold specific attributes for rendering and logic.
+  data: DiagramNodeData;
 }
 
-export interface DiagramEdge { // Renamed from 'connections' if it serves the same purpose
+export interface DiagramEdge {
   id: string;
   source: string; // node id
   target: string; // node id
   label?: string;
-  type: 'straight' | 'curved' | 'step'; // Example types
+  type: 'straight' | 'curved' | 'step' | 'floating'; // Ensure 'floating' is valid if used
   style?: any;
+  data?: { label?: string }; // For edge labels with FloatingEdge
 }
 
 export interface DiagramContent {
-  nodes: Array<DiagramNode>;
-  edges: Array<DiagramEdge>; // Changed from connections if appropriate
+  nodes: Array<DiagramNode>; // Array of our persisted DiagramNode structure
+  edges: Array<DiagramEdge>;
   title?: string;
   description?: string;
   canvas?: {
@@ -111,9 +123,6 @@ export interface DiagramContent {
     offsetX?: number;
     offsetY?: number;
   };
-  // If 'connections' is a separate concept from 'edges', define it here.
-  // For now, assuming errors pointed to 'edges' being referred to as 'connections'.
-  // If DiagramBlock truly uses a separate `connections` array with a different structure, add it here.
 }
 
 export interface SnapshotCardContent {

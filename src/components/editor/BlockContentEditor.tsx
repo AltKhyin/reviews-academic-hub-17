@@ -1,198 +1,117 @@
 
-// ABOUTME: Enhanced block content editor with proper inline settings positioning and string ID support
-// Main container for block editing with improved modular controls integration
-
-import React, { useState, useCallback, useRef } from 'react';
+// ABOUTME: Renders the appropriate editor for a given block type.
+// This is a placeholder for BlockContentEditor.tsx to define its props.
+import React from 'react';
 import { ReviewBlock, BlockType } from '@/types/review';
-import { BlockRenderer } from '@/components/review/BlockRenderer';
-import { BlockControls } from './BlockControls';
-import { BlockStatusIndicators } from './BlockStatusIndicators';
-import { InlineBlockSettings } from './inline/InlineBlockSettings';
-import { cn } from '@/lib/utils';
+import { TextBlock } from './blocks/TextBlock';
+import { HeadingBlock } from './blocks/HeadingBlock';
+import { ImageBlock } from './blocks/ImageBlock';
+import { TableBlock } from './blocks/TableBlock';
+import { CalloutBlock } from './blocks/CalloutBlock';
+import { NumberCardBlock } from './blocks/NumberCardBlock';
+import { ReviewerQuoteBlock } from './blocks/ReviewerQuoteBlock';
+import { PollBlock } from './blocks/PollBlock';
+import { CitationListBlock } from './blocks/CitationListBlock';
+import { SnapshotCardBlock } from '../review/blocks/SnapshotCardBlock';
+import { DiagramBlock } from '../review/blocks/DiagramBlock'; 
+// ... import other specific block components
 
-interface BlockContentEditorProps {
+export interface BlockContentEditorProps {
   block: ReviewBlock;
   isActive: boolean;
-  isFirst: boolean;
-  isLast: boolean;
-  onSelect: (blockId: string) => void;
+  onSelect: () => void;
   onUpdate: (blockId: string, updates: Partial<ReviewBlock>) => void;
   onDelete: (blockId: string) => void;
-  onDuplicate?: (blockId: string) => void;
-  onMove: (blockId: string, direction: 'up' | 'down') => void;
-  onAddBlock: (type: BlockType, position?: number) => void;
+  onMove: (blockId: string, direction: 'up' | 'down') => void; // Simplified for context
+  onAddBlock: (type: BlockType, position?: number) => void; // To add blocks relative to this one
+  readonly?: boolean;
+  isFirst?: boolean;
+  isLast?: boolean;
+  // Add any other common props your block editors might need
 }
 
 export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
   block,
   isActive,
-  isFirst,
-  isLast,
   onSelect,
   onUpdate,
   onDelete,
-  onDuplicate,
-  onMove,
-  onAddBlock
+  // onMove, // onMove might be handled by BlockList buttons directly
+  // onAddBlock, // onAddBlock might be handled by BlockList buttons directly
+  readonly,
 }) => {
-  const [isDragging, setIsDragging] = useState(false);
-  const [editMode, setEditMode] = useState(true);
-  const [draggedOver, setDraggedOver] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const handleUpdateContent = (contentUpdates: any) => {
+    onUpdate(block.id, { content: { ...block.content, ...contentUpdates } });
+  };
 
-  const handleBlockClick = useCallback((e: React.MouseEvent) => {
-    // Don't select if clicking on interactive elements
-    const target = e.target as Element;
-    const isInteractiveElement = target.closest('.inline-text-editor-display, .inline-rich-editor-display, input, textarea, button, select, .block-controls, .inline-block-settings');
-    
-    if (!isInteractiveElement) {
-      e.stopPropagation();
-      onSelect(block.id);
+  // Basic click handler to select the block
+  const handleClick = (e: React.MouseEvent) => {
+    // Prevent click propagation if interacting with inner editable elements
+    if ((e.target as HTMLElement).closest('[contenteditable="true"], input, textarea, button')) {
+      return;
     }
-  }, [block.id, onSelect]);
-
-  const handleBlockUpdate = useCallback((updates: Partial<ReviewBlock>) => {
-    onUpdate(block.id, updates);
-  }, [onUpdate, block.id]);
-
-  const handleToggleVisibility = useCallback(() => {
-    onUpdate(block.id, { visible: !block.visible });
-  }, [block.id, block.visible, onUpdate]);
-
-  const handleToggleEditMode = useCallback(() => {
-    setEditMode(!editMode);
-  }, [editMode]);
-
-  // Enhanced drag handlers with proper functionality
-  const handleDragStart = useCallback((e: React.DragEvent) => {
-    setIsDragging(true);
-    e.dataTransfer.setData('text/plain', block.id);
-    e.dataTransfer.effectAllowed = 'move';
-    
-    // Create drag image
-    const dragImage = e.currentTarget.cloneNode(true) as HTMLElement;
-    dragImage.style.transform = 'rotate(0deg)';
-    dragImage.style.opacity = '0.8';
-    e.dataTransfer.setDragImage(dragImage, 0, 0);
-  }, [block.id]);
-
-  const handleDragEnd = useCallback(() => {
-    setIsDragging(false);
-    setDraggedOver(false);
-  }, []);
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    setDraggedOver(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    // Only set draggedOver to false if we're actually leaving the element
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX;
-    const y = e.clientY;
-    
-    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
-      setDraggedOver(false);
+    if (!isActive) {
+      onSelect();
     }
-  }, []);
+  };
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    const draggedBlockId = e.dataTransfer.getData('text/plain');
-    
-    if (draggedBlockId !== block.id) {
-      // Determine direction based on drop position
-      const rect = e.currentTarget.getBoundingClientRect();
-      const midpoint = rect.top + rect.height / 2;
-      const direction = e.clientY < midpoint ? 'up' : 'down';
-      
-      // Move the dragged block relative to this block
-      onMove(draggedBlockId, direction);
-    }
-    
-    setDraggedOver(false);
-  }, [block.id, onMove]);
+  const commonBlockProps = {
+    block,
+    onUpdate: (updates: Partial<ReviewBlock>) => onUpdate(block.id, updates),
+    readonly,
+  };
 
+  // Outer div to handle selection click
+  // Add a visual cue for active state if desired (e.g., border)
   return (
-    <div
-      ref={containerRef}
-      className={cn(
-        "block-content-editor group relative",
-        "border rounded-lg transition-all duration-200",
-        isActive && "ring-2 ring-blue-500 ring-opacity-50 shadow-lg",
-        isDragging && "opacity-50",
-        draggedOver && "ring-2 ring-green-500 ring-opacity-50",
-        !block.visible && "opacity-60"
-      )}
-      style={{
-        backgroundColor: '#1a1a1a',
-        borderColor: isActive ? '#3b82f6' : '#2a2a2a',
-        overflow: 'visible !important',
-        position: 'relative'
-      }}
-      onClick={handleBlockClick}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
+    <div 
+      onClick={handleClick} 
+      className={`block-content-editor-wrapper w-full ${isActive ? 'outline outline-2 outline-blue-500 outline-offset-2' : ''} rounded`}
+      role="button" // Make it keyboard accessible for selection
+      tabIndex={0} // Make it focusable
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { handleClick(e as any); }}}
     >
-      <BlockControls
-        blockId={block.id}
-        isVisible={block.visible}
-        isActive={isActive}
-        isFirst={isFirst}
-        isLast={isLast}
-        editMode={editMode}
-        isDragging={isDragging}
-        onMove={onMove}
-        onToggleVisibility={handleToggleVisibility}
-        onToggleEditMode={handleToggleEditMode}
-        onDuplicate={onDuplicate}
-        onDelete={onDelete}
-      />
-
-      {/* Inline Settings - Positioned close to block controls */}
-      {isActive && (
-        <InlineBlockSettings
-          block={block}
-          onUpdate={handleBlockUpdate}
-          containerRef={containerRef}
-          className="absolute"
-        />
-      )}
-
-      {/* Block Content */}
-      <div className="relative" style={{ overflow: 'visible !important' }}>
-        {editMode ? (
-          /* Edit Mode - Inline Editing Enabled */
-          <div className="p-4" style={{ overflow: 'visible !important' }}>
-            <BlockRenderer
-              block={block}
-              onUpdate={handleBlockUpdate}
-              readonly={false}
-              className="block-content-edit"
-            />
-          </div>
-        ) : (
-          /* Preview Mode - Read Only */
-          <div className="p-4">
-            <BlockRenderer
-              block={block}
-              readonly={true}
-              className="block-content-preview"
-            />
-          </div>
-        )}
-      </div>
-
-      <BlockStatusIndicators
-        editMode={editMode}
-        isActive={isActive}
-        isVisible={block.visible}
-        isDragging={isDragging}
-        draggedOver={draggedOver}
-      />
+      {(() => {
+        switch (block.type) {
+          case 'paragraph':
+          case 'text':
+            return <TextBlock {...commonBlockProps} content={block.content} onUpdateContent={handleUpdateContent} />;
+          case 'heading':
+            return <HeadingBlock {...commonBlockProps} content={block.content} onUpdateContent={handleUpdateContent} />;
+          case 'image':
+          case 'figure':
+            return <ImageBlock {...commonBlockProps} content={block.content} onUpdateContent={handleUpdateContent} />;
+          case 'table':
+            return <TableBlock {...commonBlockProps} content={block.content} onUpdateContent={handleUpdateContent} />;
+          case 'callout':
+            return <CalloutBlock {...commonBlockProps} content={block.content} onUpdateContent={handleUpdateContent} />;
+          case 'number_card':
+            return <NumberCardBlock {...commonBlockProps} content={block.content} onUpdateContent={handleUpdateContent} />;
+          case 'reviewer_quote':
+            return <ReviewerQuoteBlock {...commonBlockProps} content={block.content} onUpdateContent={handleUpdateContent} />;
+          case 'poll':
+            return <PollBlock {...commonBlockProps} content={block.content} onUpdateContent={handleUpdateContent} />;
+          case 'citation_list':
+            return <CitationListBlock {...commonBlockProps} content={block.content} onUpdateContent={handleUpdateContent} />;
+          case 'snapshot_card':
+            // SnapshotCardBlock might wrap SnapshotCard and handle editing logic itself
+            return <SnapshotCardBlock block={block} onUpdate={(updates) => onUpdate(block.id, updates)} readonly={readonly} />;
+          case 'diagram':
+             return <DiagramBlock block={block} onUpdate={(updates) => onUpdate(block.id, updates)} readonly={readonly} />;
+          // ... cases for other block types
+          default:
+            return (
+              <div className="p-4 border border-dashed border-red-400 rounded bg-red-900/20 text-red-300">
+                <p className="font-semibold">Unsupported block type: "{block.type}"</p>
+                <p className="text-xs mt-1">ID: {block.id}</p>
+                <pre className="mt-2 text-xs bg-black/30 p-2 rounded overflow-auto">
+                  {JSON.stringify(block.content, null, 2)}
+                </pre>
+                 {!readonly && <Button size="sm" variant="destructive" className="mt-2" onClick={() => onDelete(block.id)}>Delete this block</Button>}
+              </div>
+            );
+        }
+      })()}
     </div>
   );
 };

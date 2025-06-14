@@ -1,4 +1,3 @@
-
 // ABOUTME: Enhanced diagram block with react-flow, theming, and improved UX
 // Provides interactive diagramming capabilities with persistence
 
@@ -21,16 +20,17 @@ import {
   BackgroundVariant,
   NodeChange,
   EdgeChange,
-} from '@xyflow/react'; // Changed from 'reactflow'
-import '@xyflow/react/dist/style.css'; // Standard style import
+  ReactFlowInstance // For project method
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 
-import { ReviewBlock, DiagramContent, DiagramNode as DiagramNodeType, DiagramEdge as DiagramEdgeType } from '@/types/review';
-import CustomNode from './diagram/CustomNode'; // Corrected import if CustomNode is default export
-import FloatingEdge from './diagram/FloatingEdge'; // Corrected import
+import { ReviewBlock, DiagramContent, DiagramNode as DiagramNodeType, DiagramEdge as DiagramEdgeType, DiagramNodeData } from '@/types/review';
+import CustomNode from './diagram/CustomNode';
+import FloatingEdge from './diagram/FloatingEdge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Eraser, Download, Palette } from 'lucide-react'; // Maximize, Minimize removed as not used
+import { Eraser, Download, Palette } from 'lucide-react';
 
 const getDefaultDiagramContent = (): DiagramContent => ({
   nodes: [],
@@ -51,7 +51,7 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
   onUpdate,
   readonly = false,
 }) => {
-  const diagramContent = useMemo(() => {
+  const diagramContent = useMemo((): DiagramContent => {
     const rawContent = block.content || {};
     const defaultCanvas = getDefaultDiagramContent().canvas;
     return {
@@ -61,79 +61,80 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
         ...defaultCanvas,
         ...(rawContent.canvas || {}),
       },
-      nodes: Array.isArray(rawContent.nodes) ? rawContent.nodes.map((n: DiagramNodeType): Node<DiagramNodeType['data']> => ({
-        id: n.id || `node-${Math.random().toString(36).substr(2, 9)}`,
-        position: { x: n.x, y: n.y },
-        type: 'custom', 
-        data: { 
-            label: n.label, 
-            type: n.type, // Original type like 'rectangle'
-            color: n.color,
-            width: n.width,
-            height: n.height,
-        },
-        width: n.width,
-        height: n.height,
-      })) : [],
-      edges: Array.isArray(rawContent.edges) ? rawContent.edges.map((e: DiagramEdgeType): Edge => ({
-        id: e.id || `edge-${Math.random().toString(36).substr(2, 9)}`,
-        source: e.source,
-        target: e.target,
-        label: e.label,
-        type: 'floating', 
-        data: { label: e.label }, // Pass label to data for FloatingEdge
-        // style: e.style, // If you have custom edge styles
-      })) : [],
+      // Ensure nodes and edges are arrays and match DiagramNodeType/DiagramEdgeType
+      nodes: Array.isArray(rawContent.nodes) ? rawContent.nodes : [],
+      edges: Array.isArray(rawContent.edges) ? rawContent.edges : [],
     };
   }, [block.content]);
 
-  const [nodes, setNodes] = useState<Node<DiagramNodeType['data']>[]>(diagramContent.nodes);
-  const [edges, setEdges] = useState<Edge[]>(diagramContent.edges);
+  // React Flow nodes and edges state
+  const [rfNodes, setRfNodes] = useState<Node<DiagramNodeData>[]>([]);
+  const [rfEdges, setRfEdges] = useState<Edge[]>([]);
+
   const [title, setTitle] = useState(diagramContent.title || '');
   const [description, setDescription] = useState(diagramContent.description || '');
   const [canvasSettings, setCanvasSettings] = useState(diagramContent.canvas || getDefaultDiagramContent().canvas);
   
-  const { project } = useReactFlow();
+  const reactFlowInstance = useReactFlow<DiagramNodeData, DiagramEdgeType>(); // Typed useReactFlow
 
+  // Transform persisted nodes/edges to React Flow compatible structure
   useEffect(() => {
-    setNodes(diagramContent.nodes);
-    setEdges(diagramContent.edges);
+    setRfNodes(diagramContent.nodes.map((n: DiagramNodeType): Node<DiagramNodeData> => ({
+      id: n.id,
+      position: { x: n.x, y: n.y },
+      type: 'custom', // Your custom node type
+      data: n.data,   // Pass the data field
+      width: n.width,
+      height: n.height,
+    })));
+    setRfEdges(diagramContent.edges.map((e: DiagramEdgeType): Edge => ({
+      id: e.id,
+      source: e.source,
+      target: e.target,
+      label: e.label,
+      type: e.type || 'floating', // Default to floating if type not specified
+      data: e.data, // Pass data for FloatingEdge label
+      // style: e.style, // If you have custom edge styles
+    })));
     setTitle(diagramContent.title || '');
     setDescription(diagramContent.description || '');
     setCanvasSettings(diagramContent.canvas || getDefaultDiagramContent().canvas);
   }, [diagramContent]);
+
 
   const nodeTypes: NodeTypes = useMemo(() => ({ custom: CustomNode }), []);
   const edgeTypes: EdgeTypes = useMemo(() => ({ floating: FloatingEdge }), []);
 
   const handleUpdateContent = useCallback(() => {
     if (onUpdate) {
+      const updatedDiagramNodes: DiagramNodeType[] = rfNodes.map((n: Node<DiagramNodeData>): DiagramNodeType => ({
+        id: n.id,
+        x: n.position.x,
+        y: n.position.y,
+        width: n.data?.width || n.width || 150, // Use data if available, else node itself
+        height: n.data?.height || n.height || 50,
+        data: n.data, // Persist the whole data object
+      }));
+      const updatedDiagramEdges: DiagramEdgeType[] = rfEdges.map((e: Edge): DiagramEdgeType => ({
+          id: e.id,
+          source: e.source,
+          target: e.target,
+          label: typeof e.data?.label === 'string' ? e.data.label : undefined,
+          type: (e.type as DiagramEdgeType['type']) || 'curved', // Map back, default to curved
+          data: e.data,
+          // style: e.style,
+      }));
+      
       const updatedContent: DiagramContent = {
-        nodes: nodes.map((n: Node<DiagramNodeType['data']>): DiagramNodeType => ({
-          id: n.id,
-          x: n.position.x,
-          y: n.position.y,
-          width: n.data?.width || n.width || 150,
-          height: n.data?.height || n.height || 50,
-          label: n.data?.label || '',
-          type: n.data?.type || 'rectangle', 
-          color: n.data?.color,
-        })),
-        edges: edges.map((e: Edge): DiagramEdgeType => ({
-            id: e.id,
-            source: e.source,
-            target: e.target,
-            label: typeof e.data?.label === 'string' ? e.data.label : undefined,
-            type: (e.type === 'floating' || !e.type) ? 'curved' : e.type as DiagramEdgeType['type'], // Map back, default to curved
-            // style: e.style,
-        })),
+        nodes: updatedDiagramNodes,
+        edges: updatedDiagramEdges,
         title,
         description,
         canvas: canvasSettings,
       };
       onUpdate({ content: updatedContent });
     }
-  }, [nodes, edges, title, description, canvasSettings, onUpdate]);
+  }, [rfNodes, rfEdges, title, description, canvasSettings, onUpdate]);
 
   useEffect(() => {
     if (readonly) return;
@@ -141,35 +142,36 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
       handleUpdateContent();
     }, 500);
     return () => clearTimeout(timer);
-  }, [nodes, edges, title, description, canvasSettings, readonly, handleUpdateContent]);
+  }, [rfNodes, rfEdges, title, description, canvasSettings, readonly, handleUpdateContent]);
 
 
   const onNodesChange = useCallback(
-    (changes: NodeChange[]) => setNodes((nds) => applyNodeChanges(changes, nds)),
-    [setNodes]
+    (changes: NodeChange[]) => setRfNodes((nds) => applyNodeChanges(changes, nds)),
+    [setRfNodes]
   );
   const onEdgesChange = useCallback(
-    (changes: EdgeChange[]) => setEdges((eds) => applyEdgeChanges(changes, eds)),
-    [setEdges]
+    (changes: EdgeChange[]) => setRfEdges((eds) => applyEdgeChanges(changes, eds)),
+    [setRfEdges]
   );
   const onConnect = useCallback(
     (connection: Connection | Edge) => {
-      setEdges((eds) => addEdge({ ...connection, type: 'floating', animated: true, data: { label: ''} }, eds))
+      setRfEdges((eds) => addEdge({ ...connection, type: 'floating', animated: true, data: { label: ''} }, eds))
     },
-    [setEdges]
+    [setRfEdges]
   );
 
   const addNode = useCallback(() => {
-    const newNodeId = `node_${nodes.length + 1}_${Date.now()}`;
-    const { x, y } = project({ x: Math.random() * 400 + 50, y: Math.random() * 200 + 50 });
-    const newNodeData: DiagramNodeType['data'] = {
-        label: `Novo Nó ${nodes.length + 1}`,
-        type: 'rectangle', // Default original type
+    const newNodeId = `node_${rfNodes.length + 1}_${Date.now()}`;
+    const { x, y } = reactFlowInstance.project({ x: Math.random() * 400 + 50, y: Math.random() * 200 + 50 });
+    
+    const newNodeData: DiagramNodeData = {
+        label: `Novo Nó ${rfNodes.length + 1}`,
+        type: 'rectangle',
         color: '#777',
         width: 150,
         height: 50
     };
-    const newNode: Node<DiagramNodeType['data']> = {
+    const newNode: Node<DiagramNodeData> = {
       id: newNodeId,
       type: 'custom',
       position: { x, y },
@@ -177,20 +179,19 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
       width: newNodeData.width,
       height: newNodeData.height,
     };
-    setNodes((nds) => nds.concat(newNode));
-  }, [nodes, project, setNodes]);
+    setRfNodes((nds) => nds.concat(newNode));
+  }, [rfNodes, reactFlowInstance, setRfNodes]);
 
   const clearDiagram = useCallback(() => {
-    setNodes([]);
-    setEdges([]);
-  }, [setNodes, setEdges]);
+    setRfNodes([]);
+    setRfEdges([]);
+  }, [setRfNodes, setRfEdges]);
 
   const onDownloadImage = useCallback(() => {
-    // This would require a library like html-to-image or react-flow's toPng utility
     console.log("Download image functionality to be implemented.");
-    const reactFlowInstance = document.querySelector('.react-flow');
-    if (reactFlowInstance && (window as any).toPng) { // toPng might not be readily available
-        (window as any).toPng(reactFlowInstance, { backgroundColor: canvasSettings.backgroundColor })
+    const reactFlowDomNode = document.querySelector('.react-flow'); // Be more specific if possible
+    if (reactFlowDomNode && (window as any).toPng) {
+      (window as any).toPng(reactFlowDomNode, { backgroundColor: canvasSettings.backgroundColor })
         .then((dataUrl: string) => {
           const a = document.createElement('a');
           a.href = dataUrl;
@@ -199,9 +200,11 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
         })
         .catch((err: any) => {
           console.error('Failed to download image:', err);
+          alert('Erro ao baixar imagem. Verifique o console.');
         });
     } else {
-        console.warn('Image download function (toPng) not available or React Flow instance not found.');
+      console.warn('Função toPng não disponível ou instância React Flow não encontrada.');
+      alert('Funcionalidade de download não está pronta.');
     }
   }, [title, canvasSettings.backgroundColor]);
 
@@ -213,8 +216,8 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
         {description && <p className="text-sm text-gray-400 mb-4">{description}</p>}
         <div style={{ width: '100%', height: 400, backgroundColor: canvasSettings.backgroundColor }} className="rounded overflow-hidden">
           <ReactFlow
-            nodes={nodes}
-            edges={edges}
+            nodes={rfNodes}
+            edges={rfEdges}
             nodeTypes={nodeTypes}
             edgeTypes={edgeTypes}
             fitView
@@ -226,7 +229,7 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
             proOptions={{ hideAttribution: true }}
           >
             <Background color="#444" gap={canvasSettings.gridSize} variant={BackgroundVariant.Dots} />
-            <MiniMap nodeStrokeWidth={3} nodeColor={(n: Node<DiagramNodeType['data']>) => n.data?.color || '#fff'} />
+            <MiniMap nodeStrokeWidth={3} nodeColor={(n: Node<DiagramNodeData>) => n.data?.color || '#fff'} />
           </ReactFlow>
         </div>
       </div>
@@ -251,8 +254,8 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
       />
       <div style={{ width: '100%', height: 500, border: '1px solid #333', borderRadius: '4px', backgroundColor: canvasSettings.backgroundColor }} className="relative overflow-hidden">
         <ReactFlow
-          nodes={nodes}
-          edges={edges}
+          nodes={rfNodes}
+          edges={rfEdges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
@@ -262,13 +265,13 @@ export const DiagramBlock: React.FC<DiagramBlockProps> = ({
           className="custom-diagram-flow"
           proOptions={{ hideAttribution: true }}
         >
-          <Background 
-            color={canvasSettings.gridSize && canvasSettings.gridSize > 0 ? "#555" : 'transparent'} 
-            gap={canvasSettings.gridSize || 20} 
-            variant={canvasSettings.gridSize && canvasSettings.gridSize > 0 ? BackgroundVariant.Dots : undefined} 
+          <Background
+            color={canvasSettings.gridSize && canvasSettings.gridSize > 0 ? "#555" : 'transparent'}
+            gap={canvasSettings.gridSize || 20}
+            variant={canvasSettings.gridSize && canvasSettings.gridSize > 0 ? BackgroundVariant.Dots : undefined}
           />
           <Controls className="react-flow__controls-custom" />
-          <MiniMap nodeStrokeWidth={3} nodeColor={(n: Node<DiagramNodeType['data']>) => n.data?.color || '#fff'} className="react-flow__minimap-custom"/>
+          <MiniMap nodeStrokeWidth={3} nodeColor={(n: Node<DiagramNodeData>) => n.data?.color || '#fff'} className="react-flow__minimap-custom"/>
           <Panel position="top-left" className="flex gap-1 p-1 bg-gray-800/50 rounded">
             <Button onClick={addNode} size="sm" variant="ghost" className="text-gray-300 hover:text-white hover:bg-gray-700"><Palette size={16} className="mr-1" /> Adicionar Nó</Button>
             <Button onClick={clearDiagram} size="sm" variant="ghost" className="text-red-400 hover:text-red-300 hover:bg-red-900/30"><Eraser size={16} className="mr-1" /> Limpar</Button>

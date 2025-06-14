@@ -1,48 +1,48 @@
+
 // ABOUTME: Fullscreen native editor with immersive editing experience and string ID support
 // Provides dedicated workspace for complex review creation
 
-import React, { useCallback, useEffect, useState, Dispatch, SetStateAction } from 'react'; // Added Dispatch, SetStateAction
-import { ReviewBlock, BlockType } from '@/types/review'; // Added BlockType
+import React, { useCallback, useEffect, useState, Dispatch, SetStateAction } from 'react';
+import { ReviewBlock, BlockType } from '@/types/review';
 import { BlockEditor } from './BlockEditor';
 import { BlockPalette } from './BlockPalette';
 import { ReviewPreview } from './ReviewPreview';
-import { EditorToolbar, EditorToolbarProps } from './EditorToolbar'; // Import EditorToolbarProps
-import { EditorStatusBar } from './EditorStatusBar';
+import { EditorToolbar, EditorToolbarProps } from './EditorToolbar'; // Correctly imports EditorToolbarProps
+import { EditorStatusBar, EditorStatusBarProps } from './EditorStatusBar'; // Import EditorStatusBarProps
 import { useBlockManagement } from '@/hooks/useBlockManagement';
 import { useEditorAutoSave } from '@/hooks/useEditorAutoSave';
 import { useEditorKeyboardShortcuts } from './hooks/useEditorKeyboardShortcuts';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button'; // Ensure this is the correct Button
-import { Minimize2 } from 'lucide-react'; // Ensure this is correctly imported
-import { GridPosition } from '@/types/grid'; // Added
+import { Button } from '@/components/ui/button';
+import { Minimize2 } from 'lucide-react';
+import { GridPosition } from '@/types/grid';
 
 interface NativeEditorFullscreenProps {
   issueId?: string;
-  initialBlocks?: ReviewBlock[]; // Should be current blocks when entering fullscreen
-  onSave?: (blocks: ReviewBlock[]) => void; // Propagated save handler
+  initialBlocks?: ReviewBlock[];
+  onSave?: (blocks: ReviewBlock[]) => void;
   onClose: () => void;
-  mode?: 'edit' | 'preview' | 'split'; // Initial mode for fullscreen
+  mode?: 'edit' | 'preview' | 'split';
 }
 
 export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
   issueId,
-  initialBlocks = [], // These are the blocks *at the moment fullscreen was entered*
-  onSave, // This is the main onSave from NativeEditor
+  initialBlocks = [],
+  onSave,
   onClose,
   mode: initialMode = 'split'
 }) => {
   const [editorMode, setEditorMode] = useState<'edit' | 'preview' | 'split'>(initialMode);
-  // Fullscreen editor manages its own "hasUnsavedChanges" relative to its initial state.
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const {
-    blocks, // These blocks are managed by this instance of useBlockManagement
+    blocks,
     activeBlockId,
     setActiveBlockId,
     addBlock,
     updateBlock,
     deleteBlock,
-    moveBlock,
+    moveBlock, // This is (blockId: string, directionOrIndex: "up" | "down" | number) => void;
     duplicateBlock,
     convertToGrid,
     convertTo2DGrid,
@@ -52,11 +52,10 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
     redo,
     canUndo,
     canRedo
-  } = useBlockManagement({ initialBlocks, issueId }); // Initialize with blocks from parent
+  } = useBlockManagement({ initialBlocks, issueId });
 
-  // Auto-save specific to fullscreen editor's changes
   const { handleSave: triggerAutoSave, isSaving, lastSaved } = useEditorAutoSave({
-    data: blocks, // Save current fullscreen blocks
+    data: blocks,
     onSave: onSave ? async (dataToSave) => { onSave(dataToSave); } : undefined,
     interval: 30000,
     enabled: !!issueId && !!onSave
@@ -64,7 +63,7 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
 
   const handleManualSave = useCallback(() => {
     if (onSave) {
-      onSave(blocks); // Save the current state of blocks from this fullscreen editor
+      onSave(blocks);
       setHasUnsavedChanges(false);
     }
     triggerAutoSave();
@@ -76,7 +75,6 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
     onRedo: redo
   });
 
-  // Track unsaved changes relative to when fullscreen was entered
   useEffect(() => {
     const changed = JSON.stringify(blocks) !== JSON.stringify(initialBlocks);
     setHasUnsavedChanges(changed);
@@ -84,7 +82,6 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
 
   const handleAddBlock = useCallback((type: BlockType, position?: number): string => {
     const newBlockId = addBlock(type, position);
-    console.log('Block added in fullscreen editor:', { type, position, newBlockId });
     return newBlockId;
   }, [addBlock]);
 
@@ -96,6 +93,7 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
     deleteBlock(blockId);
   }, [deleteBlock]);
 
+  // Correctly typed to match useBlockManagement's moveBlock
   const handleBlockMove = useCallback((blockId: string, directionOrIndex: 'up' | 'down' | number) => {
     moveBlock(blockId, directionOrIndex);
   }, [moveBlock]);
@@ -103,7 +101,7 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
   const handleDuplicateBlock = useCallback((blockId: string) => {
     duplicateBlock(blockId);
   }, [duplicateBlock]);
-  
+
   const handleConvertToGrid = useCallback((blockId: string, columns: number) => {
     convertToGrid(blockId, columns);
   }, [convertToGrid]);
@@ -121,7 +119,6 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
   }, [placeBlockIn2DGrid]);
 
   const handleImport = useCallback((importedBlocks: ReviewBlock[]) => {
-    console.log('Importing blocks in fullscreen:', importedBlocks);
     let currentPos = blocks.length;
     importedBlocks.forEach((block) => {
       const newId = addBlock(block.type, currentPos++);
@@ -132,10 +129,7 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        // Before closing, consider prompting if there are unsaved changes
-        // or automatically save. For now, just close.
         if (hasUnsavedChanges && onSave) {
-          // Optionally save before closing on Escape if changes exist
           // onSave(blocks); 
         }
         onClose();
@@ -143,11 +137,11 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onClose, blocks, hasUnsavedChanges, onSave]); // Added dependencies
+  }, [onClose, blocks, hasUnsavedChanges, onSave]);
 
   const editorToolbarProps: EditorToolbarProps = {
     editorMode,
-    onModeChange: setEditorMode as Dispatch<SetStateAction<"edit" | "preview" | "split">>, // Cast if necessary
+    onModeChange: setEditorMode as Dispatch<SetStateAction<"edit" | "preview" | "split">>,
     hasUnsavedChanges,
     isSaving,
     lastSaved,
@@ -159,13 +153,19 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
     blocks,
     onImport: handleImport,
   };
+  
+  const editorStatusBarProps: EditorStatusBarProps = {
+      blockCount: blocks.length,
+      activeBlockId: activeBlockId,
+  };
+
 
   return (
-    <div 
-      className="fixed inset-0 z-[100] bg-background flex flex-col" // Increased z-index
+    <div
+      className="fixed inset-0 z-[100] bg-background flex flex-col"
       style={{ backgroundColor: '#121212' }}
     >
-      <div 
+      <div
         className="h-14 border-b flex items-center justify-between px-4 flex-shrink-0"
         style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}
       >
@@ -173,7 +173,7 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
           Editor de Revisão Nativa - Fullscreen
         </h2>
         <Button
-          onClick={onClose} // Consider save prompt here if hasUnsavedChanges
+          onClick={onClose}
           variant="ghost"
           size="sm"
           className="text-gray-300 hover:text-white"
@@ -183,25 +183,24 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
         </Button>
       </div>
 
-      {/* Removed className from EditorToolbar as it might not be a valid prop */}
-      <EditorToolbar {...editorToolbarProps} /> 
-      
-      <div className="flex flex-1 overflow-hidden"> {/* Main content area takes remaining space and handles overflow */}
+      <EditorToolbar {...editorToolbarProps} />
+
+      <div className="flex flex-1 overflow-hidden">
         {(editorMode === 'edit' || editorMode === 'split') && (
-          <div 
+          <div
             className="w-64 border-r overflow-y-auto flex-shrink-0"
             style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}
           >
             <BlockPalette onBlockAdd={handleAddBlock} />
           </div>
         )}
-        
+
         {(editorMode === 'edit' || editorMode === 'split') && (
-          <div 
+          <div
             className={cn(
-              "flex-1 px-2 overflow-visible-force", // Editor needs to be able to show popups/dropdowns
+              "flex-1 px-2 overflow-y-auto", // Changed from overflow-visible-force
               editorMode === 'split' && "border-r"
-            )} 
+            )}
             style={{ borderColor: '#2a2a2a', backgroundColor: '#121212' }}
           >
             <BlockEditor
@@ -210,7 +209,7 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
               onActiveBlockChange={setActiveBlockId}
               onUpdateBlock={handleBlockUpdate}
               onDeleteBlock={handleBlockDelete}
-              onMoveBlock={handleBlockMove}
+              onMoveBlock={handleBlockMove} // Passes the correctly typed function
               onAddBlock={handleAddBlock}
               onDuplicateBlock={handleDuplicateBlock}
               onConvertToGrid={handleConvertToGrid}
@@ -220,22 +219,17 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
             />
           </div>
         )}
-        
+
         {(editorMode === 'preview' || editorMode === 'split') && (
           <div className="flex-1 px-2 overflow-y-auto" style={{ backgroundColor: '#121212' }}>
-            <ReviewPreview 
+            <ReviewPreview
               blocks={blocks}
               className="h-full"
             />
           </div>
         )}
       </div>
-
-      <EditorStatusBar
-        blockCount={blocks.length}
-        activeBlockId={activeBlockId} // activeBlockId is string | null
-        // className="flex-shrink-0" // Removed if not a valid prop
-      />
+      <EditorStatusBar {...editorStatusBarProps} />
     </div>
   );
 };

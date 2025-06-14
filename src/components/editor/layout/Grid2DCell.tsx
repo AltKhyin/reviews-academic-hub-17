@@ -1,27 +1,27 @@
 
-// ABOUTME: Enhanced 2D grid cell with complete string ID support and proper block construction
-// Handles individual cell rendering within 2D grid layouts
-
-import React, { useCallback } from 'react';
+// ABOUTME: Represents a single cell in a 2D grid, capable of holding a block.
+import React from 'react';
 import { ReviewBlock } from '@/types/review';
-import { BlockContentEditor } from '../BlockContentEditor';
+import { GridPosition } from '@/types/grid';
+import { BlockContentEditor } from '../BlockContentEditor'; // Assuming BlockContentEditorProps allows readonly
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { GridPosition } from '@/types/grid';
 
-interface Grid2DCellProps {
+export interface Grid2DCellProps {
   position: GridPosition;
-  block?: ReviewBlock;
+  block: ReviewBlock | null; // Cell might be empty
   activeBlockId: string | null;
   onActiveBlockChange: (blockId: string | null) => void;
   onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
   onDeleteBlock: (blockId: string) => void;
-  onAddBlock: (gridId: string, position: GridPosition) => void;
-  gridId: string;
-  width?: string;
-  height?: string;
-  minHeight?: number;
+  onAddBlock: (position: GridPosition) => void; // Cell requests block at its position
+  gridId: string; // To associate with the parent grid
+  // Drag and drop related props (simplified for now)
+  onDragOverCell?: (e: React.DragEvent, position: GridPosition) => void;
+  onDropInCell?: (e: React.DragEvent, position: GridPosition) => void;
+  isDragOver?: boolean; // To highlight if something is being dragged over this cell
+  readonly?: boolean;
 }
 
 export const Grid2DCell: React.FC<Grid2DCellProps> = ({
@@ -32,70 +32,74 @@ export const Grid2DCell: React.FC<Grid2DCellProps> = ({
   onUpdateBlock,
   onDeleteBlock,
   onAddBlock,
-  gridId,
-  width = 'auto',
-  height = 'auto',
-  minHeight = 120
+  // gridId, // gridId is mainly for context, block content editor doesn't directly need it
+  onDragOverCell,
+  onDropInCell,
+  isDragOver,
+  readonly,
 }) => {
-  const handleAddBlock = useCallback(() => {
-    onAddBlock(gridId, position);
-  }, [onAddBlock, gridId, position]);
+  const handleAddClick = () => {
+    onAddBlock(position);
+  };
 
-  const handleMove = useCallback((blockId: string, direction: 'up' | 'down') => {
-    // Grid cells don't support individual block movement
-    console.log('Grid cell block movement not supported:', { blockId, direction });
-  }, []);
+  const handleSelectBlock = () => {
+    if (block) {
+      onActiveBlockChange(block.id);
+    }
+  };
+  
+  // Dummy onMove, actual move is complex and handled by Grid2DContainer/BlockEditor
+  const handleMovePlaceholder = () => console.log("Move within cell not implemented directly here");
 
-  const handleAddBlockAtPosition = useCallback((type: any, pos?: number) => {
-    // For grid cells, always add at the current cell position
-    onAddBlock(gridId, position);
-  }, [onAddBlock, gridId, position]);
 
   return (
     <div
       className={cn(
-        "grid-2d-cell border-2 border-dashed border-gray-600 rounded relative",
-        "transition-all duration-200 hover:border-gray-500",
-        block && "border-solid border-gray-500 bg-gray-900/20"
+        "grid-2d-cell border-2 border-dashed rounded min-h-[100px] p-1 flex flex-col justify-center items-center transition-all duration-150",
+        block ? "border-gray-700 bg-gray-900/30" : "border-gray-800 hover:border-gray-700",
+        activeBlockId && block && activeBlockId === block.id && "ring-2 ring-blue-500 border-blue-500",
+        isDragOver && "bg-blue-900/30 border-blue-500" // Highlight on drag over
       )}
-      style={{
-        width,
-        height,
-        minHeight: `${minHeight}px`,
-        gridColumn: position.column + 1,
-        gridRow: position.row + 1
+      style={{ borderColor: isDragOver ? '#3b82f6' : (block ? '#374151' : '#2b3245') }}
+      onDragOver={(e) => {
+        if (onDragOverCell) {
+            e.preventDefault(); // Necessary to allow drop
+            onDragOverCell(e, position);
+        }
       }}
+      onDrop={(e) => {
+        if (onDropInCell) {
+            e.preventDefault();
+            onDropInCell(e, position);
+        }
+      }}
+      onClick={!block ? handleAddClick : undefined} // Add block if empty, otherwise let BlockContentEditor handle clicks
     >
-      <div className="absolute top-1 left-1 text-xs text-gray-500 font-mono z-10">
-        {position.row},{position.column}
-      </div>
-      
       {block ? (
-        <div className="h-full w-full p-2">
-          <BlockContentEditor
-            block={block}
-            isActive={activeBlockId === block.id}
-            isFirst={false}
-            isLast={false}
-            onSelect={onActiveBlockChange}
-            onUpdate={onUpdateBlock}
-            onDelete={onDeleteBlock}
-            onMove={handleMove}
-            onAddBlock={handleAddBlockAtPosition}
-          />
-        </div>
+        <BlockContentEditor
+          block={block}
+          isActive={activeBlockId === block.id}
+          onSelect={handleSelectBlock}
+          onUpdate={onUpdateBlock}
+          onDelete={onDeleteBlock}
+          // BlockContentEditor might not need these for a cell context, or they'd be no-ops
+          onMove={handleMovePlaceholder} 
+          onAddBlock={() => console.log("Add from within cell editor not standard")} // Or provide specific functionality
+          readonly={readonly}
+          // isFirst/isLast might not be relevant here or need different logic
+        />
       ) : (
-        <div className="h-full w-full flex items-center justify-center">
+        !readonly && (
           <Button
             variant="ghost"
             size="sm"
-            onClick={handleAddBlock}
+            onClick={handleAddClick}
             className="text-gray-400 hover:text-gray-300 hover:bg-gray-800"
           >
             <Plus className="w-4 h-4 mr-1" />
-            Adicionar Bloco
+            Bloco
           </Button>
-        </div>
+        )
       )}
     </div>
   );

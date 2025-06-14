@@ -1,88 +1,71 @@
 
-// ABOUTME: Enhanced snapshot card block with improved null safety and text overflow handling
-// Displays PICO evidence cards with comprehensive styling and layout controls
-
+// ABOUTME: Wrapper for SnapshotCard, handling editing logic.
 import React from 'react';
-import { ReviewBlock } from '@/types/review';
-import { SnapshotCard } from './SnapshotCard';
-import { InlineBlockSettings } from '@/components/editor/inline/InlineBlockSettings';
-import { generateSpacingStyles, getDefaultSpacing } from '@/utils/spacingUtils';
+import { ReviewBlock, SnapshotCardContent as SnapshotCardContentType } from '@/types/review';
+import { SnapshotCard } from './SnapshotCard'; // The display component
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button'; // Ensure Button is imported
 
 interface SnapshotCardBlockProps {
-  block: ReviewBlock;
+  block: ReviewBlock; // Contains content of type SnapshotCardContentType
+  onUpdate: (updates: Partial<ReviewBlock>) => void;
   readonly?: boolean;
-  onUpdate?: (updates: Partial<ReviewBlock>) => void;
 }
 
-export const SnapshotCardBlock: React.FC<SnapshotCardBlockProps> = ({ 
-  block, 
-  readonly = false,
-  onUpdate
-}) => {
-  // Safe access to content with fallbacks
-  const content = block.content || {};
-  
-  // Ensure all required properties have fallbacks
-  const snapshotContent = {
-    title: content.title || '',
-    subtitle: content.subtitle || '',
-    value: content.value || '',
-    change: content.change || '',
-    trend: content.trend || 'neutral',
-    icon: content.icon || '',
-    evidence_level: content.evidence_level || 'moderate',
-    recommendation_strength: content.recommendation_strength || 'conditional',
-    population: content.population || '',
-    intervention: content.intervention || '',
-    comparison: content.comparison || '',
-    outcome: content.outcome || '',
-    design: content.design || '',
-    key_findings: Array.isArray(content.key_findings) ? content.key_findings : []
-  };
+export const SnapshotCardBlock: React.FC<SnapshotCardBlockProps> = ({ block, onUpdate, readonly }) => {
+  const content = block.content as SnapshotCardContentType || {};
 
-  // Spacing system integration
-  const customSpacing = block.meta?.spacing;
-  const defaultSpacing = getDefaultSpacing('snapshot_card');
-  const finalSpacing = customSpacing || defaultSpacing;
-  const spacingStyles = generateSpacingStyles(finalSpacing);
-
-  const handleUpdate = (updates: any) => {
-    if (onUpdate) {
-      onUpdate({
-        content: {
-          ...content,
-          ...updates
-        }
-      });
-    }
+  const handleChange = (field: keyof SnapshotCardContentType, value: any) => {
+    onUpdate({ content: { ...content, [field]: value } });
   };
 
   if (readonly) {
-    return (
-      <div className="snapshot-card-block w-full max-w-full overflow-hidden" style={spacingStyles}>
-        <SnapshotCard
-          content={snapshotContent}
-          readonly={true}
-        />
-      </div>
-    );
+    return <SnapshotCard content={content} />;
   }
 
   return (
-    <div className="snapshot-card-block group relative w-full max-w-full overflow-hidden" style={spacingStyles}>
-      {/* Inline Settings */}
-      <div className="absolute -top-2 -right-2 z-10">
-        <InlineBlockSettings
-          block={block}
-          onUpdate={onUpdate}
-        />
-      </div>
-
-      <SnapshotCard
-        content={snapshotContent}
-        onUpdate={handleUpdate}
-        readonly={readonly}
-      />
-    </div>
+    <Card className="bg-gray-850 border-gray-700">
+      <CardContent className="p-4 space-y-3">
+        <div>
+          <Label htmlFor={`title-${block.id}`} className="text-gray-300">Title</Label>
+          <Input
+            id={`title-${block.id}`}
+            value={content.title || ''}
+            onChange={(e) => handleChange('title', e.target.value)}
+            className="bg-gray-800 border-gray-600 text-white"
+          />
+        </div>
+        <div>
+          <Label htmlFor={`description-${block.id}`} className="text-gray-300">Description</Label>
+          <Textarea
+            id={`description-${block.id}`}
+            value={content.description || ''}
+            onChange={(e) => handleChange('description', e.target.value)}
+            className="bg-gray-800 border-gray-600 text-white"
+            rows={3}
+          />
+        </div>
+        {/* Add more editable fields as needed based on SnapshotCardContentType */}
+        <div>
+          <Label htmlFor={`value-${block.id}`} className="text-gray-300">Value</Label>
+          <Input
+            id={`value-${block.id}`}
+            value={content.value?.toString() || ''}
+            onChange={(e) => handleChange('value', e.target.value)}
+            className="bg-gray-800 border-gray-600 text-white"
+          />
+        </div>
+        {/* Add more fields for metrics, source, timestamp etc. */}
+      </CardContent>
+      <CardFooter className="p-4 border-t border-gray-700">
+         <p className="text-xs text-gray-500">Live Preview:</p>
+         <div className="mt-2 p-2 border border-dashed border-gray-600 rounded">
+            <SnapshotCard content={content} />
+         </div>
+      </CardFooter>
+    </Card>
   );
 };

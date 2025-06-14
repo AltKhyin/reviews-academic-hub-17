@@ -4,21 +4,22 @@
 
 import React, { memo } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
-import { DiagramNode } from '@/types/review'; // Assuming this is the source type for node data
+import { DiagramNodeData } from '@/types/review'; // Use DiagramNodeData for the 'data' prop
 
-const CustomNode: React.FC<NodeProps<DiagramNode['data']>> = ({ data, type, selected, dragging }) => {
-  const nodeType = data?.type || 'rectangle'; // Original type from DiagramNode
-  const label = data?.label || 'Node';
-  const color = data?.color || '#777';
+const CustomNode: React.FC<NodeProps<DiagramNodeData>> = ({ data, selected, dragging }) => {
+  // data is now DiagramNodeData
+  const nodeType = data.type || 'rectangle';
+  const label = data.label || 'Node';
+  const color = data.color || '#777';
 
   const style: React.CSSProperties = {
     padding: '10px 15px',
     border: `2px solid ${selected ? '#2563eb' : color}`,
     borderRadius: nodeType === 'circle' ? '50%' : '8px',
-    background: dragging ? '#f0f0f0' : '#fff',
-    color: '#333',
-    minWidth: data?.width || 120,
-    minHeight: data?.height || 40,
+    background: dragging ? '#f0f0f0' : '#fff', // Consider dark mode for background
+    color: '#333', // Text color for light background
+    minWidth: data.width || 120,
+    minHeight: data.height || 40,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',

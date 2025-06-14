@@ -6,13 +6,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ReviewBlock, BlockType } from '@/types/review';
-import { useBlockDragDrop } from '@/hooks/useBlockDragDrop'; // Ensure this hook uses string IDs
-import { 
-  GripVertical, 
-  Eye, 
-  EyeOff, 
-  Copy, 
-  Trash2, 
+import { useBlockDragDrop, DragState } from '@/hooks/useBlockDragDrop'; // Import DragState
+import {
+  GripVertical,
+  Eye,
+  EyeOff,
+  Copy,
+  Trash2,
   Plus,
   FileText,
   Heading,
@@ -27,8 +27,8 @@ import {
   FlaskConical,
   ArrowUp,
   ArrowDown,
-  Grid, 
-  LayoutGrid as LayoutGridIcon // Renamed to avoid conflict with LayoutGrid component
+  Grid,
+  LayoutGrid as LayoutGridIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -37,15 +37,22 @@ interface BlockListProps {
   activeBlockId: string | null;
   onActiveBlockChange: (blockId: string | null) => void;
   onDeleteBlock: (blockId: string) => void;
-  onMoveBlock: (blockId: string, directionOrIndex: 'up' | 'down' | number) => void; // String ID for block, number for index
+  onMoveBlock: (blockId: string, directionOrIndex: 'up' | 'down' | number) => void;
   onAddBlock: (type: BlockType, position?: number) => void;
   onDuplicateBlock?: (blockId: string) => void;
   compact?: boolean;
   onToggleVisibility?: (blockId: string, isVisible: boolean) => void;
+  // Drag and drop handlers provided by parent (BlockEditor) using useBlockDragDrop context
+  dragState: DragState; // Consuming DragState from parent
+  handleDragStart: (e: React.DragEvent, itemId: string) => void;
+  handleDragEnd: (e: React.DragEvent) => void;
+  handleDragOver: (e: React.DragEvent, targetItemId: string | null, position: 'before' | 'after' | 'over') => void;
+  handleDragEnter: (e: React.DragEvent, targetItemId: string | null, position: 'before' | 'after' | 'over') => void;
+  handleDrop: (e: React.DragEvent) => void;
 }
 
 const getBlockIcon = (block: ReviewBlock) => {
-  if (block.meta?.layout?.grid_id) return LayoutGridIcon; // Use renamed LayoutGridIcon
+  if (block.meta?.layout?.grid_id) return LayoutGridIcon; 
   if (block.meta?.layout?.row_id) return Grid;
 
   switch (block.type) {
@@ -78,30 +85,29 @@ const getBlockIcon = (block: ReviewBlock) => {
   }
 };
 
-// ... keep existing code (getBlockColor, getBlockTitle)
-const getBlockColor = (type: string) => {
+const getBlockColor = (type: BlockType | 'layout_grid' | 'grid') => { // Adjusted type
   switch (type) {
-    case 'snapshot_card': return '#3b82f6'; // Blue
-    case 'heading': return '#8b5cf6'; // Purple
-    case 'paragraph': case 'text': return '#64748b'; // Slate
-    case 'figure': case 'image': return '#10b981'; // Green
-    case 'table': return '#f59e0b'; // Amber
-    case 'callout': return '#ef4444'; // Red
-    case 'number_card': return '#0ea5e9'; // Sky
-    case 'reviewer_quote': return '#d946ef'; // Fuchsia
-    case 'poll': return '#06b6d4'; // Cyan
-    case 'citation_list': return '#475569'; // Slate
-    case 'diagram': return '#a855f7'; // Purple (same as reviewer_quote for now)
-    // Layout block types
-    case 'grid': return '#f97316'; // Orange for 1D Grid
-    case 'layout_grid': return '#ec4899'; // Pink for 2D Grid // Matches icon LayoutGridIcon
-    default: return '#6b7280'; // Gray
+    case 'snapshot_card': return '#3b82f6'; 
+    case 'heading': return '#8b5cf6'; 
+    case 'paragraph': case 'text': return '#64748b'; 
+    case 'figure': case 'image': return '#10b981'; 
+    case 'table': return '#f59e0b'; 
+    case 'callout': return '#ef4444'; 
+    case 'number_card': return '#0ea5e9'; 
+    case 'reviewer_quote': return '#d946ef'; 
+    case 'poll': return '#06b6d4'; 
+    case 'citation_list': return '#475569'; 
+    case 'diagram': return '#a855f7'; 
+    case 'grid': return '#f97316'; 
+    case 'layout_grid': return '#ec4899'; 
+    default: return '#6b7280'; 
   }
 };
 
 const getBlockTitle = (block: ReviewBlock) => {
-  if (block.meta?.layout?.grid_id) return `Grid 2D (ID: ${block.meta.layout.grid_id.substring(0,6)}...)`;
-  if (block.meta?.layout?.row_id) return `Linha em Grid (ID: ${block.meta.layout.row_id.substring(0,6)}...)`;
+  if (block.meta?.layout?.grid_id && block.type === 'grid_2d') return `Grid 2D (ID: ${block.id.substring(0,6)}...)`;
+  if (block.meta?.layout?.row_id && block.type === 'layout_grid') return `Grid Layout (ID: ${block.id.substring(0,6)}...)`;
+  if (block.meta?.layout?.row_id) return `Item em Linha de Grid (ID: ${block.id.substring(0,6)}...)`;
 
   switch (block.type) {
     case 'heading':
@@ -127,57 +133,28 @@ const getBlockTitle = (block: ReviewBlock) => {
     case 'diagram':
       return block.content.title || 'Diagrama';
     default:
-      return `Bloco ${block.type}`;
+      const unknownTitle = block.type.replace(/_/g, ' ');
+      return unknownTitle.charAt(0).toUpperCase() + unknownTitle.slice(1);
   }
 };
-
 
 export const BlockList: React.FC<BlockListProps> = ({
   blocks,
   activeBlockId,
   onActiveBlockChange,
   onDeleteBlock,
-  onMoveBlock, // This prop expects (blockId: string, newIndex: number) or (blockId: string, direction: 'up'|'down')
+  onMoveBlock,
   onAddBlock,
   onDuplicateBlock,
   onToggleVisibility,
-  compact = false
+  compact = false,
+  dragState,
+  handleDragStart,
+  handleDragEnd,
+  handleDragOver,
+  handleDragEnter,
+  handleDrop,
 }) => {
-  // Assuming useBlockDragDrop's onMove callback expects (draggedId: string, targetId: string | null, position: 'before' | 'after')
-  // And onMoveBlock is (movedItemId: string, newIndex: number)
-  // This requires an adapter or consistent signature.
-  // For now, let's assume useBlockDragDrop's onMove is (string, string|null, 'before'|'after') and we adapt
-  
-  const handleInternalMove = useCallback((draggedId: string, targetId: string | null, position: 'before' | 'after') => {
-    const draggedIndex = blocks.findIndex(b => b.id === draggedId);
-    if (draggedIndex === -1) return;
-
-    if (targetId === null) { // Dropped on an empty area or an insert line not related to a specific block
-      if (position === 'before') { // Typically means top of the list
-        onMoveBlock(draggedId, 0);
-      } else { // Typically means bottom of the list
-        onMoveBlock(draggedId, blocks.length);
-      }
-      return;
-    }
-
-    const targetIndex = blocks.findIndex(b => b.id === targetId);
-    if (targetIndex === -1) return;
-
-    let newIndex = targetIndex;
-    if (position === 'after') {
-      newIndex = targetIndex + 1;
-    }
-    // Adjust newIndex if dragging downwards past original position
-    if (draggedIndex < newIndex) {
-        newIndex--;
-    }
-    onMoveBlock(draggedId, newIndex);
-
-  }, [blocks, onMoveBlock]);
-  
-  const { dragState, handleDragStart, handleDragEnd, handleDragOver, handleDragEnter } = 
-    useBlockDragDrop(handleInternalMove); // Pass the adapter
 
   const handleBlockClick = (e: React.MouseEvent, blockId: string) => {
     const target = e.target as HTMLElement;
@@ -229,59 +206,65 @@ export const BlockList: React.FC<BlockListProps> = ({
   }
 
   return (
-    <div className="block-list space-y-1.5 w-full max-w-full overflow-hidden">
+    <div className="block-list space-y-1.5 w-full max-w-full overflow-hidden" onDrop={handleDrop}>
       {blocks.map((block, index) => {
         const Icon = getBlockIcon(block);
-        const iconColor = getBlockColor(block.meta?.layout?.grid_id ? 'layout_grid' : block.meta?.layout?.row_id ? 'grid' : block.type);
+        const iconColorKey = block.type === 'grid_2d' ? 'layout_grid' : block.type === 'layout_grid' ? 'grid' : block.type;
+        const iconColor = getBlockColor(iconColorKey as BlockType | 'layout_grid' | 'grid');
+
         const isActive = block.id === activeBlockId;
-        // Assuming dragState from useBlockDragDrop uses string IDs
-        const isDraggedOver = dragState.dragOverItemId === block.id;
-        const isDragging = dragState.draggedItemId === block.id;
+        const isDraggedOverItem = dragState.dragOverItemId === block.id;
+        const isDraggingThisItem = dragState.draggedItemId === block.id;
         const isFirst = index === 0;
         const isLast = index === blocks.length - 1;
 
         return (
           <div key={block.id} className="space-y-1 w-full max-w-full overflow-hidden">
-            {index === 0 && (
-              <div className="insert-point group w-full">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={(e) => handleAddBlockClick(e, 0)}
-                  className="w-full h-5 opacity-30 hover:opacity-100 transition-opacity text-xs"
-                  style={{ color: '#6b7280' }}
-                  onDragOver={(e) => handleDragOver(e, null, 'before')} // Drop at the very top
-                  onDragEnter={(e) => handleDragEnter(e, null, 'before')} // Drop at the very top
-                >
-                  <Plus className="w-3 h-3 mr-1" />
-                  Inserir bloco aqui
-                </Button>
-              </div>
-            )}
+            {/* Insert line BEFORE the block */}
+            <div
+              className="insert-point group w-full h-3"
+              onDragOver={(e) => handleDragOver(e, block.id, 'before')}
+              onDragEnter={(e) => handleDragEnter(e, block.id, 'before')}
+            >
+              {dragState.isDragging && isDraggedOverItem && dragState.dropPosition === 'before' && (
+                <div className="h-full w-full bg-blue-500/30 rounded opacity-100 transition-opacity" />
+              )}
+               {!dragState.isDragging && (index === 0) && (
+                 <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={(e) => handleAddBlockClick(e, 0)}
+                    className="w-full h-full opacity-0 group-hover:opacity-100 transition-opacity text-xs flex items-center justify-center"
+                    style={{ color: '#6b7280' }}
+                  >
+                    <Plus className="w-3 h-3 mr-1" /> Inserir
+                  </Button>
+               )}
+            </div>
 
             <Card
               className={cn(
                 "block-list-item cursor-pointer transition-all duration-200 group w-full max-w-full overflow-hidden",
                 isActive && "ring-2 ring-blue-500",
-                isDraggedOver && dragState.dropPosition === 'over' && "border-blue-400", // Highlight for 'over' drop
-                isDragging && "opacity-50 scale-95"
+                isDraggedOverItem && dragState.dropPosition === 'over' && "border-blue-400",
+                isDraggingThisItem && "opacity-50 scale-95"
               )}
               style={{
                 backgroundColor: isActive ? '#1e3a8a' : '#1a1a1a',
-                borderColor: isActive ? '#3b82f6' : (isDraggedOver && dragState.dropPosition === 'over' ? '#3b82f6' : '#2a2a2a')
+                borderColor: isActive ? '#3b82f6' : (isDraggedOverItem && dragState.dropPosition === 'over' ? '#3b82f6' : '#2a2a2a')
               }}
               draggable
               onDragStart={(e) => handleDragStart(e, block.id)}
-              onDragEnd={(e) => handleDragEnd(e)} // Adjusted: handleDragEnd might not need args from error
-              onDragOver={(e) => handleDragOver(e, block.id, 'over')} // Pass 'over' for dropping onto block
-              onDragEnter={(e) => handleDragEnter(e, block.id, 'over')} // Pass 'over'
+              onDragEnd={handleDragEnd}
+              onDragOver={(e) => handleDragOver(e, block.id, 'over')}
+              onDragEnter={(e) => handleDragEnter(e, block.id, 'over')}
               onClick={(e) => handleBlockClick(e, block.id)}
             >
               <CardContent className={cn("p-2 w-full max-w-full overflow-hidden", compact && "p-1.5")}>
                 <div className="flex items-center gap-2 w-full max-w-full overflow-hidden">
-                  <div 
+                  <div
                     className="drag-handle cursor-grab active:cursor-grabbing flex-shrink-0"
-                    onMouseDown={(e) => e.stopPropagation()} // Prevent card click when grabbing handle
+                    onMouseDown={(e) => e.stopPropagation()}
                   >
                     <GripVertical className="w-4 h-4" style={{ color: '#6b7280' }} />
                   </div>
@@ -292,7 +275,7 @@ export const BlockList: React.FC<BlockListProps> = ({
 
                   <div className="flex-1 min-w-0 overflow-hidden">
                     <div className="flex items-center gap-1 mb-0.5 overflow-hidden">
-                      <h4 
+                      <h4
                         className={cn(
                           "font-medium truncate min-w-0 overflow-hidden break-words hyphens-auto",
                           compact ? "text-xs" : "text-sm"
@@ -302,18 +285,18 @@ export const BlockList: React.FC<BlockListProps> = ({
                       >
                         {getBlockTitle(block)}
                       </h4>
-                      <Badge 
-                        variant="outline" 
+                      <Badge
+                        variant="outline"
                         className="text-xs flex-shrink-0"
                         style={{ backgroundColor: 'transparent', borderColor: iconColor, color: iconColor }}
                       >
-                        {block.meta?.layout?.grid_id ? 'Grid 2D' : block.meta?.layout?.row_id ? 'Grid Row' : block.type}
+                        {block.type === 'grid_2d' ? 'Grid 2D' : block.type === 'layout_grid' ? 'Grid Layout' : block.type}
                       </Badge>
                     </div>
-                    
+
                     <div className="flex items-center gap-1 overflow-hidden">
                       <span className="text-xs break-words" style={{ color: isActive ? '#d1d5db' : '#9ca3af' }}>
-                        Posição {index + 1} (ID: {block.id})
+                        Posição {index + 1} (ID: {block.id.substring(0,8)})
                       </span>
                       {!block.visible && (
                         <EyeOff className="w-3 h-3 flex-shrink-0" style={{ color: '#ef4444' }} />
@@ -360,26 +343,40 @@ export const BlockList: React.FC<BlockListProps> = ({
               </CardContent>
             </Card>
 
-            <div className="insert-point group w-full">
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={(e) => handleAddBlockClick(e, index + 1)}
-                className={cn(
-                    "w-full h-5 transition-opacity text-xs",
-                    dragState.isDragging ? "opacity-30 hover:opacity-100" : "opacity-0 group-hover:opacity-100"
-                )}
-                style={{ color: '#6b7280' }}
-                onDragOver={(e) => handleDragOver(e, block.id, 'after')} // Drop after this block
-                onDragEnter={(e) => handleDragEnter(e, block.id, 'after')} // Drop after this block
-              >
-                <Plus className="w-3 h-3 mr-1" />
-                Inserir bloco aqui
-              </Button>
+            {/* Insert line AFTER the block */}
+             <div
+              className="insert-point group w-full h-3"
+              onDragOver={(e) => handleDragOver(e, block.id, 'after')}
+              onDragEnter={(e) => handleDragEnter(e, block.id, 'after')}
+             >
+              {dragState.isDragging && isDraggedOverItem && dragState.dropPosition === 'after' && (
+                <div className="h-full w-full bg-blue-500/30 rounded opacity-100 transition-opacity" />
+              )}
+               {!dragState.isDragging && ( /* Show add button always if not dragging */
+                 <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={(e) => handleAddBlockClick(e, index + 1)}
+                    className="w-full h-full opacity-0 group-hover:opacity-100 transition-opacity text-xs flex items-center justify-center"
+                    style={{ color: '#6b7280' }}
+                  >
+                    <Plus className="w-3 h-3 mr-1" /> Inserir
+                  </Button>
+               )}
             </div>
           </div>
         );
       })}
+       {/* Drop zone for adding to the very end of the list if dragging beyond last item */}
+       <div
+          className="insert-point group w-full h-3"
+          onDragOver={(e) => handleDragOver(e, null, 'after')}
+          onDragEnter={(e) => handleDragEnter(e, null, 'after')}
+        >
+          {dragState.isDragging && dragState.dragOverItemId === null && dragState.dropPosition === 'after' && (
+            <div className="h-full w-full bg-blue-500/30 rounded opacity-100 transition-opacity" />
+          )}
+      </div>
     </div>
   );
 };
