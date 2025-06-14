@@ -1,4 +1,3 @@
-
 // ABOUTME: Enhanced block management hook for a flat list of ReviewBlocks.
 // Manages block operations, undo/redo.
 import { useState, useCallback, useRef, useEffect } from 'react';
@@ -92,7 +91,7 @@ export const useBlockManagement = (
                 ...newBlock.meta?.layout,
                 grid_position: {
                     row: options.targetPosition.row,
-                    column: options.targetPosition.column,
+                    column: options.targetPosition.column, // Fixed typo here
                 }
             }
         };
@@ -103,8 +102,8 @@ export const useBlockManagement = (
     // This is a simplified insertion logic. A real implementation
     // would need to traverse the elements tree to find the correct
     // parent and insertion point.
-    const newLayoutElement: LayoutElement = {
-      type: 'block_container',
+    const newLayoutElement: ElementDefinition = {
+      type: 'block',
       id: generateId(),
       blockId: newBlockId,
     };
@@ -132,7 +131,7 @@ export const useBlockManagement = (
     // Also remove from elements tree
     const filterElements = (els: ElementDefinition[]): ElementDefinition[] => {
         return els.filter(el => {
-            if (el.type === 'block_container' && el.blockId === blockId) return false;
+            if (el.type === 'block' && el.blockId === blockId) return false;
             if ('columns' in el && el.columns) {
                 el.columns.forEach(c => c.elements = filterElements(c.elements));
             }

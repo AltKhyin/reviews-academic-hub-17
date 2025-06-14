@@ -1,3 +1,4 @@
+
 // ABOUTME: Grid state computation and management
 // Handles grid row extraction and layout state calculation
 
@@ -20,7 +21,7 @@ interface GridLayoutState {
 export const useGridState = (blocks: ReviewBlock[]): GridLayoutState => {
   return useMemo(() => {
     const rowsMap = new Map<string, GridRow>();
-    const processedBlocks = new Set<string>();
+    const processedBlocks = new Set<number>();
     
     console.log('Computing grid layout from blocks:', blocks.length);
     
