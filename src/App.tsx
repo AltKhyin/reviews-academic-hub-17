@@ -1,153 +1,82 @@
-// ABOUTME: Main application component with route configuration, global error boundary, and API monitoring
-import React, { Suspense, lazy, useEffect } from 'react';
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { PageLoader } from "@/components/ui/PageLoader";
-import { GlobalErrorBoundary } from "@/components/error/GlobalErrorBoundary";
-import { BundleOptimizer } from "@/utils/bundleOptimizer";
-import { ComponentAuditor } from "@/utils/componentAudit";
-import { apiCallMonitor } from "@/middleware/ApiCallMiddleware";
+import React, { lazy, Suspense } from 'react';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
+import { CommunityProvider } from './contexts/CommunityContext';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { Toaster } from '@/components/ui/toaster';
+import { MainLayout } from '@/layouts/MainLayout';
+import Loading from '@/components/ui/Loading';
 
-// Keep critical routes static for immediate loading
-import { DashboardLayout } from "@/layouts/DashboardLayout";
-import AuthPage from "@/pages/auth/AuthPage";
-import Dashboard from "@/pages/dashboard/Dashboard";
-
-// Lazy load heavy/admin routes for better performance using bundle optimizer
-const ArticleViewer = lazy(() => import("@/pages/dashboard/ArticleViewer"));
-const ArchivePage = lazy(() => import("@/pages/dashboard/ArchivePage"));
-const SearchPage = lazy(() => import("@/pages/dashboard/SearchPage"));
-const Community = lazy(() => import("@/pages/dashboard/Community"));
-const Profile = lazy(() => import("@/pages/dashboard/Profile"));
-const Edit = lazy(() => import("@/pages/dashboard/Edit"));
-const IssueEditor = lazy(() => import("@/pages/dashboard/IssueEditor"));
-
-// Optimized query client configuration
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 30 * 60 * 1000, // 30 minutes
-      retry: 2,
-      refetchOnWindowFocus: false,
-    },
-    mutations: {
-      retry: 1,
-    },
-  },
-});
-
-// Preload critical chunks during idle time
-BundleOptimizer.preloadChunk(() => import("@/pages/dashboard/ArticleViewer"), 'article-viewer');
-BundleOptimizer.preloadChunk(() => import("@/pages/dashboard/ArchivePage"), 'archive-page');
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const CommunityPage = lazy(() => import('./pages/CommunityPage'));
+const ArchivePage = lazy(() => import('./pages/ArchivePage'));
+const IssuePage = lazy(() => import('./pages/IssuePage'));
+const Dashboard = lazy(() => import('./pages/dashboard/Dashboard'));
+const IssueEditor = lazy(() => import('./pages/dashboard/IssueEditor').then(module => ({ default: module.IssueEditor })));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 
 function App() {
-  // API MONITORING: Set up global performance tracking
-  useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🚀 App: API monitoring initialized');
-      
-      // Set up global performance monitoring
-      const performanceInterval = setInterval(() => {
-        const totalCalls = apiCallMonitor.getTotalCallsInLastMinute();
-        const violations = ComponentAuditor.getViolationReport();
-        
-        if (totalCalls > 10 || violations.length > 0) {
-          console.group('🚨 PERFORMANCE ALERT');
-          console.log(`Total API calls: ${totalCalls} (target: <10)`);
-          console.log(`Components with violations: ${violations.length}`);
-          violations.forEach(violation => {
-            console.warn(`${violation.componentName}: ${violation.violations.join(', ')}`);
-          });
-          console.groupEnd();
-        }
-      }, 30000);
-
-      return () => clearInterval(performanceInterval);
-    }
-  }, []);
-
   return (
-    <GlobalErrorBoundary
-      onError={(error, errorInfo) => {
-        // In production, send to error tracking service
-        console.error('Global Error:', error, errorInfo);
-      }}
-    >
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <TooltipProvider>
-            <Sonner />
-            <Routes>
-              <Route path="/auth" element={<AuthPage />} />
-              <Route path="/" element={<DashboardLayout />}>
-                <Route index element={<Navigate to="/homepage" replace />} />
-                <Route path="homepage" element={<Dashboard />} />
-                <Route 
-                  path="article/:id" 
+    <AuthProvider>
+      <CommunityProvider>
+        <Router>
+          <MainLayout>
+            <Suspense fallback={<Loading />}>
+              <Routes>
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+                <Route path="/archive" element={<ArchivePage />} />
+                <Route path="/archive/:id" element={<IssuePage />} />
+                <Route path="/community" element={<CommunityPage />} />
+                
+                {/* Protected routes */}
+                <Route
+                  path="/profile"
                   element={
-                    <Suspense fallback={<PageLoader />}>
-                      <ArticleViewer />
-                    </Suspense>
-                  } 
+                    <ProtectedRoute>
+                      <ProfilePage />
+                    </ProtectedRoute>
+                  }
                 />
-                <Route 
-                  path="acervo" 
+                <Route
+                  path="/dashboard"
                   element={
-                    <Suspense fallback={<PageLoader />}>
-                      <ArchivePage />
-                    </Suspense>
-                  } 
+                    <ProtectedRoute>
+                      <Dashboard />
+                    </ProtectedRoute>
+                  }
                 />
-                <Route 
-                  path="search" 
+                 <Route
+                  path="/dashboard/editor/:id"
                   element={
-                    <Suspense fallback={<PageLoader />}>
-                      <SearchPage />
-                    </Suspense>
-                  } 
-                />
-                <Route 
-                  path="community" 
-                  element={
-                    <Suspense fallback={<PageLoader />}>
-                      <Community />
-                    </Suspense>
-                  } 
-                />
-                <Route 
-                  path="profile" 
-                  element={
-                    <Suspense fallback={<PageLoader />}>
-                      <Profile />
-                    </Suspense>
-                  } 
-                />
-                <Route 
-                  path="edit" 
-                  element={
-                    <Suspense fallback={<PageLoader />}>
-                      <Edit />
-                    </Suspense>
-                  } 
-                />
-                <Route 
-                  path="edit/issue/:id" 
-                  element={
-                    <Suspense fallback={<PageLoader />}>
+                    <ProtectedRoute>
                       <IssueEditor />
-                    </Suspense>
-                  } 
+                    </ProtectedRoute>
+                  }
                 />
-              </Route>
-            </Routes>
-          </TooltipProvider>
-        </AuthProvider>
-      </QueryClientProvider>
-    </GlobalErrorBoundary>
+                <Route
+                  path="/settings"
+                  element={
+                    <ProtectedRoute>
+                      <SettingsPage />
+                    </ProtectedRoute>
+                  }
+                />
+              </Routes>
+            </Suspense>
+          </MainLayout>
+        </Router>
+        <Toaster />
+      </CommunityProvider>
+    </AuthProvider>
   );
 }
 

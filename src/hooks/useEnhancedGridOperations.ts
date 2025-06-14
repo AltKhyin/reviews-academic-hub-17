@@ -3,8 +3,9 @@
 import { useCallback } from 'react';
 import { useGridState } from './grid/useGridState';
 import { useBlockOperations } from './useBlockOperations';
-import { ReviewBlock } from '@/types/review';
+import { ReviewBlock, BlockType } from '@/types/review';
 import { Grid2DLayout, GridPosition } from '@/types/grid';
+import { sanitizeBlockType } from '@/utils/typeGuards';
 
 interface EnhancedGridOperationsProps {
   blocks: ReviewBlock[];
@@ -47,14 +48,20 @@ export const useEnhancedGridOperations = ({
     originalDeleteBlock(blockId);
   }, [originalDeleteBlock]);
 
-  // Enhanced grid operations
+  // Enhanced grid operations with proper type conversion
   const addBlockToGrid = useCallback((position: GridPosition, block: ReviewBlock) => {
+    // Ensure block type is properly sanitized
+    const sanitizedBlock = {
+      ...block,
+      type: sanitizeBlockType(block.type)
+    };
+    
     // First add the block to the blocks array
-    addBlock(block.type, block.content);
+    addBlock(sanitizedBlock.type, sanitizedBlock.content);
     
     // Then add it to the grid layout
     if (gridState.grid) {
-      gridState.addBlock(gridState.grid.id, position, block);
+      gridState.addBlock(gridState.grid.id, position, sanitizedBlock);
     }
   }, [addBlock, gridState]);
 
@@ -90,7 +97,7 @@ export const useEnhancedGridOperations = ({
       if (fromBlock) {
         gridState.addBlock(gridState.grid.id, toPosition, {
           id: fromBlock.id,
-          type: fromBlock.type,
+          type: sanitizeBlockType(fromBlock.type),
           content: fromBlock.content,
           visible: fromBlock.visible,
           sort_index: fromBlock.sort_index
@@ -100,7 +107,7 @@ export const useEnhancedGridOperations = ({
       if (toBlock) {
         gridState.addBlock(gridState.grid.id, fromPosition, {
           id: toBlock.id,
-          type: toBlock.type,
+          type: sanitizeBlockType(toBlock.type),
           content: toBlock.content,
           visible: toBlock.visible,
           sort_index: toBlock.sort_index

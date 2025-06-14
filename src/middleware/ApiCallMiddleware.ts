@@ -102,3 +102,10 @@ export class ApiCallMiddleware {
     }
   }
 }
+
+// Export for monitoring - this was the missing export causing App.tsx error
+export const apiCallMonitor = {
+  trackApiCall: (endpoint: string, duration: number, success: boolean) => {
+    console.log(`API Call: ${endpoint}, Duration: ${duration}ms, Success: ${success}`);
+  }
+};

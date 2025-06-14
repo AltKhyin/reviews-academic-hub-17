@@ -79,16 +79,30 @@ export const useOptimizedArchiveSearch = ({
           };
         }
 
-        // Get metadata separately for better performance
+        // Get metadata separately for better performance - with proper typing
         const { data: metadataResult } = await supabase.rpc('get_archive_metadata');
+        
+        // Safe metadata parsing with type guards
+        const parseMetadata = (data: any) => {
+          if (!data || typeof data !== 'object') {
+            return { total_published: 0, specialties: [], years: [] };
+          }
+          return {
+            total_published: Number(data.total_published) || 0,
+            specialties: Array.isArray(data.specialties) ? data.specialties : [],
+            years: Array.isArray(data.years) ? data.years : [],
+          };
+        };
+
+        const parsedMetadata = parseMetadata(metadataResult);
         
         return {
           issues: issues || [],
           metadata: {
-            totalCount: metadataResult?.total_published || 0,
+            totalCount: parsedMetadata.total_published,
             filteredCount: issues?.length || 0,
-            specialties: metadataResult?.specialties || [],
-            years: metadataResult?.years || [],
+            specialties: parsedMetadata.specialties,
+            years: parsedMetadata.years,
           },
         };
       } catch (error) {
