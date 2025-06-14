@@ -1683,6 +1683,16 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      get_community_posts_with_details: {
+        Args: {
+          p_user_id: string
+          p_active_tab: string
+          p_search_term: string
+          p_limit?: number
+          p_offset?: number
+        }
+        Returns: Json[]
+      }
       get_current_user_id: {
         Args: Record<PropertyKey, never>
         Returns: string

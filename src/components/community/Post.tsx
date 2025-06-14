@@ -27,7 +27,7 @@ import { CommentSection } from '@/components/comments/CommentSection';
 
 interface PostProps {
   post: PostData;
-  onVoteChange: () => void;
+  onVoteChange: () => void; // This will trigger a refetch of the RPC data
 }
 
 export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
@@ -38,22 +38,9 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
   const [showHideDialog, setShowHideDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showComments, setShowComments] = useState(false);
+  
+  // COMMENT COUNT: Not yet in RPC, keeping existing fetch.
   const [commentCount, setCommentCount] = useState(0);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isBookmarked, setIsBookmarked] = useState(false);
-  const [isBookmarking, setIsBookmarking] = useState(false);
-  const [isHidden, setIsHidden] = useState(false);
-
-  const pinPost = usePinPost();
-  const unpinPost = useUnpinPost();
-
-  const formatPostDate = (dateString: string) => {
-    return formatDistanceToNow(new Date(dateString), { 
-      addSuffix: true, 
-      locale: ptBR 
-    });
-  };
-
   useEffect(() => {
     if (!post.id) return;
     
@@ -71,8 +58,13 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
     fetchCommentCount();
   }, [post.id]);
 
+  // IS ADMIN: User-specific, not post-specific from RPC. Keeping existing fetch.
+  const [isAdmin, setIsAdmin] = useState(false);
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setIsAdmin(false);
+      return;
+    }
     
     const checkAdminStatus = async () => {
       const { data } = await supabase
@@ -85,7 +77,17 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
     };
     
     checkAdminStatus();
+  }, [user]);
 
+  // IS BOOKMARKED: User-specific per post, not yet in RPC. Keeping existing fetch.
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isBookmarking, setIsBookmarking] = useState(false);
+  useEffect(() => {
+    if (!user || !post.id) {
+      setIsBookmarked(false);
+      return;
+    }
+    
     const checkBookmarkStatus = async () => {
       const { data } = await supabase
         .from('post_bookmarks')
@@ -99,6 +101,18 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
     
     checkBookmarkStatus();
   }, [user, post.id]);
+
+  const [isHidden, setIsHidden] = useState(false);
+
+  const pinPost = usePinPost(); // These hooks manage their own state and API calls
+  const unpinPost = useUnpinPost();
+
+  const formatPostDate = (dateString: string) => {
+    return formatDistanceToNow(new Date(dateString), { 
+      addSuffix: true, 
+      locale: ptBR 
+    });
+  };
 
   const handleDelete = async () => {
     if (!user) return;
@@ -118,7 +132,7 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
         description: "A publicação foi excluída com sucesso.",
       });
       
-      onVoteChange();
+      onVoteChange(); // Trigger refetch of posts list
     } catch (error) {
       console.error('Error deleting post:', error);
       toast({
@@ -204,9 +218,10 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
 
   const handlePinToggle = async () => {
     if (post.pinned) {
-      unpinPost.mutate(post.id);
+      // onVoteChange will be called by the mutation's onSuccess if needed by usePinPost/useUnpinPost
+      unpinPost.mutate(post.id, { onSuccess: onVoteChange }); 
     } else {
-      pinPost.mutate({ postId: post.id, pinDurationDays: 7 });
+      pinPost.mutate({ postId: post.id, pinDurationDays: post.pin_duration_days || 7 }, { onSuccess: onVoteChange });
     }
   };
 
@@ -215,9 +230,12 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
   };
 
   const handlePollVoteChange = () => {
-    console.log("Poll vote changed, refreshing post data");
-    onVoteChange();
+    console.log("Poll vote changed, refreshing post data via onVoteChange");
+    onVoteChange(); // This now triggers a refetch of the RPC in useCommunityPosts
   };
+
+  // Data for post.profiles and post.post_flairs now comes directly from the `post` prop (from RPC)
+  // post.userVote also comes from the `post` prop
 
   const isIssueDiscussion = post.post_flairs?.name === 'Discussão de Edição';
 
@@ -236,6 +254,9 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
       )}
 
       <div className="flex items-start space-x-4">
+        {/* Voting component uses initialUserVote from post prop */}
+        {/* <PostVoting postId={post.id} initialScore={post.score || 0} initialUserVote={post.userVote || 0} onVoteChange={onVoteChange} /> */}
+        
         <div className="flex-1 min-w-0">
           {/* Header with user info and top-right actions */}
           <div className="flex items-center justify-between mb-2">
@@ -255,7 +276,7 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
 
             {/* Top-right action cluster */}
             <div className="flex items-center space-x-1">
-              {/* Bookmark button */}
+              {/* Bookmark button - uses local isBookmarked state */}
               <Button
                 variant="ghost"
                 size="sm"
@@ -289,7 +310,7 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
                 <EyeOff className="h-5 w-5" />
               </Button>
 
-              {/* Admin pin button */}
+              {/* Admin pin button - uses local isAdmin state */}
               {isAdmin && (
                 <Button
                   variant="ghost"
@@ -303,7 +324,7 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
                 </Button>
               )}
 
-              {/* Delete button for post author or admin */}
+              {/* Delete button for post author or admin - uses local isAdmin state */}
               {user && (user.id === post.user_id || isAdmin) && (
                 <Button 
                   variant="ghost" 
@@ -321,7 +342,7 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
           {/* Title */}
           <h3 className="text-lg font-medium leading-tight mb-2">{post.title}</h3>
           
-          {/* Flair */}
+          {/* Flair - uses post.post_flairs from RPC */}
           {post.post_flairs && (
             <Badge 
               style={{ backgroundColor: post.post_flairs.color }}
@@ -331,7 +352,7 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
             </Badge>
           )}
           
-          {/* Content */}
+          {/* Content - post.poll from RPC is passed to PostContent */}
           <PostContent post={post} onVoteChange={handlePollVoteChange} />
 
           {/* Issue Discussion Banner */}
@@ -345,11 +366,11 @@ export const Post: React.FC<PostProps> = ({ post, onVoteChange }) => {
             <PostVotingIntegrated
               postId={post.id}
               initialScore={post.score || 0}
-              initialUserVote={post.userVote || 0}
-              onVoteChange={onVoteChange}
+              initialUserVote={post.userVote || 0} // userVote now comes from RPC via post prop
+              onVoteChange={onVoteChange} // Triggers RPC refetch
             />
 
-            {/* Comments button */}
+            {/* Comments button - uses local commentCount state */}
             <Button 
               variant="ghost" 
               size="sm" 

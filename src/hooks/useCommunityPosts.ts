@@ -1,21 +1,47 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { CommunitySettings } from '@/types/community';
-import { usePosts } from '@/hooks/community/usePosts';
-import { enhancePostsWithDetails } from '@/hooks/community/usePostEnhancement';
+import { PostData, CommunitySettings } from '@/types/community';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function useCommunityPosts(activeTab: string, searchTerm: string) {
-  const { data: posts, ...queryProps } = usePosts(activeTab, searchTerm);
-  
-  return useQuery({
-    queryKey: ['enhanced-posts', posts],
+  const { user } = useAuth();
+  const trimmedSearchTerm = searchTerm.trim();
+
+  const queryKey = ['community-posts-detailed', activeTab, trimmedSearchTerm, user?.id];
+
+  return useQuery<PostData[], Error>({
+    queryKey,
     queryFn: async () => {
-      if (!posts) return [];
-      return enhancePostsWithDetails(posts);
+      console.log(`Fetching community posts via RPC for tab: ${activeTab}, search: "${trimmedSearchTerm}", user: ${user?.id}`);
+
+      if (activeTab !== 'my') {
+        await supabase.rpc('unpin_expired_posts');
+      }
+
+      const { data, error } = await supabase.rpc('get_community_posts_with_details', {
+        p_user_id: user?.id || null,
+        p_active_tab: activeTab,
+        p_search_term: trimmedSearchTerm,
+        p_limit: 20,
+        p_offset: 0
+      });
+
+      if (error) {
+        console.error('Error fetching community posts via RPC:', error);
+        throw error;
+      }
+
+      console.log(`Fetched ${data?.length || 0} posts via RPC.`);
+      return (data as PostData[] | null) || [];
     },
-    enabled: !!posts,
-    ...queryProps
+    enabled: true,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
+    retry: (failureCount, error) => {
+      console.log('Community posts RPC query retry:', failureCount, error);
+      return failureCount < 2;
+    }
   });
 }
 
