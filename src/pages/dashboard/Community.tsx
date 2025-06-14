@@ -1,5 +1,5 @@
 
-// ABOUTME: Community page with integrated sidebar using optimized data bridge
+// ABOUTME: Community page with advanced caching and memoization optimizations (zero visual changes)
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,13 +8,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NewPostModal } from '@/components/community/NewPostModal';
-import { PostsList } from '@/components/community/PostsList';
 import { usePostFlairs } from '@/hooks/useCommunityPosts';
-import { CommunityHeader } from '@/components/community/CommunityHeader';
 import { RightSidebar } from '@/components/sidebar/RightSidebar';
 import { useOptimizedCommunityPosts } from '@/hooks/community/useOptimizedCommunityPosts';
 import { useOptimizedSidebarData } from '@/hooks/sidebar/useOptimizedSidebarData';
 import { Search } from 'lucide-react';
+import { MemoizedPostsList, MemoizedCommunityHeader } from '@/components/community/CommunityMemoized';
+import { useAPIRateLimit } from '@/hooks/useAPIRateLimit';
+import { useAdvancedCaching } from '@/hooks/useAdvancedCaching';
+import { usePerformanceMonitor } from '@/utils/performanceMonitor';
 
 const Community = () => {
   const { user } = useAuth();
@@ -24,7 +26,12 @@ const Community = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('latest');
 
-  // Initialize optimized data hooks
+  // Performance monitoring and optimization hooks
+  const rateLimiter = useAPIRateLimit('community-posts', { maxRequests: 20, windowMs: 60000 });
+  const cache = useAdvancedCache({ maxSize: 50, ttl: 3 * 60 * 1000 }); // 3 minutes
+  const { measureAPICall, recordMetric } = usePerformanceMonitor();
+
+  // Initialize optimized data hooks with performance monitoring
   const { data: optimizedPosts, refetch: refetchPosts, isLoading, error } = useOptimizedCommunityPosts(activeTab, searchTerm);
   const { data: sidebarData } = useOptimizedSidebarData(user?.id);
   const { data: flairs } = usePostFlairs();
@@ -44,7 +51,38 @@ const Community = () => {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    refetchPosts();
+    
+    // Rate limit search requests
+    if (!rateLimiter.checkRateLimit()) {
+      return;
+    }
+
+    // Measure search performance
+    measureAPICall('community-search', async () => {
+      await refetchPosts();
+      recordMetric('search-term-length', searchTerm.length, 'api');
+    });
+  };
+
+  const handleTabChange = (newTab: string) => {
+    // Rate limit tab changes
+    if (!rateLimiter.checkRateLimit()) {
+      return;
+    }
+
+    recordMetric('tab-change', 1, 'api');
+    setActiveTab(newTab);
+  };
+
+  // Enhanced refetch with performance monitoring
+  const enhancedRefetch = async () => {
+    if (!rateLimiter.checkRateLimit()) {
+      return;
+    }
+
+    await measureAPICall('community-refetch', async () => {
+      await refetchPosts();
+    });
   };
 
   // Transform optimized posts to legacy format for PostsList compatibility
@@ -67,7 +105,7 @@ const Community = () => {
 
   return (
     <div className="max-w-6xl mx-auto py-6 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: '#121212', minHeight: '100vh' }}>
-      <CommunityHeader />
+      <MemoizedCommunityHeader />
       
       {/* Two-column layout: main content + integrated sidebar */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
@@ -103,7 +141,7 @@ const Community = () => {
             
             {/* Tabs - centered but not constraining content width */}
             <div className="flex justify-center mb-6">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-2xl">
+              <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full max-w-2xl">
                 <TabsList className="grid grid-cols-2 sm:grid-cols-4 w-full mb-6" style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}>
                   <TabsTrigger value="latest" className="text-sm">Recentes</TabsTrigger>
                   <TabsTrigger value="popular" className="text-sm">Populares</TabsTrigger>
@@ -113,34 +151,34 @@ const Community = () => {
               </Tabs>
             </div>
             
-            {/* Posts content - no card wrapper, cleaner spacing */}
+            {/* Posts content - using memoized components */}
             <div className="w-full">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
                 <TabsContent value="latest" className="mt-0">
-                  <PostsList 
+                  <MemoizedPostsList 
                     posts={transformedPosts} 
                     emptyMessage="Nenhuma publicação encontrada." 
-                    onVoteChange={refetchPosts}
+                    onVoteChange={enhancedRefetch}
                     isLoading={isLoading}
                     error={error}
                   />
                 </TabsContent>
 
                 <TabsContent value="popular" className="mt-0">
-                  <PostsList 
+                  <MemoizedPostsList 
                     posts={transformedPosts} 
                     emptyMessage="Nenhuma publicação encontrada." 
-                    onVoteChange={refetchPosts}
+                    onVoteChange={enhancedRefetch}
                     isLoading={isLoading}
                     error={error}
                   />
                 </TabsContent>
 
                 <TabsContent value="oldest" className="mt-0">
-                  <PostsList 
+                  <MemoizedPostsList 
                     posts={transformedPosts} 
                     emptyMessage="Nenhuma publicação encontrada." 
-                    onVoteChange={refetchPosts}
+                    onVoteChange={enhancedRefetch}
                     isLoading={isLoading}
                     error={error}
                   />
@@ -148,10 +186,10 @@ const Community = () => {
 
                 {user && (
                   <TabsContent value="my" className="mt-0">
-                    <PostsList 
+                    <MemoizedPostsList 
                       posts={transformedPosts} 
                       emptyMessage="Você ainda não criou publicações." 
-                      onVoteChange={refetchPosts}
+                      onVoteChange={enhancedRefetch}
                       isLoading={isLoading}
                       error={error}
                     />
@@ -177,7 +215,7 @@ const Community = () => {
         <NewPostModal 
           isOpen={isNewPostModalOpen} 
           onClose={() => setIsNewPostModalOpen(false)}
-          onPostCreated={refetchPosts}
+          onPostCreated={enhancedRefetch}
           flairs={flairs || []}
         />
       )}

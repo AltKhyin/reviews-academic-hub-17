@@ -1,149 +1,113 @@
 
-// ABOUTME: Enhanced API rate limiting with cascade detection and automatic protection
-import { useState, useRef, useCallback } from 'react';
-import { toast } from '@/hooks/use-toast';
+// ABOUTME: API rate limiting hook with intelligent queuing and user-friendly feedback
+import { useState, useCallback, useRef } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 interface RateLimitConfig {
-  endpoint: string;
-  maxRequests: number;
-  windowMs: number;
-  cascadeThreshold?: number;
+  maxRequests?: number;
+  windowMs?: number;
+  showToast?: boolean;
 }
 
-interface RequestLog {
-  timestamp: number;
-  endpoint: string;
-  requestId: string;
+interface RateLimitState {
+  requests: number[];
+  isBlocked: boolean;
+  nextAllowedTime: number;
 }
 
-// Global rate limiting state to prevent cascade across components
-const globalRequestLog = new Map<string, RequestLog[]>();
-const cascadeDetection = new Map<string, number>();
+const DEFAULT_CONFIG: Required<RateLimitConfig> = {
+  maxRequests: 10,
+  windowMs: 60000, // 1 minute
+  showToast: true,
+};
 
-export const useAPIRateLimit = () => {
+// Global rate limit storage per endpoint
+const rateLimitStorage = new Map<string, RateLimitState>();
+
+export const useAPIRateLimit = (endpoint: string, config?: RateLimitConfig) => {
+  const { toast } = useToast();
+  const finalConfig = { ...DEFAULT_CONFIG, ...config };
   const [isRateLimited, setIsRateLimited] = useState(false);
-  const lastToastRef = useRef<number>(0);
+  const timeoutRef = useRef<NodeJS.Timeout>();
 
-  const checkRateLimit = useCallback((config: RateLimitConfig): boolean => {
-    const { endpoint, maxRequests, windowMs, cascadeThreshold = 5 } = config;
+  const checkRateLimit = useCallback((): boolean => {
     const now = Date.now();
-    const windowStart = now - windowMs;
-    
-    // Get or create request log for this endpoint
-    if (!globalRequestLog.has(endpoint)) {
-      globalRequestLog.set(endpoint, []);
-    }
-    
-    const requestLog = globalRequestLog.get(endpoint)!;
-    
-    // Clean up old requests outside the window
-    const recentRequests = requestLog.filter(req => req.timestamp > windowStart);
-    globalRequestLog.set(endpoint, recentRequests);
-    
-    // Enhanced cascade detection - check for rapid successive requests
-    const rapidRequests = recentRequests.filter(req => req.timestamp > now - 10000); // Last 10 seconds
-    
-    if (rapidRequests.length >= cascadeThreshold) {
-      const cascadeCount = cascadeDetection.get(endpoint) || 0;
-      cascadeDetection.set(endpoint, cascadeCount + 1);
-      
-      console.warn(`🚨 API Cascade detected for ${endpoint}: ${rapidRequests.length} requests in 10s`);
-      
-      // Show cascade warning toast (max once per 30 seconds)
-      if (now - lastToastRef.current > 30000) {
-        toast({
-          title: "Sistema de proteção ativo",
-          description: `Detectado excesso de requisições para ${endpoint}. Limitando automaticamente.`,
-          variant: "destructive",
-        });
-        lastToastRef.current = now;
-      }
-      
-      setIsRateLimited(true);
-      
-      // Auto-recovery after cascade cooldown
-      setTimeout(() => {
-        setIsRateLimited(false);
-        cascadeDetection.delete(endpoint);
-      }, 15000); // 15 second cooldown
-      
-      return false;
-    }
-    
-    // Standard rate limiting check
-    if (recentRequests.length >= maxRequests) {
-      console.warn(`Rate limit exceeded for ${endpoint}: ${recentRequests.length}/${maxRequests} requests`);
-      
-      // Show rate limit toast (max once per 30 seconds)
-      if (now - lastToastRef.current > 30000) {
+    const state = rateLimitStorage.get(endpoint) || {
+      requests: [],
+      isBlocked: false,
+      nextAllowedTime: 0,
+    };
+
+    // Clean old requests outside the window
+    state.requests = state.requests.filter(
+      timestamp => now - timestamp < finalConfig.windowMs
+    );
+
+    // Check if we're still blocked
+    if (state.isBlocked && now < state.nextAllowedTime) {
+      if (finalConfig.showToast) {
+        const waitTime = Math.ceil((state.nextAllowedTime - now) / 1000);
         toast({
           title: "Limite de requisições atingido",
-          description: `Por favor aguarde antes de fazer nova requisição para ${endpoint}.`,
+          description: `Aguarde ${waitTime}s antes de tentar novamente.`,
           variant: "destructive",
         });
-        lastToastRef.current = now;
       }
-      
-      setIsRateLimited(true);
-      
-      // Auto-recovery after rate limit window
-      setTimeout(() => setIsRateLimited(false), windowMs / 2);
-      
       return false;
     }
-    
+
+    // Check if we exceed the limit
+    if (state.requests.length >= finalConfig.maxRequests) {
+      state.isBlocked = true;
+      state.nextAllowedTime = now + finalConfig.windowMs;
+      
+      if (finalConfig.showToast) {
+        toast({
+          title: "Muitas requisições",
+          description: "Aguarde um momento antes de continuar.",
+          variant: "destructive",
+        });
+      }
+
+      setIsRateLimited(true);
+      
+      // Clear rate limit after window
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => {
+        setIsRateLimited(false);
+        const currentState = rateLimitStorage.get(endpoint);
+        if (currentState) {
+          currentState.isBlocked = false;
+          currentState.nextAllowedTime = 0;
+        }
+      }, finalConfig.windowMs);
+
+      rateLimitStorage.set(endpoint, state);
+      return false;
+    }
+
+    // Add current request
+    state.requests.push(now);
+    state.isBlocked = false;
+    rateLimitStorage.set(endpoint, state);
     return true;
-  }, []);
+  }, [endpoint, finalConfig, toast]);
 
-  const logRequest = useCallback((endpoint: string, requestId?: string) => {
+  const getRemainingRequests = useCallback((): number => {
+    const state = rateLimitStorage.get(endpoint);
+    if (!state) return finalConfig.maxRequests;
+    
     const now = Date.now();
-    const id = requestId || `req_${now}_${Math.random().toString(36).substr(2, 9)}`;
+    const validRequests = state.requests.filter(
+      timestamp => now - timestamp < finalConfig.windowMs
+    );
     
-    if (!globalRequestLog.has(endpoint)) {
-      globalRequestLog.set(endpoint, []);
-    }
-    
-    const requestLog = globalRequestLog.get(endpoint)!;
-    requestLog.push({
-      timestamp: now,
-      endpoint,
-      requestId: id
-    });
-    
-    console.log(`📡 API Request logged: ${endpoint} (${id})`);
-  }, []);
-
-  const getRateLimitStatus = useCallback((endpoint: string) => {
-    const requestLog = globalRequestLog.get(endpoint) || [];
-    const cascadeCount = cascadeDetection.get(endpoint) || 0;
-    const now = Date.now();
-    const recentRequests = requestLog.filter(req => req.timestamp > now - 60000); // Last minute
-    
-    return {
-      requestCount: recentRequests.length,
-      cascadeCount,
-      isLimited: isRateLimited,
-      lastRequest: recentRequests[recentRequests.length - 1]?.timestamp || 0
-    };
-  }, [isRateLimited]);
-
-  const clearRateLimit = useCallback((endpoint?: string) => {
-    if (endpoint) {
-      globalRequestLog.delete(endpoint);
-      cascadeDetection.delete(endpoint);
-    } else {
-      globalRequestLog.clear();
-      cascadeDetection.clear();
-    }
-    setIsRateLimited(false);
-    console.log(`🧹 Rate limit cleared${endpoint ? ` for ${endpoint}` : ' globally'}`);
-  }, []);
+    return Math.max(0, finalConfig.maxRequests - validRequests.length);
+  }, [endpoint, finalConfig]);
 
   return {
     checkRateLimit,
-    logRequest,
-    getRateLimitStatus,
-    clearRateLimit,
-    isRateLimited
+    getRemainingRequests,
+    isRateLimited,
   };
 };
