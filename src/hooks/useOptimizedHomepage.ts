@@ -26,7 +26,7 @@ interface ReviewerComment {
 }
 
 // Define a concrete type for section visibility to prevent deep type instantiation errors.
-type SectionConfig = Record<string, any>;
+type SectionConfig = Record<string, unknown>;
 
 interface HomepageData {
   issues: HomepageIssue[];

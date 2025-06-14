@@ -5,9 +5,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Comment, EntityType } from '@/types/commentTypes';
 import { toast } from '@/hooks/use-toast';
 
-// Swapped arguments to fix TS2345. The error indicates a string is passed where
-// an EntityType is expected, which points to an argument order mismatch.
-export const useOptimizedCommentVoting = (entityId: string, entityType: EntityType) => {
+// Swapped arguments for consistency with other hooks (entityType, entityId).
+export const useOptimizedCommentVoting = (entityType: EntityType, entityId: string) => {
   const [isVoting, setIsVoting] = useState(false);
   const queryClient = useQueryClient();
 
