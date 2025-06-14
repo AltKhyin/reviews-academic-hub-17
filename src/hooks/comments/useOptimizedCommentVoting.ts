@@ -1,4 +1,3 @@
-
 // ABOUTME: Optimized comment voting with local state management and minimal refetches
 import { useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -12,7 +11,7 @@ export const useOptimizedCommentVoting = (entityId: string, entityType: EntityTy
   const [isVoting, setIsVoting] = useState(false);
   const queryClient = useQueryClient();
 
-  const voteComment = useCallback(async (commentId: string, value: 1 | -1) => {
+  const voteComment = useCallback(async (commentId: string, value: 1 | -1 | 0) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       toast({
@@ -36,12 +35,13 @@ export const useOptimizedCommentVoting = (entityId: string, entityType: EntityTy
         const updateCommentVote = (comment: Comment) => {
           if (comment.id === commentId) {
             const currentVote = comment.userVote || 0;
-            const newVote = currentVote === value ? 0 : value;
+            // Use set-state logic instead of toggle
+            const newVote = value; 
             const scoreDiff = newVote - currentVote;
             
             return {
               ...comment,
-              userVote: newVote as 1 | -1 | 0,
+              userVote: newVote,
               score: comment.score + scoreDiff
             };
           }
@@ -78,8 +78,8 @@ export const useOptimizedCommentVoting = (entityId: string, entityType: EntityTy
         .maybeSingle();
 
       if (existingVote) {
-        if (existingVote.value === value) {
-          // Remove vote
+        if (value === 0) {
+          // Remove vote if value is 0
           const { error } = await supabase
             .from('comment_votes')
             .delete()
@@ -87,8 +87,8 @@ export const useOptimizedCommentVoting = (entityId: string, entityType: EntityTy
             .eq('user_id', user.id);
           
           if (error) throw error;
-        } else {
-          // Update vote
+        } else if (existingVote.value !== value) {
+          // Update vote if value has changed
           const { error } = await supabase
             .from('comment_votes')
             .update({ value })
@@ -97,8 +97,9 @@ export const useOptimizedCommentVoting = (entityId: string, entityType: EntityTy
           
           if (error) throw error;
         }
-      } else {
-        // Create new vote
+        // If vote is the same, do nothing
+      } else if (value !== 0) {
+        // Create new vote if one doesn't exist and value is not 0
         const { error } = await supabase
           .from('comment_votes')
           .insert([{

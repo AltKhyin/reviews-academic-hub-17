@@ -1,43 +1,22 @@
 
-import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
-import { Comment, EntityType } from '@/types/commentTypes';
-import { useCommentActions } from './useCommentActions';
-import { useCommentVoting } from './useCommentVoting';
-import { useCommentFetch } from './useCommentFetch';
+import { EntityType } from '@/types/commentTypes';
+import { useOptimizedComments } from './useOptimizedComments';
 
 export const useComments = (entityId: string, entityType: 'article' | 'issue' | 'post' = 'issue') => {
-  // Use the dedicated hooks for fetching comments
-  const { comments, loading: isLoading, error, fetchComments } = useCommentFetch(entityId, entityType);
-  
-  // Use the dedicated hooks for comment actions
-  const { 
-    addComment, 
-    replyToComment, 
-    deleteComment,
-    isAddingComment, 
-    isDeletingComment,
-    isReplying
-  } = useCommentActions(entityId, entityType, fetchComments);
-  
-  // Use the dedicated hook for voting
-  const { voteComment, isVoting } = useCommentVoting(fetchComments);
+  // Replace the old implementation with the new optimized hook
+  const optimized = useOptimizedComments(entityType, entityId);
+
+  // Adapt the voteComment signature for backward compatibility.
+  // The old signature was an object: voteComment({ commentId, value })
+  // The new signature uses direct arguments: voteComment(commentId, value)
+  const voteCommentAdapter = async ({ commentId, value }: { commentId: string; value: 1 | -1 | 0 }) => {
+    return optimized.voteComment(commentId, value);
+  };
   
   return {
-    comments,
-    isLoading,
-    error,
-    refetch: fetchComments,
-    // Comment action methods
-    addComment,
-    replyToComment,
-    deleteComment,
-    // Voting method
-    voteComment,
-    // Loading states
-    isAddingComment,
-    isDeletingComment,
-    isReplying,
-    isVoting
+    // Spread all properties from the optimized hook
+    ...optimized,
+    // Override voteComment with the backward-compatible adapter
+    voteComment: voteCommentAdapter,
   };
 };
