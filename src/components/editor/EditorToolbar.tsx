@@ -15,7 +15,7 @@ import {
 
 export interface EditorToolbarProps {
   onTogglePreview: () => void;
-  onToggleFullscreen: () => void;
+  onToggleFullscreen?: () => void;
   onToggleSidebar: () => void;
   showPreview: boolean;
   isFullscreen: boolean;
@@ -90,15 +90,17 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = ({
         )}
 
         {/* Fullscreen toggle */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onToggleFullscreen}
-          className="flex items-center space-x-1"
-        >
-          {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
-          <span>{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>
-        </Button>
+        {onToggleFullscreen && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onToggleFullscreen}
+            className="flex items-center space-x-1"
+          >
+            {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+            <span>{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</span>
+          </Button>
+        )}
       </div>
     </div>
   );

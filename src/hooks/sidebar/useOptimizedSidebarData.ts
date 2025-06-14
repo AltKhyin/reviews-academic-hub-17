@@ -41,79 +41,107 @@ export const useOptimizedSidebarData = (userId?: string) => {
     queryKey: ['sidebar-data-optimized', effectiveUserId],
     queryFn: async (): Promise<OptimizedSidebarData> => {
       try {
-        // Get community stats from the sidebar stats function
-        const { data: statsData, error: statsError } = await supabase.rpc('get_sidebar_stats');
-        
-        if (statsError) {
-          console.error('Stats query error:', statsError);
-        }
-
-        // Get user bookmarks if user is authenticated - Fix the relationship issue
-        let bookmarks: any[] = [];
-        if (effectiveUserId) {
-          // Separate queries to avoid relationship issues
-          const [issueBookmarks, postBookmarks] = await Promise.all([
-            supabase
-              .from('user_bookmarks')
-              .select(`
-                id, created_at,
-                issues:issue_id(id, title)
-              `)
-              .eq('user_id', effectiveUserId)
-              .not('issue_id', 'is', null)
-              .limit(5),
-            supabase
-              .from('user_bookmarks')
-              .select(`
-                id, created_at,
-                posts:post_id(id, title)
-              `)
-              .eq('user_id', effectiveUserId)
-              .not('post_id', 'is', null)
-              .limit(5)
-          ]);
-
-          // Process issue bookmarks
-          if (issueBookmarks.data) {
-            bookmarks = bookmarks.concat(
-              issueBookmarks.data
-                .filter(bookmark => bookmark.issues)
-                .map(bookmark => ({
-                  id: bookmark.issues.id,
-                  title: bookmark.issues.title,
-                  type: 'issue' as const,
-                  created_at: bookmark.created_at
-                }))
-            );
-          }
-
-          // Process post bookmarks - but we need to handle the relationship differently
-          if (postBookmarks.data) {
-            for (const bookmark of postBookmarks.data) {
-              if (bookmark.posts) {
-                bookmarks.push({
-                  id: bookmark.posts.id,
-                  title: bookmark.posts.title,
-                  type: 'post' as const,
-                  created_at: bookmark.created_at
-                });
-              }
-            }
-          }
-        }
-
-        // Parse stats data safely with proper type checking
-        const stats = statsData && typeof statsData === 'object' ? {
-          totalPublishedIssues: Number(statsData.totalIssues) || 0,
-          totalActiveUsers: Number(statsData.totalUsers) || 0,
-          totalCommunityPosts: Number(statsData.totalPosts) || 0,
-          featuredIssueId: '', // Will be populated separately if needed
-        } : {
+        // Get community stats with proper error handling
+        let stats = {
           totalPublishedIssues: 0,
           totalActiveUsers: 0,
           totalCommunityPosts: 0,
           featuredIssueId: '',
         };
+
+        try {
+          const { data: statsData, error: statsError } = await supabase.rpc('get_sidebar_stats');
+          
+          if (!statsError && statsData && typeof statsData === 'object') {
+            const rawStats = statsData as any;
+            stats = {
+              totalPublishedIssues: Number(rawStats.totalIssues) || 0,
+              totalActiveUsers: Number(rawStats.totalUsers) || 0,
+              totalCommunityPosts: Number(rawStats.totalPosts) || 0,
+              featuredIssueId: rawStats.featuredIssueId || '',
+            };
+          }
+        } catch (error) {
+          console.warn('Stats query failed, using defaults:', error);
+        }
+
+        // Get user bookmarks with separate queries to avoid JOIN issues
+        let bookmarks: any[] = [];
+        if (effectiveUserId) {
+          try {
+            // Get issue bookmarks
+            const { data: issueBookmarks } = await supabase
+              .from('user_bookmarks')
+              .select('id, created_at, issue_id')
+              .eq('user_id', effectiveUserId)
+              .not('issue_id', 'is', null)
+              .limit(3);
+
+            if (iss'ueBookmarks) {
+              const issueIds = issueBookmarks.map(b => b.issue_id).filter(Boolean);
+              if (issueIds.length > 0) {
+                const { data: issues } = await supabase
+                  .from('issues')
+                  .select('id, title')
+                  .in('id', issueIds);
+
+                if (issues) {
+                  bookmarks = bookmarks.concat(
+                    issueBookmarks.map(bookmark => {
+                      const issue = issues.find(i => i.id === bookmark.issue_id);
+                      return issue ? {
+                        id: issue.id,
+                        title: issue.title,
+                        type: 'issue' as const,
+                        created_at: bookmark.created_at
+                      } : null;
+                    }).filter(Boolean)
+                  );
+                }
+              }
+            }
+
+            // Get post bookmarks (if posts table exists)
+            try {
+              const { data: postBookmarks } = await supabase
+                .from('user_bookmarks')
+                .select('id, created_at, post_id')
+                .eq('user_id', effectiveUserId)
+                .not('post_id', 'is', null)
+                .limit(2);
+
+              if (postBookmarks) {
+                const postIds = postBookmarks.map(b => b.post_id).filter(Boolean);
+                if (postIds.length > 0) {
+                  const { data: posts } = await supabase
+                    .from('posts')
+                    .select('id, title')
+                    .in('id', postIds);
+
+                  if (posts) {
+                    bookmarks = bookmarks.concat(
+                      postBookmarks.map(bookmark => {
+                        const post = posts.find(p => p.id === bookmark.post_id);
+                        return post ? {
+                          id: post.id,
+                          title: post.title,
+                          type: 'post' as const,
+                          created_at: bookmark.created_at
+                        } : null;
+                      }).filter(Boolean)
+                    );
+                  }
+                }
+              }
+            } catch (postError) {
+              // Posts table might not exist, continue without post bookmarks
+              console.debug('Posts bookmarks not available:', postError);
+            }
+
+          } catch (bookmarkError) {
+            console.warn('Bookmark query failed:', bookmarkError);
+          }
+        }
 
         return {
           stats,

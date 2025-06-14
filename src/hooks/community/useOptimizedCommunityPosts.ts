@@ -51,122 +51,179 @@ export const useOptimizedCommunityPosts = (
   return useQuery({
     queryKey: ['community-posts-optimized', tab, searchTerm, limit, user?.id],
     queryFn: async (): Promise<OptimizedPostsResult> => {
-      // Single consolidated query for all post data with corrected relationship names
-      let query = supabase
-        .from('posts')
-        .select(`
-          *,
-          profiles:user_id(full_name, avatar_url),
-          post_flairs(name, color),
-          post_votes!left(value),
-          post_bookmarks!left(created_at)
-        `)
-        .eq('published', true);
+      try {
+        // Get posts with basic data only
+        let query = supabase
+          .from('posts')
+          .select('*')
+          .eq('published', true);
 
-      // Apply tab-based filtering
-      switch (tab) {
-        case 'popular':
-          query = query.order('score', { ascending: false });
-          break;
-        case 'oldest':
-          query = query.order('created_at', { ascending: true });
-          break;
-        case 'my':
-          if (user?.id) {
-            query = query.eq('user_id', user.id);
-          }
-          break;
-        default: // latest
-          query = query.order('created_at', { ascending: false });
-      }
+        // Apply tab-based filtering
+        switch (tab) {
+          case 'popular':
+            query = query.order('score', { ascending: false });
+            break;
+          case 'oldest':
+            query = query.order('created_at', { ascending: true });
+            break;
+          case 'my':
+            if (user?.id) {
+              query = query.eq('user_id', user.id);
+            }
+            break;
+          default: // latest
+            query = query.order('created_at', { ascending: false });
+        }
 
-      // Apply search filtering
-      if (searchTerm) {
-        query = query.or(`title.ilike.%${searchTerm}%,content.ilike.%${searchTerm}%`);
-      }
+        // Apply search filtering
+        if (searchTerm) {
+          query = query.or(`title.ilike.%${searchTerm}%,content.ilike.%${searchTerm}%`);
+        }
 
-      // Apply pagination
-      query = query.range(0, limit - 1);
+        // Apply pagination
+        query = query.range(0, limit - 1);
 
-      const { data: rawPosts, error, count } = await query;
+        const { data: rawPosts, error, count } = await query;
 
-      if (error) {
-        console.error('Posts query error:', error);
-        throw error;
-      }
+        if (error) {
+          console.error('Posts query error:', error);
+          throw error;
+        }
 
-      // Get comment counts separately to avoid complex joins
-      const postIds = rawPosts?.map(p => p.id) || [];
-      let commentCounts: Record<string, number> = {};
-      
-      if (postIds.length > 0) {
-        const { data: comments } = await supabase
+        if (!rawPosts) {
+          return {
+            posts: [],
+            totalCount: 0,
+            hasMore: false,
+            userInteractions: {
+              bookmarkedPosts: new Set(),
+              votedPosts: new Map(),
+              adminPermissions: false,
+            },
+          };
+        }
+
+        // Get related data in separate queries
+        const postIds = rawPosts.map(p => p.id);
+        const userIds = [...new Set(rawPosts.map(p => p.user_id))];
+        const flairIds = [...new Set(rawPosts.map(p => p.flair_id).filter(Boolean))];
+
+        // Get author profiles
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url')
+          .in('id', userIds);
+
+        // Get flairs
+        const { data: flairs } = await supabase
+          .from('post_flairs')
+          .select('id, name, color')
+          .in('id', flairIds);
+
+        // Get comment counts
+        const { data: commentCounts } = await supabase
           .from('comments')
           .select('post_id')
           .in('post_id', postIds);
-          
-        if (comments) {
-          commentCounts = comments.reduce((acc, comment) => {
-            acc[comment.post_id] = (acc[comment.post_id] || 0) + 1;
-            return acc;
-          }, {} as Record<string, number>);
-        }
-      }
 
-      // Process and normalize data safely
-      const posts: OptimizedPost[] = (rawPosts || []).map(post => {
-        const profiles = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
-        const flair = Array.isArray(post.post_flairs) ? post.post_flairs[0] : post.post_flairs;
-        const votes = Array.isArray(post.post_votes) ? post.post_votes : [];
-        const bookmarks = Array.isArray(post.post_bookmarks) ? post.post_bookmarks : [];
+        const commentCountMap = (commentCounts || []).reduce((acc, comment) => {
+          acc[comment.post_id] = (acc[comment.post_id] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+
+        // Get user interactions if logged in
+        let userVotes: any[] = [];
+        let userBookmarks: any[] = [];
+        let adminPermissions = false;
+
+        if (user?.id) {
+          // Get user votes
+          const { data: votes } = await supabase
+            .from('post_votes')
+            .select('post_id, value')
+            .eq('user_id', user.id)
+            .in('post_id', postIds);
+
+          userVotes = votes || [];
+
+          // Get user bookmarks
+          const { data: bookmarks } = await supabase
+            .from('post_bookmarks')
+            .select('post_id, created_at')
+            .eq('user_id', user.id)
+            .in('post_id', postIds);
+
+          userBookmarks = bookmarks || [];
+
+          // Check admin permissions
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+          adminPermissions = profile?.role === 'admin' || profile?.role === 'moderator';
+        }
+
+        // Create lookup maps
+        const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+        const flairMap = new Map(flairs?.map(f => [f.id, f]) || []);
+        const voteMap = new Map(userVotes.map(v => [v.post_id, v.value]));
+        const bookmarkMap = new Map(userBookmarks.map(b => [b.post_id, b.created_at]));
+
+        // Process posts data
+        const posts: OptimizedPost[] = rawPosts.map(post => {
+          const profile = profileMap.get(post.user_id);
+          const flair = post.flair_id ? flairMap.get(post.flair_id) : null;
+
+          return {
+            ...post,
+            author_name: profile?.full_name || null,
+            author_avatar: profile?.avatar_url || null,
+            flair_name: flair?.name || null,
+            flair_color: flair?.color || null,
+            user_vote: voteMap.get(post.id) || null,
+            bookmark_date: bookmarkMap.get(post.id) || null,
+            comment_count: commentCountMap[post.id] || 0,
+          };
+        });
+
+        // Extract user interactions for easy lookup
+        const bookmarkedPosts = new Set(
+          posts
+            .filter(p => p.bookmark_date)
+            .map(p => p.id)
+        );
+
+        const votedPosts = new Map(
+          posts
+            .filter(p => p.user_vote !== null)
+            .map(p => [p.id, p.user_vote!])
+        );
 
         return {
-          ...post,
-          author_name: profiles?.full_name || null,
-          author_avatar: profiles?.avatar_url || null,
-          flair_name: flair?.name || null,
-          flair_color: flair?.color || null,
-          user_vote: votes.find((v: any) => v.user_id === user?.id)?.value || null,
-          bookmark_date: bookmarks.find((b: any) => b.user_id === user?.id)?.created_at || null,
-          comment_count: commentCounts[post.id] || 0,
+          posts,
+          totalCount: count || 0,
+          hasMore: posts.length === limit,
+          userInteractions: {
+            bookmarkedPosts,
+            votedPosts,
+            adminPermissions,
+          },
         };
-      });
-
-      // Extract user interactions for easy lookup
-      const bookmarkedPosts = new Set(
-        posts
-          .filter(p => p.bookmark_date)
-          .map(p => p.id)
-      );
-
-      const votedPosts = new Map(
-        posts
-          .filter(p => p.user_vote !== null)
-          .map(p => [p.id, p.user_vote!])
-      );
-
-      // Check admin permissions (single query)
-      let adminPermissions = false;
-      if (user?.id) {
-        const { data: adminData } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
-        
-        adminPermissions = adminData?.role === 'admin' || adminData?.role === 'moderator';
+      } catch (error) {
+        console.error('Community posts error:', error);
+        return {
+          posts: [],
+          totalCount: 0,
+          hasMore: false,
+          userInteractions: {
+            bookmarkedPosts: new Set(),
+            votedPosts: new Map(),
+            adminPermissions: false,
+          },
+        };
       }
-
-      return {
-        posts,
-        totalCount: count || 0,
-        hasMore: posts.length === limit,
-        userInteractions: {
-          bookmarkedPosts,
-          votedPosts,
-          adminPermissions,
-        },
-      };
     },
     staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 5 * 60 * 1000, // Updated from cacheTime
