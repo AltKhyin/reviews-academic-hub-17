@@ -26,10 +26,11 @@ export const useOptimizedCommentVoting = (entityType: string, entityId: string) 
     try {
       // Optimistic update
       const queryKey = ['comments', entityType, entityId];
-      queryClient.setQueryData(queryKey, (oldComments: Comment[]) => {
-        if (!oldComments) return oldComments;
+      queryClient.setQueryData(queryKey, (oldData: any) => {
+        const oldComments = oldData?.pages?.flatMap((page: any) => page.comments) ?? oldData ?? [];
+        if (!oldComments) return oldData;
         
-        return oldComments.map(comment => {
+        const updateCommentVote = (comment: Comment) => {
           if (comment.id === commentId) {
             const currentVote = comment.userVote || 0;
             const newVote = currentVote === value ? 0 : value;
@@ -41,26 +42,28 @@ export const useOptimizedCommentVoting = (entityType: string, entityId: string) 
               score: comment.score + scoreDiff
             };
           }
-          
-          // Also check replies
-          return {
-            ...comment,
-            replies: comment.replies.map(reply => {
-              if (reply.id === commentId) {
-                const currentVote = reply.userVote || 0;
-                const newVote = currentVote === value ? 0 : value;
-                const scoreDiff = newVote - currentVote;
-                
-                return {
-                  ...reply,
-                  userVote: newVote as 1 | -1 | 0,
-                  score: reply.score + scoreDiff
-                };
-              }
-              return reply;
-            })
-          };
-        });
+          if (comment.replies) {
+            return {
+              ...comment,
+              replies: comment.replies.map(updateCommentVote)
+            };
+          }
+          return comment;
+        };
+        
+        const newComments = oldComments.map(updateCommentVote);
+
+        if (oldData?.pages) {
+            return {
+                ...oldData,
+                pages: oldData.pages.map((page: any) => ({
+                    ...page,
+                    comments: page.comments.map(updateCommentVote)
+                }))
+            }
+        }
+        
+        return newComments;
       });
 
       // Check if vote exists

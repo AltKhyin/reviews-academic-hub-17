@@ -1,4 +1,3 @@
-
 // ABOUTME: Article viewer router - delegates to appropriate viewer based on content type
 // Handles routing logic and maintains backward compatibility
 
@@ -48,7 +47,7 @@ const ArticleViewer: React.FC = () => {
         specialty: data.specialty || '',
         year: data.year ? parseInt(data.year) : undefined,
         population: data.population || '',
-        review_type: data.review_type || 'native',
+        review_type: (data.review_type || 'native') as 'native' | 'pdf' | 'mixed',
         article_pdf_url: data.article_pdf_url || '',
         pdf_url: data.pdf_url || ''
       };
@@ -92,7 +91,7 @@ const ArticleViewer: React.FC = () => {
   }
 
   // Route to enhanced viewer for native and hybrid content (our new default)
-  if (issue.review_type === 'native' || issue.review_type === 'hybrid' || !issue.review_type) {
+  if (issue.review_type === 'native' || !issue.review_type) {
     return <EnhancedArticleViewer />;
   }
 

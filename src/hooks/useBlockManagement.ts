@@ -102,8 +102,8 @@ export const useBlockManagement = (
     // This is a simplified insertion logic. A real implementation
     // would need to traverse the elements tree to find the correct
     // parent and insertion point.
-    const newLayoutElement: ElementDefinition = {
-      type: 'block',
+    const newLayoutElement: LayoutElement = {
+      type: 'block_container',
       id: generateId(),
       blockId: newBlockId,
     };

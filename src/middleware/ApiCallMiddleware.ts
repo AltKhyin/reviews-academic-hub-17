@@ -84,7 +84,7 @@ class MonitoredSupabaseClient {
     const component = this.getCallingComponent();
     this.monitor.logApiCall(`table:${table}`, component);
     
-    return this.client.from(table);
+    return this.client.from(table as any);
   }
 
   auth = this.client.auth;

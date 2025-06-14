@@ -80,7 +80,7 @@ const IssueEditor = () => {
       if (error) throw error;
       
       return (data || []).map(dbBlock => ({
-        id: dbBlock.id,
+        id: String(dbBlock.id),
         type: dbBlock.type as any,
         content: dbBlock.payload,
         sort_index: dbBlock.sort_index,

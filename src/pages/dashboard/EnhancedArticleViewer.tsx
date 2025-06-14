@@ -1,3 +1,4 @@
+
 // ABOUTME: Enhanced article viewer with unified controls and structured sections
 // Implements the 4-section layout: Header, Review Content, Recommendations, Comments
 
@@ -72,7 +73,7 @@ const EnhancedArticleViewer: React.FC = () => {
         specialty: data.specialty || '',
         year: data.year ? parseInt(data.year) : undefined,
         population: data.population || '',
-        review_type: data.review_type || 'native',
+        review_type: (data.review_type || 'native') as 'native' | 'pdf' | 'mixed',
         article_pdf_url: data.article_pdf_url || '',
         pdf_url: data.pdf_url || ''
       };

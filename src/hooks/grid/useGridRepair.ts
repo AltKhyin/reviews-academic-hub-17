@@ -6,7 +6,7 @@ import { useCallback } from 'react';
 import { ReviewBlock } from '@/types/review';
 
 interface UseGridRepairProps {
-  onUpdateBlock: (blockId: number, updates: Partial<ReviewBlock>) => void;
+  onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
 }
 
 export const useGridRepair = ({ onUpdateBlock }: UseGridRepairProps) => {
