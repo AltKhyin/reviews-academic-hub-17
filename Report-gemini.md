@@ -9,6 +9,7 @@ Based on comprehensive codebase analysis, here are all `useQuery` invocations fo
 
 | Query Key | File Path | Component Name | staleTime | gcTime |
 |-----------|-----------|----------------|-----------|--------|
+| `['homepage-data']` | `src/hooks/useOptimizedHomepage.ts` | `useOptimizedHomepage` | `5min` | `15min` |
 | `queryKeys.sidebarStats()` | `src/hooks/useOptimizedSidebarData.ts` | `useOptimizedSidebarData` | `15min` | `30min` |
 | `['reviewer-comments']` | `src/hooks/useOptimizedSidebarData.ts` | `useOptimizedSidebarData` | `20min` | `30min` |
 | `['top-threads']` | `src/hooks/useOptimizedSidebarData.ts` | `useOptimizedSidebarData` | `10min` | `30min` |

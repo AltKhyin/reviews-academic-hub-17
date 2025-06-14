@@ -1,4 +1,3 @@
-
 // ABOUTME: Optimized homepage data loading with request batching and deduplication
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -99,7 +98,7 @@ const fetchHomepageData = async (): Promise<HomepageData> => {
 export const useOptimizedHomepage = () => {
   const { batchRequest } = useRequestBatcher();
 
-  const query = useQuery<HomepageData, Error>({
+  const query = useQuery({
     queryKey: ['homepage-data'],
     queryFn: fetchHomepageData,
     staleTime: 5 * 60 * 1000, // 5 minutes
