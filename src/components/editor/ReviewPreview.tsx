@@ -105,7 +105,7 @@ export const ReviewPreview: React.FC<ReviewPreviewProps> = ({
               
               return {
                 block,
-                position: normalizedPosition
+                position: { row: normalizedPosition.row, column: normalizedPosition.column }
               };
             }).filter(item => 
               item.position.row >= 0 && 

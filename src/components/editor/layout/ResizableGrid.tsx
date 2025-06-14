@@ -1,3 +1,4 @@
+
 // ABOUTME: A component for a resizable grid layout, likely for a single block area.
 // This file might be a conceptual placeholder or a specific type of grid interaction.
 // Given the error, it seems to use BlockContentEditor internally.
@@ -41,8 +42,8 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
   maxHeight = 600,
   className,
 }) => {
-  const [width, setWidth] = React.useState(initialWidth);
-  const [height, setHeight] = React.useState(initialHeight);
+  const [width, setWidth] = React.useState(block.meta?.layout?.width || initialWidth);
+  const [height, setHeight] = React.useState(block.meta?.layout?.height || initialHeight);
   const [isResizing, setIsResizing] = React.useState(false);
   const [resizeDirection, setResizeDirection] = React.useState<'n' | 'e' | 's' | 'w' | 'ne' | 'se' | 'sw' | 'nw' | null>(null);
   const [startPos, setStartPos] = React.useState({ x: 0, y: 0 });
@@ -106,6 +107,18 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
     setIsResizing(false);
     setResizeDirection(null);
     
+    // Update block meta with new dimensions on resize end
+    onUpdateBlock(block.id, {
+      meta: {
+        ...block.meta,
+        layout: {
+          ...block.meta?.layout,
+          width: width,
+          height: height,
+        }
+      }
+    });
+
     // Remove global event listeners
     document.removeEventListener('mousemove', handleResizeMove);
     document.removeEventListener('mouseup', handleResizeEnd);
@@ -118,7 +131,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
     onUpdate: onUpdateBlock,
     onDelete: onDeleteBlock,
     onMove: (id, dir) => console.log('Move from ResizableGrid BDE', id, dir), // Placeholder
-    onAddBlock: (options: Partial<AddBlockOptions> & { type: BlockType; }) => console.log('Add from ResizableGrid BDE', options), // Placeholder
+    onAddBlock: (options) => console.log('Add from ResizableGrid BDE', options), // Placeholder
     readonly: readonly,
   };
 
@@ -184,7 +197,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
           
           {/* Size indicator */}
           <div className="absolute bottom-1 right-1 bg-gray-800/80 text-xs text-gray-300 px-1 rounded">
-            {width} × {height}
+            {Math.round(width)} × {Math.round(height)}
           </div>
           
           {/* Control buttons */}
@@ -192,7 +205,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
             <Button 
               variant="ghost" 
               size="icon" 
-              className="w-5 h-5 bg-gray-800/80 text-gray-300 hover:bg-gray-700"
+              className="w-6 h-6 bg-gray-800/80 text-gray-300 hover:bg-gray-700"
               onClick={() => {
                 setWidth(initialWidth);
                 setHeight(initialHeight);
@@ -208,12 +221,12 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
                 });
               }}
             >
-              <Minimize2 className="w-3 h-3" />
+              <Minimize2 className="w-4 h-4" />
             </Button>
             <Button 
               variant="ghost" 
               size="icon" 
-              className="w-5 h-5 bg-gray-800/80 text-gray-300 hover:bg-gray-700"
+              className="w-6 h-6 bg-gray-800/80 text-gray-300 hover:bg-gray-700"
               onClick={() => {
                 const newWidth = maxWidth;
                 const newHeight = maxHeight;
@@ -231,7 +244,7 @@ export const ResizableGrid: React.FC<ResizableGridProps> = ({
                 });
               }}
             >
-              <Maximize2 className="w-3 h-3" />
+              <Maximize2 className="w-4 h-4" />
             </Button>
           </div>
         </>

@@ -1,4 +1,4 @@
-# README‑BÍBLIA.md v3.11.0
+# README‑BÍBLIA.md v3.12.0
 
 ## 1. Purpose & Pitch
 Scientific journal platform with optimized review system, community features, and advanced performance monitoring. **Editor System Refactoring IN PROGRESS** - Focusing on robust `LayoutElement` management, drag-and-drop, and block operations within various layouts.
@@ -160,7 +160,7 @@ interface AddBlockOptions {
     position?: 'above' | 'below';
 }
 
-// Content Type Interfaces (NEW)
+// Content Type Interfaces (UPDATED)
 interface DiagramContent {
   nodes: Array<{
     id: string;
@@ -168,19 +168,32 @@ interface DiagramContent {
     y: number;
     width: number;
     height: number;
-    label: string;
-    type: 'rectangle' | 'circle' | 'diamond';
-    color?: string;
+    data: { // Note: 'data' contains the visual properties
+      label: string;
+      type: 'rectangle' | 'circle' | 'diamond';
+      color?: string;
+    };
   }>;
   edges: Array<{
     id: string;
     source: string;
     target: string;
     label?: string;
-    type: 'straight' | 'curved';
+    type?: 'straight' | 'curved' | 'step' | 'floating'; // Optional
+    animated?: boolean; // Optional
   }>;
   title?: string;
   description?: string;
+  canvas?: { // Optional canvas settings
+    backgroundColor?: string;
+    gridSize?: number;
+    zoom?: number;
+    width?: number;
+    height?: number;
+    gridEnabled?: boolean;
+    gridColor?: string;
+    snapToGrid?: boolean;
+  }
 }
 
 interface SnapshotCardContent {
@@ -269,6 +282,7 @@ Admin panel with performance monitoring dashboard and error tracking.
 - Refine block movement within nested layouts (e.g., reordering blocks within columns or grid cells).
 
 ## 15. Revision History
+- v3.12.0 (2025-06-14): **Editor System Refactoring Cycle 6** - Fixed multiple React Flow and layout component type errors. Aligned component props and state with expected types from libraries (`@hello-pangea/dnd`, `@xyflow/react`). Deleted unused/broken diagram helper components.
 - v3.11.0 (2025-06-14): **Editor System Refactoring Cycle 5** - Replaced `BlockList.tsx` with a new implementation that correctly renders `LayoutElement` structures (rows, grids, blocks). Created `LayoutGrid.tsx` to handle 2D grid rendering. This resolves a major architectural inconsistency in the editor's rendering pipeline.
 - v3.10.0 (2025-06-14): **Editor System Refactoring Cycle 4** - Implemented a unified `onAddBlock` handler with a consistent `AddBlockOptions` type across the editor components. This fixes inconsistent prop signatures and buggy block creation logic in `useBlockManagement`, `BlockEditor`, `SingleBlock`, and `LayoutRow`.
 - v3.9.0 (2025-06-14): **Editor System Refactoring Cycle 3** - Rearchitected `useBlockManagement` `addBlock`/`deleteBlock` functions with recursive logic to robustly handle nested layouts. Simplified and refactored `EditorToolbar` to match its usage context within `BlockEditor`.
@@ -283,6 +297,7 @@ Admin panel with performance monitoring dashboard and error tracking.
 - v3.0.0 (2025-06-13): Major architecture improvements with unified systems
 
 ## 16. Release Notes
+- **Editor System Refactoring Cycle 6**: Fixed multiple React Flow and layout component type errors. Aligned component props and state with expected types from libraries (`@hello-pangea/dnd`, `@xyflow/react`). Deleted unused/broken diagram helper components.
 - **Editor System Refactoring Cycle 5**: Replaced `BlockList.tsx` with a new implementation that correctly renders `LayoutElement` structures (rows, grids, blocks). Created `LayoutGrid.tsx` to handle 2D grid rendering. This resolves a major architectural inconsistency in the editor's rendering pipeline.
 - **Editor System Refactoring Cycle 4**: Implemented a unified `onAddBlock` handler with a consistent `AddBlockOptions` type across the editor components. This fixes inconsistent prop signatures and buggy block creation logic in `useBlockManagement`, `BlockEditor`, `SingleBlock`, and `LayoutRow`.
 - **Editor System Refactoring Cycle 3**: Rearchitected `useBlockManagement` `addBlock`/`deleteBlock` functions with recursive logic to robustly handle nested layouts. Simplified and refactored `EditorToolbar` to match its usage context within `BlockEditor`.

@@ -179,7 +179,7 @@ export interface DiagramEdge {
   source: string; // node id
   target: string; // node id
   label?: string; // Kept for direct use, but also in data for react-flow
-  type: 'straight' | 'curved' | 'step' | 'floating'; 
+  type?: 'straight' | 'curved' | 'step' | 'floating'; 
   style?: any;
   data?: DiagramEdgeData; // For edge labels with FloatingEdge or other custom edge data
   animated?: boolean;
@@ -200,6 +200,7 @@ export interface DiagramContent {
     height?: number;
     gridEnabled?: boolean;
     gridColor?: string;
+    snapToGrid?: boolean;
   };
 }
 

@@ -1,4 +1,3 @@
-
 // ABOUTME: Enhanced diagram block with react-flow, theming, and improved UX
 // Provides interactive diagramming capabilities with persistence
 
@@ -22,7 +21,7 @@ import {
   NodeChange,
   EdgeChange,
   XYPosition,
-  ReactFlowProvider, // Import ReactFlowProvider
+  ReactFlowProvider,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -68,14 +67,14 @@ const DiagramBlockInternal: React.FC<DiagramBlockProps> = ({
     };
   }, [block.content]);
 
-  const [rfNodes, setRfNodes] = useState<Node<DiagramNodeData>[]>([]);
-  const [rfEdges, setRfEdges] = useState<Edge<DiagramEdgeData>[]>([]); 
+  const [rfNodes, setRfNodes] = useState<Node[]>([]);
+  const [rfEdges, setRfEdges] = useState<Edge[]>([]); 
 
   const [title, setTitle] = useState(diagramContent.title || '');
   const [description, setDescription] = useState(diagramContent.description || '');
   const [canvasSettings, setCanvasSettings] = useState(diagramContent.canvas || getDefaultDiagramContent().canvas);
   
-  const reactFlowInstance = useReactFlow<DiagramNodeData, DiagramEdgeData>();
+  const reactFlowInstance = useReactFlow();
 
   useEffect(() => {
     setRfNodes(diagramContent.nodes.map((n: DiagramNodeType): Node<DiagramNodeData> => ({
@@ -94,6 +93,7 @@ const DiagramBlockInternal: React.FC<DiagramBlockProps> = ({
       type: e.type || 'floating', // Default to floating if type is not specified
       data: e.data, 
       style: e.style,
+      animated: e.animated,
     })));
     setTitle(diagramContent.title || '');
     setDescription(diagramContent.description || '');
@@ -110,17 +110,17 @@ const DiagramBlockInternal: React.FC<DiagramBlockProps> = ({
         id: n.id,
         x: n.position.x,
         y: n.position.y,
-        width: n.width || n.data?.width || 150, 
-        height: n.height || n.data?.height || 50,
-        data: n.data,
+        width: n.width || (n.data as DiagramNodeData)?.width || 150, 
+        height: n.height || (n.data as DiagramNodeData)?.height || 50,
+        data: n.data as DiagramNodeData,
       }));
       const updatedDiagramEdges: DiagramEdgeType[] = reactFlowInstance.getEdges().map((e): DiagramEdgeType => ({
           id: e.id,
           source: e.source,
           target: e.target,
-          label: typeof e.label === 'string' ? e.label : e.data?.label,
+          label: typeof e.label === 'string' ? e.label : (e.data as DiagramEdgeData)?.label,
           type: (e.type as DiagramEdgeType['type']) || 'floating',
-          data: e.data,
+          data: e.data as DiagramEdgeData,
           style: e.style,
           animated: e.animated,
       }));
@@ -146,15 +146,15 @@ const DiagramBlockInternal: React.FC<DiagramBlockProps> = ({
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => setRfNodes((nds) => applyNodeChanges(changes, nds)),
-    [setRfNodes]
+    []
   );
   const onEdgesChange = useCallback(
     (changes: EdgeChange[]) => setRfEdges((eds) => applyEdgeChanges(changes, eds)),
-    [setRfEdges]
+    []
   );
   const onConnect = useCallback(
     (connection: Connection) => {
-      const newEdge: Edge<DiagramEdgeData> = {
+      const newEdge: Edge = {
         id: `edge-${Date.now()}`,
         ...connection,
         type: 'floating',
@@ -230,7 +230,7 @@ const DiagramBlockInternal: React.FC<DiagramBlockProps> = ({
             proOptions={{ hideAttribution: true }}
           >
             <Background color="#444" gap={canvasSettings.gridSize || 20} variant={BackgroundVariant.Dots} />
-            <MiniMap nodeStrokeWidth={3} nodeColor={(n: Node<DiagramNodeData>) => n.data?.color || '#fff'} />
+            <MiniMap nodeStrokeWidth={3} nodeColor={(n: Node) => (n.data as DiagramNodeData)?.color || '#fff'} />
           </ReactFlow>
         </div>
       </div>
@@ -272,7 +272,7 @@ const DiagramBlockInternal: React.FC<DiagramBlockProps> = ({
             variant={canvasSettings.gridSize && canvasSettings.gridSize > 0 ? BackgroundVariant.Dots : undefined}
           />
           <Controls className="react-flow__controls-custom" />
-          <MiniMap nodeStrokeWidth={3} nodeColor={(n: Node<DiagramNodeData>) => n.data?.color || '#fff'} className="react-flow__minimap-custom"/>
+          <MiniMap nodeStrokeWidth={3} nodeColor={(n: Node) => (n.data as DiagramNodeData)?.color || '#fff'} className="react-flow__minimap-custom"/>
           <Panel position="top-left" className="flex gap-1 p-1 bg-gray-800/50 rounded shadow-lg">
             <Button onClick={addNode} size="sm" variant="ghost" className="text-gray-300 hover:text-white hover:bg-gray-700"><Palette size={16} className="mr-1" /> Adicionar Nó</Button>
             <Button onClick={clearDiagram} size="sm" variant="ghost" className="text-red-400 hover:text-red-300 hover:bg-red-900/30"><Eraser size={16} className="mr-1" /> Limpar</Button>
