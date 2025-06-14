@@ -1,3 +1,4 @@
+
 // ABOUTME: Component audit utility with corrected API call monitoring methods
 import React from 'react';
 import { apiCallMonitor } from '@/middleware/ApiCallMiddleware';
@@ -121,7 +122,7 @@ export const withComponentAudit = <P extends object>(
   WrappedComponent: React.ComponentType<P>,
   componentName: string
 ) => {
-  return React.forwardRef<any, P>((props, ref) => {
+  const AuditedComponent = React.forwardRef<any, P>((props, ref) => {
     const startTime = performance.now();
 
     React.useEffect(() => {
@@ -132,6 +133,9 @@ export const withComponentAudit = <P extends object>(
       componentAuditor.checkApiCallCompliance(componentName);
     });
 
-    return React.createElement(WrappedComponent, props);
+    return React.createElement(WrappedComponent, { ...props, ref } as any);
   });
+
+  AuditedComponent.displayName = `withComponentAudit(${componentName})`;
+  return AuditedComponent;
 };
