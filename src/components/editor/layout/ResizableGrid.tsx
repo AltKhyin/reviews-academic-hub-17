@@ -1,255 +1,241 @@
-// ABOUTME: Enhanced resizable grid component with complete string ID support
-// Provides resizable grid functionality with proper column management
+// ABOUTME: A component for a resizable grid layout, likely for a single block area.
+// This file might be a conceptual placeholder or a specific type of grid interaction.
+// Given the error, it seems to use BlockContentEditor internally.
 
-import React, { useState, useCallback, useEffect } from 'react';
-import { ReviewBlock, BlockType } from '@/types/review';
-import { BlockContentEditor } from '../BlockContentEditor';
+import React from 'react';
+import { ReviewBlock } from '@/types/review';
+import { BlockContentEditor, BlockContentEditorProps } from '../BlockContentEditor';
 import { Button } from '@/components/ui/button';
-import { Plus, Grid3X3, Settings } from 'lucide-react';
+import { Maximize2, Minimize2, Move } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface DragState {
-  draggedBlockId: string | null;
-  dragOverRowId: string | null;
-  dragOverPosition: number | null;
-  isDragging: boolean;
-  draggedFromRowId: string | null;
-  dropTargetType: 'grid' | 'single' | 'merge' | null;
-}
-
-interface ResizableGridProps {
-  rowId: string;
-  blocks: ReviewBlock[];
-  columns: number;
-  gap: number;
-  columnWidths?: number[];
-  onUpdateLayout: (rowId: string, updates: { columnWidths: number[] }) => void;
-  onAddBlock: (rowId: string, position: number, blockType?: BlockType) => void; // Added blockType as optional
+export interface ResizableGridProps {
+  block: ReviewBlock; // The block this resizable grid might be for
+  activeBlockId: string | null;
+  onSelectBlock: (blockId: string) => void;
   onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
   onDeleteBlock: (blockId: string) => void;
-  activeBlockId: string | null;
-  onActiveBlockChange: (blockId: string | null) => void; // Corrected: was onActive
-  dragState: DragState;
-  onDragOver: (e: React.DragEvent, targetRowId: string, targetPosition?: number, targetType?: 'grid' | 'single' | 'merge') => void;
-  onDragLeave: (e: React.DragEvent) => void;
-  onDrop: (e: React.DragEvent, targetRowId: string, targetPosition?: number, dropType?: 'grid' | 'single' | 'merge') => void;
+  // ... other props for resizing logic, child blocks if it's a container
+  readonly?: boolean;
+  initialWidth?: number;
+  initialHeight?: number;
+  minWidth?: number;
+  minHeight?: number;
+  maxWidth?: number;
+  maxHeight?: number;
+  className?: string;
 }
 
 export const ResizableGrid: React.FC<ResizableGridProps> = ({
-  rowId,
-  blocks,
-  columns,
-  gap,
-  columnWidths,
-  onUpdateLayout,
-  onAddBlock,
+  block,
+  activeBlockId,
+  onSelectBlock,
   onUpdateBlock,
   onDeleteBlock,
-  activeBlockId,
-  onActiveBlockChange,
-  dragState,
-  onDragOver,
-  onDragLeave,
-  onDrop
+  readonly,
+  initialWidth = 300,
+  initialHeight = 200,
+  minWidth = 100,
+  minHeight = 100,
+  maxWidth = 800,
+  maxHeight = 600,
+  className,
 }) => {
-  const [isResizing, setIsResizing] = useState(false);
-  const [localColumnWidths, setLocalColumnWidths] = useState(
-    columnWidths || Array(columns).fill(100 / columns)
-  );
+  const [width, setWidth] = React.useState(initialWidth);
+  const [height, setHeight] = React.useState(initialHeight);
+  const [isResizing, setIsResizing] = React.useState(false);
+  const [resizeDirection, setResizeDirection] = React.useState<'n' | 'e' | 's' | 'w' | 'ne' | 'se' | 'sw' | 'nw' | null>(null);
+  const [startPos, setStartPos] = React.useState({ x: 0, y: 0 });
+  const [startDimensions, setStartDimensions] = React.useState({ width: 0, height: 0 });
 
-  // Update localColumnWidths if the prop changes from outside
-  useEffect(() => {
-    setLocalColumnWidths(columnWidths || Array(columns).fill(100 / columns));
-  }, [columnWidths, columns]);
+  const isActive = activeBlockId === block.id;
 
-  const handleMoveInGrid = useCallback((blockId: string, direction: 'up' | 'down') => {
-    console.log('ResizableGrid block movement:', { blockId, direction, rowId });
-    // Movement logic within this grid (e.g., if it's a single column behaving like a list)
-    // or defer to parent drag/drop. For now, it's mostly for BlockContentEditor.
-  }, [rowId]);
-
-  const handleAddBlockAtPositionInCell = useCallback((type: BlockType, position?: number) => {
-    // This is called from BlockContentEditor, position is relative to that block.
-    // For ResizableGrid, adding a block usually means into an empty cell or replacing one.
-    // The 'position' here needs to map to a column index.
-    // Assuming BlockContentEditor's onAddBlock is for *within* its own content or adding *after* itself.
-    // For adding to an empty cell, we use handleAddBlockToColumn.
-    const targetColumnIndex = position !== undefined ? position : blocks.findIndex(b => !b); // Find first empty or append
-    if (targetColumnIndex !== -1) {
-      onAddBlock(rowId, targetColumnIndex, type);
-    } else {
-      onAddBlock(rowId, blocks.length, type); // Add to end if all full
-    }
-  }, [onAddBlock, rowId, blocks]);
-  
-  const handleAddBlockToColumn = useCallback((columnIndex: number) => {
-    onAddBlock(rowId, columnIndex, 'paragraph' as BlockType); // Default to paragraph
-  }, [onAddBlock, rowId]);
-
-  const handleColumnResize = useCallback((columnIndex: number, newWidth: number) => {
-    const newWidths = [...localColumnWidths];
-    const oldWidth = newWidths[columnIndex];
-    const diff = newWidth - oldWidth;
+  const handleResizeStart = (e: React.MouseEvent, direction: 'n' | 'e' | 's' | 'w' | 'ne' | 'se' | 'sw' | 'nw') => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizing(true);
+    setResizeDirection(direction);
+    setStartPos({ x: e.clientX, y: e.clientY });
+    setStartDimensions({ width, height });
     
-    // Adjust the next column to compensate
-    if (columnIndex < newWidths.length - 1) {
-      newWidths[columnIndex + 1] = Math.max(10, newWidths[columnIndex + 1] - diff);
+    // Add global event listeners
+    document.addEventListener('mousemove', handleResizeMove);
+    document.addEventListener('mouseup', handleResizeEnd);
+  };
+
+  const handleResizeMove = (e: MouseEvent) => {
+    if (!isResizing || !resizeDirection) return;
+    
+    const deltaX = e.clientX - startPos.x;
+    const deltaY = e.clientY - startPos.y;
+    
+    let newWidth = startDimensions.width;
+    let newHeight = startDimensions.height;
+    
+    // Handle width changes
+    if (['e', 'ne', 'se'].includes(resizeDirection)) {
+      newWidth = Math.max(minWidth, Math.min(maxWidth, startDimensions.width + deltaX));
+    } else if (['w', 'nw', 'sw'].includes(resizeDirection)) {
+      newWidth = Math.max(minWidth, Math.min(maxWidth, startDimensions.width - deltaX));
     }
     
-    newWidths[columnIndex] = Math.max(10, newWidth);
+    // Handle height changes
+    if (['n', 'ne', 'nw'].includes(resizeDirection)) {
+      newHeight = Math.max(minHeight, Math.min(maxHeight, startDimensions.height - deltaY));
+    } else if (['s', 'se', 'sw'].includes(resizeDirection)) {
+      newHeight = Math.max(minHeight, Math.min(maxHeight, startDimensions.height + deltaY));
+    }
     
-    // Ensure total width is maintained (optional, can lead to complex adjustments)
-    // For simplicity, we might allow slight overflow/underflow or require manual balancing.
-    // Or normalize:
-    // const totalWidth = newWidths.reduce((sum, w) => sum + w, 0);
-    // if (totalWidth !== 100) {
-    //   const scale = 100 / totalWidth;
-    //   newWidths = newWidths.map(w => w * scale);
-    // }
+    setWidth(newWidth);
+    setHeight(newHeight);
+    
+    // Update block meta with new dimensions
+    onUpdateBlock(block.id, {
+      meta: {
+        ...block.meta,
+        layout: {
+          ...block.meta?.layout,
+          width: newWidth,
+          height: newHeight,
+        }
+      }
+    });
+  };
 
-    setLocalColumnWidths(newWidths);
-    onUpdateLayout(rowId, { columnWidths: newWidths });
-  }, [localColumnWidths, onUpdateLayout, rowId]);
+  const handleResizeEnd = () => {
+    setIsResizing(false);
+    setResizeDirection(null);
+    
+    // Remove global event listeners
+    document.removeEventListener('mousemove', handleResizeMove);
+    document.removeEventListener('mouseup', handleResizeEnd);
+  };
+
+  const bceProps: BlockContentEditorProps = {
+    block: block,
+    isActive: isActive,
+    onSelect: () => onSelectBlock(block.id),
+    onUpdate: onUpdateBlock,
+    onDelete: onDeleteBlock,
+    onMove: (id, dir) => console.log('Move from ResizableGrid BDE', id, dir), // Placeholder
+    onAddBlock: (type, pos) => console.log('Add from ResizableGrid BDE', type, pos), // Placeholder
+    readonly: readonly,
+  };
 
   return (
-    <div className="resizable-grid border border-gray-700 rounded-lg p-4 mb-4 bg-gray-800/30">
-      {/* Grid Header */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Grid3X3 className="w-4 h-4 text-purple-400" />
-          <span className="text-sm font-medium text-gray-300">
-            Grid Redimensionável: {columns} colunas
-          </span>
-          <span className="text-xs text-gray-500">#{rowId}</span>
-        </div>
-        
-        <Button
-          size="sm"
-          variant="ghost"
-          className="text-gray-400 hover:text-gray-300"
-          title="Configurações do Grid"
-          // onClick={() => { /* Open grid settings modal */ }}
-        >
-          <Settings className="w-4 h-4" />
-        </Button>
-      </div>
-
-      {/* Grid Layout */}
-      <div
-        className="grid w-full"
-        style={{
-          gridTemplateColumns: localColumnWidths.map(w => `${w}%`).join(' '),
-          gap: `${gap}px`
-        }}
-        onDragOver={(e) => onDragOver(e, rowId, undefined, 'merge')}
-        onDragLeave={onDragLeave}
-        onDrop={(e) => onDrop(e, rowId, undefined, 'merge')}
-      >
-        {Array.from({ length: columns }).map((_, index) => {
-          const block = blocks[index]; // Assuming blocks array corresponds to columns
+    <div 
+      className={cn(
+        "resizable-grid relative",
+        isActive && "ring-2 ring-blue-500",
+        isResizing && "select-none",
+        className
+      )}
+      style={{ 
+        width: `${width}px`, 
+        height: `${height}px`,
+        cursor: isResizing ? (
+          resizeDirection === 'n' || resizeDirection === 's' ? 'ns-resize' :
+          resizeDirection === 'e' || resizeDirection === 'w' ? 'ew-resize' :
+          resizeDirection === 'ne' || resizeDirection === 'sw' ? 'nesw-resize' :
+          resizeDirection === 'nw' || resizeDirection === 'se' ? 'nwse-resize' : 'move'
+        ) : 'default'
+      }}
+      onClick={() => onSelectBlock(block.id)}
+    >
+      <BlockContentEditor {...bceProps} />
+      
+      {!readonly && isActive && (
+        <>
+          {/* Resize handles */}
+          <div 
+            className="absolute top-0 left-0 right-0 h-2 cursor-ns-resize bg-transparent hover:bg-blue-500/20"
+            onMouseDown={(e) => handleResizeStart(e, 'n')}
+          />
+          <div 
+            className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize bg-transparent hover:bg-blue-500/20"
+            onMouseDown={(e) => handleResizeStart(e, 's')}
+          />
+          <div 
+            className="absolute top-0 bottom-0 left-0 w-2 cursor-ew-resize bg-transparent hover:bg-blue-500/20"
+            onMouseDown={(e) => handleResizeStart(e, 'w')}
+          />
+          <div 
+            className="absolute top-0 bottom-0 right-0 w-2 cursor-ew-resize bg-transparent hover:bg-blue-500/20"
+            onMouseDown={(e) => handleResizeStart(e, 'e')}
+          />
           
-          return (
-            <div
-              key={`resizable-grid-item-${rowId}-${index}`}
-              className={cn(
-                "resizable-grid-item relative border-2 border-dashed rounded min-h-[120px]",
-                block ? "border-gray-700 bg-gray-900/20" : "border-gray-800 hover:border-gray-700",
-                "transition-all duration-200",
-                dragState.dragOverRowId === rowId && dragState.dragOverPosition === index && "ring-2 ring-blue-400 border-blue-500",
-                activeBlockId && block && activeBlockId === block.id && "ring-2 ring-blue-500 border-blue-500"
-              )}
-              style={{ borderColor: block ? '#374151' : '#2b3245' }}
-              // Drag event handlers for individual cells if needed for finer-grained drop targets
-              onDragOver={(e) => {
-                e.stopPropagation(); // Prevent bubbling to the parent grid's onDragOver
-                onDragOver(e, rowId, index, 'merge');
-              }}
-              onDrop={(e) => {
-                e.stopPropagation();
-                onDrop(e, rowId, index, 'merge');
+          {/* Corner handles */}
+          <div 
+            className="absolute top-0 left-0 w-4 h-4 cursor-nwse-resize bg-transparent hover:bg-blue-500/20"
+            onMouseDown={(e) => handleResizeStart(e, 'nw')}
+          />
+          <div 
+            className="absolute top-0 right-0 w-4 h-4 cursor-nesw-resize bg-transparent hover:bg-blue-500/20"
+            onMouseDown={(e) => handleResizeStart(e, 'ne')}
+          />
+          <div 
+            className="absolute bottom-0 left-0 w-4 h-4 cursor-nesw-resize bg-transparent hover:bg-blue-500/20"
+            onMouseDown={(e) => handleResizeStart(e, 'sw')}
+          />
+          <div 
+            className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize bg-transparent hover:bg-blue-500/20"
+            onMouseDown={(e) => handleResizeStart(e, 'se')}
+          />
+          
+          {/* Size indicator */}
+          <div className="absolute bottom-1 right-1 bg-gray-800/80 text-xs text-gray-300 px-1 rounded">
+            {width} × {height}
+          </div>
+          
+          {/* Control buttons */}
+          <div className="absolute top-1 right-1 flex gap-1">
+            <Button 
+              variant="ghost" 
+              size="icon_xs" 
+              className="w-5 h-5 bg-gray-800/80 text-gray-300 hover:bg-gray-700"
+              onClick={() => {
+                setWidth(initialWidth);
+                setHeight(initialHeight);
+                onUpdateBlock(block.id, {
+                  meta: {
+                    ...block.meta,
+                    layout: {
+                      ...block.meta?.layout,
+                      width: initialWidth,
+                      height: initialHeight,
+                    }
+                  }
+                });
               }}
             >
-              {/* Column Resizer */}
-              {index < columns - 1 && (
-                <div
-                  className="absolute top-0 -right-1 w-2 h-full cursor-col-resize bg-gray-600 opacity-0 hover:opacity-100 transition-opacity z-10"
-                  onMouseDown={(e) => {
-                    setIsResizing(true);
-                    const startX = e.clientX;
-                    const startWidths = [...localColumnWidths]; // Work with a copy
-                    
-                    const handleMouseMove = (moveEvent: MouseEvent) => {
-                      const currentDiffX = moveEvent.clientX - startX;
-                      const newWidths = [...startWidths];
-                      
-                      // Calculate percentage change based on grid width (approximate)
-                      // This needs a reference to the grid's actual pixel width for accuracy,
-                      // or calculate diff as percentage of window width.
-                      // For simplicity, let's assume a fixed grid width or use a simpler diff logic.
-                      // This part is tricky without knowing the parent width.
-                      // A common approach is to convert pixel diff to percentage diff.
-                      const parentGridWidth = (e.currentTarget.parentElement?.parentElement?.offsetWidth) || window.innerWidth;
-                      const diffPercent = (currentDiffX / parentGridWidth) * 100;
-
-                      if (newWidths[index] + diffPercent > 5 && newWidths[index+1] - diffPercent > 5) { // Min width 5%
-                        newWidths[index] += diffPercent;
-                        newWidths[index+1] -= diffPercent;
-                        setLocalColumnWidths(newWidths); // Update UI optimistically
-                      }
-                    };
-                    
-                    const handleMouseUp = () => {
-                      setIsResizing(false);
-                      document.removeEventListener('mousemove', handleMouseMove);
-                      document.removeEventListener('mouseup', handleMouseUp);
-                      onUpdateLayout(rowId, { columnWidths: localColumnWidths }); // Final update
-                    };
-                    
-                    document.addEventListener('mousemove', handleMouseMove);
-                    document.addEventListener('mouseup', handleMouseUp);
-                  }}
-                />
-              )}
-
-              {block ? (
-                <BlockContentEditor
-                  block={block}
-                  isActive={activeBlockId === block.id}
-                  isFirst={index === 0}
-                  isLast={index === columns - 1}
-                  onSelect={onActiveBlockChange}
-                  onUpdate={onUpdateBlock}
-                  onDelete={onDeleteBlock}
-                  onMove={handleMoveInGrid}
-                  onAddBlock={handleAddBlockAtPositionInCell}
-                />
-              ) : (
-                <div className="h-full flex items-center justify-center p-4">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleAddBlockToColumn(index)}
-                    className="text-gray-400 hover:text-gray-300 hover:bg-gray-800"
-                  >
-                    <Plus className="w-4 h-4 mr-1" />
-                    Adicionar Bloco
-                  </Button>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Grid Info */}
-      <div className="flex justify-between items-center mt-3 pt-2 border-t border-gray-700">
-        <div className="text-xs text-gray-500">
-          Larguras: {localColumnWidths.map(w => `${w.toFixed(1)}%`).join(', ')}
-        </div>
-        <div className="text-xs text-gray-500">
-          {blocks.filter(Boolean).length}/{columns} células preenchidas
-        </div>
-      </div>
+              <Minimize2 className="w-3 h-3" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon_xs" 
+              className="w-5 h-5 bg-gray-800/80 text-gray-300 hover:bg-gray-700"
+              onClick={() => {
+                const newWidth = maxWidth;
+                const newHeight = maxHeight;
+                setWidth(newWidth);
+                setHeight(newHeight);
+                onUpdateBlock(block.id, {
+                  meta: {
+                    ...block.meta,
+                    layout: {
+                      ...block.meta?.layout,
+                      width: newWidth,
+                      height: newHeight,
+                    }
+                  }
+                });
+              }}
+            >
+              <Maximize2 className="w-3 h-3" />
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   );
 };

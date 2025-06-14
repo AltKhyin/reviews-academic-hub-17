@@ -69,7 +69,7 @@ export interface AlignmentConfig {
 export interface ReviewBlock {
   id: string;
   type: BlockType;
-  content: any;
+  content: any; // Content can be specific for each block type
   sort_index: number;
   visible: boolean;
   meta?: {
@@ -86,33 +86,37 @@ export interface DiagramNodeData {
   width?: number;
   height?: number;
   // Add any other custom properties your nodes might need
+  [key: string]: any; // To satisfy Record<string, unknown> and allow extensibility
 }
 
 export interface DiagramNode { // This is the structure stored in ReviewBlock.content.nodes
   id: string;
   x: number;
   y: number;
-  // width and height here might be for the persisted size,
-  // React Flow node's width/height can also be dynamic or set on the Node object.
-  // Let's assume these are the base dimensions for persistence.
   width: number;
   height: number;
   // The 'data' field will hold specific attributes for rendering and logic.
   data: DiagramNodeData;
 }
 
+export interface DiagramEdgeData {
+    label?: string;
+    // Add any other custom data for edges
+    [key: string]: any;
+}
+
 export interface DiagramEdge {
   id: string;
   source: string; // node id
   target: string; // node id
-  label?: string;
-  type: 'straight' | 'curved' | 'step' | 'floating'; // Ensure 'floating' is valid if used
+  label?: string; // Kept for direct use, but also in data for react-flow
+  type: 'straight' | 'curved' | 'step' | 'floating'; 
   style?: any;
-  data?: { label?: string }; // For edge labels with FloatingEdge
+  data?: DiagramEdgeData; // For edge labels with FloatingEdge or other custom edge data
 }
 
 export interface DiagramContent {
-  nodes: Array<DiagramNode>; // Array of our persisted DiagramNode structure
+  nodes: Array<DiagramNode>; 
   edges: Array<DiagramEdge>;
   title?: string;
   description?: string;
