@@ -331,8 +331,6 @@ export const migrateImportData = (data: any): ReviewBlock[] => {
       sort_index: typeof block.sort_index === 'number' ? block.sort_index : index,
       visible: typeof block.visible === 'boolean' ? block.visible : true,
       meta,
-      created_at: block.created_at || new Date().toISOString(),
-      updated_at: block.updated_at || new Date().toISOString()
     };
     
     console.log(`Migrated block ${index}:`, {

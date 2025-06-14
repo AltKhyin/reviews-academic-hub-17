@@ -4,7 +4,19 @@
 
 import { useState, useCallback } from 'react';
 import { ReviewBlock } from '@/types/review';
-import { LayoutRowData } from '@/components/editor/layout/LayoutRow';
+
+// Local definition to fix build error. This hook is legacy and should be refactored.
+interface LayoutRowData {
+  id: string;
+  blocks: ReviewBlock[];
+  columns: number;
+  gap: number;
+  responsive: {
+    sm: number;
+    md: number;
+    lg: number;
+  }
+}
 
 interface LayoutState {
   rows: LayoutRowData[];

@@ -1,5 +1,4 @@
-
-# README‑BÍBLIA.md v3.13.0
+# README-BÍBLIA.md v3.14.0
 
 ## 1. Purpose & Pitch
 Scientific journal platform with optimized review system, community features, and advanced performance monitoring. **Editor System Refactoring IN PROGRESS** - Focusing on robust `LayoutElement` management, drag-and-drop, and block operations within various layouts.
@@ -7,7 +6,8 @@ Scientific journal platform with optimized review system, community features, an
 ## 2. Glossary
 - **Review Blocks**: Modular content components for scientific reviews (string IDs)
 - **Layout Elements**: Structural components for defining review document layout (e.g., rows, grids, block_containers).
-- **LayoutGrid**: Component for rendering 2D grid layouts. (NEW)
+- **LayoutElements**: A type alias for `LayoutElement[]` to aid TypeScript's recursive type resolution. (NEW)
+- **LayoutGrid**: Component for rendering 2D grid layouts.
 - **BlockList**: Component that renders the main editor canvas by processing `LayoutElement`s. (REFACTORED)
 - **GridPosition**: Type defining row/column for 2D grid elements.
 - **GridCell**: Defines a cell within a 2D grid, can contain a block.
@@ -69,7 +69,7 @@ Scientific journal platform with optimized review system, community features, an
 - **User Interactions**: `/src/contexts/UserInteractionContext.tsx`
 - **API Monitoring**: `/src/middleware/ApiCallMiddleware.ts`
 - **Component Auditing**: `/src/utils/componentAudit.ts`
-- **Type Definitions**: `/src/types/review.ts` (UPDATED - Added unified `AddBlockOptions` type)
+- **Type Definitions**: `/src/types/review.ts` (UPDATED - Added `LayoutElements` type alias, refined layout types)
 - **Review System**: `/src/components/review/` 
 - **Editor System**: `/src/components/editor/` (REFACTORING - BlockList refactored as main renderer)
 - **Layout Components**: `/src/components/editor/layout/` (UPDATED - Added LayoutGrid, interactions refined)
@@ -93,6 +93,9 @@ interface Review {
 }
 
 // Layout Element (UPDATED)
+// Type alias to help compiler with recursive types
+type LayoutElements = LayoutElement[];
+
 interface LayoutElement {
   id: string;
   type: 'row' | 'grid' | 'block_container'; // 'block_container' for a direct block in the 'elements' list
@@ -110,7 +113,7 @@ type ElementDefinition =
 
 interface LayoutColumn {
   id: string;
-  elements: ElementDefinition[]; 
+  elements: LayoutElements; // Using new type alias
   settings?: { width?: string; style?: React.CSSProperties };
 }
 
@@ -283,18 +286,19 @@ Admin panel with performance monitoring dashboard and error tracking.
 - Refine block movement within nested layouts (e.g., reordering blocks within columns or grid cells).
 
 ## 15. Revision History
-- v3.13.0 (2025-06-14): **Build Stabilization Cycle 1** - Executed batch-fix of over 40 build errors by standardizing on string-based IDs for all blocks and entities. Corrected type mismatches in grid hooks, block management, comment systems, and various components. This resolves the most critical type inconsistencies.
-- v3.12.0 (2025-06-14): **Editor System Refactoring Cycle 6** - Fixed multiple React Flow and layout component type errors. Aligned component props and state with expected types from libraries (`@hello-pangea/dnd`, `@xyflow/react`). Deleted unused/broken diagram helper components.
-- v3.11.0 (2025-06-14): **Editor System Refactoring Cycle 5** - Replaced `BlockList.tsx` with a new implementation that correctly renders `LayoutElement` structures (rows, grids, blocks). Created `LayoutGrid.tsx` to handle 2D grid rendering. This resolves a major architectural inconsistency in the editor's rendering pipeline.
-- v3.10.0 (2025-06-14): **Editor System Refactoring Cycle 4** - Implemented a unified `onAddBlock` handler with a consistent `AddBlockOptions` type across the editor components. This fixes inconsistent prop signatures and buggy block creation logic in `useBlockManagement`, `BlockEditor`, `SingleBlock`, and `LayoutRow`.
-- v3.9.0 (2025-06-14): **Editor System Refactoring Cycle 3** - Rearchitected `useBlockManagement` `addBlock`/`deleteBlock` functions with recursive logic to robustly handle nested layouts. Simplified and refactored `EditorToolbar` to match its usage context within `BlockEditor`.
-- v3.8.0 (2025-06-14): **Editor System Refactoring Cycle 2** - Refined `useBlockManagement` for adding blocks to grids. Updated `BlockEditor` for toolbar actions and DND types. Adjusted `SingleBlock` and `LayoutRow` for `LayoutElement`-based operations and DND.
-- v3.7.0 (2025-06-14): **Editor System Refactoring Cycle 1** - Added missing DND dependency, updated type definitions (Review, LayoutElement, Grid types), corrected BlockType usage, started aligning BlockEditor with useBlockManagement.
-- v3.6.0 (2025-06-14): **Build Error Crisis Resolution COMPLETE** - All type inconsistencies resolved, missing interfaces added, complete string ID enforcement, zero build errors achieved
-- v3.5.0 (2025-06-13): **Type System Foundation Repair COMPLETE** - All IDs migrated to string format, comprehensive type definitions added, build errors resolved
-- v3.4.0 (2025-06-13): Phase 1 API CASCADE RESOLUTION IMPLEMENTED - Monitoring system, component audit, context enforcement complete
-- v3.3.0 (2025-06-13): Phase 1 complete - API cascade resolved, UserInteractionContext implemented
-- v3.2.0 (2025-06-13): Phase 1 completion - bundle optimization, memory management, error boundaries
+- v3.14.0 (2025-06-14): **Build Stabilization Cycle 1** - Executed batch-fix of over 40 build errors by standardizing on string-based IDs for all blocks and entities. Corrected type mismatches in grid hooks, block management, comment systems, and various components. This resolves the most critical type inconsistencies.
+- v3.13.0 (2025-06-14): **Editor System Refactoring Cycle 6** - Fixed multiple React Flow and layout component type errors. Aligned component props and state with expected types from libraries (`@hello-pangea/dnd`, `@xyflow/react`). Deleted unused/broken diagram helper components.
+- v3.12.0 (2025-06-14): **Editor System Refactoring Cycle 5** - Replaced `BlockList.tsx` with a new implementation that correctly renders `LayoutElement` structures (rows, grids, blocks). Created `LayoutGrid.tsx` to handle 2D grid rendering. This resolves a major architectural inconsistency in the editor's rendering pipeline.
+- v3.11.0 (2025-06-14): **Editor System Refactoring Cycle 4** - Implemented a unified `onAddBlock` handler with a consistent `AddBlockOptions` type across the editor components. This fixes inconsistent prop signatures and buggy block creation logic in `useBlockManagement`, `BlockEditor`, `SingleBlock`, and `LayoutRow`.
+- v3.10.0 (2025-06-14): **Editor System Refactoring Cycle 3** - Rearchitected `useBlockManagement` `addBlock`/`deleteBlock` functions with recursive logic to robustly handle nested layouts. Simplified and refactored `EditorToolbar` to match its usage context within `BlockEditor`.
+- v3.9.0 (2025-06-14): **Editor System Refactoring Cycle 2** - Refined `useBlockManagement` for adding blocks to grids. Updated `BlockEditor` for toolbar actions and DND types. Adjusted `SingleBlock` and `LayoutRow` for `LayoutElement`-based operations and DND.
+- v3.8.0 (2025-06-14): **Editor System Refactoring Cycle 1** - Added missing DND dependency, updated type definitions (Review, LayoutElement, Grid types), corrected BlockType usage, started aligning BlockEditor with useBlockManagement.
+- v3.7.0 (2025-06-14): **Build Error Crisis Resolution COMPLETE** - All type inconsistencies resolved, missing interfaces added, complete string ID enforcement, zero build errors achieved
+- v3.6.0 (2025-06-14): **Type System Foundation Repair COMPLETE** - All IDs migrated to string format, comprehensive type definitions added, build errors resolved
+- v3.5.0 (2025-06-13): Phase 1 API CASCADE RESOLUTION IMPLEMENTED - Monitoring system, component audit, context enforcement complete
+- v3.4.0 (2025-06-13): Phase 1 complete - API cascade resolved, UserInteractionContext implemented
+- v3.3.0 (2025-06-13): Phase 1 completion - bundle optimization, memory management, error boundaries
+- v3.2.0 (2025-06-13): Performance monitoring and query optimization
 - v3.1.0 (2025-06-13): Performance monitoring and query optimization
 - v3.0.0 (2025-06-13): Major architecture improvements with unified systems
 

@@ -1,4 +1,3 @@
-
 // ABOUTME: Editor tabs component for issue editor
 // Handles tab navigation and content rendering
 
@@ -76,7 +75,7 @@ export const EditorTabs: React.FC<EditorTabsProps> = ({
 
       <TabsContent value="basic">
         <IssueFormContainer
-          initialValues={formValues}
+          values={formValues}
           onSubmit={onSubmit}
           onCancel={onCancel}
           isSubmitting={isSubmitting}
