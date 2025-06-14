@@ -2,7 +2,7 @@
 // ABOUTME: Defines the core data structures for the block-based review editor.
 // This file establishes the unified type system for blocks, layouts, and content.
 
-import { FC } from 'react';
+import { FC, CSSProperties } from 'react';
 
 // ========== CORE BLOCK & REVIEW STRUCTURES ==========
 
@@ -68,7 +68,7 @@ export interface GridLayoutElement {
 export interface LayoutColumn {
   id: string;
   elements: LayoutElements; // Using type alias here
-  settings?: { width?: string };
+  settings?: { width?: string; style?: CSSProperties };
 }
 
 export interface LayoutRowDefinition {
@@ -81,6 +81,7 @@ export interface GridCell {
   blockId: string | null;
   colSpan?: number;
   rowSpan?: number;
+  settings?: { style?: CSSProperties };
 }
 
 export interface GridPosition {
@@ -112,3 +113,108 @@ export interface BlockComponentProps<T = any> {
 }
 
 export type BlockComponent = FC<BlockComponentProps>;
+
+// ========== SPACING ==========
+export interface SpacingConfig {
+  paddingTop?: string;
+  paddingBottom?: string;
+  paddingLeft?: string;
+  paddingRight?: string;
+  marginTop?: string;
+  marginBottom?: string;
+  marginLeft?: string;
+  marginRight?: string;
+}
+
+// ========== SNAPSHOT CARD ==========
+export interface SnapshotMetric {
+  label: string;
+  value: string | number;
+  unit?: string;
+}
+
+export interface SnapshotCardContent {
+  title: string;
+  subtitle?: string;
+  description?: string;
+  icon?: string;
+  value?: string | number;
+  change?: string;
+  trend?: 'up' | 'down' | 'neutral';
+  metrics?: SnapshotMetric[];
+  key_findings?: string[];
+  population?: string;
+  intervention?: string;
+  comparison?: string;
+  outcome?: string;
+  design?: string;
+  evidence_level?: 'high' | 'moderate' | 'low' | 'very_low' | string;
+  recommendation_strength?: 'strong' | 'conditional' | 'expert_opinion' | string;
+  source?: string;
+  timestamp?: string;
+}
+
+// ========== DIAGRAMS ==========
+export interface DiagramNodeData {
+  type?: 'rectangle' | 'circle' | 'diamond';
+  label: string;
+  color?: string;
+  width?: number;
+  height?: number;
+}
+
+export interface DiagramEdgeData {
+  label?: string;
+}
+
+export interface DiagramNode {
+  id: string;
+  type?: string;
+  position: { x: number; y: number };
+  data: DiagramNodeData;
+}
+
+export interface DiagramEdge {
+  id: string;
+  source: string;
+  target: string;
+  type?: string;
+  data?: DiagramEdgeData;
+  animated?: boolean;
+}
+
+export interface DiagramContent {
+  nodes: DiagramNode[];
+  edges: DiagramEdge[];
+  viewport?: any;
+}
+
+export interface DiagramTemplateNode {
+  id: string;
+  label: string;
+  type?: 'rectangle' | 'circle' | 'diamond' | 'group';
+  position: { x: number; y: number };
+  parentId?: string;
+  width?: number;
+  height?: number;
+}
+
+export interface DiagramTemplateConnection {
+  source: string;
+  target: string;
+  label?: string;
+}
+
+// Helper type for enhanced issue data in viewer
+export interface EnhancedIssue {
+  id: string;
+  title: string;
+  description: string;
+  authors: string;
+  specialty: string;
+  year?: number;
+  population: string;
+  review_type: 'native' | 'pdf' | 'mixed';
+  article_pdf_url: string;
+  pdf_url: string;
+}

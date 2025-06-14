@@ -1,4 +1,3 @@
-
 // ABOUTME: Reviewer quote block with inline editing and comprehensive styling controls
 // Displays reviewer quotes with author attribution and customizable appearance
 

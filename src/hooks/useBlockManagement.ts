@@ -5,6 +5,7 @@ import { ReviewBlock, BlockType, LayoutElement, GridPosition, AddBlockOptions } 
 import { generateId } from '@/lib/utils';
 
 export interface UseBlockManagementReturn {
+  // State
   elements: LayoutElement[];
   blocks: { [key: string]: ReviewBlock };
   activeBlockId: string | null;
@@ -32,15 +33,14 @@ const mapElementsTree = (elements: LayoutElement[], callback: (el: LayoutElement
     return elements.map(element => {
         let newElement = { ...element };
 
-        if (newElement.columns) {
+        if (newElement.type === 'row' && newElement.columns) {
             newElement.columns = newElement.columns.map(column => ({
                 ...column,
                 elements: mapElementsTree(column.elements, callback)
             }));
         }
         
-        // This is a placeholder for 2D grid traversal if needed later
-        if (newElement.rows) {
+        if (newElement.type === 'grid' && newElement.rows) {
             // Deeper traversal logic for 2D grids can be added here
         }
         
@@ -67,20 +67,22 @@ export const useBlockManagement = (
   const updateState = (newElements: LayoutElement[], newBlocks: { [key: string]: ReviewBlock }) => {
     const newHistory = history.slice(0, historyIndex + 1);
     newHistory.push({ elements: newElements, blocks: newBlocks });
+
     if (newHistory.length > historyLimit) {
       newHistory.shift();
     }
+
     setHistory(newHistory);
     setHistoryIndex(newHistory.length - 1);
   };
   
   const setElements = (newElements: LayoutElement[]) => {
       updateState(newElements, blocks);
-  }
-
+  };
+  
   const setBlocks = (newBlocks: { [key: string]: ReviewBlock }) => {
       updateState(elements, newBlocks);
-  }
+  };
 
   const undo = useCallback(() => {
     if (canUndo) {

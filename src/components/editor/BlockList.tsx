@@ -111,7 +111,8 @@ export const BlockList: React.FC<BlockListProps> = ({
                     />
                   );
                 default:
-                  return <div key={element.id || index} className="text-xs text-red-500 p-1 bg-red-900/20 rounded">Unsupported layout element type: {(element as any).type}</div>;
+                  const unknownElement = element as any;
+                  return <div key={unknownElement.id || index} className="text-xs text-red-500 p-1 bg-red-900/20 rounded">Unsupported layout element type: {unknownElement.type}</div>;
               }
             };
 

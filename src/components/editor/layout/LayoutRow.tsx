@@ -1,3 +1,4 @@
+
 // ABOUTME: Component to render a layout row containing multiple columns/elements.
 // Each "column" in a LayoutRow can be a BlockElement or another LayoutElement (like a nested grid).
 import React from 'react';
@@ -76,7 +77,8 @@ const renderElement = (
       );
 
     default:
-      return <div key={element.id || elementIndex} className="text-xs text-yellow-400 p-1">Unsupported element: {element.type}</div>;
+      const unknownElement = element as any;
+      return <div key={unknownElement.id || elementIndex} className="text-xs text-yellow-400 p-1">Unsupported element: {unknownElement.type}</div>;
   }
 };
 
