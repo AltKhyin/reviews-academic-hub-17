@@ -3,10 +3,10 @@
 import { useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Comment } from '@/types/commentTypes';
+import { Comment, EntityType } from '@/types/commentTypes';
 import { toast } from '@/hooks/use-toast';
 
-export const useOptimizedCommentVoting = (entityType: string, entityId: string) => {
+export const useOptimizedCommentVoting = (entityType: EntityType, entityId: string) => {
   const [isVoting, setIsVoting] = useState(false);
   const queryClient = useQueryClient();
 

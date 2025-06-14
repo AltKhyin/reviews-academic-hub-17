@@ -1,12 +1,45 @@
-
 // ABOUTME: Optimized homepage data loading with request batching and deduplication
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useRequestBatcher } from './useRequestBatcher';
 import { useCallback } from 'react';
+import { PostgrestError } from '@supabase/supabase-js';
+
+interface HomepageIssue {
+  id: string;
+  title: string;
+  cover_image_url: string | null;
+  specialty: string;
+  published_at: string | null;
+  created_at: string;
+  featured: boolean | null;
+  published: boolean;
+  score: number | null;
+}
+
+interface ReviewerComment {
+  id: string;
+  reviewer_name: string;
+  reviewer_avatar: string | null;
+  comment: string;
+  created_at: string;
+}
+
+interface HomepageData {
+  issues: HomepageIssue[];
+  sectionVisibility: any;
+  featuredIssue: HomepageIssue | null;
+  reviewerComments: ReviewerComment[];
+  errors: {
+    issues: PostgrestError | null;
+    sectionVisibility: PostgrestError | null;
+    featuredIssue: PostgrestError | null;
+    reviewerComments: PostgrestError | null;
+  };
+}
 
 // Centralized homepage data fetcher to prevent cascade
-const fetchHomepageData = async () => {
+const fetchHomepageData = async (): Promise<HomepageData> => {
   const [issues, sectionVisibility, featuredIssue, reviewerComments] = await Promise.all([
     supabase
       .from('issues')
