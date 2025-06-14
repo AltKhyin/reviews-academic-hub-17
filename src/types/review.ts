@@ -1,4 +1,3 @@
-
 // ABOUTME: Enhanced review types with string IDs for database compatibility and complete type definitions
 export type BlockType = 
   | 'text' 
@@ -105,7 +104,15 @@ export interface DiagramConnection {
   targetNodeId: string;
   sourcePoint: 'top' | 'right' | 'bottom' | 'left';
   targetPoint: 'top' | 'right' | 'bottom' | 'left';
-  label?: string;
+  label?: {
+    text: string;
+    position: number;
+    style: {
+      backgroundColor: string;
+      textColor: string;
+      fontSize: number;
+    };
+  };
   style: {
     strokeColor: string;
     strokeWidth: number;

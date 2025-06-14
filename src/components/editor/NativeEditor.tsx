@@ -82,7 +82,7 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
             <div className="flex-1 overflow-y-auto p-4">
               <BlockList
                 blocks={blocks}
-                activeBlockI
+                activeBlockId={activeBlockId}
                 onActiveBlockChange={onActiveBlockChange}
                 onDeleteBlock={onDeleteBlock}
                 onMoveBlock={handleMove}

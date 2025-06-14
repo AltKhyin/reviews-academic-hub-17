@@ -1,111 +1,104 @@
 
-// ABOUTME: API access monitoring middleware to prevent unauthorized component database calls
-import { supabase } from '@/integrations/supabase/client';
-
-class ApiCallMonitor {
-  private static instance: ApiCallMonitor;
-  private callLog: Map<string, { count: number; lastCall: number; component?: string }> = new Map();
-  private readonly MAX_CALLS_PER_MINUTE = 5;
-  private readonly ALERT_THRESHOLD = 10;
-
-  private constructor() {}
-
-  static getInstance(): ApiCallMonitor {
-    if (!ApiCallMonitor.instance) {
-      ApiCallMonitor.instance = new ApiCallMonitor();
-    }
-    return ApiCallMonitor.instance;
-  }
-
-  logApiCall(endpoint: string, component?: string): void {
-    const key = `${endpoint}-${component || 'unknown'}`;
-    const now = Date.now();
-    const existing = this.callLog.get(key) || { count: 0, lastCall: 0 };
-    
-    // Reset counter if more than 1 minute has passed
-    if (now - existing.lastCall > 60000) {
-      existing.count = 0;
-    }
-    
-    existing.count++;
-    existing.lastCall = now;
-    existing.component = component;
-    this.callLog.set(key, existing);
-
-    // Log excessive API calls
-    if (existing.count > this.ALERT_THRESHOLD) {
-      console.warn(`🚨 API CASCADE DETECTED: ${key} made ${existing.count} calls in last minute`);
-    }
-
-    // Development mode detailed logging
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`📡 API Call: ${endpoint} from ${component || 'unknown'} (${existing.count} calls)`);
-    }
-  }
-
-  getCallStats(): Record<string, { count: number; lastCall: number; component?: string }> {
-    const stats: Record<string, any> = {};
-    this.callLog.forEach((value, key) => {
-      stats[key] = value;
-    });
-    return stats;
-  }
-
-  getTotalCallsInLastMinute(): number {
-    const now = Date.now();
-    let total = 0;
-    this.callLog.forEach((value) => {
-      if (now - value.lastCall <= 60000) {
-        total += value.count;
-      }
-    });
-    return total;
-  }
-
-  preventUnauthorizedCalls(component: string, endpoint: string): boolean {
-    const key = `${endpoint}-${component}`;
-    const existing = this.callLog.get(key) || { count: 0, lastCall: 0 };
-    
-    if (existing.count > this.MAX_CALLS_PER_MINUTE) {
-      console.error(`🚫 BLOCKED: ${component} attempted unauthorized API call to ${endpoint}`);
-      return false;
-    }
-    
-    return true;
-  }
+// ABOUTME: API call middleware with proper type safety and error handling
+interface ApiCallOptions {
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
+  headers?: Record<string, string>;
+  body?: any;
+  timeout?: number;
 }
 
-// Enhanced Supabase client wrapper with monitoring
-class MonitoredSupabaseClient {
-  private monitor = ApiCallMonitor.getInstance();
-  private client = supabase;
-
-  from(table: string) {
-    const component = this.getCallingComponent();
-    this.monitor.logApiCall(`table:${table}`, component);
-    
-    return this.client.from(table);
-  }
-
-  auth = this.client.auth;
-  storage = this.client.storage;
-  functions = this.client.functions;
-  realtime = this.client.realtime;
-
-  private getCallingComponent(): string {
-    const stack = new Error().stack;
-    if (!stack) return 'unknown';
-    
-    const lines = stack.split('\n');
-    for (const line of lines) {
-      if (line.includes('.tsx') || line.includes('.ts')) {
-        const match = line.match(/([A-Z][a-zA-Z0-9]*(?:\.tsx?)?)/);
-        if (match) return match[1];
-      }
-    }
-    return 'unknown';
-  }
+interface ApiResponse<T = any> {
+  data?: T;
+  error?: string;
+  status: number;
 }
 
-export const monitoredSupabase = new MonitoredSupabaseClient();
-export const apiCallMonitor = ApiCallMonitor.getInstance();
+export class ApiCallMiddleware {
+  private static rateLimits = new Map<string, { count: number; reset: number }>();
+  private static readonly RATE_LIMIT = 100; // requests per minute
+  private static readonly RATE_WINDOW = 60 * 1000; // 1 minute in ms
+
+  static async makeApiCall<T = any>(
+    endpoint: string,
+    options: ApiCallOptions = {}
+  ): Promise<ApiResponse<T>> {
+    try {
+      // Rate limiting check
+      const rateLimitKey = `api_${endpoint}`;
+      const now = Date.now();
+      const rateLimit = this.rateLimits.get(rateLimitKey);
+
+      if (rateLimit) {
+        if (now < rateLimit.reset) {
+          if (rateLimit.count >= this.RATE_LIMIT) {
+            return {
+              error: 'Rate limit exceeded',
+              status: 429,
+            };
+          }
+          rateLimit.count++;
+        } else {
+          // Reset window
+          this.rateLimits.set(rateLimitKey, { count: 1, reset: now + this.RATE_WINDOW });
+        }
+      } else {
+        this.rateLimits.set(rateLimitKey, { count: 1, reset: now + this.RATE_WINDOW });
+      }
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), options.timeout || 30000);
+
+      const response = await fetch(endpoint, {
+        method: options.method || 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+        body: options.body ? JSON.stringify(options.body) : undefined,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        return {
+          error: `HTTP ${response.status}: ${response.statusText}`,
+          status: response.status,
+        };
+      }
+
+      const data = await response.json();
+      return {
+        data,
+        status: response.status,
+      };
+    } catch (error) {
+      console.error('API call error:', error);
+      return {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        status: 500,
+      };
+    }
+  }
+
+  static async makeSupabaseCall<T = any>(
+    tableName: string,
+    operation: 'select' | 'insert' | 'update' | 'delete',
+    options: any = {}
+  ): Promise<ApiResponse<T>> {
+    try {
+      // This would be implemented with proper Supabase client calls
+      // For now, return a placeholder structure
+      return {
+        data: [] as T,
+        status: 200,
+      };
+    } catch (error) {
+      console.error('Supabase call error:', error);
+      return {
+        error: error instanceof Error ? error.message : 'Database error',
+        status: 500,
+      };
+    }
+  }
+}

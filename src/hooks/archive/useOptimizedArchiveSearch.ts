@@ -1,97 +1,125 @@
 
-// ABOUTME: Optimized archive search hook with intelligent query consolidation
-// Replaces multiple individual search and filter queries with single efficient call
+// ABOUTME: Optimized archive search with proper interface definitions
+import { useOptimizedQuery, queryKeys, queryConfigs } from '../useOptimizedQuery';
+import { supabase } from '@/integrations/supabase/client';
+import { useMemo } from 'react';
 
-import { useState, useCallback, useMemo } from 'react';
-import { useOptimizedArchiveData } from './useOptimizedArchiveData';
-
-interface UseOptimizedArchiveSearchResult {
-  // Data
-  issues: Array<any>;
-  totalCount: number;
-  filteredCount: number;
-  specialties: string[];
-  years: string[];
-  
-  // State
-  searchQuery: string;
-  selectedTags: string[];
-  selectedSpecialty?: string;
-  selectedYear?: string;
-  
-  // Actions
-  setSearchQuery: (query: string) => void;
-  setSelectedTags: (tags: string[]) => void;
-  setSelectedSpecialty: (specialty?: string) => void;
-  setSelectedYear: (year?: string) => void;
-  clearAllFilters: () => void;
-  
-  // Status
-  isLoading: boolean;
-  error: any;
+interface OptimizedArchiveResult {
+  issues: Array<{
+    id: string;
+    title: string;
+    cover_image_url?: string;
+    specialty: string;
+    published_at: string;
+    authors?: string;
+    year?: string;
+    score?: number;
+  }>;
+  metadata: {
+    totalCount: number;
+    filteredCount: number;
+    specialties: string[];
+    years: string[];
+  };
 }
 
-export const useOptimizedArchiveSearch = (): UseOptimizedArchiveSearchResult => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [selectedSpecialty, setSelectedSpecialty] = useState<string | undefined>();
-  const [selectedYear, setSelectedYear] = useState<string | undefined>();
+interface UseOptimizedArchiveSearchProps {
+  searchQuery?: string;
+  specialty?: string;
+  year?: string;
+  limit?: number;
+  offset?: number;
+}
 
-  // Use optimized data hook
-  const { 
-    data: archiveData, 
-    isLoading, 
-    error 
-  } = useOptimizedArchiveData(searchQuery, selectedTags, selectedSpecialty, selectedYear);
+export const useOptimizedArchiveSearch = ({
+  searchQuery = '',
+  specialty = '',
+  year = '',
+  limit = 20,
+  offset = 0
+}: UseOptimizedArchiveSearchProps) => {
+  
+  const { data, isLoading, error } = useOptimizedQuery<OptimizedArchiveResult>(
+    queryKeys.archiveSearch(searchQuery, specialty),
+    async (): Promise<OptimizedArchiveResult> => {
+      try {
+        // Build query with filters
+        let query = supabase
+          .from('issues')
+          .select('id, title, cover_image_url, specialty, published_at, authors, year, score')
+          .eq('published', true);
 
-  // Clear all filters
-  const clearAllFilters = useCallback(() => {
-    setSearchQuery('');
-    setSelectedTags([]);
-    setSelectedSpecialty(undefined);
-    setSelectedYear(undefined);
-  }, []);
+        if (searchQuery.trim()) {
+          query = query.or(`title.ilike.%${searchQuery}%,authors.ilike.%${searchQuery}%`);
+        }
 
-  // Memoize processed data to prevent unnecessary recalculations
-  const processedData = useMemo(() => {
-    if (!archiveData) {
-      return {
-        issues: [],
-        totalCount: 0,
-        filteredCount: 0,
-        specialties: [],
-        years: [],
-      };
+        if (specialty) {
+          query = query.eq('specialty', specialty);
+        }
+
+        if (year) {
+          query = query.eq('year', year);
+        }
+
+        const { data: issues, error } = await query
+          .order('score', { ascending: false })
+          .order('published_at', { ascending: false })
+          .range(offset, offset + limit - 1);
+
+        if (error) {
+          console.warn('Archive search error:', error);
+          return {
+            issues: [],
+            metadata: {
+              totalCount: 0,
+              filteredCount: 0,
+              specialties: [],
+              years: [],
+            },
+          };
+        }
+
+        // Get metadata separately for better performance
+        const { data: metadataResult } = await supabase.rpc('get_archive_metadata');
+        
+        return {
+          issues: issues || [],
+          metadata: {
+            totalCount: metadataResult?.total_published || 0,
+            filteredCount: issues?.length || 0,
+            specialties: metadataResult?.specialties || [],
+            years: metadataResult?.years || [],
+          },
+        };
+      } catch (error) {
+        console.warn('Archive search error:', error);
+        return {
+          issues: [],
+          metadata: {
+            totalCount: 0,
+            filteredCount: 0,
+            specialties: [],
+            years: [],
+          },
+        };
+      }
+    },
+    {
+      ...queryConfigs.dynamic,
+      enabled: true,
     }
+  );
 
-    return {
-      issues: archiveData.issues,
-      totalCount: archiveData.totalCount,
-      filteredCount: archiveData.filteredCount,
-      specialties: archiveData.specialties,
-      years: archiveData.years,
-    };
-  }, [archiveData]);
-
-  return {
-    // Data
-    ...processedData,
-    
-    // State
-    searchQuery,
-    selectedTags,
-    selectedSpecialty,
-    selectedYear,
-    
-    // Actions
-    setSearchQuery,
-    setSelectedTags,
-    setSelectedSpecialty,
-    setSelectedYear,
-    clearAllFilters,
-    
-    // Status
+  const result = useMemo(() => ({
+    issues: data?.issues || [],
+    totalCount: data?.metadata.totalCount || 0,
+    filteredCount: data?.metadata.filteredCount || 0,
+    specialties: data?.metadata.specialties || [],
+    years: data?.metadata.years || [],
     isLoading,
     error,
-  };
+    hasError: Boolean(error),
+  }), [data, isLoading, error]);
+
+  return result;
 };

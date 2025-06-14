@@ -1,134 +1,39 @@
 
-// ABOUTME: Centralized query optimization with request deduplication and aggressive caching
+// ABOUTME: Optimized query hook with consistent caching and error handling
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 
-// Global request deduplication cache
-const requestCache = new Map();
-const pendingRequests = new Map();
-
-// Centralized query key factory for consistency
 export const queryKeys = {
-  // Issues queries
-  issues: (filters?: Record<string, any>) => ['issues', filters].filter(Boolean),
-  issuesBatch: (ids: string[]) => ['issues', 'batch', ids],
-  featuredIssue: () => ['issues', 'featured'],
-  reviewWithBlocks: (id: string) => ['review', 'blocks', id],
-  
-  // Analytics and stats
-  analytics: () => ['analytics'],
-  sidebarStats: () => ['sidebar', 'stats'],
-  queryPerformance: () => ['query', 'performance'],
-  
-  // Community
-  topThreads: (minComments?: number) => ['threads', 'top', minComments],
-  popularIssues: (period?: number, limit?: number) => ['issues', 'popular', period, limit],
-  
-  // Settings
-  homeSettings: () => ['settings', 'home'],
-  sidebarConfig: () => ['config', 'sidebar'],
-  
-  // User data
-  userPermissions: (userId: string) => ['user', 'permissions', userId],
-  userReactions: (userId: string) => ['user', 'reactions', userId],
-};
+  sidebarStats: () => ['sidebar-stats'] as const,
+  communityPosts: (limit?: number, offset?: number) => ['community-posts', limit, offset] as const,
+  archiveSearch: (query?: string, specialty?: string) => ['archive-search', query, specialty] as const,
+  comments: (entityId: string, entityType: string) => ['comments', entityId, entityType] as const,
+  homepage: () => ['homepage-data'] as const,
+} as const;
 
-// Optimized query configurations with aggressive caching
-export const queryConfigs: Record<string, any> = {
-  // Static/semi-static data - very long cache times
+export const queryConfigs = {
   static: {
-    staleTime: 30 * 60 * 1000, // 30 minutes
-    gcTime: 60 * 60 * 1000, // 60 minutes
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
-    retry: 1,
-  },
-  
-  // Real-time data - moderate cache times with careful refresh
-  realtime: {
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 15 * 60 * 1000, // 15 minutes
     refetchOnWindowFocus: false,
-    refetchInterval: false, // Disable auto-refresh
-    retry: 1,
-  },
-  
-  // User-specific data - long cache times
-  user: {
-    staleTime: 15 * 60 * 1000, // 15 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes
-    refetchOnWindowFocus: false,
     refetchOnMount: false,
     retry: 1,
   },
-  
-  // Performance monitoring - minimal refresh
-  performance: {
-    staleTime: 10 * 60 * 1000, // 10 minutes
-    gcTime: 20 * 60 * 1000, // 20 minutes
+  dynamic: {
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
     refetchOnWindowFocus: false,
-    refetchInterval: false,
-    retry: 1,
-  }
-};
+    retry: 2,
+  },
+} as const;
 
-// Generic optimized query hook with request deduplication
-export const useOptimizedQuery = <TData = unknown>(
+export const useOptimizedQuery = <T>(
   queryKey: readonly unknown[],
-  queryFn: () => Promise<TData>,
-  options?: Partial<UseQueryOptions<TData>>
+  queryFn: () => Promise<T>,
+  options?: Partial<UseQueryOptions<T, Error, T, readonly unknown[]>>
 ) => {
-  // Create cache key for deduplication
-  const cacheKey = JSON.stringify(queryKey);
-  
-  // Wrap query function with deduplication
-  const deduplicatedQueryFn = async (): Promise<TData> => {
-    // Check if request is already pending
-    if (pendingRequests.has(cacheKey)) {
-      return pendingRequests.get(cacheKey);
-    }
-
-    // Check cache first
-    if (requestCache.has(cacheKey)) {
-      const cached = requestCache.get(cacheKey);
-      if (Date.now() - cached.timestamp < 30000) { // 30 second cache
-        return cached.data;
-      }
-    }
-
-    // Create and cache the promise
-    const promise = queryFn().then(data => {
-      // Cache the result
-      requestCache.set(cacheKey, { data, timestamp: Date.now() });
-      // Remove from pending
-      pendingRequests.delete(cacheKey);
-      return data;
-    }).catch(error => {
-      // Remove from pending on error
-      pendingRequests.delete(cacheKey);
-      throw error;
-    });
-
-    // Cache the promise to prevent duplicate requests
-    pendingRequests.set(cacheKey, promise);
-    return promise;
-  };
-
-  // Auto-select config based on query key pattern
-  let config = queryConfigs.user; // default
-  
-  const keyString = JSON.stringify(queryKey);
-  if (keyString.includes('stats') || keyString.includes('analytics')) {
-    config = queryConfigs.performance;
-  } else if (keyString.includes('settings') || keyString.includes('config')) {
-    config = queryConfigs.static;
-  } else if (keyString.includes('threads') || keyString.includes('comments')) {
-    config = queryConfigs.realtime;
-  }
-
   return useQuery({
     queryKey,
-    queryFn: deduplicatedQueryFn,
-    ...config,
+    queryFn,
     ...options,
   });
 };
