@@ -5,10 +5,11 @@ import { useOptimizedCommentVoting } from './useOptimizedCommentVoting';
 import { useCommentFetch } from './useCommentFetch';
 import { EntityType } from '@/types/commentTypes';
 
-export const useOptimizedComments = (entityType: EntityType, entityId: string) => {
-  const commentFetch = useCommentFetch(entityType, entityId);
-  const commentActions = useOptimizedCommentActions(entityType, entityId);
-  const commentVoting = useOptimizedCommentVoting(entityType, entityId);
+export const useOptimizedComments = (entityType: string, entityId: string) => {
+  const typedEntityType = entityType as EntityType;
+  const commentFetch = useCommentFetch(typedEntityType, entityId);
+  const commentActions = useOptimizedCommentActions(typedEntityType, entityId);
+  const commentVoting = useOptimizedCommentVoting(typedEntityType, entityId);
 
   // Create unified interface with proper method names
   const addComment = async (content: string, userId: string) => {

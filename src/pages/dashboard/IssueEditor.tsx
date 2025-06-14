@@ -7,7 +7,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { Issue } from '@/types/issue';
-import { Review, ReviewBlock } from '@/types/review';
+import { Review, ReviewBlock, BlockType } from '@/types/review';
 import { IssueHeader } from './components/issue/IssueHeader';
 import { IssueActionButtons } from './components/issue/IssueActionButtons';
 import { ContentTypeSelector } from './components/editor/ContentTypeSelector';
@@ -81,7 +81,7 @@ const IssueEditor = () => {
       
       return (data || []).map(dbBlock => ({
         id: String(dbBlock.id),
-        type: dbBlock.type as any,
+        type: dbBlock.type as BlockType,
         content: dbBlock.payload,
         sort_index: dbBlock.sort_index,
         visible: dbBlock.visible,
