@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { PostData, CommunitySettings } from '@/types/community';
@@ -32,7 +33,7 @@ export function useCommunityPosts(activeTab: string, searchTerm: string) {
       }
 
       console.log(`Fetched ${data?.length || 0} posts via RPC.`);
-      return (data as PostData[] | null) || [];
+      return (data as unknown as PostData[] | null) || [];
     },
     enabled: true,
     staleTime: 2 * 60 * 1000,

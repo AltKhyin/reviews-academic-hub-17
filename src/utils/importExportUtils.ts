@@ -278,7 +278,7 @@ export const validateImportData = (data: any): { isValid: boolean; errors: strin
   if (!data.blocks || !Array.isArray(data.blocks)) {
     errors.push('Missing or invalid blocks array');
     return { isValid: false, errors };
-  }
+    }
   
   // Validate each block with content checking
   data.blocks.forEach((block: any, index: number) => {
@@ -525,12 +525,26 @@ export const exportBlocks = (blocks: ReviewBlock[]): ExportData => {
  */
 export const getDefaultBlockContent = (type: BlockType): any => {
   const defaults: Record<BlockType, any> = {
+    text: { text: 'Novo texto' },
     paragraph: { text: 'Novo parágrafo', content: 'Novo parágrafo' },
     heading: { text: 'Novo Título', level: 2 },
     list: { items: ['Item 1', 'Item 2'], ordered: false },
     quote: { text: 'Nova citação', author: '' },
     code: { code: '// Código aqui', language: 'javascript' },
     divider: { style: 'solid', color: '#374151', thickness: 1 },
+    image: { url: '', caption: 'Nova Imagem', alt: '' },
+    video: { src: '', caption: '' },
+    embed: { src: '' },
+    chart: { type: 'bar', data: [] },
+    audio: { src: '' },
+    file: { src: '', name: 'Novo Arquivo' },
+    gallery: { images: [] },
+    timeline: { events: [] },
+    comparison: { items: [] },
+    accordion: { items: [{ title: 'Título 1', content: 'Conteúdo 1' }] },
+    tabs: { items: [{ title: 'Aba 1', content: 'Conteúdo 1' }] },
+    layout_grid: {},
+    grid_2d: {},
     figure: { 
       caption: 'Nova figura', 
       url: '', 
