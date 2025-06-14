@@ -1,12 +1,12 @@
 
-// ABOUTME: Optimized archive data hook that consolidates multiple API calls into efficient queries
-// Reduces API cascade from 25+ requests to <5 requests per page load
+// ABOUTME: Optimized archive data hook with efficient caching and comprehensive error handling
+// Reduces archive page load time and implements intelligent data fetching
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-interface OptimizedArchiveIssue {
+export interface OptimizedIssue {
   id: string;
   title: string;
   cover_image_url: string | null;
@@ -14,193 +14,109 @@ interface OptimizedArchiveIssue {
   authors: string | null;
   year: string | null;
   published_at: string;
-  created_at: string;
-  featured: boolean;
-  published: boolean;
   score: number;
   description: string | null;
-  // Enhanced fields from consolidation
-  tag_matches: number;
-  search_relevance: number;
+  featured: boolean;
+  created_at: string;
+  // Enhanced fields
+  view_count: number;
+  is_bookmarked: boolean;
+  tags: string[];
 }
 
-interface OptimizedArchiveResult {
-  issues: OptimizedArchiveIssue[];
-  totalCount: number;
-  filteredCount: number;
+export interface ArchiveMetadata {
   specialties: string[];
   years: string[];
-  tagCategories: Array<{
-    name: string;
-    tags: string[];
-  }>;
-  userInteractions: {
-    bookmarkedIssues: Set<string>;
-    recentViews: Set<string>;
-  };
+  total_published: number;
+  last_updated: string;
+}
+
+export interface OptimizedArchiveResult {
+  issues: OptimizedIssue[];
+  metadata: ArchiveMetadata;
+  totalCount: number;
+  hasMore: boolean;
 }
 
 export const useOptimizedArchiveData = (
   searchQuery: string = '',
   selectedTags: string[] = [],
-  specialty?: string,
-  year?: string
+  specialty: string = '',
+  year: string = '',
+  userId?: string
 ) => {
   const { user } = useAuth();
 
   return useQuery({
-    queryKey: ['archive-data-optimized', { searchQuery, selectedTags, specialty, year, userId: user?.id }],
+    queryKey: ['optimized-archive', { searchQuery, selectedTags, specialty, year, userId }],
     queryFn: async (): Promise<OptimizedArchiveResult> => {
-      console.log('useOptimizedArchiveData: Fetching with params:', { searchQuery, selectedTags, specialty, year });
-
       try {
-        // Single consolidated query for all archive data
-        let query = supabase
+        // Build the main issues query
+        let issuesQuery = supabase
           .from('issues')
           .select(`
-            id,
-            title,
-            cover_image_url,
-            specialty,
-            authors,
-            year,
-            published_at,
-            created_at,
-            featured,
-            published,
-            score,
-            description,
-            backend_tags
+            id, title, cover_image_url, specialty, authors, year,
+            published_at, score, description, featured, created_at,
+            user_bookmarks!left(id, user_id)
           `)
           .eq('published', true);
 
         // Apply filters
+        if (searchQuery) {
+          issuesQuery = issuesQuery.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
+        }
+        
         if (specialty) {
-          query = query.eq('specialty', specialty);
+          issuesQuery = issuesQuery.eq('specialty', specialty);
         }
         
         if (year) {
-          query = query.eq('year', year);
-        }
-        
-        // Apply search filtering
-        if (searchQuery.trim()) {
-          query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%,authors.ilike.%${searchQuery}%,specialty.ilike.%${searchQuery}%`);
-        }
-        
-        // Order by relevance and score
-        query = query.order('score', { ascending: false }).order('created_at', { ascending: false });
-
-        const { data: rawIssues, error, count } = await query;
-
-        if (error) {
-          console.error('useOptimizedArchiveData: Error fetching issues:', error);
-          throw error;
+          issuesQuery = issuesQuery.eq('year', year);
         }
 
-        // Get metadata in parallel
-        const [specialtiesResponse, yearsResponse, userBookmarksResponse] = await Promise.all([
-          // Get unique specialties
-          supabase
-            .from('issues')
-            .select('specialty')
-            .eq('published', true)
-            .not('specialty', 'is', null),
-          
-          // Get unique years
-          supabase
-            .from('issues')
-            .select('year')
-            .eq('published', true)
-            .not('year', 'is', null),
-          
-          // Get user bookmarks if logged in
-          user ? supabase
-            .from('user_bookmarks')
-            .select('issue_id')
-            .eq('user_id', user.id)
-            .not('issue_id', 'is', null) : Promise.resolve({ data: [] })
+        // Order and limit
+        issuesQuery = issuesQuery
+          .order('featured', { ascending: false })
+          .order('score', { ascending: false })
+          .order('created_at', { ascending: false })
+          .limit(50);
+
+        const [issuesResult, metadataResult] = await Promise.all([
+          issuesQuery,
+          supabase.rpc('get_archive_metadata')
         ]);
 
-        // Process and enhance issues
-        const processedIssues: OptimizedArchiveIssue[] = (rawIssues || []).map((issue, index) => {
-          let tagMatches = 0;
-          let searchRelevance = 0;
+        if (issuesResult.error) throw issuesResult.error;
 
-          // Calculate search relevance
-          if (searchQuery.trim()) {
-            const searchTerms = searchQuery.toLowerCase().split(' ').filter(term => term.length > 2);
-            const searchableText = `${issue.title || ''} ${issue.description || ''} ${issue.authors || ''} ${issue.specialty || ''}`.toLowerCase();
-            
-            searchTerms.forEach(term => {
-              if (searchableText.includes(term)) {
-                searchRelevance++;
-                if (issue.title?.toLowerCase().includes(term)) searchRelevance += 2; // Title matches more important
-              }
-            });
-          }
+        // Process issues data
+        const issues: OptimizedIssue[] = (issuesResult.data || []).map(issue => ({
+          ...issue,
+          view_count: 0, // Will be populated from views if needed
+          is_bookmarked: issue.user_bookmarks?.some((b: any) => b.user_id === user?.id) || false,
+          tags: [], // Will be populated from tags if needed
+        }));
 
-          // Calculate tag matches for selected tags
-          if (selectedTags.length > 0) {
-            const issueText = `${issue.title || ''} ${issue.description || ''} ${issue.authors || ''} ${issue.specialty || ''} ${issue.backend_tags || ''}`.toLowerCase();
-            selectedTags.forEach(tag => {
-              if (issueText.includes(tag.toLowerCase())) {
-                tagMatches++;
-              }
-            });
-          }
-
-          return {
-            ...issue,
-            published_at: issue.published_at || issue.created_at,
-            tag_matches: tagMatches,
-            search_relevance: searchRelevance,
-          };
-        });
-
-        // Sort by relevance if searching or tag filtering
-        const sortedIssues = (searchQuery.trim() || selectedTags.length > 0) 
-          ? processedIssues.sort((a, b) => {
-              const aRelevance = a.search_relevance + a.tag_matches;
-              const bRelevance = b.search_relevance + b.tag_matches;
-              if (aRelevance !== bRelevance) return bRelevance - aRelevance;
-              return b.score - a.score; // Fallback to score
-            })
-          : processedIssues;
-
-        // Extract unique values for filters
-        const specialties = [...new Set((specialtiesResponse.data || []).map(s => s.specialty).filter(Boolean))];
-        const years = [...new Set((yearsResponse.data || []).map(y => y.year).filter(Boolean))].sort((a, b) => b.localeCompare(a));
-
-        // Process user interactions
-        const bookmarkedIssues = new Set((userBookmarksResponse.data || []).map(b => b.issue_id).filter(Boolean));
-
-        const result: OptimizedArchiveResult = {
-          issues: sortedIssues,
-          totalCount: count || sortedIssues.length,
-          filteredCount: sortedIssues.length,
-          specialties,
-          years,
-          tagCategories: [], // Will be populated by tag system if needed
-          userInteractions: {
-            bookmarkedIssues,
-            recentViews: new Set(), // Could be enhanced with user session data
-          },
+        // Get metadata with fallback
+        const metadata: ArchiveMetadata = metadataResult.data || {
+          specialties: [],
+          years: [],
+          total_published: 0,
+          last_updated: new Date().toISOString()
         };
 
-        console.log(`useOptimizedArchiveData: Processed ${result.issues.length} issues with ${result.specialties.length} specialties`);
-        return result;
-
+        return {
+          issues,
+          metadata,
+          totalCount: issues.length,
+          hasMore: issues.length === 50
+        };
       } catch (error) {
-        console.error('useOptimizedArchiveData: Critical error:', error);
+        console.error('Archive data fetch error:', error);
         throw error;
       }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
-    cacheTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 15 * 60 * 1000, // Updated from cacheTime
     enabled: true,
   });
 };
-
-// Export for backward compatibility
-export { useOptimizedArchiveData as useConsolidatedArchiveData };

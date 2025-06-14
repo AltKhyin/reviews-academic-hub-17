@@ -51,16 +51,16 @@ export const useOptimizedCommunityPosts = (
   return useQuery({
     queryKey: ['community-posts-optimized', tab, searchTerm, limit, user?.id],
     queryFn: async (): Promise<OptimizedPostsResult> => {
-      // Single consolidated query for all post data
+      // Single consolidated query for all post data with proper relationships
       let query = supabase
         .from('posts')
         .select(`
           *,
-          profiles:user_id(full_name, avatar_url),
-          post_flairs:flair_id(name, color),
-          post_votes:post_votes!left(value),
-          post_bookmarks:post_bookmarks!left(created_at),
-          comments:comments!left(count)
+          profiles!posts_user_id_fkey(full_name, avatar_url),
+          post_flairs(name, color),
+          post_votes!left(value),
+          post_bookmarks!left(created_at),
+          comments!left(count)
         `)
         .eq('published', true);
 
@@ -91,19 +91,30 @@ export const useOptimizedCommunityPosts = (
 
       const { data: rawPosts, error, count } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error('Posts query error:', error);
+        throw error;
+      }
 
-      // Process and normalize data
-      const posts: OptimizedPost[] = (rawPosts || []).map(post => ({
-        ...post,
-        author_name: post.profiles?.full_name || null,
-        author_avatar: post.profiles?.avatar_url || null,
-        flair_name: post.post_flairs?.name || null,
-        flair_color: post.post_flairs?.color || null,
-        user_vote: post.post_votes?.[0]?.value || null,
-        bookmark_date: post.post_bookmarks?.[0]?.created_at || null,
-        comment_count: post.comments?.[0]?.count || 0,
-      }));
+      // Process and normalize data safely
+      const posts: OptimizedPost[] = (rawPosts || []).map(post => {
+        const profiles = Array.isArray(post.profiles) ? post.profiles[0] : post.profiles;
+        const flair = Array.isArray(post.post_flairs) ? post.post_flairs[0] : post.post_flairs;
+        const votes = Array.isArray(post.post_votes) ? post.post_votes : [];
+        const bookmarks = Array.isArray(post.post_bookmarks) ? post.post_bookmarks : [];
+        const comments = Array.isArray(post.comments) ? post.comments : [];
+
+        return {
+          ...post,
+          author_name: profiles?.full_name || null,
+          author_avatar: profiles?.avatar_url || null,
+          flair_name: flair?.name || null,
+          flair_color: flair?.color || null,
+          user_vote: votes.find((v: any) => v.user_id === user?.id)?.value || null,
+          bookmark_date: bookmarks.find((b: any) => b.user_id === user?.id)?.created_at || null,
+          comment_count: comments.length || 0,
+        };
+      });
 
       // Extract user interactions for easy lookup
       const bookmarkedPosts = new Set(
@@ -142,7 +153,7 @@ export const useOptimizedCommunityPosts = (
       };
     },
     staleTime: 2 * 60 * 1000, // 2 minutes
-    cacheTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 5 * 60 * 1000, // Updated from cacheTime
     enabled: true,
   });
 };

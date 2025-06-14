@@ -1,100 +1,172 @@
 
-// ABOUTME: Grid state computation and management
-// Handles grid row extraction and layout state calculation
+// ABOUTME: Grid state management hook with string ID support
+// Manages grid layout state and operations with proper type safety
 
-import { useMemo } from 'react';
+import { useState, useCallback } from 'react';
+import { Grid2DLayout, GridRow, GridCell, GridPosition } from '@/types/grid';
 import { ReviewBlock } from '@/types/review';
 
-interface GridRow {
-  id: string;
-  blocks: ReviewBlock[];
-  columns: number;
-  gap: number;
-  columnWidths?: number[];
-}
+export const useGridState = (initialGrid?: Grid2DLayout) => {
+  const [grid, setGrid] = useState<Grid2DLayout>(
+    initialGrid || {
+      id: `grid-${Date.now()}`,
+      rows: [],
+      columns: 2,
+      gap: 16
+    }
+  );
 
-interface GridLayoutState {
-  rows: GridRow[];
-  totalBlocks: number;
-}
+  const addRow = useCallback((gridId: string, position?: number) => {
+    if (gridId !== grid.id) return;
+    
+    setGrid(prev => {
+      const newRow: GridRow = {
+        id: `row-${Date.now()}`,
+        cells: Array.from({ length: prev.columns }, (_, index) => ({
+          id: `cell-${Date.now()}-${index}`,
+          position: index,
+          block: null
+        }))
+      };
 
-export const useGridState = (blocks: ReviewBlock[]): GridLayoutState => {
-  return useMemo(() => {
-    const rowsMap = new Map<string, GridRow>();
-    const processedBlocks = new Set<number>();
+      const newRows = [...prev.rows];
+      const insertPosition = position !== undefined ? Math.max(0, Math.min(position, newRows.length)) : newRows.length;
+      newRows.splice(insertPosition, 0, newRow);
+
+      return {
+        ...prev,
+        rows: newRows
+      };
+    });
+  }, [grid.id]);
+
+  const removeRow = useCallback((gridId: string, rowIndex: number) => {
+    if (gridId !== grid.id) return;
     
-    console.log('Computing grid layout from blocks:', blocks.length);
-    
-    const sortedBlocks = [...blocks].sort((a, b) => a.sort_index - b.sort_index);
-    
-    sortedBlocks.forEach((block) => {
-      if (processedBlocks.has(block.id)) return;
+    setGrid(prev => {
+      if (prev.rows.length <= 1) return prev; // Keep at least one row
       
-      const layout = block.meta?.layout;
-      
-      if (layout?.row_id && typeof layout.row_id === 'string' && layout.columns) {
-        const rowId = layout.row_id;
-        
-        if (!rowsMap.has(rowId)) {
-          rowsMap.set(rowId, {
-            id: rowId,
-            blocks: [],
-            columns: layout.columns,
-            gap: layout.gap || 4,
-            columnWidths: layout.columnWidths
+      const newRows = prev.rows.filter((_, index) => index !== rowIndex);
+      return {
+        ...prev,
+        rows: newRows
+      };
+    });
+  }, [grid.id]);
+
+  const addBlock = useCallback((gridId: string, position: GridPosition, block: ReviewBlock) => {
+    if (gridId !== grid.id) return;
+    
+    setGrid(prev => {
+      const newRows = prev.rows.map((row, rowIndex) => {
+        if (rowIndex === position.row) {
+          const newCells = row.cells.map(cell => {
+            if (cell.position === position.column) {
+              return {
+                ...cell,
+                block: {
+                  id: block.id,
+                  type: block.type,
+                  content: block.content,
+                  visible: block.visible,
+                  sort_index: block.sort_index
+                }
+              };
+            }
+            return cell;
           });
+
+          return {
+            ...row,
+            cells: newCells
+          };
         }
-        
-        const row = rowsMap.get(rowId)!;
-        row.blocks.push(block);
-        processedBlocks.add(block.id);
-        
-        if (layout.columnWidths && layout.columnWidths.length === layout.columns) {
-          row.columnWidths = layout.columnWidths;
-        }
-        
-        if (layout.columns > row.columns) {
-          row.columns = layout.columns;
-        }
-      } else {
-        const singleRowId = `single-${block.id}`;
-        rowsMap.set(singleRowId, {
-          id: singleRowId,
-          blocks: [block],
-          columns: 1,
-          gap: 4
-        });
-        processedBlocks.add(block.id);
-      }
-    });
-    
-    const rows = Array.from(rowsMap.values())
-      .filter(row => row.blocks.length > 0)
-      .map(row => ({
-        ...row,
-        blocks: row.blocks.sort((a, b) => {
-          const aPos = a.meta?.layout?.position ?? 0;
-          const bPos = b.meta?.layout?.position ?? 0;
-          return aPos - bPos;
-        })
-      }))
-      .sort((a, b) => {
-        const aMinSort = Math.min(...a.blocks.map(b => b.sort_index));
-        const bMinSort = Math.min(...b.blocks.map(b => b.sort_index));
-        return aMinSort - bMinSort;
+        return row;
       });
-    
-    const totalBlocks = rows.reduce((sum, row) => sum + row.blocks.length, 0);
-    
-    console.log('Grid layout computed:', {
-      totalRows: rows.length,
-      gridRows: rows.filter(r => r.columns > 1).length,
-      singleRows: rows.filter(r => r.columns === 1).length,
-      totalBlocks,
-      originalBlocks: blocks.length,
-      rows: rows.map(r => ({ id: r.id, columns: r.columns, blocksCount: r.blocks.length }))
+
+      return {
+        ...prev,
+        rows: newRows
+      };
     });
+  }, [grid.id]);
+
+  const removeBlock = useCallback((gridId: string, position: GridPosition) => {
+    if (gridId !== grid.id) return;
     
-    return { rows, totalBlocks };
-  }, [blocks]);
+    setGrid(prev => {
+      const newRows = prev.rows.map((row, rowIndex) => {
+        if (rowIndex === position.row) {
+          const newCells = row.cells.map(cell => {
+            if (cell.position === position.column) {
+              return {
+                ...cell,
+                block: null
+              };
+            }
+            return cell;
+          });
+
+          return {
+            ...row,
+            cells: newCells
+          };
+        }
+        return row;
+      });
+
+      return {
+        ...prev,
+        rows: newRows
+      };
+    });
+  }, [grid.id]);
+
+  const updateColumns = useCallback((gridId: string, columns: number) => {
+    if (gridId !== grid.id) return;
+    
+    setGrid(prev => {
+      const newRows = prev.rows.map(row => {
+        const currentCells = row.cells;
+        const newCells: GridCell[] = [];
+
+        // Add/remove cells based on column count
+        for (let i = 0; i < columns; i++) {
+          if (i < currentCells.length) {
+            newCells.push({
+              ...currentCells[i],
+              position: i
+            });
+          } else {
+            newCells.push({
+              id: `cell-${Date.now()}-${i}`,
+              position: i,
+              block: null
+            });
+          }
+        }
+
+        return {
+          ...row,
+          cells: newCells
+        };
+      });
+
+      return {
+        ...prev,
+        columns,
+        rows: newRows
+      };
+    });
+  }, [grid.id]);
+
+  return {
+    grid,
+    setGrid,
+    addRow,
+    removeRow,
+    addBlock,
+    removeBlock,
+    updateColumns
+  };
 };

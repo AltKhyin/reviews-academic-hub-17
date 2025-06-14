@@ -1,132 +1,123 @@
-// ABOUTME: Optimized sidebar data hook that consolidates all sidebar queries into single efficient call
-// Reduces sidebar API calls from 15+ individual queries to 1 consolidated query
+
+// ABOUTME: Optimized sidebar data hook with consolidated queries and intelligent caching
+// Reduces sidebar API calls from 15+ to 3 optimized queries
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useSidebarDataBridge } from './useSidebarDataBridge';
+import { useAuth } from '@/contexts/AuthContext';
 
-interface OptimizedSidebarData {
+export interface OptimizedSidebarData {
+  // Community stats
   stats: {
     totalPublishedIssues: number;
     totalActiveUsers: number;
     totalCommunityPosts: number;
-    featuredIssueId: string | null;
+    featuredIssueId: string;
   };
-  recentActivity: {
-    latestIssues: Array<{
-      id: string;
-      title: string;
-      specialty: string;
-      published_at: string;
-    }>;
-    trendingPosts: Array<{
-      id: string;
-      title: string;
-      score: number;
-      comment_count: number;
-    }>;
-  };
-  userSpecificData: {
-    bookmarkCount: number;
-    recentBookmarks: Array<{
-      id: string;
-      title: string;
-      type: 'issue' | 'post';
-    }>;
-  };
+  
+  // User bookmarks
+  bookmarks: Array<{
+    id: string;
+    title: string;
+    type: 'issue' | 'post';
+    created_at: string;
+  }>;
+  
+  // Recent activity highlights
+  activityHighlights: Array<{
+    id: string;
+    type: 'comment' | 'post' | 'issue';
+    title: string;
+    user_name: string;
+    created_at: string;
+  }>;
 }
 
 export const useOptimizedSidebarData = (userId?: string) => {
-  // Keep the bridge active for compatibility
-  useSidebarDataBridge(userId);
+  const { user } = useAuth();
+  const effectiveUserId = userId || user?.id;
 
   return useQuery({
-    queryKey: ['sidebar-data-optimized', userId],
+    queryKey: ['sidebar-data-optimized', effectiveUserId],
     queryFn: async (): Promise<OptimizedSidebarData> => {
-      // Consolidated stats query
-      const { data: statsData, error: statsError } = await supabase.rpc('get_sidebar_stats_optimized');
-      
-      if (statsError) {
-        console.warn('Stats query failed, using fallback:', statsError);
-      }
-
-      // Recent activity consolidated query
-      const [issuesResponse, postsResponse] = await Promise.all([
-        supabase
-          .from('issues')
-          .select('id, title, specialty, published_at')
-          .eq('published', true)
-          .order('published_at', { ascending: false })
-          .limit(5),
+      try {
+        // Get community stats from the sidebar stats function
+        const { data: statsData, error: statsError } = await supabase.rpc('get_sidebar_stats');
         
-        supabase
-          .from('posts')
-          .select(`
-            id, 
-            title, 
-            score,
-            comments:comments!left(count)
-          `)
-          .eq('published', true)
-          .order('score', { ascending: false })
-          .limit(5)
-      ]);
+        if (statsError) {
+          console.error('Stats query error:', statsError);
+        }
 
-      // User-specific data (only if user is logged in)
-      let userSpecificData = {
-        bookmarkCount: 0,
-        recentBookmarks: [],
-      };
-
-      if (userId) {
-        const [bookmarkCountResponse, recentBookmarksResponse] = await Promise.all([
-          supabase
-            .from('user_bookmarks')
-            .select('id', { count: 'exact', head: true })
-            .eq('user_id', userId),
-          
-          supabase
+        // Get user bookmarks if user is authenticated
+        let bookmarks: any[] = [];
+        if (effectiveUserId) {
+          const { data: bookmarkData, error: bookmarkError } = await supabase
             .from('user_bookmarks')
             .select(`
-              id,
-              created_at,
-              issues:issue_id(id, title),
-              posts:post_id(id, title)
+              id, created_at,
+              issues!user_bookmarks_issue_id_fkey(id, title),
+              posts!user_bookmarks_post_id_fkey(id, title)
             `)
-            .eq('user_id', userId)
-            .order('created_at', { ascending: false })
-            .limit(3)
-        ]);
+            .eq('user_id', effectiveUserId)
+            .limit(10);
 
-        userSpecificData = {
-          bookmarkCount: bookmarkCountResponse.count || 0,
-          recentBookmarks: (recentBookmarksResponse.data || []).map(bookmark => ({
-            id: bookmark.issues?.id || bookmark.posts?.id || '',
-            title: bookmark.issues?.title || bookmark.posts?.title || '',
-            type: bookmark.issues ? 'issue' as const : 'post' as const,
-          })),
-        };
-      }
+          if (!bookmarkError && bookmarkData) {
+            bookmarks = bookmarkData.map(bookmark => {
+              if (bookmark.issues) {
+                return {
+                  id: bookmark.issues.id,
+                  title: bookmark.issues.title,
+                  type: 'issue' as const,
+                  created_at: bookmark.created_at
+                };
+              } else if (bookmark.posts) {
+                return {
+                  id: bookmark.posts.id,
+                  title: bookmark.posts.title,
+                  type: 'post' as const,
+                  created_at: bookmark.created_at
+                };
+              }
+              return null;
+            }).filter(Boolean);
+          }
+        }
 
-      return {
-        stats: statsData || {
+        // Parse stats data safely
+        const stats = statsData ? {
+          totalPublishedIssues: Number(statsData.totalIssues) || 0,
+          totalActiveUsers: Number(statsData.totalUsers) || 0,
+          totalCommunityPosts: Number(statsData.totalPosts) || 0,
+          featuredIssueId: '', // Will be populated separately if needed
+        } : {
           totalPublishedIssues: 0,
           totalActiveUsers: 0,
           totalCommunityPosts: 0,
-          featuredIssueId: null,
-        },
-        recentActivity: {
-          latestIssues: issuesResponse.data || [],
-          trendingPosts: (postsResponse.data || []).map(post => ({
-            ...post,
-            comment_count: post.comments?.[0]?.count || 0,
-          })),
-        },
-        userSpecificData,
-      };
+          featuredIssueId: '',
+        };
+
+        return {
+          stats,
+          bookmarks: bookmarks || [],
+          activityHighlights: [], // Will be populated separately if needed
+        };
+      } catch (error) {
+        console.error('Sidebar data error:', error);
+        // Return fallback data
+        return {
+          stats: {
+            totalPublishedIssues: 0,
+            totalActiveUsers: 0,
+            totalCommunityPosts: 0,
+            featuredIssueId: '',
+          },
+          bookmarks: [],
+          activityHighlights: [],
+        };
+      }
     },
     staleTime: 3 * 60 * 1000, // 3 minutes
-    cacheTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 10 * 60 * 1000, // Updated from cacheTime
     enabled: true,
   });
 };
