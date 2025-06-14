@@ -83,7 +83,7 @@ const fetchHomepageData = async (): Promise<HomepageData> => {
 
   return {
     issues: issues.data || [],
-    sectionVisibility: (Array.isArray(visibilityValue) ? visibilityValue : []) as unknown as SectionConfig[],
+    sectionVisibility: JSON.parse(JSON.stringify(Array.isArray(visibilityValue) ? visibilityValue : [])),
     featuredIssue: featuredIssue.data || null,
     reviewerComments: reviewerComments.data || [],
     errors: {
