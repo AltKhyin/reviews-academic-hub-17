@@ -1,9 +1,8 @@
-
 // ABOUTME: Native editor wrapper for non-fullscreen block editing.
 // Integrates BlockEditor for a standard, in-page editing experience.
 import React from 'react';
 import { BlockEditor, BlockEditorProps } from './BlockEditor';
-import { Review } from '@/types/review';
+import { Review } from '@/types/review'; // Ensure Review is exported from types
 
 export interface NativeEditorProps extends Omit<BlockEditorProps, 'readonly' | 'className'> {
   initialReview?: Review;
@@ -27,4 +26,3 @@ export const NativeEditor: React.FC<NativeEditorProps> = ({
     </div>
   );
 };
-

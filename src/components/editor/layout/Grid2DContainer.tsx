@@ -1,14 +1,13 @@
-
 // ABOUTME: Container for a 2D grid layout, managing rows and cells.
 // Handles overall grid structure and passes props down to Grid2DRow.
 import React from 'react';
-import { ReviewBlock, LayoutElement, GridPosition, BlockType } from '@/types/review';
+import { ReviewBlock, LayoutElement, GridPosition, BlockType, LayoutRowDefinition } from '@/types/review'; // Ensured all types are imported
 import { Grid2DRow } from './Grid2DRow';
-import { Button } from '@/components/ui/button'; // Assuming Button component
+import { Button } from '@/components/ui/button';
 import { PlusCircle } from 'lucide-react';
 
 export interface Grid2DContainerProps {
-  layoutElement: LayoutElement & { type: 'grid' }; // Grid specific layout element
+  layoutElement: LayoutElement & { type: 'grid', rows?: LayoutRowDefinition[] }; // Specify rows type here
   blocks: { [key: string]: ReviewBlock };
   onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
   onDeleteBlock: (blockId: string) => void;
@@ -16,10 +15,9 @@ export interface Grid2DContainerProps {
   onActiveBlockChange: (blockId: string | null) => void;
   activeBlockId: string | null;
   readonly?: boolean;
-  // Drag and drop related props if managed at this level
   onCellDragOver?: (e: React.DragEvent<HTMLDivElement>, position: GridPosition) => void;
   onCellDrop?: (e: React.DragEvent<HTMLDivElement>, position: GridPosition) => void;
-  draggedBlockType?: BlockType | null; // To indicate what's being dragged over
+  draggedBlockType?: BlockType | null;
 }
 
 export const Grid2DContainer: React.FC<Grid2DContainerProps> = ({
@@ -36,12 +34,11 @@ export const Grid2DContainer: React.FC<Grid2DContainerProps> = ({
   // draggedBlockType, // This prop might be used for visual feedback
 }) => {
   const { id: gridId, rows = [], settings } = layoutElement;
-  const numCols = settings?.columns || Math.max(1, ...rows.map(row => row.cells.length)); // Calculate from rows or default
+  // Ensure numCols calculation is robust if rows might be undefined or cells sparse
+  const numCols = settings?.columns || (rows.length > 0 ? Math.max(1, ...rows.map(row => row.cells.length)) : 1);
 
   const handleAddRow = () => {
-    // This function would need to update the main 'elements' state via a callback
-    console.log("Add row to grid", gridId, "- Implementation needed in parent (e.g., BlockEditor/useBlockManagement)");
-    // Example: onUpdateLayoutElement(gridId, { rows: [...rows, { id: newRowId, cells: new Array(numCols).fill(null).map(() => ({ id: newCellId, blockId: null})) }] });
+    console.log("Add row to grid", gridId, "- Implementation needed in parent (e.g., BlockEditor/useBlockManagement to update LayoutElement)");
   };
 
   return (
@@ -52,7 +49,7 @@ export const Grid2DContainer: React.FC<Grid2DContainerProps> = ({
           gridId={gridId}
           rowIndex={rowIndex}
           cells={row.cells}
-          numCols={numCols} // Pass numCols for consistent row structure
+          numCols={numCols} 
           blocks={blocks}
           onUpdateBlock={onUpdateBlock}
           onDeleteBlock={onDeleteBlock}
@@ -75,4 +72,3 @@ export const Grid2DContainer: React.FC<Grid2DContainerProps> = ({
     </div>
   );
 };
-

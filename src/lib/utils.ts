@@ -1,10 +1,13 @@
-
-import { clsx, type ClassValue } from "clsx"
+import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
+
+export const generateId = (): string => {
+  return `id-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+};
 
 export function getSocialUrl(platform: string, username: string): string {
   if (!username) return '';

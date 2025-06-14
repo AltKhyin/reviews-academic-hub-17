@@ -1,4 +1,3 @@
-
 // ABOUTME: Represents a single row within a 2D grid layout.
 // Manages and renders Grid2DCells for the current row.
 import React, { useState } from 'react';
@@ -65,9 +64,11 @@ export const Grid2DRow: React.FC<Grid2DRowProps> = ({
     <div 
       className={cn(
         "grid-2d-row flex gap-2",
-        `grid-cols-${numCols}` // Dynamic grid columns based on numCols
-        )}
-      style={{ gridTemplateColumns: `repeat(${numCols}, minmax(0, 1fr))` }}
+        // Tailwind CSS needs full class names, dynamic generation like `grid-cols-${numCols}` won't work directly for arbitrary numbers.
+        // Use inline style for dynamic columns or predefine limited set of grid-cols-X classes if numCols is bounded.
+        // For arbitrary numbers, style is the way to go.
+      )}
+      style={{ display: 'grid', gridTemplateColumns: `repeat(${numCols}, minmax(0, 1fr))` }}
       onDragLeave={handleDragLeaveGrid} // Clear drag over when leaving the row area
     >
       {displayCells.map((cell, colIndex) => {
@@ -97,4 +98,3 @@ export const Grid2DRow: React.FC<Grid2DRowProps> = ({
     </div>
   );
 };
-

@@ -52,13 +52,13 @@ export interface SpacingConfig {
 export interface LayoutConfig {
   columns?: number;
   columnWidths?: number[];
-  grid_id?: string;
-  grid_position?: { row: number; column: number };
-  row_id?: string;
-  grid_rows?: number;
+  grid_id?: string; // For 2D grids
+  grid_position?: GridPosition; // For 2D grids { row: number, column: number }
+  row_id?: string; // For 1D grids (simple rows of blocks)
+  grid_rows?: number; // Number of rows in a 2D grid
   gap?: number;
   rowHeights?: number[];
-  position?: number;
+  position?: number; // Generic position, e.g., order within a 1D row
 }
 
 export interface AlignmentConfig {
@@ -70,13 +70,70 @@ export interface ReviewBlock {
   id: string;
   type: BlockType;
   content: any; // Content can be specific for each block type
-  sort_index: number;
+  sort_index: number; // Overall sort order for all elements/blocks at the root or within a flat list
   visible: boolean;
   meta?: {
     spacing?: SpacingConfig;
     alignment?: AlignmentConfig;
-    layout?: LayoutConfig;
+    layout?: LayoutConfig; // Defines how this block is part of a layout (1D row, 2D grid cell)
   };
+}
+
+export interface GridPosition {
+  row: number;
+  col: number;
+}
+
+export interface GridCell {
+  id: string;
+  blockId: string | null; // ID of the ReviewBlock in this cell
+  colSpan?: number;
+  rowSpan?: number;
+  settings?: any;
+}
+
+// ElementDefinition can be a block ID placeholder or a nested layout structure
+export type ElementDefinition =
+  | { type: 'block'; blockId: string; id: string; settings?: any; } // Added id and settings for consistency
+  | LayoutElement;
+
+export interface LayoutColumn {
+  id: string;
+  elements: ElementDefinition[]; // Can contain blocks or nested LayoutElements
+  settings?: {
+    width?: string; // e.g., '50%', '2fr'
+    style?: React.CSSProperties;
+  };
+}
+
+export interface LayoutRowDefinition { // Renamed to avoid conflict if LayoutRow is a component name
+  id: string;
+  cells: GridCell[]; // For 2D grid rows
+}
+
+export interface LayoutElement {
+  id: string;
+  type: 'row' | 'grid' | 'block_container'; // 'block_container' for a direct block element in a layout list
+  blockId?: string; // If type is 'block_container', this is the ID of the block to render
+  settings?: any;
+  // For 'row' (representing a 1D layout row of columns)
+  columns?: LayoutColumn[];
+  // For 'grid' (representing a 2D grid)
+  rows?: LayoutRowDefinition[];
+  // Common layout settings
+  columnDistribution?: 'even' | 'custom';
+}
+
+export interface Review {
+  id: string;
+  title: string;
+  elements: LayoutElement[]; // The top-level structure of the review document
+  blocks: { [key: string]: ReviewBlock }; // All blocks data, keyed by their ID
+  version: number;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  // Any other fields related to the review metadata
 }
 
 export interface DiagramNodeData {

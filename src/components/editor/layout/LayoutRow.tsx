@@ -1,27 +1,25 @@
-
 // ABOUTME: Component to render a layout row containing multiple columns/elements.
 // Each "column" in a LayoutRow can be a BlockElement or another LayoutElement (like a nested grid).
 import React from 'react';
-import { LayoutElement, ReviewBlock, BlockType, GridPosition } from '@/types/review'; // GridPosition for onAddBlockToGrid
+import { LayoutElement, ReviewBlock, BlockType, GridPosition, LayoutColumn, LayoutRowDefinition } from '@/types/review';
 import { SingleBlock } from '../blocks/SingleBlock';
-import { LayoutGrid } from './LayoutGrid'; // For nested grids
+import { LayoutGrid } from './LayoutGrid'; 
 import { cn } from '@/lib/utils';
-import { DraggableProvided } from '@hello-pangea/dnd'; // If rows are draggable
+import { DraggableProvided } from '@hello-pangea/dnd';
 
 export interface LayoutRowProps {
-  layoutElement: LayoutElement & { type: 'row' };
+  layoutElement: LayoutElement & { type: 'row', columns?: LayoutColumn[] }; // Specify columns type
   blocks: { [key: string]: ReviewBlock };
   onUpdateBlock: (blockId: string, updates: Partial<ReviewBlock>) => void;
   onDeleteBlock: (blockId: string) => void;
-  onMoveBlock: (blockId: string, direction: 'up' | 'down') => void; // If blocks within a row column are movable
+  onMoveBlock: (blockId: string, direction: 'up' | 'down') => void; 
   onSelectBlock: (blockId: string | null) => void;
   onAddBlock: (type: BlockType, position?: 'above' | 'below' | number, parentLayoutId?: string, columnIndex?: number) => void;
-  onAddBlockToGrid: (type: BlockType, gridId: string, position: GridPosition) => void; // For grids within rows
+  onAddBlockToGrid: (type: BlockType, gridId: string, position: GridPosition) => void;
   activeBlockId: string | null;
   readonly?: boolean;
-  // DND props if the row itself or its columns are draggable/droppable targets
-  draggableProvided?: DraggableProvided; // If the whole row is draggable
-  isDragging?: boolean; // Visual feedback for dragging
+  draggableProvided?: DraggableProvided; 
+  isDragging?: boolean; 
 }
 
 export const LayoutRow: React.FC<LayoutRowProps> = ({
@@ -29,10 +27,10 @@ export const LayoutRow: React.FC<LayoutRowProps> = ({
   blocks,
   onUpdateBlock,
   onDeleteBlock,
-  onMoveBlock, // For blocks within a simple column
+  onMoveBlock,
   onSelectBlock,
-  onAddBlock, // For adding blocks to a column in the row
-  onAddBlockToGrid, // Specifically for grids nested in this row
+  onAddBlock,
+  onAddBlockToGrid,
   activeBlockId,
   readonly,
   draggableProvided,
@@ -41,23 +39,23 @@ export const LayoutRow: React.FC<LayoutRowProps> = ({
   const { columns = [], settings } = layoutElement;
   const columnFlexBasis = settings?.columnDistribution === 'even' 
     ? `${100 / Math.max(1, columns.length)}%`
-    : undefined; // undefined will let flex-grow handle it or use custom styles
+    : undefined;
 
   return (
     <div 
       ref={draggableProvided?.innerRef}
       {...draggableProvided?.draggableProps}
-      {...draggableProvided?.dragHandleProps} // Assuming row drag handle is this div
+      {...draggableProvided?.dragHandleProps}
       className={cn(
         "layout-row flex gap-4 my-4 p-2 border border-gray-800 rounded-lg bg-gray-950/30",
         isDragging && "opacity-50 shadow-xl"
       )}
-      style={{ ...settings?.style }} // Apply custom styles from layout settings
+      style={{ ...settings?.style }}
     >
       {columns.map((column, colIndex) => (
         <div 
           key={column.id || `col-${colIndex}`} 
-          className="layout-column flex-grow p-1 border border-dashed border-gray-700/50 rounded min-h-[80px] flex flex-col gap-2" // Added min-h and gap
+          className="layout-column flex-grow p-1 border border-dashed border-gray-700/50 rounded min-h-[80px] flex flex-col gap-2"
           style={{ flexBasis: columnFlexBasis || column.settings?.width || 'auto', ...column.settings?.style }}
         >
           {column.elements.map((element, elIndex) => {
@@ -66,38 +64,38 @@ export const LayoutRow: React.FC<LayoutRowProps> = ({
                 <SingleBlock
                   key={element.blockId}
                   block={blocks[element.blockId]}
-                  index={elIndex} // This index is local to the column's elements
+                  index={elIndex} 
                   onUpdateBlock={onUpdateBlock}
                   onDeleteBlock={onDeleteBlock}
-                  onMoveBlock={(blockId, dir) => onMoveBlock(blockId, dir)} // Assuming move within this column context
+                  onMoveBlock={(blockId, dir) => onMoveBlock(blockId, dir)} 
                   onSelectBlock={onSelectBlock}
                   activeBlockId={activeBlockId}
                   readonly={readonly}
-                  onAddBlock={(type, pos) => onAddBlock(type, pos, column.id, colIndex)} // Pass column context
+                  onAddBlock={(type, pos) => onAddBlock(type, pos, column.id, colIndex)} 
                 />
               );
             } else if (element.type === 'grid') {
+               const gridElement = element as LayoutElement & { type: 'grid', rows?: LayoutRowDefinition[] };
               return (
                 <LayoutGrid
                   key={element.id}
-                  layoutElement={element as LayoutElement & { type: 'grid' }}
+                  layoutElement={gridElement}
                   blocks={blocks}
                   onUpdateBlock={onUpdateBlock}
                   onDeleteBlock={onDeleteBlock}
                   onAddBlockToGrid={onAddBlockToGrid}
-                  onActiveBlockChange={onSelectBlock}
+                  onActiveBlockChange={onSelectBlock} // Assuming this is correct for active block in grid context
                   activeBlockId={activeBlockId}
                   readonly={readonly}
                 />
               );
             }
-            // Add rendering for other LayoutElement types if they can be nested in columns
             return <div key={element.id || elIndex} className="text-xs text-red-500">Unsupported element type in column: {element.type}</div>;
           })}
           {!readonly && column.elements.length === 0 && (
              <div className="flex-grow flex items-center justify-center">
                 <button 
-                    onClick={() => onAddBlock(BlockType.TEXT, undefined, column.id, colIndex)}
+                    onClick={() => onAddBlock("text", undefined, column.id, colIndex)} // Use "text"
                     className="text-gray-500 hover:text-blue-400 text-xs p-2 rounded border border-dashed border-gray-600 hover:border-blue-500"
                 >
                     + Add Block to Column
@@ -109,4 +107,3 @@ export const LayoutRow: React.FC<LayoutRowProps> = ({
     </div>
   );
 };
-

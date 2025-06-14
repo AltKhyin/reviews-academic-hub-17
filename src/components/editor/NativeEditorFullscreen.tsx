@@ -1,9 +1,8 @@
-
 // ABOUTME: Fullscreen editor experience wrapper using BlockEditor.
 // Provides a distraction-free, immersive editing environment.
 import React, { useState, useEffect } from 'react';
 import { BlockEditor, BlockEditorProps } from './BlockEditor';
-import { Review } from '@/types/review';
+import { Review } from '@/types/review'; // Ensure Review is exported from types
 import { Button } from '@/components/ui/button';
 import { X, Save } from 'lucide-react'; // Icons for close and save
 
@@ -32,14 +31,19 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
 
   const handleSaveAndClose = () => {
     if (internalReview) {
-      onSave(internalReview);
+      // The BlockEditor now manages its own state via useBlockManagement.
+      // To get the latest state for saving, we might need onSave from BlockEditor
+      // to update internalReview here, or BlockEditor needs a way to expose its current state.
+      // For now, assuming onSave in BlockEditor updates a shared state or this internalReview correctly.
+      onSave(internalReview); 
     }
     onClose();
   };
   
+  // This handler is passed to BlockEditor. BlockEditor will call this with the complete Review object.
   const handleSaveInternal = (reviewToSave: Review) => {
-    setInternalReview(reviewToSave); // Keep internal state updated
-    onSave(reviewToSave); // Propagate save to parent immediately as well
+    setInternalReview(reviewToSave); 
+    onSave(reviewToSave); 
   };
 
 
@@ -58,15 +62,14 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
         </div>
       </header>
       
-      <div className="flex-grow overflow-y-auto"> {/* Ensure this div allows scrolling for BlockEditor content */}
+      <div className="flex-grow overflow-y-auto">
         <BlockEditor
-          initialReview={internalReview}
-          onSave={handleSaveInternal} // Use internal save handler
+          initialReview={internalReview} // BlockEditor takes initialReview
+          onSave={handleSaveInternal}    // BlockEditor calls this with the full, updated Review object
           readonly={false}
-          className="h-full" // Critical for allowing BlockEditor to manage its own scroll if needed
+          className="h-full"
         />
       </div>
     </div>
   );
 };
-

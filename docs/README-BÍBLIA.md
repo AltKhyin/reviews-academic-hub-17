@@ -1,11 +1,14 @@
-
-# README‑BÍBLIA.md v3.6.0
+# README‑BÍBLIA.md v3.7.0
 
 ## 1. Purpose & Pitch
-Scientific journal platform with optimized review system, community features, and advanced performance monitoring. **Phase 1 API cascade resolution IMPLEMENTED** with comprehensive type system foundation repair completed - all IDs now use database-compatible string format with complete build error resolution.
+Scientific journal platform with optimized review system, community features, and advanced performance monitoring. **Editor System Refactoring IN PROGRESS** - Addressing type errors and structural inconsistencies for improved stability and maintainability.
 
 ## 2. Glossary
 - **Review Blocks**: Modular content components for scientific reviews (string IDs)
+- **Layout Elements**: Structural components for defining review document layout (e.g., rows, grids). (NEW)
+- **GridPosition**: Type defining row/column for 2D grid elements. (NEW)
+- **GridCell**: Defines a cell within a 2D grid, can contain a block. (NEW)
+- **Review**: Top-level type for a scientific review document, containing metadata, layout elements, and block data. (NEW DEFINITION)
 - **Bundle Optimizer**: System for lazy loading and performance monitoring
 - **Memory Manager**: Automatic cleanup for React components
 - **Error Boundaries**: Graceful error handling system
@@ -28,8 +31,12 @@ Scientific journal platform with optimized review system, community features, an
 │  │  ├─ Component Auditor
 │  │  └─ Type System Foundation (COMPLETE)
 │  ├─ UI Components (TYPE-CONSISTENT)
+│  │  ├─ Editor System (REFACTORING IN PROGRESS)
+│  │  │  ├─ Block Components (text, heading, image etc.)
+│  │  │  └─ Layout Components (Grid2D, LayoutRow)
+│  │  └─ Review System
 │  ├─ Lazy Routes
-│  └─ State Management
+│  └─ State Management (hooks like useBlockManagement, useBlockDragDrop)
 ├─ Backend (Supabase)
 │  ├─ Database (PostgreSQL)
 │  ├─ Auth System
@@ -56,38 +63,79 @@ Scientific journal platform with optimized review system, community features, an
 - **User Interactions**: `/src/contexts/UserInteractionContext.tsx`
 - **API Monitoring**: `/src/middleware/ApiCallMiddleware.ts`
 - **Component Auditing**: `/src/utils/componentAudit.ts`
-- **Type Definitions**: `/src/types/review.ts`, `/src/types/grid.ts` (UPDATED)
-- **Review System**: `/src/components/review/` (TYPE-CONSISTENT)
-- **Editor System**: `/src/components/editor/` (TYPE-CONSISTENT)
-- **Layout Components**: `/src/components/editor/layout/` (TYPE-CONSISTENT)
+- **Type Definitions**: `/src/types/review.ts` (UPDATED - Review, LayoutElement, Grid types)
+- **Review System**: `/src/components/review/` 
+- **Editor System**: `/src/components/editor/` (REFACTORING - BlockEditor, BlockList, block components)
+- **Layout Components**: `/src/components/editor/layout/` (TYPE-CONSISTENT, supporting LayoutElement structure)
+- **Editor State Management**: `/src/hooks/useBlockManagement.ts`, `/src/hooks/useBlockDragDrop.ts` (UPDATED)
 - **Performance**: `/src/utils/bundleOptimizer.ts`, `/src/utils/memoryManager.ts`
 - **Error Handling**: `/src/components/error/`
 - **Navigation**: `/src/layouts/DashboardLayout.tsx`
 
 ## 6. Data & API Schemas
 ```typescript
+// Overall Review Document Structure (NEW)
+interface Review {
+  id: string;
+  title: string;
+  elements: LayoutElement[]; // Defines the structure of the review content
+  blocks: { [key: string]: ReviewBlock }; // Flat map of all block data
+  version: number;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Layout Element (NEW)
+interface LayoutElement {
+  id: string;
+  type: 'row' | 'grid' | 'block_container';
+  blockId?: string; // If type is 'block_container'
+  settings?: any;
+  columns?: LayoutColumn[]; // For 'row' type
+  rows?: LayoutRowDefinition[]; // For 'grid' type (LayoutRowDefinition contains GridCell[])
+}
+
+interface LayoutColumn {
+  id: string;
+  elements: ElementDefinition[]; // ElementDefinition can be another LayoutElement or a block reference
+  settings?: { width?: string; style?: React.CSSProperties };
+}
+
+interface GridCell {
+  id: string;
+  blockId: string | null;
+  colSpan?: number;
+  rowSpan?: number;
+}
+
+interface GridPosition { row: number; col: number; }
+
+
+// ReviewBlock remains largely the same, but its 'meta.layout' helps position it
 interface ReviewBlock {
-  id: string; // String IDs for database compatibility (ENFORCED)
+  id: string; 
   type: BlockType;
   content: any;
-  sort_index: number;
+  sort_index: number; // Overall sort order if in a flat list, or relative order within a parent
   visible: boolean;
   meta?: {
     spacing?: SpacingConfig;
     alignment?: AlignmentConfig;
-    layout?: LayoutConfig;
+    layout?: LayoutConfig; // Defines grid/row membership and position
   };
 }
 
 interface LayoutConfig {
-  columns?: number;
+  columns?: number;        // For 1D or 2D grid context
   columnWidths?: number[];
-  grid_id?: string;
-  grid_position?: { row: number; column: number }; // Standardized format
-  row_id?: string;
-  grid_rows?: number;
+  grid_id?: string;        // ID of parent 2D grid LayoutElement
+  grid_position?: GridPosition; // Cell position in parent 2D grid
+  row_id?: string;         // ID of parent 1D row LayoutElement
+  grid_rows?: number;      // Number of rows in parent 2D grid
   gap?: number;
   rowHeights?: number[];
+  position?: number;       // Order within a 1D row's column
 }
 
 // Content Type Interfaces (NEW)
@@ -142,9 +190,10 @@ interface DragState {
 - **Performance**: `BundleOptimizer`, `MemoryManager`
 - **User Interactions**: `UserInteractionProvider`, `useUserInteractionContext`
 - **API Monitoring**: `ApiCallMonitor`, `ComponentAuditor`
-- **Review Components**: `BlockRenderer`, `NativeReviewViewer` (TYPE-CONSISTENT)
-- **Editor Components**: `BlockContentEditor`, `SingleBlock`, `Grid2DCell` (TYPE-CONSISTENT)
-- **Layout Components**: `Grid2DContainer`, `ResizableGrid`, `LayoutRow` (TYPE-CONSISTENT)
+- **Review Components**: `BlockRenderer`, `NativeReviewViewer`
+- **Editor Components**: `BlockEditor`, `BlockList`, `BlockContentEditor`, `SingleBlock` (REFACTORING)
+- **Editor Block Primitives**: `TextBlock`, `HeadingBlock`, `ImageBlock`, etc. (NEW/UPDATED)
+- **Layout Components**: `Grid2DContainer`, `Grid2DRow`, `Grid2DCell`, `LayoutRow` (ADAPTED for LayoutElement structure)
 - **Layout**: `DashboardLayout`, `Sidebar`
 
 ## 8. Design Language
@@ -182,6 +231,7 @@ Admin panel with performance monitoring dashboard and error tracking.
 
 ## 14. TODO / Backlog
 **Phase 1 Final Validation (Current):**
+- **Editor System Refactoring**: Resolve all build errors, ensure type consistency, stabilize core editor logic. (IN PROGRESS)
 - Network log validation - confirm <10 API requests per page
 - Performance metrics validation - verify monitoring accuracy
 - Component behavior validation - ensure no functionality regression
@@ -195,6 +245,7 @@ Admin panel with performance monitoring dashboard and error tracking.
 - Advanced caching strategies
 
 ## 15. Revision History
+- v3.7.0 (2025-06-14): **Editor System Refactoring Cycle 1** - Added missing DND dependency, updated type definitions (Review, LayoutElement, Grid types), corrected BlockType usage, started aligning BlockEditor with useBlockManagement.
 - v3.6.0 (2025-06-14): **Build Error Crisis Resolution COMPLETE** - All type inconsistencies resolved, missing interfaces added, complete string ID enforcement, zero build errors achieved
 - v3.5.0 (2025-06-13): **Type System Foundation Repair COMPLETE** - All IDs migrated to string format, comprehensive type definitions added, build errors resolved
 - v3.4.0 (2025-06-13): Phase 1 API CASCADE RESOLUTION IMPLEMENTED - Monitoring system, component audit, context enforcement complete

@@ -1,4 +1,3 @@
-
 // ABOUTME: Main editor for individual block content, switching between block types.
 // Handles rendering specific block editors (Text, Heading, Image, etc.)
 import React from 'react';
@@ -7,15 +6,15 @@ import { TextBlock, TextBlockProps } from './blocks/TextBlock';
 import { HeadingBlock, HeadingBlockProps } from './blocks/HeadingBlock';
 import { ImageBlock, ImageBlockProps } from './blocks/ImageBlock';
 import { TableBlock, TableBlockProps } from './blocks/TableBlock';
-import { CalloutBlock, CalloutBlockProps } from './blocks/CalloutBlock'; // Assuming CalloutBlock exists
-import { NumberCardBlock, NumberCardBlockProps } from './blocks/NumberCardBlock'; // Assuming NumberCardBlock exists
-import { ReviewerQuoteBlock, ReviewerQuoteBlockProps } from './blocks/ReviewerQuoteBlock'; // Assuming ReviewerQuoteBlock exists
-import { PollBlock, PollBlockProps } from './blocks/PollBlock'; // Assuming PollBlock exists
-import { CitationListBlock, CitationListBlockProps } from './blocks/CitationListBlock'; // Assuming CitationListBlock exists
+import { CalloutBlock, CalloutBlockProps } from './blocks/CalloutBlock';
+import { NumberCardBlock, NumberCardBlockProps } from './blocks/NumberCardBlock';
+import { ReviewerQuoteBlock, ReviewerQuoteBlockProps } from './blocks/ReviewerQuoteBlock';
+import { PollBlock, PollBlockProps } from './blocks/PollBlock';
+import { CitationListBlock, CitationListBlockProps } from './blocks/CitationListBlock';
 
 // REVIEW_BLOCKS_FROM_REVIEW_FOLDER_BELOW
-import { DiagramBlock } from '@/components/review/blocks/DiagramBlock';
-import { SnapshotCardBlock } from '@/components/review/blocks/SnapshotCardBlock';
+import { DiagramBlock } from '@/components/review/blocks/DiagramBlock'; // Assuming DiagramBlockProps is handled by DiagramBlock itself
+import { SnapshotCardBlock } from '@/components/review/blocks/SnapshotCardBlock'; // Assuming SnapshotCardBlockProps is handled by itself
 
 import { cn } from '@/lib/utils';
 import { GripVertical } from 'lucide-react';
@@ -26,12 +25,12 @@ export interface BlockContentEditorProps {
   onSelect: (blockId: string) => void;
   onUpdate: (blockId: string, updates: Partial<ReviewBlock>) => void;
   onDelete: (blockId: string) => void;
-  onMove: (blockId: string, direction: 'up' | 'down') => void; // Or more complex move logic
-  onAddBlock: (type: BlockType, position?: 'above' | 'below' | number) => void; // Position relative to current block or index
+  onMove: (blockId: string, direction: 'up' | 'down') => void;
+  onAddBlock: (type: BlockType, position?: 'above' | 'below' | number) => void;
   readonly?: boolean;
   className?: string;
-  draggableProps?: any; // For react-beautiful-dnd or other libraries
-  dragHandleProps?: any; // For react-beautiful-dnd or other libraries
+  draggableProps?: any; 
+  dragHandleProps?: any; 
 }
 
 export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
@@ -39,12 +38,12 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
   isActive,
   onSelect,
   onUpdate,
-  // onDelete, // onDelete is passed but not used directly, might be for a wrapper
-  // onMove, // onMove is passed but not used directly
-  // onAddBlock, // onAddBlock is passed but not used directly
+  // onDelete, 
+  // onMove, 
+  // onAddBlock, 
   readonly,
   className,
-  // draggableProps, // draggableProps is passed but not used directly
+  // draggableProps, 
   dragHandleProps,
 }) => {
   const handleUpdateContent = (newContent: any) => {
@@ -59,31 +58,31 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
       readonly,
     };
 
-    // Consolidate content access
     const content = block.content || {};
 
     switch (block.type) {
-      case BlockType.TEXT:
+      case "text":
         return <TextBlock {...commonProps as TextBlockProps} content={content} />;
-      case BlockType.HEADING:
+      case "heading":
         return <HeadingBlock {...commonProps as HeadingBlockProps} content={content} />;
-      case BlockType.IMAGE:
+      case "image":
+      case "figure":
         return <ImageBlock {...commonProps as ImageBlockProps} content={content} />;
-      case BlockType.TABLE:
+      case "table":
         return <TableBlock {...commonProps as TableBlockProps} content={content} />;
-      case BlockType.DIAGRAM: // Ensure DiagramBlock is correctly typed and handled
+      case "diagram":
          return <DiagramBlock block={block} onUpdate={(updates) => onUpdate(block.id, updates)} readonly={readonly} />;
-      case BlockType.SNAPSHOT_CARD:
+      case "snapshot_card":
         return <SnapshotCardBlock block={block} onUpdate={(updates) => onUpdate(block.id, updates)} readonly={readonly} />;
-      case BlockType.CALLOUT:
+      case "callout":
         return <CalloutBlock {...commonProps as CalloutBlockProps} content={content} />;
-      case BlockType.NUMBER_CARD:
+      case "number_card":
         return <NumberCardBlock {...commonProps as NumberCardBlockProps} content={content} />;
-      case BlockType.REVIEWER_QUOTE:
+      case "reviewer_quote":
         return <ReviewerQuoteBlock {...commonProps as ReviewerQuoteBlockProps} content={content} />;
-      case BlockType.POLL:
+      case "poll":
         return <PollBlock {...commonProps as PollBlockProps} content={content} />;
-      case BlockType.CITATION_LIST:
+      case "citation_list":
         return <CitationListBlock {...commonProps as CitationListBlockProps} content={content} />;
       default:
         return <div className="text-red-500 p-2 bg-red-100 border border-red-300 rounded">Tipo de bloco desconhecido: {block.type}</div>;
@@ -122,4 +121,3 @@ export const BlockContentEditor: React.FC<BlockContentEditorProps> = ({
     </div>
   );
 };
-

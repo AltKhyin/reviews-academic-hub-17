@@ -3,10 +3,10 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Review, ReviewBlock, BlockType, GridPosition, LayoutElement } from '@/types/review';
 import { BlockList } from './BlockList';
-import { EditorToolbar } from './EditorToolbar'; // Placeholder for toolbar
+import { EditorToolbar, EditorToolbarProps } from './EditorToolbar'; 
 import { generateId } from '@/lib/utils'; 
-import { DragDropContext, DropResult, ResponderProvided, Droppable } from '@hello-pangea/dnd'; // Using hello-pangea fork
-import { useBlockManagement } from '@/hooks/useBlockManagement'; // Centralized logic
+import { DragDropContext, DropResult, ResponderProvided, Droppable } from '@hello-pangea/dnd';
+import { useBlockManagement, UseBlockManagementReturn } from '@/hooks/useBlockManagement';
 import { useBlockDragDrop } from '@/hooks/useBlockDragDrop';
 
 export interface BlockEditorProps {
@@ -22,119 +22,131 @@ export const BlockEditor: React.FC<BlockEditorProps> = ({
   readonly = false,
   className,
 }) => {
-  const [review, setReview] = useState<Review>(
-    initialReview || {
-      id: generateId(),
-      title: 'Nova Revisão',
-      elements: [], // Initialize with an empty layout
-      version: 1,
-      status: 'draft',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+  // Initial state setup for the review, including elements and blocks
+  const [currentReviewId, setCurrentReviewId] = useState(initialReview?.id || generateId());
+  const [currentReviewTitle, setCurrentReviewTitle] = useState(initialReview?.title || 'Nova Revisão');
+  // Other review metadata can be managed here if needed
+
+  const blockManager: UseBlockManagementReturn = useBlockManagement(
+    initialReview?.elements || [],
+    initialReview?.blocks || {},
+    (newElements, newBlocks) => {
+      // This callback can be used to sync with a higher-level state or trigger saves
+      // For now, the hook manages its internal state which we access directly.
+      // If we need to reconstruct the `Review` object for saving, we'll do it in handleSave.
     }
   );
 
-  const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
-
-  const {
-    elements,
-    blocks,
-    updateBlock,
-    addBlock,
-    deleteBlock,
-    moveBlockInList,
-    setElements,
-  } = useBlockManagement(review.elements, review.blocks || {}, (newElements, newBlocks) => {
-    setReview(prev => ({ ...prev, elements: newElements, blocks: newBlocks }));
-  });
+  const { 
+    elements, 
+    blocks, 
+    activeBlockId, 
+    setActiveBlockId, 
+    addBlock, 
+    updateBlock, 
+    deleteBlock, 
+    moveElement, // Renamed from moveBlockInList for clarity (operates on elements)
+    setElements // For DND
+  } = blockManager;
   
-  const { onDragEnd } = useBlockDragDrop(elements, blocks, moveBlockInList, setElements);
-
+  const { onDragEnd } = useBlockDragDrop({ elements, setElements });
 
   useEffect(() => {
     if (initialReview) {
-      setReview(initialReview);
-      // Initialize elements and blocks from useBlockManagement based on new initialReview
+      setCurrentReviewId(initialReview.id || generateId());
+      setCurrentReviewTitle(initialReview.title || 'Nova Revisão');
+      // Reset blockManager's internal state if initialReview changes significantly
+      // This might require a reset function in useBlockManagement or re-instantiating the hook
+      // For simplicity, assuming useBlockManagement initializes correctly with new initial values.
+      // If useBlockManagement doesn't internally reset with new initial props, we might need to use a key on BlockEditor or manage reset more explicitly.
+      setElements(initialReview.elements || []);
+      blockManager.setBlocks(initialReview.blocks || {}); // Expose setBlocks from hook
     }
-  }, [initialReview]);
+  }, [initialReview, setElements, blockManager]);
 
   const handleSave = useCallback(() => {
-    onSave(review);
-  }, [review, onSave]);
+    const reviewToSave: Review = {
+      id: currentReviewId,
+      title: currentReviewTitle,
+      elements: elements, // Current elements from blockManager
+      blocks: blocks,     // Current blocks from blockManager
+      version: initialReview?.version ? initialReview.version + 1 : 1,
+      status: 'draft', // Or derive from actual status
+      createdAt: initialReview?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    onSave(reviewToSave);
+  }, [currentReviewId, currentReviewTitle, elements, blocks, initialReview, onSave]);
 
   const handleSelectBlock = useCallback((blockId: string | null) => {
     setActiveBlockId(blockId);
-  }, []);
+  }, [setActiveBlockId]);
   
-  // Find a block by its ID from the centralized 'blocks' state
-  const findBlockById = (blockId: string): ReviewBlock | undefined => {
-    return blocks[blockId];
+  const handleDragEnd = (result: DropResult, _provided: ResponderProvided) => {
+    onDragEnd(result); 
   };
 
-  // If using dnd-kit or react-beautiful-dnd, this would be the onDragEnd handler
-  const handleDragEnd = (result: DropResult, _provided: ResponderProvided) => {
-    onDragEnd(result); // Delegate to the hook
+  const toolbarProps: EditorToolbarProps = {
+    onAddBlock: (type: BlockType, layoutElementId?: string) => {
+      let newBlockId: string | null = null;
+      if (layoutElementId === 'root' || !layoutElementId && elements.length === 0) {
+        newBlockId = addBlock({ type, insertAtIndex: elements.length });
+      } else if (layoutElementId) {
+        console.warn(`Adding block to layout element ${layoutElementId} requires specific parent handling.`);
+        newBlockId = addBlock({ type, parentElementId: layoutElementId });
+      } else if (elements.length > 0) {
+         // Add to the end of the top-level elements by default
+        newBlockId = addBlock({ type, insertAtIndex: elements.length });
+      } else {
+        newBlockId = addBlock({ type, insertAtIndex: 0 });
+      }
+      if (newBlockId) setActiveBlockId(newBlockId);
+    },
+    onSave: handleSave,
+    // Add other props like canUndo, canRedo, onUndo, onRedo if toolbar handles them
+    canUndo: blockManager.canUndo,
+    canRedo: blockManager.canRedo,
+    onUndo: blockManager.undo,
+    onRedo: blockManager.redo,
   };
 
   return (
     <div className={`block-editor-container bg-gray-900 text-white min-h-screen flex flex-col ${className}`}>
-      {!readonly && (
-        <EditorToolbar
-          onAddBlock={(type, layoutElementId) => {
-             // For simplicity, adding to the first layout element if layoutElementId is not specified
-             // Or, if layoutElementId is 'root', add directly to elements array
-            if (layoutElementId === 'root' || !layoutElementId && elements.length === 0) {
-                const newBlockId = addBlock(type, {content: {}}); // Assuming addBlock returns new block's ID or handles it
-                if (newBlockId) {
-                   const newLayoutElement: LayoutElement = { id: generateId(), type: 'block', blockId: newBlockId, settings: {}};
-                   setElements(prev => [...prev, newLayoutElement]);
-                }
-
-            } else if (layoutElementId) {
-                // Find the layout element (e.g., a grid) and add the block there.
-                // This part needs to be implemented based on how blocks are added to grids.
-                console.warn(`Adding block to layout element ${layoutElementId} not fully implemented.`);
-                // Potentially call addBlockToGrid or similar from useBlockManagement here.
-                // For now, let's assume addBlock can take a parentId or position.
-                addBlock(type, { parentId: layoutElementId, content: {} });
-            } else if (elements.length > 0 && elements[0].type === 'block'){
-                // Fallback: add after the first block if no specific layout target.
-                // This is a simplification. Ideally, user indicates where to add.
-                addBlock(type, { afterBlockId: elements[0].blockId, content: {} });
-            } else {
-                // Fallback for empty or non-block first element
-                const newBlockId = addBlock(type, {content: {}});
-                 if (newBlockId) {
-                   const newLayoutElement: LayoutElement = { id: generateId(), type: 'block', blockId: newBlockId, settings: {}};
-                   setElements(prev => [...prev, newLayoutElement]);
-                }
-            }
-          }}
-          onSave={handleSave}
-        />
-      )}
+      {!readonly && <EditorToolbar {...toolbarProps} />}
 
       <div className="editor-content-area flex-grow p-4 md:p-6 lg:p-8 overflow-y-auto">
         <DragDropContext onDragEnd={handleDragEnd}>
-          <Droppable droppableId="main-editor-droppable" type="BLOCK_LIST">
+          <Droppable droppableId="main-editor-droppable" type="ELEMENT_LIST"> {/* Changed type */}
             {(provided) => (
               <div ref={provided.innerRef} {...provided.droppableProps}>
                 <BlockList
-                  layoutElements={elements}
-                  blocks={blocks}
+                  layoutElements={elements} // Pass LayoutElement[]
+                  blocks={blocks} // Pass { [id: string]: ReviewBlock }
                   onUpdateBlock={updateBlock}
-                  onDeleteBlock={deleteBlock}
-                  onMoveBlock={moveBlockInList}
+                  onDeleteBlock={deleteBlock} // This should delete the block and its containing LayoutElement if it's a 'block_container'
+                  onMoveBlock={(blockId, dir) => {
+                      // Find the LayoutElement containing this blockId if it's a 'block_container'
+                      // And then move that LayoutElement.
+                      // This is simplified; a direct block move might be complex with layouts.
+                      const elementToMove = elements.find(el => el.type === 'block_container' && el.blockId === blockId);
+                      if (elementToMove) {
+                        moveElement(elementToMove.id, dir);
+                      }
+                  }}
                   onSelectBlock={handleSelectBlock}
                   activeBlockId={activeBlockId}
                   readonly={readonly}
-                  // For grid/layout elements, onAddBlockToGrid might be needed
                   onAddBlockToGrid={(type, gridId, position) => {
-                    console.log('Attempting to add block to grid:', type, gridId, position);
-                    // This should ideally call a function like addBlockToGrid from useBlockManagement
-                    // Example: addBlockToGrid(type, gridId, position, {});
-                    // For now, using the general addBlock and assuming it can handle grid context or will be adapted
-                    addBlock(type, { content: {}, parentId: gridId, position: position as any }); 
+                    const newBlockId = addBlock({ type, parentElementId: gridId, targetPosition: position });
+                    if (newBlockId) setActiveBlockId(newBlockId);
+                  }}
+                  // onAddBlock might be needed for BlockList to add blocks relative to others
+                  onAddBlock={(type, index, parentLayoutId, columnIndex) => {
+                      // This is getting complex. AddBlock in toolbar is simpler.
+                      // For adding within layouts, specific handlers in LayoutRow/Grid might be better.
+                      console.log("Request to add block from BlockList:", {type, index, parentLayoutId, columnIndex});
+                      // Example: addBlock({type, parentElementId: parentLayoutId, targetPosition: index})
+                      // For now, prefer adding via toolbar or context menus on layout elements.
                   }}
                 />
                 {provided.placeholder}
