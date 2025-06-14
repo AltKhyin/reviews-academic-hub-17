@@ -56,7 +56,7 @@ const ArchivePage = () => {
   // Convert to expected format for ArchiveHeader (maintain compatibility)
   const parentCategories = specialties; // Simple string array
   const visibleSubtags = years; // Use years as subtags for now
-  const hasActiveTagSelection = selectedTags.length > 0 || selectedSpecialty || selectedYear;
+  const hasActiveTagSelection = selectedTags.length > 0 || !!selectedSpecialty || !!selectedYear;
 
   // Simulate tag selection handlers for compatibility
   const handleTagSelect = (tag: string) => {

@@ -1,6 +1,7 @@
 
 import React, { lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { Toaster } from '@/components/ui/toaster';
@@ -17,6 +18,18 @@ const IssuePage = lazy(() => import('./pages/dashboard/ArticleViewer'));
 const Dashboard = lazy(() => import('./pages/dashboard/Dashboard'));
 const IssueEditor = lazy(() => import('./pages/dashboard/IssueEditor').then(module => ({ default: module.IssueEditor })));
 
+// Create a query client
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
+
 // Loading component
 const Loading = () => (
   <div className="flex items-center justify-center h-64">
@@ -26,8 +39,8 @@ const Loading = () => (
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
         <Suspense fallback={<Loading />}>
           <Routes>
             <Route path="/" element={<LandingPage />} />
@@ -65,8 +78,8 @@ function App() {
           </Routes>
         </Suspense>
         <Toaster />
-      </Router>
-    </AuthProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
 

@@ -1,5 +1,5 @@
 
-// ABOUTME: Optimized homepage data hook with proper type definitions
+// ABOUTME: Optimized homepage data hook with proper type definitions and RPC function name
 import { useOptimizedQuery, queryKeys, queryConfigs } from './useOptimizedQuery';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -29,8 +29,16 @@ interface HomepageData {
   };
 }
 
-export const useOptimizedHomepage = () => {
-  const { data, isLoading, error } = useOptimizedQuery<HomepageData>(
+interface HomepageResult extends HomepageData {
+  isLoading: boolean;
+  error: any;
+  hasError: boolean;
+  data?: HomepageData;
+  refetch?: () => void;
+}
+
+export const useOptimizedHomepage = (): HomepageResult => {
+  const { data, isLoading, error, refetch } = useOptimizedQuery<HomepageData>(
     queryKeys.homepage(),
     async (): Promise<HomepageData> => {
       try {
@@ -52,17 +60,25 @@ export const useOptimizedHomepage = () => {
           .order('published_at', { ascending: false })
           .limit(6);
 
-        // Fetch stats
-        const { data: stats } = await supabase.rpc('get_homepage_stats');
+        // Fetch stats using the correct RPC function name
+        const { data: statsData } = await supabase.rpc('get_archive_metadata');
+
+        // Parse stats with proper type handling
+        const parseStats = (data: any) => {
+          if (!data || typeof data !== 'object') {
+            return { totalIssues: 0, totalSpecialties: 0, totalAuthors: 0 };
+          }
+          return {
+            totalIssues: Number(data.total_published || data.total_issues || 0),
+            totalSpecialties: Number(data.total_specialties || 0),
+            totalAuthors: Number(data.total_authors || 0),
+          };
+        };
 
         return {
           featuredIssue: featuredIssue || null,
           recentIssues: recentIssues || [],
-          stats: {
-            totalIssues: stats?.total_issues || 0,
-            totalSpecialties: stats?.total_specialties || 0,
-            totalAuthors: stats?.total_authors || 0,
-          },
+          stats: parseStats(statsData),
         };
       } catch (error) {
         console.warn('Homepage data fetch error:', error);
@@ -83,12 +99,18 @@ export const useOptimizedHomepage = () => {
     }
   );
 
+  const result = data || {
+    featuredIssue: null,
+    recentIssues: [],
+    stats: { totalIssues: 0, totalSpecialties: 0, totalAuthors: 0 },
+  };
+
   return {
-    featuredIssue: data?.featuredIssue || null,
-    recentIssues: data?.recentIssues || [],
-    stats: data?.stats || { totalIssues: 0, totalSpecialties: 0, totalAuthors: 0 },
+    ...result,
     isLoading,
     error,
     hasError: Boolean(error),
+    data: result,
+    refetch,
   };
 };
