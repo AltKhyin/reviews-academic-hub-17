@@ -1,7 +1,7 @@
 // ABOUTME: Enhanced block management hook for a nested list of LayoutElements.
 // Manages block operations, undo/redo, and tree manipulation.
 import { useState, useCallback } from 'react';
-import { ReviewBlock, BlockType, LayoutElement, GridPosition, AddBlockOptions } from '@/types/review';
+import { ReviewBlock, BlockType, LayoutElement, GridPosition, AddBlockOptions, LayoutColumn, LayoutRowDefinition } from '@/types/review';
 import { generateId } from '@/lib/utils';
 
 export interface UseBlockManagementReturn {
@@ -125,7 +125,6 @@ export const useBlockManagement = (
                 if (newEl.type === 'grid' && options.targetPosition && typeof options.targetPosition !== 'number') {
                     const { row, column } = options.targetPosition;
                     if (newEl.rows && newEl.rows[row] && newEl.rows[row].cells[column]) {
-                        // We need a new block and to update the cell
                         newEl.rows[row].cells[column].blockId = newBlockId;
                         newBlock.meta = { ...newBlock.meta, layout: { grid_position: { row, column }}};
                     }
@@ -174,32 +173,33 @@ export const useBlockManagement = (
     delete newBlocks[blockId];
     
     const removeBlockFromElements = (els: LayoutElement[]): LayoutElement[] => {
-        let elsWithBlocksRemoved = els.map(el => {
-            const newEl = {...el};
-            if (newEl.columns) {
-                newEl.columns = newEl.columns.map(c => ({
-                    ...c,
-                    elements: removeBlockFromElements(c.elements)
-                }));
+        return els.map(el => {
+            if (el.type === 'row') {
+                return {
+                    ...el,
+                    columns: el.columns.map(c => ({
+                        ...c,
+                        elements: removeBlockFromElements(c.elements)
+                    }))
+                };
             }
-            if (newEl.rows) {
-                newEl.rows = newEl.rows.map(r => ({
-                    ...r,
-                    cells: r.cells.map(cell => {
-                        if (cell.blockId === blockId) {
-                            return { ...cell, blockId: null };
-                        }
-                        return cell;
-                    })
-                }));
+            if (el.type === 'grid') {
+                return {
+                    ...el,
+                    rows: el.rows.map(r => ({
+                        ...r,
+                        cells: r.cells.map(cell => {
+                            if (cell.blockId === blockId) {
+                                return { ...cell, blockId: null };
+                            }
+                            return cell;
+                        })
+                    }))
+                };
             }
-            return newEl;
-        });
-
-        return elsWithBlocksRemoved.filter(el => {
-            return !(el.type === 'block_container' && el.blockId === blockId);
-        });
-    }
+            return el;
+        }).filter(el => !(el.type === 'block_container' && el.blockId === blockId));
+    };
     
     const newElements = removeBlockFromElements([...elements]);
 

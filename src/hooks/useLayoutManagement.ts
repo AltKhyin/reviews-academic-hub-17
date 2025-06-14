@@ -1,4 +1,3 @@
-
 // ABOUTME: Layout management hook for multi-block row system
 // Handles creation, modification, and state management of layout rows
 
@@ -23,7 +22,7 @@ interface LayoutState {
   activeRowId?: string;
   dragState: {
     isDragging: boolean;
-    draggedBlockId?: number;
+    draggedBlockId?: string; // Changed from number
     sourceRowId?: string;
     targetRowId?: string;
     targetPosition?: number;
@@ -201,7 +200,7 @@ export const useLayoutManagement = ({
 
   // Move block between rows/positions
   const moveBlock = useCallback((
-    blockId: number,
+    blockId: string, // Changed from number
     targetRowId: string,
     targetPosition: number
   ) => {
@@ -262,7 +261,7 @@ export const useLayoutManagement = ({
   }, [onLayoutChange]);
 
   // Remove block from layout
-  const removeBlock = useCallback((blockId: number) => {
+  const removeBlock = useCallback((blockId: string) => { // Changed from number
     setLayoutState(prev => {
       const newRows = prev.rows.map(row => ({
         ...row,
@@ -283,7 +282,7 @@ export const useLayoutManagement = ({
   }, [layoutState.rows]);
 
   // Update single block
-  const updateBlock = useCallback((blockId: number, updates: Partial<ReviewBlock>) => {
+  const updateBlock = useCallback((blockId: string, updates: Partial<ReviewBlock>) => { // Changed from number
     setLayoutState(prev => {
       const newRows = prev.rows.map(row => ({
         ...row,
@@ -309,7 +308,7 @@ export const useLayoutManagement = ({
   }, []);
 
   // Drag state management
-  const startDrag = useCallback((blockId: number, sourceRowId: string) => {
+  const startDrag = useCallback((blockId: string, sourceRowId: string) => { // Changed from number
     setLayoutState(prev => ({
       ...prev,
       dragState: {

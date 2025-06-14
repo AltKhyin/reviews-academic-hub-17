@@ -6,8 +6,8 @@ import React, { memo } from 'react';
 import { Handle, Position, NodeProps } from '@xyflow/react';
 import { DiagramNodeData } from '@/types/review';
 
-const CustomNode: React.FC<NodeProps<DiagramNodeData>> = ({ data, selected, dragging }) => {
-  const nodeData = data;
+const CustomNode: React.FC<NodeProps> = ({ data, selected, dragging }) => {
+  const nodeData = data as DiagramNodeData;
   const nodeType = nodeData.type || 'rectangle';
   const label = nodeData.label || 'Node';
   const color = nodeData.color || '#777';
