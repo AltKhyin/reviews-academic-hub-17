@@ -1,3 +1,4 @@
+
 // ABOUTME: Optimized homepage data loading with request batching and deduplication
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,7 +28,7 @@ interface ReviewerComment {
 
 interface HomepageData {
   issues: HomepageIssue[];
-  sectionVisibility: any[]; // Changed from 'any' to 'any[]' to help TS compiler
+  sectionVisibility: any[];
   featuredIssue: HomepageIssue | null;
   reviewerComments: ReviewerComment[];
   errors: {
@@ -71,9 +72,11 @@ const fetchHomepageData = async (): Promise<HomepageData> => {
       .limit(10)
   ]);
 
+  const visibilityValue = sectionVisibility.data?.value;
+
   return {
     issues: issues.data || [],
-    sectionVisibility: sectionVisibility.data?.value || [],
+    sectionVisibility: Array.isArray(visibilityValue) ? visibilityValue : [],
     featuredIssue: featuredIssue.data || null,
     reviewerComments: reviewerComments.data || [],
     errors: {
