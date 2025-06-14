@@ -6,7 +6,7 @@ import { useCommentFetch } from './useCommentFetch';
 import { EntityType } from '@/types/commentTypes';
 
 export const useOptimizedComments = (entityType: EntityType, entityId: string) => {
-  const commentFetch = useCommentFetch(entityType, entityId);
+  const commentFetch = useCommentFetch(entityId, entityType);
   const commentActions = useOptimizedCommentActions(entityType, entityId);
   const commentVoting = useOptimizedCommentVoting(entityType, entityId);
 
@@ -33,7 +33,7 @@ export const useOptimizedComments = (entityType: EntityType, entityId: string) =
     ...commentVoting,
     
     // Loading states with unified naming
-    isLoading: commentFetch.isLoading, // Explicitly expose isLoading to fix type inference issues
+    isLoading: commentFetch.loading, // Explicitly expose isLoading to fix type inference issues
     isAddingComment: commentActions.isCreating,
     isDeletingComment: commentActions.isDeleting,
     isReplying: commentActions.isCreating,
