@@ -8,13 +8,13 @@ export const queryKeys = {
   archiveSearch: (query?: string, specialty?: string) => ['archive-search', query, specialty] as const,
   comments: (entityId: string, entityType: string) => ['comments', entityId, entityType] as const,
   homepage: () => ['homepage-data'] as const,
-  // Add missing keys
   analytics: () => ['analytics-data'] as const,
   issues: (filters?: any) => ['issues', filters] as const,
   featuredIssue: () => ['featured-issue'] as const,
   issuesBatch: (batch: number) => ['issues-batch', batch] as const,
   popularIssues: () => ['popular-issues'] as const,
   userReactions: (userId: string) => ['user-reactions', userId] as const,
+  reviewWithBlocks: (issueId: string) => ['review-with-blocks', issueId] as const,
 } as const;
 
 export const queryConfigs = {
@@ -31,7 +31,6 @@ export const queryConfigs = {
     refetchOnWindowFocus: false,
     retry: 2,
   },
-  // Add missing configs
   realtime: {
     staleTime: 30 * 1000, // 30 seconds
     gcTime: 2 * 60 * 1000, // 2 minutes

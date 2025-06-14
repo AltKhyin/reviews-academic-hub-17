@@ -37,7 +37,7 @@ export const useGrid2DManager = ({
           id: currentCells[i]?.id || `cell-${rowIndex}-${i}`,
           row: rowIndex,
           column: i,
-          position: i, // Add required position property
+          position: i,
           block: currentCells[i]?.block || null
         });
       }
@@ -53,7 +53,6 @@ export const useGrid2DManager = ({
 
   const updateColumnWidths = useCallback((widths: number[]) => {
     if (!layout) return;
-    // Grid2DLayout doesn't have columnWidths property, update through row metadata
     const newRows = layout.rows.map(row => ({
       ...row,
       metadata: { ...row.metadata, columnWidths: widths }
@@ -64,7 +63,6 @@ export const useGrid2DManager = ({
 
   const updateRowHeights = useCallback((heights: number[]) => {
     if (!layout) return;
-    // Grid2DLayout doesn't have rowHeights property, update through row metadata
     const newRows = layout.rows.map((row, index) => ({
       ...row,
       metadata: { ...row.metadata, height: heights[index] }
@@ -83,8 +81,11 @@ export const useGrid2DManager = ({
       row.cells[position.column] = {
         ...row.cells[position.column],
         block: {
-          ...block,
-          type: sanitizeBlockType(block.type)
+          id: block.id,
+          type: sanitizeBlockType(block.type),
+          content: block.content,
+          visible: block.visible,
+          sort_index: block.sort_index
         }
       };
       setLayout(prev => prev ? { ...prev, rows: newRows } : null);
@@ -117,7 +118,7 @@ export const useGrid2DManager = ({
           id: `cell-${rowIndex}-${colIndex}`,
           row: rowIndex,
           column: colIndex,
-          position: colIndex, // Add required position property
+          position: colIndex,
           block: null
         });
       }
@@ -149,7 +150,16 @@ export const useGrid2DManager = ({
   const getBlockAtPosition = useCallback((position: GridPosition): ReviewBlock | null => {
     if (!layout || !isValidPosition(position)) return null;
     
-    return layout.rows[position.row]?.cells[position.column]?.block || null;
+    const cellBlock = layout.rows[position.row]?.cells[position.column]?.block;
+    if (!cellBlock) return null;
+    
+    return {
+      id: cellBlock.id,
+      type: sanitizeBlockType(cellBlock.type),
+      content: cellBlock.content,
+      visible: cellBlock.visible,
+      sort_index: cellBlock.sort_index
+    };
   }, [layout, isValidPosition]);
 
   const memoizedLayout = useMemo(() => layout, [layout]);

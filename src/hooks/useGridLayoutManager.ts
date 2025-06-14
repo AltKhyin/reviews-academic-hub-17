@@ -19,8 +19,8 @@ export const useGridLayoutManager = ({
   onDeleteBlock
 }: UseGridLayoutManagerProps) => {
   
-  const layoutState = useGridState(blocks);
-  const { validateLayoutMetadata, repairLayoutMetadata } = useGridRepair({ onUpdateBlock });
+  const layoutState = useGridState();
+  const { repairGrid, validateGridIntegrity } = useGridRepair();
   
   const updateColumnWidths = useCallback((rowId: string, updates: { columnWidths: number[] }) => {
     const row = layoutState.rows.find(r => r.id === rowId);
@@ -31,16 +31,16 @@ export const useGridLayoutManager = ({
     
     console.log('Updating column widths:', { rowId, columnWidths: updates.columnWidths });
     
-    row.blocks.forEach(block => {
-      onUpdateBlock(block.id, {
-        meta: {
-          ...block.meta,
-          layout: {
-            ...block.meta?.layout,
-            columnWidths: updates.columnWidths
+    row.cells.forEach(cell => {
+      if (cell.block) {
+        onUpdateBlock(cell.block.id, {
+          meta: {
+            layout: {
+              columnWidths: updates.columnWidths
+            }
           }
-        }
-      });
+        });
+      }
     });
   }, [layoutState.rows, onUpdateBlock]);
   
@@ -55,15 +55,27 @@ export const useGridLayoutManager = ({
     
     const layout = blockToDelete.meta?.layout;
     
-    if (layout?.row_id) {
+    if (layout?.row_id && layoutState.grid) {
       const row = layoutState.rows.find(r => r.id === layout.row_id);
-      if (row && row.blocks.length > 1) {
-        const remainingBlocks = row.blocks.filter(b => b.id !== blockId);
+      if (row && row.cells.length > 1) {
+        const remainingBlocks = row.cells
+          .filter(cell => cell.block && cell.block.id !== blockId)
+          .map(cell => cell.block!)
+          .map(block => ({
+            id: block.id,
+            type: block.type as any,
+            content: block.content,
+            visible: block.visible,
+            sort_index: block.sort_index
+          }));
         
         onDeleteBlock(blockId);
         
         setTimeout(() => {
-          repairLayoutMetadata(layout.row_id!, remainingBlocks);
+          if (layoutState.grid) {
+            const repairedGrid = repairGrid(layoutState.grid, remainingBlocks);
+            layoutState.updateGrid(repairedGrid);
+          }
         }, 100);
         
         return;
@@ -71,11 +83,11 @@ export const useGridLayoutManager = ({
     }
     
     onDeleteBlock(blockId);
-  }, [blocks, layoutState.rows, onDeleteBlock, repairLayoutMetadata]);
+  }, [blocks, layoutState, onDeleteBlock, repairGrid]);
   
   const getRowByBlockId = useCallback((blockId: string) => {
     return layoutState.rows.find(row => 
-      row.blocks.some(block => block.id === blockId)
+      row.cells.some(cell => cell.block && cell.block.id === blockId)
     ) || null;
   }, [layoutState.rows]);
   
@@ -84,13 +96,13 @@ export const useGridLayoutManager = ({
     if (!block?.meta?.layout) return false;
     
     const row = getRowByBlockId(blockId);
-    return row ? row.columns > 1 : false;
+    return row ? row.cells.length > 1 : false;
   }, [blocks, getRowByBlockId]);
   
   return {
     layoutState,
-    validateLayoutMetadata,
-    repairLayoutMetadata,
+    validateGridIntegrity: (grid: any, blocks: ReviewBlock[]) => validateGridIntegrity(grid, blocks),
+    repairGrid: (grid: any, blocks: ReviewBlock[]) => repairGrid(grid, blocks),
     updateColumnWidths,
     deleteBlockWithLayoutRepair,
     getRowByBlockId,
