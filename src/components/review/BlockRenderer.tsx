@@ -10,7 +10,7 @@ import { ParagraphBlock } from './blocks/ParagraphBlock';
 import { FigureBlock } from './blocks/FigureBlock';
 import { TableBlock } from './blocks/TableBlock';
 import { CalloutBlock } from './blocks/CalloutBlock';
-import { SnapshotCardBlock } from './blocks/SnapshotCardBlock'; // Corrected component name
+import { SnapshotCardBlock } from './blocks/SnapshotCardBlock';
 import { NumberCard } from './blocks/NumberCard';
 import { ReviewerQuote } from './blocks/ReviewerQuote';
 import { PollBlock } from './blocks/PollBlock';
@@ -22,10 +22,7 @@ import { cn } from '@/lib/utils';
 
 interface BlockRendererProps {
   block: ReviewBlock;
-  onUpdate?: (updates: Partial<ReviewBlock>) => void; // For updating the current block
-  onUpdateBlock?: (blockId: string, updates: Partial<ReviewBlock>) => void; // For general updates by ID
-  onDeleteBlock?: (blockId: string) => void; // For general deletion by ID
-  isActive?: boolean; // To pass down to blocks like DiagramBlock
+  onUpdate?: (updates: Partial<ReviewBlock>) => void;
   readonly?: boolean;
   className?: string;
   renderAsGrid?: boolean;
@@ -37,9 +34,6 @@ interface BlockRendererProps {
 export const BlockRenderer: React.FC<BlockRendererProps> = ({
   block,
   onUpdate,
-  onUpdateBlock, // Receive general onUpdateBlock
-  onDeleteBlock, // Receive general onDeleteBlock
-  isActive,      // Receive isActive
   readonly = false,
   className,
   renderAsGrid = false,
@@ -47,27 +41,22 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
   onInteraction,
   onSectionView
 }) => {
+  // Normalize block data to handle database inconsistencies
   const normalizedBlock: ReviewBlock = {
     ...block,
+    // Handle both 'content' and 'payload' properties from database
     content: block.content || (block as any).payload || {},
+    // Ensure sort_index exists
     sort_index: block.sort_index ?? 0,
+    // Ensure visible property exists
     visible: block.visible ?? true
   };
 
-  const handleUpdateCurrentBlock = (updates: Partial<ReviewBlock>) => {
+  const handleUpdate = (updates: Partial<ReviewBlock>) => {
     if (onUpdate) {
       onUpdate(updates);
-    } else if (onUpdateBlock) { // Fallback if specific onUpdate isn't provided
-      onUpdateBlock(normalizedBlock.id, updates);
     }
   };
-  
-  const handleDeleteCurrentBlock = () => {
-    if (onDeleteBlock) {
-      onDeleteBlock(normalizedBlock.id);
-    }
-  };
-
 
   const handleInteraction = (interactionType: string, data?: any) => {
     if (onInteraction) {
@@ -75,80 +64,60 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
     }
   };
 
+  // Generate spacing styles
   const spacingStyles = generateSpacingStyles(
     normalizedBlock.meta?.spacing || getDefaultSpacing(normalizedBlock.type)
   );
 
   const renderBlockContent = () => {
-    // Props for blocks that manage their own content updates via a simple callback
-    const selfContainedBlockProps = {
+    const commonProps = {
       block: normalizedBlock,
-      onUpdate: handleUpdateCurrentBlock, // Use the specific updater for the current block
+      onUpdate: handleUpdate,
       readonly,
-      onInteraction: handleInteraction,
-      // These might be needed by some blocks, ensure they are passed if BlockRenderer receives them
-      onDeleteBlock: handleDeleteCurrentBlock, 
-      isActive: !!isActive, // Ensure boolean
+      onInteraction: handleInteraction
     };
-
-    // Props for blocks that need to call a general update/delete by ID (like DiagramBlock was)
-    const generalBlockProps = {
-        block: normalizedBlock,
-        onUpdateBlock: onUpdateBlock || ((id, updates) => handleUpdateCurrentBlock(updates)), // Fallback for DiagramBlock-like structure
-        onDeleteBlock: onDeleteBlock ? () => onDeleteBlock(normalizedBlock.id) : handleDeleteCurrentBlock,
-        isActive: !!isActive,
-        readonly,
-        onInteraction: handleInteraction,
-    };
-
 
     switch (normalizedBlock.type) {
       case 'heading':
-        return <HeadingBlock {...selfContainedBlockProps} />;
+        return <HeadingBlock {...commonProps} />;
       
       case 'paragraph':
       case 'text':
-        return <ParagraphBlock {...selfContainedBlockProps} />;
+        return <ParagraphBlock {...commonProps} />;
       
       case 'figure':
       case 'image':
-        return <FigureBlock {...selfContainedBlockProps} />;
+        return <FigureBlock {...commonProps} />;
       
       case 'table':
-        return <TableBlock {...selfContainedBlockProps} />;
+        return <TableBlock {...commonProps} />;
       
       case 'callout':
-        return <CalloutBlock {...selfContainedBlockProps} />;
+        return <CalloutBlock {...commonProps} />;
       
       case 'snapshot_card':
-        return <SnapshotCardBlock {...generalBlockProps} />; // Uses general props
+        return <SnapshotCardBlock {...commonProps} />;
       
       case 'number_card':
-        return <NumberCard {...selfContainedBlockProps} />;
+        return <NumberCard {...commonProps} />;
       
       case 'reviewer_quote':
-        return <ReviewerQuote {...selfContainedBlockProps} />;
+        return <ReviewerQuote {...commonProps} />;
       
       case 'poll':
-        return <PollBlock {...selfContainedBlockProps} />;
+        return <PollBlock {...commonProps} />;
       
       case 'citation_list':
-        return <CitationListBlock {...selfContainedBlockProps} />;
+        return <CitationListBlock {...commonProps} />;
       
       case 'divider':
-        return <DividerBlock {...selfContainedBlockProps} />;
+        return <DividerBlock {...commonProps} />;
       
       case 'diagram':
-        // DiagramBlock expects onUpdateBlock, onDeleteBlock, isActive
-        return <DiagramBlock 
-                    block={normalizedBlock}
-                    // Pass the general onUpdateBlock if available, otherwise adapt current block's onUpdate
-                    onUpdateBlock={onUpdateBlock || ((_id, updates) => handleUpdateCurrentBlock(updates))}
-                    onDeleteBlock={onDeleteBlock ? () => onDeleteBlock(normalizedBlock.id) : handleDeleteCurrentBlock}
-                    isActive={!!isActive} 
-                />;
+        return <DiagramBlock {...commonProps} />;
       
       default:
+        // Fallback for unknown block types
         return (
           <div className="unknown-block p-4 bg-yellow-900/20 border border-yellow-600 rounded">
             <div className="text-yellow-400 text-sm font-medium mb-2">
@@ -183,4 +152,3 @@ export const BlockRenderer: React.FC<BlockRendererProps> = ({
     </BlockErrorBoundary>
   );
 };
-

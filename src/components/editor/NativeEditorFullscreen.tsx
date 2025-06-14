@@ -3,7 +3,7 @@
 // Provides dedicated workspace for complex review creation
 
 import React, { useCallback, useEffect } from 'react';
-import { ReviewBlock, BlockType } from '@/types/review'; // Ensure BlockType is imported
+import { ReviewBlock } from '@/types/review';
 import { BlockEditor } from './BlockEditor';
 import { BlockPalette } from './BlockPalette';
 import { ReviewPreview } from './ReviewPreview';
@@ -15,7 +15,6 @@ import { useBlockManagement } from '@/hooks/useBlockManagement';
 import { useEditorAutoSave } from '@/hooks/useEditorAutoSave';
 import { useEditorKeyboardShortcuts } from './hooks/useEditorKeyboardShortcuts';
 import { cn } from '@/lib/utils';
-import { GridPosition } from '@/types/grid'; // Import GridPosition
 
 interface NativeEditorFullscreenProps {
   issueId?: string;
@@ -74,12 +73,13 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
     onRedo: redo
   });
 
+  // Track changes
   React.useEffect(() => {
     const hasChanges = JSON.stringify(blocks) !== JSON.stringify(initialBlocks);
     setHasUnsavedChanges(hasChanges);
   }, [blocks, initialBlocks]);
 
-  const handleAddBlock = useCallback((type: BlockType, position?: number): string => { // Ensure type is BlockType
+  const handleAddBlock = useCallback((type: any, position?: number) => {
     const newBlockId = addBlock(type, position);
     console.log('Block added in fullscreen editor:', { type, position, newBlockId });
     return newBlockId;
@@ -88,17 +88,17 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
   const handleImport = useCallback((importedBlocks: ReviewBlock[]) => {
     console.log('Importing blocks in fullscreen:', importedBlocks);
     importedBlocks.forEach((block, index) => {
-      const newBlockData = { ...block, id: String(block.id || Date.now()) };
       if (index === 0) {
-        const firstBlockId = addBlock(newBlockData.type, 0);
-        updateBlock(firstBlockId, newBlockData);
+        const firstBlockId = addBlock(block.type, 0);
+        updateBlock(firstBlockId, block);
       } else {
-        const newBlockId = addBlock(newBlockData.type, index);
-        updateBlock(newBlockId, { ...newBlockData, id: newBlockId });
+        const newBlockId = addBlock(block.type, index);
+        updateBlock(newBlockId, { ...block, id: newBlockId });
       }
     });
   }, [addBlock, updateBlock]);
 
+  // Handle escape key to close fullscreen
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -110,15 +110,12 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  // Temporary workaround for EditorStatusBar prop type
-  const numericActiveBlockId = activeBlockId ? parseInt(activeBlockId, 10) : null;
-  const statusBarActiveId = (numericActiveBlockId !== null && !isNaN(numericActiveBlockId)) ? numericActiveBlockId : null;
-
   return (
     <div 
       className="fixed inset-0 z-50 bg-background"
       style={{ backgroundColor: '#121212' }}
     >
+      {/* Header */}
       <div 
         className="h-14 border-b flex items-center justify-between px-4"
         style={{ backgroundColor: '#1a1a1a', borderColor: '#2a2a2a' }}
@@ -142,6 +139,7 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
         </div>
       </div>
 
+      {/* Toolbar */}
       <EditorToolbar
         editorMode={editorMode}
         onModeChange={setEditorMode}
@@ -157,7 +155,9 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
         onImport={handleImport}
       />
       
+      {/* Main Content */}
       <div className="flex h-[calc(100vh-7rem)]">
+        {/* Block Palette */}
         {(editorMode === 'edit' || editorMode === 'split') && (
           <div 
             className="w-64 border-r overflow-y-auto flex-shrink-0"
@@ -167,6 +167,7 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
           </div>
         )}
         
+        {/* Editor */}
         {(editorMode === 'edit' || editorMode === 'split') && (
           <div 
             className={cn(
@@ -192,6 +193,7 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
           </div>
         )}
         
+        {/* Preview */}
         {(editorMode === 'preview' || editorMode === 'split') && (
           <div className="flex-1 px-2">
             <ReviewPreview 
@@ -204,9 +206,8 @@ export const NativeEditorFullscreen: React.FC<NativeEditorFullscreenProps> = ({
 
       <EditorStatusBar
         blockCount={blocks.length}
-        activeBlockId={statusBarActiveId} // Pass string ID, EditorStatusBar should handle it or be updated
+        activeBlockId={activeBlockId}
       />
     </div>
   );
 };
-

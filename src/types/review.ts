@@ -66,9 +66,9 @@ export interface AlignmentConfig {
 }
 
 export interface ReviewBlock {
-  id: string; // Ensure IDs are strings
+  id: string;
   type: BlockType;
-  content: any; // Kept as any for flexibility, specific blocks will cast
+  content: any;
   sort_index: number;
   visible: boolean;
   meta?: {
@@ -78,55 +78,27 @@ export interface ReviewBlock {
   };
 }
 
-export interface DiagramNode {
-  id: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  label: string;
-  type: 'rectangle' | 'circle' | 'diamond';
-  color?: string;
-  style?: {
-    backgroundColor?: string;
-    borderColor?: string;
-    textColor?: string;
-    borderWidth?: number;
-    fontSize?: number;
-    fontFamily?: string;
-    textAlign?: 'left' | 'center' | 'right'; // More specific
-    opacity?: number;
-  };
-  position?: { x: number; y: number };
-  size?: { width: number; height: number };
-  text?: string;
-}
-
-export interface DiagramEdge {
-  id: string;
-  source: string; // Node ID
-  target: string; // Node ID
-  label?: string;
-  type: 'straight' | 'curved'; // Simplified, actual lib would have more
-  style?: {
-    strokeColor?: string;
-    strokeWidth?: number;
-    arrowhead?: 'default' | 'none'; // Simplified
-  };
-}
-
+// Added missing content type interfaces
 export interface DiagramContent {
-  nodes: DiagramNode[];
-  edges: DiagramEdge[]; // Changed from connections to edges
+  nodes: Array<{
+    id: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    label: string;
+    type: 'rectangle' | 'circle' | 'diamond';
+    color?: string;
+  }>;
+  edges: Array<{
+    id: string;
+    source: string;
+    target: string;
+    label?: string;
+    type: 'straight' | 'curved';
+  }>;
   title?: string;
   description?: string;
-  canvas?: { // Added canvas based on usage in DiagramBlock
-    backgroundColor?: string;
-    gridSize?: number;
-    zoomLevel?: number;
-    offsetX?: number;
-    offsetY?: number;
-  };
 }
 
 export interface SnapshotCardContent {
@@ -140,19 +112,6 @@ export interface SnapshotCardContent {
   }>;
   timestamp?: string;
   source?: string;
-  subtitle?: string;
-  value?: string | number;
-  change?: string;
-  trend?: 'up' | 'down' | 'neutral';
-  icon?: string; // Icon name or URL from a library like lucide-react
-  evidence_level?: string;
-  recommendation_strength?: string;
-  population?: string;
-  intervention?: string;
-  comparison?: string;
-  outcome?: string;
-  design?: string;
-  key_findings?: string[];
 }
 
 export interface EnhancedIssue {
@@ -167,4 +126,3 @@ export interface EnhancedIssue {
   article_pdf_url?: string;
   pdf_url?: string;
 }
-

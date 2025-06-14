@@ -1,3 +1,4 @@
+
 // ABOUTME: Enhanced block list with proper click handling and inline editing
 // Prevents unwanted block creation and provides intuitive interaction patterns - UPDATED: Reduced spacing by 50%
 
@@ -15,15 +16,15 @@ import {
   Trash2, 
   Plus,
   FileText,
-  Heading as HeadingIcon,
+  Heading,
   Type,
-  Image as ImageIconLucide,
-  Table as TableIcon,
+  Image,
+  Table,
   AlertCircle,
   Hash,
-  Quote as QuoteIcon,
+  Quote,
   BarChart3,
-  List as ListIcon,
+  List,
   FlaskConical,
   ArrowUp,
   ArrowDown
@@ -46,23 +47,23 @@ const getBlockIcon = (type: string) => {
     case 'snapshot_card':
       return FlaskConical;
     case 'heading':
-      return HeadingIcon;
+      return Heading;
     case 'paragraph':
       return Type;
     case 'figure':
-      return ImageIconLucide;
+      return Image;
     case 'table':
-      return TableIcon;
+      return Table;
     case 'callout':
       return AlertCircle;
     case 'number_card':
       return Hash;
     case 'reviewer_quote':
-      return QuoteIcon;
+      return Quote;
     case 'poll':
       return BarChart3;
     case 'citation_list':
-      return ListIcon;
+      return List;
     default:
       return FileText;
   }
@@ -98,23 +99,23 @@ const getBlockColor = (type: string) => {
 const getBlockTitle = (block: ReviewBlock) => {
   switch (block.type) {
     case 'heading':
-      return block.content?.text || 'Título sem texto';
+      return block.content.text || 'Título sem texto';
     case 'paragraph':
-      const content = block.content?.content || '';
-      const textContent = typeof content === 'string' ? content.replace(/<[^>]*>/g, '') : ''; // Strip HTML
+      const content = block.content.content || '';
+      const textContent = content.replace(/<[^>]*>/g, ''); // Strip HTML
       return textContent.length > 50 ? `${textContent.substring(0, 50)}...` : textContent || 'Parágrafo vazio';
     case 'figure':
-      return block.content?.caption || block.content?.alt || 'Figura sem título';
+      return block.content.caption || block.content.alt || 'Figura sem título';
     case 'callout':
-      return block.content?.title || `Callout (${block.content?.type || 'info'})`;
+      return block.content.title || `Callout (${block.content.type || 'info'})`;
     case 'table':
-      return block.content?.title || 'Tabela';
+      return block.content.title || 'Tabela';
     case 'number_card':
-      return `${block.content?.number || '0'} - ${block.content?.label || 'Métrica'}`;
+      return `${block.content.number || '0'} - ${block.content.label || 'Métrica'}`;
     case 'reviewer_quote':
-      return `"${(block.content?.quote || '').substring(0, 30)}..." - ${block.content?.author || 'Autor'}`;
+      return `"${(block.content.quote || '').substring(0, 30)}..." - ${block.content.author || 'Autor'}`;
     case 'poll':
-      return block.content?.question || 'Enquete';
+      return block.content.question || 'Enquete';
     default:
       return `Bloco ${block.type}`;
   }
@@ -131,16 +132,11 @@ export const BlockList: React.FC<BlockListProps> = ({
   compact = false
 }) => {
   const { dragState, handleDragStart, handleDragEnd, handleDragOver, handleDragEnter } = 
-    useBlockDragDrop((draggedIndex: number, targetIndex: number) => { // Assuming hook provides numbers
-      const draggedBlock = blocks[draggedIndex];
-      if (draggedBlock) {
-        // Determine direction based on indices
-        const direction = draggedIndex < targetIndex ? 'down' : 'up';
-        onMoveBlock(draggedBlock.id, direction); // Correctly call with two arguments
-      }
-    });
+    useBlockDragDrop(onMoveBlock);
 
+  // Handle block selection with proper event handling
   const handleBlockClick = (e: React.MouseEvent, blockId: string) => {
+    // Prevent triggering on button clicks or other interactive elements
     const target = e.target as HTMLElement;
     if (target.closest('button') || target.closest('[role="button"]')) {
       return;
@@ -150,6 +146,7 @@ export const BlockList: React.FC<BlockListProps> = ({
     onActiveBlockChange(blockId);
   };
 
+  // Handle add block with explicit positioning
   const handleAddBlockClick = (e: React.MouseEvent, position: number, type: BlockType = 'paragraph') => {
     e.stopPropagation();
     e.preventDefault();
@@ -194,6 +191,7 @@ export const BlockList: React.FC<BlockListProps> = ({
 
         return (
           <div key={block.id} className="space-y-1 w-full max-w-full overflow-hidden">
+            {/* Insert point at the top for first block */}
             {index === 0 && (
               <div className="insert-point group w-full">
                 <Button
@@ -229,6 +227,7 @@ export const BlockList: React.FC<BlockListProps> = ({
             >
               <CardContent className={cn("p-2 w-full max-w-full overflow-hidden", compact && "p-1.5")}>
                 <div className="flex items-center gap-2 w-full max-w-full overflow-hidden">
+                  {/* Drag Handle */}
                   <div 
                     className="drag-handle cursor-grab active:cursor-grabbing flex-shrink-0"
                     onMouseDown={(e) => e.stopPropagation()}
@@ -239,6 +238,7 @@ export const BlockList: React.FC<BlockListProps> = ({
                     />
                   </div>
 
+                  {/* Block Icon */}
                   <div className="flex-shrink-0">
                     <Icon 
                       className="w-4 h-4" 
@@ -246,6 +246,7 @@ export const BlockList: React.FC<BlockListProps> = ({
                     />
                   </div>
 
+                  {/* Block Info */}
                   <div className="flex-1 min-w-0 overflow-hidden">
                     <div className="flex items-center gap-1 mb-0.5 overflow-hidden">
                       <h4 
@@ -292,7 +293,9 @@ export const BlockList: React.FC<BlockListProps> = ({
                     </div>
                   </div>
 
+                  {/* Action Buttons */}
                   <div className="flex items-center gap-0.5 flex-shrink-0">
+                    {/* Up Arrow */}
                     {!isFirst && (
                       <Button
                         size="sm"
@@ -308,6 +311,7 @@ export const BlockList: React.FC<BlockListProps> = ({
                       </Button>
                     )}
 
+                    {/* Down Arrow */}
                     {!isLast && (
                       <Button
                         size="sm"
@@ -328,8 +332,7 @@ export const BlockList: React.FC<BlockListProps> = ({
                       variant="ghost"
                       onClick={(e) => {
                         e.stopPropagation();
-                        // Toggle visibility logic here - requires onUpdateBlock access
-                        // Example: onUpdateBlock(block.id, { visible: !block.visible });
+                        // Toggle visibility logic here
                       }}
                       className="w-6 h-6 p-0"
                     >
@@ -370,6 +373,7 @@ export const BlockList: React.FC<BlockListProps> = ({
               </CardContent>
             </Card>
 
+            {/* Insert Point After Each Block */}
             <div className="insert-point group w-full">
               <Button
                 size="sm"
