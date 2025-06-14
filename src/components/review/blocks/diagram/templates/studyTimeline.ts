@@ -1,8 +1,7 @@
-
 // ABOUTME: Study timeline template for temporal visualization of interventions and measurements
 // Horizontal timeline showing when events occur during study period
 
-import { DiagramNode, DiagramConnection } from '@/types/review';
+import { DiagramTemplateNode, DiagramTemplateConnection } from '@/types/review';
 
 export const studyTimelineTemplate = {
   id: 'study-timeline',
@@ -208,7 +207,7 @@ export const studyTimelineTemplate = {
         opacity: 1
       }
     }
-  ] as DiagramNode[],
+  ] as DiagramTemplateNode[],
   connections: [
     {
       id: 'conn1',
@@ -285,5 +284,5 @@ export const studyTimelineTemplate = {
         opacity: 1
       }
     }
-  ] as DiagramConnection[]
+  ] as DiagramTemplateConnection[]
 };

@@ -1,3 +1,4 @@
+
 // ABOUTME: Enhanced review types with string IDs for database compatibility and complete type definitions
 export type BlockType =
   | 'text'
@@ -242,4 +243,41 @@ export interface EnhancedIssue {
   review_type: 'native' | 'pdf' | 'mixed';
   article_pdf_url?: string;
   pdf_url?: string;
+}
+
+// Types for Diagram templates, separating them from the final react-flow structure
+export interface DiagramTemplateNode {
+  id: string;
+  type: 'rectangle' | 'circle' | 'diamond' | 'ellipse';
+  position: { x: number; y: number };
+  size: { width: number; height: number };
+  text: string;
+  style?: {
+      backgroundColor?: string;
+      borderColor?: string;
+      textColor?: string;
+      borderWidth?: number;
+      borderStyle?: 'solid' | 'dashed' | 'dotted';
+      fontSize?: number;
+      fontWeight?: string;
+      textAlign?: 'left' | 'center' | 'right';
+      opacity?: number;
+  };
+}
+
+export interface DiagramTemplateConnection {
+  id: string;
+  sourceNodeId: string;
+  targetNodeId: string;
+  sourcePoint?: string;
+  targetPoint?: string;
+  style?: {
+      strokeColor?: string;
+      strokeWidth?: number;
+      strokeStyle?: 'solid' | 'dashed' | 'dotted';
+      arrowType?: 'arrow' | 'none';
+      curved?: boolean;
+      opacity?: number;
+  };
+  label?: string;
 }

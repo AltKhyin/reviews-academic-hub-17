@@ -1,8 +1,7 @@
-
 // ABOUTME: PRISMA flow diagram template for systematic review study selection
 // Standard flowchart for documenting search and selection process
 
-import { DiagramNode, DiagramConnection } from '@/types/review';
+import { DiagramTemplateNode, DiagramTemplateConnection } from '@/types/review';
 
 export const prismaFlowTemplate = {
   id: 'prisma-flow',
@@ -154,7 +153,7 @@ export const prismaFlowTemplate = {
         opacity: 1
       }
     }
-  ] as DiagramNode[],
+  ] as DiagramTemplateNode[],
   connections: [
     {
       id: 'conn1',
@@ -261,5 +260,5 @@ export const prismaFlowTemplate = {
         opacity: 1
       }
     }
-  ] as DiagramConnection[]
+  ] as DiagramTemplateConnection[]
 };

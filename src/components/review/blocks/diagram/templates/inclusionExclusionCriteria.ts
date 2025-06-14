@@ -1,8 +1,7 @@
-
 // ABOUTME: Inclusion/exclusion criteria template for study participant selection
 // Visual funnel showing screening process with clear criteria
 
-import { DiagramNode, DiagramConnection } from '@/types/review';
+import { DiagramTemplateNode, DiagramTemplateConnection } from '@/types/review';
 
 export const inclusionExclusionCriteriaTemplate = {
   id: 'inclusion-exclusion-criteria',
@@ -190,7 +189,7 @@ export const inclusionExclusionCriteriaTemplate = {
         opacity: 1
       }
     }
-  ] as DiagramNode[],
+  ] as DiagramTemplateNode[],
   connections: [
     {
       id: 'conn1',
@@ -327,5 +326,5 @@ export const inclusionExclusionCriteriaTemplate = {
         opacity: 1
       }
     }
-  ] as DiagramConnection[]
+  ] as DiagramTemplateConnection[]
 };

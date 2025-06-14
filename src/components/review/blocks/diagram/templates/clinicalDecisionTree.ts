@@ -1,8 +1,7 @@
-
 // ABOUTME: Clinical decision tree template for diagnostic and therapeutic algorithms
 // Provides structured decision flow with yes/no branches
 
-import { DiagramNode, DiagramConnection } from '@/types/review';
+import { DiagramTemplateNode, DiagramTemplateConnection } from '@/types/review';
 
 export const clinicalDecisionTreeTemplate = {
   id: 'clinical-decision-tree',
@@ -118,7 +117,7 @@ export const clinicalDecisionTreeTemplate = {
         opacity: 1
       }
     }
-  ] as DiagramNode[],
+  ] as DiagramTemplateNode[],
   connections: [
     {
       id: 'conn1',
@@ -195,5 +194,5 @@ export const clinicalDecisionTreeTemplate = {
         opacity: 1
       }
     }
-  ] as DiagramConnection[]
+  ] as DiagramTemplateConnection[]
 };

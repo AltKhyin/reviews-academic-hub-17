@@ -1,8 +1,7 @@
-
 // ABOUTME: PICOD map template for research question structure visualization
 // Organizes Population, Intervention, Comparison, Outcome, Design elements
 
-import { DiagramNode, DiagramConnection } from '@/types/review';
+import { DiagramTemplateNode, DiagramTemplateConnection } from '@/types/review';
 
 export const picodMapTemplate = {
   id: 'picod-map',
@@ -136,7 +135,7 @@ export const picodMapTemplate = {
         opacity: 1
       }
     }
-  ] as DiagramNode[],
+  ] as DiagramTemplateNode[],
   connections: [
     {
       id: 'conn1',
@@ -258,5 +257,5 @@ export const picodMapTemplate = {
         opacity: 0.7
       }
     }
-  ] as DiagramConnection[]
+  ] as DiagramTemplateConnection[]
 };

@@ -1,8 +1,7 @@
-
 // ABOUTME: Causal chain template for intervention mechanism visualization
 // Shows logical progression from intervention to outcomes
 
-import { DiagramNode, DiagramConnection } from '@/types/review';
+import { DiagramTemplateNode, DiagramTemplateConnection } from '@/types/review';
 
 export const causalChainTemplate = {
   id: 'causal-chain',
@@ -154,7 +153,7 @@ export const causalChainTemplate = {
         opacity: 1
       }
     }
-  ] as DiagramNode[],
+  ] as DiagramTemplateNode[],
   connections: [
     {
       id: 'conn1',
@@ -261,5 +260,5 @@ export const causalChainTemplate = {
         opacity: 0.8
       }
     }
-  ] as DiagramConnection[]
+  ] as DiagramTemplateConnection[]
 };

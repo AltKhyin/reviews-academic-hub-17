@@ -1,8 +1,7 @@
-
 // ABOUTME: Network meta-analysis diagram template for comparing multiple interventions
 // Shows interconnected treatment comparisons in systematic reviews
 
-import { DiagramNode, DiagramConnection } from '@/types/review';
+import { DiagramTemplateNode, DiagramTemplateConnection } from '@/types/review';
 
 export const networkMetaAnalysisTemplate = {
   id: 'network-meta-analysis',
@@ -100,7 +99,7 @@ export const networkMetaAnalysisTemplate = {
         opacity: 1
       }
     }
-  ] as DiagramNode[],
+  ] as DiagramTemplateNode[],
   connections: [
     {
       id: 'conn1',
@@ -192,5 +191,5 @@ export const networkMetaAnalysisTemplate = {
         opacity: 0.7
       }
     }
-  ] as DiagramConnection[]
+  ] as DiagramTemplateConnection[]
 };

@@ -1,8 +1,7 @@
-
 // ABOUTME: RCT study flow template with randomization and group allocation
 // Standard CONSORT-style flow diagram for clinical trials
 
-import { DiagramNode, DiagramConnection } from '@/types/review';
+import { DiagramTemplateNode, DiagramTemplateConnection } from '@/types/review';
 
 export const rctStudyFlowTemplate = {
   id: 'rct-study-flow',
@@ -172,7 +171,7 @@ export const rctStudyFlowTemplate = {
         opacity: 1
       }
     }
-  ] as DiagramNode[],
+  ] as DiagramTemplateNode[],
   connections: [
     {
       id: 'conn1',
@@ -294,5 +293,5 @@ export const rctStudyFlowTemplate = {
         opacity: 1
       }
     }
-  ] as DiagramConnection[]
+  ] as DiagramTemplateConnection[]
 };

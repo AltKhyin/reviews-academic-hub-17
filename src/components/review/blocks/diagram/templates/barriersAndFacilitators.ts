@@ -1,8 +1,7 @@
-
 // ABOUTME: Barriers and facilitators map template for implementation challenges
 // Visual organization of obstacles vs solutions in implementation studies
 
-import { DiagramNode, DiagramConnection } from '@/types/review';
+import { DiagramTemplateNode, DiagramTemplateConnection } from '@/types/review';
 
 export const barriersAndFacilitatorsTemplate = {
   id: 'barriers-facilitators',
@@ -105,10 +104,10 @@ export const barriersAndFacilitatorsTemplate = {
       type: 'rectangle',
       position: { x: 490, y: 280 },
       size: { width: 160, height: 80 },
-      text: 'Organizacionais:\n• Liderança engajada\n• Recursos adequados\n• Cultura de inovação',
+      text: 'Organizacionais:\n• Liderança engajada\n• Cultura de apoio\n• Recursos disponíveis',
       style: {
-        backgroundColor: '#10b981',
-        borderColor: '#059669',
+        backgroundColor: '#059669',
+        borderColor: '#047857',
         textColor: '#ffffff',
         borderWidth: 2,
         borderStyle: 'solid',
@@ -123,10 +122,10 @@ export const barriersAndFacilitatorsTemplate = {
       type: 'rectangle',
       position: { x: 690, y: 280 },
       size: { width: 160, height: 80 },
-      text: 'Individuais:\n• Treinamento adequado\n• Motivação alta\n• Experiência prévia',
+      text: 'Individuais:\n• Treinamento e capacitação\n• Feedback construtivo\n• Percepção de benefício',
       style: {
-        backgroundColor: '#10b981',
-        borderColor: '#059669',
+        backgroundColor: '#059669',
+        borderColor: '#047857',
         textColor: '#ffffff',
         borderWidth: 2,
         borderStyle: 'solid',
@@ -226,7 +225,7 @@ export const barriersAndFacilitatorsTemplate = {
         opacity: 1
       }
     }
-  ] as DiagramNode[],
+  ] as DiagramTemplateNode[],
   connections: [
     {
       id: 'conn1',
@@ -348,5 +347,5 @@ export const barriersAndFacilitatorsTemplate = {
         opacity: 1
       }
     }
-  ] as DiagramConnection[]
+  ] as DiagramTemplateConnection[]
 };
