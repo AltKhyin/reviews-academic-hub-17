@@ -1,4 +1,5 @@
-# README-BÍBLIA.md v3.14.0
+
+# README-BÍBLIA.md v3.14.1
 
 ## 1. Purpose & Pitch
 Scientific journal platform with optimized review system, community features, and advanced performance monitoring. **Editor System Refactoring IN PROGRESS** - Focusing on robust `LayoutElement` management, drag-and-drop, and block operations within various layouts.
@@ -286,6 +287,7 @@ Admin panel with performance monitoring dashboard and error tracking.
 - Refine block movement within nested layouts (e.g., reordering blocks within columns or grid cells).
 
 ## 15. Revision History
+- v3.14.1 (2025-06-14): **Build Stabilization Cycle 2** - Resolved persistent build errors in `useOptimizedHomepage` (infinite type instantiation) and comment-related hooks (`useOptimizedComments`, `useOptimizedCommentVoting`) by correcting type definitions and fixing a critical argument mismatch.
 - v3.14.0 (2025-06-14): **Build Stabilization Cycle 1** - Executed batch-fix of over 40 build errors by standardizing on string-based IDs for all blocks and entities. Corrected type mismatches in grid hooks, block management, comment systems, and various components. This resolves the most critical type inconsistencies.
 - v3.13.0 (2025-06-14): **Editor System Refactoring Cycle 6** - Fixed multiple React Flow and layout component type errors. Aligned component props and state with expected types from libraries (`@hello-pangea/dnd`, `@xyflow/react`). Deleted unused/broken diagram helper components.
 - v3.12.0 (2025-06-14): **Editor System Refactoring Cycle 5** - Replaced `BlockList.tsx` with a new implementation that correctly renders `LayoutElement` structures (rows, grids, blocks). Created `LayoutGrid.tsx` to handle 2D grid rendering. This resolves a major architectural inconsistency in the editor's rendering pipeline.

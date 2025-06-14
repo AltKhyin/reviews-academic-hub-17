@@ -6,7 +6,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Comment, EntityType } from '@/types/commentTypes';
 import { toast } from '@/hooks/use-toast';
 
-export const useOptimizedCommentVoting = (entityType: EntityType, entityId: string) => {
+// Swapped arguments to fix TS2345. The error indicates a string is passed where
+// an EntityType is expected, which points to an argument order mismatch.
+export const useOptimizedCommentVoting = (entityId: string, entityType: EntityType) => {
   const [isVoting, setIsVoting] = useState(false);
   const queryClient = useQueryClient();
 
@@ -25,6 +27,7 @@ export const useOptimizedCommentVoting = (entityType: EntityType, entityId: stri
     
     try {
       // Optimistic update
+      // The query key uses the parameters in the correct semantic order.
       const queryKey = ['comments', entityType, entityId];
       queryClient.setQueryData(queryKey, (oldData: any) => {
         const oldComments = oldData?.pages?.flatMap((page: any) => page.comments) ?? oldData ?? [];

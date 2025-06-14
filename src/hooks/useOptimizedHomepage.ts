@@ -1,4 +1,3 @@
-
 // ABOUTME: Optimized homepage data loading with request batching and deduplication
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,9 +25,12 @@ interface ReviewerComment {
   created_at: string;
 }
 
+// Define a concrete type for section visibility to prevent deep type instantiation errors.
+type SectionConfig = Record<string, any>;
+
 interface HomepageData {
   issues: HomepageIssue[];
-  sectionVisibility: any[];
+  sectionVisibility: SectionConfig[]; // Use concrete type instead of any[]
   featuredIssue: HomepageIssue | null;
   reviewerComments: ReviewerComment[];
   errors: {
@@ -76,7 +78,7 @@ const fetchHomepageData = async (): Promise<HomepageData> => {
 
   return {
     issues: issues.data || [],
-    sectionVisibility: Array.isArray(visibilityValue) ? visibilityValue : [],
+    sectionVisibility: (Array.isArray(visibilityValue) ? visibilityValue : []) as SectionConfig[],
     featuredIssue: featuredIssue.data || null,
     reviewerComments: reviewerComments.data || [],
     errors: {
